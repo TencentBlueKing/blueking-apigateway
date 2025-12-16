@@ -16,200 +16,128 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package logging
+package logging_test
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/logging"
 )
 
-func TestParseZapLogLevel(t *testing.T) {
-	tests := []struct {
-		name        string
-		level       string
-		expected    interface{}
-		expectError bool
-	}{
-		{
-			name:        "panic level",
-			level:       "panic",
-			expected:    zap.PanicLevel,
-			expectError: false,
-		},
-		{
-			name:        "fatal level",
-			level:       "fatal",
-			expected:    zap.FatalLevel,
-			expectError: false,
-		},
-		{
-			name:        "error level",
-			level:       "error",
-			expected:    zap.ErrorLevel,
-			expectError: false,
-		},
-		{
-			name:        "warn level",
-			level:       "warn",
-			expected:    zap.WarnLevel,
-			expectError: false,
-		},
-		{
-			name:        "warning level",
-			level:       "warning",
-			expected:    zap.WarnLevel,
-			expectError: false,
-		},
-		{
-			name:        "info level",
-			level:       "info",
-			expected:    zap.InfoLevel,
-			expectError: false,
-		},
-		{
-			name:        "debug level",
-			level:       "debug",
-			expected:    zap.DebugLevel,
-			expectError: false,
-		},
-		{
-			name:        "uppercase INFO",
-			level:       "INFO",
-			expected:    zap.InfoLevel,
-			expectError: false,
-		},
-		{
-			name:        "mixed case Error",
-			level:       "Error",
-			expected:    zap.ErrorLevel,
-			expectError: false,
-		},
-		{
-			name:        "invalid level",
-			level:       "invalid",
-			expected:    nil,
-			expectError: true,
-		},
-		{
-			name:        "empty level",
-			level:       "",
-			expected:    nil,
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			level, err := parseZapLogLevel(tt.level)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, level)
-			}
-		})
-	}
-}
-
-func TestNewZapJSONLogger_Basic(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "info",
-		Writer:   "os",
-		Settings: map[string]string{"name": "stdout"},
-		Buffered: false,
-	}
-
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_Buffered(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "debug",
-		Writer:   "os",
-		Settings: map[string]string{"name": "stdout"},
-		Buffered: true,
-	}
-
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_InvalidLevel(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "invalid",
-		Writer:   "os",
-		Settings: map[string]string{"name": "stdout"},
-		Buffered: false,
-	}
-
-	// Should not panic, should use default level
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_WithDesensitization(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "info",
-		Writer:   "os",
-		Settings: map[string]string{"name": "stdout"},
-		Buffered: false,
-		Desensitization: config.DesensitizationConfig{
-			Enabled: true,
-			Fields: []config.DesensitizationFiled{
-				{Key: "password", JsonPath: []string{"$.password"}},
-				{Key: "token", JsonPath: []string{"$.token"}},
+var _ = Describe("Logger", func() {
+	Describe("ParseZapLogLevel", func() {
+		DescribeTable("parses log levels correctly",
+			func(level string, expected zapcore.Level, expectError bool) {
+				result, err := logging.ParseZapLogLevel(level)
+				if expectError {
+					Expect(err).To(HaveOccurred())
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(result).To(Equal(expected))
+				}
 			},
-		},
-	}
+			Entry("panic level", "panic", zap.PanicLevel, false),
+			Entry("fatal level", "fatal", zap.FatalLevel, false),
+			Entry("error level", "error", zap.ErrorLevel, false),
+			Entry("warn level", "warn", zap.WarnLevel, false),
+			Entry("warning level", "warning", zap.WarnLevel, false),
+			Entry("info level", "info", zap.InfoLevel, false),
+			Entry("debug level", "debug", zap.DebugLevel, false),
+			Entry("uppercase INFO", "INFO", zap.InfoLevel, false),
+			Entry("mixed case Error", "Error", zap.ErrorLevel, false),
+			Entry("invalid level", "invalid", zapcore.Level(0), true),
+			Entry("empty level", "", zapcore.Level(0), true),
+		)
+	})
 
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_DefaultWriter(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "info",
-		Writer:   "unknown",
-		Settings: map[string]string{},
-		Buffered: false,
-	}
-
-	// Should fallback to stdout
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_StderrWriter(t *testing.T) {
-	cfg := &config.LogConfig{
-		Level:    "info",
-		Writer:   "os",
-		Settings: map[string]string{"name": "stderr"},
-		Buffered: false,
-	}
-
-	logger := newZapJSONLogger(cfg, nil)
-	assert.NotNil(t, logger)
-}
-
-func TestNewZapJSONLogger_AllLogLevels(t *testing.T) {
-	levels := []string{"panic", "fatal", "error", "warn", "info", "debug"}
-
-	for _, level := range levels {
-		t.Run(level, func(t *testing.T) {
+	Describe("NewZapJSONLogger", func() {
+		It("should create basic logger", func() {
 			cfg := &config.LogConfig{
-				Level:    level,
-				Writer:   "os",
+				Level: "info", Writer: "os",
 				Settings: map[string]string{"name": "stdout"},
 				Buffered: false,
 			}
-
-			logger := newZapJSONLogger(cfg, nil)
-			assert.NotNil(t, logger)
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
 		})
-	}
-}
+
+		It("should create buffered logger", func() {
+			cfg := &config.LogConfig{
+				Level: "debug", Writer: "os",
+				Settings: map[string]string{"name": "stdout"},
+				Buffered: true,
+			}
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
+		})
+
+		It("should handle invalid level", func() {
+			cfg := &config.LogConfig{
+				Level: "invalid", Writer: "os",
+				Settings: map[string]string{"name": "stdout"},
+				Buffered: false,
+			}
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
+		})
+
+		It("should create logger with desensitization", func() {
+			cfg := &config.LogConfig{
+				Level: "info", Writer: "os",
+				Settings: map[string]string{"name": "stdout"},
+				Buffered: false,
+				Desensitization: config.DesensitizationConfig{
+					Enabled: true,
+					Fields: []config.DesensitizationFiled{
+						{Key: "password", JsonPath: []string{"$.password"}},
+						{Key: "token", JsonPath: []string{"$.token"}},
+					},
+				},
+			}
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
+		})
+
+		It("should fallback to stdout for unknown writer", func() {
+			cfg := &config.LogConfig{
+				Level: "info", Writer: "unknown",
+				Settings: map[string]string{},
+				Buffered: false,
+			}
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
+		})
+
+		It("should create logger with stderr writer", func() {
+			cfg := &config.LogConfig{
+				Level: "info", Writer: "os",
+				Settings: map[string]string{"name": "stderr"},
+				Buffered: false,
+			}
+			logger := logging.NewZapJSONLogger(cfg, nil)
+			Expect(logger).NotTo(BeNil())
+		})
+
+		DescribeTable("creates logger for all log levels",
+			func(level string) {
+				cfg := &config.LogConfig{
+					Level: level, Writer: "os",
+					Settings: map[string]string{"name": "stdout"},
+					Buffered: false,
+				}
+				logger := logging.NewZapJSONLogger(cfg, nil)
+				Expect(logger).NotTo(BeNil())
+			},
+			Entry("panic", "panic"),
+			Entry("fatal", "fatal"),
+			Entry("error", "error"),
+			Entry("warn", "warn"),
+			Entry("info", "info"),
+			Entry("debug", "debug"),
+		)
+	})
+})

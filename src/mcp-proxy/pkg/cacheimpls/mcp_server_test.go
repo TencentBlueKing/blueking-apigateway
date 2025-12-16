@@ -16,105 +16,81 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package cacheimpls_test
 
 import (
 	"context"
 	"errors"
-	"testing"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/entity/model"
 )
 
-func TestMCPServerKey_Key(t *testing.T) {
-	tests := []struct {
-		name        string
-		key         MCPServerKey
-		expectedKey string
-	}{
-		{
-			name: "normal name",
-			key: MCPServerKey{
-				Name: "test-server",
+var _ = Describe("MCPServer", func() {
+	Describe("MCPServerKey", func() {
+		DescribeTable("should return correct key",
+			func(name string, expectedKey string) {
+				key := cacheimpls.MCPServerKey{Name: name}
+				Expect(key.Key()).To(Equal(expectedKey))
 			},
-			expectedKey: "test-server",
-		},
-		{
-			name: "empty name",
-			key: MCPServerKey{
-				Name: "",
-			},
-			expectedKey: "",
-		},
-		{
-			name: "name with special characters",
-			key: MCPServerKey{
-				Name: "test-server-123_abc",
-			},
-			expectedKey: "test-server-123_abc",
-		},
-	}
+			Entry("normal name", "test-server", "test-server"),
+			Entry("empty name", "", ""),
+			Entry("name with special characters", "test-server-123_abc", "test-server-123_abc"),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.key.Key()
-			assert.Equal(t, tt.expectedKey, result)
+	Describe("GetMCPServerByName", func() {
+		expiration := 5 * time.Minute
+
+		It("should return MCP server successfully", func() {
+			expectedServer := &model.MCPServer{
+				ID:        1,
+				Name:      "test-server",
+				GatewayID: 123,
+				StageID:   456,
+				Status:    model.McpServerStatusActive,
+			}
+
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return expectedServer, nil
+			}
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
+
+			result, err := cacheimpls.GetMCPServerByName(context.Background(), "test-server")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Name).To(Equal("test-server"))
+			Expect(result.GatewayID).To(Equal(123))
 		})
-	}
-}
 
-func TestGetMCPServerByName_Success(t *testing.T) {
-	expiration := 5 * time.Minute
+		It("should return error when record not found", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return nil, errors.New("record not found")
+			}
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
 
-	expectedServer := &model.MCPServer{
-		ID:        1,
-		Name:      "test-server",
-		GatewayID: 123,
-		StageID:   456,
-		Status:    model.McpServerStatusActive,
-	}
+			_, err := cacheimpls.GetMCPServerByName(context.Background(), "non-existent")
+			Expect(err).To(HaveOccurred())
+		})
 
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return expectedServer, nil
-	}
-	mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
-	mcpServerCache = mockCache
+		It("should return error for invalid type", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return "invalid type", nil
+			}
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
 
-	result, err := GetMCPServerByName(context.Background(), "test-server")
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "test-server", result.Name)
-	assert.Equal(t, 123, result.GatewayID)
-}
-
-func TestGetMCPServerByName_Error(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return nil, errors.New("record not found")
-	}
-	mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
-	mcpServerCache = mockCache
-
-	_, err := GetMCPServerByName(context.Background(), "non-existent")
-	assert.Error(t, err)
-}
-
-func TestGetMCPServerByName_InvalidType(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return "invalid type", nil
-	}
-	mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
-	mcpServerCache = mockCache
-
-	_, err := GetMCPServerByName(context.Background(), "test-server")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not model.mcp in cache")
-}
+			_, err := cacheimpls.GetMCPServerByName(context.Background(), "test-server")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not model.mcp in cache"))
+		})
+	})
+})

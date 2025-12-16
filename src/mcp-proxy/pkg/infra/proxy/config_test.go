@@ -16,114 +16,86 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package proxy
+package proxy_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"github.com/stretchr/testify/assert"
+	"mcp_proxy/pkg/infra/proxy"
 )
 
-func TestToolConfig_String(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   ToolConfig
-		expected string
-	}{
-		{
-			name: "basic config",
-			config: ToolConfig{
-				Name:     "getUsers",
-				Host:     "api.example.com",
-				BasePath: "/v1",
-				Url:      "/users",
-				Method:   "GET",
-			},
-			expected: "tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
-		},
-		{
-			name: "host with trailing slash",
-			config: ToolConfig{
-				Name:     "getUsers",
-				Host:     "api.example.com/",
-				BasePath: "/v1",
-				Url:      "/users",
-				Method:   "GET",
-			},
-			expected: "tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
-		},
-		{
-			name: "base path with leading and trailing slashes",
-			config: ToolConfig{
-				Name:     "getUsers",
-				Host:     "api.example.com",
-				BasePath: "/v1/",
-				Url:      "/users",
-				Method:   "GET",
-			},
-			expected: "tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
-		},
-		{
-			name: "url without leading slash",
-			config: ToolConfig{
-				Name:     "getUsers",
-				Host:     "api.example.com",
-				BasePath: "/v1",
-				Url:      "users",
-				Method:   "GET",
-			},
-			expected: "tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
-		},
-		{
-			name: "POST method",
-			config: ToolConfig{
-				Name:     "createUser",
-				Host:     "api.example.com",
-				BasePath: "/v1",
-				Url:      "/users",
-				Method:   "POST",
-			},
-			expected: "tool:[name:createUser,url:api.example.com/v1/users, method:POST]",
-		},
-		{
-			name: "empty base path",
-			config: ToolConfig{
-				Name:     "getUsers",
-				Host:     "api.example.com",
-				BasePath: "",
-				Url:      "/users",
-				Method:   "GET",
-			},
-			expected: "tool:[name:getUsers,url:api.example.com/users, method:GET]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.config.String()
-			assert.Equal(t, tt.expected, result)
+var _ = Describe("Config", func() {
+	Describe("ToolConfig", func() {
+		Describe("String", func() {
+			DescribeTable("formats correctly",
+				func(config proxy.ToolConfig, expected string) {
+					Expect(config.String()).To(Equal(expected))
+				},
+				Entry("basic config",
+					proxy.ToolConfig{
+						Name: "getUsers", Host: "api.example.com",
+						BasePath: "/v1", Url: "/users", Method: "GET",
+					},
+					"tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
+				),
+				Entry("host with trailing slash",
+					proxy.ToolConfig{
+						Name: "getUsers", Host: "api.example.com/",
+						BasePath: "/v1", Url: "/users", Method: "GET",
+					},
+					"tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
+				),
+				Entry("base path with leading and trailing slashes",
+					proxy.ToolConfig{
+						Name: "getUsers", Host: "api.example.com",
+						BasePath: "/v1/", Url: "/users", Method: "GET",
+					},
+					"tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
+				),
+				Entry("url without leading slash",
+					proxy.ToolConfig{
+						Name: "getUsers", Host: "api.example.com",
+						BasePath: "/v1", Url: "users", Method: "GET",
+					},
+					"tool:[name:getUsers,url:api.example.com/v1/users, method:GET]",
+				),
+				Entry("POST method",
+					proxy.ToolConfig{
+						Name: "createUser", Host: "api.example.com",
+						BasePath: "/v1", Url: "/users", Method: "POST",
+					},
+					"tool:[name:createUser,url:api.example.com/v1/users, method:POST]",
+				),
+				Entry("empty base path",
+					proxy.ToolConfig{
+						Name: "getUsers", Host: "api.example.com",
+						BasePath: "", Url: "/users", Method: "GET",
+					},
+					"tool:[name:getUsers,url:api.example.com/users, method:GET]",
+				),
+			)
 		})
-	}
-}
+	})
 
-func TestMCPServerConfig(t *testing.T) {
-	config := MCPServerConfig{
-		Name:              "test-server",
-		ResourceVersionID: 123,
-		Tools: []*ToolConfig{
-			{
-				Name:        "tool1",
-				Description: "Test tool 1",
-				Method:      "GET",
-				Host:        "api.example.com",
-				BasePath:    "/v1",
-				Url:         "/test",
-			},
-		},
-	}
+	Describe("MCPServerConfig", func() {
+		It("should have correct fields", func() {
+			config := proxy.MCPServerConfig{
+				Name:              "test-server",
+				ResourceVersionID: 123,
+				Tools: []*proxy.ToolConfig{
+					{
+						Name: "tool1", Description: "Test tool 1",
+						Method: "GET", Host: "api.example.com",
+						BasePath: "/v1", Url: "/test",
+					},
+				},
+			}
 
-	assert.Equal(t, "test-server", config.Name)
-	assert.Equal(t, 123, config.ResourceVersionID)
-	assert.Len(t, config.Tools, 1)
-	assert.Equal(t, "tool1", config.Tools[0].Name)
-}
+			Expect(config.Name).To(Equal("test-server"))
+			Expect(config.ResourceVersionID).To(Equal(123))
+			Expect(config.Tools).To(HaveLen(1))
+			Expect(config.Tools[0].Name).To(Equal("tool1"))
+		})
+	})
+})

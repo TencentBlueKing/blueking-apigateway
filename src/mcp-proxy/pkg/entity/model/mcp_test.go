@@ -16,174 +16,121 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package model
+package model_test
 
 import (
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/entity/model"
 )
 
-func TestMCPServer_IsActive(t *testing.T) {
-	tests := []struct {
-		name     string
-		status   int
-		expected bool
-	}{
-		{
-			name:     "active status",
-			status:   McpServerStatusActive,
-			expected: true,
-		},
-		{
-			name:     "inactive status",
-			status:   McpServerStatusInactive,
-			expected: false,
-		},
-		{
-			name:     "other status",
-			status:   999,
-			expected: false,
-		},
-	}
+var _ = Describe("MCP Models", func() {
+	Describe("MCPServer", func() {
+		Describe("IsActive", func() {
+			DescribeTable("returns correct active status",
+				func(status int, expected bool) {
+					server := &model.MCPServer{Status: status}
+					Expect(server.IsActive()).To(Equal(expected))
+				},
+				Entry("active status", model.McpServerStatusActive, true),
+				Entry("inactive status", model.McpServerStatusInactive, false),
+				Entry("other status", 999, false),
+			)
+		})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := &MCPServer{
-				Status: tt.status,
+		It("should have correct table name", func() {
+			server := &model.MCPServer{}
+			Expect(server.TableName()).To(Equal("mcp_server"))
+		})
+
+		It("should have correct fields", func() {
+			server := &model.MCPServer{
+				ID: 1, Name: "test-server", Description: "Test MCP Server",
+				IsPublic: true, Labels: model.ArrayString{"label1", "label2"},
+				ResourceNames: model.ArrayString{"resource1", "resource2"},
+				Status:        model.McpServerStatusActive, GatewayID: 100, StageID: 200,
 			}
-			assert.Equal(t, tt.expected, server.IsActive())
+			Expect(server.ID).To(Equal(1))
+			Expect(server.Name).To(Equal("test-server"))
+			Expect(server.Description).To(Equal("Test MCP Server"))
+			Expect(server.IsPublic).To(BeTrue())
+			Expect(server.Labels).To(HaveLen(2))
+			Expect(server.ResourceNames).To(HaveLen(2))
+			Expect(server.Status).To(Equal(model.McpServerStatusActive))
+			Expect(server.GatewayID).To(Equal(100))
+			Expect(server.StageID).To(Equal(200))
 		})
-	}
-}
+	})
 
-func TestMCPServer_TableName(t *testing.T) {
-	server := &MCPServer{}
-	assert.Equal(t, "mcp_server", server.TableName())
-}
+	Describe("MCPServerAppPermission", func() {
+		It("should have correct table name", func() {
+			permission := &model.MCPServerAppPermission{}
+			Expect(permission.TableName()).To(Equal("mcp_server_app_permission"))
+		})
 
-func TestMCPServerAppPermission_TableName(t *testing.T) {
-	permission := &MCPServerAppPermission{}
-	assert.Equal(t, "mcp_server_app_permission", permission.TableName())
-}
-
-func TestArrayString_Scan(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    interface{}
-		expected ArrayString
-		hasError bool
-	}{
-		{
-			name:     "normal array",
-			input:    []byte("item1;item2;item3"),
-			expected: ArrayString{"item1", "item2", "item3"},
-			hasError: false,
-		},
-		{
-			name:     "single item",
-			input:    []byte("item1"),
-			expected: ArrayString{"item1"},
-			hasError: false,
-		},
-		{
-			name:     "empty string",
-			input:    []byte(""),
-			expected: ArrayString{},
-			hasError: false,
-		},
-		{
-			name:     "invalid type",
-			input:    "not a byte slice",
-			expected: nil,
-			hasError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var arr ArrayString
-			err := arr.Scan(tt.input)
-			if tt.hasError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, arr)
+		It("should have correct fields", func() {
+			expires := time.Now().Add(24 * time.Hour)
+			permission := &model.MCPServerAppPermission{
+				Id: 1, BkAppCode: "test-app", Expires: expires,
+				GrantType: "apply", McpServerId: 123,
 			}
+			Expect(permission.Id).To(Equal(1))
+			Expect(permission.BkAppCode).To(Equal("test-app"))
+			Expect(permission.Expires).To(Equal(expires))
+			Expect(permission.GrantType).To(Equal("apply"))
+			Expect(permission.McpServerId).To(Equal(123))
 		})
-	}
-}
+	})
 
-func TestArrayString_Value(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    ArrayString
-		expected string
-	}{
-		{
-			name:     "empty array",
-			input:    ArrayString{},
-			expected: "",
-		},
-		{
-			name:     "array with items",
-			input:    ArrayString{"item1", "item2", "item3"},
-			expected: ";;", // Note: Current implementation has a bug - it creates empty strIDs
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.input.Value()
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+	Describe("ArrayString", func() {
+		Describe("Scan", func() {
+			DescribeTable("scans values correctly",
+				func(input interface{}, expected model.ArrayString, hasError bool) {
+					var arr model.ArrayString
+					err := arr.Scan(input)
+					if hasError {
+						Expect(err).To(HaveOccurred())
+					} else {
+						Expect(err).NotTo(HaveOccurred())
+						Expect(arr).To(Equal(expected))
+					}
+				},
+				Entry("normal array", []byte("item1;item2;item3"),
+					model.ArrayString{"item1", "item2", "item3"}, false),
+				Entry("single item", []byte("item1"),
+					model.ArrayString{"item1"}, false),
+				Entry("empty string", []byte(""),
+					model.ArrayString{}, false),
+				Entry("invalid type", "not a byte slice",
+					model.ArrayString(nil), true),
+			)
 		})
-	}
-}
 
-func TestMCPServer_Fields(t *testing.T) {
-	server := &MCPServer{
-		ID:            1,
-		Name:          "test-server",
-		Description:   "Test MCP Server",
-		IsPublic:      true,
-		Labels:        ArrayString{"label1", "label2"},
-		ResourceNames: ArrayString{"resource1", "resource2"},
-		Status:        McpServerStatusActive,
-		GatewayID:     100,
-		StageID:       200,
-	}
+		Describe("Value", func() {
+			It("should return empty string for empty array", func() {
+				arr := model.ArrayString{}
+				result, err := arr.Value()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(""))
+			})
 
-	assert.Equal(t, 1, server.ID)
-	assert.Equal(t, "test-server", server.Name)
-	assert.Equal(t, "Test MCP Server", server.Description)
-	assert.True(t, server.IsPublic)
-	assert.Len(t, server.Labels, 2)
-	assert.Len(t, server.ResourceNames, 2)
-	assert.Equal(t, McpServerStatusActive, server.Status)
-	assert.Equal(t, 100, server.GatewayID)
-	assert.Equal(t, 200, server.StageID)
-}
+			It("should return joined string for array with items", func() {
+				arr := model.ArrayString{"item1", "item2", "item3"}
+				result, err := arr.Value()
+				Expect(err).NotTo(HaveOccurred())
+				// Note: Current implementation has a bug - it creates empty strIDs
+				Expect(result).To(Equal(";;"))
+			})
+		})
+	})
 
-func TestMCPServerAppPermission_Fields(t *testing.T) {
-	expires := time.Now().Add(24 * time.Hour)
-	permission := &MCPServerAppPermission{
-		Id:          1,
-		BkAppCode:   "test-app",
-		Expires:     expires,
-		GrantType:   "apply",
-		McpServerId: 123,
-	}
-
-	assert.Equal(t, 1, permission.Id)
-	assert.Equal(t, "test-app", permission.BkAppCode)
-	assert.Equal(t, expires, permission.Expires)
-	assert.Equal(t, "apply", permission.GrantType)
-	assert.Equal(t, 123, permission.McpServerId)
-}
-
-func TestMcpServerStatus_Constants(t *testing.T) {
-	assert.Equal(t, 1, McpServerStatusActive)
-	assert.Equal(t, 0, McpServerStatusInactive)
-}
+	Describe("McpServerStatus Constants", func() {
+		It("should have correct values", func() {
+			Expect(model.McpServerStatusActive).To(Equal(1))
+			Expect(model.McpServerStatusInactive).To(Equal(0))
+		})
+	})
+})

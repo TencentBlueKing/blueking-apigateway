@@ -16,109 +16,82 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package cacheimpls_test
 
 import (
 	"context"
 	"errors"
-	"testing"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/entity/model"
 )
 
-func TestMCPPermissionCacheKey_Key(t *testing.T) {
-	tests := []struct {
-		name        string
-		key         MCPPermissionCacheKey
-		expectedKey string
-	}{
-		{
-			name: "normal key",
-			key: MCPPermissionCacheKey{
-				MCPServerID: 123,
-				AppCode:     "test-app",
+var _ = Describe("MCPServerPermission", func() {
+	Describe("MCPPermissionCacheKey", func() {
+		DescribeTable("should return correct key",
+			func(mcpServerID int, appCode string, expectedKey string) {
+				key := cacheimpls.MCPPermissionCacheKey{MCPServerID: mcpServerID, AppCode: appCode}
+				Expect(key.Key()).To(Equal(expectedKey))
 			},
-			expectedKey: "123:test-app",
-		},
-		{
-			name: "zero server id",
-			key: MCPPermissionCacheKey{
-				MCPServerID: 0,
-				AppCode:     "test-app",
-			},
-			expectedKey: "0:test-app",
-		},
-		{
-			name: "empty app code",
-			key: MCPPermissionCacheKey{
-				MCPServerID: 123,
-				AppCode:     "",
-			},
-			expectedKey: "123:",
-		},
-	}
+			Entry("normal key", 123, "test-app", "123:test-app"),
+			Entry("zero server id", 0, "test-app", "0:test-app"),
+			Entry("empty app code", 123, "", "123:"),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.key.Key()
-			assert.Equal(t, tt.expectedKey, result)
+	Describe("GetMCPServerPermission", func() {
+		expiration := 5 * time.Minute
+
+		It("should return permission successfully", func() {
+			expectedPermission := &model.MCPServerAppPermission{
+				Id:          1,
+				BkAppCode:   "test-app",
+				McpServerId: 123,
+				GrantType:   "apply",
+				Expires:     time.Now().Add(24 * time.Hour),
+			}
+
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return expectedPermission, nil
+			}
+			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetAppMCPServerPermission(mockCache)
+
+			result, err := cacheimpls.GetMCPServerPermission(context.Background(), "test-app", 123)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.BkAppCode).To(Equal("test-app"))
+			Expect(result.McpServerId).To(Equal(123))
+			Expect(result.GrantType).To(Equal("apply"))
 		})
-	}
-}
 
-func TestGetMCPServerPermission_Success(t *testing.T) {
-	expiration := 5 * time.Minute
+		It("should return error when record not found", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return nil, errors.New("record not found")
+			}
+			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetAppMCPServerPermission(mockCache)
 
-	expectedPermission := &model.MCPServerAppPermission{
-		Id:          1,
-		BkAppCode:   "test-app",
-		McpServerId: 123,
-		GrantType:   "apply",
-		Expires:     time.Now().Add(24 * time.Hour),
-	}
+			_, err := cacheimpls.GetMCPServerPermission(context.Background(), "test-app", 123)
+			Expect(err).To(HaveOccurred())
+		})
 
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return expectedPermission, nil
-	}
-	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
-	appMCPServerPermission = mockCache
+		It("should return error for invalid type", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return "invalid type", nil
+			}
+			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetAppMCPServerPermission(mockCache)
 
-	result, err := GetMCPServerPermission(context.Background(), "test-app", 123)
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, "test-app", result.BkAppCode)
-	assert.Equal(t, 123, result.McpServerId)
-	assert.Equal(t, "apply", result.GrantType)
-}
-
-func TestGetMCPServerPermission_Error(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return nil, errors.New("record not found")
-	}
-	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
-	appMCPServerPermission = mockCache
-
-	_, err := GetMCPServerPermission(context.Background(), "test-app", 123)
-	assert.Error(t, err)
-}
-
-func TestGetMCPServerPermission_InvalidType(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return "invalid type", nil // Return wrong type
-	}
-	mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
-	appMCPServerPermission = mockCache
-
-	_, err := GetMCPServerPermission(context.Background(), "test-app", 123)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not model.McpServerAppPermission in cache")
-}
+			_, err := cacheimpls.GetMCPServerPermission(context.Background(), "test-app", 123)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not model.McpServerAppPermission in cache"))
+		})
+	})
+})

@@ -16,76 +16,72 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package middleware_test
 
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/middleware"
 	"mcp_proxy/pkg/util"
 )
 
-func TestRequestID_WithExistingRequestID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+var _ = Describe("RequestID", func() {
+	BeforeEach(func() {
+		gin.SetMode(gin.TestMode)
+	})
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+	Describe("RequestID Middleware", func() {
+		It("should use existing request ID from header", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-	existingRequestID := "existing-request-id-12345"
-	c.Request.Header.Set(constant.BkGatewayRequestIDKey, existingRequestID)
+			existingRequestID := "existing-request-id-12345"
+			c.Request.Header.Set(constant.BkGatewayRequestIDKey, existingRequestID)
 
-	middleware := RequestID()
-	middleware(c)
+			mw := middleware.RequestID()
+			mw(c)
 
-	// Should use the existing request ID
-	requestID := util.GetRequestIDFromContext(c.Request.Context())
-	assert.Equal(t, existingRequestID, requestID)
-}
+			requestID := util.GetRequestIDFromContext(c.Request.Context())
+			Expect(requestID).To(Equal(existingRequestID))
+		})
 
-func TestRequestID_GeneratesNewRequestID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+		It("should generate new request ID when not provided", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+			mw := middleware.RequestID()
+			mw(c)
 
-	// No request ID header set
+			requestID := util.GetRequestIDFromContext(c.Request.Context())
+			Expect(requestID).NotTo(BeEmpty())
+			// UUID4 hex format check (32 hex characters without dashes)
+			Expect(requestID).To(HaveLen(32))
+		})
 
-	middleware := RequestID()
-	middleware(c)
+		It("should generate unique request IDs for multiple requests", func() {
+			requestIDs := make(map[string]bool)
 
-	// Should generate a new request ID
-	requestID := util.GetRequestIDFromContext(c.Request.Context())
-	assert.NotEmpty(t, requestID)
-	// UUID4 hex format check (32 hex characters without dashes)
-	assert.Len(t, requestID, 32)
-}
+			for i := 0; i < 10; i++ {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-func TestRequestID_MultipleCalls(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+				mw := middleware.RequestID()
+				mw(c)
 
-	// Test that multiple requests get different request IDs
-	requestIDs := make(map[string]bool)
-
-	for i := 0; i < 10; i++ {
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-
-		middleware := RequestID()
-		middleware(c)
-
-		requestID := util.GetRequestIDFromContext(c.Request.Context())
-		assert.NotEmpty(t, requestID)
-
-		// Ensure uniqueness
-		assert.False(t, requestIDs[requestID], "Request ID should be unique")
-		requestIDs[requestID] = true
-	}
-}
+				requestID := util.GetRequestIDFromContext(c.Request.Context())
+				Expect(requestID).NotTo(BeEmpty())
+				Expect(requestIDs).NotTo(HaveKey(requestID), "Request ID should be unique")
+				requestIDs[requestID] = true
+			}
+		})
+	})
+})

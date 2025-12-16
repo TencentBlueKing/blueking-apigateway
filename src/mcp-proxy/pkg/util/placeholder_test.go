@@ -16,115 +16,78 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package util_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"github.com/stretchr/testify/assert"
+	"mcp_proxy/pkg/util"
 )
 
-func TestReplacePlaceHolder(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		params   map[string]string
-		expected string
-	}{
-		{
-			name:  "simple replacement",
-			input: "Hello, {name}!",
-			params: map[string]string{
-				"name": "World",
+var _ = Describe("Placeholder", func() {
+	Describe("ReplacePlaceHolder", func() {
+		DescribeTable("replaces placeholders correctly",
+			func(input string, params map[string]string, expected string) {
+				result := util.ReplacePlaceHolder(input, params)
+				Expect(result).To(Equal(expected))
 			},
-			expected: "Hello, World!",
-		},
-		{
-			name:  "multiple replacements",
-			input: "{greeting}, {name}! Welcome to {place}.",
-			params: map[string]string{
-				"greeting": "Hello",
-				"name":     "Alice",
-				"place":    "Wonderland",
-			},
-			expected: "Hello, Alice! Welcome to Wonderland.",
-		},
-		{
-			name:  "placeholder with spaces",
-			input: "Hello, { name }!",
-			params: map[string]string{
-				"name": "World",
-			},
-			expected: "Hello, World!",
-		},
-		{
-			name:  "missing param keeps placeholder",
-			input: "Hello, {name}!",
-			params: map[string]string{
-				"other": "value",
-			},
-			expected: "Hello, {name}!",
-		},
-		{
-			name:     "empty params",
-			input:    "Hello, {name}!",
-			params:   map[string]string{},
-			expected: "Hello, {name}!",
-		},
-		{
-			name:  "no placeholders",
-			input: "Hello, World!",
-			params: map[string]string{
-				"name": "Alice",
-			},
-			expected: "Hello, World!",
-		},
-		{
-			name:  "url template",
-			input: "https://api.example.com/{api_name}/{stage}/resource",
-			params: map[string]string{
-				"api_name": "my-gateway",
-				"stage":    "prod",
-			},
-			expected: "https://api.example.com/my-gateway/prod/resource",
-		},
-		{
-			name:  "empty replacement value",
-			input: "Hello, {name}!",
-			params: map[string]string{
-				"name": "",
-			},
-			expected: "Hello, !",
-		},
-		{
-			name:  "special characters in replacement",
-			input: "Path: {path}",
-			params: map[string]string{
-				"path": "/api/v1/users?id=123",
-			},
-			expected: "Path: /api/v1/users?id=123",
-		},
-		{
-			name:  "partial match",
-			input: "{api_name} and {api_name_v2}",
-			params: map[string]string{
-				"api_name":    "gateway1",
-				"api_name_v2": "gateway2",
-			},
-			expected: "gateway1 and gateway2",
-		},
-	}
+			Entry("simple replacement",
+				"Hello, {name}!",
+				map[string]string{"name": "World"},
+				"Hello, World!",
+			),
+			Entry("multiple replacements",
+				"{greeting}, {name}! Welcome to {place}.",
+				map[string]string{"greeting": "Hello", "name": "Alice", "place": "Wonderland"},
+				"Hello, Alice! Welcome to Wonderland.",
+			),
+			Entry("placeholder with spaces",
+				"Hello, { name }!",
+				map[string]string{"name": "World"},
+				"Hello, World!",
+			),
+			Entry("missing param keeps placeholder",
+				"Hello, {name}!",
+				map[string]string{"other": "value"},
+				"Hello, {name}!",
+			),
+			Entry("empty params",
+				"Hello, {name}!",
+				map[string]string{},
+				"Hello, {name}!",
+			),
+			Entry("no placeholders",
+				"Hello, World!",
+				map[string]string{"name": "Alice"},
+				"Hello, World!",
+			),
+			Entry("url template",
+				"https://api.example.com/{api_name}/{stage}/resource",
+				map[string]string{"api_name": "my-gateway", "stage": "prod"},
+				"https://api.example.com/my-gateway/prod/resource",
+			),
+			Entry("empty replacement value",
+				"Hello, {name}!",
+				map[string]string{"name": ""},
+				"Hello, !",
+			),
+			Entry("special characters in replacement",
+				"Path: {path}",
+				map[string]string{"path": "/api/v1/users?id=123"},
+				"Path: /api/v1/users?id=123",
+			),
+			Entry("partial match",
+				"{api_name} and {api_name_v2}",
+				map[string]string{"api_name": "gateway1", "api_name_v2": "gateway2"},
+				"gateway1 and gateway2",
+			),
+		)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := ReplacePlaceHolder(tt.input, tt.params)
-			assert.Equal(t, tt.expected, result)
+		It("should handle nil params", func() {
+			input := "Hello, {name}!"
+			result := util.ReplacePlaceHolder(input, nil)
+			Expect(result).To(Equal("Hello, {name}!"))
 		})
-	}
-}
-
-func TestReplacePlaceHolder_NilParams(t *testing.T) {
-	input := "Hello, {name}!"
-	result := ReplacePlaceHolder(input, nil)
-	assert.Equal(t, "Hello, {name}!", result)
-}
+	})
+})

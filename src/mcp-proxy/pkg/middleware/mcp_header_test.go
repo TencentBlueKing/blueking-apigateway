@@ -16,105 +16,76 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package middleware_test
 
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/middleware"
 	"mcp_proxy/pkg/util"
 )
 
-func TestMCPServerHeaderMiddleware(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+var _ = Describe("MCPHeader", func() {
+	BeforeEach(func() {
+		gin.SetMode(gin.TestMode)
+	})
 
-	tests := []struct {
-		name            string
-		timeout         string
-		allowedHeaders  string
-		expectedTimeout int
-	}{
-		{
-			name:            "with timeout header",
-			timeout:         "30",
-			allowedHeaders:  "",
-			expectedTimeout: 30,
-		},
-		{
-			name:            "without timeout header",
-			timeout:         "",
-			allowedHeaders:  "",
-			expectedTimeout: 0,
-		},
-		{
-			name:            "with allowed headers",
-			timeout:         "60",
-			allowedHeaders:  "X-Custom-Header,X-Another-Header",
-			expectedTimeout: 60,
-		},
-		{
-			name:            "invalid timeout value",
-			timeout:         "invalid",
-			allowedHeaders:  "",
-			expectedTimeout: 0,
-		},
-	}
+	Describe("MCPServerHeaderMiddleware", func() {
+		DescribeTable("handles timeout header correctly",
+			func(timeout string, allowedHeaders string, expectedTimeoutSeconds int) {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+				if timeout != "" {
+					c.Request.Header.Set(constant.BkApiTimeoutHeaderKey, timeout)
+				}
+				if allowedHeaders != "" {
+					c.Request.Header.Set(constant.BkApiAllowedHeadersKey, allowedHeaders)
+				}
+
+				mw := middleware.MCPServerHeaderMiddleware()
+				mw(c)
+
+				actualTimeout := util.GetBkApiTimeout(c.Request.Context())
+				if expectedTimeoutSeconds == 0 {
+					// Default timeout is 5 minutes
+					Expect(int(actualTimeout.Seconds())).To(Equal(5 * 60))
+				} else {
+					Expect(int(actualTimeout.Seconds())).To(Equal(expectedTimeoutSeconds))
+				}
+			},
+			Entry("with timeout header", "30", "", 30),
+			Entry("without timeout header", "", "", 0),
+			Entry("with allowed headers", "60", "X-Custom-Header,X-Another-Header", 60),
+			Entry("invalid timeout value", "invalid", "", 0),
+		)
+
+		It("should extract allowed headers", func() {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-			if tt.timeout != "" {
-				c.Request.Header.Set(constant.BkApiTimeoutHeaderKey, tt.timeout)
-			}
-			if tt.allowedHeaders != "" {
-				c.Request.Header.Set(constant.BkApiAllowedHeadersKey, tt.allowedHeaders)
-			}
+			c.Request.Header.Set(constant.BkApiAllowedHeadersKey, "X-Custom-Header,X-Another-Header")
+			c.Request.Header.Set("X-Custom-Header", "custom-value")
+			c.Request.Header.Set("X-Another-Header", "another-value")
 
-			middleware := MCPServerHeaderMiddleware()
-			middleware(c)
+			util.SetMCPServerID(c, 1)
+			util.SetMCPServerName(c, "test-server")
 
-			// Check that timeout was set correctly
-			timeout := util.GetBkApiTimeout(c.Request.Context())
-			if tt.expectedTimeout == 0 {
-				// Default timeout is 5 minutes
-				assert.Equal(t, 5*60, int(timeout.Seconds()))
-			} else {
-				assert.Equal(t, tt.expectedTimeout, int(timeout.Seconds()))
-			}
+			mw := middleware.MCPServerHeaderMiddleware()
+			mw(c)
+
+			headers := util.GetBkApiAllowedHeaders(c.Request.Context())
+			Expect(headers).NotTo(BeNil())
+			Expect(headers["X-Custom-Header"]).To(Equal("custom-value"))
+			Expect(headers["X-Another-Header"]).To(Equal("another-value"))
 		})
-	}
-}
-
-func TestMCPServerHeaderMiddleware_AllowedHeaders(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-
-	// Set allowed headers and their values
-	c.Request.Header.Set(constant.BkApiAllowedHeadersKey, "X-Custom-Header,X-Another-Header")
-	c.Request.Header.Set("X-Custom-Header", "custom-value")
-	c.Request.Header.Set("X-Another-Header", "another-value")
-
-	// Set MCP server info for the middleware
-	util.SetMCPServerID(c, 1)
-	util.SetMCPServerName(c, "test-server")
-
-	middleware := MCPServerHeaderMiddleware()
-	middleware(c)
-
-	// Check that allowed headers were extracted
-	headers := util.GetBkApiAllowedHeaders(c.Request.Context())
-	assert.NotNil(t, headers)
-	assert.Equal(t, "custom-value", headers["X-Custom-Header"])
-	assert.Equal(t, "another-value", headers["X-Another-Header"])
-}
+	})
+})

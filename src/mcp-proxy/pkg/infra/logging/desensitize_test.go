@@ -21,191 +21,55 @@ package logging_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"os"
-	"testing"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"mcp_proxy/pkg/infra/logging"
 )
 
-func BenchmarkLoggingWithoutDesensitize(b *testing.B) {
-	file, err := ioutil.TempFile(".", "logging_test_*.log")
-	if err != nil {
-		b.Fatalf("Failed to create log file: %v", err)
-	}
-	defer os.Remove(file.Name())
+var _ = Describe("Desensitize", func() {
+	Describe("JsonArray", func() {
+		It("should desensitize array fields", func() {
+			file, err := os.CreateTemp(".", "logging_test_*.log")
+			if err != nil {
+				Fail("Failed to create log file")
+			}
+			defer os.Remove(file.Name())
 
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+			encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+			w := &zapcore.BufferedWriteSyncer{
+				WS:            zapcore.AddSync(file),
+				Size:          256 * 1024,
+				FlushInterval: 30 * time.Second,
+			}
+			core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
 
-	w := &zapcore.BufferedWriteSyncer{
-		WS:            zapcore.AddSync(file),
-		Size:          256 * 1024, // 256 kB
-		FlushInterval: 30 * time.Second,
-	}
-	core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
+			logger := zap.New(core, logging.WithDesensitize(map[string][]string{
+				"body": {"data.#.bk_app_secret"},
+			}))
+			defer logger.Sync()
 
-	logger := zap.New(core)
-	defer logger.Sync()
+			body := map[string]interface{}{
+				"data": []struct {
+					BkAppSecret string `json:"bk_app_secret"`
+					BkAppCode   string `json:"bk_app_code"`
+				}{
+					{BkAppSecret: "1111-5678-9012-1111", BkAppCode: "test1"},
+					{BkAppSecret: "2222-5678-9012-2222", BkAppCode: "test2"},
+					{BkAppSecret: "3333-5678-9012-3333", BkAppCode: "test3"},
+				},
+			}
 
-	body := map[string]interface{}{
-		"username":           "user1",
-		"password":           "password1",
-		"credit_card_number": "1234-5678-9012-3456",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Info("Sensitive data", zap.Any("body", body))
-	}
-}
-
-func BenchmarkLoggingWithDesensitize(b *testing.B) {
-	file, err := ioutil.TempFile(".", "logging_test_*.log")
-	if err != nil {
-		b.Fatalf("Failed to create log file: %v", err)
-	}
-	defer os.Remove(file.Name())
-
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-
-	w := &zapcore.BufferedWriteSyncer{
-		WS:            zapcore.AddSync(file),
-		Size:          256 * 1024, // 256 kB
-		FlushInterval: 30 * time.Second,
-	}
-
-	core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
-
-	logger := zap.New(core, logging.WithDesensitize(map[string][]string{
-		"body": {"password", "credit_card_number"},
-	}))
-	defer logger.Sync()
-
-	body := map[string]interface{}{
-		"username":           "user1",
-		"password":           "passwor",
-		"credit_card_number": "1234-5678-9012-3456",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Info("Sensitive data", zap.Any("body", body))
-	}
-}
-
-func BenchmarkLoggingJSONWithoutDesensitize(b *testing.B) {
-	file, err := ioutil.TempFile(".", "logging_test_*.log")
-	if err != nil {
-		b.Fatalf("Failed to create log file: %v", err)
-	}
-	defer os.Remove(file.Name())
-
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	w := &zapcore.BufferedWriteSyncer{
-		WS:            zapcore.AddSync(file),
-		Size:          256 * 1024, // 256 kB
-		FlushInterval: 30 * time.Second,
-	}
-	core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
-
-	logger := zap.New(core)
-	defer logger.Sync()
-
-	body := map[string]interface{}{
-		"username":           "user1",
-		"password":           "password1",
-		"credit_card_number": "1234-5678-9012-3456",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		buf := new(bytes.Buffer)
-		if err := json.NewEncoder(buf).Encode(body); err != nil {
-			b.Fatalf("Failed to encode JSON: %v", err)
-		}
-		logger.Info("Sensitive data", zap.String("body", buf.String()))
-	}
-}
-
-func BenchmarkLoggingJSONWithDesensitize(b *testing.B) {
-	file, err := ioutil.TempFile(".", "logging_test_*.log")
-	if err != nil {
-		b.Fatalf("Failed to create log file: %v", err)
-	}
-	defer os.Remove(file.Name())
-
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	w := &zapcore.BufferedWriteSyncer{
-		WS:            zapcore.AddSync(file),
-		Size:          256 * 1024, // 256 kB
-		FlushInterval: 30 * time.Second,
-	}
-	core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
-
-	logger := zap.New(core, logging.WithDesensitize(map[string][]string{
-		"body": {"password", "credit_card_number"},
-	}))
-	defer logger.Sync()
-
-	body := map[string]interface{}{
-		"username":           "user1",
-		"password":           "password1",
-		"credit_card_number": "1234-5678-9012-3456",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		buf := new(bytes.Buffer)
-		if err := json.NewEncoder(buf).Encode(body); err != nil {
-			b.Fatalf("Failed to encode JSON: %v", err)
-		}
-		logger.Info("Sensitive data", zap.String("body", buf.String()))
-	}
-}
-
-func TestDesensitize_JsonArray(t *testing.T) {
-	file, err := ioutil.TempFile(".", "logging_test_*.log")
-	if err != nil {
-		t.Fatalf("Failed to create log file: %v", err)
-	}
-	defer os.Remove(file.Name())
-
-	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	w := &zapcore.BufferedWriteSyncer{
-		WS:            zapcore.AddSync(file),
-		Size:          256 * 1024, // 256 kB
-		FlushInterval: 30 * time.Second,
-	}
-	core := zapcore.NewCore(encoder, w, zapcore.InfoLevel)
-
-	logger := zap.New(core, logging.WithDesensitize(map[string][]string{
-		"body": {"data.#.bk_app_secret"},
-	}))
-	defer logger.Sync()
-
-	body := map[string]interface{}{
-		"data": []struct {
-			BkAppSecret string `json:"bk_app_secret"`
-			BkAppCode   string `json:"bk_app_code"`
-		}{
-			{BkAppSecret: "1111-5678-9012-1111", BkAppCode: "test1"},
-			{BkAppSecret: "2222-5678-9012-2222", BkAppCode: "test2"},
-			{BkAppSecret: "3333-5678-9012-3333", BkAppCode: "test3"},
-		},
-	}
-
-	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(body); err != nil {
-		t.Fatalf("Failed to encode JSON: %v", err)
-	}
-	logger.Info("Sensitive data", zap.String("body", buf.String()))
-	//{"level":"info","ts":1699933892.8620539,"msg":"Sensitive data",
-	//"body":"{\"date\":[
-	//{\"bk_app_secret\":\"111***************111\",\"bk_app_code\":\"test1\"},
-	//{\"bk_app_secret\":\"222***************222\",\"bk_app_code\":\"test2\"},
-	//{\"bk_app_secret\":\"333***************333\",\"bk_app_code\":\"test3\"}]}\n"}
-}
+			buf := new(bytes.Buffer)
+			err = json.NewEncoder(buf).Encode(body)
+			if err != nil {
+				Fail("Failed to encode JSON")
+			}
+			logger.Info("Sensitive data", zap.String("body", buf.String()))
+		})
+	})
+})

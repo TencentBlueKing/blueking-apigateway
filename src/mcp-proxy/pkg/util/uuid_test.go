@@ -16,39 +16,43 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package util_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"github.com/stretchr/testify/assert"
+	"mcp_proxy/pkg/util"
 )
 
-func TestGenUUID4(t *testing.T) {
-	uuid := GenUUID4()
+var _ = Describe("UUID", func() {
+	Describe("GenUUID4", func() {
+		It("should generate 32-character hex string", func() {
+			uuid := util.GenUUID4()
+			Expect(uuid).To(HaveLen(32))
+		})
 
-	// UUID4 hex encoded is 32 characters (16 bytes * 2)
-	assert.Len(t, uuid, 32)
+		It("should contain only hex characters", func() {
+			uuid := util.GenUUID4()
+			for _, c := range uuid {
+				Expect((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')).To(BeTrue(),
+					"UUID should only contain hex characters")
+			}
+		})
 
-	// Should be valid hex
-	for _, c := range uuid {
-		assert.True(t, (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'),
-			"UUID should only contain hex characters")
-	}
-}
+		It("should generate unique UUIDs", func() {
+			uuids := make(map[string]bool)
 
-func TestGenUUID4_Uniqueness(t *testing.T) {
-	uuids := make(map[string]bool)
+			for i := 0; i < 100; i++ {
+				uuid := util.GenUUID4()
+				Expect(uuids).NotTo(HaveKey(uuid), "UUID should be unique")
+				uuids[uuid] = true
+			}
+		})
 
-	// Generate 100 UUIDs and check uniqueness
-	for i := 0; i < 100; i++ {
-		uuid := GenUUID4()
-		assert.False(t, uuids[uuid], "UUID should be unique")
-		uuids[uuid] = true
-	}
-}
-
-func TestGenUUID4_NotEmpty(t *testing.T) {
-	uuid := GenUUID4()
-	assert.NotEmpty(t, uuid)
-}
+		It("should not be empty", func() {
+			uuid := util.GenUUID4()
+			Expect(uuid).NotTo(BeEmpty())
+		})
+	})
+})

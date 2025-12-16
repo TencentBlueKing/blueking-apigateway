@@ -20,110 +20,243 @@ package proxy
 
 import (
 	"context"
-	"testing"
+	"net/http"
+	"net/http/httptest"
+	"sync"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gin-gonic/gin"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestNewMCPProxy(t *testing.T) {
-	messageUrlFormat := "/api/mcp/%s/message"
-	proxy := NewMCPProxy(messageUrlFormat)
+var _ = Describe("MCPProxy", func() {
+	Describe("NewMCPProxy", func() {
+		It("should create a new MCPProxy instance", func() {
+			messageUrlFormat := "/api/mcp/%s/message"
+			proxy := NewMCPProxy(messageUrlFormat)
 
-	assert.NotNil(t, proxy)
-	assert.NotNil(t, proxy.mcpServers)
-	assert.NotNil(t, proxy.rwLock)
-	assert.NotNil(t, proxy.activeMCPServers)
-	assert.Equal(t, messageUrlFormat, proxy.messageUrlFormat)
-	assert.Empty(t, proxy.mcpServers)
-	assert.Empty(t, proxy.activeMCPServers)
-}
+			Expect(proxy).NotTo(BeNil())
+			Expect(proxy.mcpServers).NotTo(BeNil())
+			Expect(proxy.rwLock).NotTo(BeNil())
+			Expect(proxy.activeMCPServers).NotTo(BeNil())
+			Expect(proxy.messageUrlFormat).To(Equal(messageUrlFormat))
+			Expect(proxy.mcpServers).To(BeEmpty())
+			Expect(proxy.activeMCPServers).To(BeEmpty())
+		})
+	})
 
-func TestMCPProxy_IsMCPServerExist(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+	Describe("IsMCPServerExist", func() {
+		var proxy *MCPProxy
 
-	// Test non-existent server
-	assert.False(t, proxy.IsMCPServerExist("test-server"))
+		BeforeEach(func() {
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
 
-	// Add a mock server entry manually
-	proxy.rwLock.Lock()
-	proxy.mcpServers["test-server"] = &MCPServer{}
-	proxy.rwLock.Unlock()
+		It("should return false for non-existent server", func() {
+			Expect(proxy.IsMCPServerExist("test-server")).To(BeFalse())
+		})
 
-	// Test existent server
-	assert.True(t, proxy.IsMCPServerExist("test-server"))
-}
+		It("should return true for existent server", func() {
+			proxy.rwLock.Lock()
+			proxy.mcpServers["test-server"] = &MCPServer{}
+			proxy.rwLock.Unlock()
 
-func TestMCPProxy_GetMCPServer(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+			Expect(proxy.IsMCPServerExist("test-server")).To(BeTrue())
+		})
+	})
 
-	// Test non-existent server
-	assert.Nil(t, proxy.GetMCPServer("test-server"))
+	Describe("GetMCPServer", func() {
+		var proxy *MCPProxy
 
-	// Add a mock server entry manually
-	mockServer := &MCPServer{name: "test-server"}
-	proxy.rwLock.Lock()
-	proxy.mcpServers["test-server"] = mockServer
-	proxy.rwLock.Unlock()
+		BeforeEach(func() {
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
 
-	// Test existent server
-	result := proxy.GetMCPServer("test-server")
-	assert.NotNil(t, result)
-	assert.Equal(t, "test-server", result.name)
-}
+		It("should return nil for non-existent server", func() {
+			Expect(proxy.GetMCPServer("test-server")).To(BeNil())
+		})
 
-func TestMCPProxy_AddMCPServer(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+		It("should return server for existent server", func() {
+			mockServer := &MCPServer{name: "test-server"}
+			proxy.rwLock.Lock()
+			proxy.mcpServers["test-server"] = mockServer
+			proxy.rwLock.Unlock()
 
-	mockServer := &MCPServer{name: "test-server"}
-	proxy.AddMCPServer("test-server", mockServer)
+			result := proxy.GetMCPServer("test-server")
+			Expect(result).NotTo(BeNil())
+			Expect(result.name).To(Equal("test-server"))
+		})
+	})
 
-	assert.True(t, proxy.IsMCPServerExist("test-server"))
-	assert.Equal(t, mockServer, proxy.GetMCPServer("test-server"))
-}
+	Describe("AddMCPServer", func() {
+		It("should add server to proxy", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			mockServer := &MCPServer{name: "test-server"}
 
-func TestMCPProxy_GetActiveMCPServerNames(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy.AddMCPServer("test-server", mockServer)
 
-	// Initially empty
-	names := proxy.GetActiveMCPServerNames()
-	assert.Empty(t, names)
+			Expect(proxy.IsMCPServerExist("test-server")).To(BeTrue())
+			Expect(proxy.GetMCPServer("test-server")).To(Equal(mockServer))
+		})
 
-	// Add active servers manually
-	proxy.rwLock.Lock()
-	proxy.activeMCPServers["server1"] = struct{}{}
-	proxy.activeMCPServers["server2"] = struct{}{}
-	proxy.rwLock.Unlock()
+		It("should add multiple servers", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			server1 := &MCPServer{name: "server1"}
+			server2 := &MCPServer{name: "server2"}
 
-	names = proxy.GetActiveMCPServerNames()
-	assert.Len(t, names, 2)
-	assert.Contains(t, names, "server1")
-	assert.Contains(t, names, "server2")
-}
+			proxy.AddMCPServer("server1", server1)
+			proxy.AddMCPServer("server2", server2)
 
-func TestMCPProxy_DeleteMCPServer(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+			Expect(proxy.IsMCPServerExist("server1")).To(BeTrue())
+			Expect(proxy.IsMCPServerExist("server2")).To(BeTrue())
+		})
+	})
 
-	// Test deleting non-existent server (should not panic)
-	proxy.DeleteMCPServer("non-existent")
+	Describe("GetActiveMCPServerNames", func() {
+		var proxy *MCPProxy
 
-	// Add a mock server
-	proxy.rwLock.Lock()
-	proxy.mcpServers["test-server"] = &MCPServer{name: "test-server"}
-	proxy.activeMCPServers["test-server"] = struct{}{}
-	proxy.rwLock.Unlock()
+		BeforeEach(func() {
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
 
-	assert.True(t, proxy.IsMCPServerExist("test-server"))
+		It("should return empty list initially", func() {
+			names := proxy.GetActiveMCPServerNames()
+			Expect(names).To(BeEmpty())
+		})
 
-	// Note: DeleteMCPServer calls Shutdown which requires a valid Server
-	// So we only test the basic logic here without actual server
-}
+		It("should return active server names", func() {
+			proxy.rwLock.Lock()
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.activeMCPServers["server2"] = struct{}{}
+			proxy.rwLock.Unlock()
 
-func TestMCPProxy_Run(t *testing.T) {
-	proxy := NewMCPProxy("/api/mcp/%s/message")
+			names := proxy.GetActiveMCPServerNames()
+			Expect(names).To(HaveLen(2))
+			Expect(names).To(ContainElements("server1", "server2"))
+		})
 
-	ctx := context.Background()
+		It("should return single active server", func() {
+			proxy.rwLock.Lock()
+			proxy.activeMCPServers["only-server"] = struct{}{}
+			proxy.rwLock.Unlock()
 
-	// Run with no servers should not panic
-	proxy.Run(ctx)
-	assert.Empty(t, proxy.GetActiveMCPServerNames())
-}
+			names := proxy.GetActiveMCPServerNames()
+			Expect(names).To(HaveLen(1))
+			Expect(names).To(ContainElement("only-server"))
+		})
+	})
+
+	Describe("DeleteMCPServer", func() {
+		It("should not panic when deleting non-existent server", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			Expect(func() {
+				proxy.DeleteMCPServer("non-existent")
+			}).NotTo(Panic())
+		})
+
+		It("should mark server as existing before deletion", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy.rwLock.Lock()
+			proxy.mcpServers["test-server"] = &MCPServer{name: "test-server"}
+			proxy.activeMCPServers["test-server"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			Expect(proxy.IsMCPServerExist("test-server")).To(BeTrue())
+		})
+	})
+
+	Describe("Run", func() {
+		It("should not panic with no servers", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			ctx := context.Background()
+
+			Expect(func() {
+				proxy.Run(ctx)
+			}).NotTo(Panic())
+			Expect(proxy.GetActiveMCPServerNames()).To(BeEmpty())
+		})
+
+		It("should skip already active servers", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+			ctx := context.Background()
+
+			// Mark server as active without adding it
+			proxy.rwLock.Lock()
+			proxy.activeMCPServers["test-server"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			Expect(func() {
+				proxy.Run(ctx)
+			}).NotTo(Panic())
+		})
+	})
+
+	Describe("SseHandler", func() {
+		var proxy *MCPProxy
+
+		BeforeEach(func() {
+			gin.SetMode(gin.TestMode)
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
+
+		It("should return error for non-existent server", func() {
+			handler := proxy.SseHandler()
+			Expect(handler).NotTo(BeNil())
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/mcp/non-existent/sse", nil)
+			c.Params = gin.Params{{Key: "name", Value: "non-existent"}}
+
+			handler(c)
+
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("SseMessageHandler", func() {
+		var proxy *MCPProxy
+
+		BeforeEach(func() {
+			gin.SetMode(gin.TestMode)
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
+
+		It("should return error for non-existent server", func() {
+			handler := proxy.SseMessageHandler()
+			Expect(handler).NotTo(BeNil())
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/mcp/non-existent/message", nil)
+			c.Params = gin.Params{{Key: "name", Value: "non-existent"}}
+
+			handler(c)
+
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("Concurrent Access", func() {
+		It("should handle concurrent reads and writes", func() {
+			proxy := NewMCPProxy("/api/mcp/%s/message")
+
+			var wg sync.WaitGroup
+			for i := 0; i < 100; i++ {
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					proxy.IsMCPServerExist("test")
+					proxy.GetMCPServer("test")
+					proxy.GetActiveMCPServerNames()
+				}()
+				go func(idx int) {
+					defer wg.Done()
+					server := &MCPServer{name: "server"}
+					proxy.AddMCPServer("server", server)
+				}(i)
+			}
+			wg.Wait()
+		})
+	})
+})

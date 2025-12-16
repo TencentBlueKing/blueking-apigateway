@@ -16,74 +16,59 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package cacheimpls_test
 
 import (
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/cacheimpls"
 )
 
-func TestNewRandomDuration(t *testing.T) {
-	randomFunc := newRandomDuration(30)
+var _ = Describe("Init", func() {
+	Describe("NewRandomDuration", func() {
+		It("should return random durations within expected range", func() {
+			randomFunc := cacheimpls.NewRandomDuration(30)
 
-	// Call multiple times to ensure it returns different values
-	durations := make(map[time.Duration]bool)
-	for i := 0; i < 100; i++ {
-		d := randomFunc()
-		durations[d] = true
-
-		// Ensure duration is within expected range (0 to 30 seconds)
-		assert.GreaterOrEqual(t, d, time.Duration(0))
-		assert.Less(t, d, 30*time.Second)
-	}
-
-	// Should have some variation (not all the same)
-	assert.Greater(t, len(durations), 1)
-}
-
-func TestNewRandomDuration_DifferentSeconds(t *testing.T) {
-	tests := []struct {
-		name    string
-		seconds int
-		maxMs   int64
-	}{
-		{
-			name:    "10 seconds",
-			seconds: 10,
-			maxMs:   10000,
-		},
-		{
-			name:    "60 seconds",
-			seconds: 60,
-			maxMs:   60000,
-		},
-		{
-			name:    "1 second",
-			seconds: 1,
-			maxMs:   1000,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			randomFunc := newRandomDuration(tt.seconds)
-
-			for i := 0; i < 50; i++ {
+			durations := make(map[time.Duration]bool)
+			for i := 0; i < 100; i++ {
 				d := randomFunc()
-				assert.GreaterOrEqual(t, d.Milliseconds(), int64(0))
-				assert.Less(t, d.Milliseconds(), tt.maxMs)
-			}
-		})
-	}
-}
+				durations[d] = true
 
-func TestCacheVariables_NotNil(t *testing.T) {
-	assert.NotNil(t, gatewayIDCache)
-	assert.NotNil(t, gatewayNameCache)
-	assert.NotNil(t, stageCache)
-	assert.NotNil(t, mcpServerCache)
-	assert.NotNil(t, jwtInfoCache)
-	assert.NotNil(t, appMCPServerPermission)
-}
+				Expect(d).To(BeNumerically(">=", time.Duration(0)))
+				Expect(d).To(BeNumerically("<", 30*time.Second))
+			}
+
+			// Should have some variation
+			Expect(len(durations)).To(BeNumerically(">", 1))
+		})
+
+		DescribeTable("handles different seconds values",
+			func(seconds int, maxMs int64) {
+				randomFunc := cacheimpls.NewRandomDuration(seconds)
+
+				for i := 0; i < 50; i++ {
+					d := randomFunc()
+					Expect(d.Milliseconds()).To(BeNumerically(">=", int64(0)))
+					Expect(d.Milliseconds()).To(BeNumerically("<", maxMs))
+				}
+			},
+			Entry("10 seconds", 10, int64(10000)),
+			Entry("60 seconds", 60, int64(60000)),
+			Entry("1 second", 1, int64(1000)),
+		)
+	})
+
+	Describe("Cache Variables", func() {
+		It("should have initialized cache variables", func() {
+			Expect(cacheimpls.GetGatewayIDCache()).NotTo(BeNil())
+			Expect(cacheimpls.GetGatewayNameCache()).NotTo(BeNil())
+			Expect(cacheimpls.GetStageCache()).NotTo(BeNil())
+			Expect(cacheimpls.GetMCPServerCache()).NotTo(BeNil())
+			Expect(cacheimpls.GetJWTInfoCache()).NotTo(BeNil())
+			Expect(cacheimpls.GetAppMCPServerPermission()).NotTo(BeNil())
+		})
+	})
+})

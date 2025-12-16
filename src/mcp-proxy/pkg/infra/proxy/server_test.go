@@ -20,93 +20,109 @@ package proxy
 
 import (
 	"sync"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestMCPServer_IsRegisteredTool(t *testing.T) {
-	server := &MCPServer{
-		tools:  make(map[string]struct{}),
-		rwLock: &sync.RWMutex{},
-	}
+var _ = Describe("MCPServer", func() {
+	Describe("IsRegisteredTool", func() {
+		var server *MCPServer
 
-	// Test non-registered tool
-	assert.False(t, server.IsRegisteredTool("test-tool"))
+		BeforeEach(func() {
+			server = &MCPServer{
+				tools:  make(map[string]struct{}),
+				rwLock: &sync.RWMutex{},
+			}
+		})
 
-	// Register a tool manually
-	server.rwLock.Lock()
-	server.tools["test-tool"] = struct{}{}
-	server.rwLock.Unlock()
+		It("should return false for non-registered tool", func() {
+			Expect(server.IsRegisteredTool("test-tool")).To(BeFalse())
+		})
 
-	// Test registered tool
-	assert.True(t, server.IsRegisteredTool("test-tool"))
-}
+		It("should return true for registered tool", func() {
+			server.rwLock.Lock()
+			server.tools["test-tool"] = struct{}{}
+			server.rwLock.Unlock()
 
-func TestMCPServer_GetResourceVersionID(t *testing.T) {
-	server := &MCPServer{
-		resourceVersionID: 123,
-		rwLock:            &sync.RWMutex{},
-	}
+			Expect(server.IsRegisteredTool("test-tool")).To(BeTrue())
+		})
+	})
 
-	assert.Equal(t, 123, server.GetResourceVersionID())
-}
+	Describe("GetResourceVersionID", func() {
+		It("should return the resource version ID", func() {
+			server := &MCPServer{
+				resourceVersionID: 123,
+				rwLock:            &sync.RWMutex{},
+			}
 
-func TestMCPServer_SetResourceVersionID(t *testing.T) {
-	server := &MCPServer{
-		resourceVersionID: 123,
-		rwLock:            &sync.RWMutex{},
-	}
+			Expect(server.GetResourceVersionID()).To(Equal(123))
+		})
+	})
 
-	server.SetResourceVersionID(456)
-	assert.Equal(t, 456, server.GetResourceVersionID())
-}
+	Describe("SetResourceVersionID", func() {
+		It("should set the resource version ID", func() {
+			server := &MCPServer{
+				resourceVersionID: 123,
+				rwLock:            &sync.RWMutex{},
+			}
 
-func TestMCPServer_GetTools(t *testing.T) {
-	server := &MCPServer{
-		tools:  make(map[string]struct{}),
-		rwLock: &sync.RWMutex{},
-	}
+			server.SetResourceVersionID(456)
+			Expect(server.GetResourceVersionID()).To(Equal(456))
+		})
+	})
 
-	// Initially empty
-	tools := server.GetTools()
-	assert.Empty(t, tools)
+	Describe("GetTools", func() {
+		var server *MCPServer
 
-	// Add tools manually
-	server.rwLock.Lock()
-	server.tools["tool1"] = struct{}{}
-	server.tools["tool2"] = struct{}{}
-	server.tools["tool3"] = struct{}{}
-	server.rwLock.Unlock()
+		BeforeEach(func() {
+			server = &MCPServer{
+				tools:  make(map[string]struct{}),
+				rwLock: &sync.RWMutex{},
+			}
+		})
 
-	tools = server.GetTools()
-	assert.Len(t, tools, 3)
-	assert.Contains(t, tools, "tool1")
-	assert.Contains(t, tools, "tool2")
-	assert.Contains(t, tools, "tool3")
-}
+		It("should return empty list initially", func() {
+			tools := server.GetTools()
+			Expect(tools).To(BeEmpty())
+		})
 
-func TestMCPServer_ConcurrentAccess(t *testing.T) {
-	server := &MCPServer{
-		tools:             make(map[string]struct{}),
-		rwLock:            &sync.RWMutex{},
-		resourceVersionID: 0,
-	}
+		It("should return all registered tools", func() {
+			server.rwLock.Lock()
+			server.tools["tool1"] = struct{}{}
+			server.tools["tool2"] = struct{}{}
+			server.tools["tool3"] = struct{}{}
+			server.rwLock.Unlock()
 
-	// Test concurrent reads and writes
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			server.GetResourceVersionID()
-			server.GetTools()
-			server.IsRegisteredTool("test")
-		}()
-		go func(version int) {
-			defer wg.Done()
-			server.SetResourceVersionID(version)
-		}(i)
-	}
-	wg.Wait()
-}
+			tools := server.GetTools()
+			Expect(tools).To(HaveLen(3))
+			Expect(tools).To(ContainElements("tool1", "tool2", "tool3"))
+		})
+	})
+
+	Describe("ConcurrentAccess", func() {
+		It("should handle concurrent reads and writes", func() {
+			server := &MCPServer{
+				tools:             make(map[string]struct{}),
+				rwLock:            &sync.RWMutex{},
+				resourceVersionID: 0,
+			}
+
+			var wg sync.WaitGroup
+			for i := 0; i < 100; i++ {
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					server.GetResourceVersionID()
+					server.GetTools()
+					server.IsRegisteredTool("test")
+				}()
+				go func(version int) {
+					defer wg.Done()
+					server.SetResourceVersionID(version)
+				}(i)
+			}
+			wg.Wait()
+		})
+	})
+})

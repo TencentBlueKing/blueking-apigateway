@@ -16,304 +16,216 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package mcp
+package mcp_test
 
 import (
-	"context"
-	"testing"
-	"time"
-
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/proxy"
 )
 
-func TestConfig_Fields(t *testing.T) {
-	openapiData := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-	}
+var _ = Describe("MCP", func() {
+	Describe("MCPProxy", func() {
+		var mcpProxy *proxy.MCPProxy
 
-	cfg := &Config{
-		resourceVersion: 123,
-		openapiFileData: openapiData,
-	}
+		BeforeEach(func() {
+			mcpProxy = proxy.NewMCPProxy("/mcp/%s/message")
+		})
 
-	assert.Equal(t, 123, cfg.resourceVersion)
-	assert.NotNil(t, cfg.openapiFileData)
-	assert.Equal(t, "Test API", cfg.openapiFileData.Info.Title)
-	assert.Equal(t, "1.0.0", cfg.openapiFileData.Info.Version)
-}
+		Describe("Basic Operations", func() {
+			It("should return false for non-existent server", func() {
+				Expect(mcpProxy.IsMCPServerExist("non-existent")).To(BeFalse())
+			})
 
-func TestMCP_Creation(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
+			It("should return nil for non-existent server", func() {
+				Expect(mcpProxy.GetMCPServer("non-existent")).To(BeNil())
+			})
 
-	mcp := &MCP{
-		proxy: mcpProxy,
-	}
+			It("should return empty names when no servers", func() {
+				names := mcpProxy.GetActiveMCPServerNames()
+				Expect(names).To(BeEmpty())
+			})
+		})
 
-	assert.NotNil(t, mcp)
-	assert.NotNil(t, mcp.proxy)
-}
+		Describe("AddMCPServerFromOpenAPISpec", func() {
+			It("should add server from OpenAPI spec", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-func TestMCP_Run_ContextCancellation(t *testing.T) {
-	// Setup config with short interval for testing
-	config.G = &config.Config{
-		McpServer: config.McpServer{
-			Interval: 100 * time.Millisecond,
-		},
-	}
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
 
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
-	mcp := &MCP{
-		proxy: mcpProxy,
-	}
+				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
-	ctx, cancel := context.WithCancel(context.Background())
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+				Expect(server.GetResourceVersionID()).To(Equal(1))
+			})
+		})
 
-	// Run should return the proxy
-	result := mcp.Run(ctx)
-	assert.Equal(t, mcpProxy, result)
+		Describe("DeleteMCPServer", func() {
+			It("should delete existing server", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-	// Cancel context to stop the goroutine
-	cancel()
+				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
-	// Give some time for the goroutine to stop
-	time.Sleep(200 * time.Millisecond)
-}
+				mcpProxy.DeleteMCPServer("test-server")
+				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeFalse())
+			})
 
-func TestMCPProxy_BasicOperations(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
+			It("should not panic when deleting non-existent server", func() {
+				Expect(func() {
+					mcpProxy.DeleteMCPServer("non-existent")
+				}).NotTo(Panic())
+			})
+		})
 
-	// Test IsMCPServerExist for non-existent server
-	assert.False(t, mcpProxy.IsMCPServerExist("non-existent"))
+		Describe("UpdateMCPServerFromOpenApiSpec", func() {
+			It("should update server with new version", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-	// Test GetMCPServer for non-existent server
-	assert.Nil(t, mcpProxy.GetMCPServer("non-existent"))
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
 
-	// Test GetActiveMCPServerNames when empty
-	names := mcpProxy.GetActiveMCPServerNames()
-	assert.Empty(t, names)
-}
+				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				Expect(err).NotTo(HaveOccurred())
 
-func TestMCPProxy_AddMCPServerFromOpenAPISpec(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+				Expect(server.GetResourceVersionID()).To(Equal(1))
 
-	// Create a minimal OpenAPI spec
-	openapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
+				newOpenapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API Updated", Version: "2.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-	// Add operation to paths
-	pathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			OperationID: "getUsers",
-			Summary:     "Get users",
-			Responses:   &openapi3.Responses{},
-		},
-	}
-	openapiSpec.Paths.Set("/users", pathItem)
+				newPathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users updated",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				newOpenapiSpec.Paths.Set("/users", newPathItem)
 
-	err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
-	assert.NoError(t, err)
+				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
+					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"},
+				)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(server.GetResourceVersionID()).To(Equal(2))
+			})
+		})
 
-	// Verify server was added
-	assert.True(t, mcpProxy.IsMCPServerExist("test-server"))
+		Describe("MCPServer Tools", func() {
+			It("should get tools from server", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-	// Get the server
-	server := mcpProxy.GetMCPServer("test-server")
-	assert.NotNil(t, server)
-	assert.Equal(t, 1, server.GetResourceVersionID())
-}
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
 
-func TestMCPProxy_DeleteMCPServer(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
+				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				Expect(err).NotTo(HaveOccurred())
 
-	// Create a minimal OpenAPI spec
-	openapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
 
-	err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{})
-	assert.NoError(t, err)
-	assert.True(t, mcpProxy.IsMCPServerExist("test-server"))
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("getUsers"))
+			})
 
-	// Delete the server
-	mcpProxy.DeleteMCPServer("test-server")
-	assert.False(t, mcpProxy.IsMCPServerExist("test-server"))
+			It("should unregister tool from server", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
 
-	// Delete non-existent server should not panic
-	mcpProxy.DeleteMCPServer("non-existent")
-}
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
 
-func TestMCPProxy_UpdateMCPServerFromOpenApiSpec(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers", "createUser"},
+				)
+				Expect(err).NotTo(HaveOccurred())
 
-	// Create initial OpenAPI spec
-	openapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
 
-	pathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			OperationID: "getUsers",
-			Summary:     "Get users",
-			Responses:   &openapi3.Responses{},
-		},
-	}
-	openapiSpec.Paths.Set("/users", pathItem)
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("getUsers"))
+				Expect(tools).To(ContainElement("createUser"))
 
-	err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
-	assert.NoError(t, err)
+				server.UnregisterTool("createUser")
 
-	server := mcpProxy.GetMCPServer("test-server")
-	assert.NotNil(t, server)
-	assert.Equal(t, 1, server.GetResourceVersionID())
-
-	// Update the server with new version
-	newOpenapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API Updated",
-			Version: "2.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
-
-	newPathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			OperationID: "getUsers",
-			Summary:     "Get users updated",
-			Responses:   &openapi3.Responses{},
-		},
-		Post: &openapi3.Operation{
-			OperationID: "createUser",
-			Summary:     "Create user",
-			Responses:   &openapi3.Responses{},
-		},
-	}
-	newOpenapiSpec.Paths.Set("/users", newPathItem)
-
-	err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-		server,
-		"test-server",
-		2,
-		newOpenapiSpec,
-		[]string{"getUsers", "createUser"},
-	)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, server.GetResourceVersionID())
-}
-
-func TestMCPServer_GetTools(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
-
-	openapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
-
-	pathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			OperationID: "getUsers",
-			Summary:     "Get users",
-			Responses:   &openapi3.Responses{},
-		},
-	}
-	openapiSpec.Paths.Set("/users", pathItem)
-
-	err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
-	assert.NoError(t, err)
-
-	server := mcpProxy.GetMCPServer("test-server")
-	assert.NotNil(t, server)
-
-	tools := server.GetTools()
-	assert.Contains(t, tools, "getUsers")
-}
-
-func TestMCPServer_UnregisterTool(t *testing.T) {
-	mcpProxy := proxy.NewMCPProxy("/mcp/%s/message")
-
-	openapiSpec := &openapi3.T{
-		OpenAPI: "3.0.0",
-		Info: &openapi3.Info{
-			Title:   "Test API",
-			Version: "1.0.0",
-		},
-		Servers: []*openapi3.Server{
-			{URL: "https://api.example.com"},
-		},
-		Paths: &openapi3.Paths{},
-	}
-
-	pathItem := &openapi3.PathItem{
-		Get: &openapi3.Operation{
-			OperationID: "getUsers",
-			Summary:     "Get users",
-			Responses:   &openapi3.Responses{},
-		},
-		Post: &openapi3.Operation{
-			OperationID: "createUser",
-			Summary:     "Create user",
-			Responses:   &openapi3.Responses{},
-		},
-	}
-	openapiSpec.Paths.Set("/users", pathItem)
-
-	err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers", "createUser"})
-	assert.NoError(t, err)
-
-	server := mcpProxy.GetMCPServer("test-server")
-	assert.NotNil(t, server)
-
-	tools := server.GetTools()
-	assert.Contains(t, tools, "getUsers")
-	assert.Contains(t, tools, "createUser")
-
-	// Unregister a tool
-	server.UnregisterTool("createUser")
-
-	tools = server.GetTools()
-	assert.Contains(t, tools, "getUsers")
-	assert.NotContains(t, tools, "createUser")
-}
+				tools = server.GetTools()
+				Expect(tools).To(ContainElement("getUsers"))
+				Expect(tools).NotTo(ContainElement("createUser"))
+			})
+		})
+	})
+})

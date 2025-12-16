@@ -16,103 +16,79 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package cacheimpls
+package cacheimpls_test
 
 import (
 	"context"
 	"errors"
-	"testing"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache"
 	"github.com/TencentBlueKing/gopkg/cache/memory"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/entity/model"
 )
 
-func TestJWTInfoCacheKey_Key(t *testing.T) {
-	tests := []struct {
-		name        string
-		key         JWTInfoCacheKey
-		expectedKey string
-	}{
-		{
-			name: "normal gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 123,
+var _ = Describe("JWTPublicKey", func() {
+	Describe("JWTInfoCacheKey", func() {
+		DescribeTable("should return correct key",
+			func(gatewayID int, expectedKey string) {
+				key := cacheimpls.JWTInfoCacheKey{GatewayID: gatewayID}
+				Expect(key.Key()).To(Equal(expectedKey))
 			},
-			expectedKey: "123",
-		},
-		{
-			name: "zero gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 0,
-			},
-			expectedKey: "0",
-		},
-		{
-			name: "large gateway id",
-			key: JWTInfoCacheKey{
-				GatewayID: 999999,
-			},
-			expectedKey: "999999",
-		},
-	}
+			Entry("normal gateway id", 123, "123"),
+			Entry("zero gateway id", 0, "0"),
+			Entry("large gateway id", 999999, "999999"),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.key.Key()
-			assert.Equal(t, tt.expectedKey, result)
+	Describe("GetJWTInfo", func() {
+		expiration := 5 * time.Minute
+
+		It("should return JWT info successfully", func() {
+			expectedJWT := &model.JWT{
+				GatewayID:  123,
+				PublicKey:  "test-public-key",
+				PrivateKey: "test-private-key",
+			}
+
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return expectedJWT, nil
+			}
+			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetJWTInfoCache(mockCache)
+
+			result, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.GatewayID).To(Equal(123))
+			Expect(result.PublicKey).To(Equal("test-public-key"))
 		})
-	}
-}
 
-func TestGetJWTInfo_Success(t *testing.T) {
-	expiration := 5 * time.Minute
+		It("should return error when record not found", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return nil, errors.New("record not found")
+			}
+			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetJWTInfoCache(mockCache)
 
-	expectedJWT := &model.JWT{
-		GatewayID:  123,
-		PublicKey:  "test-public-key",
-		PrivateKey: "test-private-key",
-	}
+			_, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			Expect(err).To(HaveOccurred())
+		})
 
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return expectedJWT, nil
-	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
+		It("should return error for invalid type", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return "invalid type", nil
+			}
+			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetJWTInfoCache(mockCache)
 
-	result, err := GetJWTInfo(context.Background(), 123)
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, 123, result.GatewayID)
-	assert.Equal(t, "test-public-key", result.PublicKey)
-}
-
-func TestGetJWTInfo_Error(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return nil, errors.New("record not found")
-	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
-
-	_, err := GetJWTInfo(context.Background(), 123)
-	assert.Error(t, err)
-}
-
-func TestGetJWTInfo_InvalidType(t *testing.T) {
-	expiration := 5 * time.Minute
-
-	retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
-		return "invalid type", nil
-	}
-	mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
-	jwtInfoCache = mockCache
-
-	_, err := GetJWTInfo(context.Background(), 123)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not model.CoreJWT in cache")
-}
+			_, err := cacheimpls.GetJWTInfo(context.Background(), 123)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not model.CoreJWT in cache"))
+		})
+	})
+})

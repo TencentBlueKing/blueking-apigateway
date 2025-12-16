@@ -16,98 +16,100 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package util
+package util_test
 
 import (
 	"context"
 	"sync"
-	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/util"
 )
 
-func TestGoroutineWithRecovery_NormalExecution(t *testing.T) {
-	ctx := context.Background()
-	var executed bool
-	var wg sync.WaitGroup
-	wg.Add(1)
+var _ = Describe("Goroutinex", func() {
+	Describe("GoroutineWithRecovery", func() {
+		It("should execute function normally", func() {
+			ctx := context.Background()
+			var executed bool
+			var wg sync.WaitGroup
+			wg.Add(1)
 
-	GoroutineWithRecovery(ctx, func() {
-		executed = true
-		wg.Done()
-	})
+			util.GoroutineWithRecovery(ctx, func() {
+				executed = true
+				wg.Done()
+			})
 
-	// Wait for goroutine to complete
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
 
-	select {
-	case <-done:
-		assert.True(t, executed)
-	case <-time.After(time.Second):
-		t.Fatal("Goroutine did not complete in time")
-	}
-}
-
-func TestGoroutineWithRecovery_PanicRecovery(t *testing.T) {
-	ctx := context.Background()
-	var recovered bool
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	GoroutineWithRecovery(ctx, func() {
-		defer wg.Done()
-		recovered = true
-		panic("test panic")
-	})
-
-	// Wait for goroutine to complete
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		// Goroutine completed (panic was recovered)
-		assert.True(t, recovered)
-	case <-time.After(time.Second):
-		t.Fatal("Goroutine did not complete in time")
-	}
-}
-
-func TestGoroutineWithRecovery_MultipleGoroutines(t *testing.T) {
-	ctx := context.Background()
-	var counter int
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		GoroutineWithRecovery(ctx, func() {
-			defer wg.Done()
-			mu.Lock()
-			counter++
-			mu.Unlock()
+			select {
+			case <-done:
+				Expect(executed).To(BeTrue())
+			case <-time.After(time.Second):
+				Fail("Goroutine did not complete in time")
+			}
 		})
-	}
 
-	// Wait for all goroutines to complete
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
+		It("should recover from panic", func() {
+			ctx := context.Background()
+			var recovered bool
+			var wg sync.WaitGroup
+			wg.Add(1)
 
-	select {
-	case <-done:
-		assert.Equal(t, 10, counter)
-	case <-time.After(2 * time.Second):
-		t.Fatal("Goroutines did not complete in time")
-	}
-}
+			util.GoroutineWithRecovery(ctx, func() {
+				defer wg.Done()
+				recovered = true
+				panic("test panic")
+			})
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+				Expect(recovered).To(BeTrue())
+			case <-time.After(time.Second):
+				Fail("Goroutine did not complete in time")
+			}
+		})
+
+		It("should handle multiple goroutines", func() {
+			ctx := context.Background()
+			var counter int
+			var mu sync.Mutex
+			var wg sync.WaitGroup
+
+			for i := 0; i < 10; i++ {
+				wg.Add(1)
+				util.GoroutineWithRecovery(ctx, func() {
+					defer wg.Done()
+					mu.Lock()
+					counter++
+					mu.Unlock()
+				})
+			}
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+				Expect(counter).To(Equal(10))
+			case <-time.After(2 * time.Second):
+				Fail("Goroutines did not complete in time")
+			}
+		})
+	})
+})

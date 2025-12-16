@@ -16,192 +16,106 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package database
+package database_test
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"mcp_proxy/pkg/config"
 )
 
-func TestDatabase_DSN_WithTLS(t *testing.T) {
-	tests := []struct {
-		name     string
-		database config.Database
-		expected string
-	}{
-		{
-			name: "database without TLS",
-			database: config.Database{
-				User:     "root",
-				Password: "password",
-				Host:     "localhost",
-				Port:     3306,
-				Name:     "testdb",
-				TLS: config.TLS{
-					Enabled: false,
-				},
+var _ = Describe("Database", func() {
+	Describe("DSN with TLS", func() {
+		DescribeTable("generates correct DSN",
+			func(database config.Database, expected string) {
+				Expect(database.DSN()).To(Equal(expected))
 			},
-			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true",
-		},
-		{
-			name: "database with TLS enabled",
-			database: config.Database{
-				User:     "root",
-				Password: "password",
-				Host:     "localhost",
-				Port:     3306,
-				Name:     "testdb",
-				TLS: config.TLS{
-					Enabled: true,
+			Entry("database without TLS",
+				config.Database{
+					User: "root", Password: "password", Host: "localhost",
+					Port: 3306, Name: "testdb", TLS: config.TLS{Enabled: false},
 				},
-			},
-			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
-		},
-		{
-			name: "database with full TLS configuration",
-			database: config.Database{
-				User:     "root",
-				Password: "password",
-				Host:     "localhost",
-				Port:     3306,
-				Name:     "testdb",
-				TLS: config.TLS{
-					Enabled:            true,
-					CertCaFile:         "/path/to/ca.pem",
-					CertFile:           "/path/to/cert.pem",
-					CertKeyFile:        "/path/to/key.pem",
-					InsecureSkipVerify: true,
+				"root:password@tcp(localhost:3306)/testdb?parseTime=true",
+			),
+			Entry("database with TLS enabled",
+				config.Database{
+					User: "root", Password: "password", Host: "localhost",
+					Port: 3306, Name: "testdb", TLS: config.TLS{Enabled: true},
 				},
-			},
-			expected: "root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
-		},
-	}
+				"root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
+			),
+			Entry("database with full TLS configuration",
+				config.Database{
+					User: "root", Password: "password", Host: "localhost",
+					Port: 3306, Name: "testdb",
+					TLS: config.TLS{
+						Enabled: true, CertCaFile: "/path/to/ca.pem",
+						CertFile: "/path/to/cert.pem", CertKeyFile: "/path/to/key.pem",
+						InsecureSkipVerify: true,
+					},
+				},
+				"root:password@tcp(localhost:3306)/testdb?parseTime=true&tls=custom",
+			),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.database.DSN()
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
+	Describe("NewClient with TLS Config", func() {
+		DescribeTable("validates DSN generation",
+			func(database config.Database, expectTLS bool) {
+				dsn := database.DSN()
+				Expect(dsn).NotTo(BeEmpty())
 
-func TestNewClient_WithTLSConfig(t *testing.T) {
-	// 注意：这个测试需要真实的数据库连接，所以这里只测试配置解析
-	// 在实际环境中，应该使用测试数据库或者mock
-
-	tests := []struct {
-		name        string
-		database    config.Database
-		expectError bool
-	}{
-		{
-			name: "valid database config without TLS",
-			database: config.Database{
-				User:     "root",
-				Password: "password",
-				Host:     "localhost",
-				Port:     3306,
-				Name:     "testdb",
-				TLS: config.TLS{
-					Enabled: false,
-				},
+				if expectTLS {
+					Expect(dsn).To(ContainSubstring("&tls=custom"))
+				} else {
+					Expect(dsn).NotTo(ContainSubstring("&tls="))
+				}
 			},
-			expectError: false, // 这里会失败因为没有真实数据库，但配置解析是正确的
-		},
-		{
-			name: "valid database config with TLS",
-			database: config.Database{
-				User:     "root",
-				Password: "password",
-				Host:     "localhost",
-				Port:     3306,
-				Name:     "testdb",
-				TLS: config.TLS{
-					Enabled: true,
-				},
-			},
-			expectError: false, // 这里会失败因为没有真实数据库，但配置解析是正确的
-		},
-	}
+			Entry("valid database config without TLS",
+				config.Database{
+					User: "root", Password: "password", Host: "localhost",
+					Port: 3306, Name: "testdb", TLS: config.TLS{Enabled: false},
+				}, false,
+			),
+			Entry("valid database config with TLS",
+				config.Database{
+					User: "root", Password: "password", Host: "localhost",
+					Port: 3306, Name: "testdb", TLS: config.TLS{Enabled: true},
+				}, true,
+			),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// 验证DSN生成是否正确
-			dsn := tt.database.DSN()
-			assert.NotEmpty(t, dsn)
-
-			// 如果启用了TLS，检查DSN中是否包含TLS参数
-			if tt.database.TLS.Enabled {
-				assert.Contains(t, dsn, "&tls=custom")
-			} else {
-				assert.NotContains(t, dsn, "&tls=")
-			}
-		})
-	}
-}
-
-func TestDatabaseConfig_Validation(t *testing.T) {
-	tests := []struct {
-		name        string
-		database    config.Database
-		expectError bool
-	}{
-		{
-			name: "valid config without TLS",
-			database: config.Database{
-				ID:   "test",
-				Host: "localhost",
-				Port: 3306,
-				User: "root",
-				Name: "testdb",
-				TLS: config.TLS{
-					Enabled: false,
-				},
+	Describe("Database Config Validation", func() {
+		DescribeTable("validates database configuration",
+			func(database config.Database, expectError bool) {
+				err := database.ValidateDatabase()
+				if expectError {
+					Expect(err).To(HaveOccurred())
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
 			},
-			expectError: false,
-		},
-		{
-			name: "valid config with TLS but no cert files",
-			database: config.Database{
-				ID:   "test",
-				Host: "localhost",
-				Port: 3306,
-				User: "root",
-				Name: "testdb",
-				TLS: config.TLS{
-					Enabled: true,
-				},
-			},
-			expectError: false,
-		},
-		{
-			name: "invalid config with TLS and non-existent cert files",
-			database: config.Database{
-				ID:   "test",
-				Host: "localhost",
-				Port: 3306,
-				User: "root",
-				Name: "testdb",
-				TLS: config.TLS{
-					Enabled:    true,
-					CertCaFile: "/non/existent/ca.pem",
-				},
-			},
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.database.ValidateDatabase()
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
+			Entry("valid config without TLS",
+				config.Database{
+					ID: "test", Host: "localhost", Port: 3306, User: "root",
+					Name: "testdb", TLS: config.TLS{Enabled: false},
+				}, false,
+			),
+			Entry("valid config with TLS but no cert files",
+				config.Database{
+					ID: "test", Host: "localhost", Port: 3306, User: "root",
+					Name: "testdb", TLS: config.TLS{Enabled: true},
+				}, false,
+			),
+			Entry("invalid config with TLS and non-existent cert files",
+				config.Database{
+					ID: "test", Host: "localhost", Port: 3306, User: "root",
+					Name: "testdb",
+					TLS:  config.TLS{Enabled: true, CertCaFile: "/non/existent/ca.pem"},
+				}, true,
+			),
+		)
+	})
+})

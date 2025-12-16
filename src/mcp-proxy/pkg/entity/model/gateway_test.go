@@ -16,180 +16,165 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package model
+package model_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-	"github.com/stretchr/testify/assert"
+	"mcp_proxy/pkg/entity/model"
 )
 
-func TestGateway_TableName(t *testing.T) {
-	gateway := Gateway{}
-	assert.Equal(t, "core_api", gateway.TableName())
-}
+var _ = Describe("Gateway Models", func() {
+	Describe("Gateway", func() {
+		It("should have correct table name", func() {
+			gateway := model.Gateway{}
+			Expect(gateway.TableName()).To(Equal("core_api"))
+		})
 
-func TestGateway_Fields(t *testing.T) {
-	gateway := Gateway{
-		ID:   1,
-		Name: "test-gateway",
-	}
+		It("should have correct fields", func() {
+			gateway := model.Gateway{ID: 1, Name: "test-gateway"}
+			Expect(gateway.ID).To(Equal(1))
+			Expect(gateway.Name).To(Equal("test-gateway"))
+		})
+	})
 
-	assert.Equal(t, 1, gateway.ID)
-	assert.Equal(t, "test-gateway", gateway.Name)
-}
+	Describe("Stage", func() {
+		It("should have correct table name", func() {
+			stage := model.Stage{}
+			Expect(stage.TableName()).To(Equal("core_stage"))
+		})
 
-func TestStage_TableName(t *testing.T) {
-	stage := Stage{}
-	assert.Equal(t, "core_stage", stage.TableName())
-}
+		It("should have correct fields", func() {
+			stage := model.Stage{ID: 1, Name: "prod"}
+			Expect(stage.ID).To(Equal(1))
+			Expect(stage.Name).To(Equal("prod"))
+		})
+	})
 
-func TestStage_Fields(t *testing.T) {
-	stage := Stage{
-		ID:   1,
-		Name: "prod",
-	}
+	Describe("JWT", func() {
+		It("should have correct table name", func() {
+			jwt := model.JWT{}
+			Expect(jwt.TableName()).To(Equal("core_jwt"))
+		})
 
-	assert.Equal(t, 1, stage.ID)
-	assert.Equal(t, "prod", stage.Name)
-}
+		It("should have correct fields", func() {
+			jwt := model.JWT{
+				GatewayID:           1,
+				PrivateKey:          "private-key-content",
+				PublicKey:           "public-key-content",
+				EncryptedPrivateKey: "encrypted-private-key",
+			}
+			Expect(jwt.GatewayID).To(Equal(1))
+			Expect(jwt.PrivateKey).To(Equal("private-key-content"))
+			Expect(jwt.PublicKey).To(Equal("public-key-content"))
+			Expect(jwt.EncryptedPrivateKey).To(Equal("encrypted-private-key"))
+		})
+	})
 
-func TestJWT_TableName(t *testing.T) {
-	jwt := JWT{}
-	assert.Equal(t, "core_jwt", jwt.TableName())
-}
+	Describe("Release", func() {
+		It("should have correct table name", func() {
+			release := model.Release{}
+			Expect(release.TableName()).To(Equal("core_release"))
+		})
 
-func TestJWT_Fields(t *testing.T) {
-	jwt := JWT{
-		GatewayID:           1,
-		PrivateKey:          "private-key-content",
-		PublicKey:           "public-key-content",
-		EncryptedPrivateKey: "encrypted-private-key",
-	}
+		It("should have correct fields", func() {
+			release := model.Release{
+				ID: 1, GatewayID: 100, ResourceVersionID: 200, StageID: 300,
+			}
+			Expect(release.ID).To(Equal(1))
+			Expect(release.GatewayID).To(Equal(100))
+			Expect(release.ResourceVersionID).To(Equal(200))
+			Expect(release.StageID).To(Equal(300))
+		})
+	})
 
-	assert.Equal(t, 1, jwt.GatewayID)
-	assert.Equal(t, "private-key-content", jwt.PrivateKey)
-	assert.Equal(t, "public-key-content", jwt.PublicKey)
-	assert.Equal(t, "encrypted-private-key", jwt.EncryptedPrivateKey)
-}
+	Describe("ReleasedResource", func() {
+		It("should have correct table name", func() {
+			resource := model.ReleasedResource{}
+			Expect(resource.TableName()).To(Equal("core_released_resource"))
+		})
 
-func TestRelease_TableName(t *testing.T) {
-	release := Release{}
-	assert.Equal(t, "core_release", release.TableName())
-}
+		It("should have correct fields", func() {
+			resource := model.ReleasedResource{
+				ID: 1, ResourceVersionID: 100, ResourceID: 200,
+				ResourceName: "get_users", ResourceMethod: "GET",
+				ResourcePath: "/users", GatewayID: 300, Data: `{"key": "value"}`,
+			}
+			Expect(resource.ID).To(Equal(1))
+			Expect(resource.ResourceVersionID).To(Equal(100))
+			Expect(resource.ResourceID).To(Equal(200))
+			Expect(resource.ResourceName).To(Equal("get_users"))
+			Expect(resource.ResourceMethod).To(Equal("GET"))
+			Expect(resource.ResourcePath).To(Equal("/users"))
+			Expect(resource.GatewayID).To(Equal(300))
+			Expect(resource.Data).To(Equal(`{"key": "value"}`))
+		})
+	})
 
-func TestRelease_Fields(t *testing.T) {
-	release := Release{
-		ID:                1,
-		GatewayID:         100,
-		ResourceVersionID: 200,
-		StageID:           300,
-	}
+	Describe("Resource", func() {
+		It("should have correct table name", func() {
+			resource := model.Resource{}
+			Expect(resource.TableName()).To(Equal("core_resource"))
+		})
 
-	assert.Equal(t, 1, release.ID)
-	assert.Equal(t, 100, release.GatewayID)
-	assert.Equal(t, 200, release.ResourceVersionID)
-	assert.Equal(t, 300, release.StageID)
-}
+		It("should have correct fields", func() {
+			resource := model.Resource{
+				ID: 1, Name: "get_users", Description: "Get all users",
+				Method: "GET", Path: "/users", ProxyID: 100,
+				IsPublic: true, GatewayID: 200, MatchSubpath: false,
+				AllowApplyPermission: true, DescriptionEn: "Get all users (EN)",
+				EnableWebsocket: false,
+			}
+			Expect(resource.ID).To(Equal(1))
+			Expect(resource.Name).To(Equal("get_users"))
+			Expect(resource.Description).To(Equal("Get all users"))
+			Expect(resource.Method).To(Equal("GET"))
+			Expect(resource.Path).To(Equal("/users"))
+			Expect(resource.ProxyID).To(Equal(100))
+			Expect(resource.IsPublic).To(BeTrue())
+			Expect(resource.GatewayID).To(Equal(200))
+			Expect(resource.MatchSubpath).To(BeFalse())
+			Expect(resource.AllowApplyPermission).To(BeTrue())
+			Expect(resource.DescriptionEn).To(Equal("Get all users (EN)"))
+			Expect(resource.EnableWebsocket).To(BeFalse())
+		})
+	})
 
-func TestReleasedResource_TableName(t *testing.T) {
-	resource := ReleasedResource{}
-	assert.Equal(t, "core_released_resource", resource.TableName())
-}
+	Describe("ResourceVersion", func() {
+		It("should have correct table name", func() {
+			version := model.ResourceVersion{}
+			Expect(version.TableName()).To(Equal("core_resource_version"))
+		})
 
-func TestReleasedResource_Fields(t *testing.T) {
-	resource := ReleasedResource{
-		ID:                1,
-		ResourceVersionID: 100,
-		ResourceID:        200,
-		ResourceName:      "get_users",
-		ResourceMethod:    "GET",
-		ResourcePath:      "/users",
-		GatewayID:         300,
-		Data:              `{"key": "value"}`,
-	}
+		It("should have correct fields", func() {
+			version := model.ResourceVersion{
+				ID: 1, Data: `{"resources": []}`, GatewayID: 100,
+				Version: "v1.0.0", SchemaVersion: "1.0",
+			}
+			Expect(version.ID).To(Equal(1))
+			Expect(version.Data).To(Equal(`{"resources": []}`))
+			Expect(version.GatewayID).To(Equal(int64(100)))
+			Expect(version.Version).To(Equal("v1.0.0"))
+			Expect(version.SchemaVersion).To(Equal("1.0"))
+		})
+	})
 
-	assert.Equal(t, 1, resource.ID)
-	assert.Equal(t, 100, resource.ResourceVersionID)
-	assert.Equal(t, 200, resource.ResourceID)
-	assert.Equal(t, "get_users", resource.ResourceName)
-	assert.Equal(t, "GET", resource.ResourceMethod)
-	assert.Equal(t, "/users", resource.ResourcePath)
-	assert.Equal(t, 300, resource.GatewayID)
-	assert.Equal(t, `{"key": "value"}`, resource.Data)
-}
+	Describe("OpenapiGatewayResourceVersionSpec", func() {
+		It("should have correct table name", func() {
+			spec := model.OpenapiGatewayResourceVersionSpec{}
+			Expect(spec.TableName()).To(Equal("openapi_gateway_resource_version_spec"))
+		})
 
-func TestResource_TableName(t *testing.T) {
-	resource := Resource{}
-	assert.Equal(t, "core_resource", resource.TableName())
-}
-
-func TestResource_Fields(t *testing.T) {
-	resource := Resource{
-		ID:                   1,
-		Name:                 "get_users",
-		Description:          "Get all users",
-		Method:               "GET",
-		Path:                 "/users",
-		ProxyID:              100,
-		IsPublic:             true,
-		GatewayID:            200,
-		MatchSubpath:         false,
-		AllowApplyPermission: true,
-		DescriptionEn:        "Get all users (EN)",
-		EnableWebsocket:      false,
-	}
-
-	assert.Equal(t, 1, resource.ID)
-	assert.Equal(t, "get_users", resource.Name)
-	assert.Equal(t, "Get all users", resource.Description)
-	assert.Equal(t, "GET", resource.Method)
-	assert.Equal(t, "/users", resource.Path)
-	assert.Equal(t, 100, resource.ProxyID)
-	assert.True(t, resource.IsPublic)
-	assert.Equal(t, 200, resource.GatewayID)
-	assert.False(t, resource.MatchSubpath)
-	assert.True(t, resource.AllowApplyPermission)
-	assert.Equal(t, "Get all users (EN)", resource.DescriptionEn)
-	assert.False(t, resource.EnableWebsocket)
-}
-
-func TestResourceVersion_TableName(t *testing.T) {
-	version := ResourceVersion{}
-	assert.Equal(t, "core_resource_version", version.TableName())
-}
-
-func TestResourceVersion_Fields(t *testing.T) {
-	version := ResourceVersion{
-		ID:            1,
-		Data:          `{"resources": []}`,
-		GatewayID:     100,
-		Version:       "v1.0.0",
-		SchemaVersion: "1.0",
-	}
-
-	assert.Equal(t, 1, version.ID)
-	assert.Equal(t, `{"resources": []}`, version.Data)
-	assert.Equal(t, int64(100), version.GatewayID)
-	assert.Equal(t, "v1.0.0", version.Version)
-	assert.Equal(t, "1.0", version.SchemaVersion)
-}
-
-func TestOpenapiGatewayResourceVersionSpec_TableName(t *testing.T) {
-	spec := OpenapiGatewayResourceVersionSpec{}
-	assert.Equal(t, "openapi_gateway_resource_version_spec", spec.TableName())
-}
-
-func TestOpenapiGatewayResourceVersionSpec_Fields(t *testing.T) {
-	spec := OpenapiGatewayResourceVersionSpec{
-		ID:                1,
-		Schema:            `{"openapi": "3.0.0"}`,
-		GatewayID:         100,
-		ResourceVersionID: 200,
-	}
-
-	assert.Equal(t, 1, spec.ID)
-	assert.Equal(t, `{"openapi": "3.0.0"}`, spec.Schema)
-	assert.Equal(t, 100, spec.GatewayID)
-	assert.Equal(t, 200, spec.ResourceVersionID)
-}
+		It("should have correct fields", func() {
+			spec := model.OpenapiGatewayResourceVersionSpec{
+				ID: 1, Schema: `{"openapi": "3.0.0"}`,
+				GatewayID: 100, ResourceVersionID: 200,
+			}
+			Expect(spec.ID).To(Equal(1))
+			Expect(spec.Schema).To(Equal(`{"openapi": "3.0.0"}`))
+			Expect(spec.GatewayID).To(Equal(100))
+			Expect(spec.ResourceVersionID).To(Equal(200))
+		})
+	})
+})

@@ -16,208 +16,148 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package logging
+package logging_test
 
 import (
 	"os"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/infra/logging"
 )
 
-func TestGetWriter_OSType(t *testing.T) {
-	tests := []struct {
-		name        string
-		settings    map[string]string
-		expectError bool
-	}{
-		{
-			name:        "stdout",
-			settings:    map[string]string{"name": "stdout"},
-			expectError: false,
-		},
-		{
-			name:        "stderr",
-			settings:    map[string]string{"name": "stderr"},
-			expectError: false,
-		},
-		{
-			name:        "unknown defaults to stdout",
-			settings:    map[string]string{"name": "unknown"},
-			expectError: false,
-		},
-		{
-			name:        "empty name defaults to stdout",
-			settings:    map[string]string{},
-			expectError: false,
-		},
-	}
+var _ = Describe("Writer", func() {
+	Describe("GetWriter with OS type", func() {
+		DescribeTable("returns correct writer",
+			func(settings map[string]string, expectError bool) {
+				writer, err := logging.GetWriter("os", settings)
+				if expectError {
+					Expect(err).To(HaveOccurred())
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+					Expect(writer).NotTo(BeNil())
+				}
+			},
+			Entry("stdout", map[string]string{"name": "stdout"}, false),
+			Entry("stderr", map[string]string{"name": "stderr"}, false),
+			Entry("unknown defaults to stdout", map[string]string{"name": "unknown"}, false),
+			Entry("empty name defaults to stdout", map[string]string{}, false),
+		)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			writer, err := getWriter("os", tt.settings)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, writer)
+	Describe("GetWriter with unknown type", func() {
+		It("should fallback to stdout", func() {
+			writer, err := logging.GetWriter("unknown", map[string]string{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer).NotTo(BeNil())
+			Expect(writer).To(Equal(os.Stdout))
+		})
+	})
+
+	Describe("GetOSWriter", func() {
+		DescribeTable("returns correct OS writer",
+			func(settings map[string]string, expected *os.File) {
+				writer, err := logging.GetOSWriter(settings)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(writer).To(Equal(expected))
+			},
+			Entry("stdout", map[string]string{"name": "stdout"}, os.Stdout),
+			Entry("stderr", map[string]string{"name": "stderr"}, os.Stderr),
+			Entry("default to stdout", map[string]string{"name": "other"}, os.Stdout),
+			Entry("empty settings", map[string]string{}, os.Stdout),
+		)
+	})
+
+	Describe("GetFileWriter", func() {
+		It("should fail with missing path", func() {
+			settings := map[string]string{"name": "test.log"}
+			_, err := logging.GetFileWriter(settings)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("path should not be empty"))
+		})
+
+		It("should fail with non-existent path", func() {
+			settings := map[string]string{
+				"path": "/non/existent/path",
+				"name": "test.log",
 			}
+			_, err := logging.GetFileWriter(settings)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("not exists"))
 		})
-	}
-}
 
-func TestGetWriter_UnknownType(t *testing.T) {
-	// Unknown type should fallback to stdout
-	writer, err := getWriter("unknown", map[string]string{})
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-	assert.Equal(t, os.Stdout, writer)
-}
-
-func TestGetOSWriter(t *testing.T) {
-	tests := []struct {
-		name     string
-		settings map[string]string
-		expected interface{}
-	}{
-		{
-			name:     "stdout",
-			settings: map[string]string{"name": "stdout"},
-			expected: os.Stdout,
-		},
-		{
-			name:     "stderr",
-			settings: map[string]string{"name": "stderr"},
-			expected: os.Stderr,
-		},
-		{
-			name:     "default to stdout",
-			settings: map[string]string{"name": "other"},
-			expected: os.Stdout,
-		},
-		{
-			name:     "empty settings",
-			settings: map[string]string{},
-			expected: os.Stdout,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			writer, err := getOSWriter(tt.settings)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, writer)
+		It("should fail with invalid backups", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log", "backups": "invalid",
+			}
+			_, err := logging.GetFileWriter(settings)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("backups should be integer"))
 		})
-	}
-}
 
-func TestGetFileWriter_MissingPath(t *testing.T) {
-	settings := map[string]string{
-		"name": "test.log",
-	}
+		It("should fail with invalid size", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log", "size": "invalid",
+			}
+			_, err := logging.GetFileWriter(settings)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("size should be integer"))
+		})
 
-	_, err := getFileWriter(settings)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "path should not be empty")
-}
+		It("should fail with invalid age", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log", "age": "invalid",
+			}
+			_, err := logging.GetFileWriter(settings)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("age should be integer"))
+		})
 
-func TestGetFileWriter_NonExistentPath(t *testing.T) {
-	settings := map[string]string{
-		"path": "/non/existent/path",
-		"name": "test.log",
-	}
+		It("should succeed with valid settings", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log",
+				"backups": "5", "size": "100", "age": "30",
+			}
+			writer, err := logging.GetFileWriter(settings)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer).NotTo(BeNil())
+		})
 
-	_, err := getFileWriter(settings)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not exists")
-}
+		It("should succeed with default values", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log",
+			}
+			writer, err := logging.GetFileWriter(settings)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer).NotTo(BeNil())
+		})
 
-func TestGetFileWriter_InvalidBackups(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path":    tempDir,
-		"name":    "test.log",
-		"backups": "invalid",
-	}
+		It("should handle path with trailing slash", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir + "/", "name": "test.log",
+			}
+			writer, err := logging.GetFileWriter(settings)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer).NotTo(BeNil())
+		})
+	})
 
-	_, err := getFileWriter(settings)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "backups should be integer")
-}
-
-func TestGetFileWriter_InvalidSize(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path": tempDir,
-		"name": "test.log",
-		"size": "invalid",
-	}
-
-	_, err := getFileWriter(settings)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "size should be integer")
-}
-
-func TestGetFileWriter_InvalidAge(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path": tempDir,
-		"name": "test.log",
-		"age":  "invalid",
-	}
-
-	_, err := getFileWriter(settings)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "age should be integer")
-}
-
-func TestGetFileWriter_Success(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path":    tempDir,
-		"name":    "test.log",
-		"backups": "5",
-		"size":    "100",
-		"age":     "30",
-	}
-
-	writer, err := getFileWriter(settings)
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-}
-
-func TestGetFileWriter_DefaultValues(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path": tempDir,
-		"name": "test.log",
-	}
-
-	writer, err := getFileWriter(settings)
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-}
-
-func TestGetFileWriter_PathWithTrailingSlash(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path": tempDir + "/",
-		"name": "test.log",
-	}
-
-	writer, err := getFileWriter(settings)
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-}
-
-func TestGetWriter_FileType(t *testing.T) {
-	tempDir := t.TempDir()
-	settings := map[string]string{
-		"path": tempDir,
-		"name": "test.log",
-	}
-
-	writer, err := getWriter("file", settings)
-	assert.NoError(t, err)
-	assert.NotNil(t, writer)
-}
+	Describe("GetWriter with file type", func() {
+		It("should create file writer", func() {
+			tempDir := GinkgoT().TempDir()
+			settings := map[string]string{
+				"path": tempDir, "name": "test.log",
+			}
+			writer, err := logging.GetWriter("file", settings)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer).NotTo(BeNil())
+		})
+	})
+})
