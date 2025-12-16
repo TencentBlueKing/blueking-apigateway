@@ -19,13 +19,19 @@
 from typing import Any, Dict
 
 from django.conf import settings
+from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 
 from apigateway.apis.web.plugin.convertor import PluginConfigYamlConvertor
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
+from apigateway.apps.plugin.constants import (
+    PLUGIN_TYPE_TAGS,
+    PLUGIN_TYPE_TAGS_EN,
+    PluginBindingScopeEnum,
+    PluginTypeCodeEnum,
+)
 from apigateway.apps.plugin.models import PluginConfig, PluginForm, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.service.plugin.validator import PluginConfigYamlValidator
@@ -37,6 +43,7 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
     notes = serializers.SerializerMethodField(help_text="插件类型备注")
     related_scope_count = serializers.SerializerMethodField(help_text="插件类型绑定的环境及资源数量")
     is_bound = serializers.SerializerMethodField(help_text="插件类型是否已绑定到当前环境或资源")
+    tags = serializers.SerializerMethodField(help_text="插件类型标签")
 
     class Meta:
         ref_name = "apigateway.apis.web.plugin.serializers.PluginTypeOutputSLZ"
@@ -49,6 +56,7 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
             "notes",
             "related_scope_count",
             "is_bound",
+            "tags",
         )
 
     def get_notes(self, obj):
@@ -63,6 +71,18 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
         is_bound_map = self.context.get("type_is_bound_to_current_scope", {})
         return is_bound_map.get(obj.id, False)
 
+    def get_tags(self, obj):
+        if get_language() != "zh-cn":
+            return [tag for tag in obj.tags if tag in PLUGIN_TYPE_TAGS_EN]
+        return [tag for tag in obj.tags if tag in PLUGIN_TYPE_TAGS]
+
+
+class PluginTypeTagsOutputSLZ(serializers.Serializer):
+    tags = serializers.ListField(child=serializers.CharField(), help_text="标签列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.plugin.serializers.PluginTypeTagsOutputSLZ"
+
 
 class PluginTypeQueryInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(required=False, help_text="名称关键字")
@@ -70,6 +90,7 @@ class PluginTypeQueryInputSLZ(serializers.Serializer):
         choices=PluginBindingScopeEnum.get_choices(), required=True, help_text="范围类型：stage or resource"
     )
     scope_id = serializers.IntegerField(required=True, help_text="范围 id: stage_id or resource_id")
+    tag = serializers.CharField(required=False, help_text="标签")
 
     class Meta:
         ref_name = "apigateway.apis.web.plugin.serializers.PluginTypeQueryInputSLZ"

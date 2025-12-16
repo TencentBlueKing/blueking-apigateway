@@ -101,6 +101,7 @@
     is_public: true
     scope: stage_and_resource
     priority: 17900
+    _tags: "安全,Security"
     schema:
     - bk-cors
     - plugin
@@ -359,6 +360,7 @@
     is_public: true
     scope: stage_and_resource
     priority: 17421
+    _tags: "转换,Transformation"
     schema:
     - bk-header-rewrite
     - plugin
@@ -663,6 +665,7 @@
     is_public: true
     scope: stage_and_resource
     priority: 17662
+    _tags: "安全,Security"
     schema:
     - bk-ip-restriction
     - plugin
@@ -854,6 +857,7 @@
     is_public: true
     scope: stage_and_resource
     priority: 17652
+    _tags: "流量,Traffic"
     schema:
     - bk-rate-limit
     - plugin
@@ -1301,6 +1305,7 @@
     name_en: Gateway error using HTTP status code 200 (not recommended)
     is_public: false
     priority: 18815
+    _tags: "转换,Transformation"
     schema: null
 - model: plugin.pluginform
   fields:
@@ -1390,6 +1395,7 @@
     is_public: false
     scope: stage
     priority: 18810
+    _tags: "认证,Authentication"
     schema:
     - bk-verified-user-exempted-apps
     - plugin
@@ -1428,6 +1434,7 @@
     is_public: true
     scope: resource
     priority: 17150
+    _tags: "转换,Transformation"
     schema:
     - bk-mock
     - plugin
@@ -1663,6 +1670,7 @@
     is_public: true
     scope: resource
     priority: 1005
+    _tags: "流量,Traffic"
     schema:
     - api-breaker
     - plugin
@@ -2013,6 +2021,7 @@
     is_public: true
     scope: resource
     priority: 2800
+    _tags: "流量,Traffic,校验,Validation"
     schema:
     - request-validation
     - plugin
@@ -2197,6 +2206,7 @@
     is_public: true
     scope: resource
     priority: 11000
+    _tags: "转换,Transformation"
     schema:
     - fault-injection
     - plugin
@@ -2453,6 +2463,7 @@
     is_public: true
     scope: resource
     priority: 899
+    _tags: "转换,Transformation"
     schema:
     - response-rewrite
     - plugin
@@ -2758,6 +2769,7 @@
     is_public: true
     scope: resource
     priority: 900
+    _tags: "通用,General"
     schema:
     - redirect
     - plugin
@@ -2822,7 +2834,7 @@
           }
         }
       }
-      
+
 
 - model: schema.schema
   fields:
@@ -2853,6 +2865,7 @@
     is_public: true
     scope: resource
     priority: 18735
+    _tags: "转换,Transformation,认证,Authentication"
     schema:
     - bk-access-token-source
     - plugin
@@ -2913,6 +2926,7 @@
     name_en: Forcing the caller to pass the X-Bk-Username header header
     is_public: true
     scope: resource
+    _tags: "流量,Traffic,校验,Validation"
     priority: 18725
     schema: null
 - model: plugin.pluginform
@@ -2961,6 +2975,7 @@
     is_public: true
     scope: stage_and_resource
     priority: 17690
+    _tags: "流量,Traffic,校验,Validation"
     schema:
     - bk-request-body-limit
     - plugin
@@ -3071,6 +3086,7 @@
     is_public: true
     scope: resource
     priority: 17679
+    _tags: "安全,Security"
     schema:
     - bk-user-restriction
     - plugin
@@ -3275,6 +3291,7 @@
     is_public: false
     scope: stage
     priority: 18880
+    _tags: "转换,Transformation"
     schema: null
 - model: plugin.pluginform
   fields:
@@ -3329,6 +3346,7 @@
     is_public: true
     scope: resource
     priority: 1085
+    _tags: "流量,Traffic,缓存,Cache"
     schema:
     - proxy-cache
     - plugin
@@ -3545,6 +3563,7 @@
     is_public: true
     scope: resource
     priority: 1040
+    _tags: "AI"
     schema:
     - ai-proxy
     - plugin
@@ -3925,6 +3944,7 @@
     is_public: true
     scope: resource
     priority: 1030
+    _tags: "AI"
     schema:
     - ai-rate-limiting
     - plugin
