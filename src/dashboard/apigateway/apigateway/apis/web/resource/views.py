@@ -652,7 +652,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
         backend_hosts = self._get_backend_hosts(backend_id)
 
         result = []
-        for stage in Stage.objects.filter(gateway=request.gateway):
+        for stage in Stage.objects.filter(gateway=request.gateway).order_by("id"):
             stage_vars = stage.vars
             result.append(
                 {
