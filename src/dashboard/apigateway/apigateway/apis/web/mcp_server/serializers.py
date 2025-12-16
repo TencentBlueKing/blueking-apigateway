@@ -323,3 +323,73 @@ class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
         model = MCPServerAppPermissionApply
         fields = ("status", "comment")
         lookup_field = "id"
+
+
+# ========== Prompts 相关 Serializers ==========
+
+
+class MCPServerPromptVariableSLZ(serializers.Serializer):
+    """Prompt 变量的序列化器"""
+
+    field_name = serializers.CharField(required=True, help_text="变量名称")
+    field_value = serializers.CharField(required=False, allow_blank=True, default="", help_text="变量值")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptVariableSLZ"
+
+
+class MCPServerPromptItemSLZ(serializers.Serializer):
+    """单个 Prompt 项的序列化器"""
+
+    id = serializers.CharField(required=True, help_text="Prompt ID（第三方平台的唯一标识）")
+    name = serializers.CharField(required=True, help_text="Prompt 名称")
+    description = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 描述")
+    content = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 内容")
+    updated_time = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 更新时间")
+    labels = serializers.ListField(
+        child=serializers.CharField(), required=False, default=list, help_text="Prompt 标签列表"
+    )
+    is_public = serializers.BooleanField(required=False, default=False, help_text="Prompt 是否公开")
+    variables = serializers.ListField(
+        child=MCPServerPromptVariableSLZ(), required=False, default=list, help_text="Prompt 变量列表"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptItemSLZ"
+
+
+class MCPServerPromptsInputSLZ(serializers.Serializer):
+    """保存 Prompts 配置的输入序列化器"""
+
+    prompts = serializers.ListField(
+        child=MCPServerPromptItemSLZ(),
+        required=True,
+        allow_empty=True,
+        help_text="Prompts 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptsInputSLZ"
+
+
+class MCPServerPromptsOutputSLZ(serializers.Serializer):
+    """获取 Prompts 配置的输出序列化器"""
+
+    prompts = serializers.ListField(
+        child=MCPServerPromptItemSLZ(),
+        read_only=True,
+        help_text="Prompts 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptsOutputSLZ"
+
+
+class MCPServerRemotePromptsQueryInputSLZ(serializers.Serializer):
+    """查询第三方平台 Prompts 列表的输入序列化器"""
+
+    # 可以根据第三方平台的需求添加查询参数
+    keyword = serializers.CharField(required=False, allow_blank=True, default="", help_text="搜索关键字")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsQueryInputSLZ"

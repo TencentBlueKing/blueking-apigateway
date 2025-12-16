@@ -26,6 +26,8 @@ from .views import (
     MCPServerAppPermissionListCreateApi,
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
+    MCPServerPromptsApi,
+    MCPServerRemotePromptsListApi,
     MCPServerRetrieveUpdateDestroyApi,
     MCPServerStageReleaseCheckApi,
     MCPServerToolDocRetrieveApi,
@@ -63,6 +65,11 @@ urlpatterns = [
                     "user-custom-doc/",
                     MCPServerUserCustomDocApi.as_view(),
                     name="mcp_server.user_custom_doc",
+                ),
+                path(
+                    "prompts/",
+                    MCPServerPromptsApi.as_view(),
+                    name="mcp_server.prompts",
                 ),
                 path(
                     "permissions/",
@@ -107,4 +114,5 @@ urlpatterns = [
         ),
     ),
     path("-/stage-release-check/", MCPServerStageReleaseCheckApi.as_view(), name="mcp_server.stage_release_check"),
+    path("-/remote-prompts/", MCPServerRemotePromptsListApi.as_view(), name="mcp_server.remote_prompts_list"),
 ]

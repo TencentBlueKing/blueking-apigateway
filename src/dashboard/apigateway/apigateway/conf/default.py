@@ -543,6 +543,20 @@ AI_APP_SECRET = env.str("AI_APP_SECRET", BK_APP_SECRET)
 AI_BKAUTH_ENABLED = env.bool("AI_BKAUTH_ENABLED", False)
 
 # ==============================================================================
+# BKAIDev 平台配置（AI 开发平台）
+# ==============================================================================
+# BKAIDEV 网关名
+BK_AI_DEV_GATEWAY_NAME = env.str("BK_AI_DEV_GATEWAY_NAME", "bkaidev")
+# BKAIDev 平台 API URL 前缀
+BKAIDEV_URL_PREFIX = BK_API_URL_TMPL.format(api_name=BK_AI_DEV_GATEWAY_NAME) + "/prod"
+# BKAIDev 平台 API 超时时间（秒）
+BKAIDEV_API_TIMEOUT = env.int("BKAIDEV_API_TIMEOUT", 30)
+# 是否启用 Mock 模式（第三方 API 未就绪时使用）
+BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", True)
+# 是否启用mcp prompt 功能
+BK_MCP_PROMPT_ENABLED = env.bool("BK_MCP_PROMPT_ENABLED", True)
+
+# ==============================================================================
 # 网关全局配置
 # ==============================================================================
 DASHBOARD_URL = env.str("DASHBOARD_URL", "").rstrip("/")
@@ -906,6 +920,8 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_DISPLAY_NAME_RENDER": (
         ENABLE_MULTI_TENANT_MODE or env.bool("FEATURE_FLAG_ENABLE_DISPLAY_NAME_RENDER", True)
     ),
+    # 是否启用 mcp prompt 功能
+    "BK_MCP_PROMPT_ENABLED": BK_MCP_PROMPT_ENABLED,
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并

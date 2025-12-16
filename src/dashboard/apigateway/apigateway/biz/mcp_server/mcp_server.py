@@ -16,8 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import json
 import logging
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from django.db import transaction
 from django.db.models import Q
@@ -26,9 +27,15 @@ from django.utils.translation import gettext as _
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerExtend,
+)
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
@@ -39,6 +46,7 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
@@ -246,6 +254,143 @@ class MCPServerHandler:
             queryset = queryset.filter(stage_id=stage_id)
 
         queryset.update(status=MCPServerStatusEnum.INACTIVE.value)
+
+    # ========== Prompts 相关方法 ==========
+
+    @staticmethod
+    def fetch_remote_prompts(username: str, keyword: str = "") -> List[Dict[str, Any]]:
+        """从 BKAIDev 平台获取 prompts 列表
+
+        Args:
+            username: 用户名，用于平台鉴权
+            keyword: 搜索关键字
+
+        Returns:
+            prompts 列表
+        """
+        return bkaidev.fetch_prompts_list(username=username, keyword=keyword)
+
+    @staticmethod
+    def fetch_remote_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
+        """根据 prompt IDs 从 BKAIDev 平台批量获取 prompts 详情
+
+        Args:
+            prompt_ids: prompt ID 列表
+
+        Returns:
+            prompts 详情列表
+        """
+        return bkaidev.fetch_prompts_by_ids(prompt_ids=prompt_ids)
+
+    @staticmethod
+    def fetch_remote_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
+        """从 BKAIDev 平台批量获取 prompts 的更新时间
+
+        Args:
+            prompt_ids: prompt ID 列表
+
+        Returns:
+            prompt_id -> updated_time 的映射
+        """
+        return bkaidev.fetch_prompts_updated_time(prompt_ids=prompt_ids)
+
+    @staticmethod
+    def get_prompts(mcp_server_id: int) -> List[Dict[str, Any]]:
+        """获取 MCPServer 已关联的 prompts 配置
+
+        Args:
+            mcp_server_id: MCPServer ID
+
+        Returns:
+            prompts 列表
+        """
+        extend = MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).first()
+
+        if not extend or not extend.content:
+            return []
+
+        try:
+            return json.loads(extend.content)
+        except json.JSONDecodeError:
+            logger.exception("Failed to parse prompts content for mcp_server_id=%s", mcp_server_id)
+            return []
+
+    @staticmethod
+    def save_prompts(mcp_server_id: int, prompts: List[Dict[str, Any]], username: str) -> None:
+        """保存 MCPServer 的 prompts 配置
+
+        Args:
+            mcp_server_id: MCPServer ID
+            prompts: prompts 列表
+            username: 操作用户名
+        """
+        content = json.dumps(prompts, ensure_ascii=False)
+
+        extend, created = MCPServerExtend.objects.update_or_create(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            defaults={
+                "content": content,
+                "updated_by": username,
+            },
+        )
+
+        if created:
+            extend.created_by = username
+            extend.save(update_fields=["created_by"])
+
+    @staticmethod
+    def delete_prompts(mcp_server_id: int) -> None:
+        """删除 MCPServer 的 prompts 配置
+
+        Args:
+            mcp_server_id: MCPServer ID
+        """
+        MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).delete()
+
+    @staticmethod
+    def get_all_mcp_servers_with_prompts() -> List[Tuple[int, List[Dict[str, Any]]]]:
+        """获取所有配置了 prompts 的 MCPServer
+
+        Returns:
+            [(mcp_server_id, prompts_list), ...]
+        """
+        extends = MCPServerExtend.objects.filter(
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).exclude(content="")
+
+        result = []
+        for extend in extends:
+            try:
+                prompts = json.loads(extend.content)
+                if prompts:
+                    result.append((extend.mcp_server_id, prompts))
+            except json.JSONDecodeError:
+                logger.exception("Failed to parse prompts content for mcp_server_id=%s", extend.mcp_server_id)
+                continue
+
+        return result
+
+    @staticmethod
+    def update_prompts_content(mcp_server_id: int, prompts: List[Dict[str, Any]]) -> None:
+        """更新 MCPServer 的 prompts 内容（用于异步任务同步）
+
+        Args:
+            mcp_server_id: MCPServer ID
+            prompts: 更新后的 prompts 列表
+        """
+        content = json.dumps(prompts, ensure_ascii=False)
+
+        MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).update(content=content)
 
 
 class MCPServerPermissionHandler:
