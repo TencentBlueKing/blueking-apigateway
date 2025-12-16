@@ -32,26 +32,28 @@
       >
         {{ t('组件详情') }}
       </article>
-      <aside v-if="basics?.doc_maintainers?.type === 'user'">
-        <Chat
-          v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
-          :default-user-list="userList"
-          :owner="curUser.username"
-          :name="chatName"
-          :content="chatContent"
-          is-query
-        />
-      </aside>
-      <aside v-else>
-        <a
-          target="_blank"
-          class="link-item"
-          :href="basics.doc_maintainers?.service_account?.link"
-        >
-          <i class="ag-doc-icon doc-qw text-16px apigateway-icon icon-ag-qw" />
-          {{ t('联系') }} {{ basics.doc_maintainers?.service_account?.name }}
-        </a>
-      </aside>
+      <template v-if="curTab === 'gateway'">
+        <aside v-if="basics?.doc_maintainers?.type === 'user'">
+          <Chat
+            v-if="featureFlagStore.flags.ALLOW_CREATE_APPCHAT"
+            :default-user-list="userList"
+            :owner="curUser.username"
+            :name="chatName"
+            :content="chatContent"
+            is-query
+          />
+        </aside>
+        <aside v-else>
+          <a
+            target="_blank"
+            class="link-item"
+            :href="basics.doc_maintainers?.service_account?.link"
+          >
+            <i class="ag-doc-icon doc-qw text-16px apigateway-icon icon-ag-qw" />
+            {{ t('联系') }} {{ basics.doc_maintainers?.service_account?.name }}
+          </a>
+        </aside>
+      </template>
     </header>
     <main
       v-if="curTab === 'gateway'"

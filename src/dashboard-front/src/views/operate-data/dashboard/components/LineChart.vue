@@ -110,6 +110,9 @@ interface ChartLegend {
   ingress?: LegendItem
   egress?: LegendItem
   response_time_90th?: LegendItem
+  response_time_50th?: LegendItem
+  response_time_95th?: LegendItem
+  response_time_99th?: LegendItem
 };
 
 const { getChartIntervalOption } = useChartIntervalOption();
@@ -181,18 +184,6 @@ const chartResize = () => {
 
 const getChartOption = () => {
   const baseOption: echarts.EChartOption = {
-    // title: {
-    //   text: title,
-    //   top: 12,
-    //   left: 24,
-    //   textStyle: {
-    //     color: '#313238',
-    //     fontSize: 14,
-    //     fontWeight: 'bold',
-    //     lineHeight: 22,
-    //   },
-    // },
-    // 设置距离右侧的间距
     grid: { right: '8%' },
     xAxis: {
       type: 'time',
@@ -262,147 +253,149 @@ const getChartOption = () => {
 
   let moreOption: any = {};
 
-  if (instanceId !== 'response_time') {
-    chartData?.series?.forEach((item: ISeriesItemType) => {
-      let datapoints = item.datapoints || [];
-      datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
-      chartOption.series.push(merge({}, baseOption.series[0], {
-        name: (item.target?.split('=')[1])?.replace(/"/g, ''),
-        data: datapoints.map((item) => {
-          if (instanceId === 'ingress' || instanceId === 'egress') {
-            return [
-              item[1],
-              (item[0] / 1024).toFixed(2),
-            ];
-          }
+  const miniList = ['requests', 'non_20x_status'];
+  const fullLineList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
+
+  // if (instanceId !== 'response_time') {
+  chartData?.series?.forEach((item: ISeriesItemType) => {
+    let datapoints = item.datapoints || [];
+    datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
+    chartOption.series.push(merge({}, baseOption.series[0], {
+      name: (item.target?.split('=')[1])?.replace(/"/g, ''),
+      data: datapoints.map((item) => {
+        if (instanceId === 'ingress' || instanceId === 'egress') {
           return [
             item[1],
-            item[0],
+            (item[0] / 1024).toFixed(2),
           ];
-        }),
-      }));
-      moreOption = getChartMoreOption(datapoints);
+        }
+        return [
+          item[1],
+          item[0],
+        ];
+      }),
+    }));
+    moreOption = getChartMoreOption(datapoints);
 
-      const miniList = ['requests', 'non_20x_status'];
-      const fullLineList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
-
-      if (!fullLineList.includes(instanceId)) {
-        const dataLength = datapoints?.length || 0;
-        if (miniList.includes(instanceId)) {
-          if (dataLength <= 20) {
-            moreOption.xAxis.axisLabel = {
-              interval: 0,
-              rotate: 0,
-              fontSize: 12,
-            };
-          }
-          else {
-            moreOption.xAxis.axisLabel = {
-              interval: Math.floor(dataLength / 10),
-              rotate: 45,
-              margin: 10,
-              fontSize: 10,
-            };
-          }
+    if (!fullLineList.includes(instanceId)) {
+      const dataLength = datapoints?.length || 0;
+      if (miniList.includes(instanceId)) {
+        if (dataLength <= 20) {
+          moreOption.xAxis.axisLabel = {
+            interval: 0,
+            rotate: 0,
+            fontSize: 12,
+          };
         }
         else {
-          if (dataLength <= 30) {
-            moreOption.xAxis.axisLabel = {
-              interval: 0,
-              rotate: 0,
-              fontSize: 12,
-            };
-          }
-          else {
-            moreOption.xAxis.axisLabel = {
-              interval: Math.floor(dataLength / 10),
-              rotate: 25,
-              margin: 10,
-              fontSize: 10,
-            };
-          }
+          moreOption.xAxis.axisLabel = {
+            interval: Math.floor(dataLength / 10),
+            rotate: 45,
+            margin: 10,
+            fontSize: 10,
+          };
         }
       }
-    });
-    // 设置图表颜色
-    chartOption.color = generateChartColor(chartData.series ?? []);
+      else {
+        if (dataLength <= 30) {
+          moreOption.xAxis.axisLabel = {
+            interval: 0,
+            rotate: 0,
+            fontSize: 12,
+          };
+        }
+        else {
+          moreOption.xAxis.axisLabel = {
+            interval: Math.floor(dataLength / 10),
+            rotate: 25,
+            margin: 10,
+            fontSize: 10,
+          };
+        }
+      }
+    }
+  });
 
-    if (instanceId === 'requests') {
-      // 总请求数
-      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
-        return `<div>
+  // 设置图表颜色
+  chartOption.color = generateChartColor(chartData.series ?? []);
+
+  // 设置图表tooltip内容
+  if (instanceId === 'requests') {
+    // 总请求数
+    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+      return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${t('总请求数')}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
       </div>`;
-      };
-    }
-    else if (instanceId === 'response_time_90th') {
-      // 资源 90th 响应耗时分布
-      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
-        return `<div>
+    };
+  }
+  else if (fullLineList.includes(instanceId)) {
+    // 资源 xx 响应耗时分布
+    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+      return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ms</span></p>
       </div>`;
-      };
-    }
-    else if (['ingress', 'egress'].includes(instanceId)) {
-      // ingress 带宽占用 && egress 带宽占用
-      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
-        return `<div>
+    };
+  }
+  else if (['ingress', 'egress'].includes(instanceId)) {
+    // ingress 带宽占用 && egress 带宽占用
+    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+      return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} KB</span></p>
       </div>`;
-      };
-    }
-    else {
-      // 设置图表tooltip内容
-      chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
-        return `<div>
+    };
+  }
+  else {
+    // 默认 tooltip 内容
+    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+      return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
       </div>`;
-      };
-    }
+    };
+  }
 
-    if (['requests', 'non_20x_status'].includes(instanceId)) {
-      chartOption.grid.left = '18%';
-      if (document.body.clientWidth < 1550) {
-        chartOption.xAxis.axisLabel = { rotate: 35 };
-      }
-    }
-
-    if (instanceId === 'ingress' || instanceId === 'egress') {
-      chartOption.yAxis.axisLabel = { formatter: '{value} KB' };
-    }
-
-    if (instanceId === 'response_time_90th') {
-      chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
+  if (miniList.includes(instanceId)) {
+    chartOption.grid.left = '18%';
+    if (document.body.clientWidth < 1550) {
+      chartOption.xAxis.axisLabel = { rotate: 35 };
     }
   }
-  else {
-    const datapoints = [
-      (chartData?.response_time_90th?.series[0] || {})?.datapoints || [],
-      (chartData?.response_time_80th?.series[0] || {})?.datapoints || [],
-      (chartData?.response_time_50th?.series[0] || {})?.datapoints || [],
-    ];
-    // const seriesNames = ['90%', '80%', '50%'];
-    const seriesNames = ['90%'];
-    datapoints.forEach((data, index: number) => {
-      const values = data.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
-      chartOption.series.push(merge({}, baseOption.series[0], {
-        name: seriesNames[index],
-        data: values.map((item: Array<number>) => ([
-          item[1],
-          Math.round(item[0]),
-        ])),
-      }));
-    });
 
+  if (instanceId === 'ingress' || instanceId === 'egress') {
+    chartOption.yAxis.axisLabel = { formatter: '{value} KB' };
+  }
+
+  if (fullLineList.includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
-
-    const serieData = datapoints.reduce((a, b) => a.concat(b), []);
-    moreOption = getChartMoreOption(serieData);
   }
+  // }
+  // else {
+  //   const datapoints = [
+  //     (chartData?.response_time_90th?.series[0] || {})?.datapoints || [],
+  //     (chartData?.response_time_80th?.series[0] || {})?.datapoints || [],
+  //     (chartData?.response_time_50th?.series[0] || {})?.datapoints || [],
+  //   ];
+  //   // const seriesNames = ['90%', '80%', '50%'];
+  //   const seriesNames = ['90%'];
+  //   datapoints.forEach((data, index: number) => {
+  //     const values = data.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
+  //     chartOption.series.push(merge({}, baseOption.series[0], {
+  //       name: seriesNames[index],
+  //       data: values.map((item: Array<number>) => ([
+  //         item[1],
+  //         Math.round(item[0]),
+  //       ])),
+  //     }));
+  //   });
+
+  //   chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
+
+  //   const serieData = datapoints.reduce((a, b) => a.concat(b), []);
+  //   moreOption = getChartMoreOption(serieData);
+  // }
   return merge(baseOption, chartOption, moreOption);
 };
 

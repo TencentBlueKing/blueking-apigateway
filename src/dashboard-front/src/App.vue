@@ -193,6 +193,13 @@ const menuList: IHeaderNav[] = [
     enabled: true,
     link: '',
   },
+  {
+    name: t('微网关'),
+    id: 6,
+    url: envStore.env.BK_APISIX_URL,
+    enabled: envStore.env.EDITION === 'te',
+    link: envStore.env.BK_APISIX_URL,
+  },
 ];
 
 const fetchInitData = async () => {
