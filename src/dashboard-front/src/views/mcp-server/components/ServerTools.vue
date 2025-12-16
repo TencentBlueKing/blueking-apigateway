@@ -107,15 +107,10 @@
               >
                 {{ truncate(selectedTool.name) }}
               </div>
-              <div
-                v-bk-tooltips="{content: selectedTool.description, disabled: selectedTool.description.length <= 50}"
-                class="desc"
-              >
-                （{{ truncate(selectedTool.description, { 'length': 50 }) }}）
-              </div>
               <BkButton
                 theme="primary"
                 text
+                class="ml-16px"
                 @click="handleNavDocDetail"
               >
                 <AgIcon
@@ -126,6 +121,13 @@
                 {{ t('查看文档详情') }}
               </BkButton>
             </header>
+            <div class="pl-40px pr-40px mb-16px">
+              <AgDescription class="color-#979ba5 break-all">
+                <template #description>
+                  {{ selectedTool.description }}
+                </template>
+              </AgDescription>
+            </div>
             <article class="tool-basics">
               <section class="basic-cell">
                 <span>
@@ -231,6 +233,7 @@ import hljs from 'highlight.js';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
+import AgDescription from '@/components/ag-description/Index.vue';
 import { truncate } from 'lodash-es';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
@@ -664,12 +667,6 @@ $code-color: #63656e;
         font-weight: 700;
         line-height: 22px;
         color: #313238;
-      }
-
-      .desc {
-        font-size: 12px;
-        line-height: 20px;
-        color: #979ba5;
       }
     }
 
