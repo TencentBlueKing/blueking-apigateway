@@ -2146,5 +2146,7 @@
   "平台提供默认使用指引，您可添加自定义内容来补充说明。": "The platform provides default usage guidelines, and you can add custom content to supplement the instructions.",
   "确认删除自定义使用指引？": "Are you sure to delete the custom usage guide?",
   "删除后，MCP 文档中将显示默认指引": "After deletion, default guidelines will be displayed in the MCP document",
-  "该插件无需任何参数": "No params needed"
+  "该插件无需任何参数": "No params needed",
+  "搜索版本号": "Search version number",
+  "请输入 SDK 版本号，资源版本或语言": "Search SDK version number, resource version or language"
 }
