@@ -24,6 +24,7 @@ from .views import (
     PluginConfigRetrieveUpdateDestroyApi,
     PluginFormRetrieveApi,
     PluginTypeListApi,
+    PluginTypeTagsListApi,
     ScopePluginConfigListApi,
 )
 
@@ -31,6 +32,7 @@ urlpatterns = [
     # plugins
     # list plugin types (global)
     path("", PluginTypeListApi.as_view(), name="plugins.types"),
+    path("-/tags/", PluginTypeTagsListApi.as_view(), name="plugins.tags"),
     path(
         "<str:scope_type>/<int:scope_id>/",
         include(

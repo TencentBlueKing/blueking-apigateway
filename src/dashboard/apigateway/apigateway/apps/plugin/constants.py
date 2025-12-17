@@ -145,3 +145,16 @@ Draft7Schema = {
     },
     "default": True,
 }
+
+
+PLUGIN_TYPE_TAGS = ["安全", "转换", "流量", "AI", "通用", "认证", "校验", "缓存"]
+PLUGIN_TYPE_TAGS_EN = [
+    "Security",
+    "Transformation",
+    "Traffic",
+    "AI",
+    "General",
+    "Authentication",
+    "Validation",
+    "Cache",
+]
