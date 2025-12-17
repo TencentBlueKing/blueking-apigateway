@@ -62,6 +62,9 @@ from .serializers import (
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
+    MCPServerPromptsInputSLZ,
+    MCPServerPromptsOutputSLZ,
+    MCPServerRemotePromptsQueryInputSLZ,
     MCPServerRetrieveOutputSLZ,
     MCPServerStageReleaseCheckInputSLZ,
     MCPServerStageReleaseCheckOutputSLZ,
@@ -758,5 +761,97 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
             )
 
             MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+# ========== Prompts 相关 API ==========
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="从第三方平台获取 Prompts 列表",
+        query_serializer=MCPServerRemotePromptsQueryInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerPromptsOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerRemotePromptsListApi(generics.ListAPIView):
+    """从第三方平台获取 Prompts 列表"""
+
+    def list(self, request, *args, **kwargs):
+        slz = MCPServerRemotePromptsQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        keyword = slz.validated_data.get("keyword", "")
+
+        # 调用第三方平台获取 prompts 列表
+        prompts = MCPServerHandler.fetch_remote_prompts(
+            username=request.user.username,
+            keyword=keyword,
+        )
+
+        output_slz = MCPServerPromptsOutputSLZ({"prompts": prompts})
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 已关联的 Prompts 配置",
+        responses={status.HTTP_200_OK: MCPServerPromptsOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        operation_description="更新 MCPServer 的 Prompts 配置",
+        request_body=MCPServerPromptsInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除 MCPServer 的 Prompts 配置",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerPromptsApi(generics.RetrieveUpdateDestroyAPIView):
+    """MCPServer Prompts 配置管理"""
+
+    queryset = MCPServer.objects.all()
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        prompts = MCPServerHandler.get_prompts(instance.id)
+        slz = MCPServerPromptsOutputSLZ({"prompts": prompts})
+
+        return OKJsonResponse(data=slz.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        slz = MCPServerPromptsInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        MCPServerHandler.save_prompts(
+            mcp_server_id=instance.id,
+            prompts=slz.validated_data["prompts"],
+            username=request.user.username,
+        )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        MCPServerHandler.delete_prompts(instance.id)
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
