@@ -67,3 +67,4 @@ class MCPServerExtendTypeEnum(StructuredEnum):
     """MCPServer 扩展配置类型"""
 
     USER_CUSTOM_DOC = EnumField("user_custom_doc", label=_("用户自定义文档"))
+    PROMPTS = EnumField("prompts", label=_("Prompts 配置"))
