@@ -18,16 +18,14 @@
 #
 import logging
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
 
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
 from .http import http_get, http_post
-from .utils import gen_gateway_headers
+from .utils import do_blueking_http_request, gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +41,6 @@ _MOCK_PROMPTS: List[Dict[str, Any]] = [
         "is_public": True,
         "space_code": "devops",
         "granted_space_codes": ["monitor", "cmdb"],
-        "variables": [
-            {"field_name": "code", "field_value": ""},
-        ],
     },
     {
         "id": "prompt_002",
@@ -57,10 +52,6 @@ _MOCK_PROMPTS: List[Dict[str, Any]] = [
         "is_public": True,
         "space_code": "devops",
         "granted_space_codes": [],
-        "variables": [
-            {"field_name": "language", "field_value": "Python"},
-            {"field_name": "code", "field_value": ""},
-        ],
     },
     {
         "id": "prompt_003",
@@ -72,10 +63,6 @@ _MOCK_PROMPTS: List[Dict[str, Any]] = [
         "is_public": False,
         "space_code": "dba",
         "granted_space_codes": ["monitor"],
-        "variables": [
-            {"field_name": "db_type", "field_value": "MySQL"},
-            {"field_name": "sql", "field_value": ""},
-        ],
     },
     {
         "id": "prompt_004",
@@ -87,10 +74,6 @@ _MOCK_PROMPTS: List[Dict[str, Any]] = [
         "is_public": True,
         "space_code": "qa",
         "granted_space_codes": ["devops"],
-        "variables": [
-            {"field_name": "language", "field_value": "Python"},
-            {"field_name": "function_code", "field_value": ""},
-        ],
     },
     {
         "id": "prompt_005",
@@ -102,10 +85,6 @@ _MOCK_PROMPTS: List[Dict[str, Any]] = [
         "is_public": False,
         "space_code": "ops",
         "granted_space_codes": ["monitor", "devops"],
-        "variables": [
-            {"field_name": "app_name", "field_value": ""},
-            {"field_name": "error_log", "field_value": ""},
-        ],
     },
 ]
 
@@ -137,12 +116,13 @@ def _get_mock_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
     return {p["id"]: p["updated_time"] for p in _MOCK_PROMPTS if p["id"] in id_set}
 
 
-def _call_bkaidev(
+def _call_bkaidev_api(
     http_func,
     path: str,
     data: Optional[Dict[str, Any]] = None,
-    headers: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    more_headers: Optional[Dict[str, str]] = None,
+    timeout: int = 30,
+) -> Dict | List:
     """
     统一调用 BKAIDev 平台 API
 
@@ -150,7 +130,8 @@ def _call_bkaidev(
         http_func: HTTP 请求函数（http_get 或 http_post）
         path: API 路径
         data: 请求数据
-        headers: 额外的请求头
+        more_headers: 额外的请求头
+        timeout: 超时时间
 
     Returns:
         响应数据
@@ -158,33 +139,13 @@ def _call_bkaidev(
     Raises:
         error_codes.REMOTE_REQUEST_ERROR: 请求失败时抛出
     """
+    headers = gen_gateway_headers()
+    if more_headers:
+        headers.update(more_headers)
+
     url = url_join(settings.BKAIDEV_URL_PREFIX, path)
 
-    request_headers = gen_gateway_headers()
-    if headers:
-        request_headers.update(headers)
-
-    ok, resp_data = http_func(url, data or {}, headers=request_headers, timeout=settings.BKAIDEV_API_TIMEOUT)
-    if not ok:
-        logger.error(
-            "bkaidev api failed! %s %s, data: %s, request_id: %s, error: %s",
-            http_func.__name__,
-            url,
-            data,
-            local.request_id,
-            resp_data.get("error", ""),
-        )
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"request bkaidev fail! "
-            f"Request=[{http_func.__name__} {urlparse(url).path} request_id={local.request_id}] "
-            f"error={resp_data.get('error', '')}"
-        )
-
-    # 统一处理响应格式
-    # 假设响应格式为: {"result": true, "data": ..., "message": ""}
-    if isinstance(resp_data, dict):
-        return resp_data.get("data", resp_data)
-    return resp_data
+    return do_blueking_http_request("bkaidev", http_func, url, data, headers, timeout)
 
 
 def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]:
@@ -196,22 +157,7 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
         keyword: 搜索关键字
 
     Returns:
-        prompts 列表，格式如下：
-        [
-            {
-                "id": "prompt_001",
-                "name": "代码审查助手",
-                "description": "帮助进行代码审查的 prompt",
-                "content": "你是一个代码审查专家...",
-                "updated_time": "2025-12-12T10:00:00Z",
-                "labels": ["代码", "审查"],
-                "is_public": true,
-                "variables": [
-                    {"field_name": "code", "field_value": ""},
-                    {"field_name": "name", "field_value": ""}
-                ]
-            }
-        ]
+        prompts 列表
     """
     # Mock 模式：返回 mock 数据
     if settings.BKAIDEV_USE_MOCK:
@@ -219,19 +165,20 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
         return _get_mock_prompts_by_keyword(keyword)
 
     if not settings.BKAIDEV_URL_PREFIX:
-        logger.warning("BKAIDEV_URL_PREFIX is not configured, return empty list")
-        return []
+        raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
 
     data = {}
     if keyword:
         data["keyword"] = keyword
 
-    headers = {"X-Bk-Username": username}
+    more_headers = {"X-Bk-Username": username}
 
-    result = _call_bkaidev(http_get, "/api/v1/prompts/", data, headers)
-    if isinstance(result, list):
-        return result
-    return []
+    result = _call_bkaidev_api(http_get, "/api/v1/prompts/", data, more_headers, settings.BKAIDEV_API_TIMEOUT)
+    if not isinstance(result, list):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"fetch_prompts_list expected list response, got {type(result).__name__}"
+        )
+    return result
 
 
 def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
@@ -253,15 +200,16 @@ def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
         return _get_mock_prompts_by_ids(prompt_ids)
 
     if not settings.BKAIDEV_URL_PREFIX:
-        logger.warning("BKAIDEV_URL_PREFIX is not configured, return empty list")
-        return []
+        raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
 
     data = {"ids": prompt_ids}
 
-    result = _call_bkaidev(http_post, "/api/v1/prompts/batch/", data)
-    if isinstance(result, list):
-        return result
-    return []
+    result = _call_bkaidev_api(http_post, "/api/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT)
+    if not isinstance(result, list):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"fetch_prompts_by_ids expected list response, got {type(result).__name__}"
+        )
+    return result
 
 
 def fetch_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
@@ -284,15 +232,16 @@ def fetch_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
         return _get_mock_prompts_updated_time(prompt_ids)
 
     if not settings.BKAIDEV_URL_PREFIX:
-        logger.warning("BKAIDEV_URL_PREFIX is not configured, return empty dict")
-        return {}
+        raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
 
     data = {"ids": prompt_ids}
 
-    result = _call_bkaidev(http_post, "/api/v1/prompts/updated-time/", data)
+    result = _call_bkaidev_api(http_post, "/api/v1/prompts/updated-time/", data, timeout=settings.BKAIDEV_API_TIMEOUT)
     if isinstance(result, dict):
         return result
-    # 如果 data 是列表格式，转换为字典
+    # 如果是列表格式，转换为字典
     if isinstance(result, list):
         return {item.get("id"): item.get("updated_time", "") for item in result if item.get("id")}
-    return {}
+    raise error_codes.REMOTE_REQUEST_ERROR.format(
+        f"fetch_prompts_updated_time expected dict or list response, got {type(result).__name__}"
+    )

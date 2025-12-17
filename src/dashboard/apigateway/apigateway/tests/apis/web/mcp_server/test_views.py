@@ -952,7 +952,6 @@ class TestMCPServerRemotePromptsListApi:
                 "is_public": True,
                 "space_code": "devops",
                 "granted_space_codes": ["monitor"],
-                "variables": [{"field_name": "code", "field_value": ""}],
             },
             {
                 "id": "prompt_002",
@@ -964,7 +963,6 @@ class TestMCPServerRemotePromptsListApi:
                 "is_public": True,
                 "space_code": "devops",
                 "granted_space_codes": [],
-                "variables": [],
             },
         ]
 
@@ -998,7 +996,6 @@ class TestMCPServerRemotePromptsListApi:
                 "is_public": True,
                 "space_code": "devops",
                 "granted_space_codes": [],
-                "variables": [],
             },
         ]
 
@@ -1066,7 +1063,6 @@ class TestMCPServerPromptsApi:
                 "is_public": True,
                 "space_code": "devops",
                 "granted_space_codes": ["monitor"],
-                "variables": [{"field_name": "code", "field_value": ""}],
             },
         ]
 
@@ -1093,7 +1089,6 @@ class TestMCPServerPromptsApi:
         assert result["data"]["prompts"][0]["is_public"] is True
         assert result["data"]["prompts"][0]["space_code"] == "devops"
         assert result["data"]["prompts"][0]["granted_space_codes"] == ["monitor"]
-        assert len(result["data"]["prompts"][0]["variables"]) == 1
 
     def test_update_create_new(self, request_view, fake_gateway, fake_mcp_server):
         """测试创建新的 prompts 配置"""
@@ -1109,7 +1104,6 @@ class TestMCPServerPromptsApi:
                     "is_public": True,
                     "space_code": "devops",
                     "granted_space_codes": ["monitor", "cmdb"],
-                    "variables": [{"field_name": "code", "field_value": ""}],
                 },
                 {
                     "id": "prompt_002",
@@ -1121,10 +1115,6 @@ class TestMCPServerPromptsApi:
                     "is_public": False,
                     "space_code": "devops",
                     "granted_space_codes": [],
-                    "variables": [
-                        {"field_name": "language", "field_value": "Python"},
-                        {"field_name": "code", "field_value": ""},
-                    ],
                 },
             ],
         }
@@ -1152,7 +1142,6 @@ class TestMCPServerPromptsApi:
         assert saved_prompts[0]["space_code"] == "devops"
         assert saved_prompts[0]["granted_space_codes"] == ["monitor", "cmdb"]
         assert saved_prompts[1]["is_public"] is False
-        assert len(saved_prompts[1]["variables"]) == 2
 
     def test_update_existing(self, request_view, fake_gateway, fake_mcp_server):
         """测试更新已有的 prompts 配置"""
@@ -1165,7 +1154,6 @@ class TestMCPServerPromptsApi:
                 "updated_time": "2025-12-10T10:00:00Z",
                 "labels": [],
                 "is_public": False,
-                "variables": [],
             },
         ]
 
@@ -1186,7 +1174,6 @@ class TestMCPServerPromptsApi:
                     "updated_time": "2025-12-15T10:00:00Z",
                     "labels": ["新标签"],
                     "is_public": True,
-                    "variables": [{"field_name": "input", "field_value": ""}],
                 },
             ],
         }
@@ -1222,7 +1209,6 @@ class TestMCPServerPromptsApi:
                 "updated_time": "2025-12-10T10:00:00Z",
                 "labels": [],
                 "is_public": False,
-                "variables": [],
             },
         ]
 
@@ -1264,7 +1250,6 @@ class TestMCPServerPromptsApi:
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": [],
                 "is_public": True,
-                "variables": [],
             },
         ]
 
@@ -1341,85 +1326,3 @@ class TestMCPServerPromptsApi:
         )
 
         assert resp.status_code == 400
-
-
-class TestMCPServerPromptsApiWithVariables:
-    """测试 Prompts 配置中 variables 字段的处理"""
-
-    def test_update_with_multiple_variables(self, request_view, fake_gateway, fake_mcp_server):
-        """测试更新包含多个变量的 prompts"""
-        data = {
-            "prompts": [
-                {
-                    "id": "prompt_001",
-                    "name": "SQL 优化顾问",
-                    "description": "分析 SQL 语句并提供优化建议",
-                    "content": "数据库类型：{{db_type}}\nSQL 语句：{{sql}}",
-                    "updated_time": "2025-12-15T10:00:00Z",
-                    "labels": ["数据库", "SQL"],
-                    "is_public": True,
-                    "variables": [
-                        {"field_name": "db_type", "field_value": "MySQL"},
-                        {"field_name": "sql", "field_value": "SELECT * FROM users"},
-                    ],
-                },
-            ],
-        }
-
-        resp = request_view(
-            method="PUT",
-            view_name="mcp_server.prompts",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
-            gateway=fake_gateway,
-            data=data,
-        )
-
-        assert resp.status_code == 204
-
-        # 验证变量已保存
-        extend = MCPServerExtend.objects.get(
-            mcp_server=fake_mcp_server,
-            type=MCPServerExtendTypeEnum.PROMPTS.value,
-        )
-        saved_prompts = json.loads(extend.content)
-        assert len(saved_prompts[0]["variables"]) == 2
-        assert saved_prompts[0]["variables"][0]["field_name"] == "db_type"
-        assert saved_prompts[0]["variables"][0]["field_value"] == "MySQL"
-
-    def test_retrieve_with_variables(self, request_view, fake_gateway, fake_mcp_server):
-        """测试获取包含变量的 prompts 配置"""
-        prompts_data = [
-            {
-                "id": "prompt_001",
-                "name": "单元测试生成器",
-                "description": "为给定的函数生成单元测试用例",
-                "content": "请为以下 {{language}} 函数生成单元测试...",
-                "updated_time": "2025-12-15T10:00:00Z",
-                "labels": ["测试"],
-                "is_public": True,
-                "variables": [
-                    {"field_name": "language", "field_value": "Python"},
-                    {"field_name": "function_code", "field_value": "def add(a, b): return a + b"},
-                ],
-            },
-        ]
-
-        G(
-            MCPServerExtend,
-            mcp_server=fake_mcp_server,
-            type=MCPServerExtendTypeEnum.PROMPTS.value,
-            content=json.dumps(prompts_data, ensure_ascii=False),
-        )
-
-        resp = request_view(
-            method="GET",
-            view_name="mcp_server.prompts",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
-            gateway=fake_gateway,
-        )
-        result = resp.json()
-
-        assert resp.status_code == 200
-        assert len(result["data"]["prompts"][0]["variables"]) == 2
-        assert result["data"]["prompts"][0]["variables"][0]["field_name"] == "language"
-        assert result["data"]["prompts"][0]["variables"][1]["field_name"] == "function_code"

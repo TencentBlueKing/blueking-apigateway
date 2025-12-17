@@ -305,18 +305,20 @@ class MCPServerHandler:
         """
         content = json.dumps(prompts, ensure_ascii=False)
 
-        extend, created = MCPServerExtend.objects.update_or_create(
+        extend, created = MCPServerExtend.objects.get_or_create(
             mcp_server_id=mcp_server_id,
             type=MCPServerExtendTypeEnum.PROMPTS.value,
             defaults={
                 "content": content,
+                "created_by": username,
                 "updated_by": username,
             },
         )
 
-        if created:
-            extend.created_by = username
-            extend.save(update_fields=["created_by"])
+        if not created:
+            extend.content = content
+            extend.updated_by = username
+            extend.save(update_fields=["content", "updated_by"])
 
     @staticmethod
     def delete_prompts(mcp_server_id: int) -> None:

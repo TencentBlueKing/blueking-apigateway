@@ -46,7 +46,6 @@ class TestMCPServerPromptHandler:
                 "is_public": True,
                 "space_code": "devops",
                 "granted_space_codes": ["monitor", "cmdb"],
-                "variables": [{"field_name": "code", "field_value": ""}],
             },
             {
                 "id": "prompt_002",
@@ -58,7 +57,6 @@ class TestMCPServerPromptHandler:
                 "is_public": False,
                 "space_code": "devops",
                 "granted_space_codes": [],
-                "variables": [],
             },
         ]
 
