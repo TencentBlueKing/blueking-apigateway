@@ -39,7 +39,7 @@
       <div class="flex grow-1 justify-end">
         <BkInput
           v-model="filterData.keyword"
-          :placeholder="t('请输入版本号')"
+          :placeholder="t('搜索版本号')"
         />
       </div>
     </div>

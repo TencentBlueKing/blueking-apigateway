@@ -343,7 +343,7 @@ const actionTooltipConfig = computed(() => {
 });
 
 const fetchMetrics = debounce(() => {
-  if (stage.status === 1 && ['StageOverviewCardMode'].includes(route.name)) {
+  if (stage.status === 1) {
     Promise.all([
       getRequestCount(),
       getRequestTrend(),

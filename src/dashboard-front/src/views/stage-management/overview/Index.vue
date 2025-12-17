@@ -34,6 +34,7 @@
       v-if="mode === 'detail-mode'"
       :stage-id="stageId"
       @updated="handleStageUpdated"
+      @deleted="handleStageDeleted"
     />
   </div>
 </template>
@@ -42,8 +43,6 @@
 import TopBar from './components/TopBar.vue';
 import CardMode from './card-mode/Index.vue';
 import DetailMode from './detail-mode/Index.vue';
-
-const router = useRouter();
 
 const mode = ref('card-mode');
 const stageId = ref(0);
@@ -56,15 +55,13 @@ const handleSwitchMode = (id: number) => {
 
 const handleStageIdChange = (id: number) => {
   stageId.value = id;
-  if (mode.value === 'detail-mode') {
-    router.replace({
-      name: 'StageOverviewDetailMode',
-      params: { stageId: stageId.value },
-    });
-  }
 };
 
 const handleStageUpdated = () => {
   topBarRef.value.reload();
+};
+
+const handleStageDeleted = () => {
+  mode.value = 'card-mode';
 };
 </script>

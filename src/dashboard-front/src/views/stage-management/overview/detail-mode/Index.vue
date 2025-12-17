@@ -318,7 +318,10 @@ type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 const { stageId } = defineProps<IProps>();
 
-const emit = defineEmits<{ updated: [void] }>();
+const emit = defineEmits<{
+  updated: [void]
+  deleted: [void]
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
@@ -622,11 +625,9 @@ const handleStageDelete = async () => {
       //   isUpdate: false,
       //   isDelete: true,
       // });
-      emit('updated');
+      emit('deleted');
       // 切换前一个环境, 并且不需要获取当前环境详情
       // await mitt.emit('switch-stage', true);
-      router.replace({ name: 'StageOverviewCardMode' });
-      // 开启loading
     },
   });
 };

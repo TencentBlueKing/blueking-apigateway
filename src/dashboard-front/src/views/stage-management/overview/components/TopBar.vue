@@ -155,12 +155,10 @@ const modeList = [
   {
     key: 'card-mode',
     text: t('缩略模式'),
-    routeName: 'StageOverviewCardMode',
   },
   {
     key: 'detail-mode',
     text: t('详情模式'),
-    routeName: 'StageOverviewDetailMode',
   },
 ];
 
