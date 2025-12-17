@@ -950,6 +950,8 @@ class TestMCPServerRemotePromptsListApi:
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码", "审查"],
                 "is_public": True,
+                "space_code": "devops",
+                "granted_space_codes": ["monitor"],
                 "variables": [{"field_name": "code", "field_value": ""}],
             },
             {
@@ -960,6 +962,8 @@ class TestMCPServerRemotePromptsListApi:
                 "updated_time": "2025-12-14T15:30:00Z",
                 "labels": ["文档", "API"],
                 "is_public": True,
+                "space_code": "devops",
+                "granted_space_codes": [],
                 "variables": [],
             },
         ]
@@ -992,6 +996,8 @@ class TestMCPServerRemotePromptsListApi:
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码"],
                 "is_public": True,
+                "space_code": "devops",
+                "granted_space_codes": [],
                 "variables": [],
             },
         ]
@@ -1058,6 +1064,8 @@ class TestMCPServerPromptsApi:
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码", "审查"],
                 "is_public": True,
+                "space_code": "devops",
+                "granted_space_codes": ["monitor"],
                 "variables": [{"field_name": "code", "field_value": ""}],
             },
         ]
@@ -1083,6 +1091,8 @@ class TestMCPServerPromptsApi:
         assert result["data"]["prompts"][0]["name"] == "代码审查助手"
         assert result["data"]["prompts"][0]["labels"] == ["代码", "审查"]
         assert result["data"]["prompts"][0]["is_public"] is True
+        assert result["data"]["prompts"][0]["space_code"] == "devops"
+        assert result["data"]["prompts"][0]["granted_space_codes"] == ["monitor"]
         assert len(result["data"]["prompts"][0]["variables"]) == 1
 
     def test_update_create_new(self, request_view, fake_gateway, fake_mcp_server):
@@ -1097,6 +1107,8 @@ class TestMCPServerPromptsApi:
                     "updated_time": "2025-12-15T10:00:00Z",
                     "labels": ["代码", "审查"],
                     "is_public": True,
+                    "space_code": "devops",
+                    "granted_space_codes": ["monitor", "cmdb"],
                     "variables": [{"field_name": "code", "field_value": ""}],
                 },
                 {
@@ -1107,6 +1119,8 @@ class TestMCPServerPromptsApi:
                     "updated_time": "2025-12-14T15:30:00Z",
                     "labels": ["文档"],
                     "is_public": False,
+                    "space_code": "devops",
+                    "granted_space_codes": [],
                     "variables": [
                         {"field_name": "language", "field_value": "Python"},
                         {"field_name": "code", "field_value": ""},
@@ -1135,6 +1149,8 @@ class TestMCPServerPromptsApi:
         assert saved_prompts[0]["id"] == "prompt_001"
         assert saved_prompts[1]["id"] == "prompt_002"
         assert saved_prompts[0]["labels"] == ["代码", "审查"]
+        assert saved_prompts[0]["space_code"] == "devops"
+        assert saved_prompts[0]["granted_space_codes"] == ["monitor", "cmdb"]
         assert saved_prompts[1]["is_public"] is False
         assert len(saved_prompts[1]["variables"]) == 2
 

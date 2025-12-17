@@ -553,8 +553,6 @@ BKAIDEV_URL_PREFIX = BK_API_URL_TMPL.format(api_name=BK_AI_DEV_GATEWAY_NAME) + "
 BKAIDEV_API_TIMEOUT = env.int("BKAIDEV_API_TIMEOUT", 30)
 # 是否启用 Mock 模式（第三方 API 未就绪时使用）
 BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", True)
-# 是否启用mcp prompt 功能
-BK_MCP_PROMPT_ENABLED = env.bool("BK_MCP_PROMPT_ENABLED", True)
 
 # ==============================================================================
 # 网关全局配置
@@ -922,8 +920,8 @@ DEFAULT_FEATURE_FLAG = {
     ),
     # 是否展示网关运营状态
     "ENABLE_GATEWAY_OPERATION_STATUS": env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATION_STATUS", False),
-    # 是否启用 mcp prompt 功能
-    "BK_MCP_PROMPT_ENABLED": BK_MCP_PROMPT_ENABLED,
+    # 是否启用 MCP Prompt 功能
+    "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", True),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并

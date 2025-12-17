@@ -350,6 +350,10 @@ class MCPServerPromptItemSLZ(serializers.Serializer):
         child=serializers.CharField(), required=False, default=list, help_text="Prompt 标签列表"
     )
     is_public = serializers.BooleanField(required=False, default=False, help_text="Prompt 是否公开")
+    space_code = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 所在空间")
+    granted_space_codes = serializers.ListField(
+        child=serializers.CharField(), required=False, default=list, help_text="Prompt 授权的空间列表"
+    )
     variables = serializers.ListField(
         child=MCPServerPromptVariableSLZ(), required=False, default=list, help_text="Prompt 变量列表"
     )

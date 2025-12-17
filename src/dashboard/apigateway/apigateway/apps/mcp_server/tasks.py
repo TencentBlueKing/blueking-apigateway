@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from celery import shared_task
 
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ def _batch_update_mcp_server_prompts(mcp_server_prompts_to_update: Dict[int, Lis
     update_count = 0
     for mcp_server_id, new_prompts in mcp_server_prompts_to_update.items():
         try:
-            MCPServerHandler.update_prompts_content(mcp_server_id, new_prompts)
+            MCPServerPromptHandler.update_prompts_content(mcp_server_id, new_prompts)
             update_count += 1
             logger.info("Updated prompts for mcp_server_id=%d", mcp_server_id)
         except Exception:
@@ -125,7 +125,7 @@ def _fetch_remote_updated_times(all_prompt_ids: List[str]) -> Optional[Dict[str,
     从第三方平台获取 prompts 的更新时间
     """
     try:
-        return MCPServerHandler.fetch_remote_prompts_updated_time(all_prompt_ids)
+        return MCPServerPromptHandler.fetch_remote_prompts_updated_time(all_prompt_ids)
     except Exception:
         logger.exception("Failed to fetch remote prompts updated time")
         return None
@@ -139,13 +139,13 @@ def _fetch_updated_prompts(need_update_prompt_ids: Set[str]) -> Optional[Dict[st
         Dict: prompt_id -> prompt_data 的映射，失败返回 None
     """
     try:
-        updated_prompts = MCPServerHandler.fetch_remote_prompts_by_ids(list(need_update_prompt_ids))
+        updated_prompts = MCPServerPromptHandler.fetch_remote_prompts_by_ids(list(need_update_prompt_ids))
     except Exception:
         logger.exception("Failed to fetch remote prompts by ids")
         return None
 
     if not updated_prompts:
-        return None
+        return {}
 
     return {p["id"]: p for p in updated_prompts if p.get("id")}
 
@@ -166,7 +166,7 @@ def sync_mcp_server_prompts():
     logger.info("Starting sync_mcp_server_prompts task")
 
     # 1. 获取所有配置了 prompts 的 MCPServer
-    mcp_servers_with_prompts = MCPServerHandler.get_all_mcp_servers_with_prompts()
+    mcp_servers_with_prompts = MCPServerPromptHandler.get_all_mcp_servers_with_prompts()
     if not mcp_servers_with_prompts:
         logger.info("No MCPServer with prompts found, skip sync")
         return
