@@ -33,7 +33,7 @@
         <BkInput
           v-model="keyword"
           class="mx-10px"
-          :placeholder="t('请输入关键字或选择条件搜索')"
+          :placeholder="t('请输入 SDK 版本号，资源版本或语言')"
           @change="handleKeywordChange"
         />
       </div>

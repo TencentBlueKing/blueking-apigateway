@@ -20,6 +20,7 @@
   <div class="sideslider-wrapper">
     <BkSideslider
       v-model:is-show="isShow"
+      render-directive="if"
       quick-close
       :width="960"
       ext-cls="stage-sideslider-cls"
@@ -73,7 +74,7 @@
                       <BkFormItem
                         :label="t('环境名称')"
                         required
-                        :property="'name'"
+                        property="name"
                         :rules="rules.name"
                       >
                         <BkInput
@@ -589,7 +590,7 @@ const rules = {
     },
     {
       validator(value: string) {
-        const reg = /^[a-zA-Z][a-zA-Z0-9_-]{0,19}$/;
+        const reg = /^[a-zA-Z][a-zA-Z0-9_-]{1,19}$/;
         return reg.test(value);
       },
       message: t('请输入 2-20 字符的字母、数字、连字符(-)、下划线(_)，以字母开头'),
