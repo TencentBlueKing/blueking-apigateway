@@ -144,7 +144,32 @@
                 {{ t('插件按优先级从高到低排序，多个插件优先级高的先执行。') }}
               </BkAlert>
             </div>
-            <div class="plugin-search">
+            <div class="plugin-filter">
+              <div class="mb-8px flex justify-between text-12px">
+                <div class="flex">
+                  <div class="color-#313238 mr-12px mt-2px">
+                    {{ t('全部分类') }}
+                  </div>
+                  <div class="flex gap-8px">
+                    <BkTag
+                      v-for="(tag, index) in pluginTags"
+                      :key="index"
+                      :theme="selectedTag === tag ? 'info' : undefined"
+                      class="cursor-pointer"
+                      @click="() => handleTagClick(tag)"
+                    >
+                      {{ tag }}
+                    </BkTag>
+                  </div>
+                </div>
+                <BkButton
+                  text
+                  theme="primary"
+                  @click="selectedTag = ''"
+                >
+                  {{ t('清空选项') }}
+                </BkButton>
+              </div>
               <BkInput
                 v-model="searchValue"
                 clearable
@@ -156,7 +181,7 @@
             <BkLoading :loading="isPluginListLoading">
               <div class="plugin-list">
                 <div
-                  v-for="item in pluginListDate"
+                  v-for="item in pluginList"
                   :key="item.id"
                   :class="[isBound(item) ? 'plugin disabled' : 'plugin ']"
                   @click="() => handleChoosePlugin(item)"
@@ -235,7 +260,7 @@
                                   :key="stageItem.id"
                                   class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((stageItem.name))"
-                                  @mouseleave="handlScopeLeave"
+                                  @mouseleave="handleScopeLeave"
                                   @click="handeleJumpStage(stageItem)"
                                 >
                                   {{ stageItem.name }}
@@ -274,7 +299,7 @@
                                   :key="resourceItem.id"
                                   class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((resourceItem.name))"
-                                  @mouseleave="handlScopeLeave"
+                                  @mouseleave="handleScopeLeave"
                                   @click="handeleJumpResource(resourceItem)"
                                 >
                                   {{ resourceItem.name }}
@@ -294,6 +319,14 @@
                   <div class="plugin-notes">
                     {{ item.notes }}
                   </div>
+                  <div class="mt-6px flex gap-8px">
+                    <BkTag
+                      v-for="(tag, index) in item.tags"
+                      :key="index"
+                    >
+                      {{ tag }}
+                    </BkTag>
+                  </div>
                   <div
                     v-show="curChooseCode === item.code"
                     class="plugin-chose"
@@ -304,7 +337,7 @@
               </div>
               <div class="mt-82px">
                 <TableEmpty
-                  v-if="!pluginListDate.length"
+                  v-if="!pluginList.length"
                   background="#f5f7fa"
                   :empty-type="tableEmptyConf.emptyType"
                   :abnormal="tableEmptyConf.isAbnormal"
@@ -325,7 +358,7 @@
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
               :type="curType"
-              :plugin-list="pluginListDate"
+              :plugin-list="pluginList"
               :binding-plugins="curBindingPlugins"
               @choose-plugin="handleChoosePlugin"
               @on-change="handleOperate"
@@ -396,6 +429,7 @@ import {
   getPluginBindingsList,
   getPluginConfig,
   getPluginListData,
+  getPluginTags,
   getScopeBindingPluginList,
 } from '@/services/source/plugin-manage';
 import ConfigDisplayTable from './ConfigDisplayTable.vue';
@@ -439,7 +473,9 @@ const curType = ref('');
 const isEditVisible = ref(false);
 const isAddSuccess = ref(false);
 const searchValue = ref('');
-const pluginListDate = ref([]);
+const pluginList = ref([]);
+const pluginTags = ref<string[]>([]);
+const selectedTag = ref('');
 const curBindingScopeData = ref<any>({});
 const curHover = ref('');
 const curBindingPlugins = ref<any>([]);
@@ -529,15 +565,25 @@ watch(
   },
 );
 
-watch(searchValue, async (v) => {
+watch(searchValue, () => {
   // 清空搜索框
-  if (!v) {
+  if (!searchValue.value) {
     const params = {
       scope_type: scopeType.value,
       scope_id: scopeId.value,
+      tag: selectedTag.value,
     };
-    await getPluginListDetails(params);
+    getPluginListDetails(params);
   }
+});
+
+watch(selectedTag, () => {
+  getPluginListDetails({
+    scope_type: scopeType.value,
+    scope_id: scopeId.value,
+    tag: selectedTag.value,
+    keyword: searchValue.value,
+  });
 });
 
 // 监听是否成功添加
@@ -611,12 +657,14 @@ const handlePluginHover = async (itemCode: string) => {
 const handleScopeHover = (name: string) => {
   curHover.value = name;
 };
-const handlScopeLeave = () => {
+
+const handleScopeLeave = () => {
   curHover.value = '';
 };
 
 const handleClearFilterKey = () => {
   searchValue.value = '';
+  selectedTag.value = '';
   // handleSearch();
 };
 
@@ -744,25 +792,29 @@ async function getBindingDetails(isLoading = false) {
 }
 
 // 获取可配置的插件列表
-async function getPluginListDetails(params: {
+const getPluginListDetails = async (params: {
   scope_type: string
   scope_id: number
   keyword?: string
-}) {
+  tag?: string
+}) => {
   try {
     isPluginListLoading.value = true;
-    const res = await getPluginListData(gatewayId.value, params);
-    pluginListDate.value = res.results || [];
+    const [pluginRes, tagRes] = await Promise.all([
+      getPluginListData(gatewayId.value, params),
+      getPluginTags(gatewayId.value),
+    ]);
+    pluginList.value = pluginRes.results || [];
+    pluginTags.value = tagRes.tags || [];
   }
-  catch (error) {
-    pluginListDate.value = [];
+  catch {
+    pluginList.value = [];
     tableEmptyConf.value.isAbnormal = true;
-    console.log('error', error);
   }
   finally {
     isPluginListLoading.value = false;
   }
-}
+};
 
 // 立即添加
 const handlePluginAdd = () => {
@@ -787,6 +839,7 @@ const handleSearch = async (keyword?: string) => {
   searchValue.value = keyword || '';
   const params = {
     keyword,
+    tag: selectedTag.value,
     scope_type: scopeType.value,
     scope_id: scopeId.value,
   };
@@ -828,6 +881,14 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = '';
 };
 
+const handleTagClick = (tag: string) => {
+  if (selectedTag.value === tag) {
+    selectedTag.value = '';
+    return;
+  }
+  selectedTag.value = tag;
+};
+
 init();
 
 </script>
@@ -864,11 +925,15 @@ init();
   min-height: calc(100vh - 171px) !important;
   background-color: #f5f7fb;
 
-  .plugin-search {
-    padding: 12px 0 20px;
+  .plugin-filter {
+    padding: 16px 24px;
+    background: #FFF;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px 0 #1919290d;
+    margin-block: 16px;
 
     .bk-input--default {
-      width: 608px;
+      width: 100%;
     }
   }
 
