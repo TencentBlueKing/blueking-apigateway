@@ -15,14 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
+import json
 from unittest.mock import patch
 
 import pytest
 from ddf import G
 
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerExtend
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
@@ -295,3 +295,165 @@ class TestMCPServerHandler:
 
         with pytest.raises(Exception):
             MCPServerHandler().get_valid_resource_names(fake_gateway.id, fake_stage.id)
+
+    # ========== Prompts 相关方法测试 ==========
+
+    def test_fetch_remote_prompts(self):
+        """测试从远程获取 prompts 列表"""
+        mock_prompts = [
+            {"id": "prompt_001", "name": "Prompt 1"},
+            {"id": "prompt_002", "name": "Prompt 2"},
+        ]
+
+        with patch(
+            "apigateway.biz.mcp_server.mcp_server.bkaidev.fetch_prompts_list", return_value=mock_prompts
+        ) as mock_fetch:
+            result = MCPServerHandler.fetch_remote_prompts(username="admin", keyword="test")
+
+            mock_fetch.assert_called_once_with(username="admin", keyword="test")
+            assert result == mock_prompts
+
+    def test_fetch_remote_prompts_empty_keyword(self):
+        """测试从远程获取 prompts 列表（无关键字）"""
+        mock_prompts = [{"id": "prompt_001", "name": "Prompt 1"}]
+
+        with patch(
+            "apigateway.biz.mcp_server.mcp_server.bkaidev.fetch_prompts_list", return_value=mock_prompts
+        ) as mock_fetch:
+            result = MCPServerHandler.fetch_remote_prompts(username="admin")
+
+            mock_fetch.assert_called_once_with(username="admin", keyword="")
+            assert result == mock_prompts
+
+    def test_get_prompts_empty(self, fake_gateway, fake_stage):
+        """测试获取 prompts（无数据）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert result == []
+
+    def test_get_prompts_with_data(self, fake_gateway, fake_stage):
+        """测试获取 prompts（有数据）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        prompts = [
+            {"id": "prompt_001", "name": "代码审查助手"},
+            {"id": "prompt_002", "name": "API 文档生成器"},
+        ]
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps(prompts),
+        )
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert len(result) == 2
+        assert result[0]["id"] == "prompt_001"
+        assert result[1]["id"] == "prompt_002"
+
+    def test_get_prompts_invalid_json(self, fake_gateway, fake_stage):
+        """测试获取 prompts（无效 JSON）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content="invalid json",
+        )
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert result == []
+
+    def test_get_prompts_empty_content(self, fake_gateway, fake_stage):
+        """测试获取 prompts（空内容）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content="",
+        )
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert result == []
+
+    def test_save_prompts_create(self, fake_gateway, fake_stage):
+        """测试保存 prompts（创建新记录）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        prompts = [
+            {"id": "prompt_001", "name": "代码审查助手"},
+        ]
+
+        MCPServerHandler.save_prompts(mcp_server.id, prompts, "admin")
+
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+
+        assert json.loads(extend.content) == prompts
+        assert extend.created_by == "admin"
+        assert extend.updated_by == "admin"
+
+    def test_save_prompts_update(self, fake_gateway, fake_stage):
+        """测试保存 prompts（更新已有记录）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        old_prompts = [{"id": "old_prompt"}]
+        new_prompts = [{"id": "new_prompt", "name": "新 Prompt"}]
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps(old_prompts),
+            created_by="creator",
+            updated_by="creator",
+        )
+
+        MCPServerHandler.save_prompts(mcp_server.id, new_prompts, "updater")
+
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+
+        assert json.loads(extend.content) == new_prompts
+        assert extend.created_by == "creator"  # 创建者不变
+        assert extend.updated_by == "updater"  # 更新者变化
+
+    def test_delete_prompts(self, fake_gateway, fake_stage):
+        """测试删除 prompts"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": "prompt_001"}]),
+        )
+
+        assert MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).exists()
+
+        MCPServerHandler.delete_prompts(mcp_server.id)
+
+        assert not MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        ).exists()
+
+    def test_delete_prompts_not_exists(self, fake_gateway, fake_stage):
+        """测试删除 prompts（不存在时不报错）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        # 不应抛出异常
+        MCPServerHandler.delete_prompts(mcp_server.id)
