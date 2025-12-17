@@ -39,24 +39,20 @@ class TestMCPServerPromptHandler:
             {
                 "id": "prompt_001",
                 "name": "代码审查助手",
-                "description": "帮助进行代码审查",
                 "content": "你是一个代码审查专家...",
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码", "审查"],
                 "is_public": True,
                 "space_code": "devops",
-                "granted_space_codes": ["monitor", "cmdb"],
             },
             {
                 "id": "prompt_002",
                 "name": "API 文档生成器",
-                "description": "根据代码自动生成 API 文档",
                 "content": "请根据以下代码生成 API 文档...",
                 "updated_time": "2025-12-14T15:30:00Z",
                 "labels": ["文档"],
                 "is_public": False,
                 "space_code": "devops",
-                "granted_space_codes": [],
             },
         ]
 

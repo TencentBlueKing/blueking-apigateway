@@ -29,68 +29,88 @@ from .utils import do_blueking_http_request, gen_gateway_headers
 
 logger = logging.getLogger(__name__)
 
-# Mock 数据
+# Mock 数据（模拟第三方 API 返回格式）
 _MOCK_PROMPTS: List[Dict[str, Any]] = [
     {
-        "id": "prompt_001",
-        "name": "代码审查助手",
-        "description": "帮助进行代码审查，发现潜在问题和优化建议",
-        "content": "你是一个专业的代码审查专家，请帮我审查以下代码，指出潜在的问题、安全隐患和优化建议。\n\n代码：\n{{code}}",
-        "updated_time": "2025-12-15T10:00:00Z",
-        "labels": ["代码", "审查", "开发工具"],
-        "is_public": True,
-        "space_code": "devops",
-        "granted_space_codes": ["monitor", "cmdb"],
+        "prompt_code": "prompt_001",
+        "prompt_name": "代码审查助手",
+        "prompt_content": "你是一个专业的代码审查专家，请帮我审查以下代码，指出潜在的问题、安全隐患和优化建议。\n\n代码：\n{{code}}",
+        "updated_at": "2025-12-15T10:00:00Z",
+        "tags": ["代码", "审查", "开发工具"],
+        "generate_type": "public",
+        "space_id": "devops",
     },
     {
-        "id": "prompt_002",
-        "name": "API 文档生成器",
-        "description": "根据代码自动生成 API 文档",
-        "content": "请根据以下 {{language}} 代码生成详细的 API 文档，包括接口描述、参数说明、返回值说明和使用示例。\n\n代码：\n{{code}}",
-        "updated_time": "2025-12-14T15:30:00Z",
-        "labels": ["文档", "API", "自动化"],
-        "is_public": True,
-        "space_code": "devops",
-        "granted_space_codes": [],
+        "prompt_code": "prompt_002",
+        "prompt_name": "API 文档生成器",
+        "prompt_content": "请根据以下 {{language}} 代码生成详细的 API 文档，包括接口描述、参数说明、返回值说明和使用示例。\n\n代码：\n{{code}}",
+        "updated_at": "2025-12-14T15:30:00Z",
+        "tags": ["文档", "API", "自动化"],
+        "generate_type": "public",
+        "space_id": "devops",
     },
     {
-        "id": "prompt_003",
-        "name": "SQL 优化顾问",
-        "description": "分析 SQL 语句并提供优化建议",
-        "content": "你是一个数据库优化专家，请分析以下 SQL 语句，提供性能优化建议和最佳实践。\n\n数据库类型：{{db_type}}\nSQL 语句：\n{{sql}}",
-        "updated_time": "2025-12-13T09:15:00Z",
-        "labels": ["数据库", "SQL", "性能优化"],
-        "is_public": False,
-        "space_code": "dba",
-        "granted_space_codes": ["monitor"],
+        "prompt_code": "prompt_003",
+        "prompt_name": "SQL 优化顾问",
+        "prompt_content": "你是一个数据库优化专家，请分析以下 SQL 语句，提供性能优化建议和最佳实践。\n\n数据库类型：{{db_type}}\nSQL 语句：\n{{sql}}",
+        "updated_at": "2025-12-13T09:15:00Z",
+        "tags": ["数据库", "SQL", "性能优化"],
+        "generate_type": "space",
+        "space_id": "dba",
     },
     {
-        "id": "prompt_004",
-        "name": "单元测试生成器",
-        "description": "为给定的函数生成单元测试用例",
-        "content": "请为以下 {{language}} 函数生成完整的单元测试用例，包括正常情况、边界情况和异常情况的测试。\n\n函数代码：\n{{function_code}}",
-        "updated_time": "2025-12-12T14:20:00Z",
-        "labels": ["测试", "单元测试", "质量保证"],
-        "is_public": True,
-        "space_code": "qa",
-        "granted_space_codes": ["devops"],
+        "prompt_code": "prompt_004",
+        "prompt_name": "单元测试生成器",
+        "prompt_content": "请为以下 {{language}} 函数生成完整的单元测试用例，包括正常情况、边界情况和异常情况的测试。\n\n函数代码：\n{{function_code}}",
+        "updated_at": "2025-12-12T14:20:00Z",
+        "tags": ["测试", "单元测试", "质量保证"],
+        "generate_type": "public",
+        "space_id": "qa",
     },
     {
-        "id": "prompt_005",
-        "name": "错误日志分析",
-        "description": "分析错误日志并给出解决方案",
-        "content": "请分析以下错误日志，找出问题根因并提供解决方案。\n\n应用名称：{{app_name}}\n错误日志：\n{{error_log}}",
-        "updated_time": "2025-12-11T11:45:00Z",
-        "labels": ["运维", "日志分析", "故障排查"],
-        "is_public": False,
-        "space_code": "ops",
-        "granted_space_codes": ["monitor", "devops"],
+        "prompt_code": "prompt_005",
+        "prompt_name": "错误日志分析",
+        "prompt_content": "请分析以下错误日志，找出问题根因并提供解决方案。\n\n应用名称：{{app_name}}\n错误日志：\n{{error_log}}",
+        "updated_at": "2025-12-11T11:45:00Z",
+        "tags": ["运维", "日志分析", "故障排查"],
+        "generate_type": "space",
+        "space_id": "ops",
     },
 ]
 
 
+def _convert_prompt(remote_prompt: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    将第三方 API 返回的 prompt 数据转换为内部格式
+
+    字段映射：
+        - prompt_code -> id
+        - prompt_name -> name
+        - prompt_content -> content
+        - updated_at -> updated_time
+        - tags -> labels
+        - generate_type: public(所有空间可用) / space(本空间可用) -> is_public
+        - space_id -> space_code
+    """
+    generate_type = remote_prompt.get("generate_type", "space")
+    return {
+        "id": remote_prompt.get("prompt_code", ""),
+        "name": remote_prompt.get("prompt_name", ""),
+        "content": remote_prompt.get("prompt_content", ""),
+        "updated_time": remote_prompt.get("updated_at", ""),
+        "labels": remote_prompt.get("tags", []),
+        "is_public": generate_type == "public",
+        "space_code": remote_prompt.get("space_id", ""),
+    }
+
+
+def _convert_prompts(remote_prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """批量转换 prompts 数据"""
+    return [_convert_prompt(p) for p in remote_prompts]
+
+
 def _get_mock_prompts_by_keyword(keyword: str = "") -> List[Dict[str, Any]]:
-    """根据关键字过滤 mock prompts"""
+    """根据关键字过滤 mock prompts（返回原始格式，不做转换）"""
     if not keyword:
         return _MOCK_PROMPTS
 
@@ -98,22 +118,20 @@ def _get_mock_prompts_by_keyword(keyword: str = "") -> List[Dict[str, Any]]:
     return [
         p
         for p in _MOCK_PROMPTS
-        if keyword_lower in p["name"].lower()
-        or keyword_lower in p["description"].lower()
-        or any(keyword_lower in label.lower() for label in p.get("labels", []))
+        if keyword_lower in p["prompt_name"].lower() or any(keyword_lower in tag.lower() for tag in p.get("tags", []))
     ]
 
 
 def _get_mock_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
-    """根据 ID 列表获取 mock prompts"""
+    """根据 ID 列表获取 mock prompts（返回原始格式，不做转换）"""
     id_set = set(prompt_ids)
-    return [p for p in _MOCK_PROMPTS if p["id"] in id_set]
+    return [p for p in _MOCK_PROMPTS if p["prompt_code"] in id_set]
 
 
 def _get_mock_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
     """获取 mock prompts 的更新时间"""
     id_set = set(prompt_ids)
-    return {p["id"]: p["updated_time"] for p in _MOCK_PROMPTS if p["id"] in id_set}
+    return {p["prompt_code"]: p["updated_at"] for p in _MOCK_PROMPTS if p["prompt_code"] in id_set}
 
 
 def _call_bkaidev_api(
@@ -157,12 +175,12 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
         keyword: 搜索关键字
 
     Returns:
-        prompts 列表
+        prompts 列表（已转换为内部格式）
     """
     # Mock 模式：返回 mock 数据
     if settings.BKAIDEV_USE_MOCK:
         logger.info("BKAIDEV_USE_MOCK is enabled, returning mock data for fetch_prompts_list")
-        return _get_mock_prompts_by_keyword(keyword)
+        return _convert_prompts(_get_mock_prompts_by_keyword(keyword))
 
     if not settings.BKAIDEV_URL_PREFIX:
         raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
@@ -178,7 +196,7 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
         raise error_codes.REMOTE_REQUEST_ERROR.format(
             f"fetch_prompts_list expected list response, got {type(result).__name__}"
         )
-    return result
+    return _convert_prompts(result)
 
 
 def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
@@ -189,7 +207,7 @@ def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
         prompt_ids: prompt ID 列表
 
     Returns:
-        prompts 详情列表
+        prompts 详情列表（已转换为内部格式）
     """
     if not prompt_ids:
         return []
@@ -197,7 +215,7 @@ def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
     # Mock 模式：返回 mock 数据
     if settings.BKAIDEV_USE_MOCK:
         logger.info("BKAIDEV_USE_MOCK is enabled, returning mock data for fetch_prompts_by_ids")
-        return _get_mock_prompts_by_ids(prompt_ids)
+        return _convert_prompts(_get_mock_prompts_by_ids(prompt_ids))
 
     if not settings.BKAIDEV_URL_PREFIX:
         raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
@@ -209,7 +227,7 @@ def fetch_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
         raise error_codes.REMOTE_REQUEST_ERROR.format(
             f"fetch_prompts_by_ids expected list response, got {type(result).__name__}"
         )
-    return result
+    return _convert_prompts(result)
 
 
 def fetch_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:

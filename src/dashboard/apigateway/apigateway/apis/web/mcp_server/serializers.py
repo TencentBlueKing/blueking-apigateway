@@ -328,22 +328,11 @@ class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
 # ========== Prompts 相关 Serializers ==========
 
 
-class MCPServerPromptVariableSLZ(serializers.Serializer):
-    """Prompt 变量的序列化器"""
-
-    field_name = serializers.CharField(required=True, help_text="变量名称")
-    field_value = serializers.CharField(required=False, allow_blank=True, default="", help_text="变量值")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptVariableSLZ"
-
-
 class MCPServerPromptItemSLZ(serializers.Serializer):
     """单个 Prompt 项的序列化器"""
 
     id = serializers.CharField(required=True, help_text="Prompt ID（第三方平台的唯一标识）")
     name = serializers.CharField(required=True, help_text="Prompt 名称")
-    description = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 描述")
     content = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 内容")
     updated_time = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 更新时间")
     labels = serializers.ListField(
@@ -351,12 +340,6 @@ class MCPServerPromptItemSLZ(serializers.Serializer):
     )
     is_public = serializers.BooleanField(required=False, default=False, help_text="Prompt 是否公开")
     space_code = serializers.CharField(required=False, allow_blank=True, default="", help_text="Prompt 所在空间")
-    granted_space_codes = serializers.ListField(
-        child=serializers.CharField(), required=False, default=list, help_text="Prompt 授权的空间列表"
-    )
-    variables = serializers.ListField(
-        child=MCPServerPromptVariableSLZ(), required=False, default=list, help_text="Prompt 变量列表"
-    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerPromptItemSLZ"

@@ -945,24 +945,20 @@ class TestMCPServerRemotePromptsListApi:
             {
                 "id": "prompt_001",
                 "name": "代码审查助手",
-                "description": "帮助进行代码审查",
                 "content": "你是一个代码审查专家...",
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码", "审查"],
                 "is_public": True,
                 "space_code": "devops",
-                "granted_space_codes": ["monitor"],
             },
             {
                 "id": "prompt_002",
                 "name": "API 文档生成器",
-                "description": "根据代码自动生成 API 文档",
                 "content": "请根据以下代码生成 API 文档...",
                 "updated_time": "2025-12-14T15:30:00Z",
                 "labels": ["文档", "API"],
                 "is_public": True,
                 "space_code": "devops",
-                "granted_space_codes": [],
             },
         ]
 
@@ -989,13 +985,11 @@ class TestMCPServerRemotePromptsListApi:
             {
                 "id": "prompt_001",
                 "name": "代码审查助手",
-                "description": "帮助进行代码审查",
                 "content": "你是一个代码审查专家...",
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码"],
                 "is_public": True,
                 "space_code": "devops",
-                "granted_space_codes": [],
             },
         ]
 
@@ -1056,13 +1050,11 @@ class TestMCPServerPromptsApi:
             {
                 "id": "prompt_001",
                 "name": "代码审查助手",
-                "description": "帮助进行代码审查",
                 "content": "你是一个代码审查专家...",
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": ["代码", "审查"],
                 "is_public": True,
                 "space_code": "devops",
-                "granted_space_codes": ["monitor"],
             },
         ]
 
@@ -1088,7 +1080,6 @@ class TestMCPServerPromptsApi:
         assert result["data"]["prompts"][0]["labels"] == ["代码", "审查"]
         assert result["data"]["prompts"][0]["is_public"] is True
         assert result["data"]["prompts"][0]["space_code"] == "devops"
-        assert result["data"]["prompts"][0]["granted_space_codes"] == ["monitor"]
 
     def test_update_create_new(self, request_view, fake_gateway, fake_mcp_server):
         """测试创建新的 prompts 配置"""
@@ -1097,24 +1088,20 @@ class TestMCPServerPromptsApi:
                 {
                     "id": "prompt_001",
                     "name": "代码审查助手",
-                    "description": "帮助进行代码审查",
                     "content": "你是一个代码审查专家...",
                     "updated_time": "2025-12-15T10:00:00Z",
                     "labels": ["代码", "审查"],
                     "is_public": True,
                     "space_code": "devops",
-                    "granted_space_codes": ["monitor", "cmdb"],
                 },
                 {
                     "id": "prompt_002",
                     "name": "API 文档生成器",
-                    "description": "根据代码自动生成 API 文档",
                     "content": "请根据以下代码生成 API 文档...",
                     "updated_time": "2025-12-14T15:30:00Z",
                     "labels": ["文档"],
                     "is_public": False,
                     "space_code": "devops",
-                    "granted_space_codes": [],
                 },
             ],
         }
@@ -1140,7 +1127,6 @@ class TestMCPServerPromptsApi:
         assert saved_prompts[1]["id"] == "prompt_002"
         assert saved_prompts[0]["labels"] == ["代码", "审查"]
         assert saved_prompts[0]["space_code"] == "devops"
-        assert saved_prompts[0]["granted_space_codes"] == ["monitor", "cmdb"]
         assert saved_prompts[1]["is_public"] is False
 
     def test_update_existing(self, request_view, fake_gateway, fake_mcp_server):
@@ -1149,7 +1135,6 @@ class TestMCPServerPromptsApi:
             {
                 "id": "prompt_001",
                 "name": "旧的 Prompt",
-                "description": "旧描述",
                 "content": "旧内容",
                 "updated_time": "2025-12-10T10:00:00Z",
                 "labels": [],
@@ -1169,7 +1154,6 @@ class TestMCPServerPromptsApi:
                 {
                     "id": "prompt_002",
                     "name": "新的 Prompt",
-                    "description": "新描述",
                     "content": "新内容",
                     "updated_time": "2025-12-15T10:00:00Z",
                     "labels": ["新标签"],
@@ -1204,7 +1188,6 @@ class TestMCPServerPromptsApi:
             {
                 "id": "prompt_001",
                 "name": "旧的 Prompt",
-                "description": "旧描述",
                 "content": "旧内容",
                 "updated_time": "2025-12-10T10:00:00Z",
                 "labels": [],
@@ -1245,7 +1228,6 @@ class TestMCPServerPromptsApi:
             {
                 "id": "prompt_001",
                 "name": "代码审查助手",
-                "description": "帮助进行代码审查",
                 "content": "你是一个代码审查专家...",
                 "updated_time": "2025-12-15T10:00:00Z",
                 "labels": [],
@@ -1291,7 +1273,6 @@ class TestMCPServerPromptsApi:
             "prompts": [
                 {
                     "name": "缺少 ID 的 Prompt",
-                    "description": "描述",
                 },
             ],
         }
@@ -1312,7 +1293,6 @@ class TestMCPServerPromptsApi:
             "prompts": [
                 {
                     "id": "prompt_001",
-                    "description": "缺少 name 的 Prompt",
                 },
             ],
         }
