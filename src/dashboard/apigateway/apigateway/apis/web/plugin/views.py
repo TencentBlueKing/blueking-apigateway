@@ -27,6 +27,8 @@ from rest_framework.generics import get_object_or_404
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import (
+    PLUGIN_TYPE_TAGS,
+    PLUGIN_TYPE_TAGS_EN,
     PluginBindingScopeEnum,
     PluginBindingSourceEnum,
     PluginStyleEnum,
@@ -51,6 +53,7 @@ from .serializers import (
     PluginFormOutputSLZ,
     PluginTypeOutputSLZ,
     PluginTypeQueryInputSLZ,
+    PluginTypeTagsOutputSLZ,
     ScopePluginConfigListOutputSLZ,
 )
 
@@ -138,7 +141,29 @@ class PluginTypeListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(code__icontains=keyword))
 
+        tag = data.get("tag")
+        if tag:
+            queryset = queryset.filter(_tags__contains=tag)
+
         return queryset.order_by("-priority")
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        responses={status.HTTP_200_OK: PluginTypeTagsOutputSLZ(many=True)},
+        tags=["WebAPI.Plugin"],
+        operation_description="获取插件类型的标签列表",
+    ),
+)
+class PluginTypeTagsListApi(generics.ListAPIView):
+    serializer_class = PluginTypeTagsOutputSLZ
+
+    def get(self, request, *args, **kwargs):
+        tags = []
+        tags = PLUGIN_TYPE_TAGS_EN if get_language() != "zh-cn" else PLUGIN_TYPE_TAGS
+        serializer = PluginTypeTagsOutputSLZ({"tags": tags})
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(

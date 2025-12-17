@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, List
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -69,6 +69,8 @@ class PluginType(models.Model):
         default=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
     )
     priority = models.IntegerField("优先级", default=-1, blank=True, null=True)
+    # there would not be so many tags
+    _tags = models.CharField(db_column="tags", max_length=256, default="", blank=True, null=True)
 
     objects: ClassVar[PluginTypeManager] = PluginTypeManager()
 
@@ -77,6 +79,15 @@ class PluginType(models.Model):
 
     def natural_key(self):
         return (self.code,)
+
+    @property
+    def tags(self) -> List[str]:
+        return self._tags.split(",") if self._tags else []
+
+    @tags.setter
+    def tags(self, tags: List[str]):
+        _tags = [tag.strip() for tag in tags if tag.strip()]
+        self._tags = ",".join(_tags)
 
     class Meta:
         db_table = "plugin_type"
