@@ -1081,9 +1081,15 @@ class TestMCPServerRemotePromptsListApi:
         assert resp.status_code == 200
         assert len(result["data"]["prompts"]) == 0
 
-    def test_update_invalid_prompts_missing_name(self, request_view, fake_gateway, fake_mcp_server):
+    def test_update_invalid_prompts_missing_name(self, mocker, request_view, fake_gateway, fake_mcp_server):
         """测试更新时缺少必填字段 name"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
         data = {
+            "description": fake_mcp_server.description,
             "prompts": [
                 {
                     "id": 1,
@@ -1094,7 +1100,7 @@ class TestMCPServerRemotePromptsListApi:
 
         resp = request_view(
             method="PUT",
-            view_name="mcp_server.prompts",
+            view_name="mcp_server.retrieve_update_destroy",
             path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
             gateway=fake_gateway,
             data=data,
