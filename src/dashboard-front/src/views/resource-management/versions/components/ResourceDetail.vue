@@ -48,6 +48,7 @@
                     :class="[
                       currentSource.name === item.name ? 'active' : '',
                     ]"
+                    :data-resource-id="item.id"
                     @click="() => changeCurrentSource(item)"
                   >
                     <BkOverflowTitle type="tips">
@@ -74,7 +75,10 @@
                 </BkException>
               </div>
             </div>
-            <div class="sideslider-rg">
+            <div
+              ref="resource-collapse-wrapper"
+              class="sideslider-rg"
+            >
               <div class="sideslider-rg-version-collapse">
                 <BkCollapse
                   v-model="activeIndex"
@@ -99,8 +103,13 @@
                     :class="`source-${source.name}`"
                     class="mb-12px"
                   >
-                    <span>
-                      <BkTag :theme="getMethodsTheme(source.method)">{{ source.method }}</BkTag>
+                    <span
+                      :data-name="`resource-${source.name}`"
+                      :data-id="source.id"
+                    >
+                      <BkTag :theme="getMethodsTheme(source.method)">
+                        {{ source.method }}
+                      </BkTag>
                       <span class="log-name">{{ source.name }}</span>
                     </span>
                     <template #content>
@@ -452,6 +461,7 @@ import { getMethodsTheme } from '@/utils';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
+import { useScroll } from '@vueuse/core';
 
 interface IProps {
   id: number | undefined
@@ -477,6 +487,35 @@ const exceptionDesc = ref(t('暂无数据'));
 const keywords = ref('');
 const renderIsShow = ref(false);
 const isLoading = ref(false);
+
+const resourceCollapseWrapper = useTemplateRef('resource-collapse-wrapper');
+
+useScroll(resourceCollapseWrapper, {
+  onStop: () => {
+    const panelEls = Array.from(document.querySelectorAll('.sideslider-rg-version-collapse [data-name^="resource-"]'));
+    let topPanel = panelEls.find((el) => {
+      const top = el.getBoundingClientRect().top;
+      return top > 52 && top < window.innerHeight;
+    });
+    if (!topPanel) {
+      topPanel = panelEls.reverse().find(el => el.getBoundingClientRect().top < 0);
+    }
+    if (topPanel) {
+      const id = topPanel.dataset.id;
+      const topResource = info.value.resources.find(item => item.id === Number(id));
+      if (topResource) {
+        currentSource.value = topResource;
+        const listItem = document.querySelector(`.sideslider-lf-li[data-resource-id="${id}"]`);
+        if (listItem) {
+          listItem.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      }
+    }
+  },
+});
 
 // 网关id
 const apigwId = computed(() => +route.params.id);
@@ -521,9 +560,6 @@ const getInfo = async () => {
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
         item.proxy.config = JSON.parse(item?.proxy?.config);
-      }
-      else {
-        // item.proxy.config = {};
       }
     }
   });
@@ -719,6 +755,10 @@ const handleHidden = () => {
     line-height: 36px;
     color: #63656E;
     background-color: #f0f1f5;
+
+    .bk-collapse-icon {
+      top: 9px !important;
+    }
   }
 
   .bk-collapse-content {
