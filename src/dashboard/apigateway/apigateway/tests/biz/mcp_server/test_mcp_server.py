@@ -457,3 +457,98 @@ class TestMCPServerHandler:
 
         # 不应抛出异常
         MCPServerHandler.delete_prompts(mcp_server.id)
+
+    def test_get_prompts_count_empty(self, fake_gateway, fake_stage):
+        """测试获取 prompts 数量（无数据）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        result = MCPServerHandler.get_prompts_count(mcp_server.id)
+
+        assert result == 0
+
+    def test_get_prompts_count_with_data(self, fake_gateway, fake_stage):
+        """测试获取 prompts 数量（有数据）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        prompts = [
+            {"id": "prompt_001", "name": "代码审查助手"},
+            {"id": "prompt_002", "name": "API 文档生成器"},
+            {"id": "prompt_003", "name": "测试用例生成器"},
+        ]
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps(prompts),
+        )
+
+        result = MCPServerHandler.get_prompts_count(mcp_server.id)
+
+        assert result == 3
+
+    def test_get_prompts_count_map_empty(self, fake_gateway, fake_stage):
+        """测试批量获取 prompts 数量（无数据）"""
+        mcp_server1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server2 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        result = MCPServerHandler.get_prompts_count_map([mcp_server1.id, mcp_server2.id])
+
+        assert result == {mcp_server1.id: 0, mcp_server2.id: 0}
+
+    def test_get_prompts_count_map_with_data(self, fake_gateway, fake_stage):
+        """测试批量获取 prompts 数量（有数据）"""
+        mcp_server1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server2 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server3 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        # mcp_server1 有 2 个 prompts
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server1,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1}, {"id": 2}]),
+        )
+
+        # mcp_server2 有 3 个 prompts
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server2,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1}, {"id": 2}, {"id": 3}]),
+        )
+
+        # mcp_server3 没有 prompts
+
+        result = MCPServerHandler.get_prompts_count_map([mcp_server1.id, mcp_server2.id, mcp_server3.id])
+
+        assert result == {mcp_server1.id: 2, mcp_server2.id: 3, mcp_server3.id: 0}
+
+    def test_get_prompts_count_map_invalid_json(self, fake_gateway, fake_stage):
+        """测试批量获取 prompts 数量（无效 JSON）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content="invalid json",
+        )
+
+        result = MCPServerHandler.get_prompts_count_map([mcp_server.id])
+
+        assert result == {mcp_server.id: 0}
+
+    def test_get_prompts_count_map_empty_content(self, fake_gateway, fake_stage):
+        """测试批量获取 prompts 数量（空内容）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content="",
+        )
+
+        result = MCPServerHandler.get_prompts_count_map([mcp_server.id])
+
+        assert result == {mcp_server.id: 0}

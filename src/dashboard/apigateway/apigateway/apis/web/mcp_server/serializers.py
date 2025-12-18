@@ -127,8 +127,14 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
+    prompts_count = serializers.SerializerMethodField(help_text="Prompts 数量")
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListOutputSLZ"
+
+    def get_prompts_count(self, obj) -> int:
+        prompts_count_map = self.context.get("prompts_count_map", {})
+        return prompts_count_map.get(obj.id, 0)
 
 
 class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):

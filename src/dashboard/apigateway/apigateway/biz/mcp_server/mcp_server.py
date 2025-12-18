@@ -332,6 +332,45 @@ class MCPServerHandler:
             type=MCPServerExtendTypeEnum.PROMPTS.value,
         ).delete()
 
+    @staticmethod
+    def get_prompts_count(mcp_server_id: int) -> int:
+        """获取 MCPServer 已关联的 prompts 数量
+
+        Args:
+            mcp_server_id: MCPServer ID
+
+        Returns:
+            prompts 数量
+        """
+        prompts = MCPServerHandler.get_prompts(mcp_server_id)
+        return len(prompts)
+
+    @staticmethod
+    def get_prompts_count_map(mcp_server_ids: List[int]) -> Dict[int, int]:
+        """批量获取 MCPServer 的 prompts 数量
+
+        Args:
+            mcp_server_ids: MCPServer ID 列表
+
+        Returns:
+            {mcp_server_id: prompts_count} 映射
+        """
+        extends = MCPServerExtend.objects.filter(
+            mcp_server_id__in=mcp_server_ids,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+
+        prompts_count_map: Dict[int, int] = dict.fromkeys(mcp_server_ids, 0)
+        for extend in extends:
+            if extend.content:
+                try:
+                    prompts = json.loads(extend.content)
+                    prompts_count_map[extend.mcp_server_id] = len(prompts)
+                except json.JSONDecodeError:
+                    logger.exception("Failed to parse prompts content for mcp_server_id=%s", extend.mcp_server_id)
+
+        return prompts_count_map
+
 
 class MCPServerPermissionHandler:
     @staticmethod
