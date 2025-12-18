@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 def _collect_prompt_ids(
     mcp_servers_with_prompts: List[Tuple[int, List[Dict[str, Any]]]],
-) -> Dict[str, List[Tuple[int, Dict[str, Any], int]]]:
+) -> Dict[int, List[Tuple[int, Dict[str, Any], int]]]:
     """
     收集所有 prompt_ids 及其对应的 mcp_server 信息
 
     Returns:
         Dict: prompt_id -> [(mcp_server_id, prompt_data, index), ...]
     """
-    prompt_id_to_mcp_servers: Dict[str, List[Tuple[int, Dict[str, Any], int]]] = defaultdict(list)
+    prompt_id_to_mcp_servers: Dict[int, List[Tuple[int, Dict[str, Any], int]]] = defaultdict(list)
 
     for mcp_server_id, prompts in mcp_servers_with_prompts:
         for idx, prompt in enumerate(prompts):
@@ -48,13 +48,13 @@ def _collect_prompt_ids(
 
 
 def _find_prompts_need_update(
-    prompt_id_to_mcp_servers: Dict[str, List[Tuple[int, Dict[str, Any], int]]],
-    remote_updated_times: Dict[str, str],
-) -> Set[str]:
+    prompt_id_to_mcp_servers: Dict[int, List[Tuple[int, Dict[str, Any], int]]],
+    remote_updated_times: Dict[int, str],
+) -> Set[int]:
     """
     比对更新时间，找出需要更新的 prompt_ids
     """
-    need_update_prompt_ids: Set[str] = set()
+    need_update_prompt_ids: Set[int] = set()
 
     for prompt_id, mcp_server_infos in prompt_id_to_mcp_servers.items():
         remote_updated_time = remote_updated_times.get(prompt_id)
@@ -74,7 +74,7 @@ def _find_prompts_need_update(
 
 def _build_mcp_server_prompts_to_update(
     mcp_servers_with_prompts: List[Tuple[int, List[Dict[str, Any]]]],
-    updated_prompts_map: Dict[str, Dict[str, Any]],
+    updated_prompts_map: Dict[int, Dict[str, Any]],
 ) -> Dict[int, List[Dict[str, Any]]]:
     """
     构建需要更新的 mcp_server prompts 数据
@@ -120,7 +120,7 @@ def _batch_update_mcp_server_prompts(mcp_server_prompts_to_update: Dict[int, Lis
     return update_count
 
 
-def _fetch_remote_updated_times(all_prompt_ids: List[str]) -> Optional[Dict[str, str]]:
+def _fetch_remote_updated_times(all_prompt_ids: List[int]) -> Optional[Dict[int, str]]:
     """
     从第三方平台获取 prompts 的更新时间
     """
@@ -131,7 +131,7 @@ def _fetch_remote_updated_times(all_prompt_ids: List[str]) -> Optional[Dict[str,
         return None
 
 
-def _fetch_updated_prompts(need_update_prompt_ids: Set[str]) -> Optional[Dict[str, Dict[str, Any]]]:
+def _fetch_updated_prompts(need_update_prompt_ids: Set[int]) -> Optional[Dict[int, Dict[str, Any]]]:
     """
     从第三方平台获取需要更新的 prompts 完整数据
 

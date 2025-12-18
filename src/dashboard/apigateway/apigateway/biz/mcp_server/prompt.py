@@ -30,11 +30,11 @@ class MCPServerPromptHandler:
     """MCPServer Prompt 相关处理器（供异步任务调用）"""
 
     @staticmethod
-    def fetch_remote_prompts_by_ids(prompt_ids: List[str]) -> List[Dict[str, Any]]:
+    def fetch_remote_prompts_by_ids(prompt_ids: List[int]) -> List[Dict[str, Any]]:
         """根据 prompt IDs 从 BKAIDev 平台批量获取 prompts 详情
 
         Args:
-            prompt_ids: prompt ID 列表
+            prompt_ids: prompt ID 列表 (整数类型)
 
         Returns:
             prompts 详情列表
@@ -42,11 +42,11 @@ class MCPServerPromptHandler:
         return bkaidev.fetch_prompts_by_ids(prompt_ids=prompt_ids)
 
     @staticmethod
-    def fetch_remote_prompts_updated_time(prompt_ids: List[str]) -> Dict[str, str]:
+    def fetch_remote_prompts_updated_time(prompt_ids: List[int]) -> Dict[int, str]:
         """从 BKAIDev 平台批量获取 prompts 的更新时间
 
         Args:
-            prompt_ids: prompt ID 列表
+            prompt_ids: prompt ID 列表 (整数类型)
 
         Returns:
             prompt_id -> updated_time 的映射
