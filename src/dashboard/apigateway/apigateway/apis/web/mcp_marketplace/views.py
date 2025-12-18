@@ -110,12 +110,17 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
             for stage in Stage.objects.filter(id__in=stage_ids)
         }
 
+        # 获取 prompts_count
+        mcp_server_ids = [mcp_server.id for mcp_server in page]
+        prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
             context={
                 "gateways": gateways,
                 "stages": stages,
+                "prompts_count_map": prompts_count_map,
             },
         )
 
@@ -190,12 +195,16 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         # append the maintainers
         instance.maintainers = instance.gateway.maintainers
 
+        # 获取 prompts_count
+        prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
+
         serializer = self.get_serializer(
             instance,
             context={
                 "gateways": gateways,
                 "stages": stages,
                 "labels": labels,
+                "prompts_count_map": prompts_count_map,
             },
         )
         # 返回工具列表页面需要的信息

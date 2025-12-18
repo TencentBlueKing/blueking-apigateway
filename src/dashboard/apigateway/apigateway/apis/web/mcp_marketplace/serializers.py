@@ -55,6 +55,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
+    prompts_count = serializers.SerializerMethodField(help_text="MCPServer Prompts 数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
 
     class Meta:
@@ -68,6 +69,10 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name)
+
+    def get_prompts_count(self, obj) -> int:
+        prompts_count_map = self.context.get("prompts_count_map", {})
+        return prompts_count_map.get(obj.id, 0)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
