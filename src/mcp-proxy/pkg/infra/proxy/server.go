@@ -38,6 +38,7 @@ type MCPServer struct {
 	// 生效的资源版本号
 	resourceVersionID int
 	tools             map[string]struct{}
+	prompts           map[string]struct{}
 	rwLock            *sync.RWMutex
 }
 
@@ -57,6 +58,7 @@ func NewMCPServer(
 		Transport:         transport,
 		Handler:           handler,
 		tools:             make(map[string]struct{}),
+		prompts:           make(map[string]struct{}),
 		rwLock:            &sync.RWMutex{},
 		name:              name,
 		resourceVersionID: resourceVersion,
@@ -133,4 +135,39 @@ func (s *MCPServer) UnregisterTool(toolName string) {
 // RegisterResources ...
 func (s *MCPServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
 	s.Server.RegisterResource(resource, resourceHandler)
+}
+
+// RegisterPrompt registers a prompt to the server
+func (s *MCPServer) RegisterPrompt(prompt *protocol.Prompt, promptHandler server.PromptHandlerFunc) {
+	s.Server.RegisterPrompt(prompt, promptHandler)
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	s.prompts[prompt.Name] = struct{}{}
+}
+
+// UnregisterPrompt unregisters a prompt from the server
+func (s *MCPServer) UnregisterPrompt(promptName string) {
+	s.Server.UnregisterPrompt(promptName)
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	delete(s.prompts, promptName)
+}
+
+// GetPrompts returns all registered prompt names
+func (s *MCPServer) GetPrompts() []string {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	promptNames := make([]string, 0, len(s.prompts))
+	for promptName := range s.prompts {
+		promptNames = append(promptNames, promptName)
+	}
+	return promptNames
+}
+
+// IsRegisteredPrompt checks if the prompt is registered
+func (s *MCPServer) IsRegisteredPrompt(promptName string) bool {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	_, ok := s.prompts[promptName]
+	return ok
 }

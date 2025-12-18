@@ -80,4 +80,12 @@ var (
 		1*time.Minute,
 		newRandomDuration(10),
 	)
+
+	// mcp_server_id => mcp_server_extend (prompts), may change frequently
+	mcpServerPromptCache = memory.NewCache(
+		"mcp_server_prompt",
+		tracedFuncWrapper("mcp_server_prompt", retrieveMCPServerPromptByMcpServerID),
+		1*time.Minute,
+		newRandomDuration(10),
+	)
 )

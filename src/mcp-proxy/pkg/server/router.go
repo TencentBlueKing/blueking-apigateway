@@ -94,10 +94,10 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	})
 
 	seeRouter := router.Group("/:name")
-	seeRouter.Use(middleware.APILogger())
-	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
-	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
-	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
+	// seeRouter.Use(middleware.APILogger())
+	// seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
+	// seeRouter.Use(middleware.MCPServerPermissionMiddleware())
+	// seeRouter.Use(middleware.MCPServerHeaderMiddleware())
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
 	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
 

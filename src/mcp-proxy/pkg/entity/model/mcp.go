@@ -21,6 +21,7 @@ package model
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -96,3 +97,55 @@ type MCPServerAppPermission struct {
 func (m *MCPServerAppPermission) TableName() string {
 	return "mcp_server_app_permission"
 }
+
+// MCPServerExtend MCP Server 扩展信息
+type MCPServerExtend struct {
+	ID          int       `gorm:"primaryKey;autoIncrement;column:id"`
+	McpServerID int       `gorm:"column:mcp_server_id;NOT NULL"`
+	Type        string    `gorm:"column:type;size:32;NOT NULL"`
+	Content     string    `gorm:"column:content;type:longtext;NOT NULL"`
+	CreatedBy   string    `gorm:"column:created_by;size:32"`
+	UpdatedBy   string    `gorm:"column:updated_by;size:32"`
+	CreatedTime time.Time `gorm:"column:created_time;autoCreateTime"`
+	UpdatedTime time.Time `gorm:"column:updated_time;autoUpdateTime"`
+}
+
+// TableName ...
+func (m *MCPServerExtend) TableName() string {
+	return "mcp_server_extend"
+}
+
+// MCPServerExtendType 扩展类型常量
+const (
+	MCPServerExtendTypePrompts = "prompts"
+)
+
+// GetPromptItems 当 Type 为 prompts 时，解析 Content 为 PromptItem 列表
+func (m *MCPServerExtend) GetPromptItems() (PromptItems, error) {
+	if m.Type != MCPServerExtendTypePrompts {
+		return nil, nil
+	}
+	if m.Content == "" {
+		return nil, nil
+	}
+	var items PromptItems
+	if err := json.Unmarshal([]byte(m.Content), &items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// PromptItem Prompt 配置项
+type PromptItem struct {
+	ID        int      `json:"id"`
+	Name      string   `json:"name"`
+	Code      string   `json:"code"`
+	Content   string   `json:"content"`
+	Labels    []string `json:"labels"`
+	IsPublic  bool     `json:"is_public"`
+	SpaceCode string   `json:"space_code"`
+	SpaceName string   `json:"space_name"`
+}
+
+// PromptItems ....
+type PromptItems []*PromptItem

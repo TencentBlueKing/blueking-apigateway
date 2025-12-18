@@ -133,4 +133,112 @@ var _ = Describe("MCP Models", func() {
 			Expect(model.McpServerStatusInactive).To(Equal(0))
 		})
 	})
+
+	Describe("MCPServerExtend", func() {
+		It("should have correct table name", func() {
+			extend := &model.MCPServerExtend{}
+			Expect(extend.TableName()).To(Equal("mcp_server_extend"))
+		})
+
+		It("should have correct fields", func() {
+			extend := &model.MCPServerExtend{
+				ID:          1,
+				McpServerID: 100,
+				Type:        model.MCPServerExtendTypePrompts,
+				Content:     `[{"id":1,"name":"test"}]`,
+				CreatedBy:   "admin",
+				UpdatedBy:   "admin",
+			}
+			Expect(extend.ID).To(Equal(1))
+			Expect(extend.McpServerID).To(Equal(100))
+			Expect(extend.Type).To(Equal("prompts"))
+			Expect(extend.Content).To(ContainSubstring("test"))
+			Expect(extend.CreatedBy).To(Equal("admin"))
+			Expect(extend.UpdatedBy).To(Equal("admin"))
+		})
+
+		Describe("GetPromptItems", func() {
+			It("should return nil for non-prompts type", func() {
+				extend := &model.MCPServerExtend{
+					Type:    "other",
+					Content: `[{"id":1,"name":"test"}]`,
+				}
+				items, err := extend.GetPromptItems()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(items).To(BeNil())
+			})
+
+			It("should return nil for empty content", func() {
+				extend := &model.MCPServerExtend{
+					Type:    model.MCPServerExtendTypePrompts,
+					Content: "",
+				}
+				items, err := extend.GetPromptItems()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(items).To(BeNil())
+			})
+
+			It("should parse valid prompts content", func() {
+				extend := &model.MCPServerExtend{
+					Type: model.MCPServerExtendTypePrompts,
+					Content: `[
+						{"id":1,"name":"prompt1","code":"p1","content":"Hello","labels":["label1"],"is_public":true,"space_code":"sc1","space_name":"sn1"},
+						{"id":2,"name":"prompt2","code":"p2","content":"World","labels":["label2"],"is_public":false,"space_code":"sc2","space_name":"sn2"}
+					]`,
+				}
+				items, err := extend.GetPromptItems()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(items).To(HaveLen(2))
+				Expect(items[0].ID).To(Equal(1))
+				Expect(items[0].Name).To(Equal("prompt1"))
+				Expect(items[0].Code).To(Equal("p1"))
+				Expect(items[0].Content).To(Equal("Hello"))
+				Expect(items[0].Labels).To(ContainElement("label1"))
+				Expect(items[0].IsPublic).To(BeTrue())
+				Expect(items[0].SpaceCode).To(Equal("sc1"))
+				Expect(items[0].SpaceName).To(Equal("sn1"))
+				Expect(items[1].ID).To(Equal(2))
+				Expect(items[1].Name).To(Equal("prompt2"))
+				Expect(items[1].IsPublic).To(BeFalse())
+			})
+
+			It("should return error for invalid JSON", func() {
+				extend := &model.MCPServerExtend{
+					Type:    model.MCPServerExtendTypePrompts,
+					Content: `invalid json`,
+				}
+				_, err := extend.GetPromptItems()
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
+	Describe("MCPServerExtendType Constants", func() {
+		It("should have correct values", func() {
+			Expect(model.MCPServerExtendTypePrompts).To(Equal("prompts"))
+		})
+	})
+
+	Describe("PromptItem", func() {
+		It("should have correct fields", func() {
+			item := &model.PromptItem{
+				ID:        1,
+				Name:      "test-prompt",
+				Code:      "test_code",
+				Content:   "This is a test prompt",
+				Labels:    []string{"label1", "label2"},
+				IsPublic:  true,
+				SpaceCode: "space1",
+				SpaceName: "Space One",
+			}
+			Expect(item.ID).To(Equal(1))
+			Expect(item.Name).To(Equal("test-prompt"))
+			Expect(item.Code).To(Equal("test_code"))
+			Expect(item.Content).To(Equal("This is a test prompt"))
+			Expect(item.Labels).To(HaveLen(2))
+			Expect(item.IsPublic).To(BeTrue())
+			Expect(item.SpaceCode).To(Equal("space1"))
+			Expect(item.SpaceName).To(Equal("Space One"))
+		})
+	})
 })

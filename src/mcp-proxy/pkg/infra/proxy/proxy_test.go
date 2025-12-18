@@ -259,4 +259,38 @@ var _ = Describe("MCPProxy", func() {
 			wg.Wait()
 		})
 	})
+
+	Describe("RegisterPromptsToMCPServer", func() {
+		var proxy *MCPProxy
+
+		BeforeEach(func() {
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
+
+		It("should not panic when server does not exist", func() {
+			prompts := []*PromptConfig{
+				{Name: "prompt1", Description: "desc1", Content: "content1"},
+			}
+			Expect(func() {
+				proxy.RegisterPromptsToMCPServer("non-existent", prompts)
+			}).NotTo(Panic())
+		})
+	})
+
+	Describe("UpdateMCPServerPrompts", func() {
+		var proxy *MCPProxy
+
+		BeforeEach(func() {
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
+
+		It("should not panic when server does not exist", func() {
+			prompts := []*PromptConfig{
+				{Name: "prompt1", Description: "desc1", Content: "content1"},
+			}
+			Expect(func() {
+				proxy.UpdateMCPServerPrompts("non-existent", prompts)
+			}).NotTo(Panic())
+		})
+	})
 })

@@ -129,7 +129,14 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
-			logging.GetLogger().Infof("add  mcp server[%s] success", server.Name)
+			// 加载并注册 Prompts
+			prompts := loadMCPServerPrompts(ctx, server.ID)
+			if len(prompts) > 0 {
+				mcpProxy.RegisterPromptsToMCPServer(server.Name, prompts)
+				logging.GetLogger().Infof("registered %d prompts for mcp server[%s]", len(prompts), server.Name)
+			}
+			logging.GetLogger().Infof("add  mcp server[%s] tool:%d,prompt:%d success",
+				server.Name, len(server.ResourceNames), len(prompts))
 			continue
 		}
 
@@ -139,14 +146,18 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			logging.GetLogger().Warnf("mcp server[%s] does not exist, skip tool cleanup", server.Name)
 			continue
 		}
+
+		var toolUpdated bool
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
 			if !arrutil.Contains(server.ResourceNames, tool) {
 				mcpServer.UnregisterTool(tool)
+				toolUpdated = true
 				continue
 			}
 		}
 
+		var resourceVersionUpdated bool
 		// 如果资源版本发生变化，更新mcp server
 		if wouldReloadOpenapiSpec && conf != nil {
 			// 更新mcp server
@@ -155,8 +166,15 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			if err != nil {
 				return err
 			}
-			logging.GetLogger().Infof("update mcp server[%s] success", server.Name)
+			resourceVersionUpdated = true
 		}
+
+		// 更新 Prompts（每次都检查更新）
+		prompts := loadMCPServerPrompts(ctx, server.ID)
+		mcpProxy.UpdateMCPServerPrompts(server.Name, prompts)
+		logging.GetLogger().Infof(
+			"updated prompts:%d,tools:%v,resourceVersion:%v for mcp server[%s]",
+			len(prompts), toolUpdated, resourceVersionUpdated, server.Name)
 	}
 	// 删除已经不存在的mcp server
 	for _, server := range mcpProxy.GetActiveMCPServerNames() {
@@ -206,4 +224,26 @@ func GetMCPServerConfigWithRelease(
 		resourceVersion: release.ResourceVersionID,
 		openapiFileData: openapiFileData,
 	}, nil
+}
+
+// loadMCPServerPrompts 加载 MCP Server 的 Prompts 配置
+func loadMCPServerPrompts(ctx context.Context, mcpServerID int) []*proxy.PromptConfig {
+	promptItems, err := biz.GetMCPServerPrompts(ctx, mcpServerID)
+	if err != nil {
+		logging.GetLogger().Errorf("get mcp server[id:%d] prompts error: %v", mcpServerID, err)
+		return nil
+	}
+	if len(promptItems) == 0 {
+		return nil
+	}
+
+	prompts := make([]*proxy.PromptConfig, 0, len(promptItems))
+	for _, item := range promptItems {
+		prompts = append(prompts, &proxy.PromptConfig{
+			Name:        item.Code,
+			Description: item.Name,
+			Content:     item.Content,
+		})
+	}
+	return prompts
 }
