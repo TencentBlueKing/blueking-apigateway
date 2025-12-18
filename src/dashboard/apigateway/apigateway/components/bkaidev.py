@@ -189,7 +189,13 @@ def _call_bkaidev_api(
 
     url = url_join(settings.BKAIDEV_URL_PREFIX, path)
 
-    return do_blueking_http_request("bkaidev", http_func, url, data, headers, timeout)
+    result = do_blueking_http_request("bkaidev", http_func, url, data, headers, timeout)
+    # 确保返回 dict 类型
+    if not isinstance(result, dict):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"_call_bkaidev_api expected dict response, got {type(result).__name__}"
+        )
+    return result
 
 
 def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]:
