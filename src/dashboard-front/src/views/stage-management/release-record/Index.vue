@@ -60,6 +60,7 @@
     <ReleaseStageEvent
       ref="logDetailsRef"
       :history-id="historyId"
+      @release-success="handleReleaseSuccess"
     />
 
     <!-- 可编程网关日志抽屉 -->
@@ -370,6 +371,10 @@ const getTextFromEnum = (e: Enums, key?: unknown) => {
 
 const handlePickSuccess = () => {
   handleConfirm();
+};
+
+const handleReleaseSuccess = () => {
+  tableRef.value!.fetchData(filterData.value);
 };
 
 onUnmounted(() => {
