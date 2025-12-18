@@ -195,8 +195,9 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         # append the maintainers
         instance.maintainers = instance.gateway.maintainers
 
-        # 获取 prompts_count
+        # 获取 prompts_count 和 prompts 列表
         prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
+        prompts = MCPServerHandler.get_prompts(instance.id)
 
         serializer = self.get_serializer(
             instance,
@@ -205,6 +206,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "stages": stages,
                 "labels": labels,
                 "prompts_count_map": prompts_count_map,
+                "prompts": prompts,
             },
         )
         # 返回工具列表页面需要的信息

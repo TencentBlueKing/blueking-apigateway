@@ -100,13 +100,45 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
         return self.context["labels"].get(obj.id, [])
 
 
+class MCPServerPromptOutputSLZ(serializers.Serializer):
+    """单个 Prompt 项的输出序列化器，与 MCPServerPromptItemSLZ 保持一致"""
+
+    id = serializers.IntegerField(read_only=True, help_text="Prompt ID（第三方平台的唯一标识）")
+    name = serializers.CharField(read_only=True, help_text="Prompt 名称")
+    code = serializers.CharField(read_only=True, help_text="Prompt 标识码")
+    content = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 内容")
+    updated_time = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 更新时间")
+    updated_by = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 更新人")
+    labels = serializers.ListField(
+        child=serializers.CharField(), read_only=True, default=list, help_text="Prompt 标签列表"
+    )
+    is_public = serializers.BooleanField(read_only=True, default=False, help_text="Prompt 是否公开")
+    space_code = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 所在空间标识")
+    space_name = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 所在空间名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerPromptOutputSLZ"
+
+
 class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
     guideline = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
     tools = serializers.ListField(child=MCPServerToolOutputSLZ(), help_text="MCPServer 工具列表")
+    prompts = serializers.SerializerMethodField(help_text="MCPServer Prompts 列表")
     maintainers = serializers.ListField(child=serializers.CharField(), help_text="MCPServer 维护者")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
+
+    def get_prompts(self, obj):
+        prompts = self.context.get("prompts", [])
+        # 私有的 prompt 将 content 设置为空
+        result = []
+        for p in prompts:
+            prompt_data = dict(p)
+            if not prompt_data.get("is_public", False):
+                prompt_data["content"] = ""
+            result.append(prompt_data)
+        return MCPServerPromptOutputSLZ(result, many=True).data
 
 
 class MCPServerToolDocOutputSLZ(serializers.Serializer):

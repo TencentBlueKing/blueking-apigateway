@@ -122,8 +122,8 @@ class TestMCPMarketplaceServerRetrieveApi:
         assert result["data"]["id"] == fake_public_mcp_server.id
         assert result["data"]["name"] == fake_public_mcp_server.name
 
-    def test_retrieve_with_prompts_count(self, mocker, request_view, fake_public_mcp_server):
-        """测试详情接口返回 prompts_count"""
+    def test_retrieve_with_prompts(self, mocker, request_view, fake_public_mcp_server):
+        """测试详情接口返回 prompts 列表（私有 prompt 的 content 为空）"""
         mocker.patch(
             "apigateway.apis.web.mcp_marketplace.views.render_to_string",
             return_value="# Guideline Content",
@@ -133,12 +133,39 @@ class TestMCPMarketplaceServerRetrieveApi:
             return_value=([], {}),
         )
 
-        # 给 mcp_server 添加 prompts
+        # 给 mcp_server 添加 prompts，与 MCPServerPromptItemSLZ 字段一致
+        # 包含 1 个公开的和 1 个私有的
+        prompts_data = [
+            {
+                "id": 1001,
+                "name": "代码审查助手",
+                "code": "code_review",
+                "content": "帮助审查代码",
+                "updated_time": "2025-12-18 10:00:00",
+                "updated_by": "admin",
+                "labels": ["code", "review"],
+                "is_public": True,
+                "space_code": "default",
+                "space_name": "默认空间",
+            },
+            {
+                "id": 1002,
+                "name": "API 文档生成器",
+                "code": "api_doc_gen",
+                "content": "生成 API 文档",  # 私有的，content 应该返回空
+                "updated_time": "2025-12-18 11:00:00",
+                "updated_by": "user1",
+                "labels": ["api", "doc"],
+                "is_public": False,
+                "space_code": "team",
+                "space_name": "团队空间",
+            },
+        ]
         G(
             MCPServerExtend,
             mcp_server=fake_public_mcp_server,
             type=MCPServerExtendTypeEnum.PROMPTS.value,
-            content=json.dumps([{"id": 1, "name": "prompt1"}, {"id": 2, "name": "prompt2"}]),
+            content=json.dumps(prompts_data),
         )
 
         resp = request_view(
@@ -150,6 +177,22 @@ class TestMCPMarketplaceServerRetrieveApi:
 
         assert resp.status_code == 200
         assert result["data"]["prompts_count"] == 2
+        assert "prompts" in result["data"]
+        # 返回所有 2 个 prompts
+        assert len(result["data"]["prompts"]) == 2
+
+        # 第一个是公开的，content 有值
+        assert result["data"]["prompts"][0]["id"] == 1001
+        assert result["data"]["prompts"][0]["name"] == "代码审查助手"
+        assert result["data"]["prompts"][0]["content"] == "帮助审查代码"
+        assert result["data"]["prompts"][0]["is_public"] is True
+
+        # 第二个是私有的，content 为空
+        assert result["data"]["prompts"][1]["id"] == 1002
+        assert result["data"]["prompts"][1]["name"] == "API 文档生成器"
+        assert result["data"]["prompts"][1]["content"] == ""  # 私有的 content 为空
+        assert result["data"]["prompts"][1]["is_public"] is False
+        assert result["data"]["prompts"][1]["space_name"] == "团队空间"
 
     def test_retrieve_not_public(self, request_view, fake_gateway, fake_stage, faker):
         """测试访问非公开的 MCPServer"""
