@@ -107,10 +107,15 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
             }
             for stage in Stage.objects.filter(gateway=self.request.gateway)
         }
+
+        # 获取 prompts_count
+        mcp_server_ids = [mcp_server.id for mcp_server in page]
+        prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
-            context={"stages": stages},
+            context={"stages": stages, "prompts_count_map": prompts_count_map},
         )
 
         return self.get_paginated_response(slz.data)
