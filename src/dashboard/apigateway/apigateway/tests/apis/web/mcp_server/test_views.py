@@ -77,6 +77,35 @@ class TestMCPServerListCreateApi:
         assert resp.status_code == 200
         assert result["data"]["count"] >= 1
 
+    def test_list_with_prompts_count(self, request_view, fake_gateway, fake_mcp_server):
+        """测试列表接口返回 prompts_count"""
+        # 给 fake_mcp_server 添加 prompts
+        G(
+            MCPServerExtend,
+            mcp_server=fake_mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1, "name": "prompt1"}, {"id": 2, "name": "prompt2"}]),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] >= 1
+
+        # 找到 fake_mcp_server 对应的数据
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["prompts_count"] == 2
+
     def test_create(self, mocker, request_view, fake_gateway, fake_stage, faker):
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
