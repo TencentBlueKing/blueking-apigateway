@@ -26,7 +26,6 @@ from .views import (
     MCPServerAppPermissionListCreateApi,
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
-    MCPServerPromptsApi,
     MCPServerRemotePromptsListApi,
     MCPServerRetrieveUpdateDestroyApi,
     MCPServerStageReleaseCheckApi,
@@ -65,11 +64,6 @@ urlpatterns = [
                     "user-custom-doc/",
                     MCPServerUserCustomDocApi.as_view(),
                     name="mcp_server.user_custom_doc",
-                ),
-                path(
-                    "prompts/",
-                    MCPServerPromptsApi.as_view(),
-                    name="mcp_server.prompts",
                 ),
                 path(
                     "permissions/",
