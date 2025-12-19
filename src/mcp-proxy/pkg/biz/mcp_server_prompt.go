@@ -20,6 +20,7 @@ package biz
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -28,15 +29,15 @@ import (
 )
 
 // GetMCPServerPrompts 获取 MCP Server 的 Prompts 配置
-func GetMCPServerPrompts(ctx context.Context, mcpServerID int) ([]*model.PromptItem, error) {
-	extend, err := cacheimpls.GetMCPServerPromptByMcpServerID(ctx, mcpServerID)
+func GetMCPServerPrompts(ctx context.Context, mcpServerID int) ([]*model.Prompt, error) {
+	extend, err := cacheimpls.GetMCPServerExtendByMcpServerID(ctx, mcpServerID)
 	if err != nil {
 		// 如果记录不存在，返回空列表
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	return extend.GetPromptItems()
+	return extend.GetPrompts()
 }

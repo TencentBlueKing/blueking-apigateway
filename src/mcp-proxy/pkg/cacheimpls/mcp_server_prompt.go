@@ -48,8 +48,8 @@ func retrieveMCPServerPromptByMcpServerID(ctx context.Context, k cache.Key) (int
 		Take()
 }
 
-// GetMCPServerPromptByMcpServerID 根据 MCP Server ID 获取 Prompts 配置
-func GetMCPServerPromptByMcpServerID(ctx context.Context, mcpServerID int) (extend *model.MCPServerExtend, err error) {
+// GetMCPServerExtendByMcpServerID 根据 MCP Server ID 获取扩展配置
+func GetMCPServerExtendByMcpServerID(ctx context.Context, mcpServerID int) (extend *model.MCPServerExtend, err error) {
 	key := MCPServerPromptKey{
 		McpServerID: mcpServerID,
 	}

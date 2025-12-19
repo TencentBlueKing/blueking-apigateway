@@ -153,8 +153,8 @@ func (s *MCPServer) UnregisterPrompt(promptName string) {
 	delete(s.prompts, promptName)
 }
 
-// GetPrompts returns all registered prompt names
-func (s *MCPServer) GetPrompts() []string {
+// GetPromptNames returns all registered prompt names
+func (s *MCPServer) GetPromptNames() []string {
 	s.rwLock.RLock()
 	defer s.rwLock.RUnlock()
 	promptNames := make([]string, 0, len(s.prompts))

@@ -157,15 +157,15 @@ var _ = Describe("MCP Models", func() {
 			Expect(extend.UpdatedBy).To(Equal("admin"))
 		})
 
-		Describe("GetPromptItems", func() {
+		Describe("GetPrompts", func() {
 			It("should return nil for non-prompts type", func() {
 				extend := &model.MCPServerExtend{
 					Type:    "other",
 					Content: `[{"id":1,"name":"test"}]`,
 				}
-				items, err := extend.GetPromptItems()
+				prompts, err := extend.GetPrompts()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(items).To(BeNil())
+				Expect(prompts).To(BeNil())
 			})
 
 			It("should return nil for empty content", func() {
@@ -173,9 +173,9 @@ var _ = Describe("MCP Models", func() {
 					Type:    model.MCPServerExtendTypePrompts,
 					Content: "",
 				}
-				items, err := extend.GetPromptItems()
+				prompts, err := extend.GetPrompts()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(items).To(BeNil())
+				Expect(prompts).To(BeNil())
 			})
 
 			It("should parse valid prompts content", func() {
@@ -186,20 +186,20 @@ var _ = Describe("MCP Models", func() {
 						{"id":2,"name":"prompt2","code":"p2","content":"World","labels":["label2"],"is_public":false,"space_code":"sc2","space_name":"sn2"}
 					]`,
 				}
-				items, err := extend.GetPromptItems()
+				prompts, err := extend.GetPrompts()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(items).To(HaveLen(2))
-				Expect(items[0].ID).To(Equal(1))
-				Expect(items[0].Name).To(Equal("prompt1"))
-				Expect(items[0].Code).To(Equal("p1"))
-				Expect(items[0].Content).To(Equal("Hello"))
-				Expect(items[0].Labels).To(ContainElement("label1"))
-				Expect(items[0].IsPublic).To(BeTrue())
-				Expect(items[0].SpaceCode).To(Equal("sc1"))
-				Expect(items[0].SpaceName).To(Equal("sn1"))
-				Expect(items[1].ID).To(Equal(2))
-				Expect(items[1].Name).To(Equal("prompt2"))
-				Expect(items[1].IsPublic).To(BeFalse())
+				Expect(prompts).To(HaveLen(2))
+				Expect(prompts[0].ID).To(Equal(1))
+				Expect(prompts[0].Name).To(Equal("prompt1"))
+				Expect(prompts[0].Code).To(Equal("p1"))
+				Expect(prompts[0].Content).To(Equal("Hello"))
+				Expect(prompts[0].Labels).To(ContainElement("label1"))
+				Expect(prompts[0].IsPublic).To(BeTrue())
+				Expect(prompts[0].SpaceCode).To(Equal("sc1"))
+				Expect(prompts[0].SpaceName).To(Equal("sn1"))
+				Expect(prompts[1].ID).To(Equal(2))
+				Expect(prompts[1].Name).To(Equal("prompt2"))
+				Expect(prompts[1].IsPublic).To(BeFalse())
 			})
 
 			It("should return error for invalid JSON", func() {
@@ -207,7 +207,7 @@ var _ = Describe("MCP Models", func() {
 					Type:    model.MCPServerExtendTypePrompts,
 					Content: `invalid json`,
 				}
-				_, err := extend.GetPromptItems()
+				_, err := extend.GetPrompts()
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -219,9 +219,9 @@ var _ = Describe("MCP Models", func() {
 		})
 	})
 
-	Describe("PromptItem", func() {
+	Describe("Prompt", func() {
 		It("should have correct fields", func() {
-			item := &model.PromptItem{
+			prompt := &model.Prompt{
 				ID:        1,
 				Name:      "test-prompt",
 				Code:      "test_code",
@@ -231,14 +231,14 @@ var _ = Describe("MCP Models", func() {
 				SpaceCode: "space1",
 				SpaceName: "Space One",
 			}
-			Expect(item.ID).To(Equal(1))
-			Expect(item.Name).To(Equal("test-prompt"))
-			Expect(item.Code).To(Equal("test_code"))
-			Expect(item.Content).To(Equal("This is a test prompt"))
-			Expect(item.Labels).To(HaveLen(2))
-			Expect(item.IsPublic).To(BeTrue())
-			Expect(item.SpaceCode).To(Equal("space1"))
-			Expect(item.SpaceName).To(Equal("Space One"))
+			Expect(prompt.ID).To(Equal(1))
+			Expect(prompt.Name).To(Equal("test-prompt"))
+			Expect(prompt.Code).To(Equal("test_code"))
+			Expect(prompt.Content).To(Equal("This is a test prompt"))
+			Expect(prompt.Labels).To(HaveLen(2))
+			Expect(prompt.IsPublic).To(BeTrue())
+			Expect(prompt.SpaceCode).To(Equal("space1"))
+			Expect(prompt.SpaceName).To(Equal("Space One"))
 		})
 	})
 })

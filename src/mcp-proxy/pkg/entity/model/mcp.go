@@ -120,23 +120,23 @@ const (
 	MCPServerExtendTypePrompts = "prompts"
 )
 
-// GetPromptItems 当 Type 为 prompts 时，解析 Content 为 PromptItem 列表
-func (m *MCPServerExtend) GetPromptItems() (PromptItems, error) {
+// GetPrompts 当 Type 为 prompts 时，解析 Content 为 Prompt 列表
+func (m *MCPServerExtend) GetPrompts() (Prompts, error) {
 	if m.Type != MCPServerExtendTypePrompts {
 		return nil, nil
 	}
 	if m.Content == "" {
 		return nil, nil
 	}
-	var items PromptItems
+	var items Prompts
 	if err := json.Unmarshal([]byte(m.Content), &items); err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-// PromptItem Prompt 配置项
-type PromptItem struct {
+// Prompt Prompt 配置项
+type Prompt struct {
 	ID        int      `json:"id"`
 	Name      string   `json:"name"`
 	Code      string   `json:"code"`
@@ -147,5 +147,5 @@ type PromptItem struct {
 	SpaceName string   `json:"space_name"`
 }
 
-// PromptItems ....
-type PromptItems []*PromptItem
+// Prompts ....
+type Prompts []*Prompt

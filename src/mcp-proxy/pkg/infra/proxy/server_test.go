@@ -147,9 +147,9 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 
-		Describe("GetPrompts", func() {
+		Describe("GetPromptNames", func() {
 			It("should return empty slice when no prompts", func() {
-				Expect(server.GetPrompts()).To(BeEmpty())
+				Expect(server.GetPromptNames()).To(BeEmpty())
 			})
 
 			It("should return all registered prompt names", func() {
@@ -157,7 +157,7 @@ var _ = Describe("MCPServer", func() {
 				server.prompts["prompt2"] = struct{}{}
 				server.prompts["prompt3"] = struct{}{}
 
-				prompts := server.GetPrompts()
+				prompts := server.GetPromptNames()
 				Expect(prompts).To(HaveLen(3))
 				Expect(prompts).To(ContainElements("prompt1", "prompt2", "prompt3"))
 			})
@@ -172,7 +172,7 @@ var _ = Describe("MCPServer", func() {
 					wg.Add(1)
 					go func() {
 						defer wg.Done()
-						_ = server.GetPrompts()
+						_ = server.GetPromptNames()
 						_ = server.IsRegisteredPrompt("some-prompt")
 					}()
 				}

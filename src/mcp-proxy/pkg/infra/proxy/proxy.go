@@ -239,7 +239,7 @@ func (m *MCPProxy) UpdateMCPServerPrompts(serverName string, prompts []*PromptCo
 		newPromptNames[p.Name] = struct{}{}
 	}
 	// 删除不再存在的 prompts
-	for _, existingPrompt := range mcpServer.GetPrompts() {
+	for _, existingPrompt := range mcpServer.GetPromptNames() {
 		if _, ok := newPromptNames[existingPrompt]; !ok {
 			mcpServer.UnregisterPrompt(existingPrompt)
 		}

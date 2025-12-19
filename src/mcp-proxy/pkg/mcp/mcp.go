@@ -135,7 +135,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				mcpProxy.RegisterPromptsToMCPServer(server.Name, prompts)
 				logging.GetLogger().Infof("registered %d prompts for mcp server[%s]", len(prompts), server.Name)
 			}
-			logging.GetLogger().Infof("add  mcp server[%s] tool:%d,prompt:%d success",
+			logging.GetLogger().Infof("add mcp server[%s] tool:%d, prompt:%d success",
 				server.Name, len(server.ResourceNames), len(prompts))
 			continue
 		}
@@ -173,7 +173,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		prompts := loadMCPServerPrompts(ctx, server.ID)
 		mcpProxy.UpdateMCPServerPrompts(server.Name, prompts)
 		logging.GetLogger().Infof(
-			"updated prompts:%d,tools:%v,resourceVersion:%v for mcp server[%s]",
+			"updated prompts:%d, tools:%v, resourceVersion:%v for mcp server[%s]",
 			len(prompts), toolUpdated, resourceVersionUpdated, server.Name)
 	}
 	// 删除已经不存在的mcp server
@@ -228,22 +228,22 @@ func GetMCPServerConfigWithRelease(
 
 // loadMCPServerPrompts 加载 MCP Server 的 Prompts 配置
 func loadMCPServerPrompts(ctx context.Context, mcpServerID int) []*proxy.PromptConfig {
-	promptItems, err := biz.GetMCPServerPrompts(ctx, mcpServerID)
+	prompts, err := biz.GetMCPServerPrompts(ctx, mcpServerID)
 	if err != nil {
 		logging.GetLogger().Errorf("get mcp server[id:%d] prompts error: %v", mcpServerID, err)
-		return nil
+		return []*proxy.PromptConfig{}
 	}
-	if len(promptItems) == 0 {
-		return nil
+	if len(prompts) == 0 {
+		return []*proxy.PromptConfig{}
 	}
 
-	prompts := make([]*proxy.PromptConfig, 0, len(promptItems))
-	for _, item := range promptItems {
-		prompts = append(prompts, &proxy.PromptConfig{
-			Name:        item.Code,
-			Description: item.Name,
-			Content:     item.Content,
+	result := make([]*proxy.PromptConfig, 0, len(prompts))
+	for _, p := range prompts {
+		result = append(result, &proxy.PromptConfig{
+			Name:        p.Code,
+			Description: p.Name,
+			Content:     p.Content,
 		})
 	}
-	return prompts
+	return result
 }
