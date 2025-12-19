@@ -35,38 +35,41 @@ import (
 
 var (
 	Q                                 = new(Query)
-	CoreJWT                           *coreJWT
-	CoreRelease                       *coreRelease
-	CoreReleasedResource              *coreReleasedResource
 	Gateway                           *gateway
-	McpServer                         *mcpServer
-	McpServerAppPermission            *mcpServerAppPermission
+	JWT                               *jWT
+	MCPServer                         *mCPServer
+	MCPServerAppPermission            *mCPServerAppPermission
+	MCPServerExtend                   *mCPServerExtend
 	OpenapiGatewayResourceVersionSpec *openapiGatewayResourceVersionSpec
+	Release                           *release
+	ReleasedResource                  *releasedResource
 	Stage                             *stage
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
-	CoreJWT = &Q.CoreJWT
-	CoreRelease = &Q.CoreRelease
-	CoreReleasedResource = &Q.CoreReleasedResource
 	Gateway = &Q.Gateway
-	McpServer = &Q.McpServer
-	McpServerAppPermission = &Q.McpServerAppPermission
+	JWT = &Q.JWT
+	MCPServer = &Q.MCPServer
+	MCPServerAppPermission = &Q.MCPServerAppPermission
+	MCPServerExtend = &Q.MCPServerExtend
 	OpenapiGatewayResourceVersionSpec = &Q.OpenapiGatewayResourceVersionSpec
+	Release = &Q.Release
+	ReleasedResource = &Q.ReleasedResource
 	Stage = &Q.Stage
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
 		db:                                db,
-		CoreJWT:                           newCoreJWT(db, opts...),
-		CoreRelease:                       newCoreRelease(db, opts...),
-		CoreReleasedResource:              newCoreReleasedResource(db, opts...),
 		Gateway:                           newGateway(db, opts...),
-		McpServer:                         newMcpServer(db, opts...),
-		McpServerAppPermission:            newMcpServerAppPermission(db, opts...),
+		JWT:                               newJWT(db, opts...),
+		MCPServer:                         newMCPServer(db, opts...),
+		MCPServerAppPermission:            newMCPServerAppPermission(db, opts...),
+		MCPServerExtend:                   newMCPServerExtend(db, opts...),
 		OpenapiGatewayResourceVersionSpec: newOpenapiGatewayResourceVersionSpec(db, opts...),
+		Release:                           newRelease(db, opts...),
+		ReleasedResource:                  newReleasedResource(db, opts...),
 		Stage:                             newStage(db, opts...),
 	}
 }
@@ -74,13 +77,14 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 type Query struct {
 	db *gorm.DB
 
-	CoreJWT                           coreJWT
-	CoreRelease                       coreRelease
-	CoreReleasedResource              coreReleasedResource
 	Gateway                           gateway
-	McpServer                         mcpServer
-	McpServerAppPermission            mcpServerAppPermission
+	JWT                               jWT
+	MCPServer                         mCPServer
+	MCPServerAppPermission            mCPServerAppPermission
+	MCPServerExtend                   mCPServerExtend
 	OpenapiGatewayResourceVersionSpec openapiGatewayResourceVersionSpec
+	Release                           release
+	ReleasedResource                  releasedResource
 	Stage                             stage
 }
 
@@ -89,13 +93,14 @@ func (q *Query) Available() bool { return q.db != nil }
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:                                db,
-		CoreJWT:                           q.CoreJWT.clone(db),
-		CoreRelease:                       q.CoreRelease.clone(db),
-		CoreReleasedResource:              q.CoreReleasedResource.clone(db),
 		Gateway:                           q.Gateway.clone(db),
-		McpServer:                         q.McpServer.clone(db),
-		McpServerAppPermission:            q.McpServerAppPermission.clone(db),
+		JWT:                               q.JWT.clone(db),
+		MCPServer:                         q.MCPServer.clone(db),
+		MCPServerAppPermission:            q.MCPServerAppPermission.clone(db),
+		MCPServerExtend:                   q.MCPServerExtend.clone(db),
 		OpenapiGatewayResourceVersionSpec: q.OpenapiGatewayResourceVersionSpec.clone(db),
+		Release:                           q.Release.clone(db),
+		ReleasedResource:                  q.ReleasedResource.clone(db),
 		Stage:                             q.Stage.clone(db),
 	}
 }
@@ -111,37 +116,40 @@ func (q *Query) WriteDB() *Query {
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
 		db:                                db,
-		CoreJWT:                           q.CoreJWT.replaceDB(db),
-		CoreRelease:                       q.CoreRelease.replaceDB(db),
-		CoreReleasedResource:              q.CoreReleasedResource.replaceDB(db),
 		Gateway:                           q.Gateway.replaceDB(db),
-		McpServer:                         q.McpServer.replaceDB(db),
-		McpServerAppPermission:            q.McpServerAppPermission.replaceDB(db),
+		JWT:                               q.JWT.replaceDB(db),
+		MCPServer:                         q.MCPServer.replaceDB(db),
+		MCPServerAppPermission:            q.MCPServerAppPermission.replaceDB(db),
+		MCPServerExtend:                   q.MCPServerExtend.replaceDB(db),
 		OpenapiGatewayResourceVersionSpec: q.OpenapiGatewayResourceVersionSpec.replaceDB(db),
+		Release:                           q.Release.replaceDB(db),
+		ReleasedResource:                  q.ReleasedResource.replaceDB(db),
 		Stage:                             q.Stage.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	CoreJWT                           ICoreJWTDo
-	CoreRelease                       ICoreReleaseDo
-	CoreReleasedResource              ICoreReleasedResourceDo
 	Gateway                           IGatewayDo
-	McpServer                         IMcpServerDo
-	McpServerAppPermission            IMcpServerAppPermissionDo
+	JWT                               IJWTDo
+	MCPServer                         IMCPServerDo
+	MCPServerAppPermission            IMCPServerAppPermissionDo
+	MCPServerExtend                   IMCPServerExtendDo
 	OpenapiGatewayResourceVersionSpec IOpenapiGatewayResourceVersionSpecDo
+	Release                           IReleaseDo
+	ReleasedResource                  IReleasedResourceDo
 	Stage                             IStageDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		CoreJWT:                           q.CoreJWT.WithContext(ctx),
-		CoreRelease:                       q.CoreRelease.WithContext(ctx),
-		CoreReleasedResource:              q.CoreReleasedResource.WithContext(ctx),
 		Gateway:                           q.Gateway.WithContext(ctx),
-		McpServer:                         q.McpServer.WithContext(ctx),
-		McpServerAppPermission:            q.McpServerAppPermission.WithContext(ctx),
+		JWT:                               q.JWT.WithContext(ctx),
+		MCPServer:                         q.MCPServer.WithContext(ctx),
+		MCPServerAppPermission:            q.MCPServerAppPermission.WithContext(ctx),
+		MCPServerExtend:                   q.MCPServerExtend.WithContext(ctx),
 		OpenapiGatewayResourceVersionSpec: q.OpenapiGatewayResourceVersionSpec.WithContext(ctx),
+		Release:                           q.Release.WithContext(ctx),
+		ReleasedResource:                  q.ReleasedResource.WithContext(ctx),
 		Stage:                             q.Stage.WithContext(ctx),
 	}
 }

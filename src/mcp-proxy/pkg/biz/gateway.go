@@ -29,8 +29,8 @@ import (
 
 // GetRelease ...
 func GetRelease(ctx context.Context, gatewayID int, stageID int) (*model.Release, error) {
-	r := repo.CoreRelease
-	return repo.CoreRelease.WithContext(ctx).Where(r.GatewayID.Eq(gatewayID), r.StageID.Eq(stageID)).First()
+	r := repo.Release
+	return repo.Release.WithContext(ctx).Where(r.GatewayID.Eq(gatewayID), r.StageID.Eq(stageID)).First()
 }
 
 // GetOpenapiGatewayResourceVersionSpec ...

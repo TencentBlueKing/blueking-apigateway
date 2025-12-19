@@ -47,9 +47,9 @@ func retrieveMCPServerPermission(ctx context.Context, k cache.Key) (interface{},
 	// Cast the key to the correct type
 	key := k.(MCPPermissionCacheKey)
 	// Set the repository to the McpServerAppPermission
-	r := repo.McpServerAppPermission
+	r := repo.MCPServerAppPermission
 	// Use the CoreJWT repository to query the database for the permission
-	return repo.McpServerAppPermission.WithContext(ctx).
+	return repo.MCPServerAppPermission.WithContext(ctx).
 		Where(r.McpServerId.Eq(key.MCPServerID), r.BkAppCode.Eq(key.AppCode)).
 		Take()
 }

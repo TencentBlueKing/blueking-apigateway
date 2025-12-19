@@ -21,57 +21,51 @@ package cacheimpls
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/TencentBlueKing/gopkg/cache"
-	"github.com/spf13/cast"
 
-	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/entity/model"
 	"mcp_proxy/pkg/repo"
-	"mcp_proxy/pkg/util"
 )
 
-// JWTInfoCacheKey is the key of jwt info
-type JWTInfoCacheKey struct {
-	GatewayID int
+// MCPServerExtendKey is the key for mcp server prompt cache
+type MCPServerExtendKey struct {
+	McpServerID int
+	Type        string
 }
 
-// Key return the key string of jwt public key
-func (k JWTInfoCacheKey) Key() string {
-	return cast.ToString(k.GatewayID)
+// Key return the key string
+func (k MCPServerExtendKey) Key() string {
+	return strconv.Itoa(k.McpServerID)
 }
 
-func retrieveJWTInfo(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(JWTInfoCacheKey)
-	r := repo.JWT
-	jwtInfo, err := repo.JWT.WithContext(ctx).Where(r.GatewayID.Eq(key.GatewayID)).Take()
-	if err != nil {
-		return nil, err
-	}
-	decodePrivateKey, err := util.AESGCMDecrypt(
-		config.G.McpServer.EncryptKey, config.G.McpServer.CryptoNonce, jwtInfo.EncryptedPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	jwtInfo.PrivateKey = decodePrivateKey
-	return jwtInfo, nil
+func retrieveMCPServerExtendByMcpServerID(ctx context.Context, k cache.Key) (interface{}, error) {
+	key := k.(MCPServerExtendKey)
+	r := repo.MCPServerExtend
+	return repo.MCPServerExtend.WithContext(ctx).
+		Where(r.McpServerID.Eq(key.McpServerID)).
+		Where(r.Type.Eq(key.Type)).Take()
 }
 
-// GetJWTInfo will get the jwt info from cache by gatewayID
-func GetJWTInfo(ctx context.Context, gatewayID int) (jwt *model.JWT, err error) {
-	key := JWTInfoCacheKey{
-		GatewayID: gatewayID,
+// GetMCPServerExtendByMcpServerID 根据 MCP Server ID 获取扩展配置
+func GetMCPServerExtendByMcpServerID(ctx context.Context, mcpServerID int, extendType string) (
+	extend *model.MCPServerExtend, err error,
+) {
+	key := MCPServerExtendKey{
+		McpServerID: mcpServerID,
+		Type:        extendType,
 	}
 	var value interface{}
-	value, err = cacheGet(ctx, jwtInfoCache, key)
+	value, err = cacheGet(ctx, mcpServerExtendCache, key)
 	if err != nil {
 		return
 	}
 
 	var ok bool
-	jwt, ok = value.(*model.JWT)
+	extend, ok = value.(*model.MCPServerExtend)
 	if !ok {
-		err = errors.New("not model.CoreJWT in cache")
+		err = errors.New("not model.MCPServerExtend in cache")
 		return
 	}
 	return

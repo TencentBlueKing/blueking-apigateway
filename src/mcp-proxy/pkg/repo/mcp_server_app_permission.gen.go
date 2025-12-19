@@ -38,27 +38,27 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-func newMcpServerAppPermission(db *gorm.DB, opts ...gen.DOOption) mcpServerAppPermission {
-	_mcpServerAppPermission := mcpServerAppPermission{}
+func newMCPServerAppPermission(db *gorm.DB, opts ...gen.DOOption) mCPServerAppPermission {
+	_mCPServerAppPermission := mCPServerAppPermission{}
 
-	_mcpServerAppPermission.mcpServerAppPermissionDo.UseDB(db, opts...)
-	_mcpServerAppPermission.mcpServerAppPermissionDo.UseModel(&model.MCPServerAppPermission{})
+	_mCPServerAppPermission.mCPServerAppPermissionDo.UseDB(db, opts...)
+	_mCPServerAppPermission.mCPServerAppPermissionDo.UseModel(&model.MCPServerAppPermission{})
 
-	tableName := _mcpServerAppPermission.mcpServerAppPermissionDo.TableName()
-	_mcpServerAppPermission.ALL = field.NewAsterisk(tableName)
-	_mcpServerAppPermission.Id = field.NewInt(tableName, "id")
-	_mcpServerAppPermission.BkAppCode = field.NewString(tableName, "bk_app_code")
-	_mcpServerAppPermission.Expires = field.NewTime(tableName, "expires")
-	_mcpServerAppPermission.GrantType = field.NewString(tableName, "grant_type")
-	_mcpServerAppPermission.McpServerId = field.NewInt(tableName, "mcp_server_id")
+	tableName := _mCPServerAppPermission.mCPServerAppPermissionDo.TableName()
+	_mCPServerAppPermission.ALL = field.NewAsterisk(tableName)
+	_mCPServerAppPermission.Id = field.NewInt(tableName, "id")
+	_mCPServerAppPermission.BkAppCode = field.NewString(tableName, "bk_app_code")
+	_mCPServerAppPermission.Expires = field.NewTime(tableName, "expires")
+	_mCPServerAppPermission.GrantType = field.NewString(tableName, "grant_type")
+	_mCPServerAppPermission.McpServerId = field.NewInt(tableName, "mcp_server_id")
 
-	_mcpServerAppPermission.fillFieldMap()
+	_mCPServerAppPermission.fillFieldMap()
 
-	return _mcpServerAppPermission
+	return _mCPServerAppPermission
 }
 
-type mcpServerAppPermission struct {
-	mcpServerAppPermissionDo mcpServerAppPermissionDo
+type mCPServerAppPermission struct {
+	mCPServerAppPermissionDo mCPServerAppPermissionDo
 
 	ALL         field.Asterisk
 	Id          field.Int
@@ -70,17 +70,17 @@ type mcpServerAppPermission struct {
 	fieldMap map[string]field.Expr
 }
 
-func (m mcpServerAppPermission) Table(newTableName string) *mcpServerAppPermission {
-	m.mcpServerAppPermissionDo.UseTable(newTableName)
+func (m mCPServerAppPermission) Table(newTableName string) *mCPServerAppPermission {
+	m.mCPServerAppPermissionDo.UseTable(newTableName)
 	return m.updateTableName(newTableName)
 }
 
-func (m mcpServerAppPermission) As(alias string) *mcpServerAppPermission {
-	m.mcpServerAppPermissionDo.DO = *(m.mcpServerAppPermissionDo.As(alias).(*gen.DO))
+func (m mCPServerAppPermission) As(alias string) *mCPServerAppPermission {
+	m.mCPServerAppPermissionDo.DO = *(m.mCPServerAppPermissionDo.As(alias).(*gen.DO))
 	return m.updateTableName(alias)
 }
 
-func (m *mcpServerAppPermission) updateTableName(table string) *mcpServerAppPermission {
+func (m *mCPServerAppPermission) updateTableName(table string) *mCPServerAppPermission {
 	m.ALL = field.NewAsterisk(table)
 	m.Id = field.NewInt(table, "id")
 	m.BkAppCode = field.NewString(table, "bk_app_code")
@@ -93,19 +93,19 @@ func (m *mcpServerAppPermission) updateTableName(table string) *mcpServerAppPerm
 	return m
 }
 
-func (m *mcpServerAppPermission) WithContext(ctx context.Context) IMcpServerAppPermissionDo {
-	return m.mcpServerAppPermissionDo.WithContext(ctx)
+func (m *mCPServerAppPermission) WithContext(ctx context.Context) IMCPServerAppPermissionDo {
+	return m.mCPServerAppPermissionDo.WithContext(ctx)
 }
 
-func (m mcpServerAppPermission) TableName() string { return m.mcpServerAppPermissionDo.TableName() }
+func (m mCPServerAppPermission) TableName() string { return m.mCPServerAppPermissionDo.TableName() }
 
-func (m mcpServerAppPermission) Alias() string { return m.mcpServerAppPermissionDo.Alias() }
+func (m mCPServerAppPermission) Alias() string { return m.mCPServerAppPermissionDo.Alias() }
 
-func (m mcpServerAppPermission) Columns(cols ...field.Expr) gen.Columns {
-	return m.mcpServerAppPermissionDo.Columns(cols...)
+func (m mCPServerAppPermission) Columns(cols ...field.Expr) gen.Columns {
+	return m.mCPServerAppPermissionDo.Columns(cols...)
 }
 
-func (m *mcpServerAppPermission) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
+func (m *mCPServerAppPermission) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := m.fieldMap[fieldName]
 	if !ok || _f == nil {
 		return nil, false
@@ -114,7 +114,7 @@ func (m *mcpServerAppPermission) GetFieldByName(fieldName string) (field.OrderEx
 	return _oe, ok
 }
 
-func (m *mcpServerAppPermission) fillFieldMap() {
+func (m *mCPServerAppPermission) fillFieldMap() {
 	m.fieldMap = make(map[string]field.Expr, 5)
 	m.fieldMap["id"] = m.Id
 	m.fieldMap["bk_app_code"] = m.BkAppCode
@@ -123,47 +123,47 @@ func (m *mcpServerAppPermission) fillFieldMap() {
 	m.fieldMap["mcp_server_id"] = m.McpServerId
 }
 
-func (m mcpServerAppPermission) clone(db *gorm.DB) mcpServerAppPermission {
-	m.mcpServerAppPermissionDo.ReplaceConnPool(db.Statement.ConnPool)
+func (m mCPServerAppPermission) clone(db *gorm.DB) mCPServerAppPermission {
+	m.mCPServerAppPermissionDo.ReplaceConnPool(db.Statement.ConnPool)
 	return m
 }
 
-func (m mcpServerAppPermission) replaceDB(db *gorm.DB) mcpServerAppPermission {
-	m.mcpServerAppPermissionDo.ReplaceDB(db)
+func (m mCPServerAppPermission) replaceDB(db *gorm.DB) mCPServerAppPermission {
+	m.mCPServerAppPermissionDo.ReplaceDB(db)
 	return m
 }
 
-type mcpServerAppPermissionDo struct{ gen.DO }
+type mCPServerAppPermissionDo struct{ gen.DO }
 
-type IMcpServerAppPermissionDo interface {
+type IMCPServerAppPermissionDo interface {
 	gen.SubQuery
-	Debug() IMcpServerAppPermissionDo
-	WithContext(ctx context.Context) IMcpServerAppPermissionDo
+	Debug() IMCPServerAppPermissionDo
+	WithContext(ctx context.Context) IMCPServerAppPermissionDo
 	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
 	ReplaceDB(db *gorm.DB)
-	ReadDB() IMcpServerAppPermissionDo
-	WriteDB() IMcpServerAppPermissionDo
+	ReadDB() IMCPServerAppPermissionDo
+	WriteDB() IMCPServerAppPermissionDo
 	As(alias string) gen.Dao
-	Session(config *gorm.Session) IMcpServerAppPermissionDo
+	Session(config *gorm.Session) IMCPServerAppPermissionDo
 	Columns(cols ...field.Expr) gen.Columns
-	Clauses(conds ...clause.Expression) IMcpServerAppPermissionDo
-	Not(conds ...gen.Condition) IMcpServerAppPermissionDo
-	Or(conds ...gen.Condition) IMcpServerAppPermissionDo
-	Select(conds ...field.Expr) IMcpServerAppPermissionDo
-	Where(conds ...gen.Condition) IMcpServerAppPermissionDo
-	Order(conds ...field.Expr) IMcpServerAppPermissionDo
-	Distinct(cols ...field.Expr) IMcpServerAppPermissionDo
-	Omit(cols ...field.Expr) IMcpServerAppPermissionDo
-	Join(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo
-	LeftJoin(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo
-	RightJoin(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo
-	Group(cols ...field.Expr) IMcpServerAppPermissionDo
-	Having(conds ...gen.Condition) IMcpServerAppPermissionDo
-	Limit(limit int) IMcpServerAppPermissionDo
-	Offset(offset int) IMcpServerAppPermissionDo
+	Clauses(conds ...clause.Expression) IMCPServerAppPermissionDo
+	Not(conds ...gen.Condition) IMCPServerAppPermissionDo
+	Or(conds ...gen.Condition) IMCPServerAppPermissionDo
+	Select(conds ...field.Expr) IMCPServerAppPermissionDo
+	Where(conds ...gen.Condition) IMCPServerAppPermissionDo
+	Order(conds ...field.Expr) IMCPServerAppPermissionDo
+	Distinct(cols ...field.Expr) IMCPServerAppPermissionDo
+	Omit(cols ...field.Expr) IMCPServerAppPermissionDo
+	Join(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo
+	Group(cols ...field.Expr) IMCPServerAppPermissionDo
+	Having(conds ...gen.Condition) IMCPServerAppPermissionDo
+	Limit(limit int) IMCPServerAppPermissionDo
+	Offset(offset int) IMCPServerAppPermissionDo
 	Count() (count int64, err error)
-	Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerAppPermissionDo
-	Unscoped() IMcpServerAppPermissionDo
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IMCPServerAppPermissionDo
+	Unscoped() IMCPServerAppPermissionDo
 	Create(values ...*model.MCPServerAppPermission) error
 	CreateInBatches(values []*model.MCPServerAppPermission, batchSize int) error
 	Save(values ...*model.MCPServerAppPermission) error
@@ -185,10 +185,10 @@ type IMcpServerAppPermissionDo interface {
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
-	Attrs(attrs ...field.AssignExpr) IMcpServerAppPermissionDo
-	Assign(attrs ...field.AssignExpr) IMcpServerAppPermissionDo
-	Joins(fields ...field.RelationField) IMcpServerAppPermissionDo
-	Preload(fields ...field.RelationField) IMcpServerAppPermissionDo
+	Attrs(attrs ...field.AssignExpr) IMCPServerAppPermissionDo
+	Assign(attrs ...field.AssignExpr) IMCPServerAppPermissionDo
+	Joins(fields ...field.RelationField) IMCPServerAppPermissionDo
+	Preload(fields ...field.RelationField) IMCPServerAppPermissionDo
 	FirstOrInit() (*model.MCPServerAppPermission, error)
 	FirstOrCreate() (*model.MCPServerAppPermission, error)
 	FindByPage(offset int, limit int) (result []*model.MCPServerAppPermission, count int64, err error)
@@ -196,124 +196,124 @@ type IMcpServerAppPermissionDo interface {
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
 	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) IMcpServerAppPermissionDo
+	Returning(value interface{}, columns ...string) IMCPServerAppPermissionDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
 
-func (m mcpServerAppPermissionDo) Debug() IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Debug() IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Debug())
 }
 
-func (m mcpServerAppPermissionDo) WithContext(ctx context.Context) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) WithContext(ctx context.Context) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.WithContext(ctx))
 }
 
-func (m mcpServerAppPermissionDo) ReadDB() IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) ReadDB() IMCPServerAppPermissionDo {
 	return m.Clauses(dbresolver.Read)
 }
 
-func (m mcpServerAppPermissionDo) WriteDB() IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) WriteDB() IMCPServerAppPermissionDo {
 	return m.Clauses(dbresolver.Write)
 }
 
-func (m mcpServerAppPermissionDo) Session(config *gorm.Session) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Session(config *gorm.Session) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Session(config))
 }
 
-func (m mcpServerAppPermissionDo) Clauses(conds ...clause.Expression) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Clauses(conds ...clause.Expression) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Clauses(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Returning(value interface{}, columns ...string) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Returning(value interface{}, columns ...string) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Returning(value, columns...))
 }
 
-func (m mcpServerAppPermissionDo) Not(conds ...gen.Condition) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Not(conds ...gen.Condition) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Not(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Or(conds ...gen.Condition) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Or(conds ...gen.Condition) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Or(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Select(conds ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Select(conds ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Select(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Where(conds ...gen.Condition) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Where(conds ...gen.Condition) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Where(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Order(conds ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Order(conds ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Order(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Distinct(cols ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Distinct(cols ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Distinct(cols...))
 }
 
-func (m mcpServerAppPermissionDo) Omit(cols ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Omit(cols ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Omit(cols...))
 }
 
-func (m mcpServerAppPermissionDo) Join(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Join(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Join(table, on...))
 }
 
-func (m mcpServerAppPermissionDo) LeftJoin(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) LeftJoin(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.LeftJoin(table, on...))
 }
 
-func (m mcpServerAppPermissionDo) RightJoin(table schema.Tabler, on ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) RightJoin(table schema.Tabler, on ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.RightJoin(table, on...))
 }
 
-func (m mcpServerAppPermissionDo) Group(cols ...field.Expr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Group(cols ...field.Expr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Group(cols...))
 }
 
-func (m mcpServerAppPermissionDo) Having(conds ...gen.Condition) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Having(conds ...gen.Condition) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Having(conds...))
 }
 
-func (m mcpServerAppPermissionDo) Limit(limit int) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Limit(limit int) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Limit(limit))
 }
 
-func (m mcpServerAppPermissionDo) Offset(offset int) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Offset(offset int) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Offset(offset))
 }
 
-func (m mcpServerAppPermissionDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Scopes(funcs...))
 }
 
-func (m mcpServerAppPermissionDo) Unscoped() IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Unscoped() IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Unscoped())
 }
 
-func (m mcpServerAppPermissionDo) Create(values ...*model.MCPServerAppPermission) error {
+func (m mCPServerAppPermissionDo) Create(values ...*model.MCPServerAppPermission) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Create(values)
 }
 
-func (m mcpServerAppPermissionDo) CreateInBatches(values []*model.MCPServerAppPermission, batchSize int) error {
+func (m mCPServerAppPermissionDo) CreateInBatches(values []*model.MCPServerAppPermission, batchSize int) error {
 	return m.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (m mcpServerAppPermissionDo) Save(values ...*model.MCPServerAppPermission) error {
+func (m mCPServerAppPermissionDo) Save(values ...*model.MCPServerAppPermission) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Save(values)
 }
 
-func (m mcpServerAppPermissionDo) First() (*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) First() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.First(); err != nil {
 		return nil, err
 	} else {
@@ -321,7 +321,7 @@ func (m mcpServerAppPermissionDo) First() (*model.MCPServerAppPermission, error)
 	}
 }
 
-func (m mcpServerAppPermissionDo) Take() (*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) Take() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.Take(); err != nil {
 		return nil, err
 	} else {
@@ -329,7 +329,7 @@ func (m mcpServerAppPermissionDo) Take() (*model.MCPServerAppPermission, error) 
 	}
 }
 
-func (m mcpServerAppPermissionDo) Last() (*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) Last() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.Last(); err != nil {
 		return nil, err
 	} else {
@@ -337,12 +337,12 @@ func (m mcpServerAppPermissionDo) Last() (*model.MCPServerAppPermission, error) 
 	}
 }
 
-func (m mcpServerAppPermissionDo) Find() ([]*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) Find() ([]*model.MCPServerAppPermission, error) {
 	result, err := m.DO.Find()
 	return result.([]*model.MCPServerAppPermission), err
 }
 
-func (m mcpServerAppPermissionDo) FindInBatch(
+func (m mCPServerAppPermissionDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) (results []*model.MCPServerAppPermission, err error) {
@@ -354,7 +354,7 @@ func (m mcpServerAppPermissionDo) FindInBatch(
 	return results, err
 }
 
-func (m mcpServerAppPermissionDo) FindInBatches(
+func (m mCPServerAppPermissionDo) FindInBatches(
 	result *[]*model.MCPServerAppPermission,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
@@ -362,29 +362,29 @@ func (m mcpServerAppPermissionDo) FindInBatches(
 	return m.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (m mcpServerAppPermissionDo) Attrs(attrs ...field.AssignExpr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Attrs(attrs ...field.AssignExpr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Attrs(attrs...))
 }
 
-func (m mcpServerAppPermissionDo) Assign(attrs ...field.AssignExpr) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Assign(attrs ...field.AssignExpr) IMCPServerAppPermissionDo {
 	return m.withDO(m.DO.Assign(attrs...))
 }
 
-func (m mcpServerAppPermissionDo) Joins(fields ...field.RelationField) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Joins(fields ...field.RelationField) IMCPServerAppPermissionDo {
 	for _, _f := range fields {
 		m = *m.withDO(m.DO.Joins(_f))
 	}
 	return &m
 }
 
-func (m mcpServerAppPermissionDo) Preload(fields ...field.RelationField) IMcpServerAppPermissionDo {
+func (m mCPServerAppPermissionDo) Preload(fields ...field.RelationField) IMCPServerAppPermissionDo {
 	for _, _f := range fields {
 		m = *m.withDO(m.DO.Preload(_f))
 	}
 	return &m
 }
 
-func (m mcpServerAppPermissionDo) FirstOrInit() (*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) FirstOrInit() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
@@ -392,7 +392,7 @@ func (m mcpServerAppPermissionDo) FirstOrInit() (*model.MCPServerAppPermission, 
 	}
 }
 
-func (m mcpServerAppPermissionDo) FirstOrCreate() (*model.MCPServerAppPermission, error) {
+func (m mCPServerAppPermissionDo) FirstOrCreate() (*model.MCPServerAppPermission, error) {
 	if result, err := m.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
@@ -400,7 +400,7 @@ func (m mcpServerAppPermissionDo) FirstOrCreate() (*model.MCPServerAppPermission
 	}
 }
 
-func (m mcpServerAppPermissionDo) FindByPage(
+func (m mCPServerAppPermissionDo) FindByPage(
 	offset int,
 	limit int,
 ) (result []*model.MCPServerAppPermission, count int64, err error) {
@@ -418,7 +418,7 @@ func (m mcpServerAppPermissionDo) FindByPage(
 	return
 }
 
-func (m mcpServerAppPermissionDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (m mCPServerAppPermissionDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
 	count, err = m.Count()
 	if err != nil {
 		return
@@ -428,15 +428,15 @@ func (m mcpServerAppPermissionDo) ScanByPage(result interface{}, offset int, lim
 	return
 }
 
-func (m mcpServerAppPermissionDo) Scan(result interface{}) (err error) {
+func (m mCPServerAppPermissionDo) Scan(result interface{}) (err error) {
 	return m.DO.Scan(result)
 }
 
-func (m mcpServerAppPermissionDo) Delete(models ...*model.MCPServerAppPermission) (result gen.ResultInfo, err error) {
+func (m mCPServerAppPermissionDo) Delete(models ...*model.MCPServerAppPermission) (result gen.ResultInfo, err error) {
 	return m.DO.Delete(models)
 }
 
-func (m *mcpServerAppPermissionDo) withDO(do gen.Dao) *mcpServerAppPermissionDo {
+func (m *mCPServerAppPermissionDo) withDO(do gen.Dao) *mCPServerAppPermissionDo {
 	m.DO = *do.(*gen.DO)
 	return m
 }

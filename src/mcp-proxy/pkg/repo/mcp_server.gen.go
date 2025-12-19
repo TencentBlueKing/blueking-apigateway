@@ -38,31 +38,31 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-func newMcpServer(db *gorm.DB, opts ...gen.DOOption) mcpServer {
-	_mcpServer := mcpServer{}
+func newMCPServer(db *gorm.DB, opts ...gen.DOOption) mCPServer {
+	_mCPServer := mCPServer{}
 
-	_mcpServer.mcpServerDo.UseDB(db, opts...)
-	_mcpServer.mcpServerDo.UseModel(&model.MCPServer{})
+	_mCPServer.mCPServerDo.UseDB(db, opts...)
+	_mCPServer.mCPServerDo.UseModel(&model.MCPServer{})
 
-	tableName := _mcpServer.mcpServerDo.TableName()
-	_mcpServer.ALL = field.NewAsterisk(tableName)
-	_mcpServer.ID = field.NewInt(tableName, "id")
-	_mcpServer.Name = field.NewString(tableName, "name")
-	_mcpServer.Description = field.NewString(tableName, "description")
-	_mcpServer.IsPublic = field.NewBool(tableName, "is_public")
-	_mcpServer.Labels = field.NewField(tableName, "labels")
-	_mcpServer.ResourceNames = field.NewField(tableName, "resource_names")
-	_mcpServer.Status = field.NewInt(tableName, "status")
-	_mcpServer.GatewayID = field.NewInt(tableName, "gateway_id")
-	_mcpServer.StageID = field.NewInt(tableName, "stage_id")
+	tableName := _mCPServer.mCPServerDo.TableName()
+	_mCPServer.ALL = field.NewAsterisk(tableName)
+	_mCPServer.ID = field.NewInt(tableName, "id")
+	_mCPServer.Name = field.NewString(tableName, "name")
+	_mCPServer.Description = field.NewString(tableName, "description")
+	_mCPServer.IsPublic = field.NewBool(tableName, "is_public")
+	_mCPServer.Labels = field.NewField(tableName, "labels")
+	_mCPServer.ResourceNames = field.NewField(tableName, "resource_names")
+	_mCPServer.Status = field.NewInt(tableName, "status")
+	_mCPServer.GatewayID = field.NewInt(tableName, "gateway_id")
+	_mCPServer.StageID = field.NewInt(tableName, "stage_id")
 
-	_mcpServer.fillFieldMap()
+	_mCPServer.fillFieldMap()
 
-	return _mcpServer
+	return _mCPServer
 }
 
-type mcpServer struct {
-	mcpServerDo mcpServerDo
+type mCPServer struct {
+	mCPServerDo mCPServerDo
 
 	ALL           field.Asterisk
 	ID            field.Int
@@ -78,17 +78,17 @@ type mcpServer struct {
 	fieldMap map[string]field.Expr
 }
 
-func (m mcpServer) Table(newTableName string) *mcpServer {
-	m.mcpServerDo.UseTable(newTableName)
+func (m mCPServer) Table(newTableName string) *mCPServer {
+	m.mCPServerDo.UseTable(newTableName)
 	return m.updateTableName(newTableName)
 }
 
-func (m mcpServer) As(alias string) *mcpServer {
-	m.mcpServerDo.DO = *(m.mcpServerDo.As(alias).(*gen.DO))
+func (m mCPServer) As(alias string) *mCPServer {
+	m.mCPServerDo.DO = *(m.mCPServerDo.As(alias).(*gen.DO))
 	return m.updateTableName(alias)
 }
 
-func (m *mcpServer) updateTableName(table string) *mcpServer {
+func (m *mCPServer) updateTableName(table string) *mCPServer {
 	m.ALL = field.NewAsterisk(table)
 	m.ID = field.NewInt(table, "id")
 	m.Name = field.NewString(table, "name")
@@ -105,17 +105,17 @@ func (m *mcpServer) updateTableName(table string) *mcpServer {
 	return m
 }
 
-func (m *mcpServer) WithContext(ctx context.Context) IMcpServerDo {
-	return m.mcpServerDo.WithContext(ctx)
+func (m *mCPServer) WithContext(ctx context.Context) IMCPServerDo {
+	return m.mCPServerDo.WithContext(ctx)
 }
 
-func (m mcpServer) TableName() string { return m.mcpServerDo.TableName() }
+func (m mCPServer) TableName() string { return m.mCPServerDo.TableName() }
 
-func (m mcpServer) Alias() string { return m.mcpServerDo.Alias() }
+func (m mCPServer) Alias() string { return m.mCPServerDo.Alias() }
 
-func (m mcpServer) Columns(cols ...field.Expr) gen.Columns { return m.mcpServerDo.Columns(cols...) }
+func (m mCPServer) Columns(cols ...field.Expr) gen.Columns { return m.mCPServerDo.Columns(cols...) }
 
-func (m *mcpServer) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
+func (m *mCPServer) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := m.fieldMap[fieldName]
 	if !ok || _f == nil {
 		return nil, false
@@ -124,7 +124,7 @@ func (m *mcpServer) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	return _oe, ok
 }
 
-func (m *mcpServer) fillFieldMap() {
+func (m *mCPServer) fillFieldMap() {
 	m.fieldMap = make(map[string]field.Expr, 9)
 	m.fieldMap["id"] = m.ID
 	m.fieldMap["name"] = m.Name
@@ -137,47 +137,47 @@ func (m *mcpServer) fillFieldMap() {
 	m.fieldMap["stage_id"] = m.StageID
 }
 
-func (m mcpServer) clone(db *gorm.DB) mcpServer {
-	m.mcpServerDo.ReplaceConnPool(db.Statement.ConnPool)
+func (m mCPServer) clone(db *gorm.DB) mCPServer {
+	m.mCPServerDo.ReplaceConnPool(db.Statement.ConnPool)
 	return m
 }
 
-func (m mcpServer) replaceDB(db *gorm.DB) mcpServer {
-	m.mcpServerDo.ReplaceDB(db)
+func (m mCPServer) replaceDB(db *gorm.DB) mCPServer {
+	m.mCPServerDo.ReplaceDB(db)
 	return m
 }
 
-type mcpServerDo struct{ gen.DO }
+type mCPServerDo struct{ gen.DO }
 
-type IMcpServerDo interface {
+type IMCPServerDo interface {
 	gen.SubQuery
-	Debug() IMcpServerDo
-	WithContext(ctx context.Context) IMcpServerDo
+	Debug() IMCPServerDo
+	WithContext(ctx context.Context) IMCPServerDo
 	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
 	ReplaceDB(db *gorm.DB)
-	ReadDB() IMcpServerDo
-	WriteDB() IMcpServerDo
+	ReadDB() IMCPServerDo
+	WriteDB() IMCPServerDo
 	As(alias string) gen.Dao
-	Session(config *gorm.Session) IMcpServerDo
+	Session(config *gorm.Session) IMCPServerDo
 	Columns(cols ...field.Expr) gen.Columns
-	Clauses(conds ...clause.Expression) IMcpServerDo
-	Not(conds ...gen.Condition) IMcpServerDo
-	Or(conds ...gen.Condition) IMcpServerDo
-	Select(conds ...field.Expr) IMcpServerDo
-	Where(conds ...gen.Condition) IMcpServerDo
-	Order(conds ...field.Expr) IMcpServerDo
-	Distinct(cols ...field.Expr) IMcpServerDo
-	Omit(cols ...field.Expr) IMcpServerDo
-	Join(table schema.Tabler, on ...field.Expr) IMcpServerDo
-	LeftJoin(table schema.Tabler, on ...field.Expr) IMcpServerDo
-	RightJoin(table schema.Tabler, on ...field.Expr) IMcpServerDo
-	Group(cols ...field.Expr) IMcpServerDo
-	Having(conds ...gen.Condition) IMcpServerDo
-	Limit(limit int) IMcpServerDo
-	Offset(offset int) IMcpServerDo
+	Clauses(conds ...clause.Expression) IMCPServerDo
+	Not(conds ...gen.Condition) IMCPServerDo
+	Or(conds ...gen.Condition) IMCPServerDo
+	Select(conds ...field.Expr) IMCPServerDo
+	Where(conds ...gen.Condition) IMCPServerDo
+	Order(conds ...field.Expr) IMCPServerDo
+	Distinct(cols ...field.Expr) IMCPServerDo
+	Omit(cols ...field.Expr) IMCPServerDo
+	Join(table schema.Tabler, on ...field.Expr) IMCPServerDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IMCPServerDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IMCPServerDo
+	Group(cols ...field.Expr) IMCPServerDo
+	Having(conds ...gen.Condition) IMCPServerDo
+	Limit(limit int) IMCPServerDo
+	Offset(offset int) IMCPServerDo
 	Count() (count int64, err error)
-	Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerDo
-	Unscoped() IMcpServerDo
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IMCPServerDo
+	Unscoped() IMCPServerDo
 	Create(values ...*model.MCPServer) error
 	CreateInBatches(values []*model.MCPServer, batchSize int) error
 	Save(values ...*model.MCPServer) error
@@ -196,10 +196,10 @@ type IMcpServerDo interface {
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
-	Attrs(attrs ...field.AssignExpr) IMcpServerDo
-	Assign(attrs ...field.AssignExpr) IMcpServerDo
-	Joins(fields ...field.RelationField) IMcpServerDo
-	Preload(fields ...field.RelationField) IMcpServerDo
+	Attrs(attrs ...field.AssignExpr) IMCPServerDo
+	Assign(attrs ...field.AssignExpr) IMCPServerDo
+	Joins(fields ...field.RelationField) IMCPServerDo
+	Preload(fields ...field.RelationField) IMCPServerDo
 	FirstOrInit() (*model.MCPServer, error)
 	FirstOrCreate() (*model.MCPServer, error)
 	FindByPage(offset int, limit int) (result []*model.MCPServer, count int64, err error)
@@ -207,124 +207,124 @@ type IMcpServerDo interface {
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
 	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) IMcpServerDo
+	Returning(value interface{}, columns ...string) IMCPServerDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
 
-func (m mcpServerDo) Debug() IMcpServerDo {
+func (m mCPServerDo) Debug() IMCPServerDo {
 	return m.withDO(m.DO.Debug())
 }
 
-func (m mcpServerDo) WithContext(ctx context.Context) IMcpServerDo {
+func (m mCPServerDo) WithContext(ctx context.Context) IMCPServerDo {
 	return m.withDO(m.DO.WithContext(ctx))
 }
 
-func (m mcpServerDo) ReadDB() IMcpServerDo {
+func (m mCPServerDo) ReadDB() IMCPServerDo {
 	return m.Clauses(dbresolver.Read)
 }
 
-func (m mcpServerDo) WriteDB() IMcpServerDo {
+func (m mCPServerDo) WriteDB() IMCPServerDo {
 	return m.Clauses(dbresolver.Write)
 }
 
-func (m mcpServerDo) Session(config *gorm.Session) IMcpServerDo {
+func (m mCPServerDo) Session(config *gorm.Session) IMCPServerDo {
 	return m.withDO(m.DO.Session(config))
 }
 
-func (m mcpServerDo) Clauses(conds ...clause.Expression) IMcpServerDo {
+func (m mCPServerDo) Clauses(conds ...clause.Expression) IMCPServerDo {
 	return m.withDO(m.DO.Clauses(conds...))
 }
 
-func (m mcpServerDo) Returning(value interface{}, columns ...string) IMcpServerDo {
+func (m mCPServerDo) Returning(value interface{}, columns ...string) IMCPServerDo {
 	return m.withDO(m.DO.Returning(value, columns...))
 }
 
-func (m mcpServerDo) Not(conds ...gen.Condition) IMcpServerDo {
+func (m mCPServerDo) Not(conds ...gen.Condition) IMCPServerDo {
 	return m.withDO(m.DO.Not(conds...))
 }
 
-func (m mcpServerDo) Or(conds ...gen.Condition) IMcpServerDo {
+func (m mCPServerDo) Or(conds ...gen.Condition) IMCPServerDo {
 	return m.withDO(m.DO.Or(conds...))
 }
 
-func (m mcpServerDo) Select(conds ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Select(conds ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Select(conds...))
 }
 
-func (m mcpServerDo) Where(conds ...gen.Condition) IMcpServerDo {
+func (m mCPServerDo) Where(conds ...gen.Condition) IMCPServerDo {
 	return m.withDO(m.DO.Where(conds...))
 }
 
-func (m mcpServerDo) Order(conds ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Order(conds ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Order(conds...))
 }
 
-func (m mcpServerDo) Distinct(cols ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Distinct(cols ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Distinct(cols...))
 }
 
-func (m mcpServerDo) Omit(cols ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Omit(cols ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Omit(cols...))
 }
 
-func (m mcpServerDo) Join(table schema.Tabler, on ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Join(table schema.Tabler, on ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Join(table, on...))
 }
 
-func (m mcpServerDo) LeftJoin(table schema.Tabler, on ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) LeftJoin(table schema.Tabler, on ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.LeftJoin(table, on...))
 }
 
-func (m mcpServerDo) RightJoin(table schema.Tabler, on ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) RightJoin(table schema.Tabler, on ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.RightJoin(table, on...))
 }
 
-func (m mcpServerDo) Group(cols ...field.Expr) IMcpServerDo {
+func (m mCPServerDo) Group(cols ...field.Expr) IMCPServerDo {
 	return m.withDO(m.DO.Group(cols...))
 }
 
-func (m mcpServerDo) Having(conds ...gen.Condition) IMcpServerDo {
+func (m mCPServerDo) Having(conds ...gen.Condition) IMCPServerDo {
 	return m.withDO(m.DO.Having(conds...))
 }
 
-func (m mcpServerDo) Limit(limit int) IMcpServerDo {
+func (m mCPServerDo) Limit(limit int) IMCPServerDo {
 	return m.withDO(m.DO.Limit(limit))
 }
 
-func (m mcpServerDo) Offset(offset int) IMcpServerDo {
+func (m mCPServerDo) Offset(offset int) IMCPServerDo {
 	return m.withDO(m.DO.Offset(offset))
 }
 
-func (m mcpServerDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IMcpServerDo {
+func (m mCPServerDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IMCPServerDo {
 	return m.withDO(m.DO.Scopes(funcs...))
 }
 
-func (m mcpServerDo) Unscoped() IMcpServerDo {
+func (m mCPServerDo) Unscoped() IMCPServerDo {
 	return m.withDO(m.DO.Unscoped())
 }
 
-func (m mcpServerDo) Create(values ...*model.MCPServer) error {
+func (m mCPServerDo) Create(values ...*model.MCPServer) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Create(values)
 }
 
-func (m mcpServerDo) CreateInBatches(values []*model.MCPServer, batchSize int) error {
+func (m mCPServerDo) CreateInBatches(values []*model.MCPServer, batchSize int) error {
 	return m.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (m mcpServerDo) Save(values ...*model.MCPServer) error {
+func (m mCPServerDo) Save(values ...*model.MCPServer) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return m.DO.Save(values)
 }
 
-func (m mcpServerDo) First() (*model.MCPServer, error) {
+func (m mCPServerDo) First() (*model.MCPServer, error) {
 	if result, err := m.DO.First(); err != nil {
 		return nil, err
 	} else {
@@ -332,7 +332,7 @@ func (m mcpServerDo) First() (*model.MCPServer, error) {
 	}
 }
 
-func (m mcpServerDo) Take() (*model.MCPServer, error) {
+func (m mCPServerDo) Take() (*model.MCPServer, error) {
 	if result, err := m.DO.Take(); err != nil {
 		return nil, err
 	} else {
@@ -340,7 +340,7 @@ func (m mcpServerDo) Take() (*model.MCPServer, error) {
 	}
 }
 
-func (m mcpServerDo) Last() (*model.MCPServer, error) {
+func (m mCPServerDo) Last() (*model.MCPServer, error) {
 	if result, err := m.DO.Last(); err != nil {
 		return nil, err
 	} else {
@@ -348,12 +348,12 @@ func (m mcpServerDo) Last() (*model.MCPServer, error) {
 	}
 }
 
-func (m mcpServerDo) Find() ([]*model.MCPServer, error) {
+func (m mCPServerDo) Find() ([]*model.MCPServer, error) {
 	result, err := m.DO.Find()
 	return result.([]*model.MCPServer), err
 }
 
-func (m mcpServerDo) FindInBatch(
+func (m mCPServerDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) (results []*model.MCPServer, err error) {
@@ -365,7 +365,7 @@ func (m mcpServerDo) FindInBatch(
 	return results, err
 }
 
-func (m mcpServerDo) FindInBatches(
+func (m mCPServerDo) FindInBatches(
 	result *[]*model.MCPServer,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
@@ -373,29 +373,29 @@ func (m mcpServerDo) FindInBatches(
 	return m.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (m mcpServerDo) Attrs(attrs ...field.AssignExpr) IMcpServerDo {
+func (m mCPServerDo) Attrs(attrs ...field.AssignExpr) IMCPServerDo {
 	return m.withDO(m.DO.Attrs(attrs...))
 }
 
-func (m mcpServerDo) Assign(attrs ...field.AssignExpr) IMcpServerDo {
+func (m mCPServerDo) Assign(attrs ...field.AssignExpr) IMCPServerDo {
 	return m.withDO(m.DO.Assign(attrs...))
 }
 
-func (m mcpServerDo) Joins(fields ...field.RelationField) IMcpServerDo {
+func (m mCPServerDo) Joins(fields ...field.RelationField) IMCPServerDo {
 	for _, _f := range fields {
 		m = *m.withDO(m.DO.Joins(_f))
 	}
 	return &m
 }
 
-func (m mcpServerDo) Preload(fields ...field.RelationField) IMcpServerDo {
+func (m mCPServerDo) Preload(fields ...field.RelationField) IMCPServerDo {
 	for _, _f := range fields {
 		m = *m.withDO(m.DO.Preload(_f))
 	}
 	return &m
 }
 
-func (m mcpServerDo) FirstOrInit() (*model.MCPServer, error) {
+func (m mCPServerDo) FirstOrInit() (*model.MCPServer, error) {
 	if result, err := m.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
@@ -403,7 +403,7 @@ func (m mcpServerDo) FirstOrInit() (*model.MCPServer, error) {
 	}
 }
 
-func (m mcpServerDo) FirstOrCreate() (*model.MCPServer, error) {
+func (m mCPServerDo) FirstOrCreate() (*model.MCPServer, error) {
 	if result, err := m.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
@@ -411,7 +411,7 @@ func (m mcpServerDo) FirstOrCreate() (*model.MCPServer, error) {
 	}
 }
 
-func (m mcpServerDo) FindByPage(offset int, limit int) (result []*model.MCPServer, count int64, err error) {
+func (m mCPServerDo) FindByPage(offset int, limit int) (result []*model.MCPServer, count int64, err error) {
 	result, err = m.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -426,7 +426,7 @@ func (m mcpServerDo) FindByPage(offset int, limit int) (result []*model.MCPServe
 	return
 }
 
-func (m mcpServerDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+func (m mCPServerDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
 	count, err = m.Count()
 	if err != nil {
 		return
@@ -436,15 +436,15 @@ func (m mcpServerDo) ScanByPage(result interface{}, offset int, limit int) (coun
 	return
 }
 
-func (m mcpServerDo) Scan(result interface{}) (err error) {
+func (m mCPServerDo) Scan(result interface{}) (err error) {
 	return m.DO.Scan(result)
 }
 
-func (m mcpServerDo) Delete(models ...*model.MCPServer) (result gen.ResultInfo, err error) {
+func (m mCPServerDo) Delete(models ...*model.MCPServer) (result gen.ResultInfo, err error) {
 	return m.DO.Delete(models)
 }
 
-func (m *mcpServerDo) withDO(do gen.Dao) *mcpServerDo {
+func (m *mCPServerDo) withDO(do gen.Dao) *mCPServerDo {
 	m.DO = *do.(*gen.DO)
 	return m
 }

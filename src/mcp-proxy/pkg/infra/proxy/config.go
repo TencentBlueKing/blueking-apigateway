@@ -54,3 +54,10 @@ func (t *ToolConfig) String() string {
 		strings.TrimLeft(t.Url, "/")
 	return fmt.Sprintf("tool:[name:%s,url:%s, method:%s]", t.Name, fullUrl, t.Method)
 }
+
+// PromptConfig Prompt 配置
+type PromptConfig struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+}

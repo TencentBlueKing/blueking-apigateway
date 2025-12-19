@@ -40,8 +40,8 @@ func (k MCPServerKey) Key() string {
 
 func retrieveMCPServerByName(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(MCPServerKey)
-	r := repo.McpServer
-	return repo.McpServer.WithContext(ctx).Where(r.Name.Eq(key.Key())).Take()
+	r := repo.MCPServer
+	return repo.MCPServer.WithContext(ctx).Where(r.Name.Eq(key.Key())).Take()
 }
 
 // GetMCPServerByName will return mcp by name from cache
