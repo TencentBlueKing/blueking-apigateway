@@ -32,8 +32,8 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-var _ = Describe("MCPServerPrompt", func() {
-	Describe("MCPServerPromptKey", func() {
+var _ = Describe("MCPServerExtend", func() {
+	Describe("MCPServerExtendKey", func() {
 		DescribeTable("should return correct key",
 			func(mcpServerID int, expectedKey string) {
 				key := cacheimpls.MCPServerExtendKey{McpServerID: mcpServerID}
@@ -59,8 +59,8 @@ var _ = Describe("MCPServerPrompt", func() {
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 				return expectedExtend, nil
 			}
-			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetMCPServerPromptCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerExtendCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerExtendCache(mockCache)
 
 			result, err := cacheimpls.GetMCPServerExtendByMcpServerID(
 				context.Background(),
@@ -77,8 +77,8 @@ var _ = Describe("MCPServerPrompt", func() {
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 				return nil, errors.New("record not found")
 			}
-			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetMCPServerPromptCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerExtendCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerExtendCache(mockCache)
 
 			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(
 				context.Background(),
@@ -92,8 +92,8 @@ var _ = Describe("MCPServerPrompt", func() {
 			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
 				return "invalid type", nil
 			}
-			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
-			cacheimpls.SetMCPServerPromptCache(mockCache)
+			mockCache := memory.NewCache("mockMCPServerExtendCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerExtendCache(mockCache)
 
 			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(
 				context.Background(),
