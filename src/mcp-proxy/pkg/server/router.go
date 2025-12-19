@@ -99,7 +99,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
-	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
+	seeRouter.POST("/sse", mcpProxy.SseMessageHandler())
 
 	// mcp application 应用态mcp proxy
 	mcpApplicationProxy := proxy.NewMCPProxy(cfg.McpServer.MessageApplicationUrlFormat)
@@ -118,7 +118,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
 	seeAppRouter.GET("/sse", mcpApplicationProxy.SseHandler())
-	seeAppRouter.POST("/sse/message", mcpApplicationProxy.SseMessageHandler())
+	seeAppRouter.POST("/sse", mcpApplicationProxy.SseMessageHandler())
 
 	// trace
 	if cfg.Tracing.GinAPIEnabled() {

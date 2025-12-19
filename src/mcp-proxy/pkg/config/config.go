@@ -220,7 +220,7 @@ func Load(v *viper.Viper) (*Config, error) {
 		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_URL_TMPL")
 	}
 	if cfg.McpServer.MessageUrlFormat == "" {
-		cfg.McpServer.MessageUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
+		cfg.McpServer.MessageUrlFormat = "/%s/sse/message"
 	}
 	// mcp 应用态的url消息地址
 	if cfg.McpServer.MessageApplicationUrlFormat == "" {

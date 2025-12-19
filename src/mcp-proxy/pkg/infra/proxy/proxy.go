@@ -105,10 +105,9 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		for _, toolConfig := range config.Tools {
 			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
 			tool := &mcp.Tool{
-				Name:         toolConfig.Name,
-				Description:  toolConfig.Description,
-				InputSchema:  json.RawMessage(bytes),
-				OutputSchema: toolConfig.OutputSchema,
+				Name:        toolConfig.Name,
+				Description: toolConfig.Description,
+				InputSchema: json.RawMessage(bytes),
 			}
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.RegisterTool(tool, toolHandler)
@@ -141,10 +140,9 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string, title string,
 	for _, toolConfig := range mcpServerConfig.Tools {
 		bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
 		tool := &mcp.Tool{
-			Name:         toolConfig.Name,
-			Description:  toolConfig.Description,
-			InputSchema:  json.RawMessage(bytes),
-			OutputSchema: toolConfig.OutputSchema,
+			Name:        toolConfig.Name,
+			Description: toolConfig.Description,
+			InputSchema: json.RawMessage(bytes),
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.RegisterTool(tool, toolHandler)
@@ -227,7 +225,6 @@ func (m *MCPProxy) Run(ctx context.Context) {
 		if _, ok := m.activeMCPServers[mcpServer.name]; ok {
 			continue
 		}
-		mcpServer.Run(ctx)
 		m.activeMCPServers[mcpServer.name] = struct{}{}
 	}
 }

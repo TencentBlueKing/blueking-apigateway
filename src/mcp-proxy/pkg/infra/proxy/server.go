@@ -104,17 +104,20 @@ func (s *MCPServer) GetTools() []string {
 	return toolNames
 }
 
-// Run ...
-// Note: 官方 SDK 的 Server.Run 需要传入 transport，这里改为在 proxy 层处理
+// Run starts the MCP server.
+// Note: 官方 SDK 的 Server.Run 用于单连接场景（如 stdio），
+// 对于 SSE/HTTP 多连接场景，连接由 SSEHandler 管理，此方法为空实现。
 func (s *MCPServer) Run(ctx context.Context) {
-	// 官方 SDK 使用 SSEHandler 来处理连接，不需要单独 Run
-	// Server 会在 SSEHandler 处理请求时自动管理会话
+	// SSE 场景下，连接由 SSEHandler 在 HTTP 请求时自动建立和管理
+	// 不需要单独启动 Server
 }
 
-// Shutdown ...
+// Shutdown gracefully shuts down the MCP server by closing all active sessions.
 func (s *MCPServer) Shutdown(ctx context.Context) {
-	// 官方 SDK 的 Server 没有 Shutdown 方法
-	// 会话管理由 SSEHandler 处理
+	// 关闭所有活跃的会话
+	for session := range s.Server.Sessions() {
+		_ = session.Close()
+	}
 }
 
 // RegisterTool ...
