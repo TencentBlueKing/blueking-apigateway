@@ -29,32 +29,35 @@ import (
 	"mcp_proxy/pkg/repo"
 )
 
-// MCPServerPromptKey is the key for mcp server prompt cache
-type MCPServerPromptKey struct {
+// MCPServerExtendKey is the key for mcp server prompt cache
+type MCPServerExtendKey struct {
 	McpServerID int
+	Type        string
 }
 
 // Key return the key string
-func (k MCPServerPromptKey) Key() string {
+func (k MCPServerExtendKey) Key() string {
 	return strconv.Itoa(k.McpServerID)
 }
 
-func retrieveMCPServerPromptByMcpServerID(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(MCPServerPromptKey)
+func retrieveMCPServerExtendByMcpServerID(ctx context.Context, k cache.Key) (interface{}, error) {
+	key := k.(MCPServerExtendKey)
 	r := repo.MCPServerExtend
 	return repo.MCPServerExtend.WithContext(ctx).
 		Where(r.McpServerID.Eq(key.McpServerID)).
-		Where(r.Type.Eq(model.MCPServerExtendTypePrompts)).
-		Take()
+		Where(r.Type.Eq(key.Type)).Take()
 }
 
 // GetMCPServerExtendByMcpServerID 根据 MCP Server ID 获取扩展配置
-func GetMCPServerExtendByMcpServerID(ctx context.Context, mcpServerID int) (extend *model.MCPServerExtend, err error) {
-	key := MCPServerPromptKey{
+func GetMCPServerExtendByMcpServerID(ctx context.Context, mcpServerID int, extendType string) (
+	extend *model.MCPServerExtend, err error,
+) {
+	key := MCPServerExtendKey{
 		McpServerID: mcpServerID,
+		Type:        extendType,
 	}
 	var value interface{}
-	value, err = cacheGet(ctx, mcpServerPromptCache, key)
+	value, err = cacheGet(ctx, mcpServerExtendCache, key)
 	if err != nil {
 		return
 	}

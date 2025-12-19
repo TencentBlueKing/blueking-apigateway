@@ -30,7 +30,7 @@ import (
 
 // GetMCPServerPrompts 获取 MCP Server 的 Prompts 配置
 func GetMCPServerPrompts(ctx context.Context, mcpServerID int) ([]*model.Prompt, error) {
-	extend, err := cacheimpls.GetMCPServerExtendByMcpServerID(ctx, mcpServerID)
+	extend, err := cacheimpls.GetMCPServerExtendByMcpServerID(ctx, mcpServerID, model.MCPServerExtendTypePrompts)
 	if err != nil {
 		// 如果记录不存在，返回空列表
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -38,6 +38,5 @@ func GetMCPServerPrompts(ctx context.Context, mcpServerID int) ([]*model.Prompt,
 		}
 		return nil, err
 	}
-
 	return extend.GetPrompts()
 }

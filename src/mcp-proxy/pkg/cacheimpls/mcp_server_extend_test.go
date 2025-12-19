@@ -36,7 +36,7 @@ var _ = Describe("MCPServerPrompt", func() {
 	Describe("MCPServerPromptKey", func() {
 		DescribeTable("should return correct key",
 			func(mcpServerID int, expectedKey string) {
-				key := cacheimpls.MCPServerPromptKey{McpServerID: mcpServerID}
+				key := cacheimpls.MCPServerExtendKey{McpServerID: mcpServerID}
 				Expect(key.Key()).To(Equal(expectedKey))
 			},
 			Entry("normal id", 123, "123"),
@@ -62,7 +62,11 @@ var _ = Describe("MCPServerPrompt", func() {
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
 			cacheimpls.SetMCPServerPromptCache(mockCache)
 
-			result, err := cacheimpls.GetMCPServerExtendByMcpServerID(context.Background(), 123)
+			result, err := cacheimpls.GetMCPServerExtendByMcpServerID(
+				context.Background(),
+				123,
+				model.MCPServerExtendTypePrompts,
+			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).NotTo(BeNil())
 			Expect(result.McpServerID).To(Equal(123))
@@ -76,7 +80,11 @@ var _ = Describe("MCPServerPrompt", func() {
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
 			cacheimpls.SetMCPServerPromptCache(mockCache)
 
-			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(context.Background(), 999)
+			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(
+				context.Background(),
+				999,
+				model.MCPServerExtendTypePrompts,
+			)
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -87,7 +95,11 @@ var _ = Describe("MCPServerPrompt", func() {
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
 			cacheimpls.SetMCPServerPromptCache(mockCache)
 
-			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(context.Background(), 123)
+			_, err := cacheimpls.GetMCPServerExtendByMcpServerID(
+				context.Background(),
+				123,
+				model.MCPServerExtendTypePrompts,
+			)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("not model.MCPServerExtend in cache"))
 		})
