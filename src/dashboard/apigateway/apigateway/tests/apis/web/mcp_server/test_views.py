@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 
 import pytest
 from ddf import G
@@ -76,6 +77,35 @@ class TestMCPServerListCreateApi:
         assert resp.status_code == 200
         assert result["data"]["count"] >= 1
 
+    def test_list_with_prompts_count(self, request_view, fake_gateway, fake_mcp_server):
+        """测试列表接口返回 prompts_count"""
+        # 给 fake_mcp_server 添加 prompts
+        G(
+            MCPServerExtend,
+            mcp_server=fake_mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1, "name": "prompt1"}, {"id": 2, "name": "prompt2"}]),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] >= 1
+
+        # 找到 fake_mcp_server 对应的数据
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["prompts_count"] == 2
+
     def test_create(self, mocker, request_view, fake_gateway, fake_stage, faker):
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
@@ -107,6 +137,56 @@ class TestMCPServerListCreateApi:
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
         assert mcp_server.name == data["name"]
         assert mcp_server.description == data["description"]
+
+    def test_create_with_prompts(self, mocker, request_view, fake_gateway, fake_stage, faker):
+        """测试创建 MCPServer 时同时创建 prompts"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        data = {
+            "name": "test-mcp-server-" + faker.pystr()[:10].lower().replace("_", "-"),
+            "description": faker.pystr(),
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "labels": ["test"],
+            "resource_names": ["resource1", "resource2"],
+            "prompts": [
+                {
+                    "id": 1,
+                    "name": "代码审查助手",
+                    "code": "prompt_001",
+                    "content": "你是一个代码审查专家...",
+                    "labels": ["代码"],
+                    "is_public": True,
+                },
+            ],
+        }
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        assert "id" in result["data"]
+
+        mcp_server_id = result["data"]["id"]
+
+        # 验证 prompts 已保存
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+        saved_prompts = json.loads(extend.content)
+        assert len(saved_prompts) == 1
+        assert saved_prompts[0]["id"] == 1
+        assert saved_prompts[0]["code"] == "prompt_001"
 
 
 class TestMCPServerRetrieveUpdateDestroyApi:
@@ -931,3 +1011,270 @@ class TestMCPServerUserCustomDocApiDestroyNonExistent:
 
         # 删除不存在的记录应该成功（幂等）
         assert resp.status_code == 204
+
+
+# ========== Prompts 相关 API 测试 ==========
+
+
+class TestMCPServerRemotePromptsListApi:
+    """测试从第三方平台获取 Prompts 列表"""
+
+    def test_list(self, mocker, request_view, fake_gateway):
+        mock_prompts = [
+            {
+                "id": 1,
+                "name": "代码审查助手",
+                "code": "prompt_001",
+                "content": "你是一个代码审查专家...",
+                "updated_time": "2025-12-15T10:00:00Z",
+                "labels": ["代码", "审查"],
+                "is_public": True,
+                "space_code": "devops",
+            },
+            {
+                "id": 2,
+                "name": "API 文档生成器",
+                "code": "prompt_002",
+                "content": "请根据以下代码生成 API 文档...",
+                "updated_time": "2025-12-14T15:30:00Z",
+                "labels": ["文档", "API"],
+                "is_public": True,
+                "space_code": "devops",
+            },
+        ]
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
+            return_value=mock_prompts,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.remote_prompts_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["prompts"]) == 2
+        assert result["data"]["prompts"][0]["id"] == 1
+        assert result["data"]["prompts"][0]["name"] == "代码审查助手"
+        assert result["data"]["prompts"][0]["code"] == "prompt_001"
+
+    def test_list_with_keyword(self, mocker, request_view, fake_gateway):
+        mock_prompts = [
+            {
+                "id": 1,
+                "name": "代码审查助手",
+                "code": "prompt_001",
+                "content": "你是一个代码审查专家...",
+                "updated_time": "2025-12-15T10:00:00Z",
+                "labels": ["代码"],
+                "is_public": True,
+                "space_code": "devops",
+            },
+        ]
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
+            return_value=mock_prompts,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.remote_prompts_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"keyword": "代码"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["prompts"]) == 1
+
+    def test_list_empty(self, mocker, request_view, fake_gateway):
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
+            return_value=[],
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.remote_prompts_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["prompts"]) == 0
+
+    def test_update_invalid_prompts_missing_name(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试更新时缺少必填字段 name"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        data = {
+            "description": fake_mcp_server.description,
+            "prompts": [
+                {
+                    "id": 1,
+                    "code": "prompt_001",
+                },
+            ],
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 400
+
+
+class TestMCPServerPromptsApi:
+    """测试 MCPServer Prompts 更新 API"""
+
+    def test_update_prompts(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试更新 prompts"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        data = {
+            "description": fake_mcp_server.description,
+            "prompts": [
+                {
+                    "id": 1,
+                    "name": "代码审查助手",
+                    "code": "prompt_001",
+                    "content": "你是一个代码审查专家...",
+                    "updated_time": "2025-12-15T10:00:00Z",
+                    "updated_by": "admin",
+                    "labels": ["代码", "审查"],
+                    "is_public": True,
+                    "space_code": "devops",
+                    "space_name": "DevOps",
+                },
+                {
+                    "id": 2,
+                    "name": "API 文档生成器",
+                    "code": "prompt_002",
+                    "content": "请根据以下代码生成 API 文档...",
+                    "updated_time": "2025-12-14T15:30:00Z",
+                    "updated_by": "developer",
+                    "labels": ["文档", "API"],
+                    "is_public": True,
+                    "space_code": "devops",
+                    "space_name": "DevOps",
+                },
+            ],
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        # 验证 prompts 已保存
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=fake_mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+        saved_prompts = json.loads(extend.content)
+        assert len(saved_prompts) == 2
+        assert saved_prompts[0]["id"] == 1
+        assert saved_prompts[0]["name"] == "代码审查助手"
+        assert saved_prompts[0]["space_name"] == "DevOps"
+        assert saved_prompts[1]["id"] == 2
+        assert saved_prompts[1]["updated_by"] == "developer"
+
+    def test_update_prompts_clear(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试清空 prompts"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        # 先创建一些 prompts
+        G(
+            MCPServerExtend,
+            mcp_server=fake_mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1, "name": "test", "code": "test_001"}]),
+        )
+
+        data = {
+            "description": fake_mcp_server.description,
+            "prompts": [],
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        # 验证 prompts 已清空
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=fake_mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+        saved_prompts = json.loads(extend.content)
+        assert len(saved_prompts) == 0
+
+    def test_update_prompts_partial(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试部分更新不传 prompts 字段，不影响已有 prompts"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        # 先创建一些 prompts
+        original_prompts = [{"id": 1, "name": "test", "code": "test_001"}]
+        G(
+            MCPServerExtend,
+            mcp_server=fake_mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps(original_prompts),
+        )
+
+        # 只更新 description，不传 prompts
+        data = {
+            "description": "new description",
+        }
+
+        resp = request_view(
+            method="PATCH",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        # 验证 prompts 未被修改
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=fake_mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+        saved_prompts = json.loads(extend.content)
+        assert len(saved_prompts) == 1
+        assert saved_prompts[0]["id"] == 1

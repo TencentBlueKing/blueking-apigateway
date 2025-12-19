@@ -62,6 +62,8 @@ from .serializers import (
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
+    MCPServerRemotePromptsOutputSLZ,
+    MCPServerRemotePromptsQueryInputSLZ,
     MCPServerRetrieveOutputSLZ,
     MCPServerStageReleaseCheckInputSLZ,
     MCPServerStageReleaseCheckOutputSLZ,
@@ -105,10 +107,15 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
             }
             for stage in Stage.objects.filter(gateway=self.request.gateway)
         }
+
+        # 获取 prompts_count
+        mcp_server_ids = [mcp_server.id for mcp_server in page]
+        prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
-            context={"stages": stages},
+            context={"stages": stages, "prompts_count_map": prompts_count_map},
         )
 
         return self.get_paginated_response(slz.data)
@@ -189,7 +196,9 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
             }
         }
 
-        serializer = self.get_serializer(instance, context={"stages": stages})
+        prompts = MCPServerHandler.get_prompts(instance.id)
+
+        serializer = self.get_serializer(instance, context={"stages": stages, "prompts": prompts})
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -203,7 +212,10 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         )
 
         slz = MCPServerUpdateInputSLZ(
-            instance, data=request.data, partial=partial, context={"valid_resource_names": valid_resource_names}
+            instance,
+            data=request.data,
+            partial=partial,
+            context={"valid_resource_names": valid_resource_names, "username": request.user.username},
         )
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
@@ -229,6 +241,9 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         if instance.is_active:
             raise error_codes.FAILED_PRECONDITION.format(_("请先停用 MCPServer，然后再删除。"), replace=True)
+
+        # 删除 prompts
+        MCPServerHandler.delete_prompts(instance.id)
 
         instance.delete()
 
@@ -760,3 +775,34 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
             MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+# ========== Prompts 相关 API ==========
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="从第三方平台获取 Prompts 列表",
+        query_serializer=MCPServerRemotePromptsQueryInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerRemotePromptsOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerRemotePromptsListApi(generics.ListAPIView):
+    """从第三方平台获取 Prompts 列表"""
+
+    def list(self, request, *args, **kwargs):
+        slz = MCPServerRemotePromptsQueryInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        keyword = slz.validated_data.get("keyword", "")
+
+        # 调用第三方平台获取 prompts 列表
+        prompts = MCPServerHandler.fetch_remote_prompts(
+            username=request.user.username,
+            keyword=keyword,
+        )
+
+        output_slz = MCPServerRemotePromptsOutputSLZ({"prompts": prompts})
+        return OKJsonResponse(data=output_slz.data)
