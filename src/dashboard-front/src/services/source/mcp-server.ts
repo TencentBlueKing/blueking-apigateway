@@ -35,6 +35,7 @@ export interface IMCPServer {
     name: string
   }
   tools?: IMCPServerTool[]
+  prompts?: IMCPServerPrompt[]
 }
 
 export interface IMCPServerTool {
@@ -51,6 +52,19 @@ export interface IMCPServerTool {
     id: number
     name: string
   }[]
+}
+
+export interface IMCPServerPrompt {
+  id: string
+  name: string
+  code: string
+  content: string
+  space_name: string
+  space_code: string
+  updated_by: string
+  updated_time: string
+  is_public: boolean
+  labels: string[]
 }
 
 // 列表
@@ -135,3 +149,10 @@ export const updateCustomServerGuideDoc = (apigwId: number, mcp_server_id: numbe
  */
 export const deleteCustomServerGuideDoc = (apigwId: number, mcp_server_id: number) =>
   http.delete(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
+
+/**
+ * 获取 MCPServer 已关联的 Prompts 配置
+ * @param apigwId 网关id
+ */
+export const getServerPrompts = (apigwId: number): Promise<IMCPServerPrompt> =>
+  http.get(`${path}/${apigwId}/mcp-servers/-/remote-prompts/`);
