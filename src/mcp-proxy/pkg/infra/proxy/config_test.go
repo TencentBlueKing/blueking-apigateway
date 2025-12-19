@@ -98,4 +98,26 @@ var _ = Describe("Config", func() {
 			Expect(config.Tools[0].Name).To(Equal("tool1"))
 		})
 	})
+
+	Describe("PromptConfig", func() {
+		It("should have correct fields", func() {
+			config := proxy.PromptConfig{
+				Name:        "test-prompt",
+				Description: "This is a test prompt",
+				Content:     "Hello, this is the prompt content",
+			}
+
+			Expect(config.Name).To(Equal("test-prompt"))
+			Expect(config.Description).To(Equal("This is a test prompt"))
+			Expect(config.Content).To(Equal("Hello, this is the prompt content"))
+		})
+
+		It("should handle empty fields", func() {
+			config := proxy.PromptConfig{}
+
+			Expect(config.Name).To(BeEmpty())
+			Expect(config.Description).To(BeEmpty())
+			Expect(config.Content).To(BeEmpty())
+		})
+	})
 })

@@ -62,3 +62,9 @@ func SetJWTInfoCache(c memory.Cache) { jwtInfoCache = c }
 
 // SetAppMCPServerPermission ...
 func SetAppMCPServerPermission(c memory.Cache) { appMCPServerPermission = c }
+
+// GetMCPServerPromptCache ...
+func GetMCPServerPromptCache() memory.Cache { return mcpServerExtendCache }
+
+// SetMCPServerPromptCache ...
+func SetMCPServerPromptCache(c memory.Cache) { mcpServerExtendCache = c }
