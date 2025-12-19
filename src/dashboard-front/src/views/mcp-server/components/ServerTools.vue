@@ -73,14 +73,28 @@
                       class="tool-item"
                       @click="handleToolClick(tool.id, tool.name)"
                     >
-                      <header
-                        v-dompurify-html="getHighlightedHtml(tool.name)"
-                        class="tool-item-name"
-                      />
-                      <main
-                        v-dompurify-html="getHighlightedHtml(tool.description)"
-                        class="tool-item-desc"
-                      />
+                      <div
+                        v-bk-tooltips="{
+                          placement:'top',
+                          content: `${t('名称')}: ${tool.name}
+                          ${t('描述')}: ${tool.description}`,
+                          disabled: !tool.isOverflow,
+                          extCls: 'max-w-480px',
+                        }"
+                      >
+                        <header
+                          v-dompurify-html="getHighlightedHtml(tool.name)"
+                          class="truncate tool-item-name"
+                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                          @mouseleave="() => handleToolMouseleave(tool)"
+                        />
+                        <main
+                          v-dompurify-html="getHighlightedHtml(tool.description)"
+                          class="truncate tool-item-desc"
+                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                          @mouseleave="() => handleToolMouseleave(tool)"
+                        />
+                      </div>
                     </article>
                   </template>
                 </BkCollapsePanel>
@@ -122,7 +136,7 @@
               </BkButton>
             </header>
             <div class="pl-40px pr-40px mb-16px">
-              <AgDescription class="color-#979ba5 break-all">
+              <AgDescription class="color-#979ba5 break-all gap-4px">
                 <template #description>
                   {{ selectedTool.description }}
                 </template>
@@ -295,7 +309,6 @@ const toolGroupList = computed(() => {
     if (tool.labels[0]) {
       const { id, name } = tool.labels[0];
       const group = groupList.find(item => item.id === id);
-
       if (group) {
         group.toolList.push(tool);
       }
@@ -491,6 +504,17 @@ const handleNavDocDetail = () => {
     query: { apiName: selectedTool.value.name },
   });
   window.open(routeData.href, '_blank');
+};
+
+const handleToolMouseenter = (e: MouseEvent, row: IMCPServerTool) => {
+  const cell = (e.target as HTMLElement).closest('.truncate');
+  if (cell) {
+    row.isOverflow = cell.scrollWidth > cell.clientWidth;
+  }
+};
+
+const handleToolMouseleave = (row: IMCPServerTool) => {
+  delete row.isOverflow;
 };
 
 onMounted(() => {
