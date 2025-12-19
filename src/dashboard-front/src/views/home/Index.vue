@@ -83,32 +83,36 @@
         <section v-if="gatewaysList.length">
           <div class="table-header">
             <div
-              :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-              class="flex-grow-1"
+              class="flex-1 of2"
             >
               {{ t('网关名') }}
             </div>
             <template v-if="featureFlagStore.isTenantMode">
-              <div class="flex-grow-1 of1">
+              <div class="flex-1">
                 {{ t('租户模式') }}
               </div>
-              <div class="flex-grow-1 of1">
+              <div class="flex-1">
                 {{ t('租户 ID') }}
               </div>
             </template>
-            <div class="flex-grow-1 of1">
+            <div class="flex-1">
               {{ t('创建者') }}
             </div>
             <div
-              :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
-              class="flex-grow-1"
+              class="flex-1 of2"
             >
               {{ t('环境列表') }}
             </div>
-            <div class="flex-grow-1 of1">
+            <div
+              v-if="featureFlagStore.flags.ENABLE_GATEWAY_OPERATION_STATUS"
+              class="flex-1"
+            >
+              {{ t('运营状态') }}
+            </div>
+            <div class="flex-1">
               {{ t('资源数量') }}
             </div>
-            <div class="flex-grow-1 of2">
+            <div class="flex-1 of2">
               {{ t('操作') }}
             </div>
           </div>
@@ -119,8 +123,7 @@
               class="table-item"
             >
               <div
-                class="flex-grow-1 flex items-center"
-                :class="featureFlagStore.isTenantMode ? 'of2' : 'of3'"
+                class="flex-1 flex items-center of2"
               >
                 <div
                   :class="item.status ? '' : 'deact'"
@@ -157,20 +160,19 @@
                 </BkTag>
               </div>
               <template v-if="featureFlagStore.isTenantMode">
-                <div class="flex-grow-1 of1">
+                <div class="flex-1">
                   {{ TENANT_MODE_TEXT_MAP[item.tenant_mode as string] || '--' }}
                 </div>
-                <div class="flex-grow-1 of1">
+                <div class="flex-1">
                   {{ item.tenant_id || '--' }}
                 </div>
               </template>
-              <div class="flex-grow-1 of1">
+              <div class="flex-1">
                 <span v-if="!featureFlagStore.isEnableDisplayName">{{ item.created_by }}</span>
                 <span v-else><bk-user-display-name :user-id="item.created_by" /></span>
               </div>
               <div
-                :class="featureFlagStore.isEnableDisplayName ? 'of2' : 'of3'"
-                class="env flex-grow-1"
+                class="env flex-1 of2"
               >
                 <div class="flex">
                   <span
@@ -198,7 +200,31 @@
                 </div>
               </div>
               <div
-                class="flex-grow-1 of1 pl-4"
+                v-if="featureFlagStore.flags.ENABLE_GATEWAY_OPERATION_STATUS"
+                class="flex-1"
+              >
+                <span v-if="item.operation_status?.status === 'active'">{{ t('活跃') }}</span>
+                <div
+                  v-if="item.operation_status?.status === 'inactive'"
+                  v-bk-tooltips="{
+                    content: item.operation_status?.source === 'apigateway'
+                      ? t('网关过去 180 天没有任何调用量，请确认是否停用网关')
+                      : t('网关过去 180 天没有任何调用量，请确认是否下架网关对应的插件应用') }"
+                  class="flex items-center cursor-pointer inactive"
+                >
+                  {{ t('闲置') }}
+                  <bk-button
+                    theme="primary"
+                    class="ml-8px inactive-btn"
+                    text
+                    @click="openTab(item.operation_status?.link)"
+                  >
+                    {{ item.operation_status?.source === 'apigateway' ? t('去停用') : t('去下架') }}
+                  </bk-button>
+                </div>
+              </div>
+              <div
+                class="flex-1 pl-4"
                 :class="[
                   { 'color-#3A84FF': item.hasOwnProperty('resource_count') }
                 ]"
@@ -218,7 +244,7 @@
                   <span class="none">{{ item.resource_count }}</span>
                 </template>
               </div>
-              <div class="flex-grow-1 of2">
+              <div class="flex-1 of2">
                 <BkButton
                   text
                   theme="primary"
@@ -252,19 +278,33 @@
           class="empty-container"
         >
           <div class="table-header">
-            <div class="flex-grow-1 of3">
+            <div class="flex-1 of2">
               {{ t('网关名') }}
             </div>
-            <div class="flex-grow-1 of1">
+            <template v-if="featureFlagStore.isTenantMode">
+              <div class="flex-1">
+                {{ t('租户模式') }}
+              </div>
+              <div class="flex-1">
+                {{ t('租户 ID') }}
+              </div>
+            </template>
+            <div class="flex-1">
               {{ t('创建者') }}
             </div>
-            <div class="flex-grow-1 of3">
+            <div class="flex-1 of2">
               {{ t('环境列表') }}
             </div>
-            <div class="flex-grow-1 of1">
+            <div
+              v-if="featureFlagStore.flags.ENABLE_GATEWAY_OPERATION_STATUS"
+              class="flex-1"
+            >
+              {{ t('运营状态') }}
+            </div>
+            <div class="flex-1">
               {{ t('资源数量') }}
             </div>
-            <div class="flex-grow-1 of2">
+            <div class="flex-1 of2">
               {{ t('操作') }}
             </div>
           </div>
@@ -585,6 +625,10 @@ const handleGoPage = (routeName: string, gateway: GatewayType) => {
     name: routeName,
     params: { id: gateway.id },
   });
+};
+
+const openTab = (link?: string) => {
+  window.open(link, '_blank');
 };
 
 // 列表排序
@@ -977,6 +1021,17 @@ onMounted(() => {
           color: #3A84FF;
         }
       }
+    }
+  }
+}
+.inactive {
+  line-height: 80px;
+  .inactive-btn {
+    display: none;
+  }
+  &:hover {
+    .inactive-btn {
+      display: inline-block;
     }
   }
 }

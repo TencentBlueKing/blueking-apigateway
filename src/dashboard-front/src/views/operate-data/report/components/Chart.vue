@@ -228,27 +228,26 @@ const getChartOption = () => {
     grid: {},
   };
 
-  let moreOption = {};
+  let moreOption = { xAxis: { axisLabel: {} } };
 
   chartData?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
     chartOption.series.push(merge({}, baseOption.series[0], {
       name: (item.target?.split('=')[1])?.replace(/"/g, ''),
-      data: datapoints.map((item) => {
-        if (instanceId === 'ingress' || instanceId === 'egress') {
-          return [
-            item[1],
-            (item[0] / 1024).toFixed(2),
-          ];
-        }
-        return [
-          item[1],
-          item[0],
-        ];
-      }),
+      data: datapoints.map(item => ([
+        item[1],
+        item[0],
+      ])),
     }));
     moreOption = getChartMoreOption(datapoints);
+    const dataLength = datapoints?.length || 0;
+    if (dataLength <= 10) {
+      moreOption.xAxis.axisLabel.rotate = 0;
+    }
+    else {
+      moreOption.xAxis.axisLabel.rotate = 20;
+    }
   });
   // 设置图表颜色
   chartOption.color = generateChartColor(chartData.series ?? []);

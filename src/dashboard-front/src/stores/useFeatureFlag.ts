@@ -44,6 +44,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       MENU_ITEM_ESB_API: false,
       MENU_ITEM_ESB_API_DOC: false,
       SYNC_ESB_TO_APIGW_ENABLED: false,
+      ENABLE_GATEWAY_OPERATION_STATUS: false,
     },
     showNoticeAlert: false,
     showComManagement: false,
