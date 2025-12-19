@@ -70,7 +70,8 @@ class GatewayApisixResourceTransformer(BaseTransformer):
     # 3. 中间 registry 应该看做目标 registry 的最终状态
 
     def __init__(self, release: Release, publish_id: Optional[int] = None, revoke_flag: Optional[bool] = False):
-        if release.resource_version.is_schema_v2:
+        if release.resource_version.is_schema_v2 or revoke_flag:
+            # note: revoke_flag is True, allow to use schema v1 to revoke resources
             self._release_data = ReleaseData(release)
         else:
             raise ValueError("Only support resource_version schema v2, v1 is deprecated")
@@ -112,6 +113,8 @@ class GatewayApisixResourceTransformer(BaseTransformer):
             self.revoke_flag,
         )
         self._converted_routes = route_convertor.convert()
+
+        # NOTE: other resource should care about the revoke_flag too
 
         # FIXME: impl it
         # ssl_convertor = SSLConvertor(self._release_data)
