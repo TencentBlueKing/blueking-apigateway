@@ -177,6 +177,29 @@
           </div>
         </BkTabPanel>
         <BkTabPanel
+          v-if="isEnablePrompt"
+          name="prompt"
+        >
+          <template #label>
+            <div class="flex-row items-center">
+              Prompt
+              <div
+                v-if="promptCount"
+                class="count"
+                :class="[active === 'tools' ? 'on' : 'off']"
+              >
+                {{ promptCount }}
+              </div>
+            </div>
+          </template>
+          <div class="panel-content">
+            <ServerPrompts
+              :server="mcpDetails"
+              page="market"
+            />
+          </div>
+        </BkTabPanel>
+        <BkTabPanel
           name="guide"
         >
           <template #label>
@@ -229,6 +252,7 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import { type IMarketplaceDetails, getMcpServerDetails } from '@/services/source/mcp-market';
 import { getCustomServerGuideDoc } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
+import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
@@ -244,6 +268,7 @@ const envStore = useEnv();
 
 const active = ref('tools');
 const toolsCount = ref<number>(0);
+const promptCount = ref(0);
 const mcpDetails = ref<IMarketplaceDetails>();
 const defaultMarkdownStr = ref('');
 const markdownStr = ref('');
@@ -253,6 +278,7 @@ const isShowGuideSlider = ref(false);
 const mcpId = computed(() => {
   return route.params.id;
 });
+const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 
 const handleCopy = (str: string) => {
   copy(str);
@@ -265,8 +291,9 @@ const goBack = () => {
 const getDetails = async () => {
   const res = await getMcpServerDetails(mcpId.value as string);
   mcpDetails.value = res ?? {};
-  const { tools_count = 0, guideline = '' } = mcpDetails.value;
+  const { tools_count = 0, prompts_count = 0, guideline = '' } = mcpDetails.value;
   toolsCount.value = tools_count;
+  promptCount.value = prompts_count;
   [markdownStr.value, defaultMarkdownStr.value] = [guideline, guideline];
   if (res?.gateway?.id) {
     await fetchCustomGuide(res?.gateway?.id);

@@ -167,6 +167,11 @@
               :server="server"
               @update-count="(count) => updateCount(count, item.name)"
             />
+            <ServerPrompts
+              v-if="item.name === 'prompt'"
+              :server="server"
+              @update-count="(count) => updateCount(count, item.name)"
+            />
             <AuthApplications
               v-if="item.name === 'auth'"
               :mcp-server-id="serverId"
@@ -200,15 +205,16 @@ import {
   getServerGuideDoc,
   patchServerStatus,
 } from '@/services/source/mcp-server';
-import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import { Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
+import { useFeatureFlag, useGateway } from '@/stores';
 import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
 import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
-import { useGateway } from '@/stores';
+import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
+import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -219,6 +225,7 @@ const { gatewayId = 0 } = defineProps<IProps>();
 const { t } = useI18n();
 const route = useRoute();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const createSliderRef = ref();
 const serverId = ref(0);
@@ -249,6 +256,11 @@ const panels = ref([
     count: 0,
   },
   {
+    name: 'prompt',
+    label: 'Prompt',
+    count: 0,
+  },
+  {
     name: 'auth',
     label: t('已授权应用'),
     count: 0,
@@ -260,6 +272,12 @@ const panels = ref([
   },
 ]);
 const editingServerId = ref<number>();
+
+const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
+
+if (!isEnablePrompt.value) {
+  panels.value = panels.value.filter(item => !['prompt'].includes(item.name));
+}
 
 const fetchServer = async () => {
   server.value = await getServer(gatewayId, serverId.value);
@@ -370,7 +388,7 @@ const handleDelete = async () => {
       await deleteServer(gatewayId, server.value.id);
       Message({
         theme: 'success',
-        message: t('已删除'),
+        message: t('删除成功'),
       });
       router.replace({ name: 'MCPServer' });
     },

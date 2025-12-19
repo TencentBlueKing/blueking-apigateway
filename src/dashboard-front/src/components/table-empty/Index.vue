@@ -48,8 +48,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useI18n } from 'vue-i18n';
 import { cloneDeep } from 'lodash-es';
+import i18n from '@/locales';
 
 interface IProps {
   emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'refresh'
@@ -70,7 +70,7 @@ const emit = defineEmits<{
   'refresh': void
 }>();
 
-const { t } = useI18n();
+const { t } = i18n.global;
 
 const exceptionAttrs = computed(() => {
   if (error) {
