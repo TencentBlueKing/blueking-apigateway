@@ -148,6 +148,17 @@
             {{ server.tools_count }}
           </div>
         </div>
+        <div
+          v-if="isEnablePrompt"
+          class="content-item"
+        >
+          <div class="item-label">
+            {{ t('Prompt 数量') }}:
+          </div>
+          <div class="item-value">
+            {{ server.prompts_count }}
+          </div>
+        </div>
         <div class="content-item">
           <div class="item-label">
             {{ t('标签') }}:
@@ -174,6 +185,7 @@
 <script lang="ts" setup>
 import { type IMCPServer } from '@/services/source/mcp-server';
 import { copy } from '@/utils';
+import { useFeatureFlag } from '@/stores';
 
 interface IProps { server: IMCPServer }
 
@@ -188,7 +200,10 @@ const { server } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
+const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
+
+const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 
 const handleEditClick = () => {
   emit('edit', server.id);
