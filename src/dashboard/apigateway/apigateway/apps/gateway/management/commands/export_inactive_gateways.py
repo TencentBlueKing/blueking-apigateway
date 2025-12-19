@@ -47,9 +47,10 @@ class Command(BaseCommand):
         template = options["template"]
         days = options["days"]
 
-        gateways = Gateway.objects.all()
-        gateway_ids = list(gateways.values_list("id", flat=True))
         start_time = timezone.now() + datetime.timedelta(days=-days)
+
+        gateways = Gateway.objects.filter(created_time__lte=start_time, status=1).all()
+        gateway_ids = list(gateways.values_list("id", flat=True))
 
         exclude_gateway_ids = list(
             StatisticsGatewayRequestByDay.objects.filter(
@@ -71,7 +72,7 @@ class Command(BaseCommand):
                 "created_time": obj.created_time,
                 "options": "",
             }
-            for obj in gateways.exclude(id__in=exclude_gateway_ids).order_by("name")
+            for obj in gateways.exclude(id__in=exclude_gateway_ids).order_by("created_time")
         ]
 
         if not data:

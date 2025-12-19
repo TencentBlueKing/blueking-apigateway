@@ -32,6 +32,12 @@ const path = '/gateways';
 export const getPluginListData = (apigwId: number, data: any) => http.get(`${path}/${apigwId}/plugins/`, data);
 
 /**
+ * 获取某个环境或资源下的插件标签
+ * @param apigwId 网关id
+ */
+export const getPluginTags = (apigwId: number) => http.get<{ tags: string[] }>(`${path}/${apigwId}/plugins/-/tags/`);
+
+/**
  * 获取插件绑定的环境列表和资源列表
  * @param apigwId 网关id
  * @param code 插件code

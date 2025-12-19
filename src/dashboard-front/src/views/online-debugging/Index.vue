@@ -1063,6 +1063,7 @@ const handleRetry = (row: Record<string, any>) => {
     headers,
     body,
   } = row.request;
+  const { resource_name } = row;
 
   const pathList: any[] = [];
   Object.keys(path_params)?.forEach((key: string) => {
@@ -1095,6 +1096,25 @@ const handleRetry = (row: Record<string, any>) => {
 
   payloadType.priorityPath = [];
   payloadType.fromDataPayload = [];
+
+  if (resource_name === curResource.value?.name) {
+    return;
+  }
+
+  for (const key of Object.keys(resourceGroup.value)) {
+    const cur = resourceGroup.value[key];
+    const match = cur?.resources?.find((item: any) => {
+      return item.name === resource_name;
+    });
+    if (match) {
+      activeName.value = key;
+      curResource.value = match;
+      curComponentName.value = curResource.value?.name;
+      break;
+    }
+  }
+  responseContentRef.value?.setInit();
+  response.value = {};
 };
 
 const init = async () => {
