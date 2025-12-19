@@ -109,6 +109,17 @@
                   {{ item.tools_count }}
                 </div>
               </div>
+              <div
+                v-if="isEnablePrompt"
+                class="info-item"
+              >
+                <div class="label">
+                  {{ t('Prompt 数量') }}：
+                </div>
+                <div class="value">
+                  {{ item.prompts_count }}
+                </div>
+              </div>
               <div class="info-item">
                 <div class="label">
                   {{ t('MCP描述') }}：
@@ -166,12 +177,14 @@
 import AgIcon from '@/components/ag-icon/Index.vue';
 import { type IMarketplaceItem, getMcpMarketplace } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
+import { useFeatureFlag } from '@/stores';
 import mcpBanner from '@/images/mcp-banner.jpg';
 import mcpBannerEn from '@/images/mcp-banner-en.jpg';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 const { t, locale } = useI18n();
 const router = useRouter();
+const featureFlagStore = useFeatureFlag();
 
 const search = ref<string>('');
 const isPublic = ref<boolean>(false);
@@ -189,6 +202,8 @@ const pagination = ref({
   limit: 12,
   count: 0,
 });
+
+const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 
 const bannerImg = computed(() => {
   if (locale.value === 'zh-cn') {

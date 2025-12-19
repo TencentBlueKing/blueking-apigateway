@@ -21,13 +21,13 @@ import type { ShallowRef } from 'vue';
 import type { ITableSettings } from '@/types/common';
 import { isEqual } from 'lodash-es';
 import i18n from '@/locales';
+import router from '@/router';
 
 export function useTableSetting(setting: ShallowRef<ITableSettings>, name?: string) {
   const lang = i18n.global.locale;
   let tempName: string;
   if (!name) {
-    const route = useRoute();
-    tempName = route.name as string;
+    tempName = router?.currentRoute?.value?.name as string;
   }
   else {
     tempName = name;
