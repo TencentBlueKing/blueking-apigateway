@@ -34,6 +34,7 @@ CELERY_IMPORTS = [
     "apigateway.apps.monitor.tasks",
     "apigateway.apps.metrics.tasks",
     "apigateway.apps.permission.tasks",
+    "apigateway.apps.mcp_server.tasks",
     "apigateway.controller.tasks",
 ]
 
@@ -60,6 +61,14 @@ CELERY_BEAT_SCHEDULE = {
     "apigateway.controller.tasks.clean_task.delete_old_debug_history": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_debug_history",
         "schedule": crontab(day_of_week="*", hour=0, minute=0),
+    },
+    "apigateway.controller.tasks.clean_task.delete_old_alarm_records": {
+        "task": "apigateway.controller.tasks.clean_task.delete_old_alarm_records",
+        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+    },
+    "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts": {
+        "task": "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts",
+        "schedule": crontab(minute="*/10"),
     },
 }
 
