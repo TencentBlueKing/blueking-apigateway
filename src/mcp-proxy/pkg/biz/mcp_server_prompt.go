@@ -16,18 +16,27 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-// Package biz ...
 package biz
 
 import (
 	"context"
+	"errors"
 
+	"gorm.io/gorm"
+
+	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/entity/model"
-	"mcp_proxy/pkg/repo"
 )
 
-// GetAllActiveMCPServers ...
-func GetAllActiveMCPServers(ctx context.Context) ([]*model.MCPServer, error) {
-	q := repo.MCPServer
-	return repo.MCPServer.WithContext(ctx).Where(q.Status.Eq(model.McpServerStatusActive)).Find()
+// GetMCPServerPrompts 获取 MCP Server 的 Prompts 配置
+func GetMCPServerPrompts(ctx context.Context, mcpServerID int) ([]*model.Prompt, error) {
+	extend, err := cacheimpls.GetMCPServerExtendByMcpServerID(ctx, mcpServerID, model.MCPServerExtendTypePrompts)
+	if err != nil {
+		// 如果记录不存在，返回空列表
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return extend.GetPrompts()
 }

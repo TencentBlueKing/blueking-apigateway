@@ -122,4 +122,63 @@ var _ = Describe("MCPServer", func() {
 			Expect(result).To(ContainSubstring("GET"))
 		})
 	})
+
+	Describe("Prompt operations", func() {
+		var server *MCPServer
+
+		BeforeEach(func() {
+			server = &MCPServer{
+				name:              "test-server",
+				resourceVersionID: 1,
+				tools:             make(map[string]struct{}),
+				prompts:           make(map[string]struct{}),
+				rwLock:            &sync.RWMutex{},
+			}
+		})
+
+		Describe("IsRegisteredPrompt", func() {
+			It("should return false for unregistered prompt", func() {
+				Expect(server.IsRegisteredPrompt("unknown-prompt")).To(BeFalse())
+			})
+
+			It("should return true for registered prompt", func() {
+				server.prompts["my-prompt"] = struct{}{}
+				Expect(server.IsRegisteredPrompt("my-prompt")).To(BeTrue())
+			})
+		})
+
+		Describe("GetPromptNames", func() {
+			It("should return empty slice when no prompts", func() {
+				Expect(server.GetPromptNames()).To(BeEmpty())
+			})
+
+			It("should return all registered prompt names", func() {
+				server.prompts["prompt1"] = struct{}{}
+				server.prompts["prompt2"] = struct{}{}
+				server.prompts["prompt3"] = struct{}{}
+
+				prompts := server.GetPromptNames()
+				Expect(prompts).To(HaveLen(3))
+				Expect(prompts).To(ContainElements("prompt1", "prompt2", "prompt3"))
+			})
+		})
+
+		Describe("Concurrent prompt access", func() {
+			It("should handle concurrent reads and writes for prompts", func() {
+				var wg sync.WaitGroup
+
+				// Concurrent reads
+				for i := 0; i < 50; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						_ = server.GetPromptNames()
+						_ = server.IsRegisteredPrompt("some-prompt")
+					}()
+				}
+
+				wg.Wait()
+			})
+		})
+	})
 })
