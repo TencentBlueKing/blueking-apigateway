@@ -254,7 +254,8 @@ const getChartOption = () => {
   let moreOption: any = {};
 
   const miniList = ['requests', 'non_20x_status'];
-  const fullLineList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
+  const middleList = ['ingress', 'egress'];
+  const maxList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
 
   // if (instanceId !== 'response_time') {
   chartData?.series?.forEach((item: ISeriesItemType) => {
@@ -263,7 +264,7 @@ const getChartOption = () => {
     chartOption.series.push(merge({}, baseOption.series[0], {
       name: (item.target?.split('=')[1])?.replace(/"/g, ''),
       data: datapoints.map((item) => {
-        if (instanceId === 'ingress' || instanceId === 'egress') {
+        if (middleList.includes(instanceId)) {
           return [
             item[1],
             (item[0] / 1024).toFixed(2),
@@ -277,7 +278,7 @@ const getChartOption = () => {
     }));
     moreOption = getChartMoreOption(datapoints);
 
-    if (!fullLineList.includes(instanceId)) {
+    if (!maxList.includes(instanceId)) {
       const dataLength = datapoints?.length || 0;
       if (miniList.includes(instanceId)) {
         if (dataLength <= 20) {
@@ -329,7 +330,7 @@ const getChartOption = () => {
       </div>`;
     };
   }
-  else if (fullLineList.includes(instanceId)) {
+  else if (maxList.includes(instanceId)) {
     // 资源 xx 响应耗时分布
     chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
       return `<div>
@@ -338,7 +339,7 @@ const getChartOption = () => {
       </div>`;
     };
   }
-  else if (['ingress', 'egress'].includes(instanceId)) {
+  else if (middleList.includes(instanceId)) {
     // ingress 带宽占用 && egress 带宽占用
     chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
       return `<div>
@@ -364,11 +365,11 @@ const getChartOption = () => {
     }
   }
 
-  if (instanceId === 'ingress' || instanceId === 'egress') {
+  if (middleList.includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} KB' };
   }
 
-  if (fullLineList.includes(instanceId)) {
+  if (maxList.includes(instanceId)) {
     chartOption.yAxis.axisLabel = { formatter: '{value} ms' };
   }
   // }
