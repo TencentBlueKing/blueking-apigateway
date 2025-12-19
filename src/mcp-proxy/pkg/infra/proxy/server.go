@@ -20,21 +20,17 @@ package proxy
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
-	"github.com/ThinkInAIXYZ/go-mcp/protocol"
-	"github.com/ThinkInAIXYZ/go-mcp/server"
-	"github.com/ThinkInAIXYZ/go-mcp/transport"
-
-	"mcp_proxy/pkg/util"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // MCPServer ...
 type MCPServer struct {
-	Server    *server.Server
-	Transport transport.ServerTransport
-	Handler   *transport.SSEHandler
-	name      string
+	Server  *mcp.Server
+	Handler *mcp.SSEHandler
+	name    string
 	// 生效的资源版本号
 	resourceVersionID int
 	tools             map[string]struct{}
@@ -44,25 +40,34 @@ type MCPServer struct {
 
 // NewMCPServer ...
 func NewMCPServer(
-	transport transport.ServerTransport,
-	handler *transport.SSEHandler,
 	name string,
 	resourceVersion int,
 ) *MCPServer {
-	mcpServer, err := server.NewServer(transport)
-	if err != nil {
-		panic(err)
-	}
+	mcpServer := mcp.NewServer(
+		&mcp.Implementation{Name: name, Version: "1.0.0"},
+		nil,
+	)
 	return &MCPServer{
 		Server:            mcpServer,
-		Transport:         transport,
-		Handler:           handler,
 		tools:             make(map[string]struct{}),
 		prompts:           make(map[string]struct{}),
 		rwLock:            &sync.RWMutex{},
 		name:              name,
 		resourceVersionID: resourceVersion,
 	}
+}
+
+// SetHandler sets the SSE handler for the server
+func (s *MCPServer) SetHandler(handler *mcp.SSEHandler) {
+	s.Handler = handler
+}
+
+// HandleSSE returns the http.Handler for SSE connections
+func (s *MCPServer) HandleSSE() http.Handler {
+	if s.Handler != nil {
+		return s.Handler
+	}
+	return nil
 }
 
 // IsRegisteredTool checks if the tool is registered
@@ -99,26 +104,21 @@ func (s *MCPServer) GetTools() []string {
 }
 
 // Run ...
+// Note: 官方 SDK 的 Server.Run 需要传入 transport，这里改为在 proxy 层处理
 func (s *MCPServer) Run(ctx context.Context) {
-	util.GoroutineWithRecovery(ctx, func() {
-		if err := s.Server.Run(); err != nil {
-			panic(err)
-		}
-	})
+	// 官方 SDK 使用 SSEHandler 来处理连接，不需要单独 Run
+	// Server 会在 SSEHandler 处理请求时自动管理会话
 }
 
 // Shutdown ...
 func (s *MCPServer) Shutdown(ctx context.Context) {
-	util.GoroutineWithRecovery(ctx, func() {
-		if err := s.Server.Shutdown(ctx); err != nil {
-			panic(err)
-		}
-	})
+	// 官方 SDK 的 Server 没有 Shutdown 方法
+	// 会话管理由 SSEHandler 处理
 }
 
 // RegisterTool ...
-func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHandlerFunc) {
-	s.Server.RegisterTool(tool, toolHandler)
+func (s *MCPServer) RegisterTool(tool *mcp.Tool, toolHandler mcp.ToolHandler) {
+	s.Server.AddTool(tool, toolHandler)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	s.tools[tool.Name] = struct{}{}
@@ -126,20 +126,20 @@ func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHan
 
 // UnregisterTool  unregisters a tool from the server
 func (s *MCPServer) UnregisterTool(toolName string) {
-	s.Server.UnregisterTool(toolName)
+	s.Server.RemoveTools(toolName)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.tools, toolName)
 }
 
 // RegisterResources ...
-func (s *MCPServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
-	s.Server.RegisterResource(resource, resourceHandler)
+func (s *MCPServer) RegisterResources(resource *mcp.Resource, resourceHandler mcp.ResourceHandler) {
+	s.Server.AddResource(resource, resourceHandler)
 }
 
 // RegisterPrompt registers a prompt to the server
-func (s *MCPServer) RegisterPrompt(prompt *protocol.Prompt, promptHandler server.PromptHandlerFunc) {
-	s.Server.RegisterPrompt(prompt, promptHandler)
+func (s *MCPServer) RegisterPrompt(prompt *mcp.Prompt, promptHandler mcp.PromptHandler) {
+	s.Server.AddPrompt(prompt, promptHandler)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	s.prompts[prompt.Name] = struct{}{}
@@ -147,7 +147,7 @@ func (s *MCPServer) RegisterPrompt(prompt *protocol.Prompt, promptHandler server
 
 // UnregisterPrompt unregisters a prompt from the server
 func (s *MCPServer) UnregisterPrompt(promptName string) {
-	s.Server.UnregisterPrompt(promptName)
+	s.Server.RemovePrompts(promptName)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.prompts, promptName)
