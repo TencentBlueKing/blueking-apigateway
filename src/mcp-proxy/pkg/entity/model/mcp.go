@@ -37,6 +37,7 @@ const (
 type MCPServer struct {
 	ID            int         `gorm:"primaryKey;autoIncrement;column:id"`
 	Name          string      `gorm:"column:name;size:64;uniqueIndex"`
+	Title         string      `gorm:"column:title;size:64"`
 	Description   string      `gorm:"column:description;size:512"`
 	IsPublic      bool        `gorm:"column:is_public"`
 	Labels        ArrayString `gorm:"column:labels"`

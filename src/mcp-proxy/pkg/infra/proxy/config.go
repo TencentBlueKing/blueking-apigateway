@@ -29,6 +29,7 @@ import (
 // MCPServerConfig ...
 type MCPServerConfig struct {
 	Name              string        `json:"name"` // 唯一标识name，可以是：gateway_name+stage或者其他id
+	Title             string        `json:"title"`
 	ResourceVersionID int           `json:"resource_version_id"`
 	Tools             []*ToolConfig `json:"tools"`
 }

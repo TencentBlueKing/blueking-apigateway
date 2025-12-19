@@ -67,7 +67,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					"Test API",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
@@ -86,7 +92,13 @@ var _ = Describe("MCP", func() {
 					Paths:   &openapi3.Paths{},
 				}
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					"Test API",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
@@ -119,7 +131,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					"Test API",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+				)
 				Expect(err).NotTo(HaveOccurred())
 
 				server := mcpProxy.GetMCPServer("test-server")
@@ -173,7 +191,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					"Test API",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+				)
 				Expect(err).NotTo(HaveOccurred())
 
 				server := mcpProxy.GetMCPServer("test-server")
@@ -207,6 +231,7 @@ var _ = Describe("MCP", func() {
 
 				err := mcpProxy.AddMCPServerFromOpenAPISpec(
 					"test-server",
+					"Test API",
 					1,
 					openapiSpec,
 					[]string{"getUsers", "createUser"},

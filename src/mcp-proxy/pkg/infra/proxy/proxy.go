@@ -100,14 +100,15 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 // AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
-		mcpServer := NewMCPServer(config.Name, config.ResourceVersionID)
+		mcpServer := NewMCPServer(config.Name, config.Title, config.ResourceVersionID)
 		// register tool
 		for _, toolConfig := range config.Tools {
 			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
 			tool := &mcp.Tool{
-				Name:        toolConfig.Name,
-				Description: toolConfig.Description,
-				InputSchema: json.RawMessage(bytes),
+				Name:         toolConfig.Name,
+				Description:  toolConfig.Description,
+				InputSchema:  json.RawMessage(bytes),
+				OutputSchema: toolConfig.OutputSchema,
 			}
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.RegisterTool(tool, toolHandler)
@@ -123,14 +124,14 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenAPISpec nolint:gofmt
-func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
+func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string, title string,
 	resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
 		operationIDMap[operationID] = struct{}{}
 	}
-	mcpServer := NewMCPServer(name, resourceVersionID)
+	mcpServer := NewMCPServer(name, title, resourceVersionID)
 	mcpServerConfig := &MCPServerConfig{
 		Name:              name,
 		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap),
@@ -140,9 +141,10 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 	for _, toolConfig := range mcpServerConfig.Tools {
 		bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
 		tool := &mcp.Tool{
-			Name:        toolConfig.Name,
-			Description: toolConfig.Description,
-			InputSchema: json.RawMessage(bytes),
+			Name:         toolConfig.Name,
+			Description:  toolConfig.Description,
+			InputSchema:  json.RawMessage(bytes),
+			OutputSchema: toolConfig.OutputSchema,
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.RegisterTool(tool, toolHandler)

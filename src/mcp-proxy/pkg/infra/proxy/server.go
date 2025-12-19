@@ -41,10 +41,11 @@ type MCPServer struct {
 // NewMCPServer ...
 func NewMCPServer(
 	name string,
+	title string,
 	resourceVersion int,
 ) *MCPServer {
 	mcpServer := mcp.NewServer(
-		&mcp.Implementation{Name: name, Version: "1.0.0"},
+		&mcp.Implementation{Name: name, Title: title, Version: "1.0.0"},
 		nil,
 	)
 	return &MCPServer{
