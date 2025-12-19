@@ -43,6 +43,11 @@ interface IApiGateway {
   created_by: string
   created_time: string
   updated_time: string
+  operation_status: {
+    status?: string
+    link?: string
+    source?: string
+  }
 }
 
 interface IApiGatewayDetail extends IApiGateway {
