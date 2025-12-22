@@ -8,7 +8,7 @@ Clients supporting the MCP protocol can be configured using the following settin
     "mcpServers": {
       "{{name}}": {
         "type": "streamable-http",
-        "url": "{{sse_url}}",
+        "url": "{{url}}",
         "description": "{{description}}"
       }
     }
@@ -20,7 +20,7 @@ Clients supporting the MCP protocol can be configured using the following settin
     "mcpServers": {
       "{{name}}": {
         "type": "sse",
-        "url": "{{sse_url}}",
+        "url": "{{url}}",
         "description": "{{description}}"
       }
     }

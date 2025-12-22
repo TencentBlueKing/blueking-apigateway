@@ -8,7 +8,7 @@
     "mcpServers": {
       "{{name}}": {
         "type": "streamable-http",
-        "url": "{{sse_url}}",
+        "url": "{{url}}",
         "description": "{{description}}"
       }
     }
@@ -20,7 +20,7 @@
     "mcpServers": {
       "{{name}}": {
         "type": "sse",
-        "url": "{{sse_url}}",
+        "url": "{{url}}",
         "description": "{{description}}"
       }
     }

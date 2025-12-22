@@ -268,8 +268,8 @@ paths:
           resourcePermissionRequired: false
   /api/v2/mcp-servers/{mcp_server_name}/mcp:
     get:
-      operationId: mcp_proxy_application_steamable_http
-      description: mcp proxy steamableHTTP(用户态)接口
+      operationId: mcp_proxy_streamable_http
+      description: mcp proxy streamableHTTP(用户态)接口
       tags:
         - v2_mcp
       responses:
@@ -286,7 +286,7 @@ paths:
         backend:
           name: mcp-proxy
           method: get
-          path: /{mcp_server_name}/application/mcp
+          path: /{mcp_server_name}/mcp
           matchSubpath: false
           timeout: 0
         pluginConfigs: [ ]
@@ -297,8 +297,8 @@ paths:
         descriptionEn: None
   /api/v2/mcp-servers/{mcp_server_name}/application/mcp:
     post:
-      operationId: mcp_proxy_steamable_http
-      description: mcp proxy steamableHTTP(应用态)接口
+      operationId: mcp_proxy_streamable_http
+      description: mcp proxy streamableHTTP(应用态)接口
       tags:
         - v2_mcp
       responses:

@@ -1412,7 +1412,7 @@ class TestMCPServerProtocolType:
         call_args = mock_render.call_args
         context = call_args[1]["context"]
         assert context["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
-        assert "/sse/" in context["sse_url"]
+        assert "/sse/" in context["url"]
 
     def test_guideline_returns_correct_url_for_streamable_http(
         self, mocker, request_view, fake_gateway, fake_mcp_server
@@ -1438,4 +1438,4 @@ class TestMCPServerProtocolType:
         call_args = mock_render.call_args
         context = call_args[1]["context"]
         assert context["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
-        assert "/mcp/" in context["sse_url"]
+        assert "/mcp/" in context["url"]
