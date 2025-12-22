@@ -23,6 +23,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/constant"
 )
 
 var _ = Describe("MCPServer", func() {
@@ -34,6 +36,7 @@ var _ = Describe("MCPServer", func() {
 				name:              "test-server",
 				resourceVersionID: 1,
 				tools:             make(map[string]struct{}),
+				protocolType:      constant.MCPServerProtocolTypeSSE,
 				rwLock:            &sync.RWMutex{},
 			}
 		})
@@ -78,6 +81,50 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 
+		Describe("GetProtocolType", func() {
+			It("should return SSE protocol type", func() {
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeSSE))
+			})
+
+			It("should return Streamable HTTP protocol type", func() {
+				server.protocolType = constant.MCPServerProtocolTypeStreamableHTTP
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
+			})
+		})
+
+		Describe("IsStreamableHTTP", func() {
+			It("should return false for SSE protocol", func() {
+				server.protocolType = constant.MCPServerProtocolTypeSSE
+				Expect(server.IsStreamableHTTP()).To(BeFalse())
+			})
+
+			It("should return true for Streamable HTTP protocol", func() {
+				server.protocolType = constant.MCPServerProtocolTypeStreamableHTTP
+				Expect(server.IsStreamableHTTP()).To(BeTrue())
+			})
+		})
+
+		Describe("HandleSSE", func() {
+			It("should return nil when SSEHandler is nil", func() {
+				server.SSEHandler = nil
+				Expect(server.HandleSSE()).To(BeNil())
+			})
+		})
+
+		Describe("HandleMessage", func() {
+			It("should return nil when SSEHandler is nil", func() {
+				server.SSEHandler = nil
+				Expect(server.HandleMessage()).To(BeNil())
+			})
+		})
+
+		Describe("HandleMCP", func() {
+			It("should return nil when StreamableHTTPHandler is nil", func() {
+				server.StreamableHTTPHandler = nil
+				Expect(server.HandleMCP()).To(BeNil())
+			})
+		})
+
 		Describe("Concurrent access", func() {
 			It("should handle concurrent reads and writes", func() {
 				var wg sync.WaitGroup
@@ -90,6 +137,8 @@ var _ = Describe("MCPServer", func() {
 						_ = server.GetResourceVersionID()
 						_ = server.GetTools()
 						_ = server.IsRegisteredTool("some-tool")
+						_ = server.GetProtocolType()
+						_ = server.IsStreamableHTTP()
 					}()
 				}
 

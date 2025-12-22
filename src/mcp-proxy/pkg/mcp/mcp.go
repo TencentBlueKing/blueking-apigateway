@@ -124,7 +124,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		// 如果mcp server不存在，添加mcp server
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
-				conf.resourceVersion, conf.openapiFileData, server.ResourceNames)
+				conf.resourceVersion, conf.openapiFileData, server.ResourceNames, server.GetProtocolType())
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -135,8 +135,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				mcpProxy.RegisterPromptsToMCPServer(server.Name, prompts)
 				logging.GetLogger().Infof("registered %d prompts for mcp server[%s]", len(prompts), server.Name)
 			}
-			logging.GetLogger().Infof("add mcp server[%s] tool:%d, prompt:%d success",
-				server.Name, len(server.ResourceNames), len(prompts))
+			logging.GetLogger().Infof("add mcp server[%s] protocol:%s, tool:%d, prompt:%d success",
+				server.Name, server.GetProtocolType(), len(server.ResourceNames), len(prompts))
 			continue
 		}
 

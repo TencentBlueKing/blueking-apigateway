@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/proxy"
 )
 
@@ -67,7 +68,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					constant.MCPServerProtocolTypeSSE,
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
@@ -86,7 +93,13 @@ var _ = Describe("MCP", func() {
 					Paths:   &openapi3.Paths{},
 				}
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{},
+					constant.MCPServerProtocolTypeSSE,
+				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(mcpProxy.IsMCPServerExist("test-server")).To(BeTrue())
 
@@ -119,7 +132,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					constant.MCPServerProtocolTypeSSE,
+				)
 				Expect(err).NotTo(HaveOccurred())
 
 				server := mcpProxy.GetMCPServer("test-server")
@@ -173,7 +192,13 @@ var _ = Describe("MCP", func() {
 				}
 				openapiSpec.Paths.Set("/users", pathItem)
 
-				err := mcpProxy.AddMCPServerFromOpenAPISpec("test-server", 1, openapiSpec, []string{"getUsers"})
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					constant.MCPServerProtocolTypeSSE,
+				)
 				Expect(err).NotTo(HaveOccurred())
 
 				server := mcpProxy.GetMCPServer("test-server")
@@ -210,6 +235,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers", "createUser"},
+					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
