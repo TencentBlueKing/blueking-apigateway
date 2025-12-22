@@ -2,17 +2,31 @@
 
 支持 MCP 协议的客户端通过以下配置使用
 
+{% if protocol_type == "streamable_http" %}
 ```json
 {
     "mcpServers": {
       "{{name}}": {
-        "type": "sse",
-        "url": "{{sse_url}}",
+        "type": "streamableHttp",
+        "url": "{{url}}",
         "description": "{{description}}"
       }
     }
 }
 ```
+{% else %}
+```json
+{
+    "mcpServers": {
+      "{{name}}": {
+        "type": "sse",
+        "url": "{{url}}",
+        "description": "{{description}}"
+      }
+    }
+}
+```
+{% endif %}
 
 ## 认证
 
