@@ -318,6 +318,10 @@ class GatewayHandler:
 
         operation_statuses: Dict[int, dict] = {}
 
+        # start_time and end_time are timezone aware, now - delta_days from module-level constant
+        end_time = timezone.now()
+        start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
+
         to_stats_gateway_ids = []
         for gateway in gateways:
             source = GatewayOperationSourceEnum.APIGATEWAY.value
@@ -334,6 +338,15 @@ class GatewayHandler:
                 }
                 continue
 
+            # if created time is after start_time, set the status to active
+            if gateway.created_time > start_time:
+                operation_statuses[gateway.id] = {
+                    "status": GatewayOperationStatusEnum.ACTIVE.value,
+                    "link": link,
+                    "source": source,
+                }
+                continue
+
             operation_statuses[gateway.id] = {
                 "status": "",  # assign later
                 "link": link,
@@ -345,10 +358,6 @@ class GatewayHandler:
 
         if not to_stats_gateway_ids:
             return operation_statuses
-
-        # start_time and end_time are timezone aware, now - delta_days from module-level constant
-        end_time = timezone.now()
-        start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
 
         # query data and set the result to operation_statuses
         # just check existence, no need to calculate
