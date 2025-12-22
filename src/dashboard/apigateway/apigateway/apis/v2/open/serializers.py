@@ -25,6 +25,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerLeastPrivilegeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
@@ -188,6 +189,12 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()
     )
 
+    protocol_type = serializers.ChoiceField(
+        read_only=True,
+        help_text="MCPServer 协议类型",
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+    )
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
@@ -207,7 +214,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name)
+        return build_mcp_server_url(obj.name, obj.protocol_type)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)
@@ -316,7 +323,7 @@ class UserMCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
     def get_application_url(self, obj) -> str:
         least_privilege = self.context["least_privileges"].get((obj.gateway.id, obj.stage.id))
         if least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value:
-            return build_mcp_server_application_url(obj.name)
+            return build_mcp_server_application_url(obj.name, obj.protocol_type)
         return ""
 
     def get_least_privilege(self, obj) -> str:

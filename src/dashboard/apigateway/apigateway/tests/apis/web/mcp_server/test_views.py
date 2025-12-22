@@ -25,6 +25,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import (
@@ -1044,6 +1045,10 @@ class TestMCPServerRemotePromptsListApi:
         ]
 
         mocker.patch(
+            "apigateway.apis.web.mcp_server.views.get_user_credentials_from_request",
+            return_value=mocker.MagicMock(),
+        )
+        mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
             return_value=mock_prompts,
         )
@@ -1062,38 +1067,11 @@ class TestMCPServerRemotePromptsListApi:
         assert result["data"]["prompts"][0]["name"] == "代码审查助手"
         assert result["data"]["prompts"][0]["code"] == "prompt_001"
 
-    def test_list_with_keyword(self, mocker, request_view, fake_gateway):
-        mock_prompts = [
-            {
-                "id": 1,
-                "name": "代码审查助手",
-                "code": "prompt_001",
-                "content": "你是一个代码审查专家...",
-                "updated_time": "2025-12-15T10:00:00Z",
-                "labels": ["代码"],
-                "is_public": True,
-                "space_code": "devops",
-            },
-        ]
-
-        mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
-            return_value=mock_prompts,
-        )
-
-        resp = request_view(
-            method="GET",
-            view_name="mcp_server.remote_prompts_list",
-            path_params={"gateway_id": fake_gateway.id},
-            gateway=fake_gateway,
-            data={"keyword": "代码"},
-        )
-        result = resp.json()
-
-        assert resp.status_code == 200
-        assert len(result["data"]["prompts"]) == 1
-
     def test_list_empty(self, mocker, request_view, fake_gateway):
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.views.get_user_credentials_from_request",
+            return_value=mocker.MagicMock(),
+        )
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.fetch_remote_prompts",
             return_value=[],
@@ -1278,3 +1256,186 @@ class TestMCPServerPromptsApi:
         saved_prompts = json.loads(extend.content)
         assert len(saved_prompts) == 1
         assert saved_prompts[0]["id"] == 1
+
+
+class TestMCPServerProtocolType:
+    """测试 MCPServer 协议类型相关功能"""
+
+    def test_create_with_default_protocol_type(self, mocker, request_view, fake_gateway, fake_stage, faker):
+        """测试创建 MCPServer 时默认协议类型为 SSE"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        data = {
+            "name": "test-mcp-server-" + faker.pystr()[:10].lower().replace("_", "-"),
+            "description": faker.pystr(),
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "labels": ["test"],
+            "resource_names": ["resource1", "resource2"],
+        }
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        mcp_server = MCPServer.objects.get(id=result["data"]["id"])
+        assert mcp_server.protocol_type == MCPServerProtocolTypeEnum.SSE.value
+
+    def test_create_with_streamable_http_protocol_type(self, mocker, request_view, fake_gateway, fake_stage, faker):
+        """测试创建 MCPServer 时指定 Streamable HTTP 协议类型"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+
+        data = {
+            "name": "test-mcp-server-" + faker.pystr()[:10].lower().replace("_", "-"),
+            "description": faker.pystr(),
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "labels": ["test"],
+            "resource_names": ["resource1", "resource2"],
+            "protocol_type": MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        }
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        mcp_server = MCPServer.objects.get(id=result["data"]["id"])
+        assert mcp_server.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+    def test_update_protocol_type(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
+        """测试更新 MCPServer 协议类型"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
+            return_value=None,
+        )
+
+        # 确保初始协议类型为 SSE
+        fake_mcp_server.protocol_type = MCPServerProtocolTypeEnum.SSE.value
+        fake_mcp_server.save()
+
+        data = {
+            "description": faker.pystr(),
+            "protocol_type": MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        }
+
+        resp = request_view(
+            method="PATCH",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        fake_mcp_server.refresh_from_db()
+        assert fake_mcp_server.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+    def test_list_returns_protocol_type(self, request_view, fake_gateway, fake_mcp_server):
+        """测试列表接口返回 protocol_type"""
+        fake_mcp_server.protocol_type = MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+    def test_retrieve_returns_protocol_type(self, request_view, fake_gateway, fake_mcp_server):
+        """测试详情接口返回 protocol_type"""
+        fake_mcp_server.protocol_type = MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+    def test_guideline_returns_correct_url_for_sse(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试 guideline 接口返回正确的 SSE URL"""
+        fake_mcp_server.protocol_type = MCPServerProtocolTypeEnum.SSE.value
+        fake_mcp_server.save()
+
+        mock_render = mocker.patch(
+            "apigateway.apis.web.mcp_server.views.render_to_string",
+            return_value="# Guideline Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.guideline_retrieve",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 200
+        # 验证传递给模板的 protocol_type 参数
+        call_args = mock_render.call_args
+        context = call_args[1]["context"]
+        assert context["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+        assert "/sse/" in context["url"]
+
+    def test_guideline_returns_correct_url_for_streamable_http(
+        self, mocker, request_view, fake_gateway, fake_mcp_server
+    ):
+        """测试 guideline 接口返回正确的 Streamable HTTP URL"""
+        fake_mcp_server.protocol_type = MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+        fake_mcp_server.save()
+
+        mock_render = mocker.patch(
+            "apigateway.apis.web.mcp_server.views.render_to_string",
+            return_value="# Guideline Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.guideline_retrieve",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 200
+        # 验证传递给模板的 protocol_type 参数
+        call_args = mock_render.call_args
+        context = call_args[1]["context"]
+        assert context["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+        assert "/mcp/" in context["url"]

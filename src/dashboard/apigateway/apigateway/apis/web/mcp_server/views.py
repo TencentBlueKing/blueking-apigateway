@@ -46,6 +46,7 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
+from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.django import get_model_dict
@@ -382,12 +383,13 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
             template_name,
             context={
                 "name": instance.name,
-                "sse_url": build_mcp_server_url(instance.name),
+                "url": build_mcp_server_url(instance.name, instance.protocol_type),
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
                 "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
                 "user_tenant_id": user_tenant_id,
+                "protocol_type": instance.protocol_type,
             },
         )
 
@@ -796,13 +798,9 @@ class MCPServerRemotePromptsListApi(generics.ListAPIView):
         slz = MCPServerRemotePromptsQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        keyword = slz.validated_data.get("keyword", "")
-
         # 调用第三方平台获取 prompts 列表
-        prompts = MCPServerHandler.fetch_remote_prompts(
-            username=request.user.username,
-            keyword=keyword,
-        )
+        user_credentials = get_user_credentials_from_request(request)
+        prompts = MCPServerHandler.fetch_remote_prompts(user_credentials=user_credentials)
 
         output_slz = MCPServerRemotePromptsOutputSLZ({"prompts": prompts})
         return OKJsonResponse(data=output_slz.data)
