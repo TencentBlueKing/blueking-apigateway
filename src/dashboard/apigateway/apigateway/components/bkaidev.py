@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.url import url_join
 
 from .http import http_get, http_post
@@ -134,18 +135,9 @@ def _convert_prompts(remote_prompts: List[Dict[str, Any]]) -> List[Dict[str, Any
     return [_convert_prompt(p) for p in remote_prompts]
 
 
-def _get_mock_prompts_by_keyword(keyword: str = "") -> List[Dict[str, Any]]:
-    """根据关键字过滤 mock prompts（返回原始格式，不做转换）"""
-    if not keyword:
-        return _MOCK_PROMPTS
-
-    keyword_lower = keyword.lower()
-    return [
-        p
-        for p in _MOCK_PROMPTS
-        if keyword_lower in p["prompt_name"].lower()
-        or any(keyword_lower in tag.lower() for tag in p.get("tag_names", []))
-    ]
+def _get_mock_prompts_by_keyword() -> List[Dict[str, Any]]:
+    """返回mock prompts（返回原始格式，不做转换）"""
+    return _MOCK_PROMPTS
 
 
 def _get_mock_prompts_by_ids(prompt_ids: List[int]) -> List[Dict[str, Any]]:
@@ -164,6 +156,7 @@ def _call_bkaidev_api(
     http_func,
     path: str,
     data: Optional[Dict[str, Any]] = None,
+    user_credentials: Optional[UserCredentials] = None,
     more_headers: Optional[Dict[str, str]] = None,
     timeout: int = 30,
 ) -> Dict[str, Any]:
@@ -183,7 +176,7 @@ def _call_bkaidev_api(
     Raises:
         error_codes.REMOTE_REQUEST_ERROR: 请求失败时抛出
     """
-    headers = gen_gateway_headers()
+    headers = gen_gateway_headers(user_credentials=user_credentials)
     if more_headers:
         headers.update(more_headers)
 
@@ -198,7 +191,7 @@ def _call_bkaidev_api(
     return result
 
 
-def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]:
+def fetch_prompts_list(user_credentials: UserCredentials) -> List[Dict[str, Any]]:
     """
     从 BKAIDev 平台获取 prompts 列表
 
@@ -206,8 +199,7 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
     路径: /openapi/aidev/user_mode/resource/prompt/manage/
 
     Args:
-        username: 用户名，用于平台鉴权
-        keyword: 搜索关键字
+        user_credentials: 用户认证相关信息
 
     Returns:
         prompts 列表（已转换为内部格式）
@@ -215,19 +207,15 @@ def fetch_prompts_list(username: str, keyword: str = "") -> List[Dict[str, Any]]
     # Mock 模式：返回 mock 数据
     if settings.BKAIDEV_USE_MOCK:
         logger.info("BKAIDEV_USE_MOCK is enabled, returning mock data for fetch_prompts_list")
-        return _convert_prompts(_get_mock_prompts_by_keyword(keyword))
+        return _convert_prompts(_get_mock_prompts_by_keyword())
 
     if not settings.BKAIDEV_URL_PREFIX:
         raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
-
-    data = {}
-    if keyword:
-        data["keyword"] = keyword
-
-    more_headers = {"X-Bk-Username": username}
-
     result = _call_bkaidev_api(
-        http_get, "/openapi/aidev/user_mode/resource/prompt/manage/", data, more_headers, settings.BKAIDEV_API_TIMEOUT
+        http_get,
+        "/openapi/aidev/user_mode/resource/prompt/manage/",
+        user_credentials=user_credentials,
+        timeout=settings.BKAIDEV_API_TIMEOUT,
     )
     # 响应格式: {"data": {"results": [...]}, ...}
     results = result.get("data", {}).get("results", [])
@@ -259,7 +247,7 @@ def fetch_prompts_by_ids(prompt_ids: List[int], with_content: bool = True) -> Li
     if not settings.BKAIDEV_URL_PREFIX:
         raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
 
-    data = {"ids": prompt_ids, "with_content": with_content}
+    data = {"ids": prompt_ids, "type": "prompt", "with_content": with_content}
 
     result = _call_bkaidev_api(
         http_post, "/openapi/aidev/platform/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT

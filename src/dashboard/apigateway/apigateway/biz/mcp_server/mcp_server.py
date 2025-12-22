@@ -46,6 +46,7 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
@@ -258,17 +259,16 @@ class MCPServerHandler:
     # ========== Prompts 相关方法 ==========
 
     @staticmethod
-    def fetch_remote_prompts(username: str, keyword: str = "") -> List[Dict[str, Any]]:
+    def fetch_remote_prompts(user_credentials: UserCredentials) -> List[Dict[str, Any]]:
         """从 BKAIDev 平台获取 prompts 列表
 
         Args:
-            username: 用户名，用于平台鉴权
-            keyword: 搜索关键字
+            user_credentials: 用于平台鉴权
 
         Returns:
             prompts 列表
         """
-        return bkaidev.fetch_prompts_list(username=username, keyword=keyword)
+        return bkaidev.fetch_prompts_list(user_credentials=user_credentials)
 
     @staticmethod
     def get_prompts(mcp_server_id: int) -> List[Dict[str, Any]]:

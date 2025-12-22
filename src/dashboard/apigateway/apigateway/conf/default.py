@@ -548,7 +548,9 @@ AI_BKAUTH_ENABLED = env.bool("AI_BKAUTH_ENABLED", False)
 # BKAIDEV 网关名
 BKAIDEV_GATEWAY_NAME = env.str("BKAIDEV_GATEWAY_NAME", "bkaidev")
 # BKAIDev 平台 API URL 前缀
-BKAIDEV_URL_PREFIX = BK_API_URL_TMPL.format(api_name=BKAIDEV_GATEWAY_NAME) + "/prod"
+BKAIDEV_URL_PREFIX = (
+    BK_API_URL_TMPL.format(api_name=BKAIDEV_GATEWAY_NAME) + "/" + env.str("BKAIDEV_GATEWAY_STAGE", "prod")
+)
 # BKAIDev 平台 API 超时时间（秒）
 BKAIDEV_API_TIMEOUT = env.int("BKAIDEV_API_TIMEOUT", 30)
 # 是否启用 Mock 模式（第三方 API 未就绪时使用）

@@ -31,6 +31,7 @@ from .constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 
@@ -49,6 +50,12 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
     _resource_names = models.TextField(db_column="resource_names", blank=True, null=True, default="")
 
     status = models.IntegerField(choices=MCPServerStatusEnum.get_choices())
+    protocol_type = models.CharField(
+        max_length=32,
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+        default=MCPServerProtocolTypeEnum.SSE.value,
+        help_text="MCP 协议类型",
+    )
 
     def __str__(self):
         return f"<MCPServer: {self.pk}/{self.name}>"

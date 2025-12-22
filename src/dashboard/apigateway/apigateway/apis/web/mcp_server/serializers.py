@@ -25,6 +25,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
@@ -67,11 +68,27 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     prompts = serializers.ListField(
         child=MCPServerPromptItemSLZ(), required=False, default=list, help_text="Prompts 列表"
     )
+    protocol_type = serializers.ChoiceField(
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+        required=False,
+        default=MCPServerProtocolTypeEnum.SSE.value,
+        help_text="MCPServer 协议类型",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
         model = MCPServer
-        fields = ("name", "title", "description", "stage_id", "is_public", "labels", "resource_names", "prompts")
+        fields = (
+            "name",
+            "title",
+            "description",
+            "stage_id",
+            "is_public",
+            "labels",
+            "resource_names",
+            "prompts",
+            "protocol_type",
+        )
         lookup_field = "id"
         validators = [MCPServerValidator()]
 
@@ -114,6 +131,10 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()
     )
 
+    protocol_type = serializers.ChoiceField(
+        read_only=True, help_text="MCP 协议类型", choices=MCPServerProtocolTypeEnum.get_choices()
+    )
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
     class Meta:
@@ -123,7 +144,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["stages"][obj.stage.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name)
+        return build_mcp_server_url(obj.name, obj.protocol_type)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -157,6 +178,11 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     )
     description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
     prompts = serializers.ListField(child=MCPServerPromptItemSLZ(), required=False, help_text="Prompts 列表")
+    protocol_type = serializers.ChoiceField(
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+        required=False,
+        help_text="MCP 协议类型",
+    )
 
     def validate_resource_names(self, resource_names):
         if resource_names is not None:
@@ -175,7 +201,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
         model = MCPServer
-        fields = ("title", "description", "is_public", "labels", "resource_names", "prompts")
+        fields = ("title", "description", "is_public", "labels", "resource_names", "prompts", "protocol_type")
         lookup_field = "id"
 
     def update(self, instance, validated_data):

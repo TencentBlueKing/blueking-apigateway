@@ -25,7 +25,11 @@ from pydantic import TypeAdapter
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apps.mcp_server.constants import MCPServerAppPermissionGrantTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionGrantTypeEnum,
+    MCPServerProtocolTypeEnum,
+    MCPServerStatusEnum,
+)
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
@@ -687,6 +691,12 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
     status = serializers.ChoiceField(help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices())
+    protocol_type = serializers.ChoiceField(
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+        required=False,
+        default=MCPServerProtocolTypeEnum.SSE.value,
+        help_text="MCPServer 协议类型",
+    )
     target_app_codes = serializers.ListSerializer(
         help_text="主动授权的app_code", child=serializers.CharField(), allow_empty=True, default=list, required=False
     )
@@ -702,6 +712,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "labels",
             "resource_names",
             "status",
+            "protocol_type",
             "target_app_codes",
         )
         lookup_field = "id"
