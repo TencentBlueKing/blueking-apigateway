@@ -38,26 +38,26 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-func newCoreJWT(db *gorm.DB, opts ...gen.DOOption) coreJWT {
-	_coreJWT := coreJWT{}
+func newJWT(db *gorm.DB, opts ...gen.DOOption) jWT {
+	_jWT := jWT{}
 
-	_coreJWT.coreJWTDo.UseDB(db, opts...)
-	_coreJWT.coreJWTDo.UseModel(&model.JWT{})
+	_jWT.jWTDo.UseDB(db, opts...)
+	_jWT.jWTDo.UseModel(&model.JWT{})
 
-	tableName := _coreJWT.coreJWTDo.TableName()
-	_coreJWT.ALL = field.NewAsterisk(tableName)
-	_coreJWT.GatewayID = field.NewInt(tableName, "api_id")
-	_coreJWT.PrivateKey = field.NewString(tableName, "private_key")
-	_coreJWT.PublicKey = field.NewString(tableName, "public_key")
-	_coreJWT.EncryptedPrivateKey = field.NewString(tableName, "encrypted_private_key")
+	tableName := _jWT.jWTDo.TableName()
+	_jWT.ALL = field.NewAsterisk(tableName)
+	_jWT.GatewayID = field.NewInt(tableName, "api_id")
+	_jWT.PrivateKey = field.NewString(tableName, "private_key")
+	_jWT.PublicKey = field.NewString(tableName, "public_key")
+	_jWT.EncryptedPrivateKey = field.NewString(tableName, "encrypted_private_key")
 
-	_coreJWT.fillFieldMap()
+	_jWT.fillFieldMap()
 
-	return _coreJWT
+	return _jWT
 }
 
-type coreJWT struct {
-	coreJWTDo coreJWTDo
+type jWT struct {
+	jWTDo jWTDo
 
 	ALL                 field.Asterisk
 	GatewayID           field.Int
@@ -68,38 +68,38 @@ type coreJWT struct {
 	fieldMap map[string]field.Expr
 }
 
-func (c coreJWT) Table(newTableName string) *coreJWT {
-	c.coreJWTDo.UseTable(newTableName)
-	return c.updateTableName(newTableName)
+func (j jWT) Table(newTableName string) *jWT {
+	j.jWTDo.UseTable(newTableName)
+	return j.updateTableName(newTableName)
 }
 
-func (c coreJWT) As(alias string) *coreJWT {
-	c.coreJWTDo.DO = *(c.coreJWTDo.As(alias).(*gen.DO))
-	return c.updateTableName(alias)
+func (j jWT) As(alias string) *jWT {
+	j.jWTDo.DO = *(j.jWTDo.As(alias).(*gen.DO))
+	return j.updateTableName(alias)
 }
 
-func (c *coreJWT) updateTableName(table string) *coreJWT {
-	c.ALL = field.NewAsterisk(table)
-	c.GatewayID = field.NewInt(table, "api_id")
-	c.PrivateKey = field.NewString(table, "private_key")
-	c.PublicKey = field.NewString(table, "public_key")
-	c.EncryptedPrivateKey = field.NewString(table, "encrypted_private_key")
+func (j *jWT) updateTableName(table string) *jWT {
+	j.ALL = field.NewAsterisk(table)
+	j.GatewayID = field.NewInt(table, "api_id")
+	j.PrivateKey = field.NewString(table, "private_key")
+	j.PublicKey = field.NewString(table, "public_key")
+	j.EncryptedPrivateKey = field.NewString(table, "encrypted_private_key")
 
-	c.fillFieldMap()
+	j.fillFieldMap()
 
-	return c
+	return j
 }
 
-func (c *coreJWT) WithContext(ctx context.Context) ICoreJWTDo { return c.coreJWTDo.WithContext(ctx) }
+func (j *jWT) WithContext(ctx context.Context) IJWTDo { return j.jWTDo.WithContext(ctx) }
 
-func (c coreJWT) TableName() string { return c.coreJWTDo.TableName() }
+func (j jWT) TableName() string { return j.jWTDo.TableName() }
 
-func (c coreJWT) Alias() string { return c.coreJWTDo.Alias() }
+func (j jWT) Alias() string { return j.jWTDo.Alias() }
 
-func (c coreJWT) Columns(cols ...field.Expr) gen.Columns { return c.coreJWTDo.Columns(cols...) }
+func (j jWT) Columns(cols ...field.Expr) gen.Columns { return j.jWTDo.Columns(cols...) }
 
-func (c *coreJWT) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
-	_f, ok := c.fieldMap[fieldName]
+func (j *jWT) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
+	_f, ok := j.fieldMap[fieldName]
 	if !ok || _f == nil {
 		return nil, false
 	}
@@ -107,55 +107,55 @@ func (c *coreJWT) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	return _oe, ok
 }
 
-func (c *coreJWT) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 4)
-	c.fieldMap["api_id"] = c.GatewayID
-	c.fieldMap["private_key"] = c.PrivateKey
-	c.fieldMap["public_key"] = c.PublicKey
-	c.fieldMap["encrypted_private_key"] = c.EncryptedPrivateKey
+func (j *jWT) fillFieldMap() {
+	j.fieldMap = make(map[string]field.Expr, 4)
+	j.fieldMap["api_id"] = j.GatewayID
+	j.fieldMap["private_key"] = j.PrivateKey
+	j.fieldMap["public_key"] = j.PublicKey
+	j.fieldMap["encrypted_private_key"] = j.EncryptedPrivateKey
 }
 
-func (c coreJWT) clone(db *gorm.DB) coreJWT {
-	c.coreJWTDo.ReplaceConnPool(db.Statement.ConnPool)
-	return c
+func (j jWT) clone(db *gorm.DB) jWT {
+	j.jWTDo.ReplaceConnPool(db.Statement.ConnPool)
+	return j
 }
 
-func (c coreJWT) replaceDB(db *gorm.DB) coreJWT {
-	c.coreJWTDo.ReplaceDB(db)
-	return c
+func (j jWT) replaceDB(db *gorm.DB) jWT {
+	j.jWTDo.ReplaceDB(db)
+	return j
 }
 
-type coreJWTDo struct{ gen.DO }
+type jWTDo struct{ gen.DO }
 
-type ICoreJWTDo interface {
+type IJWTDo interface {
 	gen.SubQuery
-	Debug() ICoreJWTDo
-	WithContext(ctx context.Context) ICoreJWTDo
+	Debug() IJWTDo
+	WithContext(ctx context.Context) IJWTDo
 	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
 	ReplaceDB(db *gorm.DB)
-	ReadDB() ICoreJWTDo
-	WriteDB() ICoreJWTDo
+	ReadDB() IJWTDo
+	WriteDB() IJWTDo
 	As(alias string) gen.Dao
-	Session(config *gorm.Session) ICoreJWTDo
+	Session(config *gorm.Session) IJWTDo
 	Columns(cols ...field.Expr) gen.Columns
-	Clauses(conds ...clause.Expression) ICoreJWTDo
-	Not(conds ...gen.Condition) ICoreJWTDo
-	Or(conds ...gen.Condition) ICoreJWTDo
-	Select(conds ...field.Expr) ICoreJWTDo
-	Where(conds ...gen.Condition) ICoreJWTDo
-	Order(conds ...field.Expr) ICoreJWTDo
-	Distinct(cols ...field.Expr) ICoreJWTDo
-	Omit(cols ...field.Expr) ICoreJWTDo
-	Join(table schema.Tabler, on ...field.Expr) ICoreJWTDo
-	LeftJoin(table schema.Tabler, on ...field.Expr) ICoreJWTDo
-	RightJoin(table schema.Tabler, on ...field.Expr) ICoreJWTDo
-	Group(cols ...field.Expr) ICoreJWTDo
-	Having(conds ...gen.Condition) ICoreJWTDo
-	Limit(limit int) ICoreJWTDo
-	Offset(offset int) ICoreJWTDo
+	Clauses(conds ...clause.Expression) IJWTDo
+	Not(conds ...gen.Condition) IJWTDo
+	Or(conds ...gen.Condition) IJWTDo
+	Select(conds ...field.Expr) IJWTDo
+	Where(conds ...gen.Condition) IJWTDo
+	Order(conds ...field.Expr) IJWTDo
+	Distinct(cols ...field.Expr) IJWTDo
+	Omit(cols ...field.Expr) IJWTDo
+	Join(table schema.Tabler, on ...field.Expr) IJWTDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IJWTDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IJWTDo
+	Group(cols ...field.Expr) IJWTDo
+	Having(conds ...gen.Condition) IJWTDo
+	Limit(limit int) IJWTDo
+	Offset(offset int) IJWTDo
 	Count() (count int64, err error)
-	Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreJWTDo
-	Unscoped() ICoreJWTDo
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IJWTDo
+	Unscoped() IJWTDo
 	Create(values ...*model.JWT) error
 	CreateInBatches(values []*model.JWT, batchSize int) error
 	Save(values ...*model.JWT) error
@@ -174,10 +174,10 @@ type ICoreJWTDo interface {
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
-	Attrs(attrs ...field.AssignExpr) ICoreJWTDo
-	Assign(attrs ...field.AssignExpr) ICoreJWTDo
-	Joins(fields ...field.RelationField) ICoreJWTDo
-	Preload(fields ...field.RelationField) ICoreJWTDo
+	Attrs(attrs ...field.AssignExpr) IJWTDo
+	Assign(attrs ...field.AssignExpr) IJWTDo
+	Joins(fields ...field.RelationField) IJWTDo
+	Preload(fields ...field.RelationField) IJWTDo
 	FirstOrInit() (*model.JWT, error)
 	FirstOrCreate() (*model.JWT, error)
 	FindByPage(offset int, limit int) (result []*model.JWT, count int64, err error)
@@ -185,208 +185,205 @@ type ICoreJWTDo interface {
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
 	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) ICoreJWTDo
+	Returning(value interface{}, columns ...string) IJWTDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
 
-func (c coreJWTDo) Debug() ICoreJWTDo {
-	return c.withDO(c.DO.Debug())
+func (j jWTDo) Debug() IJWTDo {
+	return j.withDO(j.DO.Debug())
 }
 
-func (c coreJWTDo) WithContext(ctx context.Context) ICoreJWTDo {
-	return c.withDO(c.DO.WithContext(ctx))
+func (j jWTDo) WithContext(ctx context.Context) IJWTDo {
+	return j.withDO(j.DO.WithContext(ctx))
 }
 
-func (c coreJWTDo) ReadDB() ICoreJWTDo {
-	return c.Clauses(dbresolver.Read)
+func (j jWTDo) ReadDB() IJWTDo {
+	return j.Clauses(dbresolver.Read)
 }
 
-func (c coreJWTDo) WriteDB() ICoreJWTDo {
-	return c.Clauses(dbresolver.Write)
+func (j jWTDo) WriteDB() IJWTDo {
+	return j.Clauses(dbresolver.Write)
 }
 
-func (c coreJWTDo) Session(config *gorm.Session) ICoreJWTDo {
-	return c.withDO(c.DO.Session(config))
+func (j jWTDo) Session(config *gorm.Session) IJWTDo {
+	return j.withDO(j.DO.Session(config))
 }
 
-func (c coreJWTDo) Clauses(conds ...clause.Expression) ICoreJWTDo {
-	return c.withDO(c.DO.Clauses(conds...))
+func (j jWTDo) Clauses(conds ...clause.Expression) IJWTDo {
+	return j.withDO(j.DO.Clauses(conds...))
 }
 
-func (c coreJWTDo) Returning(value interface{}, columns ...string) ICoreJWTDo {
-	return c.withDO(c.DO.Returning(value, columns...))
+func (j jWTDo) Returning(value interface{}, columns ...string) IJWTDo {
+	return j.withDO(j.DO.Returning(value, columns...))
 }
 
-func (c coreJWTDo) Not(conds ...gen.Condition) ICoreJWTDo {
-	return c.withDO(c.DO.Not(conds...))
+func (j jWTDo) Not(conds ...gen.Condition) IJWTDo {
+	return j.withDO(j.DO.Not(conds...))
 }
 
-func (c coreJWTDo) Or(conds ...gen.Condition) ICoreJWTDo {
-	return c.withDO(c.DO.Or(conds...))
+func (j jWTDo) Or(conds ...gen.Condition) IJWTDo {
+	return j.withDO(j.DO.Or(conds...))
 }
 
-func (c coreJWTDo) Select(conds ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Select(conds...))
+func (j jWTDo) Select(conds ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Select(conds...))
 }
 
-func (c coreJWTDo) Where(conds ...gen.Condition) ICoreJWTDo {
-	return c.withDO(c.DO.Where(conds...))
+func (j jWTDo) Where(conds ...gen.Condition) IJWTDo {
+	return j.withDO(j.DO.Where(conds...))
 }
 
-func (c coreJWTDo) Order(conds ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Order(conds...))
+func (j jWTDo) Order(conds ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Order(conds...))
 }
 
-func (c coreJWTDo) Distinct(cols ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Distinct(cols...))
+func (j jWTDo) Distinct(cols ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Distinct(cols...))
 }
 
-func (c coreJWTDo) Omit(cols ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Omit(cols...))
+func (j jWTDo) Omit(cols ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Omit(cols...))
 }
 
-func (c coreJWTDo) Join(table schema.Tabler, on ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Join(table, on...))
+func (j jWTDo) Join(table schema.Tabler, on ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Join(table, on...))
 }
 
-func (c coreJWTDo) LeftJoin(table schema.Tabler, on ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.LeftJoin(table, on...))
+func (j jWTDo) LeftJoin(table schema.Tabler, on ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.LeftJoin(table, on...))
 }
 
-func (c coreJWTDo) RightJoin(table schema.Tabler, on ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.RightJoin(table, on...))
+func (j jWTDo) RightJoin(table schema.Tabler, on ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.RightJoin(table, on...))
 }
 
-func (c coreJWTDo) Group(cols ...field.Expr) ICoreJWTDo {
-	return c.withDO(c.DO.Group(cols...))
+func (j jWTDo) Group(cols ...field.Expr) IJWTDo {
+	return j.withDO(j.DO.Group(cols...))
 }
 
-func (c coreJWTDo) Having(conds ...gen.Condition) ICoreJWTDo {
-	return c.withDO(c.DO.Having(conds...))
+func (j jWTDo) Having(conds ...gen.Condition) IJWTDo {
+	return j.withDO(j.DO.Having(conds...))
 }
 
-func (c coreJWTDo) Limit(limit int) ICoreJWTDo {
-	return c.withDO(c.DO.Limit(limit))
+func (j jWTDo) Limit(limit int) IJWTDo {
+	return j.withDO(j.DO.Limit(limit))
 }
 
-func (c coreJWTDo) Offset(offset int) ICoreJWTDo {
-	return c.withDO(c.DO.Offset(offset))
+func (j jWTDo) Offset(offset int) IJWTDo {
+	return j.withDO(j.DO.Offset(offset))
 }
 
-func (c coreJWTDo) Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreJWTDo {
-	return c.withDO(c.DO.Scopes(funcs...))
+func (j jWTDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IJWTDo {
+	return j.withDO(j.DO.Scopes(funcs...))
 }
 
-func (c coreJWTDo) Unscoped() ICoreJWTDo {
-	return c.withDO(c.DO.Unscoped())
+func (j jWTDo) Unscoped() IJWTDo {
+	return j.withDO(j.DO.Unscoped())
 }
 
-func (c coreJWTDo) Create(values ...*model.JWT) error {
+func (j jWTDo) Create(values ...*model.JWT) error {
 	if len(values) == 0 {
 		return nil
 	}
-	return c.DO.Create(values)
+	return j.DO.Create(values)
 }
 
-func (c coreJWTDo) CreateInBatches(values []*model.JWT, batchSize int) error {
-	return c.DO.CreateInBatches(values, batchSize)
+func (j jWTDo) CreateInBatches(values []*model.JWT, batchSize int) error {
+	return j.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (c coreJWTDo) Save(values ...*model.JWT) error {
+func (j jWTDo) Save(values ...*model.JWT) error {
 	if len(values) == 0 {
 		return nil
 	}
-	return c.DO.Save(values)
+	return j.DO.Save(values)
 }
 
-func (c coreJWTDo) First() (*model.JWT, error) {
-	if result, err := c.DO.First(); err != nil {
+func (j jWTDo) First() (*model.JWT, error) {
+	if result, err := j.DO.First(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Take() (*model.JWT, error) {
-	if result, err := c.DO.Take(); err != nil {
+func (j jWTDo) Take() (*model.JWT, error) {
+	if result, err := j.DO.Take(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Last() (*model.JWT, error) {
-	if result, err := c.DO.Last(); err != nil {
+func (j jWTDo) Last() (*model.JWT, error) {
+	if result, err := j.DO.Last(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) Find() ([]*model.JWT, error) {
-	result, err := c.DO.Find()
+func (j jWTDo) Find() ([]*model.JWT, error) {
+	result, err := j.DO.Find()
 	return result.([]*model.JWT), err
 }
 
-func (c coreJWTDo) FindInBatch(
-	batchSize int,
-	fc func(tx gen.Dao, batch int) error,
-) (results []*model.JWT, err error) {
+func (j jWTDo) FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.JWT, err error) {
 	buf := make([]*model.JWT, 0, batchSize)
-	err = c.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
+	err = j.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
 	})
 	return results, err
 }
 
-func (c coreJWTDo) FindInBatches(result *[]*model.JWT, batchSize int, fc func(tx gen.Dao, batch int) error) error {
-	return c.DO.FindInBatches(result, batchSize, fc)
+func (j jWTDo) FindInBatches(result *[]*model.JWT, batchSize int, fc func(tx gen.Dao, batch int) error) error {
+	return j.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (c coreJWTDo) Attrs(attrs ...field.AssignExpr) ICoreJWTDo {
-	return c.withDO(c.DO.Attrs(attrs...))
+func (j jWTDo) Attrs(attrs ...field.AssignExpr) IJWTDo {
+	return j.withDO(j.DO.Attrs(attrs...))
 }
 
-func (c coreJWTDo) Assign(attrs ...field.AssignExpr) ICoreJWTDo {
-	return c.withDO(c.DO.Assign(attrs...))
+func (j jWTDo) Assign(attrs ...field.AssignExpr) IJWTDo {
+	return j.withDO(j.DO.Assign(attrs...))
 }
 
-func (c coreJWTDo) Joins(fields ...field.RelationField) ICoreJWTDo {
+func (j jWTDo) Joins(fields ...field.RelationField) IJWTDo {
 	for _, _f := range fields {
-		c = *c.withDO(c.DO.Joins(_f))
+		j = *j.withDO(j.DO.Joins(_f))
 	}
-	return &c
+	return &j
 }
 
-func (c coreJWTDo) Preload(fields ...field.RelationField) ICoreJWTDo {
+func (j jWTDo) Preload(fields ...field.RelationField) IJWTDo {
 	for _, _f := range fields {
-		c = *c.withDO(c.DO.Preload(_f))
+		j = *j.withDO(j.DO.Preload(_f))
 	}
-	return &c
+	return &j
 }
 
-func (c coreJWTDo) FirstOrInit() (*model.JWT, error) {
-	if result, err := c.DO.FirstOrInit(); err != nil {
+func (j jWTDo) FirstOrInit() (*model.JWT, error) {
+	if result, err := j.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) FirstOrCreate() (*model.JWT, error) {
-	if result, err := c.DO.FirstOrCreate(); err != nil {
+func (j jWTDo) FirstOrCreate() (*model.JWT, error) {
+	if result, err := j.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.JWT), nil
 	}
 }
 
-func (c coreJWTDo) FindByPage(offset int, limit int) (result []*model.JWT, count int64, err error) {
-	result, err = c.Offset(offset).Limit(limit).Find()
+func (j jWTDo) FindByPage(offset int, limit int) (result []*model.JWT, count int64, err error) {
+	result, err = j.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
 	}
@@ -396,29 +393,29 @@ func (c coreJWTDo) FindByPage(offset int, limit int) (result []*model.JWT, count
 		return
 	}
 
-	count, err = c.Offset(-1).Limit(-1).Count()
+	count, err = j.Offset(-1).Limit(-1).Count()
 	return
 }
 
-func (c coreJWTDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
-	count, err = c.Count()
+func (j jWTDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+	count, err = j.Count()
 	if err != nil {
 		return
 	}
 
-	err = c.Offset(offset).Limit(limit).Scan(result)
+	err = j.Offset(offset).Limit(limit).Scan(result)
 	return
 }
 
-func (c coreJWTDo) Scan(result interface{}) (err error) {
-	return c.DO.Scan(result)
+func (j jWTDo) Scan(result interface{}) (err error) {
+	return j.DO.Scan(result)
 }
 
-func (c coreJWTDo) Delete(models ...*model.JWT) (result gen.ResultInfo, err error) {
-	return c.DO.Delete(models)
+func (j jWTDo) Delete(models ...*model.JWT) (result gen.ResultInfo, err error) {
+	return j.DO.Delete(models)
 }
 
-func (c *coreJWTDo) withDO(do gen.Dao) *coreJWTDo {
-	c.DO = *do.(*gen.DO)
-	return c
+func (j *jWTDo) withDO(do gen.Dao) *jWTDo {
+	j.DO = *do.(*gen.DO)
+	return j
 }

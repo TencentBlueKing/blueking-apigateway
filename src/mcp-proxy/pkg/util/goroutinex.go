@@ -37,7 +37,11 @@ func GoroutineWithRecovery(ctx context.Context, fn func()) {
 				buf = buf[:n]
 				msg := fmt.Sprintf("painic err:%s", buf)
 				log.Println(msg)
-				sentry.CurrentHub().Client().CaptureMessage(msg, nil, sentry.NewScope())
+				if hub := sentry.CurrentHub(); hub != nil {
+					if client := hub.Client(); client != nil {
+						client.CaptureMessage(msg, nil, sentry.NewScope())
+					}
+				}
 			}
 		}()
 		fn()

@@ -28,6 +28,6 @@ import (
 
 // GetAllActiveMCPServers ...
 func GetAllActiveMCPServers(ctx context.Context) ([]*model.MCPServer, error) {
-	q := repo.McpServer
-	return repo.McpServer.WithContext(ctx).Where(q.Status.Eq(model.McpServerStatusActive)).Find()
+	q := repo.MCPServer
+	return repo.MCPServer.WithContext(ctx).Where(q.Status.Eq(model.McpServerStatusActive)).Find()
 }
