@@ -159,7 +159,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             template_name,
             context={
                 "name": instance.name,
-                "sse_url": build_mcp_server_url(instance.name),
+                "sse_url": build_mcp_server_url(instance.name, instance.protocol_type),
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,

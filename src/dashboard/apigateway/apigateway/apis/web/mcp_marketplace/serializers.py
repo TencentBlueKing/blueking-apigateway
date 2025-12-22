@@ -20,7 +20,7 @@ from typing import Any, Dict
 
 from rest_framework import serializers
 
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum, MCPServerStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 
@@ -51,6 +51,12 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()
     )
 
+    protocol_type = serializers.ChoiceField(
+        read_only=True,
+        help_text="MCPServer 协议类型",
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+    )
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
@@ -68,7 +74,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name)
+        return build_mcp_server_url(obj.name, obj.protocol_type)
 
     def get_prompts_count(self, obj) -> int:
         prompts_count_map = self.context.get("prompts_count_map", {})

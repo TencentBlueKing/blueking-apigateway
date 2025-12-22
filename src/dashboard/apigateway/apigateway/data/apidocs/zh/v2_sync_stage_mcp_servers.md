@@ -31,6 +31,7 @@ mcp_servers 参数说明
 | `resource_names` | array[string] | 是  | MCP Server 关联的 resource 列表                                             |
 | `is_public` | bool          | 否  | 是否公开，默认不公开                                                             |
 | `status`   | integer          | 否  | 状态：1：启用，0：关闭(默认关闭)                                                     |
+| `protocol_type` | string       | 否  | MCP 协议类型：sse（默认）、streamable_http                                       |
 | `target_app_codes`   | array[string]          | 否  | 主动授权的应用列表                                                              |
 
 
@@ -52,6 +53,7 @@ mcp_servers 参数说明
       "is_public": true,
       "description": "description",
       "status": 1,
+      "protocol_type": "sse",
       "target_app_codes": [
         "app1",
         "app2"

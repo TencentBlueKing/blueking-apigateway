@@ -2,6 +2,19 @@
 
 Clients supporting the MCP protocol can be configured using the following settings:
 
+{% if protocol_type == "streamable_http" %}
+```json
+{
+    "mcpServers": {
+      "{{name}}": {
+        "type": "streamable-http",
+        "url": "{{sse_url}}",
+        "description": "{{description}}"
+      }
+    }
+}
+```
+{% else %}
 ```json
 {
     "mcpServers": {
@@ -13,6 +26,7 @@ Clients supporting the MCP protocol can be configured using the following settin
     }
 }
 ```
+{% endif %}
 
 ## Authentication
 

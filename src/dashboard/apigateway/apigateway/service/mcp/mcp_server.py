@@ -20,6 +20,7 @@ from typing import List
 
 from django.conf import settings
 
+from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import ResourceVersion
 
@@ -62,13 +63,42 @@ def update_stage_mcp_server_related_resource_names(
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
 
 
-def build_mcp_server_url(mcp_server_name: str) -> str:
+def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value) -> str:
+    """构建 MCP Server 访问 URL
+
+    Args:
+        mcp_server_name: MCP Server 名称
+        protocol_type: 协议类型，默认为 SSE
+
+    Returns:
+        MCP Server 访问 URL
+    """
     bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+    if protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
+        return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/mcp/"
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/sse/"
 
 
-def build_mcp_server_application_url(mcp_server_name: str) -> str:
+def build_mcp_streamable_http_url(mcp_server_name: str) -> str:
+    """构建 MCP Server Streamable HTTP 协议的 URL（便捷方法）"""
+    return build_mcp_server_url(mcp_server_name, MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value)
+
+
+def build_mcp_server_application_url(
+    mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value
+) -> str:
+    """构建应用态 MCP Server 访问 URL
+
+    Args:
+        mcp_server_name: MCP Server 名称
+        protocol_type: 协议类型，默认为 SSE
+
+    Returns:
+        应用态 MCP Server 访问 URL
+    """
     bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+    if protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
+        return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/application/mcp/"
     return f"{bk_apigateway_url}/prod/api/v2/mcp-servers/{mcp_server_name}/application/sse/"
 
 

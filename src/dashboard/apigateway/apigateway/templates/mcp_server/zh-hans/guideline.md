@@ -2,6 +2,19 @@
 
 支持 MCP 协议的客户端通过以下配置使用
 
+{% if protocol_type == "streamable_http" %}
+```json
+{
+    "mcpServers": {
+      "{{name}}": {
+        "type": "streamable-http",
+        "url": "{{sse_url}}",
+        "description": "{{description}}"
+      }
+    }
+}
+```
+{% else %}
 ```json
 {
     "mcpServers": {
@@ -13,6 +26,7 @@
     }
 }
 ```
+{% endif %}
 
 ## 认证
 
