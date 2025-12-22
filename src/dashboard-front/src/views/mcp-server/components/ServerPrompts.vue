@@ -23,8 +23,8 @@
   >
     <BkResizeLayout
       :border="false"
-      :min="234"
-      initial-divide="234px"
+      :min="293"
+      initial-divide="293px"
       placement="left"
       collapsible
       @collapse-change="handlePromptCollapseChange"
@@ -193,7 +193,6 @@ const handlePromptMouseleave = (row: IMCPServerPrompt) => {
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .left-aside-wrap {
-    min-width: 234px;
     background-color: #ffffff;
     border-radius: 2px;
 
