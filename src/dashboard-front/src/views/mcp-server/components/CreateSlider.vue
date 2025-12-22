@@ -221,7 +221,7 @@
                         <BkLoading :loading="searchLoading">
                           <AgTable
                             ref="toolTableRef"
-                            v-model:table-data="filteredResourceList"
+                            v-model:table-data="filteredToolList"
                             resizable
                             show-selection
                             local-page
@@ -260,7 +260,7 @@
                               >
                                 <AgTable
                                   ref="promptTableRef"
-                                  v-model:table-data="promptTableData"
+                                  v-model:table-data="filteredPromptList"
                                   resizable
                                   local-page
                                   show-selection
@@ -291,6 +291,7 @@
                                         placement:'top',
                                         content: `${curPromptData.name} (${curPromptData?.code})`,
                                         disabled: !curPromptData.isOverflow,
+                                        extCls: 'max-w-880px',
                                       }"
                                       class="w-full truncate"
                                       @mouseenter="(e: MouseEvent) => handleCheckedMouseenter(e, curPromptData)"
@@ -346,7 +347,7 @@
                     </template>
                     <template #main>
                       <div
-                        :style="{ width: `${resizeMainWidth}px`}"
+                        :style="{ width: `${resizePreviewWidth}px`}"
                         class="result-preview"
                       >
                         <div class="flex-1">
@@ -357,17 +358,18 @@
                             <BkButton
                               text
                               theme="primary"
-                              @click="handleClearSelections"
+                              :disabled="renderPreviewByTab.length < 1"
+                              @click="handleClearSelections(activeTab)"
                             >
                               {{ t('清空') }}
                             </BkButton>
                           </div>
                           <div
-                            v-if="allSelections.length"
+                            v-if="renderPreviewByTab.length"
                             class="sticky top-0 result-preview-list"
                           >
                             <div
-                              v-for="(checks, index) in allSelections"
+                              v-for="(checks, index) in renderPreviewByTab"
                               :key="index"
                               class="list-main"
                             >
@@ -378,6 +380,7 @@
                                       placement:'top',
                                       content: checks.name,
                                       disabled: !checks.isOverflow,
+                                      extCls: 'max-w-290px',
                                     }"
                                     class="color-#3a84ff text-12px truncate name"
                                     @mouseenter="(e: MouseEvent) => handleCheckedMouseenter(e, checks)"
@@ -440,7 +443,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep, uniq, uniqBy } from 'lodash-es';
+import { uniq, uniqBy } from 'lodash-es';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
 import { getStageList } from '@/services/source/stage';
@@ -513,11 +516,10 @@ const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
 const toolTableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
-const resizeMainWidth = ref(297);
+const resizePreviewWidth = ref(297);
 const stageList = ref([]);
 const resourceList = ref([]);
 const promptTableData = ref([]);
-const allPromptTableData = ref([]);
 const curPromptData = ref({});
 const toolSelections = ref([]);
 const promptSelections = ref([]);
@@ -686,7 +688,7 @@ const sliderTitle = computed(() => {
     ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
     : t('创建 MCP Server');
 });
-const filteredResourceList = computed(() => {
+const filteredToolList = computed(() => {
   toolTableEmptyType.value = !!filterKeywordDebounced.value ? 'searchEmpty' : 'empty';
   return resourceList.value.filter((resource: any) => {
     const keyword = filterKeywordDebounced.value.trim().toLowerCase();
@@ -694,6 +696,54 @@ const filteredResourceList = computed(() => {
     const matchPath = resource.path.toLowerCase().includes(keyword);
     return matchName || matchPath;
   });
+});
+const filteredPromptList = computed(() => {
+  handleSetLoading(true);
+
+  const searchConditions = {
+    name: filterPromptValues.value.find(item => item.id === 'name')?.values[0]?.id ?? '',
+    content: filterPromptValues.value.find(item => item.id === 'content')?.values[0]?.id ?? '',
+    updated_by: filterPromptValues.value.find(item => item.id === 'updated_by')?.values[0]?.id ?? [],
+    labels: filterPromptValues.value.find(item => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
+  };
+  const results = promptTableData.value?.filter((item) => {
+    const { name, code, content, updated_by = '', labels = [] } = item;
+    let isMatch = true;
+
+    // 匹配中英文名
+    if (searchConditions.name) {
+      const nameRegex = new RegExp(searchConditions.name, 'gi');
+      isMatch = isMatch && (!!name?.match(nameRegex) || !!code?.match(nameRegex));
+    }
+
+    // 匹配内容
+    if (searchConditions.content) {
+      const contentRegex = new RegExp(searchConditions.content, 'gi');
+      isMatch = isMatch && !!content?.match(contentRegex);
+    }
+
+    // 匹配修改人
+    if (searchConditions.updated_by) {
+      const userRegex = new RegExp(searchConditions.updated_by, 'gi');
+      isMatch = isMatch && !!updated_by?.match(userRegex);
+    }
+
+    // 匹配标签
+    if (searchConditions.labels.length) {
+      // 表格项的labels与搜索标签有交集则匹配
+      const hasLabel = searchConditions.labels.some(label => labels.includes(label));
+      isMatch = isMatch && hasLabel;
+    }
+
+    return isMatch;
+  });
+
+  promptTableEmptyType.value = results.length < 1 && filterPromptValues.value.length > 0 ? 'searchEmpty' : 'empty';
+
+  return results;
+});
+const renderPreviewByTab = computed(() => {
+  return allSelections.value.filter(item => item.mode_type === activeTab.value);
 });
 const filterPromptConditions = computed<ISearchItem[]>(() => [
   {
@@ -742,63 +792,14 @@ watch(isShow, async () => {
     if (isEditMode.value) {
       await fetchServer();
     }
-    initSidebarFormData(formData.value);
-  }
-  else {
-    resetSliderData();
+    const initFormData = {
+      formData: formData.value,
+      toolSelections: toolSelections.value,
+      promptSelections: promptSelections.value,
+    };
+    initSidebarFormData(initFormData);
   }
 });
-
-watch(
-  filterPromptValues,
-  (newVal) => {
-    handleSetLoading(true);
-    const searchConditions = {
-      name: newVal.find(item => item.id === 'name')?.values[0]?.id ?? '',
-      content: newVal.find(item => item.id === 'content')?.values[0]?.id ?? '',
-      updated_by: newVal.find(item => item.id === 'updated_by')?.values[0]?.id ?? [],
-      labels: newVal.find(item => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
-    };
-
-    if (!newVal.length) {
-      promptTableData.value = cloneDeep(allPromptTableData.value);
-      return;
-    }
-
-    promptTableData.value = allPromptTableData.value?.filter((item) => {
-      const { name, code, content, updated_by = '', labels = [] } = item;
-      let isMatch = true;
-
-      // 匹配中英文名
-      if (searchConditions.name) {
-        const nameRegex = new RegExp(searchConditions.name, 'gi');
-        isMatch = isMatch && (!!name?.match(nameRegex) || !!code?.match(nameRegex));
-      }
-
-      // 匹配内容
-      if (searchConditions.content) {
-        const contentRegex = new RegExp(searchConditions.content, 'gi');
-        isMatch = isMatch && !!content?.match(contentRegex);
-      }
-
-      // 匹配修改人
-      if (searchConditions.updated_by) {
-        const userRegex = new RegExp(searchConditions.updated_by, 'gi');
-        isMatch = isMatch && !!updated_by?.match(userRegex);
-      }
-
-      // 匹配标签
-      if (searchConditions.labels.length) {
-        // 表格项的labels与搜索标签有交集则匹配
-        const hasLabel = searchConditions.labels.some(label => labels.includes(label));
-        isMatch = isMatch && hasLabel;
-      }
-
-      return isMatch;
-    });
-    promptTableEmptyType.value = promptTableData.value.length < 1 && newVal.length > 0 ? 'searchEmpty' : 'empty';
-  },
-);
 
 const resetResizeLayout = () => {
   nextTick(() => {
@@ -848,7 +849,7 @@ const handleSetRowClass = ({ row }) => {
 };
 
 const handleResizeLayout = (resizeWidth: number) => {
-  resizeMainWidth.value = 1182 - resizeWidth;
+  resizePreviewWidth.value = 1182 - resizeWidth;
 };
 
 /**
@@ -1053,7 +1054,6 @@ const fetchStageResources = async () => {
 const fetchPromptResources = async () => {
   if (!gatewayStore.currentGateway?.id) return;
   const res = await getServerPrompts(gatewayStore.currentGateway.id);
-  allPromptTableData.value = res?.prompts ?? [];
   promptTableData.value = res?.prompts ?? [];
 
   if (promptTableData.value.length) {
@@ -1066,14 +1066,6 @@ const fetchPromptResources = async () => {
       };
     });
   }
-};
-
-const sortByModeType = (data: any[]) => {
-  return [...data].sort((prev, curr) => {
-    if (prev.mode_type === 'tool' && curr.mode_type !== 'tool') return -1;
-    if (prev.mode_type !== 'tool' && curr.mode_type === 'tool') return 1;
-    return 0;
-  });
 };
 
 const handlePromptRowClick = ({
@@ -1116,15 +1108,13 @@ const handleSelectionChange = (selections: any[], type: 'tool' | 'prompt') => {
   const filteredItems = allSelections.value.filter(item => item.mode_type !== type);
   const mergedItems = [...filteredItems, ...selections];
   const uniqueItems = uniqBy(mergedItems, 'id');
-  allSelections.value = [...sortByModeType(uniqueItems)];
+  allSelections.value = [...uniqueItems];
 };
 
 const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
   toolSelections.value = selections;
   if (!selections.length) {
-    allSelections.value = sortByModeType(
-      allSelections.value.filter(item => item.mode_type !== 'tool'),
-    );
+    allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
   }
   else {
     const toolItems = selections.map(item => ({
@@ -1138,9 +1128,7 @@ const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ select
 const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
   promptSelections.value = selections;
   if (!selections.length) {
-    allSelections.value = sortByModeType(
-      allSelections.value.filter(item => item.mode_type !== 'prompt'),
-    );
+    allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
   }
   else {
     const promptItems = selections.map(item => ({
@@ -1182,12 +1170,25 @@ const handlePromptClearSelection = () => {
   allSelections.value = allSelections.value.filter(item => ['tool'].includes(item.mode_type));
 };
 
-const handleClearSelections = () => {
-  allSelections.value = [];
-  toolSelections.value = [];
-  promptSelections.value = [];
-  toolTableRef.value?.handleResetSelection();
-  promptTableRef.value?.handleResetSelection();
+const handleClearSelections = (type?: string) => {
+  const typeMap = {
+    tool: () => {
+      toolSelections.value = [];
+      toolTableRef.value?.handleResetSelection();
+    },
+    prompt: () => {
+      promptSelections.value = [];
+      promptTableRef.value?.handleResetSelection();
+    },
+    all: () => {
+      allSelections.value = [];
+      toolSelections.value = [];
+      promptSelections.value = [];
+      toolTableRef.value?.handleResetSelection();
+      promptTableRef.value?.handleResetSelection();
+    },
+  };
+  return typeMap[type ?? 'all']?.();
 };
 
 const handleToolClearFilter = () => {
@@ -1251,14 +1252,6 @@ const handleMcpTypeChange = (tab: string) => {
   tabMap[tab]?.();
 };
 
-const handleCancel = () => {
-  resetResizeLayout();
-  handleClearSelections();
-  clearValidate();
-  curPromptData.value = {};
-  isShow.value = false;
-};
-
 const handleCopyClick = () => {
   copy(url.value || previewUrl.value);
 };
@@ -1274,10 +1267,12 @@ const resetSliderData = () => {
   stageList.value = [];
   resourceList.value = [];
   toolSelections.value = [];
+  promptSelections.value = [];
   allSelections.value = [];
   noPermPrompt.value = [];
   url.value = '';
   activeTab.value = 'tool';
+  curPromptData.value = {};
   resizeLayoutConfig = {
     min: 880,
     max: 1040,
@@ -1285,8 +1280,21 @@ const resetSliderData = () => {
 };
 
 const handleBeforeClose = () => {
-  const results = isSidebarClosed(JSON.stringify(formData.value));
+  const diffFormData = {
+    formData: formData.value,
+    toolSelections: toolSelections.value,
+    promptSelections: promptSelections.value,
+  };
+  const results = isSidebarClosed(JSON.stringify(diffFormData));
   return results;
+};
+
+const handleCancel = () => {
+  resetResizeLayout();
+  handleClearSelections();
+  clearValidate();
+  resetSliderData();
+  isShow.value = false;
 };
 
 defineExpose({
