@@ -298,31 +298,21 @@ class TestMCPServerHandler:
 
     # ========== Prompts 相关方法测试 ==========
 
-    def test_fetch_remote_prompts(self):
+    def test_fetch_remote_prompts(self, mocker):
         """测试从远程获取 prompts 列表"""
         mock_prompts = [
-            {"id": "prompt_001", "name": "Prompt 1"},
-            {"id": "prompt_002", "name": "Prompt 2"},
+            {"id": 1, "name": "Prompt 1", "code": "prompt_001"},
+            {"id": 2, "name": "Prompt 2", "code": "prompt_002"},
         ]
 
-        with patch(
-            "apigateway.biz.mcp_server.mcp_server.bkaidev.fetch_prompts_list", return_value=mock_prompts
-        ) as mock_fetch:
-            result = MCPServerHandler.fetch_remote_prompts(username="admin", keyword="test")
-
-            mock_fetch.assert_called_once_with(username="admin", keyword="test")
-            assert result == mock_prompts
-
-    def test_fetch_remote_prompts_empty_keyword(self):
-        """测试从远程获取 prompts 列表（无关键字）"""
-        mock_prompts = [{"id": "prompt_001", "name": "Prompt 1"}]
+        mock_credentials = mocker.MagicMock()
 
         with patch(
             "apigateway.biz.mcp_server.mcp_server.bkaidev.fetch_prompts_list", return_value=mock_prompts
         ) as mock_fetch:
-            result = MCPServerHandler.fetch_remote_prompts(username="admin")
+            result = MCPServerHandler.fetch_remote_prompts(user_credentials=mock_credentials)
 
-            mock_fetch.assert_called_once_with(username="admin", keyword="")
+            mock_fetch.assert_called_once_with(user_credentials=mock_credentials)
             assert result == mock_prompts
 
     def test_get_prompts_empty(self, fake_gateway, fake_stage):
