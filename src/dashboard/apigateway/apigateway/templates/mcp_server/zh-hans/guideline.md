@@ -7,7 +7,7 @@
 {
     "mcpServers": {
       "{{name}}": {
-        "type": "streamable-http",
+        "type": "streamableHttp",
         "url": "{{url}}",
         "description": "{{description}}"
       }

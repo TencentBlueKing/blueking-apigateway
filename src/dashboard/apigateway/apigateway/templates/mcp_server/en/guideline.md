@@ -7,7 +7,7 @@ Clients supporting the MCP protocol can be configured using the following settin
 {
     "mcpServers": {
       "{{name}}": {
-        "type": "streamable-http",
+        "type": "streamableHttp",
         "url": "{{url}}",
         "description": "{{description}}"
       }
