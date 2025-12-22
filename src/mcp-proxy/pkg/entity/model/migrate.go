@@ -40,6 +40,7 @@ func RunGenDao() {
 		Gateway{},
 		Stage{},
 		OpenapiGatewayResourceVersionSpec{},
+		MCPServerExtend{},
 	)
 	g.Execute()
 }

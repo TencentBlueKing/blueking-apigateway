@@ -43,8 +43,8 @@ func (k JWTInfoCacheKey) Key() string {
 
 func retrieveJWTInfo(ctx context.Context, k cache.Key) (interface{}, error) {
 	key := k.(JWTInfoCacheKey)
-	r := repo.CoreJWT
-	jwtInfo, err := repo.CoreJWT.WithContext(ctx).Where(r.GatewayID.Eq(key.GatewayID)).Take()
+	r := repo.JWT
+	jwtInfo, err := repo.JWT.WithContext(ctx).Where(r.GatewayID.Eq(key.GatewayID)).Take()
 	if err != nil {
 		return nil, err
 	}

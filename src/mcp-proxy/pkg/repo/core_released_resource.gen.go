@@ -38,30 +38,30 @@ import (
 	"mcp_proxy/pkg/entity/model"
 )
 
-func newCoreReleasedResource(db *gorm.DB, opts ...gen.DOOption) coreReleasedResource {
-	_coreReleasedResource := coreReleasedResource{}
+func newReleasedResource(db *gorm.DB, opts ...gen.DOOption) releasedResource {
+	_releasedResource := releasedResource{}
 
-	_coreReleasedResource.coreReleasedResourceDo.UseDB(db, opts...)
-	_coreReleasedResource.coreReleasedResourceDo.UseModel(&model.ReleasedResource{})
+	_releasedResource.releasedResourceDo.UseDB(db, opts...)
+	_releasedResource.releasedResourceDo.UseModel(&model.ReleasedResource{})
 
-	tableName := _coreReleasedResource.coreReleasedResourceDo.TableName()
-	_coreReleasedResource.ALL = field.NewAsterisk(tableName)
-	_coreReleasedResource.ID = field.NewInt(tableName, "id")
-	_coreReleasedResource.ResourceVersionID = field.NewInt(tableName, "resource_version_id")
-	_coreReleasedResource.ResourceID = field.NewInt(tableName, "resource_id")
-	_coreReleasedResource.ResourceName = field.NewString(tableName, "resource_name")
-	_coreReleasedResource.ResourceMethod = field.NewString(tableName, "resource_method")
-	_coreReleasedResource.ResourcePath = field.NewString(tableName, "resource_path")
-	_coreReleasedResource.GatewayID = field.NewInt(tableName, "api_id")
-	_coreReleasedResource.Data = field.NewString(tableName, "data")
+	tableName := _releasedResource.releasedResourceDo.TableName()
+	_releasedResource.ALL = field.NewAsterisk(tableName)
+	_releasedResource.ID = field.NewInt(tableName, "id")
+	_releasedResource.ResourceVersionID = field.NewInt(tableName, "resource_version_id")
+	_releasedResource.ResourceID = field.NewInt(tableName, "resource_id")
+	_releasedResource.ResourceName = field.NewString(tableName, "resource_name")
+	_releasedResource.ResourceMethod = field.NewString(tableName, "resource_method")
+	_releasedResource.ResourcePath = field.NewString(tableName, "resource_path")
+	_releasedResource.GatewayID = field.NewInt(tableName, "api_id")
+	_releasedResource.Data = field.NewString(tableName, "data")
 
-	_coreReleasedResource.fillFieldMap()
+	_releasedResource.fillFieldMap()
 
-	return _coreReleasedResource
+	return _releasedResource
 }
 
-type coreReleasedResource struct {
-	coreReleasedResourceDo coreReleasedResourceDo
+type releasedResource struct {
+	releasedResourceDo releasedResourceDo
 
 	ALL               field.Asterisk
 	ID                field.Int
@@ -76,46 +76,46 @@ type coreReleasedResource struct {
 	fieldMap map[string]field.Expr
 }
 
-func (c coreReleasedResource) Table(newTableName string) *coreReleasedResource {
-	c.coreReleasedResourceDo.UseTable(newTableName)
-	return c.updateTableName(newTableName)
+func (r releasedResource) Table(newTableName string) *releasedResource {
+	r.releasedResourceDo.UseTable(newTableName)
+	return r.updateTableName(newTableName)
 }
 
-func (c coreReleasedResource) As(alias string) *coreReleasedResource {
-	c.coreReleasedResourceDo.DO = *(c.coreReleasedResourceDo.As(alias).(*gen.DO))
-	return c.updateTableName(alias)
+func (r releasedResource) As(alias string) *releasedResource {
+	r.releasedResourceDo.DO = *(r.releasedResourceDo.As(alias).(*gen.DO))
+	return r.updateTableName(alias)
 }
 
-func (c *coreReleasedResource) updateTableName(table string) *coreReleasedResource {
-	c.ALL = field.NewAsterisk(table)
-	c.ID = field.NewInt(table, "id")
-	c.ResourceVersionID = field.NewInt(table, "resource_version_id")
-	c.ResourceID = field.NewInt(table, "resource_id")
-	c.ResourceName = field.NewString(table, "resource_name")
-	c.ResourceMethod = field.NewString(table, "resource_method")
-	c.ResourcePath = field.NewString(table, "resource_path")
-	c.GatewayID = field.NewInt(table, "api_id")
-	c.Data = field.NewString(table, "data")
+func (r *releasedResource) updateTableName(table string) *releasedResource {
+	r.ALL = field.NewAsterisk(table)
+	r.ID = field.NewInt(table, "id")
+	r.ResourceVersionID = field.NewInt(table, "resource_version_id")
+	r.ResourceID = field.NewInt(table, "resource_id")
+	r.ResourceName = field.NewString(table, "resource_name")
+	r.ResourceMethod = field.NewString(table, "resource_method")
+	r.ResourcePath = field.NewString(table, "resource_path")
+	r.GatewayID = field.NewInt(table, "api_id")
+	r.Data = field.NewString(table, "data")
 
-	c.fillFieldMap()
+	r.fillFieldMap()
 
-	return c
+	return r
 }
 
-func (c *coreReleasedResource) WithContext(ctx context.Context) ICoreReleasedResourceDo {
-	return c.coreReleasedResourceDo.WithContext(ctx)
+func (r *releasedResource) WithContext(ctx context.Context) IReleasedResourceDo {
+	return r.releasedResourceDo.WithContext(ctx)
 }
 
-func (c coreReleasedResource) TableName() string { return c.coreReleasedResourceDo.TableName() }
+func (r releasedResource) TableName() string { return r.releasedResourceDo.TableName() }
 
-func (c coreReleasedResource) Alias() string { return c.coreReleasedResourceDo.Alias() }
+func (r releasedResource) Alias() string { return r.releasedResourceDo.Alias() }
 
-func (c coreReleasedResource) Columns(cols ...field.Expr) gen.Columns {
-	return c.coreReleasedResourceDo.Columns(cols...)
+func (r releasedResource) Columns(cols ...field.Expr) gen.Columns {
+	return r.releasedResourceDo.Columns(cols...)
 }
 
-func (c *coreReleasedResource) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
-	_f, ok := c.fieldMap[fieldName]
+func (r *releasedResource) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
+	_f, ok := r.fieldMap[fieldName]
 	if !ok || _f == nil {
 		return nil, false
 	}
@@ -123,59 +123,59 @@ func (c *coreReleasedResource) GetFieldByName(fieldName string) (field.OrderExpr
 	return _oe, ok
 }
 
-func (c *coreReleasedResource) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 8)
-	c.fieldMap["id"] = c.ID
-	c.fieldMap["resource_version_id"] = c.ResourceVersionID
-	c.fieldMap["resource_id"] = c.ResourceID
-	c.fieldMap["resource_name"] = c.ResourceName
-	c.fieldMap["resource_method"] = c.ResourceMethod
-	c.fieldMap["resource_path"] = c.ResourcePath
-	c.fieldMap["api_id"] = c.GatewayID
-	c.fieldMap["data"] = c.Data
+func (r *releasedResource) fillFieldMap() {
+	r.fieldMap = make(map[string]field.Expr, 8)
+	r.fieldMap["id"] = r.ID
+	r.fieldMap["resource_version_id"] = r.ResourceVersionID
+	r.fieldMap["resource_id"] = r.ResourceID
+	r.fieldMap["resource_name"] = r.ResourceName
+	r.fieldMap["resource_method"] = r.ResourceMethod
+	r.fieldMap["resource_path"] = r.ResourcePath
+	r.fieldMap["api_id"] = r.GatewayID
+	r.fieldMap["data"] = r.Data
 }
 
-func (c coreReleasedResource) clone(db *gorm.DB) coreReleasedResource {
-	c.coreReleasedResourceDo.ReplaceConnPool(db.Statement.ConnPool)
-	return c
+func (r releasedResource) clone(db *gorm.DB) releasedResource {
+	r.releasedResourceDo.ReplaceConnPool(db.Statement.ConnPool)
+	return r
 }
 
-func (c coreReleasedResource) replaceDB(db *gorm.DB) coreReleasedResource {
-	c.coreReleasedResourceDo.ReplaceDB(db)
-	return c
+func (r releasedResource) replaceDB(db *gorm.DB) releasedResource {
+	r.releasedResourceDo.ReplaceDB(db)
+	return r
 }
 
-type coreReleasedResourceDo struct{ gen.DO }
+type releasedResourceDo struct{ gen.DO }
 
-type ICoreReleasedResourceDo interface {
+type IReleasedResourceDo interface {
 	gen.SubQuery
-	Debug() ICoreReleasedResourceDo
-	WithContext(ctx context.Context) ICoreReleasedResourceDo
+	Debug() IReleasedResourceDo
+	WithContext(ctx context.Context) IReleasedResourceDo
 	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
 	ReplaceDB(db *gorm.DB)
-	ReadDB() ICoreReleasedResourceDo
-	WriteDB() ICoreReleasedResourceDo
+	ReadDB() IReleasedResourceDo
+	WriteDB() IReleasedResourceDo
 	As(alias string) gen.Dao
-	Session(config *gorm.Session) ICoreReleasedResourceDo
+	Session(config *gorm.Session) IReleasedResourceDo
 	Columns(cols ...field.Expr) gen.Columns
-	Clauses(conds ...clause.Expression) ICoreReleasedResourceDo
-	Not(conds ...gen.Condition) ICoreReleasedResourceDo
-	Or(conds ...gen.Condition) ICoreReleasedResourceDo
-	Select(conds ...field.Expr) ICoreReleasedResourceDo
-	Where(conds ...gen.Condition) ICoreReleasedResourceDo
-	Order(conds ...field.Expr) ICoreReleasedResourceDo
-	Distinct(cols ...field.Expr) ICoreReleasedResourceDo
-	Omit(cols ...field.Expr) ICoreReleasedResourceDo
-	Join(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo
-	LeftJoin(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo
-	RightJoin(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo
-	Group(cols ...field.Expr) ICoreReleasedResourceDo
-	Having(conds ...gen.Condition) ICoreReleasedResourceDo
-	Limit(limit int) ICoreReleasedResourceDo
-	Offset(offset int) ICoreReleasedResourceDo
+	Clauses(conds ...clause.Expression) IReleasedResourceDo
+	Not(conds ...gen.Condition) IReleasedResourceDo
+	Or(conds ...gen.Condition) IReleasedResourceDo
+	Select(conds ...field.Expr) IReleasedResourceDo
+	Where(conds ...gen.Condition) IReleasedResourceDo
+	Order(conds ...field.Expr) IReleasedResourceDo
+	Distinct(cols ...field.Expr) IReleasedResourceDo
+	Omit(cols ...field.Expr) IReleasedResourceDo
+	Join(table schema.Tabler, on ...field.Expr) IReleasedResourceDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IReleasedResourceDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IReleasedResourceDo
+	Group(cols ...field.Expr) IReleasedResourceDo
+	Having(conds ...gen.Condition) IReleasedResourceDo
+	Limit(limit int) IReleasedResourceDo
+	Offset(offset int) IReleasedResourceDo
 	Count() (count int64, err error)
-	Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreReleasedResourceDo
-	Unscoped() ICoreReleasedResourceDo
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IReleasedResourceDo
+	Unscoped() IReleasedResourceDo
 	Create(values ...*model.ReleasedResource) error
 	CreateInBatches(values []*model.ReleasedResource, batchSize int) error
 	Save(values ...*model.ReleasedResource) error
@@ -194,10 +194,10 @@ type ICoreReleasedResourceDo interface {
 	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
 	UpdateFrom(q gen.SubQuery) gen.Dao
-	Attrs(attrs ...field.AssignExpr) ICoreReleasedResourceDo
-	Assign(attrs ...field.AssignExpr) ICoreReleasedResourceDo
-	Joins(fields ...field.RelationField) ICoreReleasedResourceDo
-	Preload(fields ...field.RelationField) ICoreReleasedResourceDo
+	Attrs(attrs ...field.AssignExpr) IReleasedResourceDo
+	Assign(attrs ...field.AssignExpr) IReleasedResourceDo
+	Joins(fields ...field.RelationField) IReleasedResourceDo
+	Preload(fields ...field.RelationField) IReleasedResourceDo
 	FirstOrInit() (*model.ReleasedResource, error)
 	FirstOrCreate() (*model.ReleasedResource, error)
 	FindByPage(offset int, limit int) (result []*model.ReleasedResource, count int64, err error)
@@ -205,215 +205,215 @@ type ICoreReleasedResourceDo interface {
 	Rows() (*sql.Rows, error)
 	Row() *sql.Row
 	Scan(result interface{}) (err error)
-	Returning(value interface{}, columns ...string) ICoreReleasedResourceDo
+	Returning(value interface{}, columns ...string) IReleasedResourceDo
 	UnderlyingDB() *gorm.DB
 	schema.Tabler
 }
 
-func (c coreReleasedResourceDo) Debug() ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Debug())
+func (r releasedResourceDo) Debug() IReleasedResourceDo {
+	return r.withDO(r.DO.Debug())
 }
 
-func (c coreReleasedResourceDo) WithContext(ctx context.Context) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.WithContext(ctx))
+func (r releasedResourceDo) WithContext(ctx context.Context) IReleasedResourceDo {
+	return r.withDO(r.DO.WithContext(ctx))
 }
 
-func (c coreReleasedResourceDo) ReadDB() ICoreReleasedResourceDo {
-	return c.Clauses(dbresolver.Read)
+func (r releasedResourceDo) ReadDB() IReleasedResourceDo {
+	return r.Clauses(dbresolver.Read)
 }
 
-func (c coreReleasedResourceDo) WriteDB() ICoreReleasedResourceDo {
-	return c.Clauses(dbresolver.Write)
+func (r releasedResourceDo) WriteDB() IReleasedResourceDo {
+	return r.Clauses(dbresolver.Write)
 }
 
-func (c coreReleasedResourceDo) Session(config *gorm.Session) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Session(config))
+func (r releasedResourceDo) Session(config *gorm.Session) IReleasedResourceDo {
+	return r.withDO(r.DO.Session(config))
 }
 
-func (c coreReleasedResourceDo) Clauses(conds ...clause.Expression) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Clauses(conds...))
+func (r releasedResourceDo) Clauses(conds ...clause.Expression) IReleasedResourceDo {
+	return r.withDO(r.DO.Clauses(conds...))
 }
 
-func (c coreReleasedResourceDo) Returning(value interface{}, columns ...string) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Returning(value, columns...))
+func (r releasedResourceDo) Returning(value interface{}, columns ...string) IReleasedResourceDo {
+	return r.withDO(r.DO.Returning(value, columns...))
 }
 
-func (c coreReleasedResourceDo) Not(conds ...gen.Condition) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Not(conds...))
+func (r releasedResourceDo) Not(conds ...gen.Condition) IReleasedResourceDo {
+	return r.withDO(r.DO.Not(conds...))
 }
 
-func (c coreReleasedResourceDo) Or(conds ...gen.Condition) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Or(conds...))
+func (r releasedResourceDo) Or(conds ...gen.Condition) IReleasedResourceDo {
+	return r.withDO(r.DO.Or(conds...))
 }
 
-func (c coreReleasedResourceDo) Select(conds ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Select(conds...))
+func (r releasedResourceDo) Select(conds ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Select(conds...))
 }
 
-func (c coreReleasedResourceDo) Where(conds ...gen.Condition) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Where(conds...))
+func (r releasedResourceDo) Where(conds ...gen.Condition) IReleasedResourceDo {
+	return r.withDO(r.DO.Where(conds...))
 }
 
-func (c coreReleasedResourceDo) Order(conds ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Order(conds...))
+func (r releasedResourceDo) Order(conds ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Order(conds...))
 }
 
-func (c coreReleasedResourceDo) Distinct(cols ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Distinct(cols...))
+func (r releasedResourceDo) Distinct(cols ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Distinct(cols...))
 }
 
-func (c coreReleasedResourceDo) Omit(cols ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Omit(cols...))
+func (r releasedResourceDo) Omit(cols ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Omit(cols...))
 }
 
-func (c coreReleasedResourceDo) Join(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Join(table, on...))
+func (r releasedResourceDo) Join(table schema.Tabler, on ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Join(table, on...))
 }
 
-func (c coreReleasedResourceDo) LeftJoin(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.LeftJoin(table, on...))
+func (r releasedResourceDo) LeftJoin(table schema.Tabler, on ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.LeftJoin(table, on...))
 }
 
-func (c coreReleasedResourceDo) RightJoin(table schema.Tabler, on ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.RightJoin(table, on...))
+func (r releasedResourceDo) RightJoin(table schema.Tabler, on ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.RightJoin(table, on...))
 }
 
-func (c coreReleasedResourceDo) Group(cols ...field.Expr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Group(cols...))
+func (r releasedResourceDo) Group(cols ...field.Expr) IReleasedResourceDo {
+	return r.withDO(r.DO.Group(cols...))
 }
 
-func (c coreReleasedResourceDo) Having(conds ...gen.Condition) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Having(conds...))
+func (r releasedResourceDo) Having(conds ...gen.Condition) IReleasedResourceDo {
+	return r.withDO(r.DO.Having(conds...))
 }
 
-func (c coreReleasedResourceDo) Limit(limit int) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Limit(limit))
+func (r releasedResourceDo) Limit(limit int) IReleasedResourceDo {
+	return r.withDO(r.DO.Limit(limit))
 }
 
-func (c coreReleasedResourceDo) Offset(offset int) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Offset(offset))
+func (r releasedResourceDo) Offset(offset int) IReleasedResourceDo {
+	return r.withDO(r.DO.Offset(offset))
 }
 
-func (c coreReleasedResourceDo) Scopes(funcs ...func(gen.Dao) gen.Dao) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Scopes(funcs...))
+func (r releasedResourceDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IReleasedResourceDo {
+	return r.withDO(r.DO.Scopes(funcs...))
 }
 
-func (c coreReleasedResourceDo) Unscoped() ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Unscoped())
+func (r releasedResourceDo) Unscoped() IReleasedResourceDo {
+	return r.withDO(r.DO.Unscoped())
 }
 
-func (c coreReleasedResourceDo) Create(values ...*model.ReleasedResource) error {
+func (r releasedResourceDo) Create(values ...*model.ReleasedResource) error {
 	if len(values) == 0 {
 		return nil
 	}
-	return c.DO.Create(values)
+	return r.DO.Create(values)
 }
 
-func (c coreReleasedResourceDo) CreateInBatches(values []*model.ReleasedResource, batchSize int) error {
-	return c.DO.CreateInBatches(values, batchSize)
+func (r releasedResourceDo) CreateInBatches(values []*model.ReleasedResource, batchSize int) error {
+	return r.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (c coreReleasedResourceDo) Save(values ...*model.ReleasedResource) error {
+func (r releasedResourceDo) Save(values ...*model.ReleasedResource) error {
 	if len(values) == 0 {
 		return nil
 	}
-	return c.DO.Save(values)
+	return r.DO.Save(values)
 }
 
-func (c coreReleasedResourceDo) First() (*model.ReleasedResource, error) {
-	if result, err := c.DO.First(); err != nil {
+func (r releasedResourceDo) First() (*model.ReleasedResource, error) {
+	if result, err := r.DO.First(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Take() (*model.ReleasedResource, error) {
-	if result, err := c.DO.Take(); err != nil {
+func (r releasedResourceDo) Take() (*model.ReleasedResource, error) {
+	if result, err := r.DO.Take(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Last() (*model.ReleasedResource, error) {
-	if result, err := c.DO.Last(); err != nil {
+func (r releasedResourceDo) Last() (*model.ReleasedResource, error) {
+	if result, err := r.DO.Last(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) Find() ([]*model.ReleasedResource, error) {
-	result, err := c.DO.Find()
+func (r releasedResourceDo) Find() ([]*model.ReleasedResource, error) {
+	result, err := r.DO.Find()
 	return result.([]*model.ReleasedResource), err
 }
 
-func (c coreReleasedResourceDo) FindInBatch(
+func (r releasedResourceDo) FindInBatch(
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) (results []*model.ReleasedResource, err error) {
 	buf := make([]*model.ReleasedResource, 0, batchSize)
-	err = c.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
+	err = r.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
 	})
 	return results, err
 }
 
-func (c coreReleasedResourceDo) FindInBatches(
+func (r releasedResourceDo) FindInBatches(
 	result *[]*model.ReleasedResource,
 	batchSize int,
 	fc func(tx gen.Dao, batch int) error,
 ) error {
-	return c.DO.FindInBatches(result, batchSize, fc)
+	return r.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (c coreReleasedResourceDo) Attrs(attrs ...field.AssignExpr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Attrs(attrs...))
+func (r releasedResourceDo) Attrs(attrs ...field.AssignExpr) IReleasedResourceDo {
+	return r.withDO(r.DO.Attrs(attrs...))
 }
 
-func (c coreReleasedResourceDo) Assign(attrs ...field.AssignExpr) ICoreReleasedResourceDo {
-	return c.withDO(c.DO.Assign(attrs...))
+func (r releasedResourceDo) Assign(attrs ...field.AssignExpr) IReleasedResourceDo {
+	return r.withDO(r.DO.Assign(attrs...))
 }
 
-func (c coreReleasedResourceDo) Joins(fields ...field.RelationField) ICoreReleasedResourceDo {
+func (r releasedResourceDo) Joins(fields ...field.RelationField) IReleasedResourceDo {
 	for _, _f := range fields {
-		c = *c.withDO(c.DO.Joins(_f))
+		r = *r.withDO(r.DO.Joins(_f))
 	}
-	return &c
+	return &r
 }
 
-func (c coreReleasedResourceDo) Preload(fields ...field.RelationField) ICoreReleasedResourceDo {
+func (r releasedResourceDo) Preload(fields ...field.RelationField) IReleasedResourceDo {
 	for _, _f := range fields {
-		c = *c.withDO(c.DO.Preload(_f))
+		r = *r.withDO(r.DO.Preload(_f))
 	}
-	return &c
+	return &r
 }
 
-func (c coreReleasedResourceDo) FirstOrInit() (*model.ReleasedResource, error) {
-	if result, err := c.DO.FirstOrInit(); err != nil {
+func (r releasedResourceDo) FirstOrInit() (*model.ReleasedResource, error) {
+	if result, err := r.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) FirstOrCreate() (*model.ReleasedResource, error) {
-	if result, err := c.DO.FirstOrCreate(); err != nil {
+func (r releasedResourceDo) FirstOrCreate() (*model.ReleasedResource, error) {
+	if result, err := r.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
 		return result.(*model.ReleasedResource), nil
 	}
 }
 
-func (c coreReleasedResourceDo) FindByPage(
+func (r releasedResourceDo) FindByPage(
 	offset int,
 	limit int,
 ) (result []*model.ReleasedResource, count int64, err error) {
-	result, err = c.Offset(offset).Limit(limit).Find()
+	result, err = r.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
 	}
@@ -423,29 +423,29 @@ func (c coreReleasedResourceDo) FindByPage(
 		return
 	}
 
-	count, err = c.Offset(-1).Limit(-1).Count()
+	count, err = r.Offset(-1).Limit(-1).Count()
 	return
 }
 
-func (c coreReleasedResourceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
-	count, err = c.Count()
+func (r releasedResourceDo) ScanByPage(result interface{}, offset int, limit int) (count int64, err error) {
+	count, err = r.Count()
 	if err != nil {
 		return
 	}
 
-	err = c.Offset(offset).Limit(limit).Scan(result)
+	err = r.Offset(offset).Limit(limit).Scan(result)
 	return
 }
 
-func (c coreReleasedResourceDo) Scan(result interface{}) (err error) {
-	return c.DO.Scan(result)
+func (r releasedResourceDo) Scan(result interface{}) (err error) {
+	return r.DO.Scan(result)
 }
 
-func (c coreReleasedResourceDo) Delete(models ...*model.ReleasedResource) (result gen.ResultInfo, err error) {
-	return c.DO.Delete(models)
+func (r releasedResourceDo) Delete(models ...*model.ReleasedResource) (result gen.ResultInfo, err error) {
+	return r.DO.Delete(models)
 }
 
-func (c *coreReleasedResourceDo) withDO(do gen.Dao) *coreReleasedResourceDo {
-	c.DO = *do.(*gen.DO)
-	return c
+func (r *releasedResourceDo) withDO(do gen.Dao) *releasedResourceDo {
+	r.DO = *do.(*gen.DO)
+	return r
 }

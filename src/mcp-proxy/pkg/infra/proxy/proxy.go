@@ -215,6 +215,64 @@ func (m *MCPProxy) DeleteMCPServer(name string) {
 	delete(m.activeMCPServers, name)
 }
 
+// RegisterPromptsToMCPServer registers prompts to the specified MCP server
+func (m *MCPProxy) RegisterPromptsToMCPServer(serverName string, prompts []*PromptConfig) {
+	mcpServer := m.GetMCPServer(serverName)
+	if mcpServer == nil {
+		return
+	}
+	for _, promptConfig := range prompts {
+		prompt, handler := genPromptAndHandler(promptConfig)
+		mcpServer.RegisterPrompt(prompt, handler)
+	}
+}
+
+// UpdateMCPServerPrompts updates prompts for the specified MCP server
+func (m *MCPProxy) UpdateMCPServerPrompts(serverName string, prompts []*PromptConfig) {
+	mcpServer := m.GetMCPServer(serverName)
+	if mcpServer == nil {
+		return
+	}
+	// 构建新的 prompt 名称集合
+	newPromptNames := make(map[string]struct{})
+	for _, p := range prompts {
+		newPromptNames[p.Name] = struct{}{}
+	}
+	// 删除不再存在的 prompts
+	for _, existingPrompt := range mcpServer.GetPromptNames() {
+		if _, ok := newPromptNames[existingPrompt]; !ok {
+			mcpServer.UnregisterPrompt(existingPrompt)
+		}
+	}
+	// 注册新的 prompts
+	for _, promptConfig := range prompts {
+		prompt, handler := genPromptAndHandler(promptConfig)
+		mcpServer.RegisterPrompt(prompt, handler)
+	}
+}
+
+func genPromptAndHandler(promptConfig *PromptConfig) (*protocol.Prompt, server.PromptHandlerFunc) {
+	prompt := &protocol.Prompt{
+		Name:        promptConfig.Name,
+		Description: promptConfig.Description,
+	}
+	handler := func(ctx context.Context, request *protocol.GetPromptRequest) (*protocol.GetPromptResult, error) {
+		return &protocol.GetPromptResult{
+			Description: promptConfig.Description,
+			Messages: []*protocol.PromptMessage{
+				{
+					Role: protocol.RoleUser,
+					Content: &protocol.TextContent{
+						Type: "text",
+						Text: promptConfig.Content,
+					},
+				},
+			},
+		}, nil
+	}
+	return prompt, handler
+}
+
 func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 	// 生成handler
 	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
