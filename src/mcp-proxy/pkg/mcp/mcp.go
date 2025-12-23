@@ -103,8 +103,16 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		// 判断mcp server是否已经存在
 		if mcpProxy.IsMCPServerExist(server.Name) {
 			mcpServer := mcpProxy.GetMCPServer(server.Name)
-			// 判断资源版本是否变化
-			if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+			// 检查协议类型是否发生变化，如果变化需要删除旧的 MCPServer 并重新创建
+			if mcpServer.GetProtocolType() != server.GetProtocolType() {
+				logging.GetLogger().Infof(
+					"mcp server[%s] protocol type changed from %s to %s, will recreate",
+					server.Name, mcpServer.GetProtocolType(), server.GetProtocolType())
+				mcpProxy.DeleteMCPServer(server.Name)
+				// 删除后需要重新加载 openapi spec
+				wouldReloadOpenapiSpec = true
+			} else if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+				// 判断资源版本是否变化
 				logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
 				wouldReloadOpenapiSpec = false
 			}
@@ -124,7 +132,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		// 如果mcp server不存在，添加mcp server
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
-				conf.resourceVersion, conf.openapiFileData, server.ResourceNames)
+				conf.resourceVersion, conf.openapiFileData, server.ResourceNames, server.GetProtocolType())
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -135,8 +143,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				mcpProxy.RegisterPromptsToMCPServer(server.Name, prompts)
 				logging.GetLogger().Infof("registered %d prompts for mcp server[%s]", len(prompts), server.Name)
 			}
-			logging.GetLogger().Infof("add mcp server[%s] tool:%d, prompt:%d success",
-				server.Name, len(server.ResourceNames), len(prompts))
+			logging.GetLogger().Infof("add mcp server[%s] protocol:%s, tool:%d, prompt:%d success",
+				server.Name, server.GetProtocolType(), len(server.ResourceNames), len(prompts))
 			continue
 		}
 

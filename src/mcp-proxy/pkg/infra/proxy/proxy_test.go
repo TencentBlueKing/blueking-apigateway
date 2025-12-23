@@ -237,6 +237,54 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
+	Describe("StreamableHTTPHandler", func() {
+		var proxy *MCPProxy
+
+		BeforeEach(func() {
+			gin.SetMode(gin.TestMode)
+			proxy = NewMCPProxy("/api/mcp/%s/message")
+		})
+
+		It("should return error for non-existent server", func() {
+			handler := proxy.StreamableHTTPHandler()
+			Expect(handler).NotTo(BeNil())
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/mcp/non-existent/mcp", nil)
+			c.Params = gin.Params{{Key: "name", Value: "non-existent"}}
+
+			handler(c)
+
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+
+		It("should return error when server does not support Streamable HTTP protocol", func() {
+			handler := proxy.StreamableHTTPHandler()
+			Expect(handler).NotTo(BeNil())
+
+			// Add a SSE server (which doesn't support Streamable HTTP)
+			sseServer := &MCPServer{
+				name:                  "sse-server",
+				protocolType:          "sse",
+				StreamableHTTPHandler: nil, // No Streamable HTTP handler
+				rwLock:                &sync.RWMutex{},
+				tools:                 make(map[string]struct{}),
+				prompts:               make(map[string]struct{}),
+			}
+			proxy.AddMCPServer("sse-server", sseServer)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodPost, "/mcp/sse-server/mcp", nil)
+			c.Params = gin.Params{{Key: "name", Value: "sse-server"}}
+
+			handler(c)
+
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
 	Describe("Concurrent Access", func() {
 		It("should handle concurrent reads and writes", func() {
 			proxy := NewMCPProxy("/api/mcp/%s/message")
