@@ -378,8 +378,9 @@ import {
   getGuideDocs,
   patchGateway,
 } from '@/services/source/gateway.ts';
-import { Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
+import type { IFormMethod } from '@/types/common';
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import bareGit from '@/images/bare_git.png';
@@ -394,11 +395,6 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
 type ParamType = Parameters<typeof patchGateway>[1];
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 interface IProps { initData?: ParamType }
 
@@ -422,7 +418,7 @@ const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
-const formRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const formData = ref<ParamType>({
   name: '',
   description: '',
