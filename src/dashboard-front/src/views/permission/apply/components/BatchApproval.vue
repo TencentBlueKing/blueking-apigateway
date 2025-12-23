@@ -89,6 +89,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
+import type { IFormMethod } from '@/types/common';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps {
@@ -121,8 +122,6 @@ interface Emits {
   })
 }
 
-type FormMethod = { validate: () => void };
-
 const {
   title = '',
   dialogParams = {
@@ -139,7 +138,7 @@ const {
 } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
 
-const batchApprovalFormRef = ref<InstanceType<typeof BkForm> & FormMethod>();
+const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const approvalColumns = shallowRef([
   {
     title: t('蓝鲸应用ID'),

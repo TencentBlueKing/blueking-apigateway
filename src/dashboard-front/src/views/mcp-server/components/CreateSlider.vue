@@ -128,6 +128,30 @@
               />
             </BkFormItem>
             <BkFormItem
+              class="form-protocol-type"
+              property="protocol_type"
+              required
+            >
+              <template #label>
+                <span class="connect-method">
+                  {{ t('连接方式') }}
+                </span>
+                <span class="color-#979ba5 text-12px ml-16px">
+                  <InfoLine class="v-mid" />
+                  {{ t('切换连接方式后，客户端需要基于新协议重新建立连接') }}
+                </span>
+              </template>
+              <BkRadioGroup v-model="formData.protocol_type">
+                <BkRadio
+                  v-for="item of MCP_PROTOCOL_TYPE"
+                  :key="item.value"
+                  :label="item.value"
+                >
+                  {{ item.label }}
+                </BkRadio>
+              </BkRadioGroup>
+            </BkFormItem>
+            <BkFormItem
               :label="t('是否公开')"
               property="is_public"
               required
@@ -439,12 +463,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { uniq, uniqBy } from 'lodash-es';
+import { cloneDeep, uniq, uniqBy } from 'lodash-es';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
+import { InfoLine } from 'bkui-lib/icon';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
-import type { ITableMethod } from '@/types/common';
+import type { IFormMethod, ITableMethod } from '@/types/common';
 import { refDebounced } from '@vueuse/core';
 import {
   Form,
@@ -457,6 +482,7 @@ import {
   patchServer,
 } from '@/services/source/mcp-server';
 import { usePopInfoBox, useSidebar } from '@/hooks';
+import { MCP_PROTOCOL_TYPE } from '@/constants';
 import { copy } from '@/utils';
 import {
   useEnv,
@@ -493,17 +519,19 @@ const { t } = i18n.global;
 
 let loadingTimer: NodeJS.Timeout | null = null;
 
+const resizeLayoutRef = ref<HTMLElement | null>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
-const resizeLayoutRef = ref<HTMLElement | null>(null);
-const formRef = ref<InstanceType<typeof Form>>();
-const formData = ref<FormData>({
+const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const defaultFormData = ref<FormData>({
   name: '',
   description: '',
+  protocol_type: 'streamable_http',
   stage_id: 0,
   is_public: true,
   labels: [],
 });
+const formData = ref<FormData>(cloneDeep(defaultFormData.value));
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
@@ -676,6 +704,7 @@ let resizeLayoutConfig = {
 
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 const isEditMode = computed(() => !!serverId);
+const gatewayId = computed(() => gatewayStore?.currentGateway?.id);
 const stage = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway!.name}-${stageName.value}-`);
@@ -775,6 +804,7 @@ const previewUrl = computed(() => {
 
 watch(isShow, async () => {
   if (isShow.value) {
+    clearValidate();
     if (isEnablePrompt.value) {
       await Promise.allSettled([
         fetchStageList(),
@@ -832,8 +862,8 @@ const handleCheckedMouseleave = (row: TableRowData) => {
 };
 
 const clearValidate = () => {
+  formRef.value?.clearValidate();
   nextTick(() => {
-    formRef.value?.clearValidate();
   });
 };
 
@@ -916,10 +946,11 @@ const handleSubmit = async () => {
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
     };
     if (isEditMode.value) {
-      const { description, is_public, labels, title } = formData.value as FormData;
+      const { description, is_public, protocol_type, labels, title } = formData.value as FormData;
       params = Object.assign(params, {
         description,
         is_public,
+        protocol_type,
         labels,
         title,
       });
@@ -956,7 +987,7 @@ const isCurrentStageValid = computed(() =>
   stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
 
 const fetchStageList = async () => {
-  const response = await getStageList(gatewayStore.currentGateway!.id!);
+  const response = await getStageList(gatewayId.value);
   stageList.value = response || [];
   const validStage = stageList.value.find(stage => stage.status === 1);
   formData.value.stage_id = validStage?.id ?? undefined;
@@ -966,62 +997,69 @@ const fetchStageList = async () => {
 };
 
 const fetchServer = async () => {
-  const response = await getServer(gatewayStore.currentGateway!.id!, serverId!);
-  const {
-    name = '',
-    title = '',
-    description = '',
-    labels = [],
-    is_public = true,
-    stage = { id: 0 },
-    resource_names = [],
-    prompts = [],
-  } = response ?? {};
-  formData.value = {
-    ...formData.value,
-    name,
-    title,
-    description,
-    labels,
-    is_public,
-    stage_id: stage.id || 0,
-  };
-  url.value = response?.url ?? '';
-  // 渲染tool勾选数据
-  if (resource_names.length) {
-    toolSelections.value = resourceList.value
-      .filter(item => resource_names.includes(item.name))
-      .map(({ name, id }) => ({
-        name,
-        id,
-        mode_type: 'tool',
-      }));
-    toolTableRef.value?.setSelectionData(toolSelections.value);
-  }
-  // 渲染prompt勾选数据
-  if (prompts.length) {
-    // 处理已经是绑定的但是列表里面没有这个prompt的无权限数据
-    const authorizedPromptIds = new Set(promptTableData.value.map(item => item.id));
-    noPermPrompt.value = prompts.filter(item => !authorizedPromptIds.has(item.id)).map((item) => {
-      return {
-        ...item,
-        is_no_perm: !authorizedPromptIds.has(item.id),
-      };
-    });
-    promptSelections.value = prompts.map(item => ({
-      ...item,
-      mode_type: 'prompt',
-      is_no_perm: !authorizedPromptIds.has(item.id),
-    }));
-    if (noPermPrompt.value.length) {
-      promptTableData.value = [...promptTableData.value, ...noPermPrompt.value];
-      if (Object.keys(curPromptData.value).length === 0 && promptTableData.value.length) {
-        curPromptData.value = { ...promptTableData.value[0] };
-      }
+  try {
+    const response = await getServer(gatewayId.value, serverId!);
+    const {
+      name = '',
+      title = '',
+      description = '',
+      protocol_type = 'streamable_http',
+      labels = [],
+      is_public = true,
+      stage = { id: 0 },
+      resource_names = [],
+      prompts = [],
+    } = response ?? {};
+    formData.value = {
+      ...formData.value,
+      name,
+      title,
+      description,
+      labels,
+      is_public,
+      stage_id: stage.id || 0,
+      protocol_type,
+    };
+    url.value = response?.url ?? '';
+    // 渲染tool勾选数据
+    if (resource_names.length) {
+      toolSelections.value = resourceList.value
+        .filter(item => resource_names.includes(item.name))
+        .map(({ name, id }) => ({
+          name,
+          id,
+          mode_type: 'tool',
+        }));
+      toolTableRef.value?.setSelectionData(toolSelections.value);
     }
-    promptTableRef.value?.setSelectionData(promptSelections.value);
+    // 渲染prompt勾选数据
+    if (prompts.length) {
+      // 处理已经是绑定的但是列表里面没有这个prompt的无权限数据
+      const authorizedPromptIds = new Set(promptTableData.value.map(item => item.id));
+      noPermPrompt.value = prompts.filter(item => !authorizedPromptIds.has(item.id)).map((item) => {
+        return {
+          ...item,
+          is_no_perm: !authorizedPromptIds.has(item.id),
+        };
+      });
+      promptSelections.value = prompts.map(item => ({
+        ...item,
+        mode_type: 'prompt',
+        is_no_perm: !authorizedPromptIds.has(item.id),
+      }));
+      if (noPermPrompt.value.length) {
+        promptTableData.value = [...promptTableData.value, ...noPermPrompt.value];
+        if (Object.keys(curPromptData.value).length === 0 && promptTableData.value.length) {
+          curPromptData.value = { ...promptTableData.value[0] };
+        }
+      }
+      promptTableRef.value?.setSelectionData(promptSelections.value);
+    }
+    allSelections.value = [...toolSelections.value, ...promptSelections.value];
   }
-  allSelections.value = [...toolSelections.value, ...promptSelections.value];
+  catch {
+    formData.value = cloneDeep(defaultFormData.value);
+  }
 };
 
 const fetchStageResources = async () => {
@@ -1029,7 +1067,7 @@ const fetchStageResources = async () => {
     searchLoading.value = true;
     if (stage.value && stage.value.resource_version?.id) {
       const response = await getVersionDetail(
-        gatewayStore.currentGateway!.id!,
+        gatewayId.value,
         stage.value.resource_version.id,
         {
           stage_id: stage.value.id,
@@ -1220,7 +1258,7 @@ const handleToolNameClick = (row: { id: number }) => {
   const routeData = router.resolve({
     name: 'ResourceEdit',
     params: {
-      id: gatewayStore.currentGateway!.id!,
+      id: gatewayId.value,
       resourceId: row.id,
     },
   });
@@ -1245,7 +1283,7 @@ const handleMcpTypeChange = (tab: string) => {
       }
     },
   };
-  tabMap[tab]?.();
+  return tabMap[tab]?.();
 };
 
 const handleCopyClick = () => {
@@ -1253,13 +1291,10 @@ const handleCopyClick = () => {
 };
 
 const resetSliderData = () => {
-  formData.value = {
-    name: '',
-    description: '',
-    stage_id: 0,
-    is_public: true,
-    labels: [],
-  };
+  // 这里编辑状态下关闭会触发校验
+  if (!isEditMode.value) {
+    formData.value = cloneDeep(defaultFormData.value);
+  }
   stageList.value = [];
   resourceList.value = [];
   toolSelections.value = [];
@@ -1498,5 +1533,28 @@ defineExpose({
       margin-bottom: 0;
     }
   }
+}
+
+:deep(.form-protocol-type) {
+  .bk-form-label {
+
+    &::after {
+      display: none;
+    }
+
+    .connect-method {
+      position: relative;
+
+      &::after {
+        position: absolute;
+        top: 0;
+        width: 14px;
+        color: #ea3636;
+        text-align: center;
+        content: "*";
+      }
+    }
+  }
+
 }
 </style>
