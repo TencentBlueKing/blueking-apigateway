@@ -104,7 +104,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		var mcpServer *MCPServer
 
-		if config.ProtocolType == "streamable_http" {
+		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
 			// 创建 Streamable HTTP Transport
 			trans, httpHandler, err := transport.NewStreamableHTTPServerTransportAndHandler()
 			if err != nil {
