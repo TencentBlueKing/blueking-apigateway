@@ -60,15 +60,11 @@
 
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
-import { Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import { type MavonEditorProps, mavonEditor } from 'mavon-editor';
+import type { IFormMethod } from '@/types/common';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 const isShow = defineModel('isShow', {
   type: Boolean,
@@ -102,7 +98,7 @@ interface IProps {
 const route = useRoute();
 const { t } = useI18n();
 
-const formRef = ref<InstanceType<typeof Form> & FormMethod>();
+const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const markdownRef = ref<InstanceType<typeof mavonEditor> | null>(null);
 const submitLoading = ref(false);
 const isSubfield = ref(true);

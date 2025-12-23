@@ -160,3 +160,15 @@ export const USAGE_GUIDE_LIST = [
     value: 'custom',
   },
 ];
+
+// MCPSever连接方式
+export const MCP_PROTOCOL_TYPE = [
+  {
+    label: 'SSE',
+    value: 'sse',
+  },
+  {
+    label: 'Streamable HTTP',
+    value: 'streamable_http',
+  },
+];

@@ -131,3 +131,9 @@ export type ITableSettings = {
   fontSize: string
   rowSize: string
 };
+
+// 表单实例函数
+export type IFormMethod = {
+  validate: () => void
+  clearValidate: () => void
+};

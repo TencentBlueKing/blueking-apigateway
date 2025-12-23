@@ -325,6 +325,7 @@
 import { cloneDeep, isEqual } from 'lodash-es';
 import { Checkbox, Form, Input, Message, Select } from 'bkui-vue';
 import { useAccessLog, useGateway } from '@/stores';
+import type { IFormMethod } from '@/types/common';
 import type { IStageListItem } from '@/services/source/stage';
 import {
   type IAlarmStrategy,
@@ -351,11 +352,6 @@ type ISliderParams = {
 };
 
 type IDetailData = { detailData: IAlarmStrategy };
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 interface IProps {
   sliderParams?: ISliderParams
@@ -386,7 +382,7 @@ const nameRef = ref<InstanceType<typeof Input>>(null);
 const alarmTypeRef = ref<InstanceType<typeof Select>>(null);
 const effectiveRef = ref<InstanceType<typeof Select>>(null);
 const noticeWayRef = ref<InstanceType<typeof Checkbox.Group>>(null);
-const strategyFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const strategyFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const rules = reactive({
   name: [
     {

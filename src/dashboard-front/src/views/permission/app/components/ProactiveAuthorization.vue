@@ -164,6 +164,7 @@
 import { Form, Input, Transfer } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
+import type { IFormMethod } from '@/types/common';
 import { type IResource } from '@/types/permission';
 import {
   type IAuthData,
@@ -176,11 +177,6 @@ type ISliderParams = {
   isShow: boolean
   isLoading: boolean
   title: string
-};
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
 };
 
 interface IProps {
@@ -213,7 +209,7 @@ const emits = defineEmits<Emits>();
 
 const route = useRoute();
 
-const authFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const authFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const appCodeRef = ref<InstanceType<typeof Input>>(null);
 const expireTypeRef = ref<InstanceType<typeof Input>>(null);
 const dimensionRef = ref<InstanceType<typeof Transfer>>(null);
