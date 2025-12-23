@@ -1551,6 +1551,7 @@
   "可能会导致正在使用该接口的服务异常，请确认": "This may cause services using this interface to malfunction, please confirm",
   "请输入 Cookies 中字段 bk_token 的值": "Please enter the value of the bk_token field in Cookies",
   "网关的唯一标识，创建后不可更改": "The gateway's unique identifier, cannot be changed after creation",
+  "与现有的网关名称重复了": "Duplicate gateway name",
   "请输入小写字母、数字、连字符(-)": "Please enter lowercase letters, numbers, hyphens (-)",
   "请输入小写字母、数字、连字符(-)，以小写字母开头": "Please enter lowercase letters, numbers, hyphens (-), starting with a lowercase letter",
   "确认发布": "Release",

@@ -159,6 +159,8 @@ export const patchGateway = (id: number, data: Partial<IApiGatewayEditParam>) =>
 
 export const putGatewayBasics = (id: number, data: Partial<IApiGatewayEditParam>) => http.put(`${path}/${id}/`, data);
 
+export const checkNameAvailable = (param: { name: string }) => http.get(`${path}/check-name-available/`, param);
+
 // 获取操作指引
 export const getGuideDocs = (id: number) => http.get(`${path}/${id}/dev-guideline/`);
 

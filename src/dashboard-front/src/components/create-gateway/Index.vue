@@ -374,6 +374,7 @@
 <script lang="ts" setup>
 import { getEnv } from '@/services/source/basic.ts';
 import {
+  checkNameAvailable,
   createGateway,
   getGuideDocs,
   patchGateway,
@@ -462,6 +463,7 @@ const defaultFormData = ref({
   },
 });
 
+const isNameAvailable = ref(true);
 const rules = {
   'name': [
     {
@@ -487,6 +489,23 @@ const rules = {
       message: () => formData.value.kind === 0
         ? t('由小写字母、数字、连接符（-）组成，首字符必须是小写字母，长度大于3小于30个字符')
         : t('只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间'),
+      trigger: 'blur',
+    },
+    {
+      validator: async (value: string) => {
+        try {
+          if (!value) return true;
+
+          const response = await checkNameAvailable({ name: value });
+          isNameAvailable.value = response?.is_available;
+          return isNameAvailable.value;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        catch (_) {
+          return false;
+        }
+      },
+      message: t('与现有的网关名称重复了'),
       trigger: 'blur',
     },
   ],
@@ -702,6 +721,10 @@ const handleTenantModeChange = (tenant_mode: string) => {
 const handleConfirmCreate = async () => {
   try {
     await formRef.value?.validate();
+
+    if (!isNameAvailable.value) {
+      return;
+    }
 
     if (!formData.value.maintainers.length) {
       return;
