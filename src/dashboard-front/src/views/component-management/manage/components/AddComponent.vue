@@ -264,6 +264,7 @@
 import { cloneDeep, isEqual } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
 import { useAccessLog } from '@/stores';
+import type { IFormMethod } from '@/types/common';
 import {
   type IComponentItem,
   addComponent,
@@ -280,11 +281,6 @@ type ISliderParams = {
 };
 
 type IDetailData = { detailData: IComponentItem };
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 interface IProps {
   sliderParams?: ISliderParams
@@ -316,7 +312,7 @@ const emits = defineEmits<Emits>();
 const accessLogStore = useAccessLog();
 const { t } = useI18n();
 
-const componentFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const componentFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const configRef = ref<InstanceType<typeof RenderConfig> & { getData: () => void }>();
 const submitLoading = ref(false);
 const methodList = ref(accessLogStore.methodList);

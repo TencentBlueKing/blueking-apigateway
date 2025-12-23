@@ -100,7 +100,7 @@
 <script setup lang="tsx">
 import { delay } from 'lodash-es';
 import { Button, Form, Message } from 'bkui-vue';
-import type { ITableMethod } from '@/types/common';
+import type { IFormMethod, ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
   type ICategoryItem,
@@ -110,11 +110,6 @@ import {
   updateDocCategory,
 } from '@/services/source/category';
 import AgTable from '@/components/ag-table/Index.vue';
-
-type IFormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 const { t } = useI18n();
 

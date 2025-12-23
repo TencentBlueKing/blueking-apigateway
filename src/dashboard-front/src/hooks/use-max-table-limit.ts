@@ -123,7 +123,6 @@ function getTableSizeLineHeight(className: string, mode = 'bkui'): Record<string
  * @returns maxTableLimit → 最大展示条数   clientHeight → 剩余可视化最大高度
  */
 export function useMaxTableLimit(payload?: Partial<ITableLimit>) {
-  const route = useRoute();
   const featureFlagStore = useFeatureFlag();
   const viewportHeight = toValue(useWindowSize().height);
   // 默认已占位高度
