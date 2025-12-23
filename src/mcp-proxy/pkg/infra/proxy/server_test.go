@@ -230,4 +230,59 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 	})
+
+	Describe("MCPServer initialization", func() {
+		Describe("SSE MCPServer", func() {
+			It("should have correct protocol type for SSE server", func() {
+				server := &MCPServer{
+					name:              "sse-server",
+					resourceVersionID: 1,
+					protocolType:      constant.MCPServerProtocolTypeSSE,
+					tools:             make(map[string]struct{}),
+					prompts:           make(map[string]struct{}),
+					rwLock:            &sync.RWMutex{},
+				}
+
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeSSE))
+				Expect(server.IsStreamableHTTP()).To(BeFalse())
+				Expect(server.HandleMCP()).To(BeNil())
+			})
+		})
+
+		Describe("Streamable HTTP MCPServer", func() {
+			It("should have correct protocol type for Streamable HTTP server", func() {
+				server := &MCPServer{
+					name:              "streamable-http-server",
+					resourceVersionID: 2,
+					protocolType:      constant.MCPServerProtocolTypeStreamableHTTP,
+					tools:             make(map[string]struct{}),
+					prompts:           make(map[string]struct{}),
+					rwLock:            &sync.RWMutex{},
+				}
+
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
+				Expect(server.IsStreamableHTTP()).To(BeTrue())
+				Expect(server.HandleSSE()).To(BeNil())
+				Expect(server.HandleMessage()).To(BeNil())
+			})
+
+			It("should initialize with correct fields", func() {
+				server := &MCPServer{
+					name:              "test-streamable",
+					resourceVersionID: 10,
+					protocolType:      constant.MCPServerProtocolTypeStreamableHTTP,
+					tools:             make(map[string]struct{}),
+					prompts:           make(map[string]struct{}),
+					rwLock:            &sync.RWMutex{},
+				}
+
+				Expect(server.name).To(Equal("test-streamable"))
+				Expect(server.GetResourceVersionID()).To(Equal(10))
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
+				Expect(server.IsStreamableHTTP()).To(BeTrue())
+				Expect(server.GetTools()).To(BeEmpty())
+				Expect(server.GetPromptNames()).To(BeEmpty())
+			})
+		})
+	})
 })
