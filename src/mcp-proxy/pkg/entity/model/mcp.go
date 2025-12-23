@@ -25,6 +25,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"mcp_proxy/pkg/constant"
 )
 
 // McpServerStatusActive ...
@@ -44,6 +46,20 @@ type MCPServer struct {
 	Status        int         `gorm:"column:status"`
 	GatewayID     int         `gorm:"column:gateway_id"`
 	StageID       int         `gorm:"column:stage_id"`
+	ProtocolType  string      `gorm:"column:protocol_type;size:32;default:sse"`
+}
+
+// GetProtocolType 获取协议类型，默认返回 SSE
+func (m *MCPServer) GetProtocolType() string {
+	if m.ProtocolType == "" {
+		return constant.MCPServerProtocolTypeSSE
+	}
+	return m.ProtocolType
+}
+
+// IsStreamableHTTP 判断是否为 Streamable HTTP 协议
+func (m *MCPServer) IsStreamableHTTP() bool {
+	return m.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP
 }
 
 // IsActive ...

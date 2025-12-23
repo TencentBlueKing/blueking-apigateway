@@ -58,3 +58,9 @@ const (
 
 // BkVirtualAppCodeFormat ...
 const BkVirtualAppCodeFormat = "v_mcp_%d_%s" // 格式 v_mcp_%d_%s 【mcp 代表虚拟app_code 的类型】
+
+// MCPServerProtocolType 协议类型常量
+const (
+	MCPServerProtocolTypeSSE            = "sse"
+	MCPServerProtocolTypeStreamableHTTP = "streamable_http"
+)

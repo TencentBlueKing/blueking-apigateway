@@ -20,21 +20,25 @@ package proxy
 
 import (
 	"context"
+	"net/http"
 	"sync"
 
 	"github.com/ThinkInAIXYZ/go-mcp/protocol"
 	"github.com/ThinkInAIXYZ/go-mcp/server"
 	"github.com/ThinkInAIXYZ/go-mcp/transport"
 
+	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/util"
 )
 
 // MCPServer ...
 type MCPServer struct {
-	Server    *server.Server
-	Transport transport.ServerTransport
-	Handler   *transport.SSEHandler
-	name      string
+	Server                *server.Server
+	Transport             transport.ServerTransport
+	SSEHandler            *transport.SSEHandler            // SSE 协议 Handler
+	StreamableHTTPHandler *transport.StreamableHTTPHandler // Streamable HTTP 协议 Handler
+	protocolType          string                           // 协议类型: sse 或 streamable_http
+	name                  string
 	// 生效的资源版本号
 	resourceVersionID int
 	tools             map[string]struct{}
@@ -42,7 +46,7 @@ type MCPServer struct {
 	rwLock            *sync.RWMutex
 }
 
-// NewMCPServer ...
+// NewMCPServer 创建 SSE 协议的 MCP Server
 func NewMCPServer(
 	transport transport.ServerTransport,
 	handler *transport.SSEHandler,
@@ -56,13 +60,72 @@ func NewMCPServer(
 	return &MCPServer{
 		Server:            mcpServer,
 		Transport:         transport,
-		Handler:           handler,
+		SSEHandler:        handler,
+		protocolType:      constant.MCPServerProtocolTypeSSE,
 		tools:             make(map[string]struct{}),
 		prompts:           make(map[string]struct{}),
 		rwLock:            &sync.RWMutex{},
 		name:              name,
 		resourceVersionID: resourceVersion,
 	}
+}
+
+// NewStreamableHTTPMCPServer 创建 Streamable HTTP 协议的 MCP Server
+func NewStreamableHTTPMCPServer(
+	trans transport.ServerTransport,
+	handler *transport.StreamableHTTPHandler,
+	name string,
+	resourceVersion int,
+) *MCPServer {
+	mcpServer, err := server.NewServer(trans)
+	if err != nil {
+		panic(err)
+	}
+	return &MCPServer{
+		Server:                mcpServer,
+		Transport:             trans,
+		StreamableHTTPHandler: handler,
+		protocolType:          constant.MCPServerProtocolTypeStreamableHTTP,
+		tools:                 make(map[string]struct{}),
+		prompts:               make(map[string]struct{}),
+		rwLock:                &sync.RWMutex{},
+		name:                  name,
+		resourceVersionID:     resourceVersion,
+	}
+}
+
+// GetProtocolType 获取协议类型
+func (s *MCPServer) GetProtocolType() string {
+	return s.protocolType
+}
+
+// IsStreamableHTTP 判断是否为 Streamable HTTP 协议
+func (s *MCPServer) IsStreamableHTTP() bool {
+	return s.protocolType == constant.MCPServerProtocolTypeStreamableHTTP
+}
+
+// HandleSSE 返回 SSE 连接 Handler
+func (s *MCPServer) HandleSSE() http.Handler {
+	if s.SSEHandler != nil {
+		return s.SSEHandler.HandleSSE()
+	}
+	return nil
+}
+
+// HandleMessage 返回 SSE 消息 Handler
+func (s *MCPServer) HandleMessage() http.Handler {
+	if s.SSEHandler != nil {
+		return s.SSEHandler.HandleMessage()
+	}
+	return nil
+}
+
+// HandleMCP 返回 Streamable HTTP Handler
+func (s *MCPServer) HandleMCP() http.Handler {
+	if s.StreamableHTTPHandler != nil {
+		return s.StreamableHTTPHandler.HandleMCP()
+	}
+	return nil
 }
 
 // IsRegisteredTool checks if the tool is registered
