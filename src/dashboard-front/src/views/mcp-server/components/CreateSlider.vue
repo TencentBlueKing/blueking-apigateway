@@ -73,22 +73,8 @@
                 :prefix="(isEditMode || noValidStage) ? undefined : serverNamePrefix"
               />
               <div class="name-help-text">
-                <div class="text-body">
+                <div class="lh-22px text-body">
                   {{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}
-                </div>
-                <div class="url">
-                  <div class="label">
-                    {{ t('访问地址') }}:
-                  </div>
-                  <div class="ml-4px content">
-                    {{ url || previewUrl }}
-                  </div>
-                  <div class="suffix">
-                    <AgIcon
-                      name="copy-info"
-                      @click.stop="handleCopyClick"
-                    />
-                  </div>
                 </div>
               </div>
             </BkFormItem>
@@ -154,6 +140,20 @@
                   {{ item.label }}
                 </BkRadio>
               </BkRadioGroup>
+              <div class="flex items-center bg-#f5f7fa h-32px text-12px pl-8px url">
+                <div class="color-#4d4f56">
+                  {{ t('访问地址') }}:
+                </div>
+                <div class="ml-4px color-#313238">
+                  {{ previewUrl }}
+                </div>
+                <div class="ml-8px cursor-pointer hover:text-#3a84ff">
+                  <AgIcon
+                    name="copy-info"
+                    @click.stop="handleCopyClick"
+                  />
+                </div>
+              </div>
             </BkFormItem>
             <BkFormItem
               :label="t('是否公开')"
@@ -799,11 +799,12 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
   },
 ]);
 const previewUrl = computed(() => {
-  const prefix = envStore.env.BK_API_RESOURCE_URL_TMPL
+  const viewUrl = url.value || envStore.env.BK_API_RESOURCE_URL_TMPL;
+  const prefix = viewUrl
     .replace('{api_name}', 'bk-apigateway')
     .replace('{stage_name}', 'prod')
     .replace('{resource_path}', 'api/v2/mcp-servers');
-  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/sse/`;
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type) ? 'mcp' : formData.value.protocol_type}/`;
 });
 
 watch(isShow, async () => {
@@ -867,8 +868,6 @@ const handleCheckedMouseleave = (row: TableRowData) => {
 
 const clearValidate = () => {
   formRef.value?.clearValidate();
-  nextTick(() => {
-  });
 };
 
 const handleSetRowClass = ({ row }) => {
@@ -1291,7 +1290,7 @@ const handleMcpTypeChange = (tab: string) => {
 };
 
 const handleCopyClick = () => {
-  copy(url.value || previewUrl.value);
+  copy(previewUrl.value);
 };
 
 const resetSliderData = () => {
@@ -1369,35 +1368,6 @@ defineExpose({
         .text-body {
           font-size: 12px;
           color: #979ba5;
-        }
-
-        .url {
-          display: flex;
-          width: 100%;
-          height: 32px;
-          padding-left: 8px;
-          font-size: 12px;
-          background: #f5f7fa;
-          align-items: center;
-
-          .label {
-            line-height: 20px;
-            color: #4d4f56;
-          }
-
-          .content {
-            line-height: 20px;
-            color: #313238;
-          }
-
-          .suffix {
-            margin-left: 8px;
-            cursor: pointer;
-
-            &:hover {
-              color: #3a84ff;
-            }
-          }
         }
       }
     }
@@ -1524,7 +1494,6 @@ defineExpose({
           }
         }
       }
-
     }
 
     &.set-border {
@@ -1559,6 +1528,5 @@ defineExpose({
       }
     }
   }
-
 }
 </style>
