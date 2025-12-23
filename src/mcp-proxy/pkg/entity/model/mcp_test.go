@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/entity/model"
 )
 
@@ -62,6 +63,36 @@ var _ = Describe("MCP Models", func() {
 			Expect(server.Status).To(Equal(model.McpServerStatusActive))
 			Expect(server.GatewayID).To(Equal(100))
 			Expect(server.StageID).To(Equal(200))
+		})
+
+		Describe("GetProtocolType", func() {
+			It("should return SSE when protocol type is empty", func() {
+				server := &model.MCPServer{ProtocolType: ""}
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeSSE))
+			})
+
+			It("should return SSE when protocol type is sse", func() {
+				server := &model.MCPServer{ProtocolType: constant.MCPServerProtocolTypeSSE}
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeSSE))
+			})
+
+			It("should return Streamable HTTP when protocol type is streamable_http", func() {
+				server := &model.MCPServer{ProtocolType: constant.MCPServerProtocolTypeStreamableHTTP}
+				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
+			})
+		})
+
+		Describe("IsStreamableHTTP", func() {
+			DescribeTable("returns correct streamable HTTP status",
+				func(protocolType string, expected bool) {
+					server := &model.MCPServer{ProtocolType: protocolType}
+					Expect(server.IsStreamableHTTP()).To(Equal(expected))
+				},
+				Entry("empty protocol type", "", false),
+				Entry("SSE protocol type", constant.MCPServerProtocolTypeSSE, false),
+				Entry("Streamable HTTP protocol type", constant.MCPServerProtocolTypeStreamableHTTP, true),
+				Entry("unknown protocol type", "unknown", false),
+			)
 		})
 	})
 
