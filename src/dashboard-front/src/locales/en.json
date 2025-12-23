@@ -2160,14 +2160,17 @@
   "该插件无需任何参数": "No params needed",
   "搜索版本号": "Search version number",
   "请输入 SDK 版本号，资源版本或语言": "Search SDK version number, resource version or language",
+  "连接方式": "Connection method",
   "Prompt 名称": "Prompt name",
   "中英文名": "Chinese and English names",
   "内容": "Content ",
   "修改人": "Modifier",
+  "请选择工具": "Please select tool",
   "请输入中英文名": "Please input both Chinese and English names",
   "请输入修改人": "Please input modifier",
   "继续执行": "Continue execution",
   "此操作存在风险": "This operation carries risks",
+  "切换连接方式后，客户端需要基于新协议重新建立连接": "After switching the connection method, the client needs to re-establish the connection based on the new protocol",
   "搜索中英文名、标签、内容、修改人": "Search for Chinese and English names, tags, content, and modifier",
   "以下 Prompt 仅在授权空间内可用，添加到 MCP 后，所有经MCP 授权的应用均可访问该 Prompt 信息": "The following prompt is only available within the authorized space. After being added to MCP, all MCP authorized applications can access the prompt information"
 }

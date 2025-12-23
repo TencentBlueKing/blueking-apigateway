@@ -86,7 +86,7 @@
       />
     </template>
     <template #loading>
-      <BkLoading :loading="loading" />
+      <Loading :loading="loading" />
     </template>
     <template #empty>
       <slot name="empty">
@@ -109,7 +109,7 @@ import {
   type PrimaryTableProps,
   type TableRowData,
 } from '@blueking/tdesign-ui';
-import { Checkbox } from 'bkui-vue';
+import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';

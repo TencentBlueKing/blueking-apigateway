@@ -165,6 +165,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
+import type { IFormMethod } from '@/types/common';
 import { type ICategoryItem } from '@/services/source/category';
 import {
   type ISystemItem,
@@ -181,11 +182,6 @@ type ISliderParams = {
 };
 
 type IDetailData = { detailData: ISystemItem };
-
-type FormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
 
 interface IProps {
   sliderParams?: ISliderParams
@@ -212,7 +208,7 @@ const emits = defineEmits<Emits>();
 const { t } = useI18n();
 
 const saveLoading = ref(false);
-const systemFormRef = ref<InstanceType<typeof Form> & FormMethod>();
+const systemFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const rules = ref({
   name: [
     {
