@@ -103,8 +103,16 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		// 判断mcp server是否已经存在
 		if mcpProxy.IsMCPServerExist(server.Name) {
 			mcpServer := mcpProxy.GetMCPServer(server.Name)
-			// 判断资源版本是否变化
-			if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+			// 检查协议类型是否发生变化，如果变化需要删除旧的 MCPServer 并重新创建
+			if mcpServer.GetProtocolType() != server.GetProtocolType() {
+				logging.GetLogger().Infof(
+					"mcp server[%s] protocol type changed from %s to %s, will recreate",
+					server.Name, mcpServer.GetProtocolType(), server.GetProtocolType())
+				mcpProxy.DeleteMCPServer(server.Name)
+				// 删除后需要重新加载 openapi spec
+				wouldReloadOpenapiSpec = true
+			} else if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+				// 判断资源版本是否变化
 				logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
 				wouldReloadOpenapiSpec = false
 			}
