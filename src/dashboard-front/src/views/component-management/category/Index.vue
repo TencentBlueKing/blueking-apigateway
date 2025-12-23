@@ -99,8 +99,8 @@
 
 <script setup lang="tsx">
 import { delay } from 'lodash-es';
-import { Button, Message } from 'bkui-vue';
-import type { ITableMethod } from '@/types/common';
+import { Button, Form, Message } from 'bkui-vue';
+import type { IFormMethod, ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
   type ICategoryItem,
@@ -111,15 +111,10 @@ import {
 } from '@/services/source/category';
 import AgTable from '@/components/ag-table/Index.vue';
 
-type IFormMethod = {
-  validate: () => void
-  clearValidate: () => void
-};
-
 const { t } = useI18n();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const validateFormRef = ref<InstanceType<typeof BkForm> & IFormMethod>();
+const validateFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const keyword = ref('');
 const tableColumns = ref([
   {
