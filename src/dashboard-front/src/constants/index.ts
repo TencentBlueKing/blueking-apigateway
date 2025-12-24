@@ -172,3 +172,28 @@ export const MCP_PROTOCOL_TYPE = [
     value: 'streamable_http',
   },
 ];
+
+export const MCP_TAB_LIST = [
+  {
+    name: 'tools',
+    label: t('工具'),
+  },
+  {
+    name: 'prompts',
+    label: 'Prompts',
+  },
+  {
+    name: 'auth',
+    label: t('已授权应用'),
+  },
+  {
+    name: 'guide',
+    label: t('使用指引'),
+  },
+].map((item) => {
+  return {
+    ...item,
+    count: 0,
+    show: true,
+  };
+});

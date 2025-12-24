@@ -2161,6 +2161,7 @@
   "该插件无需任何参数": "No params needed",
   "搜索版本号": "Search version number",
   "请输入 SDK 版本号，资源版本或语言": "Search SDK version number, resource version or language",
+   "服务展示名不能小于3个字符": "The service display name must be at least 3 characters long",
   "连接方式": "Connection method",
   "Prompt 名称": "Prompt name",
   "中英文名": "Chinese and English names",
