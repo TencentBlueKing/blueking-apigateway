@@ -1,6 +1,6 @@
 openapi: 3.0.1
 servers:
-  - url: /
+- url: /
 info:
   version: '2.0'
   title: API Gateway Resources
@@ -11,7 +11,7 @@ paths:
       operationId: get_apis
       description: 查询网关
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -69,7 +69,7 @@ paths:
       operationId: grant_permissions
       description: 网关为应用主动授权
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -98,7 +98,7 @@ paths:
       operationId: revoke_permissions
       description: 回收应用访问网关 API 的权限
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -383,7 +383,7 @@ paths:
       operationId: add_related_apps
       description: 添加网关关联应用
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -522,7 +522,7 @@ paths:
       operationId: sync_resources
       description: 同步资源
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -637,7 +637,7 @@ paths:
       operationId: release
       description: 发布版本
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -666,7 +666,7 @@ paths:
       operationId: generate_sdk
       description: 生成 SDK
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -753,7 +753,7 @@ paths:
       operationId: get_stages_with_resource_version
       description: 查询网关环境资源版本
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -782,7 +782,7 @@ paths:
       operationId: update_gateway_status
       description: 修改网关状态
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -811,7 +811,7 @@ paths:
       operationId: sync_api
       description: 同步网关
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -840,7 +840,7 @@ paths:
       operationId: v2_open_list_gateways
       description: 获取网关列表
       tags:
-        - v2_open
+      - v2_open
       responses:
         default:
           description: ''
@@ -869,7 +869,7 @@ paths:
       operationId: v2_open_get_gateway
       description: 获取网关
       tags:
-        - v2_open
+      - v2_open
       responses:
         default:
           description: ''
@@ -1097,7 +1097,7 @@ paths:
       operationId: v2_open_get_gateway_public_key
       description: 获取网关公钥(废弃)
       tags:
-        - v2_open
+      - v2_open
       responses:
         default:
           description: ''
@@ -1126,7 +1126,7 @@ paths:
       operationId: v2_open_get_gateway_public_key_new
       description: 获取网关公钥
       tags:
-        - v2_open
+      - v2_open
       responses:
         default:
           description: ''
@@ -1358,7 +1358,7 @@ paths:
       operationId: v2_sync_get_gateway_public_key_new
       description: 获取网关公钥
       tags:
-        - v2_sync
+      - v2_sync
       responses:
         default:
           description: ''
@@ -1387,7 +1387,7 @@ paths:
       operationId: v2_sync_add_related_apps
       description: 添加网关的关联应用
       tags:
-        - v2_sync
+      - v2_sync
       responses:
         default:
           description: ''
