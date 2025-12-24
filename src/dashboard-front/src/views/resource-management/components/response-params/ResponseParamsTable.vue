@@ -83,7 +83,7 @@
                     {{ t('类型') }}
                   </th>
                   <th
-                    :style="readonly ? 'width: 150px' : ''"
+                    :style="readonly ? 'width: 250px' : ''"
                     class="table-head-row-cell description-col"
                   >
                     {{ t('备注') }}
@@ -146,14 +146,16 @@
                   </td>
                   <!-- 字段备注 -->
                   <td
-                    :style="readonly ? 'width: 150px' : ''"
                     class="table-body-row-cell description-col"
+                    :class="{ 'max-w-250px w-250px': readonly }"
                   >
                     <div
                       v-if="readonly"
                       class="readonly-value-wrapper"
                     >
-                      {{ row.description || '--' }}
+                      <BkOverflowTitle type="tips">
+                        {{ row.description || '--' }}
+                      </BkOverflowTitle>
                     </div>
                     <BkInput
                       v-else
@@ -311,6 +313,10 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       if (Object.keys(property.properties || {}).length) {
         row.properties = convertSchemaToBodyRow(property);
       }
+      // 处理 array 类型和 items 属性
+      if (property.type === 'array' && Object.keys(property.items || {}).length) {
+        row.properties = convertSchemaToBodyRow(property.items);
+      }
       body.push(row);
     }
   }
@@ -411,7 +417,15 @@ const genSchema = (row: ITableRow) => {
     schema.description = row.description;
   }
 
-  if (row.properties?.length) {
+  // 处理 type 为 array 和拥有 items 字段的情况
+  // 此时 row.properties[0] 实际上就是 items
+  if (row.type === 'array') {
+    if (row.properties?.length === 1 && row.properties[0].type === 'object') {
+      schema.items = genSchema(row.properties[0]);
+    }
+  }
+  // 处理 type 为其他值的情况
+  else if (row.properties?.length) {
     schema.properties = {};
     row.properties.forEach((item) => {
       Object.assign(schema.properties, { [item.name]: genSchema(item) });
