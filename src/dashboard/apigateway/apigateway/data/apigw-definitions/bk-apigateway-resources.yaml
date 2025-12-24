@@ -268,7 +268,7 @@ paths:
           resourcePermissionRequired: false
   /api/v2/mcp-servers/{mcp_server_name}/mcp:
     get:
-      operationId: mcp_proxy_streamable_http
+      operationId: mcp_proxy_user_streamable_http_get
       description: mcp proxy streamableHTTP(用户态)接口
       tags:
         - v2_mcp
@@ -296,7 +296,7 @@ paths:
           resourcePermissionRequired: false
         descriptionEn: None
     post:
-      operationId: mcp_proxy_streamable_http
+      operationId: mcp_proxy_user_streamable_http_post
       description: mcp proxy streamableHTTP(用户态)接口
       tags:
         - v2_mcp
@@ -325,7 +325,7 @@ paths:
         descriptionEn: None
   /api/v2/mcp-servers/{mcp_server_name}/application/mcp:
     post:
-      operationId: mcp_proxy_streamable_http
+      operationId: mcp_proxy_app_streamable_http_post
       description: mcp proxy streamableHTTP(应用态)接口
       tags:
         - v2_mcp
@@ -352,7 +352,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
     get:
-      operationId: mcp_proxy_streamable_http
+      operationId: mcp_proxy_app_streamable_http_get
       description: mcp proxy streamableHTTP(应用态)接口
       tags:
         - v2_mcp
