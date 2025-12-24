@@ -505,7 +505,7 @@ const rules = {
           return false;
         }
       },
-      message: t('与现有的网关名称重复了'),
+      message: t('网关名已被占用'),
       trigger: 'blur',
     },
   ],
