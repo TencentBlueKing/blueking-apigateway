@@ -81,6 +81,13 @@
             <BkFormItem
               :label="t('服务展示名')"
               property="title"
+              :rules="[
+                {
+                  validator: (value: string) => value?.trim()?.length >= 3,
+                  message: t('服务展示名不能小于3个字符'),
+                  trigger: 'blur',
+                },
+              ]"
               required
             >
               <BkInput
@@ -141,13 +148,23 @@
                 </BkRadio>
               </BkRadioGroup>
               <div class="flex items-center bg-#f5f7fa h-32px text-12px pl-8px url">
-                <div class="color-#4d4f56">
+                <div class="min-w-55px color-#4d4f56">
                   {{ t('访问地址') }}:
                 </div>
-                <div class="ml-4px color-#313238">
+                <div
+                  v-bk-tooltips="{
+                    placement:'top',
+                    content: previewUrl,
+                    disabled: !isOverflow,
+                    extCls: 'max-w-1180px',
+                  }"
+                  class="truncate color-#313238"
+                  @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                  @mouseleave="handleMouseleave"
+                >
                   {{ previewUrl }}
                 </div>
-                <div class="ml-8px cursor-pointer hover:text-#3a84ff">
+                <div class="ml-8px pr-8px cursor-pointer hover:text-#3a84ff">
                   <AgIcon
                     name="copy-info"
                     @click.stop="handleCopyClick"
@@ -314,12 +331,12 @@
                                       v-bk-tooltips="{
                                         placement:'top',
                                         content: `${curPromptData.name} (${curPromptData?.code})`,
-                                        disabled: !curPromptData.isOverflow,
+                                        disabled: !isOverflow,
                                         extCls: 'max-w-880px',
                                       }"
                                       class="w-full truncate"
-                                      @mouseenter="(e: MouseEvent) => handleCheckedMouseenter(e, curPromptData)"
-                                      @mouseleave="() => handleCheckedMouseleave(curPromptData)"
+                                      @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                                      @mouseleave="handleMouseleave"
                                     >
                                       {{ curPromptData?.name ?? '--' }}
                                       <span
@@ -403,12 +420,12 @@
                                     v-bk-tooltips="{
                                       placement:'top',
                                       content: checks.name,
-                                      disabled: !checks.isOverflow,
+                                      disabled: !isOverflow,
                                       extCls: 'max-w-290px',
                                     }"
                                     class="color-#3a84ff text-12px truncate name"
-                                    @mouseenter="(e: MouseEvent) => handleCheckedMouseenter(e, checks)"
-                                    @mouseleave="() => handleCheckedMouseleave(checks)"
+                                    @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                                    @mouseleave="handleMouseleave"
                                   >
                                     {{ checks.name }}
                                   </div>
@@ -539,6 +556,7 @@ const formData = ref<FormData>(cloneDeep(defaultFormData.value));
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
+const isOverflow = ref(false);
 const url = ref('');
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
@@ -855,15 +873,15 @@ const toolDisabledSelection = (row) => {
   return !row.has_openapi_schema;
 };
 
-const handleCheckedMouseenter = (e: MouseEvent, row: TableRowData) => {
+const handleMouseenter = (e: MouseEvent) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
-    row.isOverflow = cell.scrollWidth > cell.clientWidth;
+    isOverflow.value = cell.scrollWidth > cell.clientWidth;
   }
 };
 
-const handleCheckedMouseleave = (row: TableRowData) => {
-  delete row?.isOverflow;
+const handleMouseleave = () => {
+  isOverflow.value = false;
 };
 
 const clearValidate = () => {
