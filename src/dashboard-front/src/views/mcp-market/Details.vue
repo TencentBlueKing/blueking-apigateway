@@ -30,7 +30,7 @@
           type="tips"
           class="truncate color-#313238 text-16px max-w-1/2"
         >
-          {{ mcpDetails?.name }}
+          {{ mcpDetails?.title }}
         </BkOverflowTitle>
         <BkOverflowTitle
           type="tips"
@@ -178,15 +178,15 @@
         </BkTabPanel>
         <BkTabPanel
           v-if="isEnablePrompt"
-          name="prompt"
+          name="prompts"
         >
           <template #label>
             <div class="flex-row items-center">
-              Prompt
+              Prompts
               <div
                 v-if="promptCount"
                 class="count"
-                :class="[active === 'tools' ? 'on' : 'off']"
+                :class="[active === 'prompts' ? 'on' : 'off']"
               >
                 {{ promptCount }}
               </div>

@@ -144,7 +144,7 @@
         type="card-tab"
       >
         <BkTabPanel
-          v-for="item in panels"
+          v-for="item in filteredPanels"
           :key="item.name"
           :name="item.name"
           render-directive="if"
@@ -168,7 +168,7 @@
               @update-count="(count) => updateCount(count, item.name)"
             />
             <ServerPrompts
-              v-if="item.name === 'prompt'"
+              v-if="item.name === 'prompts'"
               :server="server"
               @update-count="(count) => updateCount(count, item.name)"
             />
@@ -208,6 +208,7 @@ import {
 import { Message } from 'bkui-vue';
 import { usePopInfoBox } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
+import { MCP_TAB_LIST } from '@/constants';
 import router from '@/router';
 import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
 import AuthApplications from '@/views/mcp-server/components/AuthApplications.vue';
@@ -249,35 +250,16 @@ const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
 
 const active = ref('tools');
-const panels = ref([
-  {
-    name: 'tools',
-    label: t('工具'),
-    count: 0,
-  },
-  {
-    name: 'prompt',
-    label: 'Prompt',
-    count: 0,
-  },
-  {
-    name: 'auth',
-    label: t('已授权应用'),
-    count: 0,
-  },
-  {
-    name: 'guide',
-    label: t('使用指引'),
-    count: 0,
-  },
-]);
+const panels = ref(MCP_TAB_LIST);
 const editingServerId = ref<number>();
 
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
-
-if (!isEnablePrompt.value) {
-  panels.value = panels.value.filter(item => !['prompt'].includes(item.name));
-}
+const filteredPanels = computed(() => {
+  if (!isEnablePrompt.value) {
+    panels.value = panels.value.filter(item => !['prompts'].includes(item.name));
+  }
+  return panels.value.filter(item => item.show);
+});
 
 const fetchServer = async () => {
   server.value = await getServer(gatewayId, serverId.value);
@@ -300,6 +282,7 @@ const handleUpdated = async () => {
     fetchGuide(),
     fetchCustomGuide(),
   ]);
+  updateCount();
 };
 
 const handleGuideChange = (tabName: string) => {
@@ -395,11 +378,25 @@ const handleDelete = async () => {
   });
 };
 
-const updateCount = (count: number, panelName: string) => {
-  const panel = panels.value.find(panel => panel.name === panelName);
-  if (panel) {
-    panel.count = count;
-  }
+/**
+ * 更新面板计数并控制prompts面板显隐
+ * @param count - 目标面板的自定义计数
+ * @param panelName - 目标面板名称
+ */
+const updateCount = (count?: number, panelName?: string) => {
+  const { tools_count, prompts } = server.value ?? {};
+  const panelCountMap = {
+    tools: () => tools_count ?? 0,
+    prompts: () => prompts?.length ?? 0,
+    [panelName]: () => count ?? 0,
+  };
+  panels.value.forEach((item) => {
+    const getCount = panelCountMap[item.name];
+    if (getCount) {
+      item.count = getCount?.();
+      item.show = getCount?.() < 1 && ['prompts'].includes(item.name) ? false : true;
+    }
+  });
 };
 </script>
 
