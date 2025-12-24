@@ -100,13 +100,23 @@
             <BkFormItem
               :label="t('描述')"
               property="description"
+              :rules="[
+                {
+                  validator: (value: string) => value?.trim()?.length >= 10,
+                  message: t('描述不能小于10个字符'),
+                  trigger: 'blur',
+                },
+              ]"
               required
             >
               <BkInput
                 v-model="formData.description"
+                type="textarea"
+                :minlength="10"
                 :maxlength="512"
+                :rows="10"
                 :disabled="noValidStage"
-                :placeholder="t('请输入描述')"
+                :placeholder="t('请输入10-512个字符的描述')"
                 clearable
                 show-word-limit
                 resize
@@ -736,7 +746,7 @@ const sliderTitle = computed(() => {
     : t('创建 MCP Server');
 });
 const filteredToolList = computed(() => {
-  toolTableEmptyType.value = !!filterKeywordDebounced.value ? 'searchEmpty' : 'empty';
+  toolTableEmptyType.value = filterKeywordDebounced.value ? 'searchEmpty' : 'empty';
   return resourceList.value.filter((resource: any) => {
     const keyword = filterKeywordDebounced.value.trim().toLowerCase();
     const matchName = resource.name.toLowerCase().includes(keyword);

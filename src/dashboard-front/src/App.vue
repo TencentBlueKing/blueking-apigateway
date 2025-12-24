@@ -301,7 +301,7 @@ const getRouteData = (routeName: string, index: number, link: string) => {
 
 const handleNavClick = (url: string, index: number, link: string = '') => {
   // 禁止重复点击
-  if (index === activeIndex.value && url !== 'Home') {
+  if (index === activeIndex.value && !['Home', 'McpMarket'].includes(url)) {
     return;
   }
   getRouteData(url, index, link);
@@ -399,7 +399,8 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
       }
     }
 
-    &.PlatformToolsToolbox-navigation-content {
+    &.PlatformToolsToolbox-navigation-content,
+    &.McpMarketDetails-navigation-content {
       :deep(.bk-navigation-wrapper) {
 
         .container-content,

@@ -17,7 +17,11 @@
  */
 
 <template>
-  <div class="guide-line-content">
+  <div
+    :class="[
+      `guide-line-content ${page === 'market' ? 'max-h-[calc(100vh-494px)]' : 'max-h-[calc(100vh-360px)]'}`
+    ]"
+  >
     <!-- 是否需要展示自定义使用指引tab -->
     <template v-if="showUsageGuide">
       <BkAlert
@@ -105,6 +109,7 @@ interface IProps {
   markdownStr?: string
   gatewayId?: number
   showUsageGuide?: boolean
+  page?: string
 }
 
 const isExistCustomGuide = defineModel('isExistCustomGuide', {
@@ -114,6 +119,7 @@ const isExistCustomGuide = defineModel('isExistCustomGuide', {
 
 const {
   markdownStr = '',
+  page = 'server',
   gatewayId = 0,
   showUsageGuide = false,
 } = defineProps<IProps>();
@@ -221,6 +227,7 @@ const handleGuideConfirm = () => {
 .guide-line-content {
   padding: 0 24px 40px 48px;
   background-color: #ffffff;
+  overflow-y: auto;
 
   .usage-guide-list {
     box-sizing: border-box;

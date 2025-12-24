@@ -43,7 +43,10 @@
             </main>
           </header>
           <!--  API 列表  -->
-          <main class="tool-list custom-scroll-bar">
+          <main
+            class="tool-list custom-scroll-bar"
+            :class="[`${page === 'market' ? 'h-[calc(100vh-594px)]' : 'h-[calc(100vh-476px)]'}`]"
+          >
             <template v-if="filteredToolList.length">
               <BkCollapse
                 v-model="activeGroupPanelNames"
@@ -73,28 +76,34 @@
                       class="tool-item"
                       @click="handleToolClick(tool.id, tool.name)"
                     >
-                      <div
+                      <header
+                        v-dompurify-html="getHighlightedHtml(tool.name)"
+                        v-bk-tooltips="{
+                          placement:'top',
+                          content: `${t('名称')}: ${tool.name}
+                            ${t('描述')}: ${tool.description}`,
+                          disabled: !tool.isOverflow,
+                          extCls: 'max-w-480px',
+                          delay: 0
+                        }"
+                        class="truncate color-#4d4f56 tool-item-name"
+                        @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                        @mouseleave="() => handleToolMouseleave(tool)"
+                      />
+                      <main
+                        v-dompurify-html="getHighlightedHtml(tool.description)"
                         v-bk-tooltips="{
                           placement:'top',
                           content: `${t('名称')}: ${tool.name}
                           ${t('描述')}: ${tool.description}`,
                           disabled: !tool.isOverflow,
                           extCls: 'max-w-480px',
+                          delay: 0
                         }"
-                      >
-                        <header
-                          v-dompurify-html="getHighlightedHtml(tool.name)"
-                          class="truncate tool-item-name"
-                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
-                          @mouseleave="() => handleToolMouseleave(tool)"
-                        />
-                        <main
-                          v-dompurify-html="getHighlightedHtml(tool.description)"
-                          class="truncate tool-item-desc"
-                          @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
-                          @mouseleave="() => handleToolMouseleave(tool)"
-                        />
-                      </div>
+                        class="truncate color-#979ba5 tool-item-desc"
+                        @mouseenter="(e: MouseEvent) => handleToolMouseenter(e, tool)"
+                        @mouseleave="() => handleToolMouseleave(tool)"
+                      />
                     </article>
                   </template>
                 </BkCollapsePanel>
@@ -112,7 +121,10 @@
       </template>
       <!--  中间栏，当前 API 文档内容  -->
       <template #main>
-        <div class="main-content-wrap">
+        <div
+          class="main-content-wrap"
+          :class="[`${page === 'market' ? 'h-[calc(100vh-480px)]' : 'h-[calc(100vh-370px)]'}`]"
+        >
           <template v-if="selectedTool">
             <header class="tool-name">
               <div
@@ -509,8 +521,8 @@ const handleNavDocDetail = () => {
 const handleToolMouseenter = (e: MouseEvent, row: IMCPServerTool) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
-    row.isOverflow = cell.scrollWidth > cell.clientWidth;
-  }
+    row.isOverflow = cell.scrollWidth > cell.offsetWidth;
+  };
 };
 
 const handleToolMouseleave = (row: IMCPServerTool) => {
@@ -557,8 +569,7 @@ $code-color: #63656e;
     }
 
     .tool-list {
-      height: calc(100vh - 468px);
-      overflow-y: scroll;
+      overflow-y: auto;
 
       .tool-group-collapse {
         max-height: 100%;
@@ -629,22 +640,8 @@ $code-color: #63656e;
 
         .tool-item-name,
         .tool-item-desc {
-          display: -webkit-box;
-          overflow: hidden;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 1;
-        }
-
-        .tool-item-name {
           font-size: 12px;
           line-height: 20px;
-          color: #4d4f56;
-        }
-
-        .tool-item-desc {
-          font-size: 12px;
-          line-height: 20px;
-          color: #979ba5;
         }
 
         &:hover,
@@ -668,9 +665,8 @@ $code-color: #63656e;
   }
 
   .main-content-wrap {
-    height: calc(100vh - 354px);
     overflow-y: auto;
-    background-color: #fff;
+    background-color: #ffffff;
 
     .tool-name,
     .tool-basics,
