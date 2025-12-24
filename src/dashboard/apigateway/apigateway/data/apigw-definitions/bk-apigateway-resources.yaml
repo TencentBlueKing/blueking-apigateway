@@ -40,7 +40,7 @@ paths:
       operationId: apply_permissions
       description: 申请网关API访问权限
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
@@ -127,7 +127,7 @@ paths:
       operationId: get_apigw_public_key
       description: 获取网关公钥
       tags:
-        - v1
+      - v1
       responses:
         default:
           description: ''
