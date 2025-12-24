@@ -67,14 +67,16 @@
           </td>
           <!-- 字段备注 -->
           <td
-            :style="readonly ? 'width: 150px' : ''"
             class="table-body-row-cell description"
+            :class="{ 'max-w-250px w-250px': readonly }"
           >
             <div
               v-if="readonly"
               class="readonly-value-wrapper"
             >
-              {{ row.description || '--' }}
+              <BkOverflowTitle type="tips">
+                {{ row.description || '--' }}
+              </BkOverflowTitle>
             </div>
             <BkInput
               v-else
