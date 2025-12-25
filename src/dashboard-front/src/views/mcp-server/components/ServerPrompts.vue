@@ -31,10 +31,7 @@
     >
       <template #aside>
         <div :class="`${promptCollapseMargin} left-aside-wrap`">
-          <main
-            v-if="promptList.length"
-            class="mcp-prompt-list custom-scroll-bar"
-          >
+          <main :class="`mcp-prompt-list custom-scroll-bar ${setMaxH}`">
             <div
               v-for="prompt in promptList"
               :key="prompt.id"
@@ -62,14 +59,12 @@
               </BkTag>
             </div>
           </main>
-          <TableEmpty
-            v-else
-            class="h-[calc(100vh-360px)]"
-          />
         </div>
       </template>
       <template #main>
-        <div class="w-full pl-24px pr-24px main-content-wrap">
+        <div
+          :class="`w-full pl-24px pr-24px main-content-wrap ${setMaxH}`"
+        >
           <div
             v-if="Object.keys(curPromptData)?.length"
             class="w-full p-16px mt-16px mb-16px prompt-detail-content"
@@ -133,14 +128,16 @@ import {
   type IMCPServerPrompt,
   getServer,
 } from '@/services/source/mcp-server';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import AgDescription from '@/components/ag-description/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
-interface IProps { server: MCPServerType }
+interface IProps {
+  server: MCPServerType
+  page?: string
+}
 
-const { server } = defineProps<IProps>();
+const { server, page = 'server' } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'update-count': [count: number] }>();
 
@@ -150,6 +147,7 @@ const mcpPromptRef = ref(null);
 const curPromptData = ref<IMCPServerPrompt>({});
 const promptCollapseMargin = ref('mt-16px');
 
+const setMaxH = computed(() => `${page === 'market' ? 'h-[calc(100vh-534px)]' : 'h-[calc(100vh-400px)]'}`);
 const promptList = computed<IMCPServerPrompt[]>(() => {
   const results = server?.prompts ?? [];
   if (results.length) {
@@ -197,8 +195,7 @@ const handlePromptMouseleave = (row: IMCPServerPrompt) => {
     border-radius: 2px;
 
     .mcp-prompt-list {
-      height: calc(100vh - 360px);
-      overflow-y: scroll;
+      overflow-y: auto;
 
       .prompt-item {
         height: 32px;
@@ -221,7 +218,6 @@ const handlePromptMouseleave = (row: IMCPServerPrompt) => {
   }
 
   .main-content-wrap {
-    height: calc(100vh - 360px);
     overflow-y: auto;
 
     .prompt-detail-content {
