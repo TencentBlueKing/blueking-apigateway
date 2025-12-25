@@ -32,14 +32,12 @@ import (
 var _ = Describe("MCPProxy", func() {
 	Describe("NewMCPProxy", func() {
 		It("should create a new MCPProxy instance", func() {
-			messageUrlFormat := "/api/mcp/%s/message"
-			proxy := NewMCPProxy(messageUrlFormat)
+			proxy := NewMCPProxy()
 
 			Expect(proxy).NotTo(BeNil())
 			Expect(proxy.mcpServers).NotTo(BeNil())
 			Expect(proxy.rwLock).NotTo(BeNil())
 			Expect(proxy.activeMCPServers).NotTo(BeNil())
-			Expect(proxy.messageUrlFormat).To(Equal(messageUrlFormat))
 			Expect(proxy.mcpServers).To(BeEmpty())
 			Expect(proxy.activeMCPServers).To(BeEmpty())
 		})
@@ -49,7 +47,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should return false for non-existent server", func() {
@@ -69,7 +67,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should return nil for non-existent server", func() {
@@ -90,7 +88,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("AddMCPServer", func() {
 		It("should add server to proxy", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			mockServer := &MCPServer{name: "test-server"}
 
 			proxy.AddMCPServer("test-server", mockServer)
@@ -100,7 +98,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should add multiple servers", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			server1 := &MCPServer{name: "server1"}
 			server2 := &MCPServer{name: "server2"}
 
@@ -116,7 +114,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should return empty list initially", func() {
@@ -148,14 +146,14 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("DeleteMCPServer", func() {
 		It("should not panic when deleting non-existent server", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			Expect(func() {
 				proxy.DeleteMCPServer("non-existent")
 			}).NotTo(Panic())
 		})
 
 		It("should mark server as existing before deletion", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			proxy.rwLock.Lock()
 			proxy.mcpServers["test-server"] = &MCPServer{name: "test-server"}
 			proxy.activeMCPServers["test-server"] = struct{}{}
@@ -167,7 +165,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("Run", func() {
 		It("should not panic with no servers", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			ctx := context.Background()
 
 			Expect(func() {
@@ -177,7 +175,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should skip already active servers", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 			ctx := context.Background()
 
 			// Mark server as active without adding it
@@ -196,7 +194,7 @@ var _ = Describe("MCPProxy", func() {
 
 		BeforeEach(func() {
 			gin.SetMode(gin.TestMode)
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should return error for non-existent server", func() {
@@ -214,35 +212,12 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
-	Describe("SseMessageHandler", func() {
-		var proxy *MCPProxy
-
-		BeforeEach(func() {
-			gin.SetMode(gin.TestMode)
-			proxy = NewMCPProxy("/api/mcp/%s/message")
-		})
-
-		It("should return error for non-existent server", func() {
-			handler := proxy.SseMessageHandler()
-			Expect(handler).NotTo(BeNil())
-
-			w := httptest.NewRecorder()
-			c, _ := gin.CreateTestContext(w)
-			c.Request = httptest.NewRequest(http.MethodPost, "/mcp/non-existent/message", nil)
-			c.Params = gin.Params{{Key: "name", Value: "non-existent"}}
-
-			handler(c)
-
-			Expect(w.Code).To(Equal(http.StatusBadRequest))
-		})
-	})
-
 	Describe("StreamableHTTPHandler", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
 			gin.SetMode(gin.TestMode)
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should return error for non-existent server", func() {
@@ -287,7 +262,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("Concurrent Access", func() {
 		It("should handle concurrent reads and writes", func() {
-			proxy := NewMCPProxy("/api/mcp/%s/message")
+			proxy := NewMCPProxy()
 
 			var wg sync.WaitGroup
 			for i := 0; i < 100; i++ {
@@ -312,7 +287,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should not panic when server does not exist", func() {
@@ -329,7 +304,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy("/api/mcp/%s/message")
+			proxy = NewMCPProxy()
 		})
 
 		It("should not panic when server does not exist", func() {

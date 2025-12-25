@@ -32,7 +32,7 @@ var _ = Describe("MCP", func() {
 		var mcpProxy *proxy.MCPProxy
 
 		BeforeEach(func() {
-			mcpProxy = proxy.NewMCPProxy("/mcp/%s/message")
+			mcpProxy = proxy.NewMCPProxy()
 		})
 
 		Describe("Basic Operations", func() {
@@ -378,7 +378,7 @@ var _ = Describe("MCP", func() {
 				Expect(tools).To(ContainElement("getUsers"))
 				Expect(tools).To(ContainElement("createUser"))
 
-				server.UnregisterTool("createUser")
+				server.RemoveTool("createUser")
 
 				tools = server.GetTools()
 				Expect(tools).To(ContainElement("getUsers"))
