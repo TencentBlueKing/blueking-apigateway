@@ -64,6 +64,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     prompts_count = serializers.SerializerMethodField(help_text="MCPServer Prompts 数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
 
+    updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBaseOutputSLZ"
 

@@ -78,6 +78,14 @@ class TestMCPServerListCreateApi:
         assert resp.status_code == 200
         assert result["data"]["count"] >= 1
 
+        # 验证返回的数据中包含 updated_time 字段
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert "updated_time" in mcp_server_data
+
     def test_list_with_prompts_count(self, request_view, fake_gateway, fake_mcp_server):
         """测试列表接口返回 prompts_count"""
         # 给 fake_mcp_server 添加 prompts
@@ -203,6 +211,7 @@ class TestMCPServerRetrieveUpdateDestroyApi:
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_mcp_server.id
         assert result["data"]["name"] == fake_mcp_server.name
+        assert "updated_time" in result["data"]
 
     def test_update(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
         mocker.patch(

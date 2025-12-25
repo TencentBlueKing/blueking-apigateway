@@ -137,6 +137,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
+    updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
 
