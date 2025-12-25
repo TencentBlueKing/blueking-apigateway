@@ -177,7 +177,7 @@
           </div>
         </BkTabPanel>
         <BkTabPanel
-          v-if="isEnablePrompt"
+          v-if="isEnablePrompt && promptCount > 0"
           name="prompts"
         >
           <template #label>
@@ -228,6 +228,7 @@
             <Guideline
               :markdown-str="markdownStr"
               :show-usage-guide="false"
+              page="market"
             />
           </div>
         </BkTabPanel>
