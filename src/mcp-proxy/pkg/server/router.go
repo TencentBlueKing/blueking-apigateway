@@ -83,7 +83,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	ctx := context.Background()
 
 	// mcp 用户态mcp proxy
-	mcpProxy := proxy.NewMCPProxy(cfg.McpServer.MessageUrlFormat)
+	mcpProxy := proxy.NewMCPProxy()
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
 		logging.GetLogger().Panic("mcp user proxy init failed: %v", err)
@@ -98,15 +98,15 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
-	// SSE 协议路由
+	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
-	seeRouter.POST("/sse/message", mcpProxy.SseMessageHandler())
+	seeRouter.POST("/sse", mcpProxy.SseHandler())
 	// Streamable HTTP 协议路由
 	seeRouter.GET("/mcp", mcpProxy.StreamableHTTPHandler())
 	seeRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 
 	// mcp application 应用态mcp proxy
-	mcpApplicationProxy := proxy.NewMCPProxy(cfg.McpServer.MessageApplicationUrlFormat)
+	mcpApplicationProxy := proxy.NewMCPProxy()
 	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
 	if err != nil {
 		logging.GetLogger().Panic("mcp application proxy init failed: %v", err)
@@ -121,9 +121,9 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeAppRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
-	// SSE 协议路由
+	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
 	seeAppRouter.GET("/sse", mcpApplicationProxy.SseHandler())
-	seeAppRouter.POST("/sse/message", mcpApplicationProxy.SseMessageHandler())
+	seeAppRouter.POST("/sse", mcpApplicationProxy.SseHandler())
 	// Streamable HTTP 协议路由
 	seeAppRouter.GET("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
 	seeAppRouter.POST("/mcp", mcpApplicationProxy.StreamableHTTPHandler())

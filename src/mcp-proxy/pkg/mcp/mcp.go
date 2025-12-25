@@ -159,7 +159,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
 			if !arrutil.Contains(server.ResourceNames, tool) {
-				mcpServer.UnregisterTool(tool)
+				mcpServer.RemoveTool(tool)
 				toolUpdated = true
 				continue
 			}

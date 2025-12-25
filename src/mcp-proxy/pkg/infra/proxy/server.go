@@ -23,21 +23,23 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/ThinkInAIXYZ/go-mcp/protocol"
-	"github.com/ThinkInAIXYZ/go-mcp/server"
-	"github.com/ThinkInAIXYZ/go-mcp/transport"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"mcp_proxy/pkg/constant"
-	"mcp_proxy/pkg/util"
 )
+
+// ToolHandler is the handler type for tools
+type ToolHandler = mcp.ToolHandler
+
+// PromptHandler is the handler type for prompts
+type PromptHandler = mcp.PromptHandler
 
 // MCPServer ...
 type MCPServer struct {
-	Server                *server.Server
-	Transport             transport.ServerTransport
-	SSEHandler            *transport.SSEHandler            // SSE 协议 Handler
-	StreamableHTTPHandler *transport.StreamableHTTPHandler // Streamable HTTP 协议 Handler
-	protocolType          string                           // 协议类型: sse 或 streamable_http
+	Server                *mcp.Server
+	SSEHandler            *mcp.SSEHandler            // SSE 协议 Handler
+	StreamableHTTPHandler *mcp.StreamableHTTPHandler // Streamable HTTP 协议 Handler
+	protocolType          string                     // 协议类型: sse 或 streamable_http
 	name                  string
 	// 生效的资源版本号
 	resourceVersionID int
@@ -48,18 +50,13 @@ type MCPServer struct {
 
 // NewMCPServer 创建 SSE 协议的 MCP Server
 func NewMCPServer(
-	transport transport.ServerTransport,
-	handler *transport.SSEHandler,
+	server *mcp.Server,
+	handler *mcp.SSEHandler,
 	name string,
 	resourceVersion int,
 ) *MCPServer {
-	mcpServer, err := server.NewServer(transport)
-	if err != nil {
-		panic(err)
-	}
 	return &MCPServer{
-		Server:            mcpServer,
-		Transport:         transport,
+		Server:            server,
 		SSEHandler:        handler,
 		protocolType:      constant.MCPServerProtocolTypeSSE,
 		tools:             make(map[string]struct{}),
@@ -72,18 +69,13 @@ func NewMCPServer(
 
 // NewStreamableHTTPMCPServer 创建 Streamable HTTP 协议的 MCP Server
 func NewStreamableHTTPMCPServer(
-	trans transport.ServerTransport,
-	handler *transport.StreamableHTTPHandler,
+	server *mcp.Server,
+	handler *mcp.StreamableHTTPHandler,
 	name string,
 	resourceVersion int,
 ) *MCPServer {
-	mcpServer, err := server.NewServer(trans)
-	if err != nil {
-		panic(err)
-	}
 	return &MCPServer{
-		Server:                mcpServer,
-		Transport:             trans,
+		Server:                server,
 		StreamableHTTPHandler: handler,
 		protocolType:          constant.MCPServerProtocolTypeStreamableHTTP,
 		tools:                 make(map[string]struct{}),
@@ -107,15 +99,7 @@ func (s *MCPServer) IsStreamableHTTP() bool {
 // HandleSSE 返回 SSE 连接 Handler
 func (s *MCPServer) HandleSSE() http.Handler {
 	if s.SSEHandler != nil {
-		return s.SSEHandler.HandleSSE()
-	}
-	return nil
-}
-
-// HandleMessage 返回 SSE 消息 Handler
-func (s *MCPServer) HandleMessage() http.Handler {
-	if s.SSEHandler != nil {
-		return s.SSEHandler.HandleMessage()
+		return s.SSEHandler
 	}
 	return nil
 }
@@ -123,7 +107,7 @@ func (s *MCPServer) HandleMessage() http.Handler {
 // HandleMCP 返回 Streamable HTTP Handler
 func (s *MCPServer) HandleMCP() http.Handler {
 	if s.StreamableHTTPHandler != nil {
-		return s.StreamableHTTPHandler.HandleMCP()
+		return s.StreamableHTTPHandler
 	}
 	return nil
 }
@@ -161,56 +145,49 @@ func (s *MCPServer) GetTools() []string {
 	return toolNames
 }
 
-// Run ...
+// Run starts the MCP server.
+// Note: 官方 SDK 的 Server.Run 用于单连接场景（如 stdio），
+// 对于 SSE/HTTP 多连接场景，连接由 SSEHandler 管理，此方法为空实现。
 func (s *MCPServer) Run(ctx context.Context) {
-	util.GoroutineWithRecovery(ctx, func() {
-		if err := s.Server.Run(); err != nil {
-			panic(err)
-		}
-	})
+	// SSE 场景下，连接由 SSEHandler 在 HTTP 请求时自动建立和管理
+	// 不需要单独启动 Server
 }
 
-// Shutdown ...
+// Shutdown gracefully shuts down the MCP server by closing all active sessions.
 func (s *MCPServer) Shutdown(ctx context.Context) {
-	util.GoroutineWithRecovery(ctx, func() {
-		if err := s.Server.Shutdown(ctx); err != nil {
-			panic(err)
-		}
-	})
+	// 关闭所有活跃的会话
+	for session := range s.Server.Sessions() {
+		_ = session.Close()
+	}
 }
 
-// RegisterTool ...
-func (s *MCPServer) RegisterTool(tool *protocol.Tool, toolHandler server.ToolHandlerFunc) {
-	s.Server.RegisterTool(tool, toolHandler)
+// AddTool adds a tool to the server
+func (s *MCPServer) AddTool(tool *mcp.Tool, toolHandler ToolHandler) {
+	s.Server.AddTool(tool, toolHandler)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	s.tools[tool.Name] = struct{}{}
 }
 
-// UnregisterTool  unregisters a tool from the server
-func (s *MCPServer) UnregisterTool(toolName string) {
-	s.Server.UnregisterTool(toolName)
+// RemoveTool removes a tool from the server
+func (s *MCPServer) RemoveTool(toolName string) {
+	s.Server.RemoveTools(toolName)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.tools, toolName)
 }
 
-// RegisterResources ...
-func (s *MCPServer) RegisterResources(resource *protocol.Resource, resourceHandler server.ResourceHandlerFunc) {
-	s.Server.RegisterResource(resource, resourceHandler)
-}
-
-// RegisterPrompt registers a prompt to the server
-func (s *MCPServer) RegisterPrompt(prompt *protocol.Prompt, promptHandler server.PromptHandlerFunc) {
-	s.Server.RegisterPrompt(prompt, promptHandler)
+// AddPrompt adds a prompt to the server
+func (s *MCPServer) AddPrompt(prompt *mcp.Prompt, promptHandler PromptHandler) {
+	s.Server.AddPrompt(prompt, promptHandler)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	s.prompts[prompt.Name] = struct{}{}
 }
 
-// UnregisterPrompt unregisters a prompt from the server
-func (s *MCPServer) UnregisterPrompt(promptName string) {
-	s.Server.UnregisterPrompt(promptName)
+// RemovePrompt removes a prompt from the server
+func (s *MCPServer) RemovePrompt(promptName string) {
+	s.Server.RemovePrompts(promptName)
 	s.rwLock.Lock()
 	defer s.rwLock.Unlock()
 	delete(s.prompts, promptName)
