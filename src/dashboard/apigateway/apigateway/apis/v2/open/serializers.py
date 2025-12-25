@@ -35,6 +35,7 @@ from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_application_url,
     build_mcp_server_detail_url,
+    build_mcp_server_permission_approval_url,
     build_mcp_server_url,
 )
 
@@ -267,6 +268,10 @@ class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    def get_approval_url(self, obj) -> str:
+        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"
@@ -294,9 +299,13 @@ class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):
     comment = serializers.CharField(read_only=True, help_text="备注")
     reason = serializers.CharField(read_only=True, help_text="申请原因")
     expire_days = serializers.IntegerField(read_only=True, help_text="过期天数")
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
     def get_status_display(self, obj):
         return MCPServerAppPermissionApplyStatusEnum.get_choice_label(obj.status)
+
+    def get_approval_url(self, obj) -> str:
+        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyRecordListOutputSLZ"

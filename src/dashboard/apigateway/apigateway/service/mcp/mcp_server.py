@@ -104,3 +104,18 @@ def build_mcp_server_application_url(
 
 def build_mcp_server_detail_url(mcp_server_id: int) -> str:
     return f"{settings.DASHBOARD_FE_URL}/mcp-market-details/{mcp_server_id}/"
+
+
+def build_mcp_server_permission_approval_url(gateway_id: int, mcp_server_id: int) -> str:
+    """构建 MCP Server 权限审批 URL
+
+    Args:
+        gateway_id: 网关 ID
+        mcp_server_id: MCP Server ID
+
+    Returns:
+        MCP Server 权限审批 URL
+    """
+    return settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL.format(
+        gateway_id=gateway_id, mcp_server_id=mcp_server_id
+    )

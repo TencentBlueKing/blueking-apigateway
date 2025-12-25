@@ -33,17 +33,20 @@
     {
       "record_id": 10,
       "bk_app_code": "bk-001",
-      "mcp_server_id": 1
+      "mcp_server_id": 1,
+      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=1"
     },
     {
       "record_id": 11,
       "bk_app_code": "bk-001",
-      "mcp_server_id": 2
+      "mcp_server_id": 2,
+      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=2"
     },
     {
       "record_id": 12,
       "bk_app_code": "bk-001",
-      "mcp_server_id": 3
+      "mcp_server_id": 3,
+      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=3"
     }
   ]
 }
@@ -56,3 +59,4 @@
 | record_id     | int      | 申请记录 ID             |
 | bk_app_code   | string   | 蓝鲸应用编码              |
 | mcp_server_id | int      | mcp_server ID       |
+| approval_url  | string   | 权限审批 URL            |

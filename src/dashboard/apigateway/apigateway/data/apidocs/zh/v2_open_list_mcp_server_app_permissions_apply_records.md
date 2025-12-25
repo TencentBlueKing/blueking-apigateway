@@ -37,7 +37,8 @@
       "status_display": "通过",
       "comment": "",
       "reason": "",
-      "expire_days": 0
+      "expire_days": 0,
+      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=1"
     }
   ]
 }
@@ -65,6 +66,7 @@
 | comment        | string | 审批内容          |
 | reason         | string | 申请理由          |
 | expire_days    | int    | 过期时间          |
+| approval_url   | string | 权限审批 URL      |
 | mcp_server     | object | mcp_server 信息 |
 
 
