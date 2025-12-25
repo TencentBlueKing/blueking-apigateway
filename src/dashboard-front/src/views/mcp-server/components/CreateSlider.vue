@@ -92,7 +92,7 @@
             >
               <BkInput
                 v-model="formData.title"
-                :placeholder="t('请输入1-32个字符的服务展示名称')"
+                :placeholder="t('请输入3-32个字符的服务展示名称')"
                 :maxlength="32"
                 clearable
               />
@@ -114,7 +114,7 @@
                 type="textarea"
                 :minlength="10"
                 :maxlength="512"
-                :rows="10"
+                :rows="4"
                 :disabled="noValidStage"
                 :placeholder="t('请输入10-512个字符的描述')"
                 clearable

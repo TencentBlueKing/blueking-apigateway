@@ -2150,7 +2150,7 @@
   "（未发布）": "(Unpublished)",
   "message 必填": "message 必填",
   "服务展示名": "Service display name",
-  "请输入1-32个字符的服务展示名称": "Please enter a service display name of 1-32 characters",
+  "请输入3-32个字符的服务展示名称": "Please enter a service display name of 3-32 characters",
   "请输入10-512个字符的描述": "Please enter description of 10-512 characters",
   "默认使用指引": "Default usage guidelines",
   "自定义使用指引": "Custom usage guidelines",

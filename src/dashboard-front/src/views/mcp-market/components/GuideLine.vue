@@ -24,27 +24,22 @@
   >
     <!-- 是否需要展示自定义使用指引tab -->
     <template v-if="showUsageGuide">
-      <BkAlert
+      <div
         v-if="!isExistCustomGuide"
-        theme="info"
-        class="mt-24px"
+        class="flex items-center mt-24px"
       >
-        <template #title>
-          <div class="flex">
-            <div class="color-#4d4f56">
-              {{ t('平台提供默认使用指引，您可添加自定义内容来补充说明。') }}
-            </div>
-            <BkButton
-              text
-              theme="primary"
-              class="ml-8px"
-              @click="handleShowGuide('add')"
-            >
-              {{ t('添加自定义使用指引') }}
-            </BkButton>
-          </div>
-        </template>
-      </BkAlert>
+        <BkButton
+          theme="primary"
+          @click="handleShowGuide('add')"
+        >
+          <Plus class="text-22px" />
+          {{ t('自定义使用指引') }}
+        </BkButton>
+        <div class="flex items-center color-#979ba5 text-12px ml-16px">
+          <InfoLine class="text-14px mr-4px" />
+          {{ t('平台提供默认使用指引，您可添加自定义内容来补充说明。') }}
+        </div>
+      </div>
       <div
         v-else
         class="flex items-center flex-nowrap p-t-24px usage-guide-list"
@@ -93,7 +88,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import { Close } from 'bkui-vue/lib/icon';
+import { Close, InfoLine, Plus } from 'bkui-vue/lib/icon';
 import { USAGE_GUIDE_LIST } from '@/constants';
 import { usePopInfoBox } from '@/hooks';
 import {
