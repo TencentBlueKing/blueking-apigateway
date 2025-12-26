@@ -3560,7 +3560,7 @@
     code: ai-proxy
     name: AI 代理
     name_en: AI Proxy
-    is_public: true
+    is_public: false
     scope: resource
     priority: 1040
     _tags: "AI"
@@ -3941,7 +3941,7 @@
     code: ai-rate-limiting
     name: AI 速率限制
     name_en: AI Rate Limiting
-    is_public: true
+    is_public: false
     scope: resource
     priority: 1030
     _tags: "AI"
