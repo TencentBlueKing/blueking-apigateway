@@ -60,6 +60,14 @@ class TestMCPMarketplaceServerListApi:
         assert resp.status_code == 200
         assert "count" in result["data"]
 
+        # 验证返回的数据中包含 updated_time 字段
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_public_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert "updated_time" in mcp_server_data
+
     def test_list_with_prompts_count(self, request_view, fake_public_mcp_server):
         """测试列表接口返回 prompts_count"""
         # 给 mcp_server 添加 prompts
@@ -121,6 +129,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_public_mcp_server.id
         assert result["data"]["name"] == fake_public_mcp_server.name
+        assert "updated_time" in result["data"]
 
     def test_retrieve_with_prompts(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回 prompts 列表（私有 prompt 的 content 为空）"""
