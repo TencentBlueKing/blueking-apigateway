@@ -31,7 +31,10 @@
     >
       <template #aside>
         <div :class="`${promptCollapseMargin} left-aside-wrap`">
-          <main :class="`mcp-prompt-list custom-scroll-bar ${setMaxH}`">
+          <main
+            class="mcp-prompt-list custom-scroll-bar"
+            :style="{ height: setPageMaxH }"
+          >
             <div
               v-for="prompt in promptList"
               :key="prompt.id"
@@ -63,7 +66,8 @@
       </template>
       <template #main>
         <div
-          :class="`w-full pl-24px pr-24px main-content-wrap ${setMaxH}`"
+          class="w-full pl-24px pr-24px main-content-wrap"
+          :style="{ height: setPageMaxH }"
         >
           <div
             v-if="Object.keys(curPromptData)?.length"
@@ -124,6 +128,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useFeatureFlag } from '@/stores';
 import {
   type IMCPServerPrompt,
   getServer,
@@ -142,12 +147,19 @@ const { server, page = 'server' } = defineProps<IProps>();
 const emit = defineEmits<{ 'update-count': [count: number] }>();
 
 const { t } = useI18n();
+const featureFlagStore = useFeatureFlag();
 
 const mcpPromptRef = ref(null);
 const curPromptData = ref<IMCPServerPrompt>({});
 const promptCollapseMargin = ref('mt-16px');
 
-const setMaxH = computed(() => `${page === 'market' ? 'h-[calc(100vh-534px)]' : 'h-[calc(100vh-400px)]'}`);
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+const setPageMaxH = computed(() => {
+  const offsetH = page === 'market'
+    ? (!isShowNoticeAlert.value ? 518 : 478)
+    : (!isShowNoticeAlert.value ? 390 : 420);
+  return `calc(100vh - ${offsetH}px)`;
+});
 const promptList = computed<IMCPServerPrompt[]>(() => {
   const results = server?.prompts ?? [];
   if (results.length) {
