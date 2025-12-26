@@ -134,26 +134,54 @@
 
     <div class="text-14px lh-22px color-#979ba5 absolute bottom-24px mcp-footer-content">
       <div class="flex items-center justify-between content-item">
-        <div class="flex items-center flex-wrap gap-4px max-w-1/2 item-label">
+        <div
+          v-bk-tooltips="{
+            content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time)}`,
+            disabled: !isOverflow
+          }"
+          class="flex items-center gap-4px min-w-100px item-label"
+          :style="{ maxWidth: `calc(100% - ${operateIconWidth}px)` }"
+        >
           <i class="apigateway-icon icon-ag-time-circle color-#979ba5 text-16px" />
-          <div class="truncate">
-            {{ t('发布于') }} {{ getUtcTimeAgo(server.updated_time) }}
+          <div
+            class="truncate"
+            @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+            @mouseleave="handleMouseleave"
+          >
+            {{ t('发布于') }} {{ getUtcTimeAgo(server?.updated_time) }}
           </div>
         </div>
-        <div class="flex items-center item-value">
-          <div class="flex items-center flex-wrap gap-4px">
+        <div
+          :ref="(el: HTMLElement) => setMapRefs(el, operateIconRefs,'item-value-')"
+          class="flex items-center item-value"
+        >
+          <div class="flex items-center gap-4px">
             <i class="apigateway-icon icon-ag-manual color-#979ba5 text-16px" />
-            <div class="truncate">
-              {{ server.tools_count }}
+            <div
+              v-bk-tooltips="{
+                content: String(server?.tools_count),
+                content: `${t('工具')}: ${String(server?.tools_count)}`,
+                disabled: String(server?.tools_count).length < 6
+              }"
+              class="truncate max-w-60px"
+            >
+              {{ server?.tools_count }}
             </div>
           </div>
           <div
             v-if="isEnablePrompt"
-            class="flex items-center flex-wrap gap-4px ml-20px"
+            class="flex items-center gap-4px ml-20px"
           >
             <i class="apigateway-icon icon-ag-nocomment color-#979ba5 text-16px" />
-            <div class="truncate">
-              {{ server.prompts_count }}
+            <div
+              v-bk-tooltips="{
+                content: String(server?.prompts_count),
+                content: `Prompts: ${String(server?.prompts_count)}`,
+                disabled: String(server?.prompts_count).length < 6
+              }"
+              class="truncate max-w-60px"
+            >
+              {{ server?.prompts_count }}
             </div>
           </div>
         </div>
@@ -189,7 +217,24 @@ const featureFlagStore = useFeatureFlag();
 
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0);
 
+const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
+const isOverflow = ref(false);
+const operateIconWidth = ref(0);
+
 setupDayjsLocale(locale.value);
+
+const setMapRefs = (el: HTMLElement, anyRef: Ref, prefix: string) => {
+  if (el) {
+    anyRef?.set(`${prefix}${server?.id}`, el);
+  }
+};
+
+const getOperateWidth = () => {
+  nextTick(() => {
+    operateIconWidth.value = operateIconRefs.value.get(`item-value-${server?.id}`)?.offsetWidth + 8 ?? 0;
+  });
+};
+getOperateWidth();
 
 const handleEditClick = () => {
   emit('edit', server.id);
@@ -210,10 +255,24 @@ const handleDeleteClick = () => {
   emit('delete', server.id);
 };
 
+const handleMouseenter = (e: MouseEvent) => {
+  const cell = (e.target as HTMLElement).closest('.truncate');
+  if (cell) {
+    isOverflow.value = cell.scrollWidth > cell.clientWidth;
+  }
+};
+
+const handleMouseleave = () => {
+  isOverflow.value = false;
+};
+
 const preventDefault = (e: MouseEvent) => {
   e.preventDefault();
 };
 
+onUnmounted(() => {
+  operateIconRefs.value?.clear();
+});
 </script>
 
 <style lang="scss" scoped>
