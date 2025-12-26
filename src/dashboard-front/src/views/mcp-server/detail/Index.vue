@@ -64,7 +64,7 @@
             <div class="value url">
               <p
                 v-bk-tooltips="server.url"
-                class="link"
+                class="truncate"
               >
                 {{ server.url || '--' }}
               </p>
@@ -86,8 +86,19 @@
             <div class="label">
               {{ `${t('描述')}：` }}
             </div>
-            <div class="value">
-              {{ server.description || '--' }}
+            <div
+              class="value description max-w-256px!"
+            >
+              <p
+                v-bk-tooltips="{
+                  content: server?.description,
+                  disabled: server?.description?.length < 1,
+                  extCls: 'max-w-480px'
+                }"
+                class="truncate"
+              >
+                {{ server.description || '--' }}
+              </p>
             </div>
           </div>
         </div>
@@ -511,16 +522,11 @@ const updateCount = (count?: number, panelName?: string) => {
         flex: 1;
         color: #313238;
 
-        &.url {
+        &.url,
+        &.description {
           display: flex;
           max-width: 230px;
           align-items: center;
-
-          .link {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
 
           i {
             padding: 3px;

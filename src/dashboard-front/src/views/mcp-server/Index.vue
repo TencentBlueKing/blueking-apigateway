@@ -57,7 +57,7 @@ import {
 } from '@/services/source/mcp-server';
 import { usePopInfoBox } from '@/hooks';
 import CreateSlider from './components/CreateSlider.vue';
-import ServerItemCard from './components/ServerItemCard.vue';
+import ServerItemCard from '@/components/ag-mcp-card/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
 
@@ -177,6 +177,15 @@ onMounted(() => {
         color: #3a84ff;
       }
     }
+
+    :deep(.ag-mcp-card-wrapper) {
+      padding: 20px 40px;
+
+      .main-content {
+        right: 40px;
+        left: 40px;
+      }
+    }
   }
 }
 
@@ -188,6 +197,18 @@ onMounted(() => {
 
 @media (min-width: 1200px) {
   .add-server-card {
+    width: calc(33.333% - 16px);
+  }
+}
+
+@media (min-width: 768px) {
+  .ag-mcp-card-wrapper {
+    width: calc(50% - 12px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .ag-mcp-card-wrapper {
     width: calc(33.333% - 16px);
   }
 }
