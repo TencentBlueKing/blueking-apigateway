@@ -181,7 +181,11 @@ onMounted(() => {
     :deep(.ag-mcp-card-wrapper) {
       padding: 20px 40px;
 
-      .main-content {
+      .mcp-card-title {
+        max-width: calc(100% - 80px);
+      }
+
+      .mcp-footer-content {
         right: 40px;
         left: 40px;
       }
@@ -202,13 +206,13 @@ onMounted(() => {
 }
 
 @media (min-width: 768px) {
-  .ag-mcp-card-wrapper {
+  :deep(.ag-mcp-card-wrapper) {
     width: calc(50% - 12px);
   }
 }
 
 @media (min-width: 1200px) {
-  .ag-mcp-card-wrapper {
+  :deep(.ag-mcp-card-wrapper) {
     width: calc(33.333% - 16px);
   }
 }

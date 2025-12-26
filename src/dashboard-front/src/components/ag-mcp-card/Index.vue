@@ -19,11 +19,11 @@
 <template>
   <div class="ag-mcp-card-wrapper">
     <header class="w-full flex items-baseline justify-between card-header">
-      <div class="flex items-baseline header-title-wrapper">
+      <div class="max-w-[calc(100%-138px)] flex items-center gap-8px header-title-wrapper">
         <div class="w-full flex items-center gap-8px">
           <BkOverflowTitle
             type="tips"
-            class="color-#313238 text-16px font-700 lh-22px flex-1 max-w-200px"
+            class="color-#313238 text-16px font-700 lh-22px mcp-card-title"
           >
             {{ server.title }}
           </BkOverflowTitle>
@@ -35,12 +35,12 @@
           </BkTag>
           <BkOverflowTitle
             type="tips"
-            class="max-w-80px"
+            class="max-w-56px mr-8px"
           >
             <BkTag
               v-bk-tooltips="{
                 content: server.stage?.name ,
-                disabled: server.stage?.name?.length < 10,
+                disabled: server.stage?.name?.length < 4,
                 extCls: 'max-w-480px'
               }"
               theme="info"
@@ -132,23 +132,29 @@
       </AgDescription>
     </div>
 
-    <div class="text-14px lh-22px color-#979ba5 absolute bottom-24px main-content">
+    <div class="text-14px lh-22px color-#979ba5 absolute bottom-24px mcp-footer-content">
       <div class="flex items-center justify-between content-item">
-        <div class="flex items-center gap-4px item-label">
+        <div class="flex items-center flex-wrap gap-4px max-w-1/2 item-label">
           <i class="apigateway-icon icon-ag-time-circle color-#979ba5 text-16px" />
-          <div>{{ t('发布于') }} {{ getUtcTimeAgo(server.updated_time) }}</div>
+          <div class="truncate">
+            {{ t('发布于') }} {{ getUtcTimeAgo(server.updated_time) }}
+          </div>
         </div>
         <div class="flex items-center item-value">
-          <div class="flex items-center gap-4px">
+          <div class="flex items-center flex-wrap gap-4px">
             <i class="apigateway-icon icon-ag-manual color-#979ba5 text-16px" />
-            <div>{{ server.tools_count }}</div>
+            <div class="truncate">
+              {{ server.tools_count }}
+            </div>
           </div>
           <div
             v-if="isEnablePrompt"
-            class="flex items-center gap-4px ml-20px"
+            class="flex items-center flex-wrap gap-4px ml-20px"
           >
             <i class="apigateway-icon icon-ag-nocomment color-#979ba5 text-16px" />
-            <div>{{ server.prompts_count }}</div>
+            <div class="truncate">
+              {{ server.prompts_count }}
+            </div>
           </div>
         </div>
       </div>
@@ -222,7 +228,6 @@ const preventDefault = (e: MouseEvent) => {
   .card-header {
 
     .header-title-wrapper {
-      max-width: calc(100% - 224px);
 
       :deep(.bk-tag-text) {
         font-size: 12px !important;
