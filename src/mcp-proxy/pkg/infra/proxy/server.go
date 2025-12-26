@@ -211,3 +211,8 @@ func (s *MCPServer) IsRegisteredPrompt(promptName string) bool {
 	_, ok := s.prompts[promptName]
 	return ok
 }
+
+// GetServer returns the underlying mcp.Server for middleware registration
+func (s *MCPServer) GetServer() *mcp.Server {
+	return s.Server
+}

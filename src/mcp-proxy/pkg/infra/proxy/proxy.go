@@ -127,6 +127,12 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 				Description: toolConfig.Description,
 				InputSchema: &inputSchema,
 			}
+			// 处理 OutputSchema
+			if len(toolConfig.OutputSchema) > 0 {
+				var outputSchema jsonschema.Schema
+				_ = json.Unmarshal(toolConfig.OutputSchema, &outputSchema)
+				tool.OutputSchema = &outputSchema
+			}
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.AddTool(tool, toolHandler)
 		}
@@ -316,7 +322,12 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
-		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
+		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
+		innerJwt, err := util.SignInnerJWTFromContext(ctx)
+		if err != nil {
+			auditLog.Error("sign inner jwt err", zap.Error(err))
+			return nil, fmt.Errorf("sign inner jwt failed: %w", err)
+		}
 		auditLog.Info("call tool", zap.Any("request", params.Arguments))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(params.Arguments)

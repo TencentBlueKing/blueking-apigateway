@@ -19,12 +19,10 @@
 package middleware
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/TencentBlueKing/gopkg/stringx"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
@@ -34,98 +32,59 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
-type bodyLogWriter struct {
-	gin.ResponseWriter
-	body *bytes.Buffer
-}
-
-// Write will write body and return the length of body
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
-	return w.ResponseWriter.Write(b)
-}
-
 // APILogger is a middleware to log request
+// 优化：移除 bodyLogWriter 避免 SSE 长连接场景下的内存泄露
+// 详细的请求/响应参数由 MCP 层的日志中间件记录
 func APILogger() gin.HandlerFunc {
 	logger := logging.GetAPILogger()
 
 	return func(c *gin.Context) {
-		fields := logContextFields(c)
+		start := time.Now()
+
+		// set mcp server info to context
+		mcpName := c.Param("name")
+		if mcpName != "" {
+			mcp, err := cacheimpls.GetMCPServerByName(c.Request.Context(), mcpName)
+			if err != nil {
+				util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
+				c.Abort()
+				return
+			}
+			util.SetMCPServerID(c, mcp.ID)
+			util.SetMCPServerName(c, mcpName)
+			util.SetGatewayID(c, mcp.GatewayID)
+		}
+
+		c.Next()
+
+		// Calculate latency in microseconds
+		duration := time.Since(start)
+
+		status := c.Writer.Status()
+
+		fields := []zap.Field{
+			zap.Int("gateway_id", util.GetGatewayID(c)),
+			zap.String("mcp_server_name", mcpName),
+			zap.Int("mcp_server_id", util.GetMCPServerID(c)),
+			zap.String("method", c.Request.Method),
+			zap.String("path", c.Request.URL.Path),
+			zap.Int("status", status),
+			zap.String("latency", duration.String()),
+			zap.String("request_id", c.GetString(util.RequestIDKey)),
+			zap.String("instance_id", c.GetString(util.InstanceIDKey)),
+			zap.String("client_ip", c.ClientIP()),
+		}
+
+		// only send 5xx err to sentry
+		if status >= http.StatusInternalServerError {
+			sentry.ReportToSentry(
+				fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path),
+				map[string]interface{}{
+					"fields": fields,
+				},
+			)
+		}
+
 		logger.Info("-", fields...)
 	}
-}
-
-func logContextFields(c *gin.Context) []zap.Field {
-	start := time.Now()
-	// request body
-	var body string
-	requestBody, err := util.ReadRequestBody(c.Request)
-	if err != nil {
-		body = ""
-	} else {
-		body = util.TruncateBytesToString(requestBody, 1024)
-	}
-
-	newWriter := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
-	c.Writer = newWriter
-
-	// set inner app code
-	mcpName := c.Param("name")
-	if mcpName != "" {
-		// get mcp_id by name
-		mcp, err := cacheimpls.GetMCPServerByName(c.Request.Context(), mcpName)
-		if err != nil {
-			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
-			c.Abort()
-		}
-		// set mcp_id to ctx
-		util.SetMCPServerID(c, mcp.ID)
-		// set mcp_name to ctx
-		util.SetMCPServerName(c, mcpName)
-		// set gateway_id to ctx
-		util.SetGatewayID(c, mcp.GatewayID)
-	}
-
-	c.Next()
-
-	duration := time.Since(start)
-
-	latency := float64(duration) / float64(time.Microsecond)
-
-	status := c.Writer.Status()
-
-	hasError := status != http.StatusOK
-
-	params := stringx.Truncate(c.Request.URL.RawQuery, 1024)
-	fields := []zap.Field{
-		zap.Int("gateway_id", util.GetGatewayID(c)),
-		zap.String("mcp_server_name", mcpName),
-		zap.Int("mcp_server_id", util.GetMCPServerID(c)),
-		zap.String("method", c.Request.Method),
-		zap.String("path", c.Request.URL.Path),
-		zap.String("params", params),
-		zap.String("body", body),
-		zap.Int("status", status),
-		zap.Float64("latency", latency),
-		zap.String("request_id", c.GetString(util.RequestIDKey)),
-		zap.String("instance_id", c.GetString(util.InstanceIDKey)),
-		zap.String("client_ip", c.ClientIP()),
-	}
-
-	if hasError {
-		fields = append(fields, zap.String("response_body", newWriter.body.String()))
-	} else {
-		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
-	}
-
-	// only send 5xx err to sentry
-	if status >= http.StatusInternalServerError {
-		sentry.ReportToSentry(
-			fmt.Sprintf("%s %s ", c.Request.Method, c.Request.URL.Path),
-			map[string]interface{}{
-				"fields": fields,
-			},
-		)
-	}
-	return fields
 }

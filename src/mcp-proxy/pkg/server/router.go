@@ -94,10 +94,10 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	})
 
 	seeRouter := router.Group("/:name")
-	seeRouter.Use(middleware.APILogger())
-	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
-	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
-	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
+	// seeRouter.Use(middleware.APILogger())
+	// seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
+	// seeRouter.Use(middleware.MCPServerPermissionMiddleware())
+	// seeRouter.Use(middleware.MCPServerHeaderMiddleware())
 	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
 	seeRouter.POST("/sse", mcpProxy.SseHandler())

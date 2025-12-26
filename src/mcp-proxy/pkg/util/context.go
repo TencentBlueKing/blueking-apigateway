@@ -166,3 +166,41 @@ func GetBkApiAllowedHeaders(ctx context.Context) map[string]string {
 	}
 	return allowedHeaders
 }
+
+// JWTClaimsForLazySigning 用于延迟签发 JWT 的 claims 信息
+type JWTClaimsForLazySigning struct {
+	AppCode      string
+	AppVerified  bool
+	Username     string
+	UserVerified bool
+	Issuer       string
+	Audience     []string
+}
+
+// SetJWTClaimsForLazySigning 保存 JWT claims 和私钥到 context，用于延迟签发
+func SetJWTClaimsForLazySigning(c *gin.Context, claims *JWTClaimsForLazySigning, privateKey []byte) {
+	c.Set(string(constant.BkGatewayJWTClaims), claims)
+	c.Set(string(constant.BkGatewayPrivateKey), privateKey)
+	if c.Request != nil {
+		ctx := c.Request.Context()
+		ctx = context.WithValue(ctx, constant.BkGatewayJWTClaims, claims)
+		ctx = context.WithValue(ctx, constant.BkGatewayPrivateKey, privateKey)
+		c.Request = c.Request.WithContext(ctx)
+	}
+}
+
+// GetJWTClaimsFromContext 从 context 获取 JWT claims
+func GetJWTClaimsFromContext(ctx context.Context) *JWTClaimsForLazySigning {
+	if claims, ok := ctx.Value(constant.BkGatewayJWTClaims).(*JWTClaimsForLazySigning); ok {
+		return claims
+	}
+	return nil
+}
+
+// GetPrivateKeyFromContext 从 context 获取私钥
+func GetPrivateKeyFromContext(ctx context.Context) []byte {
+	if key, ok := ctx.Value(constant.BkGatewayPrivateKey).([]byte); ok {
+		return key
+	}
+	return nil
+}
