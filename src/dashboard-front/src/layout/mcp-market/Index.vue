@@ -221,7 +221,7 @@ const handlePaginationLimitChange = (limit: number) => {
     .ag-mcp-card-wrapper {
       padding: 20px;
 
-      .main-content {
+      .mcp-footer-content {
         right: 20px;
         left: 20px;
       }
@@ -233,32 +233,40 @@ const handlePaginationLimitChange = (limit: number) => {
   }
 }
 
-@media (max-width: 1599.98px) {
+@media (max-width: 1619px) {
 
   .main {
     width: 1280px;
   }
 
-  .card-list {
+  :deep(.card-list) {
     gap: 20px 25px;
 
     .ag-mcp-card-wrapper {
       width: 410px;
+
+      .mcp-card-title {
+        max-width: 240px;
+      }
     }
   }
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1620px) {
 
   .main {
     width: 1600px;
   }
 
-  .card-list {
+  :deep(.card-list) {
     gap: 20px 26.67px;
 
     .ag-mcp-card-wrapper {
       width: 380px;
+
+      .mcp-card-title {
+        max-width: 216px;
+      }
     }
   }
 }
