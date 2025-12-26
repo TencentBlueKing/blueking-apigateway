@@ -18,9 +18,8 @@
 
 <template>
   <div
-    :class="[
-      `guide-line-content ${page === 'market' ? 'max-h-[calc(100vh-494px)]' : 'max-h-[calc(100vh-360px)]'}`
-    ]"
+    class="guide-line-content"
+    :style="{ height: setPageMaxH }"
   >
     <!-- 是否需要展示自定义使用指引tab -->
     <template v-if="showUsageGuide">
@@ -90,6 +89,7 @@
 import { Message } from 'bkui-vue';
 import { Close, InfoLine, Plus } from 'bkui-vue/lib/icon';
 import { USAGE_GUIDE_LIST } from '@/constants';
+import { useFeatureFlag } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import {
   deleteCustomServerGuideDoc,
@@ -123,6 +123,7 @@ const emit = defineEmits<{ 'guide-change': [tabName: string] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const featureFlagStore = useFeatureFlag();
 
 const md = new MarkdownIt({
   linkify: false,
@@ -151,6 +152,13 @@ const activeTab = ref('default');
 const isShowGuideSlider = ref(false);
 
 const serverId = computed(() => route.params.serverId);
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+const setPageMaxH = computed(() => {
+  const offsetH = page === 'market'
+    ? (isShowNoticeAlert.value ? 500 : 464)
+    : (isShowNoticeAlert.value ? 380 : 420);
+  return `calc(100vh - ${offsetH}px)`;
+});
 
 watch(
   () => markdownStr,
