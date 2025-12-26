@@ -27,6 +27,13 @@
       <header class="detail-header">
         <header class="res-name">
           {{ api.name ?? '--' }}
+          <BkTag
+            v-if="basics?.is_deprecated"
+            theme="danger"
+            class="ml-12px font-400"
+          >
+            deprecated
+          </BkTag>
         </header>
         <footer class="res-header-footer">
           <main class="res-desc">
@@ -42,6 +49,13 @@
             </span>
           </aside>
         </footer>
+        <BkAlert
+          v-if="basics?.deprecated_note"
+          theme="warning"
+          class="mt-16px"
+          closable
+          :title="basics?.deprecated_note"
+        />
       </header>
       <main class="detail-main">
         <article class="res-basics">
@@ -111,9 +125,11 @@
 <script setup lang="ts">
 import DocDetailSideNav from './DocDetailSideNav.vue';
 import type {
+  IApiGatewayBasics,
   IComponent,
   INavItem,
   IResource,
+  ISystemBasics,
   TabType,
 } from '../types.d.ts';
 import { copy } from '@/utils';
@@ -125,6 +141,7 @@ import { minBy } from 'lodash-es';
 
 interface IProps {
   api?: IResource & IComponent | null
+  basics?: IApiGatewayBasics & ISystemBasics | null
   navList?: INavItem[]
   markdownHtml?: string
   updatedTime?: string | null
@@ -132,6 +149,7 @@ interface IProps {
 
 const {
   api = null,
+  basics = null,
   navList = [],
   markdownHtml = '',
   updatedTime = null,

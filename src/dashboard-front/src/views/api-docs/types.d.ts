@@ -44,6 +44,8 @@ interface IApiGatewayBasics {
       link: string
     }
   }
+  is_deprecated?: boolean
+  deprecated_note?: string
 }
 
 interface IApiGatewaySdkDoc {

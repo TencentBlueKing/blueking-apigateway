@@ -152,12 +152,20 @@
                               :class="{ active: api.id === curApi?.id }"
                               @click="() => handleApiClick(api.id, api.name)"
                             >
-                              <header
-                                :ref="el => setNameRef(el, api.id)"
-                                v-dompurify-html="getHighlightedHtml(api.name)"
-                                v-bk-tooltips="{ content: api.name, disabled: !overflowMap[api.id]?.name }"
-                                class="res-item-name"
-                              />
+                              <div class="flex items-center">
+                                <header
+                                  :ref="el => setNameRef(el, api.id)"
+                                  v-dompurify-html="getHighlightedHtml(api.name)"
+                                  v-bk-tooltips="{ content: api.name, disabled: !overflowMap[api.id]?.name }"
+                                  class="res-item-name mr-8px"
+                                />
+                                <BkTag
+                                  v-if="curTargetBasics?.is_deprecated"
+                                  theme="danger"
+                                >
+                                  deprecated
+                                </BkTag>
+                              </div>
                               <main
                                 :ref="el => setDescRef(el, api.id)"
                                 v-dompurify-html="getHighlightedHtml(api.description)"
@@ -186,6 +194,7 @@
                   v-if="apiList.length && curApi"
                   v-bkloading="{ loading: isLoading }"
                   :api="curApi"
+                  :basics="curTargetBasics"
                   :nav-list="navList"
                   :markdown-html="curApiMarkdownHtml"
                   :updated-time="updatedTime"
