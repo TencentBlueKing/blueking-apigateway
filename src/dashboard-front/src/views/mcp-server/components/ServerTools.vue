@@ -45,7 +45,7 @@
           <!--  API 列表  -->
           <main
             class="tool-list custom-scroll-bar"
-            :class="[`${page === 'market' ? 'h-[calc(100vh-594px)]' : 'h-[calc(100vh-476px)]'}`]"
+            :style="{ height: setSideMaxH }"
           >
             <template v-if="filteredToolList.length">
               <BkCollapse
@@ -123,7 +123,7 @@
       <template #main>
         <div
           class="main-content-wrap"
-          :class="[`${page === 'market' ? 'h-[calc(100vh-480px)]' : 'h-[calc(100vh-370px)]'}`]"
+          :style="{ height: setMainMaxH }"
         >
           <template v-if="selectedTool">
             <header class="tool-name">
@@ -245,7 +245,7 @@
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useRouteParams } from '@vueuse/router';
-import { useGateway } from '@/stores';
+import { useFeatureFlag, useGateway } from '@/stores';
 import {
   type IMCPServerTool,
   getServer,
@@ -279,6 +279,7 @@ const router = useRouter();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const md = new MarkdownIt({
   linkify: false,
@@ -314,7 +315,6 @@ const filteredToolList = computed(() => {
   const regex = new RegExp(keyword.value, 'i');
   return toolList.value.filter(tool => regex.test(tool.name) || regex.test(tool.description));
 });
-
 // tool 分类列表
 const toolGroupList = computed(() => {
   return filteredToolList.value?.reduce((groupList, tool) => {
@@ -353,17 +353,19 @@ const toolGroupList = computed(() => {
     toolList: typeof toolList.value
   }[]);
 });
-
-// watch(() => route.query, async () => {
-//   if (route.query?.tool_name) {
-//     selectedToolName.value = route.query.tool_name as string;
-//     selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
-//
-//     if (selectedTool.value) {
-//       await getDoc();
-//     }
-//   }
-// }, { deep: true });
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+const setSideMaxH = computed(() => {
+  const offsetH = page === 'market'
+    ? (isShowNoticeAlert.value ? 594 : 554)
+    : (isShowNoticeAlert.value ? 516 : 476);
+  return `calc(100vh - ${offsetH}px)`;
+});
+const setMainMaxH = computed(() => {
+  const offsetH = page === 'market'
+    ? (isShowNoticeAlert.value ? 500 : 540)
+    : (isShowNoticeAlert.value ? 410 : 370);
+  return `calc(100vh - ${offsetH}px)`;
+});
 
 watch(() => server, () => {
   fetchToolList();

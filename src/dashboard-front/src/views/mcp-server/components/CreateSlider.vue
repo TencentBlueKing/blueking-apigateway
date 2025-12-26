@@ -827,8 +827,7 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
   },
 ]);
 const previewUrl = computed(() => {
-  const viewUrl = url.value || envStore.env.BK_API_RESOURCE_URL_TMPL;
-  const prefix = viewUrl
+  const prefix = envStore.env.BK_API_RESOURCE_URL_TMPL
     .replace('{api_name}', 'bk-apigateway')
     .replace('{stage_name}', 'prod')
     .replace('{resource_path}', 'api/v2/mcp-servers');
@@ -1322,10 +1321,7 @@ const handleCopyClick = () => {
 };
 
 const resetSliderData = () => {
-  // 这里编辑状态下关闭会触发校验
-  if (!isEditMode.value) {
-    formData.value = cloneDeep(defaultFormData.value);
-  }
+  formData.value = cloneDeep(defaultFormData.value);
   stageList.value = [];
   resourceList.value = [];
   toolSelections.value = [];
