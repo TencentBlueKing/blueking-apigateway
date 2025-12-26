@@ -69,6 +69,8 @@ interface IApiGatewayDetail extends IApiGateway {
   bk_app_codes: string[]
   related_app_codes: string[]
   links: any
+  is_deprecated: boolean
+  deprecated_note: string
 }
 
 interface IApiGatewayEditParam {

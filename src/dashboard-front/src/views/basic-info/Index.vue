@@ -69,6 +69,12 @@
                 <AgIcon name="minus-circle" />
                 {{ t('已停用') }}
               </BkTag>
+              <BkTag
+                v-if="basicInfoData.status && basicInfoData.is_deprecated"
+                theme="danger"
+              >
+                deprecated
+              </BkTag>
             </div>
           </div>
           <div class="header-info-description">
@@ -123,6 +129,29 @@
                 {{ t('查看开发指引') }}
               </BkButton>
             </template>
+            <BkDropdown
+              :popover-options="{ clickContentAutoHide: true }"
+              placement="right"
+            >
+              <div class="icon-deprecated">
+                <AgIcon
+                  name="more-fill"
+                />
+              </div>
+              <template #content>
+                <BkDropdownMenu>
+                  <BkDropdownItem
+                    v-for="item in dropdownList"
+                    :key="item.value"
+                    :disabled="dropdownItemDisabled(item)"
+                    :ext-cls="{ 'is-disabled': dropdownItemDisabled(item) }"
+                    @click="handleDeprecatedClick(item.value)"
+                  >
+                    {{ item.name }}
+                  </BkDropdownItem>
+                </BkDropdownMenu>
+              </template>
+            </BkDropdown>
           </div>
         </div>
       </section>
@@ -378,7 +407,7 @@
             {{ t('API公钥（指纹）') }}
           </div>
           <div class="detail-item-content">
-            <bk-alert
+            <BkAlert
               theme="warning"
               class="mb-24px"
             >
@@ -402,7 +431,7 @@
                   </a>
                 </div>
               </template>
-            </bk-alert>
+            </BkAlert>
             <div class="detail-item-content-item">
               <div class="label w-0px" />
               <div class="value public-key-content">
@@ -570,6 +599,67 @@
         </BkButton>
       </template>
     </BkDialog>
+
+    <BkDialog
+      width="540"
+      :is-show="deprecatedDialog.isShow"
+      :title="t(`确认标记为弃用？`)"
+      header-align="center"
+      :theme="'primary'"
+      @closed="deprecatedDialog.isShow = false"
+    >
+      <div class="ps-form">
+        <BkAlert
+          class="mb-16px"
+          theme="warning"
+        >
+          <template #title>
+            <div>
+              {{ t('标记为弃用后，API 文档中网关下所有资源会标记为"deprecated"，不推荐用户调用此网关下的任何 API 接口。') }}
+            </div>
+          </template>
+        </BkAlert>
+        <BkForm
+          ref="deprecatedFormRef"
+          :model="deprecatedDialog.formData"
+          form-type="vertical"
+        >
+          <BkFormItem
+            :label="t('弃用说明')"
+            property="deprecated_note"
+            class="form-item-name"
+            required
+          >
+            <BkInput
+              v-model="deprecatedDialog.formData.deprecated_note"
+              :placeholder="t('请输入弃用说明，比如：此网关已迁移到新版本，请使用  xx 网关替代。预计在 xxx 天后正式下线')"
+              type="textarea"
+              :maxlength="100"
+              :minlength="1"
+              :rows="3"
+              show-word-limit
+            />
+          </BkFormItem>
+          <span class="font-size-12px color-#979ba5 top--20px position-relative">
+            {{ t('说明将会展示在 API 文档中，帮助用户理解弃用影响以及如何迁移') }}
+          </span>
+        </BkForm>
+      </div>
+      <template #footer>
+        <BkButton
+          theme="primary"
+          class="mr-8px"
+          :loading="deprecatedDialog.loading"
+          @click="handleDeprecatedConfirm"
+        >
+          {{ t('确定') }}
+        </BkButton>
+        <BkButton @click="deprecatedDialog.isShow = false">
+          {{ t('取消') }}
+        </BkButton>
+      </template>
+    </BkDialog>
+
     <EditAPIDoc
       v-model="isShowApiDoc"
       :data="basicInfoData"
@@ -621,6 +711,7 @@ import {
   useFeatureFlag,
   useGateway,
 } from '@/stores';
+import { usePopInfoBox } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
@@ -642,6 +733,26 @@ const isShowMarkdown = ref(false);
 const markdownHtml = ref('');
 const isShowApiDoc = ref(false);
 const releasingStatus = ref<boolean>(false);
+const dropdownList = ref([
+  {
+    name: t('标记为弃用'),
+    value: 'deprecated',
+  },
+  {
+    name: t('去除弃用标记'),
+    value: 'undeprecated',
+  },
+]);
+
+const dropdownItemDisabled = (item: { value: string }) => {
+  if (item?.value === 'deprecated') {
+    return basicInfoData.value.is_deprecated || !basicInfoData.value.status;
+  }
+  if (item?.value === 'undeprecated') {
+    return !basicInfoData.value.is_deprecated || !basicInfoData.value.status;
+  }
+  return false;
+};
 
 // 当前网关基本信息
 const basicInfoData = ref<BasicInfoType>({
@@ -678,6 +789,13 @@ const delApigwDialog = ref({
   loading: false,
 });
 const statusChanging = ref(false);
+
+const deprecatedFormRef = ref();
+const deprecatedDialog = ref({
+  isShow: false,
+  loading: false,
+  formData: { deprecated_note: '' },
+});
 
 const formRemoveApigw = computed(() => {
   return basicInfoData.value.name === formRemoveConfirmApigw.value;
@@ -819,6 +937,59 @@ const handleChangeApigwStatus = async () => {
   }
   finally {
     statusChanging.value = false;
+  }
+};
+
+const handleDeprecatedClick = (type: string) => {
+  if (!basicInfoData.value.status) return;
+
+  if (type === 'deprecated' && !basicInfoData.value.is_deprecated) {
+    deprecatedDialog.value.isShow = true;
+    deprecatedDialog.value.formData.deprecated_note = '';
+    setTimeout(() => {
+      deprecatedFormRef.value?.clearValidate();
+    }, 0);
+  }
+  else if (type === 'undeprecated' && basicInfoData.value.is_deprecated) {
+    usePopInfoBox({
+      isShow: true,
+      title: t('确认去除弃用标记？'),
+      subTitle: t('去除后，API 文档中的“deprecated”标记将被移除'),
+      cancelText: t('取消'),
+      onConfirm: async () => {
+        basicInfoData.value.is_deprecated = false;
+        basicInfoData.value.deprecated_note = '';
+
+        await patchGateway(apigwId.value, basicInfoData.value);
+        Message({
+          message: t('更新成功'),
+          theme: 'success',
+          width: 'auto',
+        });
+      },
+    });
+  }
+};
+
+const handleDeprecatedConfirm = async () => {
+  try {
+    await deprecatedFormRef.value?.validate();
+    deprecatedDialog.value.loading = true;
+    const { deprecated_note } = deprecatedDialog.value.formData;
+
+    basicInfoData.value.is_deprecated = true;
+    basicInfoData.value.deprecated_note = deprecated_note;
+
+    await patchGateway(apigwId.value, basicInfoData.value);
+    Message({
+      message: t('更新成功'),
+      theme: 'success',
+      width: 'auto',
+    });
+    deprecatedDialog.value.isShow = false;
+  }
+  finally {
+    deprecatedDialog.value.loading = false;
   }
 };
 
@@ -1045,6 +1216,7 @@ onUnmounted(() => {
 
       .header-info-button {
         display: flex;
+        align-items: center;
 
         .btn-line {
           width: 1px;
@@ -1282,17 +1454,30 @@ onUnmounted(() => {
   }
 }
 
-.gateways-name-tip {
-  font-size: 14px;
-  color: #979BA5;
+.icon-deprecated {
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  color: #4D4F56;
+  border-radius: 50%;
+  cursor: pointer;
+  &:hover {
+    background: #EAEBF0;
+  }
 }
 
-.warning-header,
-.warning-main,
-.warning-more {
-  font-size: 12px;
-  color: #4D4F56;
+.bk-dropdown-item.is-disabled {
+  cursor: not-allowed;
+  color: #dcdee5 !important;
 }
+
+.form-item-name {
+  :deep(.bk-form-error) {
+    position: relative;
+  }
+}
+
 .warning-main {
   margin: 24px 0px;
 }
