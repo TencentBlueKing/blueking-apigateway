@@ -68,6 +68,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-audit1-fill:before {
 	content: "\e1af";
 }
+.icon-ag-time:before {
+	content: "\e1ed";
+}
 .icon-ag-danger-fill:before {
 	content: "\e181";
 }
@@ -350,6 +353,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-doc-2:before {
 	content: "\e15b";
 }
+.icon-ag-nocomment:before {
+	content: "\e1ec";
+}
 .icon-ag-edit-line:before {
 	content: "\e158";
 }
@@ -412,6 +418,12 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-notification:before {
 	content: "\e17f";
+}
+.icon-ag-manual:before {
+	content: "\e1ee";
+}
+.icon-ag-manual2:before {
+	content: "\e1ef";
 }
 .icon-ag-chayiduibi-shixin:before {
 	content: "\e16e";

@@ -11,11 +11,18 @@
         'has-max-height': dynamicMaxHeight > 0 && !isExpanded
       }"
     >
-      <slot name="description" />
+      <section
+        v-bk-tooltips="{
+          content: slots?.description,
+          disabled: !(isShowExpand && !showExpandIcon),
+          extCls: 'max-w-480px'
+        }"
+      >
+        <slot name="description" />
+      </section>
     </div>
-
     <BkButton
-      v-if="isShowExpand"
+      v-if="displayExpand"
       theme="primary"
       text
       class="text-12px toggle-btn"
@@ -37,22 +44,22 @@ interface IProps {
   expandText?: string // 展开按钮文字
   collapseText?: string // 收起按钮文字
   dynamicMaxHeight?: number // 动态最大高度（优先级高于maxLines）
+  showExpandIcon?: boolean // 显示展开/收缩按钮
 }
 
 const {
   maxLines = 3,
+  dynamicMaxHeight = 0,
   expandText = '展开',
   collapseText = '收起',
-  dynamicMaxHeight = 0,
+  showExpandIcon = true,
 } = defineProps<IProps>();
+
+const slots = useSlots();
 
 const contentRef = ref<HTMLElement | null>(null);
 const isExpanded = ref(false);
 const isShowExpand = ref(false);
-
-const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value;
-};
 
 const descriptionWrapperStyle = computed(() => {
   const styleList = [
@@ -64,6 +71,12 @@ const descriptionWrapperStyle = computed(() => {
   }
   return styleList.join('; ');
 });
+
+const displayExpand = computed(() => isShowExpand.value && showExpandIcon);
+
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value;
+};
 
 // 判断是否显示展开按钮
 const checkOverflow = () => {
