@@ -2149,5 +2149,17 @@
   "此操作存在风险": "This operation carries risks",
   "切换连接方式后，客户端需要基于新协议重新建立连接": "After switching the connection method, the client needs to re-establish the connection based on the new protocol",
   "搜索中英文名、标签、内容、修改人": "Search for Chinese and English names, tags, content, and modifier",
-  "以下 Prompt 仅在授权空间内可用，添加到 MCP 后，所有经MCP 授权的应用均可访问该 Prompt 信息": "The following prompt is only available within the authorized space. After being added to MCP, all MCP authorized applications can access the prompt information"
+  "以下 Prompt 仅在授权空间内可用，添加到 MCP 后，所有经MCP 授权的应用均可访问该 Prompt 信息": "The following prompt is only available within the authorized space. After being added to MCP, all MCP authorized applications can access the prompt information",
+  "发布于": "Published on",
+  "刚刚": "Just now",
+  "1分钟前": "1 minute ago",
+  "1小时前": "1 hour ago",
+  "1天前": "1 day ago",
+  "1个月前": "1 month ago",
+  "1年前": "1 year ago",
+  "{n}分钟前": "{n} minutes ago",
+  "{n}小时前": "{n} hours ago",
+  "{n}天前": "{n} days ago",
+  "{n}个月前": "{n} months ago",
+  "{n}年前": "{n} years ago"
 }

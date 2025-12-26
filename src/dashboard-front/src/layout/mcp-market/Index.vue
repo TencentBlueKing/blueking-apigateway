@@ -46,107 +46,17 @@
           <span>{{ t('使用指引') }}</span>
           </div> -->
       </div>
-      <div
-        v-if="mcpList?.length"
-        class="card-list"
-      >
-        <div
-          v-for="item in mcpList"
-          :key="item.id"
-          class="card"
-          @click="() => goDetails(item.id)"
-        >
-          <div class="pt-18px pb-16px flex items-baseline header">
-            <div class="max-w-[calc(100%-115px)] color-#313238 font-bold mr-16px title">
-              <BkOverflowTitle
-                type="tips"
-                class="lh-22px mb-12px text-18px"
-              >
-                {{ item.title }}
-              </BkOverflowTitle>
-              <BkOverflowTitle
-                type="tips"
-                class="text-14px"
-              >
-                {{ item.name }}
-              </BkOverflowTitle>
-            </div>
-            <BkTag
-              v-if="item.gateway.is_official"
-              theme="success"
-              class="mr8"
-            >
-              {{ t('官方') }}
-            </BkTag>
-            <BkTag theme="info">
-              {{ item.stage?.name }}
-            </BkTag>
-          </div>
-          <div class="content">
-            <div class="info-item">
-              <div class="label">
-                {{ t('访问地址') }}：
-              </div>
-              <div class="value flex-row align-items-center">
-                <BkOverflowTitle style="width: calc(100% - 28px)">
-                  {{ item.url }}
-                </BkOverflowTitle>
-                <div
-                  class="copy-wrapper"
-                  @click.stop="() => handleCopy(item.url)"
-                >
-                  <AgIcon
-                    name="copy"
-                    size="14"
-                    class="icon"
-                  />
-                </div>
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('工具数量') }}：
-              </div>
-              <div class="value">
-                {{ item.tools_count }}
-              </div>
-            </div>
-            <div
-              v-if="isEnablePrompt"
-              class="info-item"
-            >
-              <div class="label">
-                {{ t('Prompt 数量') }}：
-              </div>
-              <div class="value">
-                {{ item.prompts_count }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('MCP描述') }}：
-              </div>
-              <div class="value">
-                {{ item.description }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="label">
-                {{ t('MCP标签') }}：
-              </div>
-              <div class="value">
-                <BkTag
-                  v-for="label in item.labels"
-                  :key="label"
-                  class="mr8"
-                >
-                  {{ label }}
-                </BkTag>
-              </div>
-            </div>
-          </div>
+      <template v-if="mcpList?.length">
+        <div class="flex flex-wrap justify-start card-list">
+          <ServerItemCard
+            v-for="market of mcpList"
+            :key="market.id"
+            :server="market"
+            :show-actions="false"
+            @click="() => handleCardClick(market.id)"
+          />
         </div>
-      </div>
+      </template>
       <div
         v-else
         class="empty-wrapper"
@@ -164,17 +74,14 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
 import { type IMarketplaceItem, getMcpMarketplace } from '@/services/source/mcp-market';
-import { copy } from '@/utils';
-import { useFeatureFlag } from '@/stores';
 import mcpBanner from '@/images/mcp-banner.jpg';
 import mcpBannerEn from '@/images/mcp-banner-en.jpg';
 import TableEmpty from '@/components/table-empty/Index.vue';
+import ServerItemCard from '@/components/ag-mcp-card/Index.vue';
 
 const { t, locale } = useI18n();
 const router = useRouter();
-const featureFlagStore = useFeatureFlag();
 
 const search = ref<string>('');
 const isPublic = ref<boolean>(false);
@@ -186,8 +93,6 @@ const tableEmptyConf = ref<{
   emptyType: '',
   isAbnormal: false,
 });
-
-const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 
 const bannerImg = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -225,11 +130,7 @@ const handleInput = () => {
   }
 };
 
-const handleCopy = (str: string) => {
-  copy(str);
-};
-
-const goDetails = (id: number) => {
+const handleCardClick = (id: number) => {
   router.push({
     name: 'McpMarketDetails',
     params: { id },
@@ -280,53 +181,15 @@ const handleClearFilterKey = async () => {
     }
   }
 
-  .card-list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+  :deep(.card-list) {
     box-sizing: border-box;
-    .card {
-      padding: 0 24px;
-      border-radius: 2px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
-      box-sizing: border-box;
-      cursor: pointer;
 
-      .header {
-        border-bottom: 1px solid #EAEBF0;
-      }
+    .ag-mcp-card-wrapper {
+      padding: 20px;
 
-      .content {
-        padding: 16px 0 4px;
-
-        .info-item {
-          display: flex;
-          align-items: center;
-          margin-bottom: 12px;
-          font-size: 12px;
-          line-height: 20px;
-
-          .label {
-            font-size: 14px;
-            color: #4D4F56;
-          }
-          .value {
-            flex: 1;
-            font-size: 14px;
-            color: #313238;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            .copy-wrapper {
-              width: 28px;
-              text-align: right;
-            }
-            .icon {
-              color: #3A84FF;
-            }
-          }
-        }
+      .main-content {
+        right: 20px;
+        left: 20px;
       }
     }
   }
@@ -342,7 +205,8 @@ const handleClearFilterKey = async () => {
   }
   .card-list {
     gap: 20px 25px;
-    .card {
+
+    .ag-mcp-card-wrapper {
       width: 410px;
     }
   }
@@ -354,7 +218,8 @@ const handleClearFilterKey = async () => {
   }
   .card-list {
     gap: 20px 26.67px;
-    .card {
+
+    .ag-mcp-card-wrapper {
       width: 380px;
     }
   }

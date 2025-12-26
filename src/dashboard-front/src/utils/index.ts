@@ -35,3 +35,4 @@ export * from './getMethodsTheme';
 export * from './blobDownload';
 export * from './getStrFromFile';
 export * from './getLoginURL';
+export * from './dayUtc';
