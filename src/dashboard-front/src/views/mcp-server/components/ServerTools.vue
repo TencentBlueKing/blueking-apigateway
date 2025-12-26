@@ -356,13 +356,13 @@ const toolGroupList = computed(() => {
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setSideMaxH = computed(() => {
   const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 594 : 554)
+    ? (isShowNoticeAlert.value ? 640 : 600)
     : (isShowNoticeAlert.value ? 516 : 476);
   return `calc(100vh - ${offsetH}px)`;
 });
 const setMainMaxH = computed(() => {
   const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 500 : 540)
+    ? (isShowNoticeAlert.value ? 540 : 500)
     : (isShowNoticeAlert.value ? 410 : 370);
   return `calc(100vh - ${offsetH}px)`;
 });
