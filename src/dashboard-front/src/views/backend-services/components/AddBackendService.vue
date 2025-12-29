@@ -404,12 +404,14 @@
 </template>
 
 <script lang="ts" setup>
-import { Message } from 'bkui-vue';
 import { cloneDeep, isEqual } from 'lodash-es';
+import { Form, Input, Message } from 'bkui-vue';
+import { AngleUpFill, Success } from 'bkui-lib/icon';
 import {
   useEnv,
   useGateway,
 } from '@/stores';
+import type { IFormMethod } from '@/types/common';
 import {
   type IBackendServicesConfig,
   createBackendService,
@@ -417,7 +419,6 @@ import {
   updateBackendService,
 } from '@/services/source/backendServices';
 import { type IStageListItem, getStageList } from '@/services/source/stage';
-import { AngleUpFill, Success } from 'bkui-lib/icon';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 
@@ -458,8 +459,8 @@ const stageConfigRef = ref([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
 const finalConfigs = ref([]);
-const nameRef = ref<InstanceType<typeof BkInput>>(null);
-const baseInfoEl = useTemplateRef<InstanceType<typeof BkForm> & { validate: () => void }>(
+const nameRef = ref<InstanceType<typeof Input>>(null);
+const baseInfoEl = useTemplateRef<InstanceType<typeof Form> & IFormMethod>(
   'baseInfoRef',
 );
 let publishDialog = reactive({
@@ -626,6 +627,7 @@ const handleDeleteServiceAddress = (name: string, index: number) => {
 const handleCancel = () => {
   sliderConfig.isShow = false;
   stageConfigRef.value = [];
+  baseInfoEl.value?.clearValidate();
 };
 
 const handleConfirm = async () => {
