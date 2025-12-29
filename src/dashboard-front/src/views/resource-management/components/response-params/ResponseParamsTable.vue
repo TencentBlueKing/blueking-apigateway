@@ -423,6 +423,15 @@ const genSchema = (row: ITableRow) => {
     if (row.properties?.length === 1 && row.properties[0].type === 'object') {
       schema.items = genSchema(row.properties[0]);
     }
+    else if (row.properties?.length) {
+      schema.items = {
+        properties: {},
+        type: 'object',
+      };
+      row.properties.forEach((item) => {
+        Object.assign(schema.items!.properties, { [item.name]: genSchema(item) });
+      });
+    }
   }
   // 处理 type 为其他值的情况
   else if (row.properties?.length) {
