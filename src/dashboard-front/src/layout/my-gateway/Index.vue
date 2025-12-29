@@ -387,6 +387,7 @@ const needBkuiTablePage = computed(() => {
     'AuditLog',
     'MonitorAlarmStrategy',
     'MonitorAlarmHistory',
+    'ResourceVersion',
   ];
 });
 

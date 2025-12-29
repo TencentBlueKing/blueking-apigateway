@@ -48,9 +48,11 @@
         <AgTable
           ref="tableRef"
           v-model:table-data="tableData"
-          show-settings
           resizable
+          show-settings
           show-selection
+          :show-first-full-row="selections.length > 0"
+          :max-limit-config="{ allocatedHeight: 267, mode: 'tdesign'}"
           :api-method="getTableData"
           :columns="columns"
           @clear-filter="handleClearFilterKey"
@@ -139,7 +141,6 @@ interface IProps { version?: string }
 const { version = '' } = defineProps<IProps>();
 
 const { t } = useI18n();
-const route = useRoute();
 const resourceVersionStore = useResourceVersion();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
@@ -191,7 +192,7 @@ const diffSourceId = ref();
 const diffTargetId = ref();
 const resourceDetailShow = ref(false);
 
-const apigwId = computed(() => +route.params.id);
+const apigwId = computed(() => gatewayStore.apigwId);
 
 const columns = computed<PrimaryTableProps['columns']>(() => [
   {
@@ -327,12 +328,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
 watch(
   selections,
   () => {
-    if (selections.value.length === 1 || selections.value.length === 2) {
-      diffDisabled.value = false;
-    }
-    else {
-      diffDisabled.value = true;
-    }
+    diffDisabled.value = ![1, 2].includes(selections.value.length);
   },
   { deep: true },
 );
