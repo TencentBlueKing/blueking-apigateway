@@ -33,25 +33,24 @@ const SUPPORTED_LANGS = ['zh-cn', 'en'] as const;
 type ValidLang = (typeof SUPPORTED_LANGS)[number];
 
 interface RelativeTimeConfig {
-  s?: string | undefined
+  s?: string
   ss?: string | ((num: number) => string)
-  m?: string | undefined
+  m?: string
   mm?: string | ((num: number) => string)
-  h?: string | undefined
+  h?: string
   hh?: string | ((num: number) => string)
-  d?: string | undefined
+  d?: string
   dd?: string | ((num: number) => string)
-  M?: string | undefined
+  M?: string
   MM?: string | ((num: number) => string)
-  y?: string | undefined
+  y?: string
   yy?: string | ((num: number) => string)
-  future?: string | undefined
-  past?: string | undefined
+  future?: string
+  past?: string
 }
 
 // 默认相对时间配置
 const defaultRelativeTime = {
-  s: '刚刚',
   ss: '%d 秒前',
   m: t('1分钟前'),
   mm: '%d 分钟前',
@@ -85,7 +84,7 @@ export function setupDayjsLocale(lang: string): void {
   const customRelativeTime: Partial<RelativeTimeConfig> = {
     ...relativeTimeConfig,
     ...defaultRelativeTime,
-    s: t('刚刚') || defaultRelativeTime.s,
+    s: t('刚刚'),
     ss: (num: number) => (t('几秒前', { n: num }) || defaultRelativeTime.ss).replace(/\{n\}|\%d/g, num.toString()),
     mm: (num: number) => (t('{n}分钟前', { n: num }) || defaultRelativeTime.mm).replace(/\{n\}|\%d/g, num.toString()),
     hh: (num: number) => (t('{n}小时前', { n: num }) || defaultRelativeTime.hh).replace(/\{n\}|\%d/g, num.toString()),
