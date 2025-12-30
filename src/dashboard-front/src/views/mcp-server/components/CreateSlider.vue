@@ -113,10 +113,10 @@
                 v-model="formData.description"
                 type="textarea"
                 :minlength="10"
-                :maxlength="512"
+                :maxlength="2048"
                 :rows="4"
                 :disabled="noValidStage"
-                :placeholder="t('请输入10-512个字符的描述')"
+                :placeholder="t('请输入10-2048个字符的描述')"
                 clearable
               />
             </BkFormItem>
