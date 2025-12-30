@@ -30,7 +30,7 @@
       </BkCheckbox>
     </div>
     <div
-      v-if="!readonly"
+      v-if="!readonly && !disabled"
       class="text-right mb-6px"
     >
       <IconButton
