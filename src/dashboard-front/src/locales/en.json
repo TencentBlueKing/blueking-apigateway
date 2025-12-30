@@ -2161,5 +2161,7 @@
   "{n}小时前": "{n} hours ago",
   "{n}天前": "{n} days ago",
   "{n}个月前": "{n} months ago",
-  "{n}年前": "{n} years ago"
+  "{n}年前": "{n} years ago",
+  "请选择合法的 JSON": "Invalid Schema",
+  "通过 JSON 生成": "Generate by JSON"
 }
