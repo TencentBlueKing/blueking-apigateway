@@ -68,6 +68,19 @@
         </template>
         <template #content>
           <div class="response-table-wrapper">
+            <div
+              v-if="!readonly"
+              class="text-right mb-6px"
+            >
+              <IconButton
+                text
+                theme="primary"
+                icon="upload"
+                @click="handleImportSchema"
+              >
+                {{ t('通过 JSON 生成') }}
+              </IconButton>
+            </div>
             <table
               v-for="row in tableData"
               :key="row.id"
@@ -214,6 +227,8 @@ import {
 import { Message } from 'bkui-vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ResponseParamsSubTable from './ResponseParamsSubTable.vue';
+import { useFileSystemAccess } from '@vueuse/core';
+import toJsonSchema from 'to-json-schema';
 
 interface ITableRow {
   id: string
@@ -246,6 +261,14 @@ const emit = defineEmits<{
   'delete': []
   'change-code': [code: string]
 }>();
+
+const { data: importedJsonText, open } = useFileSystemAccess({
+  dataType: 'Text',
+  types: [{
+    description: 'text',
+    accept: { 'text/plain': ['.txt', '.json'] },
+  }],
+});
 
 const { t } = useI18n();
 
@@ -326,30 +349,34 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   return body;
 };
 
-watch(() => response, () => {
-  if (response) {
-    tableData.value = [];
-    const { body } = response;
-    const row = {
-      id: uniqueId(),
-      name: t('根节点'),
-      type: 'object' as JSONSchema7TypeName,
-      description: body.description ?? '',
-    };
-    // 响应没有响应体的情况（不会有 content 字段）
-    if (body.content?.['application/json']?.schema) {
-      const { type } = body.content['application/json'].schema;
-      if (type === 'object') {
-        const rowProperties = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
-        if (rowProperties) {
-          Object.assign(row, { properties: rowProperties });
-        }
+const initTableData = (schema?: Record<string, any>) => {
+  tableData.value = [];
+  const { body } = response;
+  const row = {
+    id: uniqueId(),
+    name: t('根节点'),
+    type: 'object' as JSONSchema7TypeName,
+    description: body.description ?? '',
+  };
+  // 响应没有响应体的情况（不会有 content 字段）
+  if (body.content?.['application/json']?.schema) {
+    const { type } = body.content['application/json'].schema;
+    if (type === 'object') {
+      const rowProperties = convertSchemaToBodyRow(schema || body?.content?.['application/json']?.schema);
+      if (rowProperties) {
+        Object.assign(row, { properties: rowProperties });
       }
     }
-    tableData.value.push(row);
-    nextTick(() => {
-      tableRef.value?.setAllRowExpand(true);
-    });
+  }
+  tableData.value.push(row);
+  nextTick(() => {
+    tableRef.value?.setAllRowExpand(true);
+  });
+};
+
+watch(() => response, () => {
+  if (response) {
+    initTableData();
   }
 }, { immediate: true });
 
@@ -484,6 +511,29 @@ const handleCodeInputDone = () => {
 
 const handleDelete = () => {
   emit('delete');
+};
+
+const handleImportSchema = async () => {
+  await open();
+  try {
+    if (importedJsonText.value) {
+      const jsonObject = JSON.parse(importedJsonText.value);
+      const schema = toJsonSchema(jsonObject);
+      initTableData(schema);
+    }
+    else {
+      Message({
+        theme: 'warning',
+        message: t('请选择合法的 JSON'),
+      });
+    }
+  }
+  catch (e) {
+    Message({
+      theme: 'error',
+      message: e,
+    });
+  }
 };
 
 onMounted(() => {
