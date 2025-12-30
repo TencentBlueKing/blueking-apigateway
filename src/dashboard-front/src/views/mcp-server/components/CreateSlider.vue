@@ -1503,7 +1503,6 @@ defineExpose({
             margin-bottom: 4px;
             background-color: #ffffff;
             border-radius: 2px;
-            // box-shadow: 0 1px 2px 0 #0000001f;
             justify-content: space-between;
             align-items: center;
 
