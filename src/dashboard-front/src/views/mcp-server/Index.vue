@@ -18,28 +18,33 @@
 
 <template>
   <div class="page-wrapper">
-    <div class="server-list">
-      <ServerItemCard
-        v-for="server in serverList"
-        :key="server.id"
-        :server="server"
-        @delete="handleDelete"
-        @edit="handleEdit"
-        @enable="handleEnable"
-        @suspend="handleSuspend"
-        @click="() => handleCardClick(server.id)"
-      />
-      <!-- 添加按钮卡片 -->
-      <div
-        class="flex items-center justify-center add-server-card"
-        @click="handleAddServerClick"
-      >
-        <AgIcon
-          name="add-small"
-          size="40"
+    <BkLoading
+      :loading="isLoading"
+      :z-index="99"
+    >
+      <div class="server-list">
+        <ServerItemCard
+          v-for="server in serverList"
+          :key="server.id"
+          :server="server"
+          @delete="handleDelete"
+          @edit="handleEdit"
+          @enable="handleEnable"
+          @suspend="handleSuspend"
+          @click="() => handleCardClick(server.id)"
         />
+        <!-- 添加按钮卡片 -->
+        <div
+          class="flex items-center justify-center add-server-card"
+          @click="handleAddServerClick"
+        >
+          <AgIcon
+            name="add-small"
+            size="40"
+          />
+        </div>
       </div>
-    </div>
+    </BkLoading>
     <CreateSlider
       ref="createSliderRef"
       :server-id="editingServerId"
@@ -68,13 +73,19 @@ const { gatewayId = 0 } = defineProps<IProps>();
 const { t } = useI18n();
 const router = useRouter();
 
-const createSliderRef = ref();
+const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverList = ref<MCPServerType[]>([]);
-const editingServerId = ref<number>();
+const editingServerId = ref();
+const isLoading = ref(true);
 
 const fetchServerList = async () => {
-  const response = await getServers(gatewayId);
-  serverList.value = response?.results || [];
+  try {
+    const response = await getServers(gatewayId);
+    serverList.value = response?.results || [];
+  }
+  finally {
+    isLoading.value = false;
+  }
 };
 
 const handleAddServerClick = () => {
