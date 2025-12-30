@@ -46,6 +46,7 @@
           resizable
           :api-method="getTableData"
           :columns="columns"
+          :max-limit-config="{ allocatedHeight: 267, mode: 'tdesign'}"
           @clear-filter="handleClearFilterKey"
         />
       </div>

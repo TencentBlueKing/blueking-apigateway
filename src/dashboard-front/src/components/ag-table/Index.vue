@@ -370,8 +370,10 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
     const results = response?.results ?? [];
     paramsData.value = { ...params.value?.[0] };
     pagination.value!.total = response?.count ?? 0;
-    tableData.value = [...results];
-    getSelectionData();
+    tableData.value = cloneDeep(results);
+    setTimeout(() => {
+      getSelectionData();
+    });
     // 处理接口调用成功后抛出事件，为每个页面提供单独业务处理
     emit('request-done');
   },
@@ -445,10 +447,11 @@ const renderSelectionData = (selectList?: any[]) => {
   const checkTableData = selectList || selectionsRowKeys.value;
   if (checkTableData?.length > 0 && tableData.value?.length > 0) {
     const selectionTable = tableData.value.filter(item => !disabledCheckSelection?.(item));
-    const checkedIds = tableData.value
+    const checkedIds = selectionTable
       .filter(item => checkTableData.includes(item[tableRowKey]))
       .map(check => check[tableRowKey]);
-    isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
+    isAllSelection.value
+      = selectionTable.filter(item => checkedIds.includes(item[tableRowKey])).length === selectionTable.length;
     tableData.value.forEach((item) => {
       if (!disabledCheckSelection?.(item)) {
         item.isCustomCheck = checkedIds.includes(item[tableRowKey]);
