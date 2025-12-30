@@ -2197,5 +2197,8 @@
   "{n}小时前": "{n} hours ago",
   "{n}天前": "{n} days ago",
   "{n}个月前": "{n} months ago",
-  "{n}年前": "{n} years ago"
+  "{n}年前": "{n} years ago",
+  "请导入合法的 Schema": "Invalid Schema",
+  "导入 Schema": "Import Schema",
+  "导入 Request Body Schema": "Import Request Body Schema"
 }
