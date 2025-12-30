@@ -2197,7 +2197,6 @@
   "{n}天前": "{n} 天前",
   "{n}个月前": "{n} 个月前",
   "{n}年前": "{n} 年前",
-  "请导入合法的 Schema": "请导入合法的 Schema",
-  "导入 Schema": "导入 Schema",
-  "导入 Request Body Schema": "导入 Request Body Schema"
+  "请选择合法的 JSON": "请选择合法的 JSON",
+  "通过 JSON 生成": "通过 JSON 生成"
 }

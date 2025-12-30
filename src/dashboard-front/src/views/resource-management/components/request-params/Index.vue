@@ -39,7 +39,7 @@
         icon="upload"
         @click="handleImportSchema"
       >
-        {{ t('导入 Request Body Schema') }}
+        {{ t('通过 JSON 生成') }}
       </IconButton>
     </div>
     <BkTable
@@ -256,6 +256,7 @@ import {
   type JSONSchema7TypeName,
 } from 'json-schema';
 import { useFileSystemAccess } from '@vueuse/core';
+import toJsonSchema from 'to-json-schema';
 
 interface ITableRow {
   id: string
@@ -309,7 +310,7 @@ const {
   readonly = false,
 } = defineProps<IProp>();
 
-const { data: importedSchemaText, open } = useFileSystemAccess({
+const { data: importedJsonText, open } = useFileSystemAccess({
   dataType: 'Text',
   types: [{
     description: 'text',
@@ -652,8 +653,9 @@ const handleTableMounted = () => {
 const handleImportSchema = async () => {
   await open();
   try {
-    if (importedSchemaText.value) {
-      const schema = JSON.parse(importedSchemaText.value);
+    if (importedJsonText.value) {
+      const jsonObject = JSON.parse(importedJsonText.value);
+      const schema = toJsonSchema(jsonObject);
 
       const row = {
         id: uniqueId(),
@@ -691,7 +693,7 @@ const handleImportSchema = async () => {
     else {
       Message({
         theme: 'warning',
-        message: t('请导入合法的 Schema'),
+        message: t('请选择合法的 JSON'),
       });
     }
   }
