@@ -29,6 +29,19 @@
         {{ t('该资源无请求参数') }}
       </BkCheckbox>
     </div>
+    <div
+      v-if="!readonly"
+      class="text-right mb-6px"
+    >
+      <IconButton
+        text
+        theme="primary"
+        icon="upload"
+        @click="handleImportSchema"
+      >
+        {{ t('导入 Request Body Schema') }}
+      </IconButton>
+    </div>
     <BkTable
       v-if="!disabled"
       ref="tableRef"
@@ -242,6 +255,7 @@ import {
   type JSONSchema7,
   type JSONSchema7TypeName,
 } from 'json-schema';
+import { useFileSystemAccess } from '@vueuse/core';
 
 interface ITableRow {
   id: string
@@ -295,7 +309,16 @@ const {
   readonly = false,
 } = defineProps<IProp>();
 
+const { data: importedSchemaText, open } = useFileSystemAccess({
+  dataType: 'Text',
+  types: [{
+    description: 'text',
+    accept: { 'text/plain': ['.txt', '.json'] },
+  }],
+});
+
 const { t } = useI18n();
+
 const tableRef = ref();
 
 const tableData = ref<ITableRow[]>([
@@ -624,6 +647,60 @@ const isTypeDisabled = (paramIn: string, type: string) => {
 
 const handleTableMounted = () => {
   tableRef.value?.setAllRowExpand(true);
+};
+
+const handleImportSchema = async () => {
+  await open();
+  try {
+    if (importedSchemaText.value) {
+      const schema = JSON.parse(importedSchemaText.value);
+
+      const row = {
+        id: uniqueId(),
+        name: t('根节点'),
+        in: 'body',
+        type: 'object' as JSONSchema7TypeName,
+        required: false,
+        description: '',
+      };
+
+      // 是否已存在 request body 表格行
+      const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
+      if (currentBodyRowIndex > -1) {
+        Object.assign(row, tableData.value[currentBodyRowIndex]);
+      }
+
+      const subBody = convertSchemaToBodyRow(schema);
+      if (subBody) {
+        Object.assign(row, { body: subBody });
+      }
+
+      // 替换行
+      if (currentBodyRowIndex > -1) {
+        tableData.value[currentBodyRowIndex] = row;
+      }
+      // 插入新行
+      else {
+        tableData.value.push(row);
+      }
+
+      nextTick(() => {
+        tableRef.value?.setAllRowExpand(true);
+      });
+    }
+    else {
+      Message({
+        theme: 'warning',
+        message: t('请导入合法的 Schema'),
+      });
+    }
+  }
+  catch (e) {
+    Message({
+      theme: 'error',
+      message: e,
+    });
+  }
 };
 
 onMounted(() => {
