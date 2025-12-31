@@ -49,6 +49,8 @@ const (
 	BkAppCode           CtxKey = "bk_app_code"
 	BkUsername          CtxKey = "bk_username"
 	BkGatewayInnerJWT   CtxKey = "bk_api_inner_jwt"
+	BkGatewayJWTClaims  CtxKey = "bk_gateway_jwt_claims"  // 存储原始 JWT claims，用于延迟签发 inner JWT
+	BkGatewayPrivateKey CtxKey = "bk_gateway_private_key" // 存储私钥，用于延迟签发 inner JWT
 	MCPServerID         CtxKey = "mcp_server_id"
 	MCPServerName       CtxKey = "mcp_server_name"
 	GatewayID           CtxKey = "gateway_id"

@@ -68,6 +68,8 @@ var (
 )
 
 // BkGatewayJWTAuthMiddleware is the middleware to verify the bk gateway jwt
+// 优化：移除 JWT 签发逻辑，改为延迟签发（lazy signing）
+// JWT 签发只在调用外部 API 的 tool handler 中进行，其他 MCP 操作（如 tools/list, prompts/get）不需要签发
 func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		signedToken := c.GetHeader(constant.BkGatewayJWTHeaderKey)
@@ -103,12 +105,17 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 		}
 		util.SetBkAppCode(c, claims.App.AppCode)
 		util.SetBkUsername(c, claims.User.Username)
-		err = SignBkInnerJWTToken(c, claims, []byte(jwtInfo.PrivateKey))
-		if err != nil {
-			util.SystemErrorJSONResponse(c, err)
-			c.Abort()
-			return
+		// 将 claims 转换为延迟签发结构体，保存到 context
+		// 只有在调用外部 API 的 tool handler 中才会签发 JWT
+		lazySigningClaims := &util.JWTClaimsForLazySigning{
+			AppCode:      claims.App.AppCode,
+			AppVerified:  claims.App.Verified,
+			Username:     claims.User.Username,
+			UserVerified: claims.User.Verified,
+			Issuer:       claims.Issuer,
+			Audience:     claims.Audience,
 		}
+		util.SetJWTClaimsForLazySigning(c, lazySigningClaims, []byte(jwtInfo.PrivateKey))
 		c.Next()
 	}
 }

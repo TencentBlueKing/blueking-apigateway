@@ -18,17 +18,7 @@
 
 package middleware
 
-import "bytes"
-
 var (
 	VerifyJWTToken  = verifyJWTToken
 	ParseBKJWTToken = parseBKJWTToken
 )
-
-type BodyLogWriterWrapper struct{ body *bytes.Buffer }
-
-func (w *BodyLogWriterWrapper) Body() *bytes.Buffer { return w.body }
-
-func NewBodyLogWriter(buf *bytes.Buffer) *BodyLogWriterWrapper {
-	return &BodyLogWriterWrapper{body: buf}
-}

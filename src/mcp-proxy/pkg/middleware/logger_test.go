@@ -126,14 +126,4 @@ var _ = Describe("Logger", func() {
 			Expect(mw).NotTo(BeNil())
 		})
 	})
-
-	Describe("bodyLogWriter", func() {
-		It("should capture response body", func() {
-			var buf bytes.Buffer
-			blw := middleware.NewBodyLogWriter(&buf)
-
-			blw.Body().WriteString("test response")
-			Expect(blw.Body().String()).To(Equal("test response"))
-		})
-	})
 })

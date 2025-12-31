@@ -34,3 +34,5 @@ bin
 bk-apigateway-mcp-proxy
 .coverage.cov
 config.yaml
+*.pprof
+*.out
