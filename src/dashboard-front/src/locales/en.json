@@ -2198,5 +2198,6 @@
   "{n}个月前": "{n} months ago",
   "{n}年前": "{n} years ago",
   "请选择合法的 JSON": "Invalid Schema",
-  "通过 JSON 生成": "Generate by JSON"
+  "通过 JSON 生成": "Generate by JSON",
+  "共找到 {0} 个结果": "Found {0} result(s)"
 }

@@ -46,6 +46,17 @@
           <span>{{ t('使用指引') }}</span>
           </div> -->
       </div>
+      <div
+        v-if="search"
+        class="text-12px mb-16px"
+      >
+        <I18nT
+          keypath="共找到 {0} 个结果"
+          tag="span"
+        >
+          <strong class="color-#3A84FF">{{ mcpAllList.length }}</strong>
+        </I18nT>
+      </div>
       <template v-if="mcpList?.length">
         <div class="flex flex-wrap justify-start card-list">
           <ServerItemCard
@@ -56,17 +67,6 @@
             @click="() => handleCardClick(market.id)"
           />
         </div>
-        <BkPagination
-          v-model="pagination.current"
-          class="mt-24px"
-          align="center"
-          :count="pagination.count"
-          :limit="pagination.limit"
-          :limit-list="[10, 12, 20, 50, 100]"
-          size="small"
-          @change="handlePaginationChange"
-          @limit-change="handlePaginationLimitChange"
-        />
       </template>
       <div
         v-else
@@ -81,6 +81,11 @@
         />
       </div>
     </div>
+    <!-- 触底翻页触发器 -->
+    <div
+      v-intersection-observer="onIntersectionObserver"
+      class="h-40px"
+    />
   </div>
 </template>
 
@@ -90,17 +95,15 @@ import mcpBanner from '@/images/mcp-banner.jpg';
 import mcpBannerEn from '@/images/mcp-banner-en.jpg';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import ServerItemCard from '@/components/ag-mcp-card/Index.vue';
+import { vIntersectionObserver } from '@vueuse/components';
 
 const { t, locale } = useI18n();
 const router = useRouter();
 
-const search = ref<string>('');
-const isPublic = ref<boolean>(false);
+const search = ref('');
+const isPublic = ref(false);
 const mcpAllList = ref<IMarketplaceItem[]>([]);
-const tableEmptyConf = ref<{
-  emptyType: string
-  isAbnormal: boolean
-}>({
+const tableEmptyConf = ref({
   emptyType: '',
   isAbnormal: false,
 });
@@ -109,6 +112,7 @@ const pagination = ref({
   current: 1,
   limit: 12,
   count: 0,
+  hasNoMore: false,
 });
 
 const bannerImg = computed(() => {
@@ -130,16 +134,29 @@ const mcpList = computed(() => {
 });
 
 const getList = async () => {
+  if (pagination.value.hasNoMore) {
+    return;
+  }
   const res = await getMcpMarketplace({
     limit: pagination.value.limit,
     offset: pagination.value.limit * (pagination.value.current - 1),
     keyword: search.value,
   });
 
+  if (pagination.value.current === 1) {
+    mcpAllList.value = res.results;
+  }
+  else {
+    mcpAllList.value = mcpAllList.value.concat(res.results);
+  }
+
   pagination.value.count = res.count;
-  mcpAllList.value = res.results;
+  pagination.value.current += 1;
+
+  if (mcpAllList.value.length >= pagination.value.count) {
+    pagination.value.hasNoMore = true;
+  }
 };
-getList();
 
 const handleInput = () => {
   if (!search.value) {
@@ -165,22 +182,31 @@ const updateTableEmptyConfig = () => {
 const handleClearFilterKey = () => {
   search.value = '';
   pagination.value.current = 1;
+  pagination.value.hasNoMore = false;
   getList();
 };
 
 const handleSearch = () => {
   pagination.value.current = 1;
+  pagination.value.hasNoMore = false;
   getList();
 };
 
-const handlePaginationChange = () => {
-  getList();
+const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
+  if (entry?.isIntersecting) {
+    getList();
+  }
 };
 
-const handlePaginationLimitChange = (limit: number) => {
-  pagination.value.limit = limit;
-  getList();
-};
+onBeforeMount(() => {
+  // 如果屏幕宽度小于1620px，那么每页显示9条数据（3列），否则每页显示12条数据（4列）
+  if (window.innerWidth < 1620) {
+    pagination.value.limit = 9;
+  }
+  else {
+    pagination.value.limit = 12;
+  }
+});
 
 </script>
 
