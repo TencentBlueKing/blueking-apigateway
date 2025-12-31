@@ -249,12 +249,20 @@ const removeField = (row: IBodyRow) => {
 </script>
 
 <style lang="scss" scoped>
+.bk-table .bk-table-body table tbody tr td {
+  border-bottom: none !important;
+}
 
 .request-body-table {
   border-collapse: collapse;
   border-spacing: 0;
 
   .table-body {
+
+    td {
+      border-top: 1px solid #dcdee5;
+      border-bottom: none !important;
+    }
 
     .readonly-value-wrapper {
       padding-left: 16px;

@@ -412,6 +412,23 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       if (Object.keys(property.properties || {}).length) {
         row.body = convertSchemaToBodyRow(property);
       }
+      else if (property.type === 'array' && Object.keys(property.items || {}).length) {
+        if (property.items.type === 'object') {
+          row.body = [{
+            id: uniqueId(),
+            name: '',
+            type: 'object',
+            required: false,
+            default: '',
+            description: property.items.description ?? '',
+            body: [],
+          }];
+          row.body[0].body = convertSchemaToBodyRow(property.items);
+        }
+        else {
+          row.body = convertSchemaToBodyRow(property.items);
+        }
+      }
       body.push(row);
     }
   }
