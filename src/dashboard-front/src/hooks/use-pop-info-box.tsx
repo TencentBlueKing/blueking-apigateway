@@ -61,25 +61,20 @@ export function usePopInfoBox(props: Partial<IProps>) {
   const infoBoxInstance = InfoBox(new InfoModel());
 
   const renderTitle = () => {
-    if (isFunction(props.title)) {
-      return <div class="info-box-title">{props.title?.()}</div>;
-    }
-    return props.title;
+    return <div class="break-all info-box-title">{ isFunction(props.title) ? props.title() : props.title }</div>;
   };
 
   const renderContent = () => {
     const displayContent = props.subTitle ?? props.content;
-    if (isFunction(displayContent)) {
-      return <div class="info-box-content">{displayContent?.()}</div>;
-    }
-    return displayContent;
+    return <div class="break-all info-box-content">{isFunction(displayContent) ? displayContent() : displayContent }</div>;
   };
 
   const renderInfoBox = () => {
+    const subTitle = props.content ? 'content' : 'subTitle';
     infoBoxInstance.update({
       ...props,
       title: renderTitle(),
-      content: renderContent(),
+      [subTitle]: renderContent(),
     });
     infoBoxInstance.show();
   };

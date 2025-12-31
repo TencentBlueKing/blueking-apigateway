@@ -155,7 +155,7 @@ const serverId = computed(() => route.params.serverId);
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
   const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 540 : 500)
+    ? (isShowNoticeAlert.value ? 540 : 480)
     : (isShowNoticeAlert.value ? 440 : 400);
   return `calc(100vh - ${offsetH}px)`;
 });

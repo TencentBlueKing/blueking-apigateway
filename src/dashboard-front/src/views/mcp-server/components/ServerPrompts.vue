@@ -156,7 +156,7 @@ const promptCollapseMargin = ref('mt-16px');
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
   const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 600 : 560)
+    ? (isShowNoticeAlert.value ? 600 : 494)
     : (isShowNoticeAlert.value ? 456 : 416);
   return `calc(100vh - ${offsetH}px)`;
 });

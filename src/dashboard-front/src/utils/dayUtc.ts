@@ -85,12 +85,12 @@ export function setupDayjsLocale(lang: string): void {
     ...relativeTimeConfig,
     ...defaultRelativeTime,
     s: t('刚刚'),
-    ss: (num: number) => (t('几秒前', { n: num }) || defaultRelativeTime.ss).replace(/\{n\}|\%d/g, num.toString()),
-    mm: (num: number) => (t('{n}分钟前', { n: num }) || defaultRelativeTime.mm).replace(/\{n\}|\%d/g, num.toString()),
-    hh: (num: number) => (t('{n}小时前', { n: num }) || defaultRelativeTime.hh).replace(/\{n\}|\%d/g, num.toString()),
-    dd: (num: number) => (t('{n}天前', { n: num }) || defaultRelativeTime.dd).replace(/\{n\}|\%d/g, num.toString()),
-    MM: (num: number) => (t('{n}个月前', { n: num }) || defaultRelativeTime.MM).replace(/\{n\}|\%d/g, num.toString()),
-    yy: (num: number) => (t('{n}年前', { n: num }) || defaultRelativeTime.yy).replace(/\{n\}|\%d/g, num.toString()),
+    ss: (num: number) => (t('几秒前', { n: num }) || defaultRelativeTime.ss).replace(/\{n\}|%d/g, num.toString()),
+    mm: (num: number) => (t('{n}分钟前', { n: num }) || defaultRelativeTime.mm).replace(/\{n\}|%d/g, num.toString()),
+    hh: (num: number) => (t('{n}小时前', { n: num }) || defaultRelativeTime.hh).replace(/\{n\}|%d/g, num.toString()),
+    dd: (num: number) => (t('{n}天前', { n: num }) || defaultRelativeTime.dd).replace(/\{n\}|%d/g, num.toString()),
+    MM: (num: number) => (t('{n}个月前', { n: num }) || defaultRelativeTime.MM).replace(/\{n\}|%d/g, num.toString()),
+    yy: (num: number) => (t('{n}年前', { n: num }) || defaultRelativeTime.yy).replace(/\{n\}|%d/g, num.toString()),
   };
 
   dayjs.locale(validLang, {
