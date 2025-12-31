@@ -231,7 +231,7 @@ const setMapRefs = (el: HTMLElement, anyRef: Ref, prefix: string) => {
 
 const getOperateWidth = () => {
   nextTick(() => {
-    operateIconWidth.value = operateIconRefs.value.get(`item-value-${server?.id}`)?.offsetWidth + 8 ?? 0;
+    operateIconWidth.value = operateIconRefs.value.get(`item-value-${server?.id}`)?.offsetWidth + 8 || 0;
   });
 };
 getOperateWidth();

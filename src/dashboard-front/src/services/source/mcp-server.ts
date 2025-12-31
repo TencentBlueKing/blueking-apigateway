@@ -68,11 +68,11 @@ export interface IMCPServerPrompt {
 }
 
 // 列表
-export const getServers = (apigwId: number): Promise<{ results: IMCPServer[] }> =>
-  http.get(`${path}/${apigwId}/mcp-servers/`, {
-    offset: 0,
-    limit: 10000,
-  });
+export const getServers = (apigwId: number, data: {
+  offset: number
+  limit: number
+}): Promise<{ results: IMCPServer[] }> =>
+  http.get(`${path}/${apigwId}/mcp-servers/`, data);
 
 // 详情
 export const getServer = (apigwId: number, serverId: number): Promise<IMCPServer> =>
