@@ -109,6 +109,8 @@ class TestMockPrompts:
         assert "prompt_id" in result[0]
         assert "prompt_name" in result[0]
         assert "prompt_code" in result[0]
+        # 模拟真实 API 行为：列表接口不返回 prompt_content 字段
+        assert "prompt_content" not in result[0]
 
     def test_get_mock_prompts_by_ids(self):
         """测试根据 ID 获取 mock prompts"""
@@ -117,6 +119,8 @@ class TestMockPrompts:
         assert len(result) == 2
         assert result[0]["prompt_id"] == 1
         assert result[1]["prompt_id"] == 2
+        # 批量接口返回 prompt_content 字段
+        assert "prompt_content" in result[0]
 
     def test_get_mock_prompts_by_ids_partial(self):
         """测试部分 ID 存在的情况"""
@@ -160,7 +164,8 @@ class TestFetchPromptsListMock:
         assert "id" in result[0]
         assert "name" in result[0]
         assert "code" in result[0]
-        assert "content" in result[0]
+        # 列表接口不返回 content（模拟真实 API 行为）
+        assert result[0]["content"] == ""
 
 
 class TestFetchPromptsByIdsMock:
@@ -215,24 +220,20 @@ class TestFetchPromptsListApi:
         mock_credentials = mocker.MagicMock()
         mock_call_api = mocker.patch(
             "apigateway.components.bkaidev._call_bkaidev_api",
-            return_value={
-                "data": {
-                    "results": [
-                        {
-                            "prompt_id": 100,
-                            "prompt_code": "api_prompt",
-                            "prompt_name": "API Prompt",
-                            "prompt_content": "API Content",
-                            "updated_at": "2025-12-18T10:00:00Z",
-                            "updated_by": "api_user",
-                            "tag_names": ["api"],
-                            "is_public": True,
-                            "space_id": "api_space",
-                            "space_name": "API Space",
-                        }
-                    ]
+            return_value=[
+                {
+                    "prompt_id": 100,
+                    "prompt_code": "api_prompt",
+                    "prompt_name": "API Prompt",
+                    "prompt_content": "API Content",
+                    "updated_at": "2025-12-18T10:00:00Z",
+                    "updated_by": "api_user",
+                    "tag_names": ["api"],
+                    "is_public": True,
+                    "space_id": "api_space",
+                    "space_name": "API Space",
                 }
-            },
+            ],
         )
 
         result = fetch_prompts_list(mock_credentials)
@@ -264,17 +265,15 @@ class TestFetchPromptsByIdsApi:
         mock_call_api = mocker.patch(
             "apigateway.components.bkaidev._call_bkaidev_api",
             return_value={
-                "data": {
-                    "results": [
-                        {
-                            "prompt_id": 100,
-                            "prompt_code": "api_prompt",
-                            "prompt_name": "API Prompt",
-                            "prompt_content": "API Content",
-                            "is_public": True,
-                        }
-                    ]
-                }
+                "results": [
+                    {
+                        "prompt_id": 100,
+                        "prompt_code": "api_prompt",
+                        "prompt_name": "API Prompt",
+                        "prompt_content": "API Content",
+                        "is_public": True,
+                    }
+                ]
             },
         )
 
@@ -284,7 +283,7 @@ class TestFetchPromptsByIdsApi:
         assert result[0]["id"] == 100
         # 验证调用参数包含 type 和 with_content
         call_args = mock_call_api.call_args
-        assert call_args[0][1] == "/openapi/aidev/platform/resource/v1/prompts/batch/"
+        assert call_args[0][1] == "/openapi/aidev/resource/v1/prompts/batch/"
         assert call_args[0][2]["ids"] == [100]
         assert call_args[0][2]["type"] == "prompt"
         assert call_args[0][2]["with_content"] is True
@@ -297,7 +296,7 @@ class TestFetchPromptsByIdsApi:
 
         mock_call_api = mocker.patch(
             "apigateway.components.bkaidev._call_bkaidev_api",
-            return_value={"data": {"results": []}},
+            return_value={"results": []},
         )
 
         fetch_prompts_by_ids([100], with_content=False)
@@ -324,12 +323,10 @@ class TestFetchPromptsUpdatedTimeApi:
         mock_call_api = mocker.patch(
             "apigateway.components.bkaidev._call_bkaidev_api",
             return_value={
-                "data": {
-                    "results": [
-                        {"prompt_id": 100, "updated_at": "2025-12-18T10:00:00Z"},
-                        {"prompt_id": 101, "updated_at": "2025-12-17T15:30:00Z"},
-                    ]
-                }
+                "results": [
+                    {"prompt_id": 100, "updated_at": "2025-12-18T10:00:00Z"},
+                    {"prompt_id": 101, "updated_at": "2025-12-17T15:30:00Z"},
+                ]
             },
         )
 
