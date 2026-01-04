@@ -137,18 +137,22 @@ def delete_legacy_resource_version():
         .values_list("gateway_id", flat=True)
     )
 
-    legacy_resource_version_ids = ResourceVersion.objects.filter(
-        gateway_id__in=gateway_ids,
-        schema_version=ResourceVersionSchemaEnum.V1.value,
-        created_time__lt=delete_end_time,
-    ).values_list("id", flat=True)
+    legacy_resource_version_ids = list(
+        ResourceVersion.objects.filter(
+            gateway_id__in=gateway_ids,
+            schema_version=ResourceVersionSchemaEnum.V1.value,
+            created_time__lt=delete_end_time,
+        ).values_list("id", flat=True)
+    )
 
     # check not used in Release
-    used_legacy_resource_version_ids = Release.objects.filter(
-        resource_version_id__in=legacy_resource_version_ids
-    ).values_list("resource_version_id", flat=True)
+    used_legacy_resource_version_ids = list(
+        Release.objects.filter(resource_version_id__in=legacy_resource_version_ids).values_list(
+            "resource_version_id", flat=True
+        )
+    )
 
-    # only get the top 10 for each time
+    # only get the top 30 for each time
     to_delete_legacy_resource_version_ids = list(
         set(legacy_resource_version_ids) - set(used_legacy_resource_version_ids)
     )
