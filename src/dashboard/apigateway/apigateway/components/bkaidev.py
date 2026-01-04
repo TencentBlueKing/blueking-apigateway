@@ -136,8 +136,12 @@ def _convert_prompts(remote_prompts: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 
 def _get_mock_prompts_by_keyword() -> List[Dict[str, Any]]:
-    """返回mock prompts（返回原始格式，不做转换）"""
-    return _MOCK_PROMPTS
+    """返回mock prompts（返回原始格式，不做转换）
+
+    模拟真实 API 行为：列表接口不返回 prompt_content 字段
+    """
+    # 列表接口不返回 content，移除 prompt_content 字段
+    return [{k: v for k, v in p.items() if k != "prompt_content"} for p in _MOCK_PROMPTS]
 
 
 def _get_mock_prompts_by_ids(prompt_ids: List[int]) -> List[Dict[str, Any]]:
@@ -159,7 +163,7 @@ def _call_bkaidev_api(
     user_credentials: Optional[UserCredentials] = None,
     more_headers: Optional[Dict[str, str]] = None,
     timeout: int = 30,
-) -> Dict[str, Any]:
+) -> Any:
     """
     统一调用 BKAIDev 平台 API
 
@@ -171,7 +175,10 @@ def _call_bkaidev_api(
         timeout: 超时时间
 
     Returns:
-        响应数据，格式为 {"data": {"results": [...]}, ...}
+        响应数据，do_blueking_http_request 返回 resp_data["data"]
+        不同接口返回格式不同：
+        - /openapi/aidev/user_mode/resource/prompt/manage/ 返回 list
+        - /openapi/aidev/resource/v1/prompts/batch/ 返回 dict {"results": [...]}
 
     Raises:
         error_codes.REMOTE_REQUEST_ERROR: 请求失败时抛出
@@ -182,13 +189,7 @@ def _call_bkaidev_api(
 
     url = url_join(settings.BKAIDEV_URL_PREFIX, path)
 
-    result = do_blueking_http_request("bkaidev", http_func, url, data, headers, timeout)
-    # 确保返回 dict 类型
-    if not isinstance(result, dict):
-        raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"_call_bkaidev_api expected dict response, got {type(result).__name__}"
-        )
-    return result
+    return do_blueking_http_request("bkaidev", http_func, url, data, headers, timeout)
 
 
 def fetch_prompts_list(user_credentials: UserCredentials) -> List[Dict[str, Any]]:
@@ -217,9 +218,12 @@ def fetch_prompts_list(user_credentials: UserCredentials) -> List[Dict[str, Any]
         user_credentials=user_credentials,
         timeout=settings.BKAIDEV_API_TIMEOUT,
     )
-    # 响应格式: {"data": {"results": [...]}, ...}
-    results = result.get("data", {}).get("results", [])
-    return _convert_prompts(results)
+    # 该接口返回 data 直接是 list
+    if not isinstance(result, list):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"fetch_prompts_list expected list response, got {type(result).__name__}"
+        )
+    return _convert_prompts(result)
 
 
 def fetch_prompts_by_ids(prompt_ids: List[int], with_content: bool = True) -> List[Dict[str, Any]]:
@@ -227,7 +231,7 @@ def fetch_prompts_by_ids(prompt_ids: List[int], with_content: bool = True) -> Li
     根据 prompt IDs 从 BKAIDev 平台批量获取 prompts 详情
 
     调用接口: create_platform_resource_v1_prompts_batch (POST)
-    路径: /openapi/aidev/platform/resource/v1/prompts/batch/
+    路径: /openapi/aidev/resource/v1/prompts/batch/
 
     Args:
         prompt_ids: prompt ID 列表 (整数类型)
@@ -249,11 +253,15 @@ def fetch_prompts_by_ids(prompt_ids: List[int], with_content: bool = True) -> Li
 
     data = {"ids": prompt_ids, "type": "prompt", "with_content": with_content}
 
-    result = _call_bkaidev_api(
-        http_post, "/openapi/aidev/platform/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
+    resp = _call_bkaidev_api(
+        http_post, "/openapi/aidev/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
     )
-    # 响应格式: {"data": {"results": [...]}, ...}
-    results = result.get("data", {}).get("results", [])
+    # 该接口返回 data 是 dict，包含 results 字段
+    results = resp.get("results", [])
+    if not isinstance(results, list):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"fetch_prompts_by_ids expected list response, got {type(results).__name__}"
+        )
     return _convert_prompts(results)
 
 
@@ -262,7 +270,7 @@ def fetch_prompts_updated_time(prompt_ids: List[int]) -> Dict[int, str]:
     从 BKAIDev 平台批量获取 prompts 的更新时间
 
     调用接口: create_platform_resource_v1_prompts_batch (POST)
-    路径: /openapi/aidev/platform/resource/v1/prompts/batch/
+    路径: /openapi/aidev/resource/v1/prompts/batch/
     参数: with_content=False 只返回更新时间
 
     Args:
@@ -284,11 +292,15 @@ def fetch_prompts_updated_time(prompt_ids: List[int]) -> Dict[int, str]:
         raise error_codes.REMOTE_REQUEST_ERROR.format("BKAIDEV_URL_PREFIX is not configured")
 
     # 使用 with_content=False 只获取更新时间
-    data = {"ids": prompt_ids, "with_content": False}
+    data = {"ids": prompt_ids, "type": "prompt", "with_content": False}
 
-    result = _call_bkaidev_api(
-        http_post, "/openapi/aidev/platform/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
+    resp = _call_bkaidev_api(
+        http_post, "/openapi/aidev/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
     )
-    # 响应格式: {"data": {"results": [...]}, ...}
-    results = result.get("data", {}).get("results", [])
+    # 该接口返回 data 是 dict，包含 results 字段
+    results = resp.get("results", [])
+    if not isinstance(results, list):
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"fetch_prompts_updated_time expected list response, got {type(results).__name__}"
+        )
     return {item.get("prompt_id"): item.get("updated_at", "") for item in results if item.get("prompt_id")}

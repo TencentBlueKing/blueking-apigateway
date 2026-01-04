@@ -41,6 +41,7 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.django.translation import get_current_language_code
@@ -63,6 +64,8 @@ from .serializers import (
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
+    MCPServerRemotePromptsBatchInputSLZ,
+    MCPServerRemotePromptsBatchOutputSLZ,
     MCPServerRemotePromptsOutputSLZ,
     MCPServerRemotePromptsQueryInputSLZ,
     MCPServerRetrieveOutputSLZ,
@@ -803,4 +806,29 @@ class MCPServerRemotePromptsListApi(generics.ListAPIView):
         prompts = MCPServerHandler.fetch_remote_prompts(user_credentials=user_credentials)
 
         output_slz = MCPServerRemotePromptsOutputSLZ({"prompts": prompts})
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="根据 ID 列表批量获取第三方平台 Prompts 内容",
+        request_body=MCPServerRemotePromptsBatchInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerRemotePromptsBatchOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerRemotePromptsBatchApi(generics.CreateAPIView):
+    """根据 ID 列表批量获取第三方平台 Prompts 内容"""
+
+    def create(self, request, *args, **kwargs):
+        slz = MCPServerRemotePromptsBatchInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        prompt_ids = slz.validated_data["ids"]
+
+        # 调用第三方平台批量获取 prompts 内容
+        prompts = MCPServerPromptHandler.fetch_remote_prompts_by_ids(prompt_ids)
+
+        output_slz = MCPServerRemotePromptsBatchOutputSLZ({"prompts": prompts})
         return OKJsonResponse(data=output_slz.data)
