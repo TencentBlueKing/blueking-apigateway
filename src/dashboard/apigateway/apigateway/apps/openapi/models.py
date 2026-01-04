@@ -42,7 +42,7 @@ class OpenAPIResourceSchemaVersion(TimestampedModelMixin, OperatorModelMixin):
     openapi_resource_schema_version: resource 接口协议版本表
     """
 
-    resource_version = models.OneToOneField(ResourceVersion, on_delete=models.PROTECT)
+    resource_version = models.OneToOneField(ResourceVersion, on_delete=models.CASCADE)
     schema = models.JSONField(blank=True, null=True)
 
     class Meta:
@@ -57,8 +57,8 @@ class OpenAPIFileResourceSchemaVersion(TimestampedModelMixin, OperatorModelMixin
     openapi_gateway_resource_version_spec: resource openapi 文件接口协议版本表
     """
 
-    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
-    resource_version = models.OneToOneField(ResourceVersion, on_delete=models.PROTECT)
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    resource_version = models.OneToOneField(ResourceVersion, on_delete=models.CASCADE)
     schema = models.TextField(blank=True, null=True)
 
     class Meta:

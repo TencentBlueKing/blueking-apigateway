@@ -48,7 +48,7 @@ CELERY_BEAT_SCHEDULE = {
     # },
     "delete_old_publish_events": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_publish_events",
-        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+        "schedule": crontab(day_of_week="*", hour=1, minute=0),
     },
     "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon": {
         "task": "apigateway.apps.permission.tasks.alert_app_permission_expiring_soon",
@@ -56,15 +56,19 @@ CELERY_BEAT_SCHEDULE = {
     },
     "delete_old_resource_version_records": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_resource_doc_version_records",
-        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+        "schedule": crontab(day_of_week="*", hour=1, minute=5),
     },
     "apigateway.controller.tasks.clean_task.delete_old_debug_history": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_debug_history",
-        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+        "schedule": crontab(day_of_week="*", hour=1, minute=10),
     },
     "apigateway.controller.tasks.clean_task.delete_old_alarm_records": {
         "task": "apigateway.controller.tasks.clean_task.delete_old_alarm_records",
-        "schedule": crontab(day_of_week="*", hour=0, minute=0),
+        "schedule": crontab(day_of_week="*", hour=1, minute=15),
+    },
+    "apigateway.controller.tasks.clean_task.delete_legacy_resource_version": {
+        "task": "apigateway.controller.tasks.clean_task.delete_legacy_resource_version",
+        "schedule": crontab(day_of_week="*", hour=1, minute=20),
     },
     "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts": {
         "task": "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts",
