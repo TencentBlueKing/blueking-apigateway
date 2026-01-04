@@ -126,8 +126,9 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         validated_data["status"] = self.context["status"]
         instance = super().create(validated_data)
 
-        # 保存 prompts（先填充空的 content）
+        # 保存 prompts
         if prompts:
+            # 确保content是最新的
             prompts = _fill_prompts_content(prompts)
             MCPServerHandler.save_prompts(
                 mcp_server_id=instance.id,
@@ -238,7 +239,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         prompts = validated_data.pop("prompts", None)
         instance = super().update(instance, validated_data)
 
-        # 如果传入了 prompts，则更新（先填充空的 content）
+        # 如果传入了 prompts，则更新
         if prompts is not None:
             prompts = _fill_prompts_content(prompts)
             MCPServerHandler.save_prompts(
