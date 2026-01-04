@@ -183,12 +183,10 @@ const handleDelete = async (id: number) => {
 };
 
 const handleServerUpdated = () => {
-  // 如果是新建mcp重置滚动条到顶部
-  if (!editingServerId.value) {
-    const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
-    if (mcpEl) {
-      mcpEl.scrollTop = 0;
-    }
+  // 如果是新建编辑mcp重置滚动条到顶部
+  const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
+  if (mcpEl?.scrollTop > 0) {
+    mcpEl.scrollTop = 0;
   }
   resetPagination();
 };

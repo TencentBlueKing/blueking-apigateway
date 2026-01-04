@@ -65,73 +65,76 @@
         </div>
       </template>
       <template #main>
-        <div
-          class="w-full pl-24px pr-24px main-content-wrap"
-          :style="{ height: setPageMaxH }"
-        >
+        <BkLoading :loading="promptDetailLoading">
           <div
-            v-if="Object.keys(curPromptData)?.length"
-            class="w-full p-16px mt-16px mb-16px prompt-detail-content"
+            class="w-full pl-24px pr-24px main-content-wrap"
+            :style="{ height: setPageMaxH }"
           >
-            <div class="flex items-center gap-4px">
-              <div class="min-w-0 flex text-14px font-700 color-#4d4f56">
-                <div
-                  v-bk-tooltips="{
-                    placement:'top',
-                    content: `${curPromptData.name} (${curPromptData.code})`,
-                    disabled: !curPromptData.isOverflow,
-                  }"
-                  class="w-full truncate"
-                  @mouseenter="(e: MouseEvent) => handlePromptMouseenter(e, curPromptData)"
-                  @mouseleave="() => handlePromptMouseleave(curPromptData)"
-                >
-                  <span>{{ curPromptData?.name ?? '--' }}</span>
-                  <span class="ml-8px">
-                    ({{ curPromptData?.code ?? '--' }})
-                  </span>
+            <div
+              v-if="Object.keys(curPromptData)?.length"
+              class="w-full p-16px mt-16px mb-16px prompt-detail-content"
+            >
+              <div class="flex items-center gap-4px">
+                <div class="min-w-0 flex text-14px font-700 color-#4d4f56">
+                  <div
+                    v-bk-tooltips="{
+                      placement:'top',
+                      content: `${curPromptData.name} (${curPromptData.code})`,
+                      disabled: !curPromptData.isOverflow,
+                    }"
+                    class="w-full truncate"
+                    @mouseenter="(e: MouseEvent) => handlePromptMouseenter(e, curPromptData)"
+                    @mouseleave="() => handlePromptMouseleave(curPromptData)"
+                  >
+                    <span>{{ curPromptData?.name ?? '--' }}</span>
+                    <span class="ml-8px">
+                      ({{ curPromptData?.code ?? '--' }})
+                    </span>
+                  </div>
+                </div>
+                <div class="flex-shrink-0">
+                  <BkTag
+                    :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                  >
+                    {{ t( curPromptData?.is_public ? '公开' : '私有') }}
+                  </BkTag>
                 </div>
               </div>
-              <div class="flex-shrink-0">
+              <AgDescription
+                v-if="curPromptData?.content?.length"
+                class="mt-12px lh-22px text-14px color-#4d4f56 break-all gap-16px"
+                :dynamic-max-height="500"
+              >
+                <template #description>
+                  {{ curPromptData?.content }}
+                </template>
+              </AgDescription>
+              <div
+                v-if="curPromptData?.labels?.length"
+                class="mt-16px"
+              >
                 <BkTag
-                  :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                  v-for="label of curPromptData?.labels"
+                  :key="label"
+                  class="mr-4px"
                 >
-                  {{ t( curPromptData?.is_public ? '公开' : '私有') }}
+                  {{ label }}
                 </BkTag>
               </div>
             </div>
-            <AgDescription
-              v-if="curPromptData?.content?.length"
-              class="mt-12px lh-22px text-14px color-#4d4f56 break-all gap-16px"
-              :dynamic-max-height="500"
-            >
-              <template #description>
-                {{ curPromptData?.content }}
-              </template>
-            </AgDescription>
-            <div
-              v-if="curPromptData?.labels?.length"
-              class="mt-16px"
-            >
-              <BkTag
-                v-for="label of curPromptData?.labels"
-                :key="label"
-                class="mr-4px"
-              >
-                {{ label }}
-              </BkTag>
-            </div>
           </div>
-        </div>
+        </BkLoading>
       </template>
     </BkResizeLayout>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useFeatureFlag } from '@/stores';
+import { useFeatureFlag, useGateway } from '@/stores';
 import {
   type IMCPServerPrompt,
   getServer,
+  getServerPromptsDetail,
 } from '@/services/source/mcp-server';
 import AgDescription from '@/components/ag-description/Index.vue';
 
@@ -148,16 +151,18 @@ const emit = defineEmits<{ 'update-count': [count: number] }>();
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
+const gatewayStore = useGateway();
 
-const mcpPromptRef = ref(null);
+const mcpPromptRef = ref<HTMLDivElement | null>(null);
 const curPromptData = ref<IMCPServerPrompt>({});
 const promptCollapseMargin = ref('mt-16px');
+const promptDetailLoading = ref(false);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
   const offsetH = page === 'market'
     ? (isShowNoticeAlert.value ? 600 : 494)
-    : (isShowNoticeAlert.value ? 456 : 416);
+    : (isShowNoticeAlert.value ? 420 : 380);
   return `calc(100vh - ${offsetH}px)`;
 });
 const promptList = computed<IMCPServerPrompt[]>(() => {
@@ -169,6 +174,20 @@ const promptList = computed<IMCPServerPrompt[]>(() => {
   return results;
 });
 
+const fetchPromptDetail = async () => {
+  promptDetailLoading.value = true;
+  try {
+    const res = await getServerPromptsDetail(gatewayStore.currentGateway?.id, { ids: [curPromptData.value.id] });
+    curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
+  }
+  catch {
+    curPromptData.value = {};
+  }
+  finally {
+    promptDetailLoading.value = false;
+  }
+};
+
 const handlePromptCollapseChange = (isCollapse: boolean) => {
   if (isCollapse) {
     promptCollapseMargin.value = 'hidden mt-0';
@@ -179,7 +198,11 @@ const handlePromptCollapseChange = (isCollapse: boolean) => {
 };
 
 const handlePromptClick = (row: IMCPServerPrompt) => {
-  curPromptData.value = row;
+  const isRepeat = `${curPromptData.value.id}&${curPromptData.value.code}` === `${row.id}&${row.code}`;
+  if (!isRepeat) {
+    curPromptData.value = row;
+    fetchPromptDetail();
+  }
 };
 
 const handlePromptMouseenter = (e: MouseEvent, row: IMCPServerPrompt) => {
