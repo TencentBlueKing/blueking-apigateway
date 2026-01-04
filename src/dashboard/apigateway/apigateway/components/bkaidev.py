@@ -253,17 +253,16 @@ def fetch_prompts_by_ids(prompt_ids: List[int], with_content: bool = True) -> Li
 
     data = {"ids": prompt_ids, "type": "prompt", "with_content": with_content}
 
-    result = _call_bkaidev_api(
+    resp = _call_bkaidev_api(
         http_post, "/openapi/aidev/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
     )
     # 该接口返回 data 是 dict，包含 results 字段
-    if isinstance(result, dict):
-        result = result.get("results", [])
-    if not isinstance(result, list):
+    results = resp.get("results", [])
+    if not isinstance(results, list):
         raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"fetch_prompts_by_ids expected list response, got {type(result).__name__}"
+            f"fetch_prompts_by_ids expected list response, got {type(results).__name__}"
         )
-    return _convert_prompts(result)
+    return _convert_prompts(results)
 
 
 def fetch_prompts_updated_time(prompt_ids: List[int]) -> Dict[int, str]:
@@ -295,14 +294,13 @@ def fetch_prompts_updated_time(prompt_ids: List[int]) -> Dict[int, str]:
     # 使用 with_content=False 只获取更新时间
     data = {"ids": prompt_ids, "type": "prompt", "with_content": False}
 
-    result = _call_bkaidev_api(
+    resp = _call_bkaidev_api(
         http_post, "/openapi/aidev/resource/v1/prompts/batch/", data, timeout=settings.BKAIDEV_API_TIMEOUT
     )
     # 该接口返回 data 是 dict，包含 results 字段
-    if isinstance(result, dict):
-        result = result.get("results", [])
-    if not isinstance(result, list):
+    results = resp.get("results", [])
+    if not isinstance(results, list):
         raise error_codes.REMOTE_REQUEST_ERROR.format(
-            f"fetch_prompts_updated_time expected list response, got {type(result).__name__}"
+            f"fetch_prompts_updated_time expected list response, got {type(results).__name__}"
         )
-    return {item.get("prompt_id"): item.get("updated_at", "") for item in result if item.get("prompt_id")}
+    return {item.get("prompt_id"): item.get("updated_at", "") for item in results if item.get("prompt_id")}

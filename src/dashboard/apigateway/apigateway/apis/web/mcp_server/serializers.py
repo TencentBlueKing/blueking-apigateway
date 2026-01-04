@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import logging
 from typing import Any, Dict, List
 
 from django.utils.translation import gettext_lazy as _
@@ -34,12 +35,15 @@ from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPS
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
+logger = logging.getLogger(__name__)
+
 
 def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     从第三方接口批量获取 prompts 的 content 字段，确保数据与第三方一致
 
-    不管本地是否有 content，都会从第三方接口获取最新的 content 进行覆盖
+    不管本地是否有 content，都会从第三方接口获取最新的 content 进行覆盖。
+    如果第三方接口调用失败，会记录日志但不会阻止操作继续。
     """
     if not prompts:
         return prompts
@@ -48,7 +52,11 @@ def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     prompt_ids = [p["id"] for p in prompts]
 
     # 批量获取 content
-    remote_prompts = MCPServerPromptHandler.fetch_remote_prompts_by_ids(prompt_ids)
+    try:
+        remote_prompts = MCPServerPromptHandler.fetch_remote_prompts_by_ids(prompt_ids)
+    except Exception:
+        logger.exception("Failed to fetch prompts content from remote API, prompt_ids=%s", prompt_ids)
+        return prompts
 
     # 构建 id -> content 映射
     content_map = {p["id"]: p.get("content", "") for p in remote_prompts}
@@ -128,7 +136,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
         # 保存 prompts
         if prompts:
-            # 确保content是最新的
+            # 确保 content 是最新的
             prompts = _fill_prompts_content(prompts)
             MCPServerHandler.save_prompts(
                 mcp_server_id=instance.id,
