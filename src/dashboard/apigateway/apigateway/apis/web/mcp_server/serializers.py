@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -29,9 +29,36 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
+
+
+def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    从第三方接口批量获取 prompts 的 content 字段，确保数据与第三方一致
+
+    不管本地是否有 content，都会从第三方接口获取最新的 content 进行覆盖
+    """
+    if not prompts:
+        return prompts
+
+    # 获取所有 prompt ids
+    prompt_ids = [p["id"] for p in prompts]
+
+    # 批量获取 content
+    remote_prompts = MCPServerPromptHandler.fetch_remote_prompts_by_ids(prompt_ids)
+
+    # 构建 id -> content 映射
+    content_map = {p["id"]: p.get("content", "") for p in remote_prompts}
+
+    # 用第三方的 content 覆盖本地数据
+    for prompt in prompts:
+        if prompt["id"] in content_map:
+            prompt["content"] = content_map[prompt["id"]]
+
+    return prompts
 
 
 class MCPServerPromptItemSLZ(serializers.Serializer):
@@ -99,8 +126,9 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         validated_data["status"] = self.context["status"]
         instance = super().create(validated_data)
 
-        # 保存 prompts
+        # 保存 prompts（先填充空的 content）
         if prompts:
+            prompts = _fill_prompts_content(prompts)
             MCPServerHandler.save_prompts(
                 mcp_server_id=instance.id,
                 prompts=prompts,
@@ -210,8 +238,9 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         prompts = validated_data.pop("prompts", None)
         instance = super().update(instance, validated_data)
 
-        # 如果传入了 prompts，则更新
+        # 如果传入了 prompts，则更新（先填充空的 content）
         if prompts is not None:
+            prompts = _fill_prompts_content(prompts)
             MCPServerHandler.save_prompts(
                 mcp_server_id=instance.id,
                 prompts=prompts,
@@ -433,3 +462,30 @@ class MCPServerRemotePromptsOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsOutputSLZ"
+
+
+class MCPServerRemotePromptsBatchInputSLZ(serializers.Serializer):
+    """批量获取第三方平台 Prompts 内容的输入序列化器"""
+
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True,
+        min_length=1,
+        help_text="Prompt ID 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsBatchInputSLZ"
+
+
+class MCPServerRemotePromptsBatchOutputSLZ(serializers.Serializer):
+    """批量获取远程 Prompts 内容的输出序列化器"""
+
+    prompts = serializers.ListField(
+        child=MCPServerPromptItemSLZ(),
+        read_only=True,
+        help_text="Prompts 列表（包含内容）",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsBatchOutputSLZ"
