@@ -17,44 +17,51 @@
  */
 
 <template>
-  <div class="page-wrapper">
-    <BkLoading
-      :loading="isLoading"
-      :z-index="99"
-    >
-      <div class="server-list">
-        <ServerItemCard
-          v-for="server in serverList"
-          :key="server.id"
-          :server="server"
-          @delete="handleDelete"
-          @edit="handleEdit"
-          @enable="handleEnable"
-          @suspend="handleSuspend"
-          @click="() => handleCardClick(server.id)"
-        />
-        <!-- 添加按钮卡片 -->
-        <div
-          class="flex items-center justify-center add-server-card"
-          @click="handleAddServerClick"
-        >
-          <AgIcon
-            name="add-small"
-            size="40"
+  <div>
+    <div class="page-wrapper">
+      <BkLoading
+        :loading="isLoading"
+        :z-index="99"
+      >
+        <div class="server-list">
+          <ServerItemCard
+            v-for="server in serverList"
+            :key="server.id"
+            :server="server"
+            @delete="handleDelete"
+            @edit="handleEdit"
+            @enable="handleEnable"
+            @suspend="handleSuspend"
+            @click="() => handleCardClick(server.id)"
           />
+          <!-- 添加按钮卡片 -->
+          <div
+            class="flex items-center justify-center add-server-card"
+            @click="handleAddServerClick"
+          >
+            <AgIcon
+              name="add-small"
+              size="40"
+            />
+          </div>
         </div>
-      </div>
-    </BkLoading>
-    <CreateSlider
-      ref="createSliderRef"
-      :server-id="editingServerId"
-      @updated="handleServerUpdated"
+      </BkLoading>
+      <CreateSlider
+        ref="createSliderRef"
+        :server-id="editingServerId"
+        @updated="handleServerUpdated"
+      />
+    </div>
+    <div
+      v-intersection-observer="onIntersectionObserver"
+      class="h-40px"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
+import { vIntersectionObserver } from '@vueuse/components';
 import {
   deleteServer,
   getServers,
@@ -77,14 +84,39 @@ const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverList = ref<MCPServerType[]>([]);
 const editingServerId = ref();
 const isLoading = ref(true);
+const pagination = ref({
+  current: 1,
+  limit: window.innerWidth < 1620 ? 9 : 12,
+  count: 0,
+  hasNoMore: false,
+});
 
 const fetchServerList = async () => {
+  const { hasNoMore, current, limit } = pagination.value;
+  isLoading.value = true;
+  if (hasNoMore) {
+    isLoading.value = false;
+    return;
+  };
+
   try {
-    const response = await getServers(gatewayId);
-    serverList.value = response?.results || [];
+    const params = {
+      limit,
+      offset: limit * (current - 1),
+    };
+    const res = await getServers(gatewayId, params);
+    const { results = [], count = 0 } = res ?? {};
+    serverList.value = current === 1 ? results : [...serverList.value, ...results];
+    pagination.value = Object.assign(pagination.value, {
+      count,
+      hasNoMore: serverList.value.length >= count,
+      current: current + 1,
+    });
   }
   finally {
-    isLoading.value = false;
+    setTimeout(() => {
+      isLoading.value = false;
+    }, 500);
   }
 };
 
@@ -103,7 +135,7 @@ const handleSuspend = async (id: number) => {
   usePopInfoBox({
     isShow: true,
     type: 'warning',
-    title: t('确认停用 {n}？', { n: server.name }),
+    title: () => t('确认停用 {n}？', { n: server.name }),
     subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
     confirmText: t('确认停用'),
     cancelText: t('取消'),
@@ -113,18 +145,18 @@ const handleSuspend = async (id: number) => {
         theme: 'success',
         message: t('已停用'),
       });
-      await fetchServerList();
+      resetPagination();
     },
   });
 };
 
 const handleEnable = async (id: number) => {
   await patchServerStatus(gatewayId, id, { status: 1 });
-  await fetchServerList();
   Message({
     theme: 'success',
     message: t('已启用'),
   });
+  resetPagination();
 };
 
 const handleDelete = async (id: number) => {
@@ -134,7 +166,7 @@ const handleDelete = async (id: number) => {
       isShow: true,
       type: 'warning',
       title: t('确定删除 {n}？', { n: server.name }),
-      subTitle: t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.name }),
+      subTitle: () => t('删除后，{n} 不可恢复，请谨慎操作！', { n: server.name }),
       confirmText: t('删除'),
       cancelText: t('取消'),
       confirmButtonTheme: 'danger',
@@ -144,14 +176,21 @@ const handleDelete = async (id: number) => {
           theme: 'success',
           message: t('已删除'),
         });
-        await fetchServerList();
+        resetPagination();
       },
     });
   }
 };
 
 const handleServerUpdated = () => {
-  fetchServerList();
+  // 如果是新建mcp重置滚动条到顶部
+  if (!editingServerId.value) {
+    const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
+    if (mcpEl) {
+      mcpEl.scrollTop = 0;
+    }
+  }
+  resetPagination();
 };
 
 const handleCardClick = (id: number) => {
@@ -161,9 +200,23 @@ const handleCardClick = (id: number) => {
   });
 };
 
-onMounted(() => {
+const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
+  if (entry?.isIntersecting) {
+    fetchServerList();
+  }
+};
+
+const resetPagination = () => {
+  // 保留上一次的limit
+  const lastLimit = pagination.value.limit * (pagination.value.current - 1);
+  pagination.value = Object.assign(pagination.value, {
+    limit: lastLimit,
+    current: 1,
+    count: 0,
+    hasNoMore: false,
+  });
   fetchServerList();
-});
+};
 </script>
 
 <style lang="scss" scoped>
@@ -208,21 +261,17 @@ onMounted(() => {
   .add-server-card {
     width: calc(50% - 12px);
   }
-}
 
-@media (min-width: 1200px) {
-  .add-server-card {
-    width: calc(33.333% - 16px);
-  }
-}
-
-@media (min-width: 768px) {
   :deep(.ag-mcp-card-wrapper) {
     width: calc(50% - 12px);
   }
 }
 
 @media (min-width: 1200px) {
+  .add-server-card {
+    width: calc(33.333% - 16px);
+  }
+
   :deep(.ag-mcp-card-wrapper) {
     width: calc(33.333% - 16px);
   }
