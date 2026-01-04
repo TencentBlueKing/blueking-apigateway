@@ -153,6 +153,11 @@ class TestMCPServerListCreateApi:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
+        # mock _fill_prompts_content 避免调用第三方 API
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.serializers._fill_prompts_content",
+            side_effect=lambda x: x,
+        )
 
         data = {
             "name": "test-mcp-server-" + faker.pystr()[:10].lower().replace("_", "-"),
@@ -1134,6 +1139,11 @@ class TestMCPServerPromptsApi:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
+        # mock _fill_prompts_content 避免调用第三方 API
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.serializers._fill_prompts_content",
+            side_effect=lambda x: x,
+        )
 
         data = {
             "description": fake_mcp_server.description,
@@ -1266,6 +1276,59 @@ class TestMCPServerPromptsApi:
         assert len(saved_prompts) == 1
         assert saved_prompts[0]["id"] == 1
 
+    def test_update_prompts_fill_content_from_remote(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试更新 prompts 时自动从第三方获取 content"""
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
+            return_value={"resource1", "resource2"},
+        )
+        # mock fetch_remote_prompts_by_ids 返回带 content 的数据
+        mocker.patch(
+            "apigateway.biz.mcp_server.prompt.MCPServerPromptHandler.fetch_remote_prompts_by_ids",
+            return_value=[
+                {"id": 1, "content": "远程获取的内容1"},
+                {"id": 2, "content": "远程获取的内容2"},
+            ],
+        )
+
+        data = {
+            "description": fake_mcp_server.description,
+            "prompts": [
+                {
+                    "id": 1,
+                    "name": "Prompt 1",
+                    "code": "prompt_001",
+                    "content": "",  # 空 content
+                },
+                {
+                    "id": 2,
+                    "name": "Prompt 2",
+                    "code": "prompt_002",
+                    "content": "本地已有内容",  # 有 content，但也会被远程覆盖
+                },
+            ],
+        }
+
+        resp = request_view(
+            method="PUT",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+
+        assert resp.status_code == 204
+
+        # 验证 content 已被远程数据覆盖
+        extend = MCPServerExtend.objects.get(
+            mcp_server_id=fake_mcp_server.id,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+        )
+        saved_prompts = json.loads(extend.content)
+        assert len(saved_prompts) == 2
+        assert saved_prompts[0]["content"] == "远程获取的内容1"
+        assert saved_prompts[1]["content"] == "远程获取的内容2"
+
 
 class TestMCPServerProtocolType:
     """测试 MCPServer 协议类型相关功能"""
@@ -1275,6 +1338,11 @@ class TestMCPServerProtocolType:
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
+        )
+        # mock _fill_prompts_content 避免调用第三方 API
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.serializers._fill_prompts_content",
+            side_effect=lambda x: x,
         )
 
         data = {
@@ -1304,6 +1372,11 @@ class TestMCPServerProtocolType:
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
+        )
+        # mock _fill_prompts_content 避免调用第三方 API
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.serializers._fill_prompts_content",
+            side_effect=lambda x: x,
         )
 
         data = {
@@ -1448,3 +1521,91 @@ class TestMCPServerProtocolType:
         context = call_args[1]["context"]
         assert context["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
         assert "/mcp/" in context["url"]
+
+
+class TestMCPServerRemotePromptsBatchApi:
+    """测试批量获取第三方平台 Prompts 内容的 API"""
+
+    def test_batch_get_prompts(self, mocker, request_view, fake_gateway):
+        """测试批量获取 prompts 内容"""
+        mock_prompts = [
+            {
+                "id": 1,
+                "name": "代码审查助手",
+                "code": "prompt_001",
+                "content": "你是一个代码审查专家...",
+                "updated_time": "2025-12-15T10:00:00Z",
+                "labels": ["代码", "审查"],
+                "is_public": True,
+            },
+            {
+                "id": 2,
+                "name": "API 文档生成器",
+                "code": "prompt_002",
+                "content": "请根据以下代码生成 API 文档...",
+                "updated_time": "2025-12-14T15:30:00Z",
+                "labels": ["文档", "API"],
+                "is_public": True,
+            },
+        ]
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.prompt.MCPServerPromptHandler.fetch_remote_prompts_by_ids",
+            return_value=mock_prompts,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.remote_prompts_batch",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"ids": [1, 2]},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["prompts"]) == 2
+        assert result["data"]["prompts"][0]["id"] == 1
+        assert result["data"]["prompts"][0]["content"] == "你是一个代码审查专家..."
+        assert result["data"]["prompts"][1]["id"] == 2
+
+    def test_batch_get_prompts_empty_ids(self, mocker, request_view, fake_gateway):
+        """测试空 ID 列表返回错误"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.remote_prompts_batch",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"ids": []},
+        )
+
+        assert resp.status_code == 400
+
+    def test_batch_get_prompts_partial_found(self, mocker, request_view, fake_gateway):
+        """测试部分 ID 找到的情况"""
+        mock_prompts = [
+            {
+                "id": 1,
+                "name": "代码审查助手",
+                "code": "prompt_001",
+                "content": "你是一个代码审查专家...",
+            },
+        ]
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.prompt.MCPServerPromptHandler.fetch_remote_prompts_by_ids",
+            return_value=mock_prompts,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.remote_prompts_batch",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"ids": [1, 999]},  # 999 不存在
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["prompts"]) == 1
+        assert result["data"]["prompts"][0]["id"] == 1
