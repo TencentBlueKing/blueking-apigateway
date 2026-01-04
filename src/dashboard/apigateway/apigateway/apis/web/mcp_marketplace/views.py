@@ -84,6 +84,9 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         # optimize query by using select_related
         queryset = queryset.select_related("gateway", "stage")
 
+        # order by updated_time desc
+        queryset = queryset.order_by("-updated_time")
+
         # note: the stage offline will update related mcp server status to inactive,
         # the stage publish will update the mcp server resource_names,
         # so we don't need to care about is the mcp server stage is correctly published here

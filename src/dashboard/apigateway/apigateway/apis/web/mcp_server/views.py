@@ -100,7 +100,7 @@ from .serializers import (
 )
 class MCPServerListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
-        queryset = MCPServer.objects.filter(gateway=self.request.gateway).order_by("-status", "-id")
+        queryset = MCPServer.objects.filter(gateway=self.request.gateway).order_by("-status", "-updated_time")
 
         page = self.paginate_queryset(queryset)
 
