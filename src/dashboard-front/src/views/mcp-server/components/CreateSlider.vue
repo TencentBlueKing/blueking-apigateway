@@ -64,9 +64,17 @@
             <BkFormItem
               :label="t('服务名称')"
               property="name"
+              :rules="[
+                {
+                  required: true,
+                  message: t('服务名称不能为空'),
+                  trigger: 'blur',
+                },
+              ]"
               required
             >
               <BkInput
+                ref="nameRef"
                 v-model="formData.name"
                 :placeholder="t('请输入小写字母、数字、连字符(-)')"
                 :disabled="isEditMode || noValidStage"
@@ -88,9 +96,10 @@
                   trigger: 'blur',
                 },
               ]"
-              required
+              class="custom-form-item-required"
             >
               <BkInput
+                ref="titleRef"
                 v-model="formData.title"
                 :placeholder="t('请输入3-32个字符的服务展示名称')"
                 :maxlength="32"
@@ -107,9 +116,10 @@
                   trigger: 'blur',
                 },
               ]"
-              required
+              class="custom-form-item-required"
             >
               <BkInput
+                ref="descriptionRef"
                 v-model="formData.description"
                 type="textarea"
                 :minlength="10"
@@ -238,6 +248,7 @@
                 </BkButton>
               </div>
               <div
+                ref="resourceRef"
                 class="resource-selector-wrapper"
                 :class="[{
                   'set-border': ['tool'].includes(activeTab)
@@ -502,9 +513,12 @@ import type { IFormMethod, ITableMethod } from '@/types/common';
 import { refDebounced } from '@vueuse/core';
 import {
   Form,
+  Input,
   Message,
 } from 'bkui-vue';
 import {
+  type IMCPServerPrompt,
+  type IMCPServerTool,
   createServer,
   getServer,
   getServerPrompts,
@@ -543,6 +557,10 @@ const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
+const nameRef = ref<InstanceType<typeof Input>>(null);
+const titleRef = ref<InstanceType<typeof Input>>(null);
+const descriptionRef = ref<InstanceType<typeof Input>>(null);
+const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 
 const { t } = i18n.global;
 
@@ -603,7 +621,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('资源名称'),
     colKey: 'name',
-    cell: (_, { row }) => {
+    cell: (_, { row }: { row: IMCPServerTool }) => {
       if (!row?.name) {
         return '--';
       }
@@ -638,12 +656,12 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'isExistConfig',
     ellipsis: true,
     width: 220,
-    cell: (_, { row }: any) => row.has_openapi_schema ? t('是') : t('否'),
+    cell: (_, { row }: { row: IMCPServerTool }) => row.has_openapi_schema ? t('是') : t('否'),
   },
   {
     title: t('请求方法'),
     colKey: 'methods',
-    cell: (_, { row }: any) => (
+    cell: (_, { row }: { row: IMCPServerTool }) => (
       <BkTag
         theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
       >
@@ -666,7 +684,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('Prompt 名称'),
     colKey: 'name',
-    cell: (_h, { row }) => {
+    cell: (_h, { row }: { row: IMCPServerPrompt }) => {
       if (!row?.name) {
         return '--';
       }
@@ -711,7 +729,7 @@ const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
     title: 'Prompt',
     colKey: 'name',
     ellipsis: true,
-    cell: (_h, { row }) => {
+    cell: (_h, { row }: { row: IMCPServerPrompt }) => {
       return row.name || '--';
     },
   },
@@ -859,6 +877,10 @@ watch(isShow, async () => {
 
 const resetResizeLayout = () => {
   nextTick(() => {
+    const modalContentEl = document.querySelector('.create-slider .bk-modal-content');
+    if (modalContentEl) {
+      modalContentEl.scrollTop = 0;
+    }
     if (!resizeLayoutRef.value) {
       return;
     }
@@ -951,10 +973,36 @@ const isExistPrivatePrompt = (): Promise<boolean> => {
 };
 
 const handleSubmit = async () => {
-  await formRef.value!.validate();
+  try {
+    await formRef.value?.validate();
+  }
+  catch {
+    const {
+      name,
+      title,
+      description,
+    } = formData.value;
+    // 自动focus到必填项
+    if (!name) {
+      nameRef.value?.focus();
+      handleScrollView(nameRef.value?.$el);
+      return;
+    }
+    if (!title?.trim().length < 3) {
+      titleRef.value?.focus();
+      handleScrollView(titleRef.value?.$el);
+      return;
+    }
+    if (!description.length < 10) {
+      titleRef.value?.focus();
+      handleScrollView(titleRef.value?.$el);
+      return;
+    }
+  }
 
   let isValidate = toolSelections.value.length > 0;
   if (!isValidate) {
+    handleScrollView(resourceRef.value);
     Message({
       theme: 'warning',
       message: t('请选择工具'),
@@ -1335,6 +1383,13 @@ const resetSliderData = () => {
   };
 };
 
+const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
+  el.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+  });
+};
+
 const handleBeforeClose = () => {
   const diffFormData = {
     formData: formData.value,
@@ -1401,6 +1456,20 @@ defineExpose({
         color: #3a84ff;
       }
     }
+  }
+}
+
+// 这里直接在formItem写校验规则会触发空校验，所以自定义样式
+:deep(.custom-form-item-required) {
+  position: relative;
+
+  .bk-form-label::after {
+    position: absolute;
+    top: 0;
+    width: 14px;
+    color: #ea3636;
+    text-align: center;
+    content: "*";
   }
 }
 
