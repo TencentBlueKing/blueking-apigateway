@@ -121,7 +121,8 @@ def delete_legacy_resource_version():
     4. resource version is not used in Release
 
     当前风险较小，因为只处理大于 30 个版本的对应 v1 版本的 resource version
-    如果要清理 v2 版本的 resource version，需要重新评估风险，制定清理策略
+    - 如果想要彻底删掉所有的 v1 版本 resource version，需要重新评估改动这个清理任务的逻辑
+    - 如果要清理 v2 版本的 resource version，需要重新评估风险，制定清理策略，另外写一个清理任务
     """
 
     logger.info("begin clean legacy resource version")
