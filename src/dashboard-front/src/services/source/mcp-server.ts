@@ -121,41 +121,49 @@ export const getServerGuideDoc = (apigwId: number, mcp_server_id: number): Promi
 
 /**
  * 获取 MCPServer 用户自定义文档
- * @param apigwId 网关id
- * @param mcp_server_id mcpServer id
+ * @param {Number} apigwId 网关id
+ * @param {Number} mcp_server_id mcpServer id
  */
 export const getCustomServerGuideDoc = (apigwId: number, mcp_server_id: number): Promise<{ content: string }> =>
   http.get(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
 
 /**
  * 新建 MCPServer 用户自定义文档
- * @param apigwId 网关id
- * @param mcp_server_id mcpServer id
- * @param data 自定义指引内容
+ * @param {Number} apigwId 网关id
+ * @param {Number} mcp_server_id mcpServer id
+ * @param {String} data.content 自定义指引内容
  */
 export const addCustomServerGuideDoc = (apigwId: number, mcp_server_id: number, data: { content: string }) =>
   http.post(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
 
 /**
  * 更新 MCPServer 用户自定义文档
- * @param apigwId 网关id
- * @param mcp_server_id mcpServer id
- * @param data 自定义指引内容
+ * @param {Number} apigwId 网关id
+ * @param {Number} mcp_server_id mcpServer id
+ * @param {String} data.content 自定义指引内容
  */
 export const updateCustomServerGuideDoc = (apigwId: number, mcp_server_id: number, data: { content: string }) =>
   http.put(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`, data);
 
 /**
  * 删除 MCPServer 用户自定义文档
- * @param apigwId 网关id
- * @param mcp_server_id mcpServer id
+ * @param {Number} apigwId 网关id
+ * @param {Number} mcp_server_id mcpServer id
  */
 export const deleteCustomServerGuideDoc = (apigwId: number, mcp_server_id: number) =>
   http.delete(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/user-custom-doc/`);
 
 /**
  * 获取 MCPServer 已关联的 Prompts 配置
- * @param apigwId 网关id
+ * @param {Number} apigwId 网关id
  */
 export const getServerPrompts = (apigwId: number): Promise<IMCPServerPrompt> =>
   http.get(`${path}/${apigwId}/mcp-servers/-/remote-prompts/`);
+
+/**
+ * 根据 PromptID 列表批量获取第三方平台 Prompts 内容
+ * @param apigwId 网关id
+ * @param {Number[]} data.ids 当前PromptID组
+ */
+export const getServerPromptsDetail = (apigwId: number, data: { ids: number[] }): Promise<IMCPServerPrompt> =>
+  http.post(`${path}/${apigwId}/mcp-servers/-/remote-prompts/batch/`, data);

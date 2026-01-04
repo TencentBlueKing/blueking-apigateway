@@ -339,68 +339,70 @@
                             </div>
                           </template>
                           <template #main>
-                            <div class="mt-16px pl-24px pr-24px">
-                              <div
-                                v-if="Object.keys(curPromptData)?.length"
-                                class="p-16px prompt-row-detail"
-                              >
-                                <div class="flex items-center gap-4px">
-                                  <div class="max-w-85% min-w-0 flex text-14px font-700 color-#4d4f56">
-                                    <div
-                                      v-bk-tooltips="{
-                                        placement:'top',
-                                        content: `${curPromptData.name} (${curPromptData?.code})`,
-                                        disabled: !isOverflow,
-                                        extCls: 'max-w-880px',
-                                      }"
-                                      class="w-full truncate"
-                                      @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
-                                      @mouseleave="handleMouseleave"
-                                    >
-                                      {{ curPromptData?.name ?? '--' }}
-                                      <span
-                                        class="ml-8px"
+                            <BkLoading :loading="promptDetailLoading">
+                              <div class="mt-16px pl-24px pr-24px">
+                                <div
+                                  v-if="Object.keys(curPromptData)?.length"
+                                  class="p-16px prompt-row-detail"
+                                >
+                                  <div class="flex items-center gap-4px">
+                                    <div class="max-w-85% min-w-0 flex text-14px font-700 color-#4d4f56">
+                                      <div
+                                        v-bk-tooltips="{
+                                          placement:'top',
+                                          content: `${curPromptData.name} (${curPromptData?.code})`,
+                                          disabled: !isOverflow,
+                                          extCls: 'max-w-880px',
+                                        }"
+                                        class="w-full truncate"
+                                        @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                                        @mouseleave="handleMouseleave"
                                       >
-                                        ({{ curPromptData?.code ?? '--' }})
-                                      </span>
+                                        {{ curPromptData?.name ?? '--' }}
+                                        <span
+                                          class="ml-8px"
+                                        >
+                                          ({{ curPromptData?.code ?? '--' }})
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div class="flex items-center">
+                                      <BkTag
+                                        :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                                      >
+                                        {{ curPromptData?.is_public ? t('公开') : t('私有') }}
+                                      </BkTag>
+                                      <BkTag
+                                        v-if="curPromptData?.is_no_perm"
+                                        class="ml-4px"
+                                      >
+                                        {{ t('无权限') }}
+                                      </BkTag>
                                     </div>
                                   </div>
-                                  <div class="flex items-center">
-                                    <BkTag
-                                      :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                                  <template v-if="!curPromptData.is_no_perm">
+                                    <div
+                                      v-if="curPromptData?.content?.length "
+                                      class="mt-12px lh-22px text-14px color-#4d4f56 break-all"
                                     >
-                                      {{ curPromptData?.is_public ? t('公开') : t('私有') }}
-                                    </BkTag>
-                                    <BkTag
-                                      v-if="curPromptData?.is_no_perm"
-                                      class="ml-4px"
+                                      {{ curPromptData?.content }}
+                                    </div>
+                                    <div
+                                      v-if="curPromptData?.labels?.length"
+                                      class="mt-12px"
                                     >
-                                      {{ t('无权限') }}
-                                    </BkTag>
-                                  </div>
+                                      <BkTag
+                                        v-for="label of curPromptData?.labels"
+                                        :key="label"
+                                        class="mr-4px"
+                                      >
+                                        {{ label }}
+                                      </BkTag>
+                                    </div>
+                                  </template>
                                 </div>
-                                <template v-if="!curPromptData.is_no_perm">
-                                  <div
-                                    v-if="curPromptData?.content?.length "
-                                    class="mt-12px lh-22px text-14px color-#4d4f56 break-all"
-                                  >
-                                    {{ curPromptData?.content }}
-                                  </div>
-                                  <div
-                                    v-if="curPromptData?.labels?.length"
-                                    class="mt-12px"
-                                  >
-                                    <BkTag
-                                      v-for="label of curPromptData?.labels"
-                                      :key="label"
-                                      class="mr-4px"
-                                    >
-                                      {{ label }}
-                                    </BkTag>
-                                  </div>
-                                </template>
                               </div>
-                            </div>
+                            </BkLoading>
                           </template>
                         </BkResizeLayout>
                       </template>
@@ -504,7 +506,7 @@
 
 <script lang="tsx" setup>
 import { cloneDeep, uniq, uniqBy } from 'lodash-es';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
 import { InfoLine } from 'bkui-lib/icon';
 import { getStageList } from '@/services/source/stage';
@@ -515,6 +517,7 @@ import {
   Form,
   Input,
   Message,
+  ResizeLayout,
 } from 'bkui-vue';
 import {
   type IMCPServerPrompt,
@@ -522,6 +525,7 @@ import {
   createServer,
   getServer,
   getServerPrompts,
+  getServerPromptsDetail,
   patchServer,
 } from '@/services/source/mcp-server';
 import { usePopInfoBox, useSidebar } from '@/hooks';
@@ -557,16 +561,16 @@ const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
-const nameRef = ref<InstanceType<typeof Input>>(null);
-const titleRef = ref<InstanceType<typeof Input>>(null);
-const descriptionRef = ref<InstanceType<typeof Input>>(null);
-const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 
 const { t } = i18n.global;
 
 let loadingTimer: NodeJS.Timeout | null = null;
 
-const resizeLayoutRef = ref<HTMLElement | null>(null);
+const nameRef = ref<InstanceType<typeof Input>>(null);
+const titleRef = ref<InstanceType<typeof Input>>(null);
+const descriptionRef = ref<InstanceType<typeof Input>>(null);
+const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
+const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
@@ -582,6 +586,7 @@ const formData = ref<FormData>(cloneDeep(defaultFormData.value));
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
+const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
 const url = ref('');
 const filterKeyword = ref('');
@@ -1175,6 +1180,21 @@ const fetchPromptResources = async () => {
         id: item,
       };
     });
+    await fetchPromptResourcesDetail();
+  }
+};
+
+const fetchPromptResourcesDetail = async () => {
+  promptDetailLoading.value = true;
+  try {
+    const res = await getServerPromptsDetail(gatewayStore.currentGateway?.id, { ids: [curPromptData.value.id] });
+    curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
+  }
+  catch {
+    curPromptData.value = {};
+  }
+  finally {
+    promptDetailLoading.value = false;
   }
 };
 
@@ -1182,15 +1202,17 @@ const handlePromptRowClick = ({
   e,
   row,
 }: {
-  e: Event
-  row: TableRowData
+  e: MouseEvent
+  row: IMCPServerPrompt
 }) => {
   e?.stopPropagation();
   const isCheckbox = (e.target as HTMLElement).closest('.custom-ag-table-checkbox');
-  if (isCheckbox) {
+  const isRepeat = `${curPromptData.value.id}&${curPromptData.value.code}` === `${row.id}&${row.code}`;
+  if (isCheckbox || isRepeat) {
     return;
   }
   curPromptData.value = row;
+  fetchPromptResourcesDetail();
 };
 
 const handleRemoveResource = ({
