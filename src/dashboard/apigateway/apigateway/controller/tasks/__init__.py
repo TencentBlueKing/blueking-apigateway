@@ -21,6 +21,7 @@ from apigateway.controller.tasks.clean_task import (
     delete_old_debug_history,
     delete_old_publish_events,
     delete_old_resource_doc_version_records,
+    delete_old_stats_records,
 )
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
@@ -41,4 +42,5 @@ __all__ = [
     "delete_old_debug_history",
     "delete_old_alarm_records",
     "delete_legacy_resource_version",
+    "delete_old_stats_records",
 ]
