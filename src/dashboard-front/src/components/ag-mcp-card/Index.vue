@@ -159,7 +159,6 @@
             <i class="apigateway-icon icon-ag-manual color-#979ba5 text-16px" />
             <div
               v-bk-tooltips="{
-                content: String(server?.tools_count),
                 content: `${t('工具')}: ${String(server?.tools_count)}`,
                 disabled: String(server?.tools_count).length < 6
               }"
@@ -175,7 +174,6 @@
             <i class="apigateway-icon icon-ag-nocomment color-#979ba5 text-16px" />
             <div
               v-bk-tooltips="{
-                content: String(server?.prompts_count),
                 content: `Prompts: ${String(server?.prompts_count)}`,
                 disabled: String(server?.prompts_count).length < 6
               }"

@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentMap, type IHeaderWriteFormData, type ISchema, defaultComponentMap } from '@/components/plugin-manage/schema-type';
+import { type ComponentMap, type IHeaderWriteFormData, type ISchema, defaultComponentMap } from '@/components/plugin-manage/schema-type';
 
 type ICustomFormData = IHeaderWriteFormData & Record<string, any>;
 
