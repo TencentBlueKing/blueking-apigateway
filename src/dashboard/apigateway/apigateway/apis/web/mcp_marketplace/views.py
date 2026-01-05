@@ -203,6 +203,9 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
         prompts = MCPServerHandler.get_prompts(instance.id)
 
+        # 获取用户自定义文档
+        user_custom_doc = MCPServerHandler.get_user_custom_doc(instance.id)
+
         serializer = self.get_serializer(
             instance,
             context={
@@ -211,6 +214,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "labels": labels,
                 "prompts_count_map": prompts_count_map,
                 "prompts": prompts,
+                "user_custom_doc": user_custom_doc,
             },
         )
         # 返回工具列表页面需要的信息

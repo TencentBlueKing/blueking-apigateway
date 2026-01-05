@@ -371,6 +371,26 @@ class MCPServerHandler:
 
         return prompts_count_map
 
+    @staticmethod
+    def get_user_custom_doc(mcp_server_id: int) -> str:
+        """获取 MCPServer 的用户自定义文档
+
+        Args:
+            mcp_server_id: MCPServer ID
+
+        Returns:
+            用户自定义文档内容，如果不存在则返回空字符串
+        """
+        extend = MCPServerExtend.objects.filter(
+            mcp_server_id=mcp_server_id,
+            type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
+        ).first()
+
+        if not extend or not extend.content:
+            return ""
+
+        return extend.content
+
 
 class MCPServerPermissionHandler:
     @staticmethod
