@@ -133,9 +133,13 @@ class MCPServerRetrieveOutputSLZ(MCPServerBaseOutputSLZ):
     tools = serializers.ListField(child=MCPServerToolOutputSLZ(), help_text="MCPServer 工具列表")
     prompts = serializers.SerializerMethodField(help_text="MCPServer Prompts 列表")
     maintainers = serializers.ListField(child=serializers.CharField(), help_text="MCPServer 维护者")
+    user_custom_doc = serializers.SerializerMethodField(help_text="用户自定义文档")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
+
+    def get_user_custom_doc(self, obj) -> str:
+        return self.context.get("user_custom_doc", "")
 
     def get_prompts(self, obj):
         prompts = self.context.get("prompts", [])
