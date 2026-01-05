@@ -557,7 +557,7 @@ BKAIDEV_URL_PREFIX = (
 # BKAIDev 平台 API 超时时间（秒）
 BKAIDEV_API_TIMEOUT = env.int("BKAIDEV_API_TIMEOUT", 30)
 # 是否启用 Mock 模式（第三方 API 未就绪时使用）
-BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", True)
+BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 
 # ==============================================================================
 # 网关全局配置
