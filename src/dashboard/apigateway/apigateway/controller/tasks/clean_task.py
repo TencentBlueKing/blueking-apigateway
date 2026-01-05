@@ -25,6 +25,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from apigateway.apps.api_debug.models import APIDebugHistory
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.core.constants import ResourceVersionSchemaEnum
@@ -170,3 +171,39 @@ def delete_legacy_resource_version():
 
     # delete the resource version
     ResourceVersion.objects.filter(id__in=to_delete_legacy_resource_version_ids).delete()
+
+
+@shared_task(ignore_result=True)
+def delete_old_stats_records():
+    """清理旧的统计记录
+    1. two tables: metrics_stats_api_request_by_day, metrics_stats_app_request_by_day
+    2. delete records 5 years ago
+    3. max 10000 records per time
+    """
+    logger.info("begin clean old stats records")
+
+    max_records_per_time = 10000
+
+    delete_end_time = timezone.now() - relativedelta(years=5) - relativedelta(days=1)
+
+    stats_api_ids_to_delete = list(
+        StatisticsGatewayRequestByDay.objects.filter(start_time__lte=delete_end_time)
+        .order_by("start_time")
+        .values_list("id", flat=True)[:max_records_per_time]
+    )
+
+    if stats_api_ids_to_delete:
+        count, _ = StatisticsGatewayRequestByDay.objects.filter(id__in=stats_api_ids_to_delete).delete()
+
+        logger.info("deleted metrics_stats_api_request_by_day %s stats records older than %s", count, delete_end_time)
+
+    stats_app_ids_to_delete = list(
+        StatisticsAppRequestByDay.objects.filter(start_time__lte=delete_end_time)
+        .order_by("start_time")
+        .values_list("id", flat=True)[:max_records_per_time]
+    )
+
+    if stats_app_ids_to_delete:
+        count, _ = StatisticsAppRequestByDay.objects.filter(id__in=stats_app_ids_to_delete).delete()
+
+        logger.info("deleted metrics_stats_app_request_by_day %s stats records older than %s", count, delete_end_time)

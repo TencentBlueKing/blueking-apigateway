@@ -26,7 +26,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 
-from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
+from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
@@ -237,30 +237,34 @@ class GatewayHandler:
 
         Release.objects.delete_by_gateway_id(gateway_id)
 
-        # delete backend config
+        # 3. delete backend config
         BackendConfig.objects.filter(gateway_id=gateway_id).delete()
 
-        # 3. delete stage
+        # 4. delete stage
 
         StageHandler.delete_by_gateway_id(gateway_id)
 
-        # 4. delete resource
+        # 5. delete resource
 
         ResourceHandler.delete_by_gateway_id(gateway_id)
 
-        # 5. delete resource-version
+        # 6. delete resource-version
 
         ResourceVersionHandler.delete_by_gateway_id(gateway_id)
 
-        # plugin bindings
+        # 7. plugin bindings
 
         PluginBinding.objects.delete_by_gateway_id(gateway_id)
 
-        # delete backend
+        # 8. delete backend
 
         Backend.objects.filter(gateway_id=gateway_id).delete()
 
-        # delete gateway
+        # 9. delete stats
+        StatisticsGatewayRequestByDay.objects.filter(gateway_id=gateway_id).delete()
+        StatisticsAppRequestByDay.objects.filter(gateway_id=gateway_id).delete()
+
+        # 10. delete gateway
         Gateway.objects.filter(id=gateway_id).delete()
 
     @staticmethod
