@@ -246,6 +246,59 @@ class TestMCPMarketplaceServerRetrieveApi:
 
         assert resp.status_code == 404
 
+    def test_retrieve_with_user_custom_doc(self, mocker, request_view, fake_public_mcp_server):
+        """测试详情接口返回用户自定义文档"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            return_value="# Guideline Content",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([], {}),
+        )
+
+        # 给 mcp_server 添加用户自定义文档
+        custom_doc_content = "# 用户自定义文档\n\n这是一份自定义的使用说明。"
+        G(
+            MCPServerExtend,
+            mcp_server=fake_public_mcp_server,
+            type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
+            content=custom_doc_content,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.retrieve",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "user_custom_doc" in result["data"]
+        assert result["data"]["user_custom_doc"] == custom_doc_content
+
+    def test_retrieve_without_user_custom_doc(self, mocker, request_view, fake_public_mcp_server):
+        """测试详情接口在没有用户自定义文档时返回空字符串"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            return_value="# Guideline Content",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([], {}),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.retrieve",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "user_custom_doc" in result["data"]
+        assert result["data"]["user_custom_doc"] == ""
+
 
 class TestMCPMarketplaceServerToolDocRetrieveApi:
     def test_retrieve(self, mocker, request_view, fake_public_mcp_server):
