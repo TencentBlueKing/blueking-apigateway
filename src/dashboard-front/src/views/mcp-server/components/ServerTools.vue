@@ -355,15 +355,17 @@ const toolGroupList = computed(() => {
 });
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setSideMaxH = computed(() => {
-  const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 640 : 600)
-    : (isShowNoticeAlert.value ? 516 : 476);
+  if (page === 'market') {
+    return '100%';
+  }
+  const offsetH = isShowNoticeAlert.value ? 516 : 476;
   return `calc(100vh - ${offsetH}px)`;
 });
 const setMainMaxH = computed(() => {
-  const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 540 : 500)
-    : (isShowNoticeAlert.value ? 410 : 370);
+  if (page === 'market') {
+    return '100%';
+  }
+  const offsetH = isShowNoticeAlert.value ? 410 : 370;
   return `calc(100vh - ${offsetH}px)`;
 });
 
@@ -552,7 +554,8 @@ $code-color: #63656e;
   .left-aside-wrap {
     width: auto;
     min-width: 290px;
-    background-color: #fff;
+    height: 100%;
+    background-color: #ffffff;
     border-radius: 2px;
     box-shadow: 0 2px 4px 0 #1919290d;
 
