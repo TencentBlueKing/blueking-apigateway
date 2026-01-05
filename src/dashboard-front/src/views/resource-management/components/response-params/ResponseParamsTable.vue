@@ -262,7 +262,7 @@ const emit = defineEmits<{
   'change-code': [code: string]
 }>();
 
-const { data: importedJsonText, open } = useFileSystemAccess({
+const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
   dataType: 'Text',
   types: [{
     description: 'text',
@@ -515,23 +515,42 @@ const handleDelete = () => {
 
 const handleImportSchema = async () => {
   await open();
-  try {
-    if (importedJsonText.value) {
-      const jsonObject = JSON.parse(importedJsonText.value);
+  // 文件大小限制为 10KB
+  if (fileSize.value > 10 * 1024) {
+    Message({
+      theme: 'warning',
+      message: t('文件大小超过 10KB'),
+    });
+    return;
+  }
+
+  if (importedJsonText.value) {
+    let jsonObject: any = {};
+    try {
+      jsonObject = JSON.parse(importedJsonText.value);
+    }
+    catch {
+      Message({
+        theme: 'error',
+        message: t('请选择合法的 JSON'),
+      });
+      return;
+    }
+    try {
       const schema = toJsonSchema(jsonObject);
       initTableData(schema);
     }
-    else {
+    catch {
       Message({
-        theme: 'warning',
-        message: t('请选择合法的 JSON'),
+        theme: 'error',
+        message: t('生成 JSON Schema 失败'),
       });
     }
   }
-  catch (e) {
+  else {
     Message({
       theme: 'error',
-      message: e,
+      message: t('请选择合法的 JSON'),
     });
   }
 };
