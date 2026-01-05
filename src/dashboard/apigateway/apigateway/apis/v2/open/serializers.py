@@ -423,3 +423,38 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceDetailOutputSLZ"
+
+
+class GetDatetimeInputSLZ(serializers.Serializer):
+    tz_name = serializers.CharField(required=False, allow_blank=True, help_text="时区名，默认 Asia/Shanghai")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GetDatetimeInputSLZ"
+
+
+class GetDatetimeOutputSLZ(serializers.Serializer):
+    datetime = serializers.CharField(read_only=True, help_text="当前时间")
+
+
+class GetCurrentUnixTimestampOutputSLZ(serializers.Serializer):
+    unix_timestamp = serializers.IntegerField(read_only=True, help_text="当前时间戳")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GetCurrentUnixTimestampOutputSLZ"
+
+
+class ParseDatetimeStrToTimestampInputSLZ(serializers.Serializer):
+    datetime = serializers.CharField(required=True, help_text="时间字符串")
+    datetime_format = serializers.CharField(
+        required=False, allow_blank=True, help_text="时间格式，默认 %Y-%m-%d %H:%M:%S, python's datetime format"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.ParseDatetimeStrToTimestampInputSLZ"
+
+
+class ParseDatetimeStrToTimestampOutputSLZ(serializers.Serializer):
+    timestamp = serializers.IntegerField(read_only=True, help_text="时间戳")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.ParseDatetimeStrToTimestampOutputSLZ"

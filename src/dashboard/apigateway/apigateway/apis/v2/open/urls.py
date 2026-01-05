@@ -117,4 +117,34 @@ urlpatterns = [
         views.UserMCPServerListApi.as_view(),
         name="openapi.v2.open.user.mcp_server.list",
     ),
+    # Some tools for official apigateway mcp-server
+    path(
+        "tools/",
+        include(
+            [
+                path(
+                    "time/",
+                    include(
+                        [
+                            path(
+                                "get_datetime/",
+                                views.GetDatetimeApi.as_view(),
+                                name="openapi.v2.open.tools.time.get_datetime",
+                            ),
+                            path(
+                                "get_current_unix_timestamp/",
+                                views.GetCurrentUnixTimestampApi.as_view(),
+                                name="openapi.v2.open.tools.time.get_current_unix_timestamp",
+                            ),
+                            path(
+                                "parse_datetime_str_to_timestamp/",
+                                views.ParseDatetimeStrToTimestampApi.as_view(),
+                                name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
 ]

@@ -18,6 +18,9 @@
 #
 import logging
 import operator
+import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
@@ -60,6 +63,9 @@ from .serializers import (
     GatewayResourceDetailInputSLZ,
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListOutputSLZ,
+    GetCurrentUnixTimestampOutputSLZ,
+    GetDatetimeInputSLZ,
+    GetDatetimeOutputSLZ,
     MCPServerAppPermissionApplyRecordListOutputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
@@ -67,6 +73,8 @@ from .serializers import (
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
+    ParseDatetimeStrToTimestampInputSLZ,
+    ParseDatetimeStrToTimestampOutputSLZ,
     UserMCPServerListInputSLZ,
     UserMCPServerListOutputSLZ,
 )
@@ -689,3 +697,68 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 resource_data.name,
             )
             return None
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取当前时间",
+        query_serializer=GetDatetimeInputSLZ,
+        responses={status.HTTP_200_OK: GetDatetimeOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GetDatetimeApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        # get tz_name from request.params
+        slz = GetDatetimeInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        tz_name = slz.validated_data.get("tz_name")
+        # default tz_name is Asia/Shanghai
+        if not tz_name:
+            tz_name = settings.TIME_ZONE
+
+        current_time = datetime.now(ZoneInfo(tz_name))
+        slz = GetDatetimeOutputSLZ({"datetime": current_time.strftime("%Y-%m-%d %H:%M:%S")})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取当前时间",
+        responses={status.HTTP_200_OK: GetDatetimeOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GetCurrentUnixTimestampApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        slz = GetCurrentUnixTimestampOutputSLZ({"unix_timestamp": int(time.time())})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="将时间字符串转换为时间戳",
+        request_body=ParseDatetimeStrToTimestampInputSLZ,
+        responses={status.HTTP_200_OK: ParseDatetimeStrToTimestampOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        slz = ParseDatetimeStrToTimestampInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        datetime_str = slz.validated_data.get("datetime")
+        datetime_format = slz.validated_data.get("datetime_format", "%Y-%m-%d %H:%M:%S")
+
+        timestamp = int(time.mktime(datetime.strptime(datetime_str, datetime_format).timetuple()))
+
+        slz = ParseDatetimeStrToTimestampOutputSLZ({"timestamp": timestamp})
+        return OKJsonResponse(data=slz.data)
+
+
+# - 2. add log query by request_id tool
+# - 4. add the definition to definition.yaml
