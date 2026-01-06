@@ -70,7 +70,23 @@
             :disabled="row.in === 'body'"
             :placeholder="t('参数名')"
             class="edit-input"
-          />
+            :class="{ 'has-error': invalidRowIdMap[row.id] }"
+            @change="() => clearInvalidState(row.id)"
+            @input="() => clearInvalidState(row.id)"
+          >
+            <template
+              v-if="invalidRowIdMap[row.id]"
+              #suffix
+            >
+              <div class="h-full pr-6px bg-#fff0f1 content-center">
+                <AgIcon
+                  name="exclamation-circle-fill"
+                  size="12"
+                  class="color-#EA3636 h-12px "
+                />
+              </div>
+            </template>
+          </BkInput>
         </template>
       </BkTableColumn>
       <BkTableColumn
@@ -225,6 +241,7 @@
       <template #expandRow="row">
         <div v-if="row?.in === 'body'">
           <RequestParamsTable
+            ref="sub-table-ref"
             v-model="row.body"
             :readonly="readonly"
           />
@@ -321,6 +338,7 @@ const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
 const { t } = useI18n();
 
 const tableRef = ref();
+const subTableRef = useTemplateRef('sub-table-ref');
 
 const tableData = ref<ITableRow[]>([
   {
@@ -333,7 +351,10 @@ const tableData = ref<ITableRow[]>([
     description: '',
   },
 ]);
-const inList = ref([
+
+const invalidRowIdMap = ref<Record<string, boolean>>({});
+
+const inList = [
   {
     label: 'Header',
     value: 'header',
@@ -350,9 +371,9 @@ const inList = ref([
     label: 'Body',
     value: 'body',
   },
-]);
+];
 
-const typeList = ref([
+const typeList = [
   {
     label: 'String',
     value: 'string',
@@ -373,7 +394,7 @@ const typeList = ref([
     label: 'Object',
     value: 'object',
   },
-]);
+];
 
 const convertPropertyType = (type: string): JSONSchema7TypeName => {
   switch (type) {
@@ -742,18 +763,47 @@ const handleImportSchema = async () => {
   }
 };
 
+const setInvalidRowId = () => {
+  invalidRowIdMap.value = {};
+  tableData.value?.forEach((row) => {
+    if (!row.name) {
+      invalidRowIdMap.value[row.id] = true;
+    }
+  });
+};
+
+const clearInvalidState = (rowId: string) => {
+  delete invalidRowIdMap.value[rowId];
+};
+
 onMounted(() => {
   tableRef.value?.setAllRowExpand(true);
 });
 
 defineExpose({
-  getValue: () => {
-    const parameters = genParameters();
-    const requestBody = genBody();
-    return {
-      parameters,
-      requestBody,
-    };
+  getValue: async () => {
+    try {
+      await subTableRef.value?.validate();
+
+      setInvalidRowId();
+      if (Object.keys(invalidRowIdMap.value).length) {
+        throw new Error('invalid request params');
+      }
+
+      const parameters = genParameters();
+      const requestBody = genBody();
+      return {
+        parameters,
+        requestBody,
+      };
+    }
+    catch {
+      Message({
+        theme: 'warning',
+        message: t('请填写完整的请求参数'),
+      });
+      throw new Error('invalid request params');
+    }
   },
 });
 </script>
@@ -789,6 +839,13 @@ defineExpose({
 
   &:hover {
     border: 1px solid #a3c5fd;
+  }
+
+  &.has-error {
+
+    :deep(.bk-input--text) {
+      background-color: #fff0f1 !important;
+    }
   }
 }
 
