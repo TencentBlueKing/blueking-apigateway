@@ -29,7 +29,10 @@
             <AgIcon name="right-shape" />
           </td>
           <!-- 字段名 -->
-          <td class="table-body-row-cell name-col">
+          <td
+            class="table-body-row-cell name-col"
+            :class="{ 'has-error': invalidRowIdMap[row.id] }"
+          >
             <div
               v-if="readonly"
               class="readonly-value-wrapper"
@@ -40,7 +43,21 @@
               v-else
               v-model="row.name"
               :placeholder="t('字段名')"
-            />
+              @input="() => handleNameInput(row.id)"
+            >
+              <template
+                v-if="invalidRowIdMap[row.id]"
+                #suffix
+              >
+                <div class="h-full pr-6px bg-#fff0f1 content-center">
+                  <AgIcon
+                    name="exclamation-circle-fill"
+                    size="12"
+                    class="color-#EA3636 h-12px "
+                  />
+                </div>
+              </template>
+            </BkInput>
           </td>
           <!-- 字段类型 -->
           <td class="table-body-row-cell type">
@@ -112,6 +129,7 @@
             class="pl-16px"
           >
             <ResponseParamsSubTable
+              ref="recursive-sub-table-ref"
               v-model="row.properties"
               :readonly="readonly"
             />
@@ -143,6 +161,7 @@ const { readonly = false } = defineProps<IProps>();
 const { t } = useI18n();
 
 const tableRef = ref();
+const recursiveSubTableRef = useTemplateRef('recursive-sub-table-ref');
 
 const typeList = ref([
   {
@@ -167,6 +186,8 @@ const typeList = ref([
   },
 ]);
 
+const invalidRowIdMap = ref<Record<string, boolean>>({});
+
 const genRow = () => {
   return {
     id: uniqueId(),
@@ -187,7 +208,7 @@ const isAddFieldVisible = (row: ITableRow) => {
 };
 
 const addField = (row: ITableRow) => {
-  const targetRow = tableData.value.find(data => data.id === row.id);
+  const targetRow = tableData.value?.find(data => data.id === row.id);
   if (targetRow) {
     if (targetRow.properties) {
       targetRow.properties.push(genRow());
@@ -199,14 +220,14 @@ const addField = (row: ITableRow) => {
 };
 
 const removeField = (row: ITableRow) => {
-  const index = tableData.value.findIndex(data => data.id === row.id);
-  if (index !== -1) {
-    tableData.value.splice(index, 1);
+  const index = tableData.value?.findIndex(data => data.id === row.id);
+  if (index !== undefined && index !== -1) {
+    tableData.value?.splice(index, 1);
   }
 };
 
 const handleTypeChange = (row: ITableRow) => {
-  const targetRow = tableData.value.find(data => data.id === row.id);
+  const targetRow = tableData.value?.find(data => data.id === row.id);
   if (targetRow) {
     if (row.type === 'object' || row.type === 'array') {
       targetRow.properties = [genRow()];
@@ -217,9 +238,38 @@ const handleTypeChange = (row: ITableRow) => {
   }
 };
 
+const setInvalidRowId = () => {
+  invalidRowIdMap.value = {};
+  tableData.value?.forEach((row) => {
+    if (!row.name) {
+      invalidRowIdMap.value[row.id] = true;
+    }
+  });
+};
+
+const handleNameInput = (rowId: string) => {
+  delete invalidRowIdMap.value[rowId];
+};
+
 onMounted(() => {
   tableRef.value?.setAllRowExpand(true);
 });
+
+defineExpose({
+  validate: () => new Promise((resolve, reject) => {
+    if (recursiveSubTableRef.value?.validate) {
+      recursiveSubTableRef.value.validate().catch(() => {
+        reject(false);
+      });
+    }
+    setInvalidRowId();
+    if (Object.keys(invalidRowIdMap.value).length > 0) {
+      reject(false);
+    }
+    resolve(true);
+  }),
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -251,6 +301,16 @@ onMounted(() => {
 
         &.name-col {
           border-left: none;
+
+          &.has-error {
+
+            :deep(.bk-input) {
+
+              .bk-input--text {
+                background-color: #fff0f1 !important;
+              }
+            }
+          }
         }
 
         &.type {

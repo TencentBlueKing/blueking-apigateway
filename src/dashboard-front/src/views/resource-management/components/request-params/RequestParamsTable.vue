@@ -29,7 +29,10 @@
             <AgIcon name="right-shape" />
           </td>
           <!-- 字段名 -->
-          <td class="table-body-row-cell">
+          <td
+            class="table-body-row-cell"
+            :class="{ 'has-error': invalidRowIdMap[row.id] }"
+          >
             <div
               v-if="readonly"
               class="readonly-value-wrapper"
@@ -40,7 +43,21 @@
               v-else
               v-model="row.name"
               :placeholder="t('字段名')"
-            />
+              @input="() => clearInvalidState(row.id)"
+            >
+              <template
+                v-if="invalidRowIdMap[row.id]"
+                #suffix
+              >
+                <div class="h-full pr-6px bg-#fff0f1 content-center">
+                  <AgIcon
+                    name="exclamation-circle-fill"
+                    size="12"
+                    class="color-#EA3636 h-12px "
+                  />
+                </div>
+              </template>
+            </BkInput>
           </td>
           <!-- 字段类型 -->
           <td class="table-body-row-cell type">
@@ -139,6 +156,7 @@
             class="pl-16px"
           >
             <RequestParamsTable
+              ref="recursive-sub-table-refs"
               v-model="row.body"
               :readonly="readonly"
             />
@@ -171,7 +189,11 @@ interface IBodyRow {
   body?: IBodyRow[]
 }
 
-const typeList = ref([
+const recursiveSubTableRef = useTemplateRef('recursive-sub-table-refs');
+
+const invalidRowIdMap = ref<Record<string, boolean>>({});
+
+const typeList = [
   {
     label: 'String',
     value: 'string',
@@ -192,7 +214,7 @@ const typeList = ref([
     label: 'Object',
     value: 'object',
   },
-]);
+];
 
 const genBodyRow = (id?: string) => {
   return {
@@ -246,6 +268,41 @@ const removeField = (row: IBodyRow) => {
     tableData.value!.splice(index, 1);
   }
 };
+
+const setInvalidRowId = () => {
+  invalidRowIdMap.value = {};
+  tableData.value?.forEach((row) => {
+    if (!row.name) {
+      invalidRowIdMap.value[row.id] = true;
+    }
+  });
+};
+
+const clearInvalidState = (rowId: string) => {
+  delete invalidRowIdMap.value[rowId];
+};
+
+defineExpose({
+  validate: () => {
+    if (recursiveSubTableRef.value?.[0]) {
+      return recursiveSubTableRef.value[0].validate().then(() => new Promise((resolve, reject) => {
+        setInvalidRowId();
+        if (Object.keys(invalidRowIdMap.value).length > 0) {
+          reject('invalid request params');
+        }
+        resolve(true);
+      }));
+    }
+    return new Promise((resolve, reject) => {
+      setInvalidRowId();
+      if (Object.keys(invalidRowIdMap.value).length > 0) {
+        reject('invalid request params');
+      }
+      resolve(true);
+    });
+  },
+});
+
 </script>
 
 <style lang="scss" scoped>
@@ -329,6 +386,13 @@ const removeField = (row: IBodyRow) => {
 
           &.add-btn {
             margin-right: 16px;
+          }
+        }
+
+        &.has-error {
+
+          :deep(.bk-input--text) {
+            background-color: #fff0f1 !important;
           }
         }
       }
