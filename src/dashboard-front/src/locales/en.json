@@ -48,6 +48,7 @@
   "校验": "Check",
   "精度": "Precision",
   "自动刷新间隔": "Auto Refresh Interval",
+  "删除网关": "Delete Gateway",
   "蓝鲸 API 网关(API Gateway) 是蓝鲸体系的 API 托管服务。": "API Gateway is the API hosting service of the BlueKing system.",
   "可以帮助开发者创建、发布、维护，和保护 API，以快速、低成本、低风险地开放系统的数据或服务。": "It can help developers create, publish, maintain, and protect APIs to open up the system's data or services quickly, inexpensively, and with low risk.",
   "API 网关支持“自助配置接入”和“组件编码接入”两种方式，并提供了统一的用户认证、蓝鲸应用鉴权、请求转发、日志记录等功能。": "The API Gateway supports both \" Self-Configuration\" and \"Component Coding\", and provides unified user authentication, app authentication, request forwarding, and log recording.",
