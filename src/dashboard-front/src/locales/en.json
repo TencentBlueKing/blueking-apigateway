@@ -2203,5 +2203,7 @@
   "通过 JSON 生成": "Generate by JSON",
   "共找到 {0} 个结果": "Found {0} result(s)",
   "文件大小超过 10KB": "File size exceeds 10KB",
-  "生成 JSON Schema 失败": "Failed to generate JSON Schema"
+  "生成 JSON Schema 失败": "Failed to generate JSON Schema",
+  "请填写完整的响应参数": "Please fill in the complete response parameters",
+  "请填写完整的请求参数": "Please fill in the complete request parameters"
 }

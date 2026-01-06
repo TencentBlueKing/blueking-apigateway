@@ -246,14 +246,15 @@ const handleSubmit = async () => {
     return;
   }
 
-  const baseFormData = baseInfoRef.value.formData;
-  const frontFormData = frontConfigRef.value.frontConfigData;
-  const requestParamsData = hasNoRequestParams.value ? {} : requestParamsRef.value.getValue();
-  const backFormData = backConfigRef.value.backConfigData;
-  const responseParamsData = responseParamsRef.value.getValue();
-
   try {
     submitLoading.value = true;
+
+    const baseFormData = baseInfoRef.value.formData;
+    const frontFormData = frontConfigRef.value.frontConfigData;
+    const requestParamsData = hasNoRequestParams.value ? {} : await requestParamsRef.value.getValue();
+    const backFormData = backConfigRef.value.backConfigData;
+    const responseParamsData = await responseParamsRef.value.getValue();
+
     const params = {
       ...baseFormData,
       ...frontFormData,

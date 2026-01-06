@@ -47,6 +47,7 @@
 import ResponseParamsTable from './ResponseParamsTable.vue';
 import { type JSONSchema7 } from 'json-schema';
 import { uniqueId } from 'lodash-es';
+import { Message } from 'bkui-vue';
 
 interface IProp {
   detail?: {
@@ -131,13 +132,22 @@ const handleDelete = (response: IResponse) => {
 };
 
 defineExpose({
-  getValue: () => {
-    const result: any = {};
-    responseParamsTableRefs.value.forEach((item) => {
-      const { code, body } = item.getValue();
-      result[code] = body;
-    });
-    return result;
+  getValue: async () => {
+    try {
+      const result: any = {};
+      for (const item of responseParamsTableRefs.value) {
+        const { code, body } = await item.getValue();
+        result[code] = body;
+      }
+      return result;
+    }
+    catch {
+      Message({
+        theme: 'warning',
+        message: t('请填写完整的响应参数'),
+      });
+      throw new Error('invalid response params');
+    }
   },
 });
 

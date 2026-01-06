@@ -204,6 +204,7 @@
                     class="pl-16px"
                   >
                     <ResponseParamsSubTable
+                      ref="sub-table-refs"
                       v-model="row.properties"
                       :readonly="readonly"
                     />
@@ -274,11 +275,13 @@ const { t } = useI18n();
 
 const tableData = ref<ITableRow[]>([]);
 const activeIndex = ref<string[]>(['currentCollapse']);
-const tableRef = ref();
 const localCode = ref('');
 const isEditingCode = ref(false);
 
-const typeList = ref([
+const tableRef = ref();
+const subTableRefs = useTemplateRef('sub-table-refs');
+
+const typeList = [
   {
     label: 'String',
     value: 'string',
@@ -299,7 +302,7 @@ const typeList = ref([
     label: 'Object',
     value: 'object',
   },
-]);
+];
 
 const convertPropertyType = (type: string): JSONSchema7TypeName => {
   switch (type) {
@@ -560,10 +563,22 @@ onMounted(() => {
 });
 
 defineExpose({
-  getValue: () => ({
-    code: response.code,
-    body: genBody(),
-  }),
+  getValue: async () => {
+    try {
+      if (subTableRefs.value?.length) {
+        for (const subTable of subTableRefs.value) {
+          await subTable?.validate();
+        }
+      }
+      return {
+        code: response.code,
+        body: genBody(),
+      };
+    }
+    catch {
+      throw new Error('invalid response params');
+    }
+  },
 });
 </script>
 
