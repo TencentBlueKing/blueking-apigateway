@@ -1,3 +1,16 @@
+<!-- 2026-01-06 -->
+# V1.19.3 Release Log
+
+### Features
+
+- MCP Server supports configuring Chinese display name
+- MCP Server supports configuring Prompt
+- MCP Server supports custom usage guidance
+- MCP Server adds request headers X-Bkapi-Mcp-Server-Id/X-Bkapi-Mcp-Server-Name
+- MCP Server supports Streamable HTTP protocol
+
+---
+
 <!-- 2025-11-20 -->
 # V1.19.1 Release Log
 

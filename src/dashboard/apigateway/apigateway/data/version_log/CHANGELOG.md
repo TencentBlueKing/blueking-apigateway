@@ -1,3 +1,16 @@
+<!-- 2026-01-06 -->
+# V1.19.3 版本更新日志
+
+### 新增功能
+
+- MCP Server 支持配置中文展示名
+- MCP Server 支持配置 Prompt
+- MCP Server 支持自定义使用指引
+- MCP Server 增加请求头 X-Bkapi-Mcp-Server-Id/X-Bkapi-Mcp-Server-Name
+- MCP Server 支持 Streamable HTTP 协议
+
+---
+
 <!-- 2025-11-20 -->
 # V1.19.1 版本更新日志
 
