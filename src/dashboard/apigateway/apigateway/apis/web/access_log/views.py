@@ -20,19 +20,18 @@ import random
 import time
 from datetime import datetime
 from io import StringIO
-from typing import Dict, List
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
 from apigateway.biz.access_log.data_scrubber import DataScrubber
+from apigateway.biz.access_log.log import LogHandler
 from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Gateway, Stage
@@ -82,20 +81,6 @@ class LogTimeChartRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-def add_or_refine_fields(logs: List[Dict]):
-    """为日志添加扩展字段"""
-    for log in logs:
-        if log.get("error"):
-            log["response_desc"] = _("网关未请求或请求后端接口异常，响应内容由网关提供。")
-        else:
-            log["response_desc"] = _("网关已请求后端接口，并将其响应原样返回。")
-
-        if log.get("status") == 200 and log.get("response_body") == "":
-            log["response_body"] = _("当状态码为 200 时，不记录响应正文")
-
-    return logs
-
-
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -133,7 +118,7 @@ class SearchLogListApi(generics.ListAPIView):
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 添加扩展数据
-        logs = add_or_refine_fields(logs)
+        logs = LogHandler.add_or_refine_fields(logs)
 
         paginator = LimitOffsetPaginator(total_count, data["offset"], data["limit"])
 
@@ -183,7 +168,7 @@ class LogExportApi(generics.RetrieveAPIView):
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         # 增加扩展数据
-        logs = add_or_refine_fields(logs)
+        logs = LogHandler.add_or_refine_fields(logs)
 
         # 准备文件名称数据
         gateway = Gateway.objects.get(id=request.gateway.id)
@@ -233,12 +218,7 @@ class LogDetailRetrieveApi(generics.RetrieveAPIView):
         validator = SignatureValidator(settings.LOG_LINK_SECRET, request, LOG_LINK_EXPIRE_SECONDS)
         validator.is_valid(raise_exception=True)
 
-        client = LogSearchClient(request_id=request_id)
-
-        total_count, logs = client.search_logs()
-        # 去除 params、body 中的敏感数据
-        logs = DataScrubber().scrub_sensitive_data(logs)
-        logs = add_or_refine_fields(logs)
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 
@@ -263,12 +243,7 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
         """
         获取指定 request_id 日志的分享链接
         """
-        client = LogSearchClient(request_id=request_id)
-
-        total_count, logs = client.search_logs()
-        # 去除 params、body 中的敏感数据
-        logs = DataScrubber().scrub_sensitive_data(logs)
-        logs = add_or_refine_fields(logs)
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 

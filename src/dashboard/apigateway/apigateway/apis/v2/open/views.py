@@ -37,6 +37,7 @@ from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MC
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.access_log.log import LogHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -55,6 +56,7 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
+from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -66,6 +68,8 @@ from .serializers import (
     GetCurrentUnixTimestampOutputSLZ,
     GetDatetimeInputSLZ,
     GetDatetimeOutputSLZ,
+    LogSearchByRequestIdInputSLZ,
+    LogSearchByRequestIdOutputSLZ,
     MCPServerAppPermissionApplyRecordListOutputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
@@ -760,5 +764,29 @@ class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-# - 2. add log query by request_id tool
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="根据 request_id 查询日志",
+        query_serializer=LogSearchByRequestIdInputSLZ,
+        responses={status.HTTP_200_OK: LogSearchByRequestIdOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class LogSearchByRequestIdApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        slz = LogSearchByRequestIdInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        request_id = slz.validated_data.get("request_id")
+
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
+        paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+        # 将字段信息添加到结果中，便于前端展示
+        results = paginator.get_paginated_data(logs)
+
+        output_slz = LogSearchByRequestIdOutputSLZ(results, many=True)
+        return OKJsonResponse(data=output_slz.data)
+
+
 # - 4. add the definition to definition.yaml

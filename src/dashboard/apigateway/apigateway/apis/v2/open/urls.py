@@ -144,6 +144,18 @@ urlpatterns = [
                         ]
                     ),
                 ),
+                path(
+                    "log/",
+                    include(
+                        [
+                            path(
+                                "query_by_request_id/",
+                                views.LogSearchByRequestIdApi.as_view(),
+                                name="openapi.v2.open.tools.log.query_by_request_id",
+                            ),
+                        ]
+                    ),
+                ),
             ]
         ),
     ),
