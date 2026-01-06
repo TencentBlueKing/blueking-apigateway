@@ -2,8 +2,18 @@
 
 查询网关列表
 
+获取可用的网关列表，返回的网关需满足以下条件：
+- 已启用
+- 公开
+- 已发布
+
 ### 输入参数
-无
+#### query 参数
+
+| 参数名称 | 参数类型 | 必选 | 描述                                                       |
+|----------|----------|------|-----------------------------------------------------------|
+| name     | string   | 否   | 网关名称，用于过滤网关                                      |
+| fuzzy    | boolean  | 否   | 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配   |
 
 ### 响应示例
 
@@ -13,8 +23,11 @@
         {
             "id": 1,
             "name": "bk-apigateway",
-            "description": "",
+            "description": "蓝鲸 API 网关",
             "maintainers": [
+                "admin"
+            ],
+            "doc_maintainers": [
                 "admin"
             ]
         }
@@ -30,9 +43,10 @@
 
 data[]
 
-| 参数名称    | 参数类型 | 描述       |
-| ----------- | -------- | ---------- |
-| id          | int      | 网关 ID     |
-| name        | string   | 网关名称   |
-| description | string   | 网关描述   |
-| maintainers | array    | 网关管理员 |
+| 参数名称        | 参数类型 | 描述         |
+| --------------- | -------- | ------------ |
+| id              | int      | 网关 ID      |
+| name            | string   | 网关名称     |
+| description     | string   | 网关描述     |
+| maintainers     | array    | 网关管理员   |
+| doc_maintainers | array    | 文档管理员   |
