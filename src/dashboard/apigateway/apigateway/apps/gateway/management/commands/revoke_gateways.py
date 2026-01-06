@@ -102,7 +102,9 @@ class Command(BaseCommand):
             if do_deactivate or do_remove:  # noqa: SIM102
                 if gw.is_active:
                     # Trigger publish event for gateway deactivation
-                    trigger_gateway_publish(PublishSourceEnum.GATEWAY_DISABLE, "system_deactivate", gw.id)
+                    trigger_gateway_publish(
+                        PublishSourceEnum.GATEWAY_DISABLE, "system_deactivate", gw.id, is_sync=True
+                    )
                     self.stdout.write(self.style.SUCCESS(f"Deactivated gateway id={gw.id}, name={gw.name}"))
                     gw.status = GatewayStatusEnum.INACTIVE.value
                     gw.save()
