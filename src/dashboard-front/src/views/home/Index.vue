@@ -264,29 +264,39 @@
                 </template>
               </div>
               <div class="flex-1 of2">
+                <template v-if="item.status === 1">
+                  <BkButton
+                    text
+                    theme="primary"
+                    @click="() => handleGoPage('StageOverview', item)"
+                  >
+                    {{ t('环境概览') }}
+                  </BkButton>
+                  <BkButton
+                    text
+                    theme="primary"
+                    class="ml-20px"
+                    :disabled="item?.kind === 1"
+                    @click="() => handleGoPage('ResourceSetting', item)"
+                  >
+                    {{ t('资源配置') }}
+                  </BkButton>
+                  <BkButton
+                    text
+                    theme="primary"
+                    class="ml-20px"
+                    @click="() => handleGoPage('AccessLog', item)"
+                  >
+                    {{ t('流水日志') }}
+                  </BkButton>
+                </template>
                 <BkButton
+                  v-else
                   text
-                  theme="primary"
-                  @click="() => handleGoPage('StageOverview', item)"
+                  theme="danger"
+                  @click="() => handleGoPage('BasicInfo', item)"
                 >
-                  {{ t('环境概览') }}
-                </BkButton>
-                <BkButton
-                  text
-                  theme="primary"
-                  class="ml-20px"
-                  :disabled="item?.kind === 1"
-                  @click="() => handleGoPage('ResourceSetting', item)"
-                >
-                  {{ t('资源配置') }}
-                </BkButton>
-                <BkButton
-                  text
-                  theme="primary"
-                  class="ml-20px"
-                  @click="() => handleGoPage('AccessLog', item)"
-                >
-                  {{ t('流水日志') }}
+                  {{ t('删除网关') }}
                 </BkButton>
               </div>
             </div>

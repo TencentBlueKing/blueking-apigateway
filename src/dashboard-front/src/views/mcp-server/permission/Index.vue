@@ -127,6 +127,7 @@
             </BkTableColumn>
             <BkTableColumn
               :label="t('申请人')"
+              :show-overflow-tooltip="false"
               prop="applied_by"
             >
               <template #default="{ row }">
