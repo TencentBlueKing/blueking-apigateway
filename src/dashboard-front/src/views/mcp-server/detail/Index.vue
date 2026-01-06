@@ -130,7 +130,7 @@
           </BkButton>
           <template #content>
             <BkDropdownMenu ext-cls="stage-more-actions">
-              <BkDropdownItem>
+              <BkDropdownItem @click="handleDelete">
                 <BkButton
                   v-bk-tooltips="{
                     content: t('请先停用再删除'),
@@ -138,7 +138,6 @@
                   }"
                   :disabled="server.status === 1"
                   text
-                  @click="handleDelete"
                 >
                   {{ t('删除') }}
                 </BkButton>
