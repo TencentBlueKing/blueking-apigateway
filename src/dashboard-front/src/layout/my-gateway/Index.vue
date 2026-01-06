@@ -413,6 +413,13 @@ const routerViewWrapperClass = computed(() => {
   return `${initClass} ${displayBkuiTable}`;
 });
 
+watch(
+  () => gatewayStore?.currentGateway?.status,
+  () => {
+    Promise.all([getGatewayData(), getPermissionData()]);
+  },
+);
+
 // 监听当前路由
 watch(
   [
