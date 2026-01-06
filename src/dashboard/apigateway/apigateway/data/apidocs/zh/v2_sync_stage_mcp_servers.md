@@ -72,7 +72,7 @@ mcp_servers 参数说明
     "data": [
       {
          "name": "gateway-stage-server1",
-          "action": "create",
+          "action": "created",
           "id": 1
       }
       
@@ -94,4 +94,4 @@ data
 |--------| -------- |------------------|
 | id     | integer  | MCP Server ID    |
 | name   | string   | MCP Serve name   |
-| action | string   | updated / crated |
+| action | string   | updated / created |
