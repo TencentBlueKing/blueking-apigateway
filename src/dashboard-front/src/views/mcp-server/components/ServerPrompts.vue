@@ -67,12 +67,12 @@
       <template #main>
         <BkLoading :loading="promptDetailLoading">
           <div
-            class="w-full pl-24px pr-24px main-content-wrap"
+            class="w-full pl-24px pr-24px mt-16px mb-16px main-content-wrap"
             :style="{ height: setPageMaxH }"
           >
             <div
               v-if="Object.keys(curPromptData)?.length"
-              class="w-full p-16px mt-16px mb-16px prompt-detail-content"
+              class="w-full p-16px prompt-detail-content"
             >
               <div class="flex items-center gap-4px">
                 <div class="min-w-0 flex text-14px font-700 color-#4d4f56">
@@ -116,7 +116,7 @@
                 <BkTag
                   v-for="label of curPromptData?.labels"
                   :key="label"
-                  class="mr-4px"
+                  class="mr-4px mb-8px"
                 >
                   {{ label }}
                 </BkTag>
@@ -160,9 +160,10 @@ const promptDetailLoading = ref(false);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
-  const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 600 : 494)
-    : (isShowNoticeAlert.value ? 420 : 380);
+  if (page === 'market') {
+    return '100%';
+  }
+  const offsetH = isShowNoticeAlert.value ? 420 : 380;
   return `calc(100vh - ${offsetH}px)`;
 });
 const promptList = computed<IMCPServerPrompt[]>(() => {
@@ -174,10 +175,12 @@ const promptList = computed<IMCPServerPrompt[]>(() => {
   return results;
 });
 
+const gatewayId = computed(() => gatewayStore.currentGateway?.id || server?.gateway?.id);
+
 const fetchPromptDetail = async () => {
   promptDetailLoading.value = true;
   try {
-    const res = await getServerPromptsDetail(gatewayStore.currentGateway?.id, { ids: [curPromptData.value.id] });
+    const res = await getServerPromptsDetail(gatewayId.value, { ids: [curPromptData.value.id] });
     curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
   }
   catch {
@@ -253,7 +256,6 @@ const handlePromptMouseleave = (row: IMCPServerPrompt) => {
   }
 
   .main-content-wrap {
-    overflow-y: auto;
 
     .prompt-detail-content {
       color: #4d4f56;

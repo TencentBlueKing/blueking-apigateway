@@ -251,7 +251,6 @@ import {
 import AgIcon from '@/components/ag-icon/Index.vue';
 // import { useGetGlobalProperties } from '@/hooks';
 import { type IMarketplaceDetails, getMcpServerDetails } from '@/services/source/mcp-market';
-import { getCustomServerGuideDoc } from '@/services/source/mcp-server';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';
@@ -292,21 +291,14 @@ const goBack = () => {
 const getDetails = async () => {
   const res = await getMcpServerDetails(mcpId.value as string);
   mcpDetails.value = res ?? {};
-  const { tools_count = 0, prompts_count = 0, guideline = '' } = mcpDetails.value;
+  const { tools_count = 0, prompts_count = 0, guideline = '', user_custom_doc = '' } = mcpDetails.value;
   toolsCount.value = tools_count;
   promptCount.value = prompts_count;
   [markdownStr.value, defaultMarkdownStr.value] = [guideline, guideline];
-  if (res?.gateway?.id) {
-    await fetchCustomGuide(res?.gateway?.id);
+  if (user_custom_doc) {
+    markdownStr.value = user_custom_doc;
+    isExistCustomGuide.value = user_custom_doc.length > 0;
   }
-};
-
-const fetchCustomGuide = async (gatewayId) => {
-  const res = await getCustomServerGuideDoc(gatewayId, mcpId.value);
-  if (res?.content) {
-    markdownStr.value = res.content;
-  }
-  isExistCustomGuide.value = res?.content?.length > 0;
 };
 
 const handleShowGuide = () => {

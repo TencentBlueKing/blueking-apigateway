@@ -392,8 +392,7 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
       }
     }
 
-    &.PlatformToolsToolbox-navigation-content,
-    &.McpMarketDetails-navigation-content {
+    &.PlatformToolsToolbox-navigation-content {
       :deep(.bk-navigation-wrapper) {
 
         .container-content,
