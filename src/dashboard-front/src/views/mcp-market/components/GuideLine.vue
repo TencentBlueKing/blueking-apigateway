@@ -154,9 +154,10 @@ const isShowGuideSlider = ref(false);
 const serverId = computed(() => route.params.serverId);
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
-  const offsetH = page === 'market'
-    ? (isShowNoticeAlert.value ? 540 : 480)
-    : (isShowNoticeAlert.value ? 400 : 360);
+  if (page === 'market') {
+    return '100%';
+  }
+  const offsetH = isShowNoticeAlert.value ? 400 : 360;
   return `calc(100vh - ${offsetH}px)`;
 });
 
