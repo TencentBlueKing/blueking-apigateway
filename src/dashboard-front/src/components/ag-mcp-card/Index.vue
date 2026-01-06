@@ -77,16 +77,17 @@
             />
             <template #content>
               <BkDropdownMenu>
-                <BkDropdownItem>
+                <BkDropdownItem
+                  @click.stop="() => { server.status === 1 ? handleSuspendClick() : handleEnableClick() }"
+                >
                   <BkButton
                     size="small"
                     text
-                    @click.stop="() => {server.status === 1 ? handleSuspendClick() : handleEnableClick() }"
                   >
                     {{ t(server.status === 1 ? '停用' : '启用') }}
                   </BkButton>
                 </BkDropdownItem>
-                <BkDropdownItem>
+                <BkDropdownItem @click="handleDeleteClick">
                   <BkButton
                     v-bk-tooltips="{
                       content: t('请先停用再删除'),
@@ -94,7 +95,6 @@
                     }"
                     :disabled="server.status === 1"
                     text
-                    @click="handleDeleteClick"
                   >
                     {{ t('删除') }}
                   </BkButton>
