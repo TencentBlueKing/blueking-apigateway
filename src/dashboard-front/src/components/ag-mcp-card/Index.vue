@@ -118,11 +118,9 @@
 
     <div class="divider" />
 
-    <div
-      v-if="server?.description"
-      class="mb-44px card-main"
-    >
+    <div class="mb-44px card-main">
       <AgDescription
+        v-if="server?.description"
         :show-expand-icon="false"
         class="color-#4d4f56 break-all"
       >
