@@ -160,12 +160,14 @@
         <div class="last-step">
           <BkPopConfirm
             v-if="isStage"
-            :title="t('确认{optType}插件（{name}）到 {stage} 环境？',
-                      {
-                        optType: isAdd ? t('添加') : t('修改'),
-                        name: curPluginInfo?.name,
-                        stage: stageStore?.curStageData?.name
-                      })"
+            :title="t(
+              '确认{optType}插件（{name}）到 {stage} 环境？',
+              {
+                optType: isAdd ? t('添加') : t('修改'),
+                name: curPluginInfo?.name,
+                stage: stageStore?.curStageData?.name
+              }
+            )"
             :content="t('插件配置变更后，将立即影响线上环境，请确认。')"
             trigger="click"
             @confirm="handleAdd"
@@ -361,8 +363,17 @@ const handleAdd = async () => {
       Object.assign(data, { yaml: whitelist.value?.sendPolicyData().data });
     }
     else {
-      await formRef.value!.validate();
-      Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
+      if (!formRef.value) {
+        Message({
+          theme: 'error',
+          message: t('表单加载失败'),
+        });
+        return;
+      }
+      else {
+        await formRef.value.validate();
+        Object.assign(data, { yaml: json2Yaml(JSON.stringify(schemaFormData.value)).data });
+      }
     }
   }
   catch (err) {
