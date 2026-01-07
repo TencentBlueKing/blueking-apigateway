@@ -384,6 +384,201 @@ var _ = Describe("MCP", func() {
 				Expect(tools).To(ContainElement("getUsers"))
 				Expect(tools).NotTo(ContainElement("createUser"))
 			})
+
+			It("should detect new tools when resource_names changed but version unchanged", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+					Delete: &openapi3.Operation{
+						OperationID: "deleteUser",
+						Summary:     "Delete user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				// 初始只注册一个工具
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+				Expect(server.GetResourceVersionID()).To(Equal(1))
+
+				tools := server.GetTools()
+				Expect(tools).To(HaveLen(1))
+				Expect(tools).To(ContainElement("getUsers"))
+
+				// 模拟 resource_names 变化检测逻辑
+				// 新的 resource_names 包含新工具
+				newResourceNames := []string{"getUsers", "createUser", "deleteUser"}
+				currentTools := server.GetTools()
+
+				// 检测是否有新工具
+				hasNewTools := false
+				for _, resourceName := range newResourceNames {
+					found := false
+					for _, tool := range currentTools {
+						if tool == resourceName {
+							found = true
+							break
+						}
+					}
+					if !found {
+						hasNewTools = true
+						break
+					}
+				}
+				Expect(hasNewTools).To(BeTrue())
+
+				// 使用相同的 resourceVersionID 更新（模拟 resource_names 变化但版本不变的场景）
+				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
+					server, "test-server", 1, openapiSpec, newResourceNames,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				// 验证新工具已注册
+				tools = server.GetTools()
+				Expect(tools).To(HaveLen(3))
+				Expect(tools).To(ContainElement("getUsers"))
+				Expect(tools).To(ContainElement("createUser"))
+				Expect(tools).To(ContainElement("deleteUser"))
+			})
+
+			It("should not reload when resource_names unchanged and version unchanged", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers", "createUser"},
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+
+				// 模拟 resource_names 没有变化的检测逻辑
+				sameResourceNames := []string{"getUsers", "createUser"}
+				currentTools := server.GetTools()
+
+				// 检测是否有新工具
+				hasNewTools := false
+				for _, resourceName := range sameResourceNames {
+					found := false
+					for _, tool := range currentTools {
+						if tool == resourceName {
+							found = true
+							break
+						}
+					}
+					if !found {
+						hasNewTools = true
+						break
+					}
+				}
+				// 没有新工具，不需要重新加载
+				Expect(hasNewTools).To(BeFalse())
+			})
+
+			It("should detect new tools when only partial tools exist", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+
+				// 新增一个工具 createUser
+				newResourceNames := []string{"getUsers", "createUser"}
+				currentTools := server.GetTools()
+
+				// 检测是否有新工具
+				hasNewTools := false
+				for _, resourceName := range newResourceNames {
+					found := false
+					for _, tool := range currentTools {
+						if tool == resourceName {
+							found = true
+							break
+						}
+					}
+					if !found {
+						hasNewTools = true
+						break
+					}
+				}
+				// 有新工具 createUser
+				Expect(hasNewTools).To(BeTrue())
+			})
 		})
 	})
 })

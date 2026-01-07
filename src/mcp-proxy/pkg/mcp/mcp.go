@@ -113,8 +113,23 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				wouldReloadOpenapiSpec = true
 			} else if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
 				// 判断资源版本是否变化
-				logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
-				wouldReloadOpenapiSpec = false
+				// 检查 resource_names 是否有新增的工具
+				currentTools := mcpServer.GetTools()
+				hasNewTools := false
+				for _, resourceName := range server.ResourceNames {
+					if !arrutil.Contains(currentTools, resourceName) {
+						hasNewTools = true
+						break
+					}
+				}
+				if hasNewTools {
+					logging.GetLogger().Infof(
+						"mcp server[%s] resource_names changed, will reload openapi spec", server.Name)
+					wouldReloadOpenapiSpec = true
+				} else {
+					logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload yaml", server.Name)
+					wouldReloadOpenapiSpec = false
+				}
 			}
 		}
 
