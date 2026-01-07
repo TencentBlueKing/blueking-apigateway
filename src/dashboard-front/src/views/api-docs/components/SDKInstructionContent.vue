@@ -42,7 +42,7 @@
       v-if="sdkDoc"
       id="sdk-instruction-markdown"
       :key="renderHtmlIndex"
-      v-dompurify-html="markdownHtml"
+      v-bk-xss-html="markdownHtml"
       class="ag-markdown-view"
     />
     <BkException

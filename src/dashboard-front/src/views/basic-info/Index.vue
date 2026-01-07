@@ -548,7 +548,7 @@
     >
       <div class="ps-form">
         <div
-          v-dompurify-html="delTips"
+          v-bk-xss-html="delTips"
           class="form-tips"
         />
         <div class="mt-15px">

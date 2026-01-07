@@ -36,7 +36,7 @@ import 'virtual:uno.css';
 import '@unocss/reset/tailwind-compat.css';
 
 import i18n from './locales';
-import VueDOMPurifyHTML from 'vue-dompurify-html';
+import { BkXssFilterDirective } from '@blueking/xss-filter';
 
 import directive from '@/directives';
 import AgIcon from '@/components/ag-icon/Index.vue';
@@ -59,7 +59,7 @@ app.use(createPinia())
   .use(bkui)
   .use(i18n)
   .use(mavonEditor)
-  .use(VueDOMPurifyHTML)
+  .use(BkXssFilterDirective)
   .use(directive)
   // 全局组件
   .component('AgIcon', AgIcon)

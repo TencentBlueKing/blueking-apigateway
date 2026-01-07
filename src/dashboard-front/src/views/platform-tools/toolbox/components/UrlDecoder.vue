@@ -85,7 +85,7 @@
           v-if="!errorMsg"
           class="decode-result"
         >
-          <pre v-dompurify-html="highlightString(result)" />
+          <pre v-bk-xss-html="highlightString(result)" />
         </div>
         <div
           v-else

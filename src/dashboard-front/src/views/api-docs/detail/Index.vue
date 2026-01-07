@@ -153,11 +153,11 @@
                               @click="() => handleApiClick(api.id, api.name)"
                             >
                               <header
-                                v-dompurify-html="getHighlightedHtml(api.name)"
+                                v-bk-xss-html="getHighlightedHtml(api.name)"
                                 class="res-item-name"
                               />
                               <main
-                                v-dompurify-html="getHighlightedHtml(api.description)"
+                                v-bk-xss-html="getHighlightedHtml(api.description)"
                                 class="res-item-desc"
                               />
                             </article>
