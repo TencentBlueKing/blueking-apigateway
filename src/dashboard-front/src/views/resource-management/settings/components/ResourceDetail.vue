@@ -877,7 +877,7 @@ import {
   getResourceDetail,
   updateResources,
 } from '@/services/source/resource';
-import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backendServices';
+import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backend-services.ts';
 import { getGatewayLabels } from '@/services/source/gateway';
 import { Message } from 'bkui-vue';
 import { copy } from '@/utils';

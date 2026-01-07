@@ -105,7 +105,7 @@ import { getTenantUsers } from '@/services/source/basic';
 import {
   type IAuditLog,
   getAuditLogList,
-} from '@/services/source/auditLog';
+} from '@/services/source/audit-log.ts';
 import AgTable from '@/components/ag-table/Index.vue';
 
 const { t, locale } = useI18n();
