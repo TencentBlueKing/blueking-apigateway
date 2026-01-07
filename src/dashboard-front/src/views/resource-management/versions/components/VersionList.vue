@@ -48,6 +48,7 @@
         <AgTable
           ref="tableRef"
           v-model:table-data="tableData"
+          :immediate="false"
           resizable
           show-settings
           show-selection
@@ -141,6 +142,7 @@ interface IProps { version?: string }
 const { version = '' } = defineProps<IProps>();
 
 const { t } = useI18n();
+const route = useRoute();
 const resourceVersionStore = useResourceVersion();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
@@ -334,8 +336,26 @@ watch(
 );
 
 watch(filterData, () => {
-  tableRef.value!.fetchData(filterData.value);
-}, { deep: true });
+  nextTick(() => {
+    tableRef.value!.fetchData(filterData.value);
+  });
+}, {
+  deep: true,
+  immediate: true,
+});
+
+watch(
+  () => route.query,
+  () => {
+    if (route.query?.version) {
+      filterData.value.keyword = route.query.version as string;
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
 
 const getTableData = async (params: Record<string, any> = {}) => getVersionList(apigwId.value, params);
 
