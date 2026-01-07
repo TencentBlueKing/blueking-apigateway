@@ -44,6 +44,13 @@
             <BkFormItem
               :label="t('环境')"
               property="stage_id"
+              :rules="[
+                {
+                  required: true,
+                  message: t('环境不能为空'),
+                  trigger: 'blur',
+                },
+              ]"
               required
             >
               <BkSelect
@@ -641,7 +648,10 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
-            class="truncate color-#3a84ff cursor-pointer mr-4px"
+            class={[
+              'truncate mr-4px',
+              { 'color-#3a84ff cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
+            ]}
             onMouseenter={e => toolTableRef.value?.handleCellEnter({
               e,
               row,
@@ -874,17 +884,20 @@ watch(isShow, async () => {
       resourceTabList.value = resourceTabList.value.filter(item => !['prompt'].includes(item.value));
       await fetchStageList();
     }
+    initSidebarFormData(getDiffFormData());
     if (isEditMode.value) {
       await fetchServer();
     }
-    const initFormData = {
-      formData: formData.value,
-      toolSelections: toolSelections.value,
-      promptSelections: promptSelections.value,
-    };
-    initSidebarFormData(initFormData);
   }
 });
+
+const getDiffFormData = () => {
+  return {
+    formData: formData.value,
+    toolSelections: toolSelections.value,
+    promptSelections: promptSelections.value,
+  };
+};
 
 const resetResizeLayout = () => {
   nextTick(() => {
@@ -1147,6 +1160,9 @@ const fetchServer = async () => {
   catch {
     formData.value = cloneDeep(defaultFormData.value);
   }
+  finally {
+    initSidebarFormData(getDiffFormData());
+  }
 };
 
 const fetchStageResources = async () => {
@@ -1359,6 +1375,7 @@ const handleStageSelectChange = () => {
 };
 
 const handleToolNameClick = (row: { id: number }) => {
+  if (gatewayStore.currentGateway?.kind === 1) return;
   const routeData = router.resolve({
     name: 'ResourceEdit',
     params: {
@@ -1419,12 +1436,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
 };
 
 const handleBeforeClose = () => {
-  const diffFormData = {
-    formData: formData.value,
-    toolSelections: toolSelections.value,
-    promptSelections: promptSelections.value,
-  };
-  const results = isSidebarClosed(JSON.stringify(diffFormData));
+  const results = isSidebarClosed(JSON.stringify(getDiffFormData()));
   return results;
 };
 
