@@ -2173,6 +2173,7 @@
   "请输入 SDK 版本号，资源版本或语言": "Search SDK version number, resource version or language",
   "服务展示名不能小于3个字符": "The service display name must be at least 3 characters long",
   "描述不能小于10个字符": "The description must be at least 10 characters long",
+  "环境不能为空": "Environment cannot be empty",
   "服务名称不能为空": "Service name cannot be empty",
   "连接方式": "Connection method",
   "Prompt 名称": "Prompt name",
