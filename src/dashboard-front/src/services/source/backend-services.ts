@@ -17,7 +17,7 @@
  */
 import http from '../http';
 
-interface IBackendServicesConfig {
+export interface IBackendServicesConfig {
   name: string
   description: string
   configs: {

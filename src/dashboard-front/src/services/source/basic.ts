@@ -65,23 +65,26 @@ export function getFeatureFlags(params: {
  */
 export function getEnv() {
   return http.get<{
+    BK_ANALYSIS_SCRIPT_SRC: string
+    BK_APIGATEWAY_VERSION: string
+    BK_APISIX_DOC_URL: string
+    BK_APISIX_URL: string
     BK_API_RESOURCE_URL_TMPL: string
     BK_APP_CODE: string
     BK_COMPONENT_API_URL: string
+    BK_DASHBOARD_COOKIE_DOMAIN: string
+    BK_DASHBOARD_CSRF_COOKIE_DOMAIN: string
     BK_DASHBOARD_CSRF_COOKIE_NAME: string
     BK_DASHBOARD_FE_URL: string
     BK_DASHBOARD_URL: string
     BK_DEFAULT_TEST_APP_CODE: string
-    BK_PAAS_APP_REPO_URL_TMPL: string
-    EDITION: string
-    BK_APISIX_URL: string
-    BK_APISIX_DOC_URL: string
-    BK_APIGATEWAY_VERSION: string
     BK_DOCS_URL_PREFIX: string
-    BK_USER_WEB_API_URL: string
     BK_LOGIN_URL: string
-    BK_ANALYSIS_SCRIPT_SRC: string
+    BK_PAAS_APP_REPO_URL_TMPL: string
+    BK_SHARED_RES_URL: string
+    BK_USER_WEB_API_URL: string
     CREATE_CHAT_API: string
+    EDITION: string
     SEND_CHAT_API: string
     HELPER: {
       name: string
@@ -148,3 +151,8 @@ export function getTenantUsers(
  * 获取版本日志
  */
 export const getVersionLog = () => http.get('/version-log/');
+
+/**
+ * 将国际化语言设置保存到用户管理中
+ */
+export const saveUserLanguage = (url: string, params: { language: string }) => http.put(url, params);

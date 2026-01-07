@@ -187,7 +187,7 @@
     </BkTableColumn>
     <template #empty>
       <TableEmpty
-        :keyword="keyword"
+        :empty-type="keyword ? 'search-empty' : 'empty'"
         @clear-filter="handleClearFilter"
       />
     </template>

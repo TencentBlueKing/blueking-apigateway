@@ -370,6 +370,9 @@ const initTableData = (schema?: Record<string, any>) => {
         Object.assign(row, { properties: rowProperties });
       }
     }
+    else {
+      row.type = type || 'object';
+    }
   }
   tableData.value.push(row);
   nextTick(() => {
@@ -432,7 +435,7 @@ const handleTypeChange = () => {
 const genBody = () => {
   const bodyRow = tableData.value[0];
   const requestBody = { description: bodyRow.description };
-  if (bodyRow.properties?.length) {
+  if (bodyRow.properties?.length || ['string', 'number', 'boolean'].includes(bodyRow.type)) {
     const schema: JSONSchema7 = {};
     Object.assign(schema, genSchema(bodyRow));
     Object.assign(requestBody, { content: { 'application/json': { schema } } });
