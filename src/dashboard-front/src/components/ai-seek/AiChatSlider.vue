@@ -37,7 +37,7 @@
             v-if="response && !loading"
             class="msg-item out"
           >
-            <div v-dompurify-html="markdownHTML" />
+            <div v-bk-xss-html="markdownHTML" />
           </div>
         </div>
         <BkLoading

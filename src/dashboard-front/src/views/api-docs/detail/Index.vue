@@ -155,7 +155,7 @@
                               <div class="flex items-center">
                                 <header
                                   :ref="el => setNameRef(el, api.id)"
-                                  v-dompurify-html="getHighlightedHtml(api.name)"
+                                  v-bk-xss-html="getHighlightedHtml(api.name)"
                                   v-bk-tooltips="{ content: api.name, disabled: !overflowMap[api.id]?.name }"
                                   class="res-item-name mr-8px"
                                 />
@@ -168,7 +168,7 @@
                               </div>
                               <main
                                 :ref="el => setDescRef(el, api.id)"
-                                v-dompurify-html="getHighlightedHtml(api.description)"
+                                v-bk-xss-html="getHighlightedHtml(api.description)"
                                 v-bk-tooltips="{ content: api.description, disabled: !overflowMap[api.id]?.desc }"
                                 class="res-item-desc"
                               />

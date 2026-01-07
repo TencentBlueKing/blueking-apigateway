@@ -107,7 +107,7 @@
         </div>
         <div
           v-show="!isEdited"
-          v-dompurify-html="markdownHtml"
+          v-bk-xss-html="markdownHtml"
           class="ag-markdown-view pb-54px"
         />
         <div

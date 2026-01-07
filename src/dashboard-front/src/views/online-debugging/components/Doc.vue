@@ -104,35 +104,10 @@
           <div
             id="markdown"
             :key="renderHtmlIndex"
-            v-dompurify-html="curComponent.markdownHtml"
+            v-bk-xss-html="curComponent.markdownHtml"
             class="ag-markdown-view"
           />
         </BkTabPanel>
-        <!-- <BkTabPanel
-          :name="'sdk'"
-          :label="t('SDK及示例')"
-          v-if="userStore.featureFlags?.ENABLE_SDK"
-          >
-          <div id="sdk-markdown">
-          <div class="bk-button-group">
-          <BkButton class="is-selected">Python</BkButton>
-          </div>
-
-          <h3 class="f16">
-          {{ t('SDK信息-doc') }}
-          <span class="ag-tip ml-10px" v-if="!curSdk?.sdk?.version">
-          ({{ SDKInfo }})
-          </span>
-          </h3>
-
-          <div>
-          <sdk-detail :params="curSdk" :is-apigw="true"></sdk-detail>
-          </div>
-
-          <h3 class="f16 mt-20px"> {{ t('SDK使用样例') }} </h3>
-          <div class="ag-markdown-view mt-20px" :key="renderHtmlIndex" v-dompurify-html="sdkMarkdownHtml"></div>
-          </div>
-          </BkTabPanel> -->
       </BkTab>
     </div>
   </div>

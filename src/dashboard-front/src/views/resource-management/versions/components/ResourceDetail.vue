@@ -52,7 +52,7 @@
                     @click="() => changeCurrentSource(item)"
                   >
                     <BkOverflowTitle type="tips">
-                      <span v-dompurify-html="renderTitle(item.name)" />
+                      <span v-bk-xss-html="renderTitle(item.name)" />
                     </BkOverflowTitle>
                   </div>
                 </template>

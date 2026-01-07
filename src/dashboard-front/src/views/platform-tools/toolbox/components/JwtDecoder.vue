@@ -60,10 +60,10 @@
       </div>
       <div class="section-main">
         <Collapse title="Header">
-          <pre v-dompurify-html="highlightJson(decodedHeader)" />
+          <pre v-bk-xss-html="highlightJson(decodedHeader)" />
         </Collapse>
         <Collapse title="Payload">
-          <pre v-dompurify-html="highlightJson(decodedPayload)" />
+          <pre v-bk-xss-html="highlightJson(decodedPayload)" />
         </Collapse>
         <div
           v-if="decodeErrorMsg"

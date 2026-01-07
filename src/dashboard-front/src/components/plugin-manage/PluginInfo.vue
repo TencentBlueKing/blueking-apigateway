@@ -269,7 +269,7 @@
       </header>
       <main class="example-main">
         <pre
-          v-dompurify-html="exampleHtml"
+          v-bk-xss-html="exampleHtml"
           class="example-pre"
         />
       </main>

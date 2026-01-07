@@ -79,7 +79,7 @@
           v-if="!errorMsg"
           class="decode-result"
         >
-          <pre v-dompurify-html="highlightJson(result)" />
+          <pre v-bk-xss-html="highlightJson(result)" />
         </div>
         <div
           v-else

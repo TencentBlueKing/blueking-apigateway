@@ -118,7 +118,7 @@
               <div
                 v-show="!isEdited"
                 id="resource-doc-markdown"
-                v-dompurify-html="markdownHtml"
+                v-bk-xss-html="markdownHtml"
                 class="ag-markdown-view"
               />
               <div

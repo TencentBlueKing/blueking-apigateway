@@ -79,10 +79,10 @@
                 <a href="javascript:;">
                   <p class="name">
                     <strong
-                      v-dompurify-html="hightlightSystemName(item)"
+                      v-bk-xss-html="hightlightSystemName(item)"
                       class="mr-5px"
                     />
-                    <span v-dompurify-html="hightlight(item)" />
+                    <span v-bk-xss-html="hightlight(item)" />
                   </p>
                   <p class="desc">{{ item.description || t('暂无描述') }}</p>
                 </a>

@@ -32,7 +32,7 @@
       >
         <div class="panel-hd">
           <h2
-            v-dompurify-html="titleInfo"
+            v-bk-xss-html="titleInfo"
             class="title"
           />
           <small class="time">{{ transformTime(+routeQuery.bk_timestamp) }}</small>

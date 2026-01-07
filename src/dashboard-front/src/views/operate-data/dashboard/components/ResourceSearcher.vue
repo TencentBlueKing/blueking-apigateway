@@ -41,9 +41,9 @@
       </template>
       <template #optionRender="{ item } ">
         <div class="resource-option-wrapper">
-          <strong v-dompurify-html="getHighlightContent(item, 'name')" />
+          <strong v-bk-xss-html="getHighlightContent(item, 'name')" />
           <span
-            v-dompurify-html="getHighlightContent(item, 'path')"
+            v-bk-xss-html="getHighlightContent(item, 'path')"
             class="path"
           />
         </div>

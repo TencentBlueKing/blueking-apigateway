@@ -68,7 +68,7 @@
     >
       <div>
         <div
-          v-dompurify-html="systemDelTips"
+          v-bk-xss-html="systemDelTips"
           class="text-[13px] m-t-8px m-b-8px"
         />
         <BkInput v-model="formRemoveConfirmCode" />
