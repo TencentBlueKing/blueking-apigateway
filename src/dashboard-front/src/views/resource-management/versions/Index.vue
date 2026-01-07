@@ -36,21 +36,9 @@ import TopBar from './components/TopBar.vue';
 import VersionList from './components/VersionList.vue';
 import SDKList from './components/SDKList.vue';
 
-const route = useRoute();
 const resourceVersionStore = useResourceVersion();
 
 const curQueryVersion = ref('');
-
-watch(
-  () => route.query,
-  () => {
-    curQueryVersion.value = route.query?.version as string || '';
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
 
 watch(
   () => resourceVersionStore.tabActive,

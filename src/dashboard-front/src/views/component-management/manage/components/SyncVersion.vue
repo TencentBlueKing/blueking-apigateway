@@ -51,7 +51,7 @@
 import { delay } from 'lodash-es';
 import { PERMISSION_LEVEL_MAP } from '@/enums';
 import type { ITableMethod } from '@/types/common';
-import { type ISyncApigwItem, getSyncVersion } from '@/services/source/componentManagement';
+import { type ISyncApigwItem, getSyncVersion } from '@/services/source/component-management.ts';
 import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
@@ -194,6 +194,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
+
   .sync-version-search {
     width: 328px;
     margin-left: auto;

@@ -269,7 +269,7 @@ import {
   type IComponentItem,
   addComponent,
   updateComponent,
-} from '@/services/source/componentManagement';
+} from '@/services/source/component-management.ts';
 import { type ISystemItem } from '@/services/source/system';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 import RenderConfig from './RenderConfig.vue';
@@ -490,11 +490,12 @@ const handleCancel = () => {
 };
 </script>
 
-<style lang="scss" setup>
+<style lang="scss">
 .apigw-access-manager-slider-cls {
+
   .tips {
-    line-height: 24px;
     font-size: 12px;
+    line-height: 24px;
     color: #63656e;
 
     i {
@@ -506,18 +507,17 @@ const handleCancel = () => {
 
   .timeout-append {
     width: 50px;
-    line-height: 32px;
     font-size: 12px;
+    line-height: 32px;
     text-align: center;
   }
 
   .ag-tip {
-    color: #63656e;
-    line-height: 16px;
     clear: both;
-    font-weight: normal;
     font-size: 12px;
     font-weight: 400;
+    line-height: 16px;
+    color: #63656e;
   }
 }
 </style>

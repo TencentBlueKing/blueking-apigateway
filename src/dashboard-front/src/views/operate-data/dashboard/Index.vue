@@ -284,7 +284,7 @@ import {
 } from '@/services/source/dashboard';
 import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
-import { getBackendServiceList } from '@/services/source/backendServices';
+import { getBackendServiceList } from '@/services/source/backend-services.ts';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
@@ -577,8 +577,8 @@ onMounted(() => {
 }
 
 .search-form {
-  width: 100%;
   display: flex;
+  width: 100%;
 
   :deep(.bk-form-item) {
     margin-right: 16px;
@@ -587,75 +587,87 @@ onMounted(() => {
 
 .statistics {
   padding: 20px 24px 32px;
+
   .line-container {
     display: flex;
     align-items: center;
     margin-bottom: 16px;
   }
+
   .requests {
+
     .total-requests {
+      display: flex;
       width: 200px;
       height: 320px;
-      background: #FFFFFF;
-      box-shadow: 0 1px 2px 0 #0000001a;
-      border-radius: 2px;
       margin-right: 16px;
-      display: flex;
+      background: #FFF;
+      border-radius: 2px;
+      box-shadow: 0 1px 2px 0 #0000001a;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+
       .title {
-        font-size: 14px;
-        color: #63656E;
-        line-height: 18px;
         margin-bottom: 24px;
+        font-size: 14px;
+        line-height: 18px;
+        color: #63656E;
       }
+
       .number {
-        font-weight: Bold;
         font-size: 32px;
-        color: #313238;
+        font-weight: bold;
         line-height: 32px;
+        color: #313238;
       }
     }
+
     .success-requests {
       width: 673px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
-      border-radius: 2px;
       margin-right: 16px;
+      background: #FFF;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
     }
+
     .error-requests {
       width: 673px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
+      background: #FFF;
       border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
     }
   }
+
   .secondary-panel {
+
     .secondary-lf {
       width: 808px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
-      border-radius: 2px;
-      margin-right: 16px;
       padding-bottom: 6px;
+      margin-right: 16px;
+      background: #FFF;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
     }
+
     .secondary-rg {
       width: 808px;
-      background: #FFFFFF;
-      box-shadow: 0 2px 4px 0 #1919290d;
-      border-radius: 2px;
       padding-bottom: 6px;
+      background: #FFF;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
     }
   }
+
   .full-line {
-    background: #FFFFFF;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    border-radius: 2px;
     padding-bottom: 12px;
     margin-bottom: 16px;
+    background: #FFF;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px 0 #1919290d;
   }
 }
+
 .full-box {
   width: 100%;
   height: 100%;

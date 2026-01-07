@@ -138,7 +138,7 @@ import {
   getEsbComponents,
   getFeatures,
   getReleaseStatus,
-} from '@/services/source/componentManagement';
+} from '@/services/source/component-management.ts';
 import { getSystems } from '@/services/source/system';
 import AddComponentSlider from './components/AddComponent.vue';
 import RenderSystem from './components/RenderSystem.vue';
@@ -558,7 +558,7 @@ watch(
 
 <style lang="scss" scoped>
 .apigw-access-manager-wrapper {
-  background-color: #ffffff;
+  background-color: #fff;
 
   &.app-content {
     min-height: calc(100vh - 104px);
@@ -567,9 +567,9 @@ watch(
 
   .left-system-nav {
     position: relative;
-    max-height: calc(100vh - 104px);
-    background: #ffffff;
     width: 300px;
+    max-height: calc(100vh - 104px);
+    background: #fff;
 
     &.is-expand {
       width: 0;
@@ -585,25 +585,25 @@ watch(
   }
 
   .left-wrapper {
+    width: 300px;
+    height: 100%;
     padding: 10px 0;
     margin-right: 16px;
-    width: 300px;
     overflow: hidden;
-    height: 100%;
     background-color: #f6f7fb;
   }
 
   .handle-icon {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
     right: -16px;
+    display: flex;
     width: 16px;
     height: 64px;
+    cursor: pointer;
     background: #dcdee5;
     border-radius: 0 4px 4px 0;
-    cursor: pointer;
-    display: flex;
+    transform: translateY(-50%);
     align-items: center;
 
     i {
@@ -616,43 +616,45 @@ watch(
   }
 
   .action-wrapper {
+
     .bk-button {
       margin-right: 4px;
     }
   }
 
   .right-wrapper {
+    width: calc(100% - 348px);
     padding: 0 10px;
     margin: 24px;
-    width: calc(100% - 348px);
 
     &.is-expand {
-      margin-left: 20px;
       width: calc(100% - 40px);
+      margin-left: 20px;
     }
   }
 
   .component-flex {
+
     .bk-search-select {
       width: 450px;
-      background: #ffffff;
       margin-right: 10px;
+      background: #fff;
     }
 
     .history-icon {
-      cursor: pointer;
       display: inline-block;
+      width: 30px;
       height: 32px;
       line-height: 32px;
-      width: 30px;
+      color: #979ba5;
+      cursor: pointer;
+      background-color: #fff;
       border: 1px solid #c4c6cc;
       border-radius: 2px;
-      background-color: #ffffff;
-      color: #979ba5;
 
       &:hover {
-        border-color: #979ba5;
         color: #63656e;
+        border-color: #979ba5;
       }
     }
   }

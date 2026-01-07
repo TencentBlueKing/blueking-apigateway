@@ -252,7 +252,7 @@ import { useGateway } from '@/stores';
 import {
   getBackendServiceDetail,
   getBackendServiceList,
-} from '@/services/source/backendServices.ts';
+} from '@/services/source/backend-services.ts';
 import { backendsPathCheck } from '@/services/source/resource.ts';
 // import mitt from '@/common/event-bus';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';

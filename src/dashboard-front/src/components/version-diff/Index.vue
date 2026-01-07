@@ -486,7 +486,7 @@ import {
   getVersionDiff,
   getVersionList,
 } from '@/services/source/resource';
-import { getBackendServiceList } from '@/services/source/backendServices';
+import { getBackendServiceList } from '@/services/source/backend-services.ts';
 import { useGateway } from '@/stores';
 
 interface IProps {
