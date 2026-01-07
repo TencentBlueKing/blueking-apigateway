@@ -20,7 +20,7 @@ import logging
 import operator
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
@@ -722,7 +722,14 @@ class GetDatetimeApi(generics.RetrieveAPIView):
         if not tz_name:
             tz_name = settings.TIME_ZONE
 
-        current_time = datetime.now(ZoneInfo(tz_name))
+        try:
+            tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("时区【{tz_name}】不存在").format(tz_name=tz_name), replace=True
+            )
+
+        current_time = datetime.now(tz)
         slz = GetDatetimeOutputSLZ({"datetime": current_time.strftime("%Y-%m-%d %H:%M:%S")})
         return OKJsonResponse(data=slz.data)
 
@@ -731,7 +738,7 @@ class GetDatetimeApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取当前时间",
-        responses={status.HTTP_200_OK: GetDatetimeOutputSLZ()},
+        responses={status.HTTP_200_OK: GetCurrentUnixTimestampOutputSLZ()},
         tags=["OpenAPI.V2.Open"],
     ),
 )
@@ -758,7 +765,14 @@ class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
         datetime_str = slz.validated_data.get("datetime")
         datetime_format = slz.validated_data.get("datetime_format", "%Y-%m-%d %H:%M:%S")
 
-        timestamp = int(time.mktime(datetime.strptime(datetime_str, datetime_format).timetuple()))
+        try:
+            datetime_obj = datetime.strptime(datetime_str, datetime_format)
+        except ValueError:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("时间字符串格式错误").format(datetime_str=datetime_str), replace=True
+            )
+
+        timestamp = int(time.mktime(datetime_obj.timetuple()))
 
         slz = ParseDatetimeStrToTimestampOutputSLZ({"timestamp": timestamp})
         return OKJsonResponse(data=slz.data)
@@ -787,6 +801,3 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
 
         output_slz = LogSearchByRequestIdOutputSLZ(results, many=True)
         return OKJsonResponse(data=output_slz.data)
-
-
-# - 4. add the definition to definition.yaml

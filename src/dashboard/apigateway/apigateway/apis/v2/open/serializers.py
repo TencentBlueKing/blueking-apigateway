@@ -435,6 +435,9 @@ class GetDatetimeInputSLZ(serializers.Serializer):
 class GetDatetimeOutputSLZ(serializers.Serializer):
     datetime = serializers.CharField(read_only=True, help_text="当前时间")
 
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GetDatetimeOutputSLZ"
+
 
 class GetCurrentUnixTimestampOutputSLZ(serializers.Serializer):
     unix_timestamp = serializers.IntegerField(read_only=True, help_text="当前时间戳")
@@ -464,7 +467,7 @@ class LogSearchByRequestIdInputSLZ(serializers.Serializer):
     request_id = serializers.CharField(required=True, help_text="请求 ID")
 
     class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.LogSearchInputSLZ"
+        ref_name = "apigateway.apis.v2.open.serializers.LogSearchByRequestIdInputSLZ"
 
 
 class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
@@ -498,4 +501,4 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
     response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应描述")
 
     class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.LogSearchOutputSLZ"
+        ref_name = "apigateway.apis.v2.open.serializers.LogSearchByRequestIdOutputSLZ"
