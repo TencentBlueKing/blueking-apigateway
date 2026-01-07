@@ -53,6 +53,17 @@ fmt:
 test:
 	$(GINKGO) -r -mod=vendor --cover --coverprofile=.coverage.cov ./...
 
+.PHONY: integration
+integration:
+	cd tests/integration && docker-compose up -d --build
+	@echo "Waiting for services to be ready..."
+	@sleep 10
+	$(GINKGO) -r -mod=vendor ./tests/integration/...
+
+.PHONY: integration-down
+integration-down:
+	cd tests/integration && docker-compose down -v
+
 .PHONY: cov
 cov:
 	go tool cover -html=.coverage.cov

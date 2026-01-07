@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: mcp-proxy-test-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: bk_apigateway
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 测试用后端 API 服务 (使用 httpbin 模拟，支持 ARM64)
+  mock-api:
+    image: mccutchen/go-httpbin:latest
+    container_name: mcp-proxy-test-mock-api
+    ports:
+      - "8080:8080"
+
+  # MCP Proxy 服务
+  mcp-proxy:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: mcp-proxy-test
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - BK_API_URL_TMPL=http://mock-api:8080/api/{api_name}
+      - ENCRYPT_KEY=OWtSMTM0MG4zVDA1dnNpRGpGa1B6SnExYzFjQ2ZXMTM=
+      - BK_APIGW_CRYPTO_NONCE=q76rE8srRuYM
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mock-api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8889/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
