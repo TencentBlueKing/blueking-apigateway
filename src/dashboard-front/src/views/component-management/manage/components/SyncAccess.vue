@@ -97,7 +97,7 @@ import {
   checkSyncComponent,
   getEsbGateway,
   getSyncReleaseData,
-} from '@/services/source/componentManagement';
+} from '@/services/source/component-management.ts';
 import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();

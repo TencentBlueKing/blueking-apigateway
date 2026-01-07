@@ -71,7 +71,7 @@ import { usePopInfoBox } from '@/hooks';
 import {
   deleteBackendService,
   getBackendServiceList,
-} from '@/services/source/backendServices';
+} from '@/services/source/backend-services.ts';
 import { getStageList } from '@/services/source/stage';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import AgTable from '@/components/ag-table/Index.vue';

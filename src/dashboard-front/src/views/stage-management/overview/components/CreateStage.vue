@@ -469,7 +469,7 @@ import {
   getStageDetail,
   putStage,
 } from '@/services/source/stage';
-import { getBackendServiceList } from '@/services/source/backendServices';
+import { getBackendServiceList } from '@/services/source/backend-services.ts';
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import {

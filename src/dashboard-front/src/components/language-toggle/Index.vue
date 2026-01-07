@@ -59,13 +59,26 @@
 
 <script setup lang="ts">
 import Cookie from 'js-cookie';
+import { useEnv } from '@/stores';
+import { saveUserLanguage } from '@/services/source/basic.ts';
 
 const { locale } = useI18n();
 const router = useRouter();
+const envStore = useEnv();
 
 const toggleLanguage = async (lang: string) => {
-  Cookie.set('blueking_language', lang, { domain: getDomain() });
-  router.go(0);
+  try {
+    Cookie.set('blueking_language', lang, { domain: envStore.env.BK_DASHBOARD_COOKIE_DOMAIN || getDomain() });
+    const urlTemplate = envStore.env.BK_API_RESOURCE_URL_TMPL;
+    const url = urlTemplate
+      .replace('{api_name}', 'bk-user-web')
+      .replace('{stage_name}', 'prod')
+      .replace('{resource_path}', 'api/v3/open-web/tenant/current-user/language/');
+    await saveUserLanguage(url, { language: lang });
+  }
+  finally {
+    router.go(0);
+  }
 };
 
 const getDomain = () => {

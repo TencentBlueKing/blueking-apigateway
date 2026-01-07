@@ -62,7 +62,7 @@ import { Button, Loading } from 'bkui-vue';
 import { useDatePicker } from '@/hooks';
 import { OPERATE_STATUS_MAP } from '@/enums';
 import type { ITableMethod } from '@/types/common';
-import { type ISyncHistoryItem, getSyncHistory } from '@/services/source/componentManagement';
+import { type ISyncHistoryItem, getSyncHistory } from '@/services/source/component-management.ts';
 import AgTable from '@/components/ag-table/Index.vue';
 
 const router = useRouter();

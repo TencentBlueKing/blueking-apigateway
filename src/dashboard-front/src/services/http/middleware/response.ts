@@ -26,6 +26,7 @@ import { showLoginModal } from '@blueking/login-modal';
 import RequestError from '../lib/request-error';
 
 import { t } from '@/locales';
+import { useEnv } from '@/stores';
 
 // 首次登录不弹小窗
 let hasLoggedIn = false;
@@ -46,10 +47,13 @@ const redirectLogin = (loginUrl: string) => {
   const { protocol, host, pathname } = parseURL(loginUrl);
   const domain = `${protocol}://${host}${pathname}`;
 
+  const envStore = useEnv();
+
   if (hasLoggedIn) {
+    const loginSuccessURL = `${envStore.env.BK_DASHBOARD_FE_URL || window.location.origin}/login-success.html`;
     showLoginModal({
       loginUrl:
-        `${domain}?is_from_logout=1&c_url=${decodeURIComponent(`${window.location.origin}/login-success.html`)}`,
+        `${domain}?is_from_logout=1&c_url=${decodeURIComponent(loginSuccessURL)}`,
     });
   }
   else {
