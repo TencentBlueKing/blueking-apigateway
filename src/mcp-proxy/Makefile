@@ -1,6 +1,9 @@
 VERSION = `git describe --tags --abbrev=0`
 COMMIT=`git rev-parse HEAD`
 
+# 检测 Docker Compose 命令（兼容 V1 和 V2）
+DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo ""; fi)
+
 .PHONY: init
 init:
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -55,14 +58,24 @@ test:
 
 .PHONY: integration
 integration:
-	cd tests/integration && docker-compose up -d --build
+	@if [ -z "$(DOCKER_COMPOSE)" ]; then \
+		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."; \
+		exit 1; \
+	fi
+	cd tests/integration && $(DOCKER_COMPOSE) down -v || true
+	cd tests/integration && $(DOCKER_COMPOSE) up -d --build
 	@echo "Waiting for services to be ready..."
-	@sleep 10
+	@sleep 15
 	$(GINKGO) -r -mod=vendor ./tests/integration/...
+	cd tests/integration && $(DOCKER_COMPOSE) down -v
 
 .PHONY: integration-down
 integration-down:
-	cd tests/integration && docker-compose down -v
+	@if [ -z "$(DOCKER_COMPOSE)" ]; then \
+		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."; \
+		exit 1; \
+	fi
+	cd tests/integration && $(DOCKER_COMPOSE) down -v
 
 .PHONY: cov
 cov:

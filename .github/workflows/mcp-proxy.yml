@@ -68,9 +68,3 @@ jobs:
     - name: Run Integration Tests
       run: make integration
       working-directory: src/mcp-proxy
-
-    - name: Cleanup
-      if: always()
-      run: |
-        cd tests/integration && docker-compose down -v || true
-      working-directory: src/mcp-proxy
