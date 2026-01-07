@@ -62,7 +62,7 @@
               <div class="flex items-center">
                 <span class="title-wrapper">
                   <!-- eslint-disable-next-line vue/no-v-html -->
-                  <span v-dompurify-html="highlight(item)" />
+                  <span v-bk-xss-html="highlight(item)" />
                 </span>
                 <span
                   v-if="item.is_official"
@@ -77,7 +77,7 @@
             </div>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div
-              v-dompurify-html="highlightDesc(item)"
+              v-bk-xss-html="highlightDesc(item)"
               class="desc"
             />
           </div>

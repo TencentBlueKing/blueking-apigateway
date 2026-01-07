@@ -84,12 +84,12 @@
                       @click="() => handleShowDoc(component)"
                     >
                       <p
-                        v-dompurify-html="hightlight(component.name)"
+                        v-bk-xss-html="hightlight(component.name)"
                         v-bk-overflow-tips
                         class="name"
                       />
                       <p
-                        v-dompurify-html="hightlight(component.description) || t('暂无描述')"
+                        v-bk-xss-html="hightlight(component.description) || t('暂无描述')"
                         v-bk-overflow-tips
                         class="label"
                       />

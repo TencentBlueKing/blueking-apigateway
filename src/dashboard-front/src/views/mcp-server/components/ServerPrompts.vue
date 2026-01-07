@@ -72,7 +72,7 @@
           >
             <div
               v-if="Object.keys(curPromptData)?.length"
-              class="w-full p-16px prompt-detail-content"
+              class="w-full p-16px pb-8px prompt-detail-content"
             >
               <div class="flex items-center gap-4px">
                 <div class="min-w-0 flex text-14px font-700 color-#4d4f56">
@@ -102,11 +102,13 @@
               </div>
               <AgDescription
                 v-if="curPromptData?.content?.length"
-                class="mt-12px lh-22px text-14px color-#4d4f56 break-all gap-16px"
+                class="mt-12px lh-22px text-14px gap-16px"
                 :dynamic-max-height="500"
               >
                 <template #description>
-                  {{ curPromptData?.content }}
+                  <code class="color-#4d4f56 break-all whitespace-pre-line font-unset">
+                    {{ escapedCodeContent }}
+                  </code>
                 </template>
               </AgDescription>
               <div
@@ -130,6 +132,7 @@
 </template>
 
 <script lang="ts" setup>
+import { escape } from 'lodash-es';
 import { useFeatureFlag, useGateway } from '@/stores';
 import {
   type IMCPServerPrompt,
@@ -163,7 +166,7 @@ const setPageMaxH = computed(() => {
   if (page === 'market') {
     return '100%';
   }
-  const offsetH = isShowNoticeAlert.value ? 420 : 380;
+  const offsetH = isShowNoticeAlert.value ? 434 : 394;
   return `calc(100vh - ${offsetH}px)`;
 });
 const promptList = computed<IMCPServerPrompt[]>(() => {
@@ -174,7 +177,9 @@ const promptList = computed<IMCPServerPrompt[]>(() => {
   }
   return results;
 });
-
+const escapedCodeContent = computed(() => {
+  return escape(curPromptData.value?.content ?? '');
+});
 const gatewayId = computed(() => gatewayStore.currentGateway?.id || server?.gateway?.id);
 
 const fetchPromptDetail = async () => {
