@@ -315,7 +315,7 @@ class TestMCPServerToolsListApi:
     def test_list(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}),
+            return_value=([], {}, {}),
         )
 
         resp = request_view(

@@ -30,6 +30,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.biz.mcp_server.mcp_server import parse_resource_name_with_tool
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
@@ -147,6 +148,16 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         return instance
 
 
+class MCPServerResourceNameItemSLZ(serializers.Serializer):
+    """资源名称项序列化器，支持工具重命名"""
+
+    resource_name = serializers.CharField(read_only=True, help_text="资源名称")
+    tool_name = serializers.CharField(read_only=True, allow_blank=True, help_text="工具名称（重命名后的名称）")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerResourceNameItemSLZ"
+
+
 class MCPServerBaseOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
@@ -159,7 +170,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
     labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
-    resource_names = serializers.ListField(read_only=True, help_text="MCPServer 资源名称")
+    resource_names = serializers.SerializerMethodField(help_text="MCPServer 资源名称列表")
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
@@ -184,6 +195,19 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name, obj.protocol_type)
+
+    def get_resource_names(self, obj) -> List[Dict[str, str]]:
+        """将资源名称列表解析为包含 resource_name 和 tool_name 的对象列表"""
+        result = []
+        for name in obj.resource_names:
+            resource_name, tool_name = parse_resource_name_with_tool(name)
+            result.append(
+                {
+                    "resource_name": resource_name,
+                    "tool_name": tool_name,
+                }
+            )
+        return result
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -230,10 +254,12 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             valid_resource_names = self.context["valid_resource_names"]
 
             for resource_name in resource_names:
-                if resource_name not in valid_resource_names:
+                # 解析资源名称，提取纯资源名（支持 resource_name@tool_name 格式）
+                pure_resource_name, _tool_name = parse_resource_name_with_tool(resource_name)
+                if pure_resource_name not in valid_resource_names:
                     raise serializers.ValidationError(
                         _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                        + f"resource_name={resource_name}"
+                        + f"resource_name={pure_resource_name}"
                     )
         return resource_names
 
@@ -289,6 +315,7 @@ class MCPServerUpdateLabelsInputSLZ(serializers.ModelSerializer):
 class MCPServerToolOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    tool_name = serializers.SerializerMethodField(help_text="工具名称（重命名后的名称）")
     description = serializers.CharField(read_only=True, help_text="资源描述")
     method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
     path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
@@ -304,6 +331,11 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
+
+    def get_tool_name(self, obj) -> str:
+        """获取工具名称（重命名后的名称）"""
+        tool_name_map = self.context.get("tool_name_map", {})
+        return tool_name_map.get(obj.name, "")
 
 
 class MCPServerGuidelineOutputSLZ(serializers.Serializer):

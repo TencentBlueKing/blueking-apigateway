@@ -54,13 +54,72 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
 
+# 工具名分隔符：resource_name@tool_name
+TOOL_NAME_SEPARATOR = "@"
+
+
+def parse_resource_name_with_tool(resource_name_with_tool: str) -> Tuple[str, str]:
+    """解析带有工具名的资源名称
+
+    格式: resource_name 或 resource_name@tool_name
+
+    Args:
+        resource_name_with_tool: 资源名称，可能包含工具名
+
+    Returns:
+        (resource_name, tool_name) 元组，如果没有工具名则 tool_name 为空字符串
+    """
+    if TOOL_NAME_SEPARATOR in resource_name_with_tool:
+        parts = resource_name_with_tool.split(TOOL_NAME_SEPARATOR, 1)
+        return parts[0], parts[1]
+    return resource_name_with_tool, ""
+
+
+def get_pure_resource_names(resource_names: List[str]) -> List[str]:
+    """从资源名称列表中提取纯资源名称（去除工具名部分）
+
+    Args:
+        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
+
+    Returns:
+        纯资源名称列表
+    """
+    return [parse_resource_name_with_tool(name)[0] for name in resource_names]
+
+
+def get_resource_name_tool_map(resource_names: List[str]) -> Dict[str, str]:
+    """构建资源名称到工具名的映射
+
+    Args:
+        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
+
+    Returns:
+        {resource_name: tool_name} 映射，如果没有工具名则值为空字符串
+    """
+    return {parse_resource_name_with_tool(name)[0]: parse_resource_name_with_tool(name)[1] for name in resource_names}
+
 
 class MCPServerHandler:
     @staticmethod
     def get_tools_resources_and_labels(
         gateway_id: int, stage_name: str, resource_names: List[str]
-    ) -> Tuple[List[ReleasedResourceData], Dict[int, List]]:
-        tool_resource_names = set(resource_names)
+    ) -> Tuple[List[ReleasedResourceData], Dict[int, List], Dict[str, str]]:
+        """获取工具资源列表、标签和工具名映射
+
+        Args:
+            gateway_id: 网关 ID
+            stage_name: 环境名称
+            resource_names: 资源名称列表，支持 resource_name@tool_name 格式
+
+        Returns:
+            (tool_resources, labels, tool_name_map) 元组
+            - tool_resources: 资源数据列表
+            - labels: 资源标签映射
+            - tool_name_map: {resource_name: tool_name} 映射
+        """
+        # 解析资源名称，提取纯资源名和工具名映射
+        pure_resource_names = set(get_pure_resource_names(resource_names))
+        tool_name_map = get_resource_name_tool_map(resource_names)
 
         stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
             gateway_id,
@@ -70,13 +129,13 @@ class MCPServerHandler:
 
         # only need the resources in the resource_names
         tool_resources: List[ReleasedResourceData] = [
-            r for r in stage_released_resources if r.name in tool_resource_names
+            r for r in stage_released_resources if r.name in pure_resource_names
         ]
 
         label_ids = list({label_id for resource in tool_resources for label_id in resource.gateway_labels})
         labels = ResourceLabelHandler.get_labels_by_ids(label_ids)
 
-        return tool_resources, labels
+        return tool_resources, labels, tool_name_map
 
     @staticmethod
     def get_valid_resource_names(gateway_id: int, stage_id: int) -> Set[str]:
@@ -181,9 +240,11 @@ class MCPServerHandler:
         if not resource_names:
             logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
-        resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
-            "id", flat=True
-        )
+        # 解析资源名称，提取纯资源名（去除工具名部分）
+        pure_resource_names = get_pure_resource_names(resource_names)
+        resource_ids = Resource.objects.filter(
+            gateway_id=mcp_server.gateway_id, name__in=pure_resource_names
+        ).values_list("id", flat=True)
 
         # 3. sync the permission
         newest_virtual_app_code_resource_id_set = {

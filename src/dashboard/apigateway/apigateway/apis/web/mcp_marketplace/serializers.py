@@ -91,6 +91,7 @@ class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
 class MCPServerToolOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    tool_name = serializers.SerializerMethodField(help_text="工具名称（重命名后的名称）")
     description = serializers.CharField(read_only=True, help_text="资源描述")
     method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
     path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
@@ -106,6 +107,11 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
 
     def get_labels(self, obj):
         return self.context["labels"].get(obj.id, [])
+
+    def get_tool_name(self, obj) -> str:
+        """获取工具名称（重命名后的名称）"""
+        tool_name_map = self.context.get("tool_name_map", {})
+        return tool_name_map.get(obj.name, "")
 
 
 class MCPServerPromptOutputSLZ(serializers.Serializer):

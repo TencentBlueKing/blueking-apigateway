@@ -349,7 +349,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
+        tool_resources, labels, tool_name_map = MCPServerHandler.get_tools_resources_and_labels(
             gateway_id=request.gateway.id,
             stage_name=instance.stage.name,
             resource_names=instance.resource_names,
@@ -358,7 +358,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
         slz = MCPServerToolOutputSLZ(
             tool_resources,
             many=True,
-            context={"labels": labels},
+            context={"labels": labels, "tool_name_map": tool_name_map},
         )
 
         return OKJsonResponse(status=status.HTTP_200_OK, data=slz.data)
