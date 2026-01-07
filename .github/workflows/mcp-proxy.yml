@@ -65,6 +65,10 @@ jobs:
       run: make init
       working-directory: src/mcp-proxy
 
+    - name: Sync vendor
+      run: make dep
+      working-directory: src/mcp-proxy
+
     - name: Run Integration Tests
       run: make integration
       working-directory: src/mcp-proxy
