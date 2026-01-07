@@ -345,7 +345,7 @@
                               <div class="mt-16px pl-24px pr-24px">
                                 <div
                                   v-if="Object.keys(curPromptData)?.length"
-                                  class="p-16px prompt-row-detail"
+                                  class="p-16px pb-8px prompt-row-detail"
                                 >
                                   <div class="flex items-center gap-4px">
                                     <div class="max-w-85% min-w-0 flex text-14px font-700 color-#4d4f56">
@@ -383,11 +383,13 @@
                                     </div>
                                   </div>
                                   <template v-if="!curPromptData.is_no_perm">
-                                    <div
-                                      v-if="curPromptData?.content?.length "
-                                      class="mt-12px lh-22px text-14px color-#4d4f56 break-all"
-                                    >
-                                      {{ curPromptData?.content }}
+                                    <div class="mt-12px lh-22px text-14px">
+                                      <code
+                                        v-if="curPromptData?.content?.length"
+                                        class="color-#4d4f56 break-all whitespace-pre-line font-unset"
+                                      >
+                                        {{ escapedCodeContent }}
+                                      </code>
                                     </div>
                                     <div
                                       v-if="curPromptData?.labels?.length"
@@ -396,7 +398,7 @@
                                       <BkTag
                                         v-for="label of curPromptData?.labels"
                                         :key="label"
-                                        class="mr-4px"
+                                        class="mr-4px mb-8px"
                                       >
                                         {{ label }}
                                       </BkTag>
@@ -507,7 +509,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep, uniq, uniqBy } from 'lodash-es';
+import { cloneDeep, escape, uniq, uniqBy } from 'lodash-es';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
 import { InfoLine } from 'bkui-lib/icon';
@@ -855,6 +857,10 @@ const previewUrl = computed(() => {
     .replace('{stage_name}', 'prod')
     .replace('{resource_path}', 'api/v2/mcp-servers');
   return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type) ? 'mcp' : formData.value.protocol_type}/`;
+});
+
+const escapedCodeContent = computed(() => {
+  return escape(curPromptData.value?.content ?? '');
 });
 
 watch(isShow, async () => {

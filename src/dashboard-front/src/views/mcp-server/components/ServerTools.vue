@@ -77,7 +77,7 @@
                       @click="handleToolClick(tool.id, tool.name)"
                     >
                       <header
-                        v-dompurify-html="getHighlightedHtml(tool.name)"
+                        v-bk-xss-html="getHighlightedHtml(tool.name)"
                         v-bk-tooltips="{
                           placement:'top',
                           content: `${t('名称')}: ${tool.name}
@@ -91,7 +91,7 @@
                         @mouseleave="() => handleToolMouseleave(tool)"
                       />
                       <main
-                        v-dompurify-html="getHighlightedHtml(tool.description)"
+                        v-bk-xss-html="getHighlightedHtml(tool.description)"
                         v-bk-tooltips="{
                           placement:'top',
                           content: `${t('名称')}: ${tool.name}
@@ -198,11 +198,6 @@
           </template>
           <!--  API markdown 文档  -->
           <article class="tool-detail-content">
-            <!-- <div
-              id="toolDocMarkdown"
-              v-dompurify-html="selectedToolMarkdownHtml"
-              class="ag-markdown-view"
-              /> -->
             <div class="schema-wrapper">
               <article class="schema-group">
                 <h3 class="title mt-0!">

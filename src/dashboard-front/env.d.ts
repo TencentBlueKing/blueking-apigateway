@@ -29,6 +29,8 @@ declare module '@blueking/login-modal' {
 
 declare module '@blueking/release-note';
 
+declare module '@blueking/xss-filter';
+
 declare interface Window {
   BKANALYSIS?: { init: (params: { siteName: string }) => void }
   BK_DASHBOARD_URL: string

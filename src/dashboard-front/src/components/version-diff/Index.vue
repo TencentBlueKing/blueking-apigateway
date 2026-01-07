@@ -285,7 +285,7 @@
                     class="expand-icon"
                   />
                   <span
-                    v-dompurify-html="renderTitle(addItem)"
+                    v-bk-xss-html="renderTitle(addItem)"
                     class="resource-title"
                     :title="`【${addItem?.method}】${addItem?.path}`"
                   />
@@ -324,7 +324,7 @@
                     class="expand-icon"
                   />
                   <span
-                    v-dompurify-html="renderTitle(deleteItem)"
+                    v-bk-xss-html="renderTitle(deleteItem)"
                     class="resource-title"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   />
@@ -355,7 +355,7 @@
                     class="expand-icon"
                   />
                   <span
-                    v-dompurify-html="renderTitle(deleteItem)"
+                    v-bk-xss-html="renderTitle(deleteItem)"
                     class="resource-title"
                     :title="`【${deleteItem?.method}】${deleteItem?.path}`"
                   />
@@ -395,7 +395,7 @@
                     class="expand-icon"
                   />
                   <span
-                    v-dompurify-html="renderTitle(updateItem.source)"
+                    v-bk-xss-html="renderTitle(updateItem.source)"
                     class="resource-title"
                     :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
                   />
@@ -428,7 +428,7 @@
                     class="expand-icon"
                   />
                   <span
-                    v-dompurify-html="renderTitle(updateItem.target)"
+                    v-bk-xss-html="renderTitle(updateItem.target)"
                     class="resource-title"
                     :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
                   />
