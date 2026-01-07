@@ -394,6 +394,7 @@
       quick-close
       ext-cls="plugin-add-slider"
       :width="pluginSliderWidth"
+      render-directive="if"
       @closed="handleClosePluginSlider"
     >
       <template #default>

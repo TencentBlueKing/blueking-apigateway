@@ -106,10 +106,7 @@
             </template>
             <template v-else>
               <template v-if="row.resource_ids && row.resource_ids.length && !row.isIconView">
-                <BkPopover
-                  placement="top"
-                  :ext-cls="'aaaaaa'"
-                >
+                <BkPopover placement="top">
                   <div
                     class="parent"
                     :style="{ 'height': row.rowHeight }"
