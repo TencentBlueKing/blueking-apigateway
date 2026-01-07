@@ -92,7 +92,7 @@
         >
           <div
             id="resMarkdown"
-            v-dompurify-html="markdownHtml"
+            v-bk-xss-html="markdownHtml"
             class="ag-markdown-view"
           />
         </article>
