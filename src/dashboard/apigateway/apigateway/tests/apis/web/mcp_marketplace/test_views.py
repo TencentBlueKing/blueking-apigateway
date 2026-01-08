@@ -116,7 +116,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         )
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}, {}),
+            return_value=([], {}),
         )
 
         resp = request_view(
@@ -139,7 +139,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         )
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}, {}),
+            return_value=([], {}),
         )
 
         # 给 mcp_server 添加 prompts，与 MCPServerPromptItemSLZ 字段一致
@@ -254,7 +254,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         )
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}, {}),
+            return_value=([], {}),
         )
 
         # 给 mcp_server 添加用户自定义文档
@@ -285,7 +285,7 @@ class TestMCPMarketplaceServerRetrieveApi:
         )
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}, {}),
+            return_value=([], {}),
         )
 
         resp = request_view(

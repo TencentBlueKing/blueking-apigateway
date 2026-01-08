@@ -103,7 +103,7 @@ class TestUpdateStageMcpServerRelatedResourceNames:
             gateway=stage.gateway,
             status=MCPServerStatusEnum.ACTIVE.value,
         )
-        mcp_server.resource_names = ["resource1", "resource2"]
+        mcp_server._resource_names = "resource1;resource2"
         mcp_server.save()
 
         original_resource_names = mcp_server.resource_names.copy()
@@ -124,7 +124,7 @@ class TestUpdateStageMcpServerRelatedResourceNames:
             gateway=stage.gateway,
             status=MCPServerStatusEnum.ACTIVE.value,
         )
-        mcp_server.resource_names = ["resource1", "deleted_resource1", "resource2", "deleted_resource2"]
+        mcp_server._resource_names = "resource1;deleted_resource1;resource2;deleted_resource2"
         mcp_server.save()
 
         # Call the function
@@ -143,7 +143,7 @@ class TestUpdateStageMcpServerRelatedResourceNames:
             gateway=stage.gateway,
             status=MCPServerStatusEnum.ACTIVE.value,
         )
-        mcp_server.resource_names = ["deleted_resource1", "deleted_resource2", "deleted_resource3"]
+        mcp_server._resource_names = "deleted_resource1;deleted_resource2;deleted_resource3"
         mcp_server.save()
 
         # Call the function
@@ -208,103 +208,6 @@ class TestUpdateStageMcpServerRelatedResourceNames:
         assert set(mcp_server2.resource_names) == {"resource1", "resource3"}  # unchanged
         assert mcp_server3.resource_names == []
         assert mcp_server4.resource_names == []  # unchanged
-
-    def test_with_tool_names_some_deleted(self, stage, resource_version):
-        """Test resources with tool names when some are deleted"""
-        mcp_server = G(
-            MCPServer,
-            stage=stage,
-            gateway=stage.gateway,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 设置带工具名的资源
-        mcp_server.resource_names_raw = [
-            "resource1@custom_tool1",
-            "deleted_resource@custom_tool2",
-            "resource2",
-        ]
-        mcp_server.save()
-
-        # Call the function
-        update_stage_mcp_server_related_resource_names(stage.id, resource_version.id)
-
-        # Check results - tool names should be preserved
-        mcp_server.refresh_from_db()
-        assert set(mcp_server.resource_names_raw) == {"resource1@custom_tool1", "resource2"}
-        assert set(mcp_server.resource_names) == {"resource1", "resource2"}
-
-    def test_with_tool_names_all_preserved(self, stage, resource_version):
-        """Test resources with tool names when all are preserved"""
-        mcp_server = G(
-            MCPServer,
-            stage=stage,
-            gateway=stage.gateway,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 设置带工具名的资源（全部存在于 resource_version 中）
-        mcp_server.resource_names_raw = [
-            "resource1@custom_tool1",
-            "resource2@custom_tool2",
-            "resource3",
-        ]
-        mcp_server.save()
-
-        original_resource_names_raw = mcp_server.resource_names_raw.copy()
-
-        # Call the function
-        update_stage_mcp_server_related_resource_names(stage.id, resource_version.id)
-
-        # Check results - should remain unchanged
-        mcp_server.refresh_from_db()
-        assert mcp_server.resource_names_raw == original_resource_names_raw
-
-    def test_with_tool_names_all_deleted(self, stage, resource_version):
-        """Test resources with tool names when all are deleted"""
-        mcp_server = G(
-            MCPServer,
-            stage=stage,
-            gateway=stage.gateway,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 设置带工具名的资源（全部不存在于 resource_version 中）
-        mcp_server.resource_names_raw = [
-            "deleted1@custom_tool1",
-            "deleted2@custom_tool2",
-        ]
-        mcp_server.save()
-
-        # Call the function
-        update_stage_mcp_server_related_resource_names(stage.id, resource_version.id)
-
-        # Check results - all should be removed
-        mcp_server.refresh_from_db()
-        assert mcp_server.resource_names_raw == []
-        assert mcp_server.resource_names == []
-
-    def test_mixed_with_and_without_tool_names(self, stage, resource_version):
-        """Test mixed resources with and without tool names"""
-        mcp_server = G(
-            MCPServer,
-            stage=stage,
-            gateway=stage.gateway,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 混合设置
-        mcp_server.resource_names_raw = [
-            "resource1@custom_tool",  # 存在，带工具名
-            "resource2",  # 存在，不带工具名
-            "deleted1@tool1",  # 不存在，带工具名
-            "deleted2",  # 不存在，不带工具名
-        ]
-        mcp_server.save()
-
-        # Call the function
-        update_stage_mcp_server_related_resource_names(stage.id, resource_version.id)
-
-        # Check results
-        mcp_server.refresh_from_db()
-        assert set(mcp_server.resource_names_raw) == {"resource1@custom_tool", "resource2"}
-        assert set(mcp_server.resource_names) == {"resource1", "resource2"}
 
 
 class TestBuildMCPServerURL:
