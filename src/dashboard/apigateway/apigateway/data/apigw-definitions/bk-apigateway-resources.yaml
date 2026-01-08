@@ -1353,6 +1353,177 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/open/tools/time/get_datetime/:
+    get:
+      operationId: v2_open_tools_time_get_datetime
+      description: 获取当前时间
+      tags:
+        - v2_open
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      datetime:
+                        type: string
+                        description: 'format is %Y-%m-%d %H:%M:%S'
+          description: ''
+      parameters:
+      - in: query
+        name: tz_name
+        schema:
+          type: string
+          default: Asia/Shanghai
+        description: timezone
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/tools/time/get_datetime/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/open/tools/time/get_current_unix_timestamp/:
+    get:
+      operationId: v2_open_tools_time_get_current_unix_timestamp
+      description: 获取当前时间戳
+      tags:
+        - v2_open
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      unix_timestamp:
+                        type: number
+                        description: 'e.g. 1767665249'
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/tools/time/get_current_unix_timestamp/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/open/tools/time/parse_datetime_str_to_timestamp/:
+    post:
+      operationId: v2_open_tools_time_parse_datetime_str_to_timestamp
+      description: 将时间字符串转换为时间戳
+      tags:
+        - v2_open
+      responses:
+        default:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      timestamp:
+                        type: number
+                        description: e.g. 1767665249
+          description: ''
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - datetime
+              properties:
+                datetime:
+                  type: string
+                  description: '2026-01-05 12:00:00'
+                datetime_format:
+                  type: string
+                  default: '%Y-%m-%d %H:%M:%S'
+                  description: python's datetime format
+        required: false
+        description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/open/tools/time/parse_datetime_str_to_timestamp/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
+  /api/v2/open/tools/log/query_by_request_id/:
+    get:
+      operationId: v2_open_tools_log_query_by_request_id
+      description: 根据 request_id 查询日志
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      parameters:
+      - in: query
+        name: request_id
+        schema:
+          type: string
+        required: true
+        description: request_id, 36 位 uuid
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/tools/log/query_by_request_id/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: None
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
       operationId: v2_sync_get_gateway_public_key_new

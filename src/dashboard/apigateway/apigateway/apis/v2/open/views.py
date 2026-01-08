@@ -18,6 +18,9 @@
 #
 import logging
 import operator
+import time
+from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
@@ -34,6 +37,7 @@ from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MC
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.access_log.log import LogHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -52,6 +56,7 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
+from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -60,6 +65,11 @@ from .serializers import (
     GatewayResourceDetailInputSLZ,
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListOutputSLZ,
+    GetCurrentUnixTimestampOutputSLZ,
+    GetDatetimeInputSLZ,
+    GetDatetimeOutputSLZ,
+    LogSearchByRequestIdInputSLZ,
+    LogSearchByRequestIdOutputSLZ,
     MCPServerAppPermissionApplyRecordListOutputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
@@ -67,6 +77,8 @@ from .serializers import (
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
+    ParseDatetimeStrToTimestampInputSLZ,
+    ParseDatetimeStrToTimestampOutputSLZ,
     UserMCPServerListInputSLZ,
     UserMCPServerListOutputSLZ,
 )
@@ -689,3 +701,103 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 resource_data.name,
             )
             return None
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取当前时间",
+        query_serializer=GetDatetimeInputSLZ,
+        responses={status.HTTP_200_OK: GetDatetimeOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GetDatetimeApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        # get tz_name from request.params
+        slz = GetDatetimeInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        tz_name = slz.validated_data.get("tz_name")
+        # default tz_name is Asia/Shanghai
+        if not tz_name:
+            tz_name = settings.TIME_ZONE
+
+        try:
+            tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("时区【{tz_name}】不存在").format(tz_name=tz_name), replace=True
+            )
+
+        current_time = datetime.now(tz)
+        slz = GetDatetimeOutputSLZ({"datetime": current_time.strftime("%Y-%m-%d %H:%M:%S")})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取当前时间",
+        responses={status.HTTP_200_OK: GetCurrentUnixTimestampOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GetCurrentUnixTimestampApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        slz = GetCurrentUnixTimestampOutputSLZ({"unix_timestamp": int(time.time())})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="将时间字符串转换为时间戳",
+        request_body=ParseDatetimeStrToTimestampInputSLZ,
+        responses={status.HTTP_200_OK: ParseDatetimeStrToTimestampOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class ParseDatetimeStrToTimestampApi(generics.CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        slz = ParseDatetimeStrToTimestampInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        datetime_str = slz.validated_data.get("datetime")
+        datetime_format = slz.validated_data.get("datetime_format", "%Y-%m-%d %H:%M:%S")
+
+        try:
+            datetime_obj = datetime.strptime(datetime_str, datetime_format)
+        except ValueError:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("时间字符串格式错误").format(datetime_str=datetime_str), replace=True
+            )
+
+        timestamp = int(time.mktime(datetime_obj.timetuple()))
+
+        slz = ParseDatetimeStrToTimestampOutputSLZ({"timestamp": timestamp})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="根据 request_id 查询日志",
+        query_serializer=LogSearchByRequestIdInputSLZ,
+        responses={status.HTTP_200_OK: LogSearchByRequestIdOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class LogSearchByRequestIdApi(generics.RetrieveAPIView):
+    def retrieve(self, request, *args, **kwargs):
+        slz = LogSearchByRequestIdInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        request_id = slz.validated_data.get("request_id")
+
+        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
+        paginator = LimitOffsetPaginator(total_count, 0, total_count)
+
+        # 将字段信息添加到结果中，便于前端展示
+        results = paginator.get_paginated_data(logs)
+
+        output_slz = LogSearchByRequestIdOutputSLZ(results, many=True)
+        return OKJsonResponse(data=output_slz.data)
