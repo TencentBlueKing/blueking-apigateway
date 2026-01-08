@@ -140,7 +140,20 @@
                 {{ t('网关负责人') }}
               </div>
               <div class="value">
-                {{ data?.maintainers?.join(',') || '--' }}
+                <EditMember
+                  v-if="!featureFlagStore.isTenantMode"
+                  mode="detail"
+                  width="600px"
+                  field="maintainers"
+                  :content="data?.maintainers"
+                />
+                <TenantUserSelector
+                  v-else
+                  :content="data?.maintainers"
+                  field="maintainers"
+                  mode="detail"
+                  width="600px"
+                />
               </div>
             </div>
 

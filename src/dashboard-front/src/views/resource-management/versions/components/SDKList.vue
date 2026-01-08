@@ -70,6 +70,8 @@ import {
 import CreateSDK from './CreateSDK.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import AgTable from '@/components/ag-table/Index.vue';
+import EditMember from '@/views/basic-info/components/EditMember.vue';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
@@ -120,9 +122,23 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     cell: (h, { row }) => (
       <div>
         {
-          featureFlagStore.isEnableDisplayName
-            ? <span><bk-user-display-name userId={row.created_by} /></span>
-            : <span>{ row.created_by }</span>
+          !featureFlagStore.isEnableDisplayName
+            ? (
+              <EditMember
+                mode="detail"
+                width="600px"
+                field="created_by"
+                content={[row?.created_by]}
+              />
+            )
+            : (
+              <TenantUserSelector
+                mode="detail"
+                width="600px"
+                field="created_by"
+                content={[row?.created_by]}
+              />
+            )
         }
       </div>
     ),
