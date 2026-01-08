@@ -11,10 +11,11 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -p123456 -e 'SELECT 1' || exit 1"]
       interval: 5s
-      timeout: 3s
-      retries: 10
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   # 测试用后端 API 服务 (使用 httpbin 模拟，支持 ARM64)
   mock-api:
@@ -29,6 +30,7 @@ services:
       context: ../..
       dockerfile: Dockerfile
     container_name: mcp-proxy-test
+    restart: on-failure:3
     ports:
       - "8889:8889"
     volumes:
