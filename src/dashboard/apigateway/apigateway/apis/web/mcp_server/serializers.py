@@ -99,7 +99,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     title = serializers.CharField(
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
-    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
+    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述")
     prompts = serializers.ListField(
         child=MCPServerPromptItemSLZ(), required=False, default=list, help_text="Prompts 列表"
     )
@@ -215,7 +215,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     title = serializers.CharField(
         required=False, allow_blank=True, help_text="MCPServer 中文名/显示名称", max_length=128
     )
-    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述", max_length=512)
+    description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述")
     prompts = serializers.ListField(child=MCPServerPromptItemSLZ(), required=False, help_text="Prompts 列表")
     protocol_type = serializers.ChoiceField(
         choices=MCPServerProtocolTypeEnum.get_choices(),
