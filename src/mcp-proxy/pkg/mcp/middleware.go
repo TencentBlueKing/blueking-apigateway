@@ -28,29 +28,22 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.uber.org/zap"
 
-	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/util"
 )
 
-// ServerMiddleware is the middleware type for MCP server
-type ServerMiddleware = mcp.Middleware[*mcp.ServerSession]
-
-// ServerMethodHandler is the method handler type for MCP server
-type ServerMethodHandler = mcp.MethodHandler[*mcp.ServerSession]
-
 // LoggingMiddleware returns a middleware that logs all MCP method calls with timing information.
 // 参照 middleware/logger.go 的风格实现，记录详细的请求/响应参数
-func LoggingMiddleware(serverName string) ServerMiddleware {
+func LoggingMiddleware(serverName string) mcp.Middleware {
 	logger := logging.GetAPILogger()
 
-	return func(next ServerMethodHandler) ServerMethodHandler {
-		return func(ctx context.Context, ss *mcp.ServerSession, method string, req mcp.Params) (mcp.Result, error) {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			start := time.Now()
 
 			// Call the next handler
-			result, err := next(ctx, ss, method, req)
+			result, err := next(ctx, method, req)
 
 			// Calculate latency in microseconds (与 logger.go 保持一致)
 			duration := time.Since(start)
@@ -60,8 +53,8 @@ func LoggingMiddleware(serverName string) ServerMiddleware {
 			// 序列化请求参数
 			var params string
 			if req != nil {
-				if paramsBytes, marshalErr := json.Marshal(req); marshalErr == nil {
-					params = stringx.Truncate(string(paramsBytes), 1024)
+				if paramsBytes, marshalErr := json.Marshal(req.GetParams()); marshalErr == nil {
+					params = stringx.Truncate(string(paramsBytes), 2048)
 				}
 			}
 
@@ -78,20 +71,30 @@ func LoggingMiddleware(serverName string) ServerMiddleware {
 			}
 
 			// 从 context 获取更多信息
-			gatewayID := getIntFromContext(ctx, constant.GatewayID)
-			mcpServerID := getIntFromContext(ctx, constant.MCPServerID)
+			gatewayID := util.GetGatewayIDFromContext(ctx)
+			mcpServerID := util.GetMCPServerIDFromContext(ctx)
 			requestID := util.GetRequestIDFromContext(ctx)
+			appCode := util.GetAppCodeFromContext(ctx)
+			username := util.GetUsernameFromContext(ctx)
+
+			// 获取 session ID
+			var sessionID string
+			if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+				sessionID = ss.ID()
+			}
 
 			fields := []zap.Field{
 				zap.Int("gateway_id", gatewayID),
 				zap.String("mcp_server_name", serverName),
 				zap.Int("mcp_server_id", mcpServerID),
 				zap.String("mcp_method", method),
-				zap.String("session_id", ss.ID()),
+				zap.String("session_id", sessionID),
 				zap.String("params", params),
 				zap.String("latency", duration.String()),
 				zap.String("response", response),
 				zap.String("request_id", requestID),
+				zap.String("app_code", appCode),
+				zap.String("username", username),
 			}
 
 			if hasError {
@@ -115,14 +118,4 @@ func LoggingMiddleware(serverName string) ServerMiddleware {
 // AddLoggingMiddleware adds logging middleware to the MCP server
 func AddLoggingMiddleware(server *mcp.Server, serverName string) {
 	server.AddReceivingMiddleware(LoggingMiddleware(serverName))
-}
-
-// getIntFromContext safely gets an int value from context
-func getIntFromContext(ctx context.Context, key constant.CtxKey) int {
-	if v := ctx.Value(key); v != nil {
-		if i, ok := v.(int); ok {
-			return i
-		}
-	}
-	return 0
 }

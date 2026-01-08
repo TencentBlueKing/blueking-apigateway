@@ -73,6 +73,7 @@ func APILogger() gin.HandlerFunc {
 			zap.String("request_id", c.GetString(util.RequestIDKey)),
 			zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 			zap.String("client_ip", c.ClientIP()),
+			zap.String("app_code", util.GetAppCode(c)),
 		}
 
 		// only send 5xx err to sentry

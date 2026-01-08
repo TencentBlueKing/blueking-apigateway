@@ -34,7 +34,6 @@ import (
 	cli "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/runtime/logger"
 	"github.com/go-openapi/strfmt"
-	"github.com/modelcontextprotocol/go-sdk/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
@@ -113,25 +112,54 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 			// 默认使用 SSE Handler
 			sseHandler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 				return server
-			})
+			}, nil)
 			mcpServer = NewMCPServer(server, sseHandler, config.Name, config.ResourceVersionID)
 		}
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			schemaBytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
-			var inputSchema jsonschema.Schema
-			_ = json.Unmarshal(schemaBytes, &inputSchema)
+			schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
+			if err != nil {
+				logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
+					zap.Error(err),
+					zap.String("tool_name", toolConfig.Name),
+					zap.String("mcp_server", config.Name),
+				)
+			}
+			// 默认提供空对象 schema，避免 AddTool panic
+			inputSchema := map[string]any{"type": "object"}
+			if len(schemaBytes) > 0 {
+				if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
+					logging.GetLogger().Error("failed to unmarshal tool input schema",
+						zap.Error(err),
+						zap.String("tool_name", toolConfig.Name),
+						zap.String("mcp_server", config.Name),
+					)
+					// 保持默认的空对象 schema
+					inputSchema = map[string]any{"type": "object"}
+				}
+			}
 			tool := &mcp.Tool{
 				Name:        toolConfig.Name,
 				Description: toolConfig.Description,
-				InputSchema: &inputSchema,
+				InputSchema: inputSchema,
 			}
 			// 处理 OutputSchema
 			if len(toolConfig.OutputSchema) > 0 {
-				var outputSchema jsonschema.Schema
-				_ = json.Unmarshal(toolConfig.OutputSchema, &outputSchema)
-				tool.OutputSchema = &outputSchema
+				var outputSchema map[string]any
+				if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
+					logging.GetLogger().Error("failed to unmarshal tool output schema",
+						zap.Error(err),
+						zap.String("tool_name", toolConfig.Name),
+						zap.String("mcp_server", config.Name),
+					)
+				} else {
+					// 确保 OutputSchema 包含 type: "object"，否则 SDK 会 panic
+					if _, ok := outputSchema["type"]; !ok {
+						outputSchema["type"] = "object"
+					}
+					tool.OutputSchema = outputSchema
+				}
 			}
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.AddTool(tool, toolHandler)
@@ -172,13 +200,31 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		schemaBytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
-		var inputSchema jsonschema.Schema
-		_ = json.Unmarshal(schemaBytes, &inputSchema)
+		schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
+		if err != nil {
+			logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
+				zap.Error(err),
+				zap.String("tool_name", toolConfig.Name),
+				zap.String("mcp_server", name),
+			)
+		}
+		// 默认提供空对象 schema，避免 AddTool panic
+		inputSchema := map[string]any{"type": "object"}
+		if len(schemaBytes) > 0 {
+			if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
+				logging.GetLogger().Error("failed to unmarshal tool input schema",
+					zap.Error(err),
+					zap.String("tool_name", toolConfig.Name),
+					zap.String("mcp_server", name),
+				)
+				// 保持默认的空对象 schema
+				inputSchema = map[string]any{"type": "object"}
+			}
+		}
 		tool := &mcp.Tool{
 			Name:        toolConfig.Name,
 			Description: toolConfig.Description,
-			InputSchema: &inputSchema,
+			InputSchema: inputSchema,
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.AddTool(tool, toolHandler)
@@ -296,9 +342,7 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 		Name:        promptConfig.Name,
 		Description: promptConfig.Description,
 	}
-	handler := func(ctx context.Context, ss *mcp.ServerSession,
-		params *mcp.GetPromptParams,
-	) (*mcp.GetPromptResult, error) {
+	handler := func(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
 		return &mcp.GetPromptResult{
 			Description: promptConfig.Description,
 			Messages: []*mcp.PromptMessage{
@@ -316,9 +360,7 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 
 func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 	// 生成handler
-	handler := func(ctx context.Context, ss *mcp.ServerSession,
-		params *mcp.CallToolParamsFor[map[string]any],
-	) (*mcp.CallToolResultFor[any], error) {
+	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
@@ -328,11 +370,11 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			auditLog.Error("sign inner jwt err", zap.Error(err))
 			return nil, fmt.Errorf("sign inner jwt failed: %w", err)
 		}
-		auditLog.Info("call tool", zap.Any("request", params.Arguments))
+		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
 		var handlerRequest HandlerRequest
-		argsBytes, err := json.Marshal(params.Arguments)
+		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
-			auditLog.Error("marshal arguments err", zap.Any("arguments", params.Arguments), zap.Error(err))
+			auditLog.Error("marshal arguments err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
 			return nil, err
 		}
 		err = json.Unmarshal(argsBytes, &handlerRequest)

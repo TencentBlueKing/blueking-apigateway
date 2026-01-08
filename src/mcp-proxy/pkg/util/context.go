@@ -55,6 +55,27 @@ func GetBkAppCode(c *gin.Context) string {
 	return appCode.(string)
 }
 
+// GetAppCode is an alias for GetBkAppCode
+func GetAppCode(c *gin.Context) string {
+	return GetBkAppCode(c)
+}
+
+// GetAppCodeFromContext gets app code from context
+func GetAppCodeFromContext(ctx context.Context) string {
+	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
+		return appCode
+	}
+	return ""
+}
+
+// GetUsernameFromContext gets username from context
+func GetUsernameFromContext(ctx context.Context) string {
+	if username, ok := ctx.Value(constant.BkUsername).(string); ok {
+		return username
+	}
+	return ""
+}
+
 // SetInnerJWTToken ...
 func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	c.Set(string(constant.BkGatewayInnerJWT), jwtToken)
@@ -98,6 +119,14 @@ func GetMCPServerID(c *gin.Context) int {
 	return mcpServerID.(int)
 }
 
+// GetMCPServerIDFromContext gets MCP server ID from context
+func GetMCPServerIDFromContext(ctx context.Context) int {
+	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(int); ok {
+		return mcpServerID
+	}
+	return 0
+}
+
 // SetGatewayID ...
 func SetGatewayID(c *gin.Context, gatewayID int) {
 	c.Set(string(constant.GatewayID), gatewayID)
@@ -113,6 +142,15 @@ func GetGatewayID(c *gin.Context) int {
 		return 0
 	}
 	return mcpServerID.(int)
+}
+
+// GetGatewayIDFromContext ...
+func GetGatewayIDFromContext(ctx context.Context) int {
+	gatewayID, ok := ctx.Value(constant.GatewayID).(int)
+	if !ok {
+		return 0
+	}
+	return gatewayID
 }
 
 // GetInnerJWTTokenFromContext ...

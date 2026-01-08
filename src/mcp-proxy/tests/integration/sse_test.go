@@ -69,9 +69,10 @@ var _ = Describe("SSE Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewSSEClientTransport(sseURL, &mcp.SSEClientTransportOptions{
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			// 创建 MCP 客户端
 			mcpClient := mcp.NewClient(&mcp.Implementation{
@@ -80,7 +81,7 @@ var _ = Describe("SSE Protocol", func() {
 			}, nil)
 
 			// 连接到服务器（Connect 会自动发送 initialize 请求）
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session).NotTo(BeNil())
 			defer session.Close()
@@ -122,16 +123,17 @@ var _ = Describe("SSE Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewSSEClientTransport(sseURL, &mcp.SSEClientTransportOptions{
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -155,16 +157,17 @@ var _ = Describe("SSE Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewSSEClientTransport(sseURL, &mcp.SSEClientTransportOptions{
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -193,16 +196,17 @@ var _ = Describe("SSE Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewSSEClientTransport(sseURL, &mcp.SSEClientTransportOptions{
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 

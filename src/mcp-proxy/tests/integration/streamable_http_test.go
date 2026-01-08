@@ -67,9 +67,10 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			// 创建 MCP 客户端
 			mcpClient := mcp.NewClient(&mcp.Implementation{
@@ -78,7 +79,7 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			}, nil)
 
 			// 连接到服务器（Connect 会自动发送 initialize 请求）
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session).NotTo(BeNil())
 			defer session.Close()
@@ -102,16 +103,17 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -135,16 +137,17 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -171,16 +174,17 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -206,16 +210,17 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
 				Version: "1.0.0",
 			}, nil)
 
-			session, err := mcpClient.Connect(ctx, transport)
+			session, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -235,9 +240,10 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				Timeout: 10 * time.Second,
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
@@ -245,7 +251,7 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			}, nil)
 
 			// 连接应该失败
-			_, err := mcpClient.Connect(ctx, transport)
+			_, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -261,9 +267,10 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
@@ -271,7 +278,7 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			}, nil)
 
 			// 连接应该失败
-			_, err := mcpClient.Connect(ctx, transport)
+			_, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -288,9 +295,10 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				},
 			}
 
-			transport := mcp.NewStreamableClientTransport(mcpURL, &mcp.StreamableClientTransportOptions{
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
 				HTTPClient: httpClient,
-			})
+			}
 
 			mcpClient := mcp.NewClient(&mcp.Implementation{
 				Name:    "test-client",
@@ -298,7 +306,7 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			}, nil)
 
 			// 连接应该失败
-			_, err := mcpClient.Connect(ctx, transport)
+			_, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).To(HaveOccurred())
 		})
 	})
