@@ -50,14 +50,13 @@ def update_stage_mcp_server_related_resource_names(
 
     to_update: List[MCPServer] = []
     for mcp_server in mcp_servers:
-        server_resource_names = set(mcp_server.resource_names)
+        # 使用纯资源名称进行比较
+        server_pure_resource_names = set(mcp_server.resource_names)
+        deleted_resource_names = server_pure_resource_names - resource_version_resource_names
 
-        deleted_resource_names = server_resource_names - resource_version_resource_names
-        if not deleted_resource_names:
-            continue
-
-        mcp_server.resource_names = list(server_resource_names - deleted_resource_names)
-        to_update.append(mcp_server)
+        # 使用 model 方法移除已删除的资源
+        if mcp_server.remove_deleted_resources(deleted_resource_names):
+            to_update.append(mcp_server)
 
     if to_update:
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
