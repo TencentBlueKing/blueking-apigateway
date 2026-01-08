@@ -25,7 +25,7 @@ from django.db.models import Count
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.models import MCPServer, parse_resource_name_with_tool
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEnum, GatewayAPIDocMaintainerTypeEnum
@@ -568,20 +568,35 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         return MCPServerHandler().get_valid_resource_names(gateway_id=gateway.id, stage_id=stage.id)
 
     def _check_all_resources_valid(self, resource_names: list, valid_names: set[str]):
-        """检查资源是否全部有效"""
-        for name in resource_names:
-            if name not in valid_names:
+        """检查资源是否全部有效
+
+        resource_names 支持两种格式:
+        - 字典格式 (Web): [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        - 字符串格式 (OpenAPI): ["resource1@tool", "resource2", ...]
+        """
+        for item in resource_names:
+            # 支持字典格式和字符串格式
+            pure_name = item["resource_name"] if isinstance(item, dict) else parse_resource_name_with_tool(item)[0]
+            if pure_name not in valid_names:
                 raise serializers.ValidationError(
-                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在") + f"resource_name={name}"
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={pure_name}"
                 )
 
     def _check_resource_schemas_confirmed(self, context: dict, resource_names: list):
-        """检查资源 Schema 是否确认 (仅 OpenAPI 来源需要)"""
+        """检查资源 Schema 是否确认 (仅 OpenAPI 来源需要)
+
+        resource_names 支持两种格式:
+        - 字典格式 (Web): [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        - 字符串格式 (OpenAPI): ["resource1@tool", "resource2", ...]
+        """
         schema_map = context.get("resource_name_to_schema", {})
-        for name in resource_names:
-            schema = schema_map.get(name)
+        for item in resource_names:
+            # 支持字典格式和字符串格式
+            pure_name = item["resource_name"] if isinstance(item, dict) else parse_resource_name_with_tool(item)[0]
+            schema = schema_map.get(pure_name)
             if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
-                raise serializers.ValidationError(_(f"请检查当前资源:{name}对应的资源请求参数是否已经确认"))
+                raise serializers.ValidationError(_(f"请检查当前资源:{pure_name}对应的资源请求参数是否已经确认"))
 
 
 class UpstreamValidator:
