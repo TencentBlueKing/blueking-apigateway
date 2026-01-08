@@ -873,4 +873,10 @@ $primary-color: #3a84ff;
     }
   }
 }
+
+.docs-list {
+  :deep(.t-table__content) {
+    max-height: 652px !important;
+  }
+}
 </style>
