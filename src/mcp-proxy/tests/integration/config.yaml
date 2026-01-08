@@ -1,0 +1,38 @@
+debug: true
+
+server:
+  host: 0.0.0.0
+  port: 8889
+  readTimeout: 60
+  writeTimeout: 60
+  idleTimeout: 180
+
+sentry:
+  dsn: ""
+  reportLogLevel: 2
+
+databases:
+  - id: "apigateway"
+    host: "mysql"
+    port: 3306
+    user: "root"
+    password: "123456"
+    name: "bk_apigateway"
+    maxOpenConns: 200
+    maxIdleConns: 50
+    connMaxLifetimeSecond: 600
+
+logger:
+  default:
+    level: debug
+    writer: os
+    buffered: false
+    settings: {name: stdout}
+
+mcpServer:
+  innerJwtExpireTime: 5m
+  bkApiUrlTmpl: "http://localhost:8080/api/{api_name}"
+  interval: 60
+
+tracing:
+  enable: false
