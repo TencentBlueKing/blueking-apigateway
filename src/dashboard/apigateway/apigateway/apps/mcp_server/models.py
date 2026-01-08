@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import ClassVar, List
+from typing import ClassVar, Dict, List, Tuple
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -34,6 +34,80 @@ from .constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
+
+# 工具名分隔符：resource_name@tool_name
+TOOL_NAME_SEPARATOR = "@"
+
+
+def parse_resource_name_with_tool(resource_name_with_tool: str) -> Tuple[str, str]:
+    """解析带有工具名的资源名称
+
+    格式: resource_name 或 resource_name@tool_name
+
+    Args:
+        resource_name_with_tool: 资源名称，可能包含工具名
+
+    Returns:
+        (resource_name, tool_name) 元组，如果没有工具名则 tool_name 为空字符串
+    """
+    if TOOL_NAME_SEPARATOR in resource_name_with_tool:
+        parts = resource_name_with_tool.split(TOOL_NAME_SEPARATOR, 1)
+        return parts[0], parts[1]
+    return resource_name_with_tool, ""
+
+
+def convert_resource_names_to_storage_format(resource_names: List[Dict[str, str]]) -> List[str]:
+    """将前端传入的资源名称列表转换为存储格式
+
+    输入格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+    输出格式: ["xxx@yyy", ...] 或 ["xxx", ...] (如果 tool_name 为空)
+    """
+    result = []
+    for item in resource_names:
+        resource_name = item["resource_name"]
+        tool_name = item.get("tool_name", "")
+        if tool_name:
+            result.append(f"{resource_name}{TOOL_NAME_SEPARATOR}{tool_name}")
+        else:
+            result.append(resource_name)
+    return result
+
+
+def convert_resource_names_from_storage_format(resource_names: List[str]) -> List[Dict[str, str]]:
+    """将存储格式的资源名称列表转换为前端展示格式
+
+    输入格式: ["xxx@yyy", ...] 或 ["xxx", ...]
+    输出格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+    """
+    result = []
+    for name in resource_names:
+        resource_name, tool_name = parse_resource_name_with_tool(name)
+        result.append({"resource_name": resource_name, "tool_name": tool_name})
+    return result
+
+
+def get_pure_resource_names(resource_names: List[str]) -> List[str]:
+    """从资源名称列表中提取纯资源名称（去除工具名部分）
+
+    Args:
+        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
+
+    Returns:
+        纯资源名称列表
+    """
+    return [parse_resource_name_with_tool(name)[0] for name in resource_names]
+
+
+def get_resource_name_tool_map(resource_names: List[str]) -> Dict[str, str]:
+    """构建资源名称到工具名的映射
+
+    Args:
+        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
+
+    Returns:
+        {resource_name: tool_name} 映射，如果没有工具名则值为空字符串
+    """
+    return {parse_resource_name_with_tool(name)[0]: parse_resource_name_with_tool(name)[1] for name in resource_names}
 
 
 class MCPServer(TimestampedModelMixin, OperatorModelMixin):
@@ -76,18 +150,67 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         self._labels = ";".join(value)
 
     @property
-    def resource_names(self) -> List[str]:
+    def resource_names_raw(self) -> List[str]:
+        """获取原始存储格式的资源名称列表（包含工具名）
+
+        返回格式: ["xxx@yyy", ...] 或 ["xxx", ...]
+        """
         if not self._resource_names:
             return []
         return self._resource_names.split(";")
 
-    @resource_names.setter
-    def resource_names(self, value: List[str]):
+    @resource_names_raw.setter
+    def resource_names_raw(self, value: List[str]):
+        """设置原始存储格式的资源名称列表
+
+        输入格式: ["xxx@yyy", ...] 或 ["xxx", ...]
+        """
         self._resource_names = ";".join(value)
 
     @property
+    def resource_names(self) -> List[str]:
+        """获取纯资源名称列表（去除工具名部分）
+
+        返回格式: ["xxx", "yyy", ...]
+        注意：此属性保持向后兼容，只返回纯资源名称
+        """
+        return get_pure_resource_names(self.resource_names_raw)
+
+    @resource_names.setter
+    def resource_names(self, value: List[str]):
+        """设置存储格式的资源名称列表
+
+        输入格式: ["xxx@yyy", ...] 或 ["xxx", ...]
+        """
+        self._resource_names = ";".join(value)
+
+    @property
+    def resource_names_with_tool(self) -> List[Dict[str, str]]:
+        """获取带工具名的资源名称列表（前端展示格式）
+
+        返回格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        """
+        return convert_resource_names_from_storage_format(self.resource_names_raw)
+
+    @resource_names_with_tool.setter
+    def resource_names_with_tool(self, value: List[Dict[str, str]]):
+        """设置带工具名的资源名称列表（前端输入格式）
+
+        输入格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        """
+        self._resource_names = ";".join(convert_resource_names_to_storage_format(value))
+
+    @property
+    def resource_name_tool_map(self) -> Dict[str, str]:
+        """获取资源名称到工具名的映射
+
+        返回格式: {"resource_name": "tool_name", ...}
+        """
+        return get_resource_name_tool_map(self.resource_names_raw)
+
+    @property
     def tools_count(self) -> int:
-        return len(self.resource_names)
+        return len(self.resource_names_raw)
 
     @property
     def is_active(self) -> bool:

@@ -35,6 +35,8 @@ from apigateway.apps.mcp_server.models import (
     MCPServerAppPermission,
     MCPServerAppPermissionApply,
     MCPServerExtend,
+    get_pure_resource_names,
+    get_resource_name_tool_map,
 )
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
@@ -53,50 +55,6 @@ from apigateway.core.models import Gateway, Release, Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
-
-# 工具名分隔符：resource_name@tool_name
-TOOL_NAME_SEPARATOR = "@"
-
-
-def parse_resource_name_with_tool(resource_name_with_tool: str) -> Tuple[str, str]:
-    """解析带有工具名的资源名称
-
-    格式: resource_name 或 resource_name@tool_name
-
-    Args:
-        resource_name_with_tool: 资源名称，可能包含工具名
-
-    Returns:
-        (resource_name, tool_name) 元组，如果没有工具名则 tool_name 为空字符串
-    """
-    if TOOL_NAME_SEPARATOR in resource_name_with_tool:
-        parts = resource_name_with_tool.split(TOOL_NAME_SEPARATOR, 1)
-        return parts[0], parts[1]
-    return resource_name_with_tool, ""
-
-
-def get_pure_resource_names(resource_names: List[str]) -> List[str]:
-    """从资源名称列表中提取纯资源名称（去除工具名部分）
-
-    Args:
-        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
-
-    Returns:
-        纯资源名称列表
-    """
-    return [parse_resource_name_with_tool(name)[0] for name in resource_names]
-
-
-def get_resource_name_tool_map(resource_names: List[str]) -> Dict[str, str]:
-    """构建资源名称到工具名的映射
-
-    Args:
-        resource_names: 资源名称列表，可能包含 resource_name@tool_name 格式
-
-    Returns:
-        {resource_name: tool_name} 映射，如果没有工具名则值为空字符串
-    """
-    return {parse_resource_name_with_tool(name)[0]: parse_resource_name_with_tool(name)[1] for name in resource_names}
 
 
 class MCPServerHandler:

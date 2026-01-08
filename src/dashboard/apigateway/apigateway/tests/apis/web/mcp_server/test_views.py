@@ -128,7 +128,10 @@ class TestMCPServerListCreateApi:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": ["resource1", "resource2"],
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": ""},
+                {"resource_name": "resource2", "tool_name": ""},
+            ],
         }
 
         resp = request_view(
@@ -165,7 +168,10 @@ class TestMCPServerListCreateApi:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": ["resource1", "resource2"],
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": ""},
+                {"resource_name": "resource2", "tool_name": ""},
+            ],
             "prompts": [
                 {
                     "id": 1,
@@ -232,7 +238,10 @@ class TestMCPServerRetrieveUpdateDestroyApi:
             "description": faker.pystr(),
             "is_public": False,
             "labels": ["new-label"],
-            "resource_names": ["resource1", "resource3"],
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": ""},
+                {"resource_name": "resource3", "tool_name": ""},
+            ],
         }
 
         resp = request_view(
@@ -1351,7 +1360,10 @@ class TestMCPServerProtocolType:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": ["resource1", "resource2"],
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": ""},
+                {"resource_name": "resource2", "tool_name": ""},
+            ],
         }
 
         resp = request_view(
@@ -1385,7 +1397,10 @@ class TestMCPServerProtocolType:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": ["resource1", "resource2"],
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": ""},
+                {"resource_name": "resource2", "tool_name": ""},
+            ],
             "protocol_type": MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
         }
 
