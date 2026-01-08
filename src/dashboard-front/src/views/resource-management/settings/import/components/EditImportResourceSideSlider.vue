@@ -88,6 +88,12 @@
                 <BackConfig
                   ref="backConfigRef"
                   :detail="resource"
+                  :front-config="{
+                    path: resource?.path || '',
+                    method: resource?.method || 'GET',
+                    match_subpath: resource?.match_subpath || '',
+                    enable_websocket: resource?.enable_websocket || false,
+                  }"
                 />
               </template>
             </BkCollapsePanel>
