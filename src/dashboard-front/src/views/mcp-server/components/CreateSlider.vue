@@ -174,6 +174,12 @@
                   {{ item.label }}
                 </BkRadio>
               </BkRadioGroup>
+              <div
+                v-if="['sse'].includes(formData.protocol_type)"
+                class="text-12px color-#ea3636 lh-20px mb-4px"
+              >
+                {{ t('sse协议不太稳定, 未来会逐步下架') }}
+              </div>
               <div class="flex items-center bg-#f5f7fa h-32px text-12px pl-8px url">
                 <div class="min-w-55px color-#4d4f56">
                   {{ t('访问地址') }}:
@@ -866,7 +872,9 @@ const previewUrl = computed(() => {
     .replace('{api_name}', 'bk-apigateway')
     .replace('{stage_name}', 'prod')
     .replace('{resource_path}', 'api/v2/mcp-servers');
-  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type) ? 'mcp' : formData.value.protocol_type}/`;
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type)
+    ? 'mcp'
+    : formData.value.protocol_type}/`;
 });
 
 const escapedCodeContent = computed(() => {
