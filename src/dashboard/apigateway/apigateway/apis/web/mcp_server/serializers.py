@@ -148,6 +148,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) == 0:
             raise serializers.ValidationError(_("资源名称列表不能为空"))
 
+        # 验证 resource_name 不能重复
+        pure_resource_names = [item["resource_name"] for item in resource_names]
+        if len(pure_resource_names) != len(set(pure_resource_names)):
+            raise serializers.ValidationError(_("资源名称不能重复"))
+
         # 验证 tool_name 不能重复（非空的 tool_name）
         tool_names = [item.get("tool_name", "") for item in resource_names if item.get("tool_name")]
         if len(tool_names) != len(set(tool_names)):
@@ -263,6 +268,11 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             if len(resource_names) == 0:
                 raise serializers.ValidationError(_("资源名称列表不能为空"))
             valid_resource_names = self.context["valid_resource_names"]
+
+            # 验证 resource_name 不能重复
+            pure_resource_names = [item["resource_name"] for item in resource_names]
+            if len(pure_resource_names) != len(set(pure_resource_names)):
+                raise serializers.ValidationError(_("资源名称不能重复"))
 
             for item in resource_names:
                 pure_resource_name = item["resource_name"]

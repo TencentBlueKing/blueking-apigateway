@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import ClassVar, Dict, List, Tuple
+from typing import ClassVar, Dict, List, Optional, Tuple
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -107,7 +107,7 @@ def get_resource_name_tool_map(resource_names: List[str]) -> Dict[str, str]:
     Returns:
         {resource_name: tool_name} 映射，如果没有工具名则值为空字符串
     """
-    return {parse_resource_name_with_tool(name)[0]: parse_resource_name_with_tool(name)[1] for name in resource_names}
+    return dict(parse_resource_name_with_tool(name) for name in resource_names)
 
 
 class MCPServer(TimestampedModelMixin, OperatorModelMixin):
@@ -178,9 +178,15 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
 
     @resource_names.setter
     def resource_names(self, value: List[str]):
-        """设置存储格式的资源名称列表
+        """设置存储格式的资源名称列表（保持与历史行为兼容）
 
-        输入格式: ["xxx@yyy", ...] 或 ["xxx", ...]
+        注意：
+        - getter 返回的是"纯资源名"（不包含工具名），例如 ["xxx", "yyy", ...]
+        - setter 接受的是"存储格式"的资源名（可能包含工具名），例如 ["xxx@tool", "yyy", ...]
+
+        为避免歧义，新的代码如果需要直接读写存储格式，建议使用：
+        - `resource_names_raw`（List[str]，如 ["xxx@tool", "yyy", ...]）
+        - 或 `resource_names_with_tool`（List[Dict[str, str]]，如 {"resource_name": "xxx", "tool_name": "tool"}）
         """
         self._resource_names = ";".join(value)
 
@@ -207,6 +213,63 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         返回格式: {"resource_name": "tool_name", ...}
         """
         return get_resource_name_tool_map(self.resource_names_raw)
+
+    @property
+    def tool_names(self) -> List[str]:
+        """获取工具名列表（与 resource_names 顺序对应）
+
+        返回格式: ["tool1", "", "tool3", ...]
+        如果资源没有自定义工具名，则对应位置为空字符串
+        """
+        return [parse_resource_name_with_tool(name)[1] for name in self.resource_names_raw]
+
+    def update_resource_names(
+        self,
+        resource_names_with_tool: List[Dict[str, str]],
+        valid_resource_names: Optional[set] = None,
+    ) -> None:
+        """更新资源名称列表
+
+        此方法封装了资源名称的更新逻辑，包括格式转换和验证。
+
+        Args:
+            resource_names_with_tool: 前端格式的资源名称列表
+                格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+            valid_resource_names: 可选，有效的资源名称集合，用于验证
+
+        Raises:
+            ValueError: 如果资源名称不在有效集合中
+        """
+        if valid_resource_names is not None:
+            for item in resource_names_with_tool:
+                if item["resource_name"] not in valid_resource_names:
+                    raise ValueError(f"Invalid resource name: {item['resource_name']}")
+
+        self._resource_names = ";".join(convert_resource_names_to_storage_format(resource_names_with_tool))
+
+    def remove_deleted_resources(self, deleted_resource_names: set) -> bool:
+        """移除已删除的资源
+
+        Args:
+            deleted_resource_names: 需要删除的纯资源名称集合
+
+        Returns:
+            是否有资源被移除
+        """
+        if not deleted_resource_names:
+            return False
+
+        new_resource_names_raw = [
+            name
+            for name in self.resource_names_raw
+            if parse_resource_name_with_tool(name)[0] not in deleted_resource_names
+        ]
+
+        if len(new_resource_names_raw) == len(self.resource_names_raw):
+            return False
+
+        self._resource_names = ";".join(new_resource_names_raw)
+        return True
 
     @property
     def tools_count(self) -> int:

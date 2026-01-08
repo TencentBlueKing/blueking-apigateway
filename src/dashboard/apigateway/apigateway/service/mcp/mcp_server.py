@@ -21,7 +21,7 @@ from typing import List
 from django.conf import settings
 
 from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum
-from apigateway.apps.mcp_server.models import MCPServer, parse_resource_name_with_tool
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import ResourceVersion
 
 
@@ -52,18 +52,11 @@ def update_stage_mcp_server_related_resource_names(
     for mcp_server in mcp_servers:
         # 使用纯资源名称进行比较
         server_pure_resource_names = set(mcp_server.resource_names)
-
         deleted_resource_names = server_pure_resource_names - resource_version_resource_names
-        if not deleted_resource_names:
-            continue
 
-        new_resource_names_raw = [
-            name
-            for name in mcp_server.resource_names_raw
-            if parse_resource_name_with_tool(name)[0] not in deleted_resource_names
-        ]
-        mcp_server.resource_names = new_resource_names_raw
-        to_update.append(mcp_server)
+        # 使用 model 方法移除已删除的资源
+        if mcp_server.remove_deleted_resources(deleted_resource_names):
+            to_update.append(mcp_server)
 
     if to_update:
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])

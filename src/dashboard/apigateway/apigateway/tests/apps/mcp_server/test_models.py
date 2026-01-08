@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
@@ -301,3 +302,91 @@ class TestMCPServer:
         assert mcp_server.resource_names_with_tool == []
         assert mcp_server.resource_name_tool_map == {}
         assert mcp_server.tools_count == 0
+
+    def test_tool_names_property(self):
+        """测试 tool_names 属性"""
+        mcp_server = G(MCPServer)
+        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
+
+        assert mcp_server.tool_names == ["custom_tool", "", "tool3"]
+
+    def test_tool_names_empty(self):
+        """测试空资源时的 tool_names"""
+        mcp_server = G(MCPServer)
+        mcp_server._resource_names = ""
+
+        assert mcp_server.tool_names == []
+
+    def test_update_resource_names(self):
+        """测试 update_resource_names 方法"""
+        mcp_server = G(MCPServer)
+        mcp_server.update_resource_names(
+            [
+                {"resource_name": "resource1", "tool_name": "custom_tool"},
+                {"resource_name": "resource2", "tool_name": ""},
+            ]
+        )
+
+        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
+        assert mcp_server.resource_names == ["resource1", "resource2"]
+
+    def test_update_resource_names_with_validation(self):
+        """测试 update_resource_names 方法的验证功能"""
+        mcp_server = G(MCPServer)
+
+        # 有效资源名
+        mcp_server.update_resource_names(
+            [{"resource_name": "resource1", "tool_name": ""}],
+            valid_resource_names={"resource1", "resource2"},
+        )
+        assert mcp_server.resource_names == ["resource1"]
+
+        # 无效资源名应该抛出异常
+        with pytest.raises(ValueError) as exc_info:
+            mcp_server.update_resource_names(
+                [{"resource_name": "invalid_resource", "tool_name": ""}],
+                valid_resource_names={"resource1", "resource2"},
+            )
+        assert "invalid_resource" in str(exc_info.value)
+
+    def test_remove_deleted_resources_some_deleted(self):
+        """测试 remove_deleted_resources 方法 - 部分删除"""
+        mcp_server = G(MCPServer)
+        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
+
+        result = mcp_server.remove_deleted_resources({"resource2"})
+
+        assert result is True
+        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource3@tool3"]
+        assert mcp_server.resource_names == ["resource1", "resource3"]
+
+    def test_remove_deleted_resources_all_deleted(self):
+        """测试 remove_deleted_resources 方法 - 全部删除"""
+        mcp_server = G(MCPServer)
+        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
+
+        result = mcp_server.remove_deleted_resources({"resource1", "resource2"})
+
+        assert result is True
+        assert mcp_server.resource_names_raw == []
+        assert mcp_server.resource_names == []
+
+    def test_remove_deleted_resources_none_deleted(self):
+        """测试 remove_deleted_resources 方法 - 无删除"""
+        mcp_server = G(MCPServer)
+        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
+
+        result = mcp_server.remove_deleted_resources({"resource3", "resource4"})
+
+        assert result is False
+        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
+
+    def test_remove_deleted_resources_empty_set(self):
+        """测试 remove_deleted_resources 方法 - 空集合"""
+        mcp_server = G(MCPServer)
+        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
+
+        result = mcp_server.remove_deleted_resources(set())
+
+        assert result is False
+        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]

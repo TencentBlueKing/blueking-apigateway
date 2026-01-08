@@ -27,163 +27,10 @@ from apigateway.apis.web.mcp_server.serializers import (
     MCPServerUpdateInputSLZ,
 )
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import (
-    MCPServer,
-    convert_resource_names_from_storage_format,
-    convert_resource_names_to_storage_format,
-    get_pure_resource_names,
-    get_resource_name_tool_map,
-    parse_resource_name_with_tool,
-)
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.common.constants import CallSourceTypeEnum
 
 pytestmark = pytest.mark.django_db
-
-
-class TestParseResourceNameWithTool:
-    """测试 parse_resource_name_with_tool 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1")
-        assert resource_name == "resource1"
-        assert tool_name == ""
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1@custom_tool")
-        assert resource_name == "resource1"
-        assert tool_name == "custom_tool"
-
-    def test_with_multiple_separators(self):
-        """测试包含多个分隔符的情况（只分割第一个）"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1@tool@extra")
-        assert resource_name == "resource1"
-        assert tool_name == "tool@extra"
-
-    def test_empty_string(self):
-        """测试空字符串"""
-        resource_name, tool_name = parse_resource_name_with_tool("")
-        assert resource_name == ""
-        assert tool_name == ""
-
-
-class TestConvertResourceNamesToStorageFormat:
-    """测试 convert_resource_names_to_storage_format 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带 tool_name 的情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": ""},
-            {"resource_name": "resource2"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_with_tool_name(self):
-        """测试带 tool_name 的情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": "custom_tool1"},
-            {"resource_name": "resource2", "tool_name": "custom_tool2"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1@custom_tool1", "resource2@custom_tool2"]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-            {"resource_name": "resource3"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1@custom_tool", "resource2", "resource3"]
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = convert_resource_names_to_storage_format([])
-        assert result == []
-
-
-class TestConvertResourceNamesFromStorageFormat:
-    """测试 convert_resource_names_from_storage_format 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的存储格式"""
-        resource_names = ["resource1", "resource2"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": ""},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-
-    def test_with_tool_name(self):
-        """测试带工具名的存储格式"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": "custom_tool1"},
-            {"resource_name": "resource2", "tool_name": "custom_tool2"},
-        ]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-            {"resource_name": "resource3", "tool_name": "tool3"},
-        ]
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = convert_resource_names_from_storage_format([])
-        assert result == []
-
-
-class TestGetPureResourceNames:
-    """测试 get_pure_resource_names 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_names = ["resource1", "resource2"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2", "resource3"]
-
-
-class TestGetResourceNameToolMap:
-    """测试 get_resource_name_tool_map 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_names = ["resource1", "resource2"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "", "resource2": ""}
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "custom_tool1", "resource2": "custom_tool2"}
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "custom_tool", "resource2": "", "resource3": "tool3"}
 
 
 class TestMCPServerResourceNameInputItemSLZ:
@@ -268,6 +115,24 @@ class TestMCPServerCreateInputSLZ:
         assert not slz.is_valid()
         assert "resource_names" in slz.errors
         # 验证错误信息包含重复提示
+        error_msg = str(slz.errors["resource_names"])
+        assert "重复" in error_msg
+
+    def test_validate_resource_names_duplicate_resource_name(self, fake_gateway, fake_stage):
+        """测试重复的 resource_name"""
+        data = {
+            "name": "test-mcp-server",
+            "description": "Test description",
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": "tool1"},
+                {"resource_name": "resource1", "tool_name": "tool2"},
+            ],
+        }
+        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        assert not slz.is_valid()
+        assert "resource_names" in slz.errors
         error_msg = str(slz.errors["resource_names"])
         assert "重复" in error_msg
 
@@ -365,6 +230,26 @@ class TestMCPServerUpdateInputSLZ:
         error_msg = str(slz.errors["resource_names"])
         assert "重复" in error_msg
 
+    def test_validate_resource_names_duplicate_resource_name(self, fake_gateway, fake_stage):
+        """测试重复的 resource_name"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
+        data = {
+            "description": "Updated description",
+            "resource_names": [
+                {"resource_name": "resource1", "tool_name": "tool1"},
+                {"resource_name": "resource1", "tool_name": "tool2"},
+            ],
+        }
+        slz = MCPServerUpdateInputSLZ(
+            instance=mcp_server,
+            data=data,
+            context={"valid_resource_names": {"resource1", "resource2"}},
+        )
+        assert not slz.is_valid()
+        assert "resource_names" in slz.errors
+        error_msg = str(slz.errors["resource_names"])
+        assert "重复" in error_msg
+
     def test_validate_resource_names_empty_tool_names_not_duplicate(self, fake_gateway, fake_stage):
         """测试多个空 tool_name 不算重复"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
@@ -396,95 +281,3 @@ class TestMCPServerUpdateInputSLZ:
         )
         assert slz.is_valid(), slz.errors
         assert "resource_names" not in slz.validated_data
-
-
-class TestMCPServerModelResourceNames:
-    """测试 MCPServer model 中 resource_names 相关属性"""
-
-    def test_resource_names_with_tool_getter(self, fake_gateway, fake_stage):
-        """测试 resource_names_with_tool getter"""
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=fake_stage,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 设置存储格式的资源名称（使用 resource_names_raw）
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-        mcp_server.save()
-
-        # 验证 resource_names_with_tool 返回正确格式
-        assert mcp_server.resource_names_with_tool == [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-
-    def test_resource_names_with_tool_setter(self, fake_gateway, fake_stage):
-        """测试 resource_names_with_tool setter"""
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=fake_stage,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        # 使用前端格式设置资源名称
-        mcp_server.resource_names_with_tool = [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-        mcp_server.save()
-
-        # 验证存储格式正确（使用 resource_names_raw 检查）
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
-        # resource_names 返回纯资源名称
-        assert mcp_server.resource_names == ["resource1", "resource2"]
-
-    def test_resource_names_returns_pure_names(self, fake_gateway, fake_stage):
-        """测试 resource_names 返回纯资源名称（向后兼容）"""
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=fake_stage,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        mcp_server.save()
-
-        # 验证 resource_names 返回纯资源名称
-        assert mcp_server.resource_names == ["resource1", "resource2", "resource3"]
-        # 验证 resource_names_raw 返回完整存储格式
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2", "resource3@tool3"]
-
-    def test_resource_name_tool_map(self, fake_gateway, fake_stage):
-        """测试 resource_name_tool_map 属性"""
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=fake_stage,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        mcp_server.save()
-
-        # 验证资源名到工具名的映射
-        assert mcp_server.resource_name_tool_map == {
-            "resource1": "custom_tool",
-            "resource2": "",
-            "resource3": "tool3",
-        }
-
-    def test_empty_resource_names(self, fake_gateway, fake_stage):
-        """测试空资源名称列表"""
-        mcp_server = G(
-            MCPServer,
-            gateway=fake_gateway,
-            stage=fake_stage,
-            status=MCPServerStatusEnum.ACTIVE.value,
-        )
-        mcp_server._resource_names = ""
-        mcp_server.save()
-
-        assert mcp_server.resource_names == []
-        assert mcp_server.resource_names_raw == []
-        assert mcp_server.resource_names_with_tool == []
-        assert mcp_server.resource_name_tool_map == {}
