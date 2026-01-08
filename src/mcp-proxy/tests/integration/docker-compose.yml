@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL 数据库服务
   mysql:
@@ -45,7 +43,8 @@ services:
       mock-api:
         condition: service_started
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8889/ping"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8889/ping || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
+      start_period: 10s

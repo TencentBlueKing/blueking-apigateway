@@ -65,8 +65,24 @@ integration:
 	cd tests/integration && $(DOCKER_COMPOSE) down -v || true
 	cd tests/integration && $(DOCKER_COMPOSE) up -d --build
 	@echo "Waiting for services to be ready..."
-	@sleep 15
-	$(GINKGO) -r -mod=vendor ./tests/integration/...
+	@sleep 5
+	@echo "Checking mcp-proxy container status..."
+	@cd tests/integration && $(DOCKER_COMPOSE) ps
+	@echo "Waiting for mcp-proxy to be healthy..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+		if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8889/ping | grep -q "200"; then \
+			echo "mcp-proxy is ready!"; \
+			break; \
+		fi; \
+		echo "Waiting for mcp-proxy... ($$i/12)"; \
+		sleep 5; \
+		if [ $$i -eq 12 ]; then \
+			echo "mcp-proxy failed to start, showing logs:"; \
+			cd tests/integration && $(DOCKER_COMPOSE) logs mcp-proxy; \
+			exit 1; \
+		fi; \
+	done
+	$(GINKGO) -r -mod=vendor ./tests/integration/... || (cd tests/integration && $(DOCKER_COMPOSE) logs mcp-proxy && exit 1)
 	cd tests/integration && $(DOCKER_COMPOSE) down -v
 
 .PHONY: integration-down
