@@ -105,6 +105,16 @@ class MCPServerResourceNameInputItemSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerResourceNameInputItemSLZ"
 
 
+class MCPServerResourceNameOutputItemSLZ(serializers.Serializer):
+    """资源名称输出项序列化器"""
+
+    resource_name = serializers.CharField(read_only=True, help_text="资源名称")
+    tool_name = serializers.CharField(read_only=True, help_text="工具名称（重命名后的名称）")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerResourceNameOutputItemSLZ"
+
+
 class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     stage_id = serializers.IntegerField(help_text="Stage ID")
     labels = serializers.ListField(child=serializers.CharField(), required=False, help_text="MCPServer 标签列表")
@@ -193,7 +203,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
 
     labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
-    resource_names = serializers.SerializerMethodField(help_text="MCPServer 资源名称列表")
+    resource_names = MCPServerResourceNameOutputItemSLZ(
+        many=True, read_only=True, source="resource_names_with_tool", help_text="MCPServer 资源名称列表"
+    )
 
     tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
@@ -218,11 +230,6 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name, obj.protocol_type)
-
-    def get_resource_names(self, obj) -> List[Dict[str, str]]:
-        """将资源名称列表解析为包含 resource_name 和 tool_name 的对象列表"""
-        # 直接使用 model 层的属性
-        return obj.resource_names_with_tool
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
