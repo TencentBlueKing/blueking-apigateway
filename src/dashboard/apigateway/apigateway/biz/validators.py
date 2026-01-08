@@ -570,11 +570,13 @@ class MCPServerValidator(GetGatewayFromContextMixin):
     def _check_all_resources_valid(self, resource_names: list, valid_names: set[str]):
         """检查资源是否全部有效
 
-        resource_names 可能是存储格式（如 "resource1@tool_name"），需要解析出纯资源名
+        resource_names 支持两种格式:
+        - 字典格式 (Web): [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        - 字符串格式 (OpenAPI): ["resource1@tool", "resource2", ...]
         """
-        for name in resource_names:
-            # 解析存储格式，提取纯资源名
-            pure_name, _tool_name = parse_resource_name_with_tool(name)
+        for item in resource_names:
+            # 支持字典格式和字符串格式
+            pure_name = item["resource_name"] if isinstance(item, dict) else parse_resource_name_with_tool(item)[0]
             if pure_name not in valid_names:
                 raise serializers.ValidationError(
                     _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
@@ -584,12 +586,14 @@ class MCPServerValidator(GetGatewayFromContextMixin):
     def _check_resource_schemas_confirmed(self, context: dict, resource_names: list):
         """检查资源 Schema 是否确认 (仅 OpenAPI 来源需要)
 
-        resource_names 可能是存储格式（如 "resource1@tool_name"），需要解析出纯资源名
+        resource_names 支持两种格式:
+        - 字典格式 (Web): [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
+        - 字符串格式 (OpenAPI): ["resource1@tool", "resource2", ...]
         """
         schema_map = context.get("resource_name_to_schema", {})
-        for name in resource_names:
-            # 解析存储格式，提取纯资源名
-            pure_name, _tool_name = parse_resource_name_with_tool(name)
+        for item in resource_names:
+            # 支持字典格式和字符串格式
+            pure_name = item["resource_name"] if isinstance(item, dict) else parse_resource_name_with_tool(item)[0]
             schema = schema_map.get(pure_name)
             if not ResourceOpenAPISchemaHandler.has_openapi_schem(schema):
                 raise serializers.ValidationError(_(f"请检查当前资源:{pure_name}对应的资源请求参数是否已经确认"))
