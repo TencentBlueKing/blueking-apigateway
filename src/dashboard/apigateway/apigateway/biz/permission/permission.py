@@ -18,6 +18,8 @@
 
 from typing import List
 
+from django.conf import settings
+
 from apigateway.apps.permission.constants import (
     GrantTypeEnum,
 )
@@ -25,6 +27,12 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
+from apigateway.common.tenant.constants import (
+    TENANT_ID_OPERATION,
+    TenantModeEnum,
+)
+from apigateway.components.bkauth import get_app_tenant_info_cached
+from apigateway.components.bkuser import query_display_names_cached
 from apigateway.core.models import Gateway
 
 
@@ -70,3 +78,29 @@ class ResourcePermissionHandler:
                     "grant_type": GrantTypeEnum.SYNC.value,
                 },
             )
+
+    @staticmethod
+    def convert_applied_by_to_display_name(
+        bk_app_code: str, applied_by: str, gateway_tenant_mode: str, gateway_tenant_id: str
+    ) -> str:
+        """
+        将申请人转换为显示名称，用于非 global 租户申请 global 网关权限时前端用户的展示
+        """
+        if not settings.ENABLE_MULTI_TENANT_MODE:
+            return applied_by
+
+        try:
+            app_tenant_mode, app_tenant_id = get_app_tenant_info_cached(bk_app_code)
+            if app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
+                return applied_by
+
+            if app_tenant_mode == TenantModeEnum.GLOBAL.value:
+                app_tenant_id = TENANT_ID_OPERATION
+
+            display_names = query_display_names_cached(app_tenant_id, applied_by)
+            if display_names:
+                return display_names[0].get("display_name", applied_by)
+        except Exception:  # pylint: disable=broad-except
+            return applied_by
+
+        return applied_by
