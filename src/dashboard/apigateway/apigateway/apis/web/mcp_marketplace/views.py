@@ -192,7 +192,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         tool_resources, labels, tool_name_map = MCPServerHandler.get_tools_resources_and_labels(
             gateway_id=instance.gateway.id,
             stage_name=instance.stage.name,
-            resource_names=instance.resource_names,
+            resource_names=instance.resource_names_raw,
         )
         instance.tools = tool_resources
 

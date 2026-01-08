@@ -22,8 +22,6 @@ from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
     TOOL_NAME_SEPARATOR,
     MCPServer,
-    convert_resource_names_from_storage_format,
-    convert_resource_names_to_storage_format,
     get_pure_resource_names,
     get_resource_name_tool_map,
     parse_resource_name_with_tool,
@@ -68,80 +66,6 @@ class TestParseResourceNameWithTool:
         resource_name, tool_name = parse_resource_name_with_tool("resource1@")
         assert resource_name == "resource1"
         assert tool_name == ""
-
-
-class TestConvertResourceNamesToStorageFormat:
-    """测试 convert_resource_names_to_storage_format 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带 tool_name 的情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": ""},
-            {"resource_name": "resource2"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_with_tool_name(self):
-        """测试带 tool_name 的情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": "custom_tool1"},
-            {"resource_name": "resource2", "tool_name": "custom_tool2"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1@custom_tool1", "resource2@custom_tool2"]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-            {"resource_name": "resource3"},
-        ]
-        result = convert_resource_names_to_storage_format(resource_names)
-        assert result == ["resource1@custom_tool", "resource2", "resource3"]
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = convert_resource_names_to_storage_format([])
-        assert result == []
-
-
-class TestConvertResourceNamesFromStorageFormat:
-    """测试 convert_resource_names_from_storage_format 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的存储格式"""
-        resource_names = ["resource1", "resource2"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": ""},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-
-    def test_with_tool_name(self):
-        """测试带工具名的存储格式"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": "custom_tool1"},
-            {"resource_name": "resource2", "tool_name": "custom_tool2"},
-        ]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = convert_resource_names_from_storage_format(resource_names)
-        assert result == [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-            {"resource_name": "resource3", "tool_name": "tool3"},
-        ]
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = convert_resource_names_from_storage_format([])
-        assert result == []
 
 
 class TestGetPureResourceNames:
@@ -259,17 +183,6 @@ class TestMCPServer:
         assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
         assert mcp_server.resource_names == ["resource1", "resource2"]
 
-    def test_resource_name_tool_map(self):
-        """测试 resource_name_tool_map 属性"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-
-        assert mcp_server.resource_name_tool_map == {
-            "resource1": "custom_tool",
-            "resource2": "",
-            "resource3": "tool3",
-        }
-
     def test_is_active(self):
         mcp_server = G(MCPServer)
         assert mcp_server.is_active is False
@@ -299,7 +212,6 @@ class TestMCPServer:
         assert mcp_server.resource_names == []
         assert mcp_server.resource_names_raw == []
         assert mcp_server.resource_names_with_tool == []
-        assert mcp_server.resource_name_tool_map == {}
         assert mcp_server.tools_count == 0
 
     def test_tool_names_property(self):

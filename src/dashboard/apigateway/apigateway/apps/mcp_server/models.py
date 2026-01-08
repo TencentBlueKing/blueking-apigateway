@@ -56,36 +56,6 @@ def parse_resource_name_with_tool(resource_name_with_tool: str) -> Tuple[str, st
     return resource_name_with_tool, ""
 
 
-def convert_resource_names_to_storage_format(resource_names: List[Dict[str, str]]) -> List[str]:
-    """将前端传入的资源名称列表转换为存储格式
-
-    输入格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
-    输出格式: ["xxx@yyy", ...] 或 ["xxx", ...] (如果 tool_name 为空)
-    """
-    result = []
-    for item in resource_names:
-        resource_name = item["resource_name"]
-        tool_name = item.get("tool_name", "")
-        if tool_name:
-            result.append(f"{resource_name}{TOOL_NAME_SEPARATOR}{tool_name}")
-        else:
-            result.append(resource_name)
-    return result
-
-
-def convert_resource_names_from_storage_format(resource_names: List[str]) -> List[Dict[str, str]]:
-    """将存储格式的资源名称列表转换为前端展示格式
-
-    输入格式: ["xxx@yyy", ...] 或 ["xxx", ...]
-    输出格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
-    """
-    result = []
-    for name in resource_names:
-        resource_name, tool_name = parse_resource_name_with_tool(name)
-        result.append({"resource_name": resource_name, "tool_name": tool_name})
-    return result
-
-
 def get_pure_resource_names(resource_names: List[str]) -> List[str]:
     """从资源名称列表中提取纯资源名称（去除工具名部分）
 
@@ -196,7 +166,11 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
 
         返回格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
         """
-        return convert_resource_names_from_storage_format(self.resource_names_raw)
+        result = []
+        for name in self.resource_names_raw:
+            resource_name, tool_name = parse_resource_name_with_tool(name)
+            result.append({"resource_name": resource_name, "tool_name": tool_name})
+        return result
 
     @resource_names_with_tool.setter
     def resource_names_with_tool(self, value: List[Dict[str, str]]):
@@ -204,15 +178,7 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
 
         输入格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
         """
-        self._resource_names = ";".join(convert_resource_names_to_storage_format(value))
-
-    @property
-    def resource_name_tool_map(self) -> Dict[str, str]:
-        """获取资源名称到工具名的映射
-
-        返回格式: {"resource_name": "tool_name", ...}
-        """
-        return get_resource_name_tool_map(self.resource_names_raw)
+        self._resource_names = ";".join(self._to_storage_format(value))
 
     @property
     def tool_names(self) -> List[str]:
@@ -223,6 +189,19 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         """
         return [parse_resource_name_with_tool(name)[1] for name in self.resource_names_raw]
 
+    @staticmethod
+    def _to_storage_format(resource_names: List[Dict[str, str]]) -> List[str]:
+        """将前端格式转换为存储格式"""
+        result = []
+        for item in resource_names:
+            resource_name = item["resource_name"]
+            tool_name = item.get("tool_name", "")
+            if tool_name:
+                result.append(f"{resource_name}{TOOL_NAME_SEPARATOR}{tool_name}")
+            else:
+                result.append(resource_name)
+        return result
+
     def update_resource_names(self, resource_names_with_tool: List[Dict[str, str]]) -> None:
         """更新资源名称列表
 
@@ -232,9 +211,7 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
             resource_names_with_tool: 前端格式的资源名称列表
                 格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
         """
-        self._resource_names = ";".join(convert_resource_names_to_storage_format(resource_names_with_tool))
-
-        self._resource_names = ";".join(convert_resource_names_to_storage_format(resource_names_with_tool))
+        self._resource_names = ";".join(self._to_storage_format(resource_names_with_tool))
 
     def remove_deleted_resources(self, deleted_resource_names: set) -> bool:
         """移除已删除的资源

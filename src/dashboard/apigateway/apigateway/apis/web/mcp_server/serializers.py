@@ -107,6 +107,26 @@ class MCPServerResourceNameInputItemSLZ(serializers.Serializer):
 class MCPServerResourceNameOutputItemSLZ(serializers.Serializer):
     """资源名称输出项序列化器"""
 
+
+def _validate_resource_names_duplicates(resource_names: List[Dict[str, Any]]) -> None:
+    """验证资源名称和工具名称不能重复
+
+    Args:
+        resource_names: 资源名称列表
+
+    Raises:
+        serializers.ValidationError: 如果存在重复
+    """
+    # 验证 resource_name 不能重复
+    pure_resource_names = [item["resource_name"] for item in resource_names]
+    if len(pure_resource_names) != len(set(pure_resource_names)):
+        raise serializers.ValidationError(_("资源名称不能重复"))
+
+    # 验证 tool_name 不能重复（非空的 tool_name）
+    tool_names = [item.get("tool_name", "") for item in resource_names if item.get("tool_name")]
+    if len(tool_names) != len(set(tool_names)):
+        raise serializers.ValidationError(_("工具名称不能重复"))
+
     resource_name = serializers.CharField(read_only=True, help_text="资源名称")
     tool_name = serializers.CharField(read_only=True, help_text="工具名称（重命名后的名称）")
 
@@ -157,15 +177,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) == 0:
             raise serializers.ValidationError(_("资源名称列表不能为空"))
 
-        # 验证 resource_name 不能重复
-        pure_resource_names = [item["resource_name"] for item in resource_names]
-        if len(pure_resource_names) != len(set(pure_resource_names)):
-            raise serializers.ValidationError(_("资源名称不能重复"))
-
-        # 验证 tool_name 不能重复（非空的 tool_name）
-        tool_names = [item.get("tool_name", "") for item in resource_names if item.get("tool_name")]
-        if len(tool_names) != len(set(tool_names)):
-            raise serializers.ValidationError(_("工具名称不能重复"))
+        _validate_resource_names_duplicates(resource_names)
 
         # 返回原始格式，由 model 层处理转换
         return resource_names
@@ -281,10 +293,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
                 raise serializers.ValidationError(_("资源名称列表不能为空"))
             valid_resource_names = self.context["valid_resource_names"]
 
-            # 验证 resource_name 不能重复
-            pure_resource_names = [item["resource_name"] for item in resource_names]
-            if len(pure_resource_names) != len(set(pure_resource_names)):
-                raise serializers.ValidationError(_("资源名称不能重复"))
+            _validate_resource_names_duplicates(resource_names)
 
             for item in resource_names:
                 pure_resource_name = item["resource_name"]
@@ -293,11 +302,6 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
                         _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
                         + f"resource_name={pure_resource_name}"
                     )
-
-            # 验证 tool_name 不能重复（非空的 tool_name）
-            tool_names = [item.get("tool_name", "") for item in resource_names if item.get("tool_name")]
-            if len(tool_names) != len(set(tool_names)):
-                raise serializers.ValidationError(_("工具名称不能重复"))
 
         # 返回原始格式，由 model 层处理转换
         return resource_names

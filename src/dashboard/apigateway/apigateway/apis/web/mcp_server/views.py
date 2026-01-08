@@ -352,7 +352,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
         tool_resources, labels, tool_name_map = MCPServerHandler.get_tools_resources_and_labels(
             gateway_id=request.gateway.id,
             stage_name=instance.stage.name,
-            resource_names=instance.resource_names,
+            resource_names=instance.resource_names_raw,
         )
 
         slz = MCPServerToolOutputSLZ(
