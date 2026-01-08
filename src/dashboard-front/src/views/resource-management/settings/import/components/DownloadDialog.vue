@@ -29,11 +29,17 @@
     @closed="isShow = false"
   >
     <BkForm
+      ref="formRef"
+      :model="params"
+      :rules="rules"
       label-position="left"
       label-width="100"
     >
       <BkFormItem :label="t('下载内容')">
-        <BkRadioGroup v-model="config.docType">
+        <BkRadioGroup
+          v-model="config.docType"
+          @change="params.file_type = ''"
+        >
           <BkRadio label="resource">
             {{ t('资源配置') }}
           </BkRadio>
@@ -44,6 +50,7 @@
       </BkFormItem>
       <BkFormItem
         v-if="config.docType === 'resource'"
+        property="file_type"
         :label="t('下载格式')"
       >
         <BkRadioGroup v-model="params.file_type">
@@ -57,6 +64,7 @@
       </BkFormItem>
       <BkFormItem
         v-else
+        property="file_type"
         :label="t('下载格式')"
       >
         <BkRadioGroup v-model="params.file_type">
@@ -102,18 +110,28 @@ const config: IExportDialog = reactive({
   docType: 'resource',
 });
 
+const formRef = ref();
+const rules = {
+  file_type: [
+    {
+      required: true,
+      message: t('请选择下载的格式'),
+      trigger: 'change',
+    },
+  ],
+};
+
 // 下载
 const handleConfirm = async () => {
-  const fetchMethod = config.docType === 'resource' ? exportResources : exportDocs;
+  await formRef.value?.validate();
   try {
-    const res = await fetchMethod(gatewayId.value, params);
-    if (res.success) {
-      Message({
-        message: t('下载成功'),
-        theme: 'success',
-        width: 'auto',
-      });
-    }
+    const fetchMethod = config.docType === 'resource' ? exportResources : exportDocs;
+    await fetchMethod(gatewayId.value, params);
+    Message({
+      message: t('下载成功'),
+      theme: 'success',
+      width: 'auto',
+    });
     isShow.value = false;
   }
   catch (err: unknown) {
