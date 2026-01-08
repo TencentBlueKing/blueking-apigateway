@@ -199,13 +199,12 @@ const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
 };
 
 onBeforeMount(() => {
-  // 如果屏幕宽度小于1620px，那么每页显示9条数据（3列），否则每页显示12条数据（4列）
-  if (window.innerWidth < 1620) {
-    pagination.value.limit = 9;
-  }
-  else {
-    pagination.value.limit = 12;
-  }
+  // 如果屏幕宽度小于1620px，那么每页显示3列数据，否则每页显示4列数据
+  const cols = window.innerWidth < 1620 ? 3 : 4;
+  // 每屏可展示行数
+  const cardContainerHeight = window.innerHeight - 352;
+  const rows = Math.ceil(cardContainerHeight / 206);
+  pagination.value.limit = cols * rows;
 });
 
 </script>
