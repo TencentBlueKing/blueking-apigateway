@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
@@ -329,25 +328,6 @@ class TestMCPServer:
 
         assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
         assert mcp_server.resource_names == ["resource1", "resource2"]
-
-    def test_update_resource_names_with_validation(self):
-        """测试 update_resource_names 方法的验证功能"""
-        mcp_server = G(MCPServer)
-
-        # 有效资源名
-        mcp_server.update_resource_names(
-            [{"resource_name": "resource1", "tool_name": ""}],
-            valid_resource_names={"resource1", "resource2"},
-        )
-        assert mcp_server.resource_names == ["resource1"]
-
-        # 无效资源名应该抛出异常
-        with pytest.raises(ValueError) as exc_info:
-            mcp_server.update_resource_names(
-                [{"resource_name": "invalid_resource", "tool_name": ""}],
-                valid_resource_names={"resource1", "resource2"},
-            )
-        assert "invalid_resource" in str(exc_info.value)
 
     def test_remove_deleted_resources_some_deleted(self):
         """测试 remove_deleted_resources 方法 - 部分删除"""

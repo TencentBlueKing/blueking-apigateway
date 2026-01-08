@@ -32,7 +32,6 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermissionApply,
-    convert_resource_names_to_storage_format,
 )
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
@@ -154,7 +153,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         validators = [MCPServerValidator()]
 
     def validate_resource_names(self, resource_names):
-        """验证并转换资源名称列表为存储格式"""
+        """验证资源名称列表"""
         if len(resource_names) == 0:
             raise serializers.ValidationError(_("资源名称列表不能为空"))
 
@@ -168,15 +167,21 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if len(tool_names) != len(set(tool_names)):
             raise serializers.ValidationError(_("工具名称不能重复"))
 
-        # 转换为存储格式（使用 model 层的转换函数）
-        return convert_resource_names_to_storage_format(resource_names)
+        # 返回原始格式，由 model 层处理转换
+        return resource_names
 
     def create(self, validated_data):
         prompts = validated_data.pop("prompts", [])
+        resource_names = validated_data.pop("resource_names")
+
         validated_data["gateway_id"] = self.context["gateway"].id
         validated_data["created_by"] = self.context["created_by"]
         validated_data["status"] = self.context["status"]
-        instance = super().create(validated_data)
+
+        # 创建实例并设置资源名称，一次性保存
+        instance = MCPServer(**validated_data)
+        instance.resource_names_with_tool = resource_names
+        instance.save()
 
         # 保存 prompts
         if prompts:
@@ -270,7 +275,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     )
 
     def validate_resource_names(self, resource_names):
-        """验证并转换资源名称列表为存储格式"""
+        """验证资源名称列表"""
         if resource_names is not None:
             if len(resource_names) == 0:
                 raise serializers.ValidationError(_("资源名称列表不能为空"))
@@ -294,8 +299,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             if len(tool_names) != len(set(tool_names)):
                 raise serializers.ValidationError(_("工具名称不能重复"))
 
-            # 转换为存储格式（使用 model 层的转换函数）
-            return convert_resource_names_to_storage_format(resource_names)
+        # 返回原始格式，由 model 层处理转换
         return resource_names
 
     class Meta:
@@ -306,7 +310,18 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         prompts = validated_data.pop("prompts", None)
-        instance = super().update(instance, validated_data)
+        resource_names = validated_data.pop("resource_names", None)
+
+        # 更新普通字段
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # 如果传入了 resource_names，使用 model 层方法更新
+        if resource_names is not None:
+            instance.update_resource_names(resource_names)
+
+        # 一次性保存所有更改
+        instance.save()
 
         # 如果传入了 prompts，则更新
         if prompts is not None:

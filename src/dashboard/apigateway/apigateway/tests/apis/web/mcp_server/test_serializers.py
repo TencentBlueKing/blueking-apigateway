@@ -96,8 +96,11 @@ class TestMCPServerCreateInputSLZ:
         }
         slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
         assert slz.is_valid(), slz.errors
-        # 验证转换后的格式
-        assert slz.validated_data["resource_names"] == ["resource1@custom_tool", "resource2"]
+        # 验证返回原始格式（由 model 层处理转换）
+        assert slz.validated_data["resource_names"] == [
+            {"resource_name": "resource1", "tool_name": "custom_tool"},
+            {"resource_name": "resource2", "tool_name": ""},
+        ]
 
     def test_validate_resource_names_duplicate_tool_name(self, fake_gateway, fake_stage):
         """测试重复的 tool_name"""
@@ -154,7 +157,12 @@ class TestMCPServerCreateInputSLZ:
         }
         slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["resource_names"] == ["resource1", "resource2", "resource3"]
+        # 验证返回原始格式（由 model 层处理转换）
+        assert slz.validated_data["resource_names"] == [
+            {"resource_name": "resource1", "tool_name": ""},
+            {"resource_name": "resource2", "tool_name": ""},
+            {"resource_name": "resource3", "tool_name": ""},
+        ]
 
 
 class TestMCPServerUpdateInputSLZ:
@@ -208,7 +216,11 @@ class TestMCPServerUpdateInputSLZ:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["resource_names"] == ["resource1@custom_tool", "resource2"]
+        # 验证返回原始格式（由 model 层处理转换）
+        assert slz.validated_data["resource_names"] == [
+            {"resource_name": "resource1", "tool_name": "custom_tool"},
+            {"resource_name": "resource2", "tool_name": ""},
+        ]
 
     def test_validate_resource_names_duplicate_tool_name(self, fake_gateway, fake_stage):
         """测试重复的 tool_name"""
@@ -266,7 +278,11 @@ class TestMCPServerUpdateInputSLZ:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["resource_names"] == ["resource1", "resource2"]
+        # 验证返回原始格式（由 model 层处理转换）
+        assert slz.validated_data["resource_names"] == [
+            {"resource_name": "resource1", "tool_name": ""},
+            {"resource_name": "resource2", "tool_name": ""},
+        ]
 
     def test_validate_resource_names_none(self, fake_gateway, fake_stage):
         """测试 resource_names 为 None（不更新）"""

@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import ClassVar, Dict, List, Optional, Tuple
+from typing import ClassVar, Dict, List, Tuple
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -223,27 +223,16 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         """
         return [parse_resource_name_with_tool(name)[1] for name in self.resource_names_raw]
 
-    def update_resource_names(
-        self,
-        resource_names_with_tool: List[Dict[str, str]],
-        valid_resource_names: Optional[set] = None,
-    ) -> None:
+    def update_resource_names(self, resource_names_with_tool: List[Dict[str, str]]) -> None:
         """更新资源名称列表
 
-        此方法封装了资源名称的更新逻辑，包括格式转换和验证。
+        此方法封装了资源名称的更新逻辑，包括格式转换。
 
         Args:
             resource_names_with_tool: 前端格式的资源名称列表
                 格式: [{"resource_name": "xxx", "tool_name": "yyy"}, ...]
-            valid_resource_names: 可选，有效的资源名称集合，用于验证
-
-        Raises:
-            ValueError: 如果资源名称不在有效集合中
         """
-        if valid_resource_names is not None:
-            for item in resource_names_with_tool:
-                if item["resource_name"] not in valid_resource_names:
-                    raise ValueError(f"Invalid resource name: {item['resource_name']}")
+        self._resource_names = ";".join(convert_resource_names_to_storage_format(resource_names_with_tool))
 
         self._resource_names = ";".join(convert_resource_names_to_storage_format(resource_names_with_tool))
 
