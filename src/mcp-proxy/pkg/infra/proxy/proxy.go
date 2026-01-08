@@ -27,12 +27,12 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/runtime"
 	cli "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/runtime/logger"
 	"github.com/go-openapi/strfmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cast"
@@ -358,12 +358,79 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 	return prompt, handler
 }
 
+// loggingTransport 是一个带日志的 HTTP Transport
+type loggingTransport struct {
+	base      http.RoundTripper
+	logger    *zap.SugaredLogger
+	appCode   string
+	username  string
+	requestID string
+	toolName  string
+}
+
+// RoundTrip 实现 http.RoundTripper 接口
+func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	start := time.Now()
+
+	// 记录请求日志
+	t.logger.Infow("outgoing request",
+		"app_code", t.appCode,
+		"username", t.username,
+		"request_id", t.requestID,
+		"tool", t.toolName,
+		"method", req.Method,
+		"url", req.URL.String(),
+		"host", req.Host,
+	)
+
+	// 执行请求
+	resp, err := t.base.RoundTrip(req)
+
+	duration := time.Since(start)
+
+	if err != nil {
+		t.logger.Errorw("outgoing request failed",
+			"app_code", t.appCode,
+			"username", t.username,
+			"request_id", t.requestID,
+			"tool", t.toolName,
+			"method", req.Method,
+			"url", req.URL.String(),
+			"duration", duration,
+			"error", err,
+		)
+		return nil, err
+	}
+
+	// 记录响应日志
+	t.logger.Infow("outgoing response",
+		"app_code", t.appCode,
+		"username", t.username,
+		"request_id", t.requestID,
+		"tool", t.toolName,
+		"method", req.Method,
+		"url", req.URL.String(),
+		"status_code", resp.StatusCode,
+		"duration", duration,
+	)
+
+	return resp, nil
+}
+
 func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
-		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
+		appCode := util.GetAppCodeFromContext(ctx)
+		username := util.GetUsernameFromContext(ctx)
+
+		// 在所有日志中添加 app_code 和 username
+		auditLog = auditLog.With(
+			zap.String("tool", toolApiConfig.String()),
+			zap.String("app_code", appCode),
+			zap.String("username", username),
+		)
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
@@ -383,10 +450,19 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				string(argsBytes)), zap.Error(err))
 			return nil, err
 		}
-		tr := &http.Transport{
+		// 创建带日志的 Transport
+		baseTransport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
-		client := &http.Client{Transport: tr}
+		logTransport := &loggingTransport{
+			base:      baseTransport,
+			logger:    logging.GetLogger(),
+			appCode:   appCode,
+			username:  username,
+			requestID: requestID,
+			toolName:  toolApiConfig.String(),
+		}
+		client := &http.Client{Transport: logTransport}
 		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
@@ -493,7 +569,6 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			),
 		}
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
-		openAPIClient.SetLogger(logger.StandardLogger{})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
