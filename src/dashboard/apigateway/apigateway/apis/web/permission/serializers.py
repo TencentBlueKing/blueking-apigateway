@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -29,13 +28,8 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
-from apigateway.common.tenant.constants import (
-    TENANT_ID_OPERATION,
-    TenantModeEnum,
-)
-from apigateway.components.bkauth import get_app_tenant_info_cached
-from apigateway.components.bkuser import query_display_names_cached
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
@@ -263,27 +257,12 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
     def get_applied_by(self, obj):
-        if not settings.ENABLE_MULTI_TENANT_MODE:
-            return obj.applied_by
-
-        try:
-            gateway_tenant_mode = self.context.get("gateway_tenant_mode")
-            gateway_tenant_id = self.context.get("gateway_tenant_id")
-
-            app_tenant_mode, app_tenant_id = get_app_tenant_info_cached(obj.bk_app_code)
-            if app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
-                return obj.applied_by
-
-            if app_tenant_mode == TenantModeEnum.GLOBAL.value:
-                app_tenant_id = TENANT_ID_OPERATION
-
-            display_names = query_display_names_cached(app_tenant_id, obj.applied_by)
-            if display_names:
-                return display_names[0].get("display_name", obj.applied_by)
-        except Exception:  # pylint: disable=broad-except
-            return obj.applied_by
-
-        return obj.applied_by
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            self.context.get("gateway_tenant_mode"),
+            self.context.get("gateway_tenant_id"),
+        )
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):

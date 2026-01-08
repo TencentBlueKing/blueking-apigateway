@@ -728,7 +728,11 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
 
         page = self.paginate_queryset(queryset)
 
-        slz = MCPServerAppPermissionApplyListOutputSLZ(page, many=True)
+        context = {
+            "gateway_tenant_mode": request.gateway.tenant_mode,
+            "gateway_tenant_id": request.gateway.tenant_id,
+        }
+        slz = MCPServerAppPermissionApplyListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(slz.data)
 
 

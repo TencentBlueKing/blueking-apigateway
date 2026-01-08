@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
+from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
@@ -423,7 +424,7 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
 class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
-    applied_by = serializers.CharField(read_only=True, help_text="申请人")
+    applied_by = serializers.SerializerMethodField(help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
     status = serializers.ChoiceField(
         read_only=True, choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), help_text="审批状态"
@@ -432,6 +433,14 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyListOutputSLZ"
+
+    def get_applied_by(self, obj):
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            self.context.get("gateway_tenant_mode"),
+            self.context.get("gateway_tenant_id"),
+        )
 
 
 class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
