@@ -34,7 +34,6 @@ import (
 )
 
 // LoggingMiddleware returns a middleware that logs all MCP method calls with timing information.
-// 参照 middleware/logger.go 的风格实现，记录详细的请求/响应参数
 func LoggingMiddleware(serverName string) mcp.Middleware {
 	logger := logging.GetAPILogger()
 
