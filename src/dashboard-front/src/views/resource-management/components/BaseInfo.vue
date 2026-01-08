@@ -58,7 +58,7 @@
         :width="700"
         is-add
         @update-success="init"
-        @label-add-success="init"
+        @label-add-success="handleLabelAddSuccess"
       />
     </BkFormItem>
     <BkFormItem :label="t('认证方式')">
@@ -155,7 +155,7 @@ const formData = ref({
   allow_apply_permission: true,
 });
 
-const labelsData = ref([]);
+const labelsData = ref<any[]>([]);
 
 const rules = {
   name: [
@@ -221,6 +221,13 @@ watch(
 
 const init = async () => {
   labelsData.value = await getGatewayLabels(gatewayId.value);
+};
+
+const handleLabelAddSuccess = async (labelId: number) => {
+  await init();
+  if (!formData.value.label_ids.includes(labelId)) {
+    formData.value.label_ids.push(labelId);
+  }
 };
 
 // 监听表单校验时间，收集 #id

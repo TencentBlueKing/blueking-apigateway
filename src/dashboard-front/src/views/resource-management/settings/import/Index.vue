@@ -1239,10 +1239,12 @@ const handleEditSubmit = (newResource: ILocalImportedResource) => {
 // 点击修改配置时，会唤出 SideSlider
 const handleEdit = (resourceRow: ILocalImportedResource) => {
   const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
-  if (_editingResource) editingResource.value = {
-    ...editingResource.value,
-    ..._editingResource,
-  };
+  if (_editingResource) {
+    editingResource.value = {
+      ...editingResource.value,
+      ..._editingResource,
+    };
+  }
   isSliderShow.value = true;
 };
 

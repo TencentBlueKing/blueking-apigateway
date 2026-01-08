@@ -171,7 +171,7 @@ const {
 const emit = defineEmits<{
   'close': [data: any[]]
   'update-success': [void]
-  'label-add-success': [id: string]
+  'label-add-success': [id: number]
   'update:modelValue': [data: any[]]
 }>();
 
@@ -222,12 +222,15 @@ const handleToggle = async (v: boolean) => {
   }
   // 新增标签标识
   if (isAdd || bathEdit) return;
+
+  // 提前获取 gatewayId，避免组件收起后 gatewayId 被重置为默认值
+  const _gatewayId = gatewayId.value;
   setTimeout(async () => {
     // 关闭下拉框且
     if (!v) {
       // 变更了的标签数据请求接口
       if (!isSameLabels.value) {
-        await updateResourceLabels(gatewayId.value, resourceId, { label_ids: curLabelIds.value });
+        await updateResourceLabels(_gatewayId, resourceId, { label_ids: curLabelIds.value });
         Message({
           message: t('修改标签成功'),
           theme: 'success',

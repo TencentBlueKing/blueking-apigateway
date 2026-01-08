@@ -71,6 +71,7 @@ interface IImportedResource {
   openapi_schema: Record<string, any>
   path: string
   plugin_configs?: IPluginConfig[] | null
+  enable_websocket: boolean
 }
 
 interface ILocalImportedResource extends Partial<IImportedResource> {
