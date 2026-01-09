@@ -117,16 +117,16 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
             "Not supported, you should use update_resource_names or delete_resource_names instead"
         )
 
-    def delete_resource_names(self, to_deleted_resource_names: set) -> bool:
+    def delete_resource_names(self, deleted_resource_names: set) -> bool:
         """移除已删除的资源
 
         Args:
-            deleted_resource_names: 需要删除的纯资源名称集合
+            to_deleted_resource_names: 需要删除的纯资源名称集合
 
         Returns:
             是否有资源被移除
         """
-        if not to_deleted_resource_names:
+        if not deleted_resource_names:
             return False
 
         current_resource_names = self.resource_names
@@ -134,7 +134,7 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
 
         result = []
         for index, resource_name in enumerate(current_resource_names):
-            if resource_name in to_deleted_resource_names:
+            if resource_name in deleted_resource_names:
                 continue
 
             tool_name = current_tool_names[index]

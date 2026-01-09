@@ -139,26 +139,25 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
-        if resource_names is not None:
-            if len(resource_names) == 0:
-                raise serializers.ValidationError(_("资源名称列表不能为空"))
-            valid_resource_names = self.context["valid_resource_names"]
+        if not resource_names:
+            raise serializers.ValidationError(_("资源名称列表不能为空"))
+        valid_resource_names = self.context["valid_resource_names"]
 
-            if len(resource_names) != len(set(resource_names)):
-                raise serializers.ValidationError(_("资源名称不能重复"))
+        if len(resource_names) != len(set(resource_names)):
+            raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-            for resource_name in resource_names:
-                if resource_name not in valid_resource_names:
-                    raise serializers.ValidationError(
-                        _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                        + f"resource_name={resource_name}"
-                    )
+        for resource_name in resource_names:
+            if resource_name not in valid_resource_names:
+                raise serializers.ValidationError(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={resource_name}"
+                )
         return resource_names
 
     def validate_tool_names(self, tool_names):
         """验证工具名称列表"""
         if len(tool_names) == 0:
-            raise serializers.ValidationError(_("资源别名列表不能为空"))
+            raise serializers.ValidationError(_("工具名称列表不能为空"))
 
         if len(tool_names) != len(set(tool_names)):
             raise serializers.ValidationError(_("工具名称不能重复"))
@@ -281,26 +280,25 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
-        if resource_names is not None:
-            if len(resource_names) == 0:
-                raise serializers.ValidationError(_("资源名称列表不能为空"))
-            valid_resource_names = self.context["valid_resource_names"]
+        if not resource_names:
+            raise serializers.ValidationError(_("资源名称列表不能为空"))
+        valid_resource_names = self.context["valid_resource_names"]
 
-            if len(resource_names) != len(set(resource_names)):
-                raise serializers.ValidationError(_("资源名称不能重复"))
+        if len(resource_names) != len(set(resource_names)):
+            raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-            for resource_name in resource_names:
-                if resource_name not in valid_resource_names:
-                    raise serializers.ValidationError(
-                        _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                        + f"resource_name={resource_name}"
-                    )
+        for resource_name in resource_names:
+            if resource_name not in valid_resource_names:
+                raise serializers.ValidationError(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={resource_name}"
+                )
         return resource_names
 
     def validate_tool_names(self, tool_names):
         """验证工具名称列表"""
         if len(tool_names) == 0:
-            raise serializers.ValidationError(_("资源别名列表不能为空"))
+            raise serializers.ValidationError(_("工具名称列表不能为空"))
 
         if len(tool_names) != len(set(tool_names)):
             raise serializers.ValidationError(_("工具名称不能重复"))
@@ -337,6 +335,9 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
         # 如果传入了 resource_names，使用 model 层方法更新
         if resource_names is not None:
+            if tool_names is None:
+                raise serializers.ValidationError(_("工具名称列表不能为空"))
+
             if len(tool_names) != len(resource_names):
                 raise serializers.ValidationError(_("工具名称列表长度与资源名称列表长度不一致"))
 

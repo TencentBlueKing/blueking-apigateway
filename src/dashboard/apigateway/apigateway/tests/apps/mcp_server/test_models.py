@@ -93,6 +93,16 @@ class TestMCPServer:
         assert mcp_server.delete_resource_names({"resource1", "resource3"})
         assert mcp_server.resource_names == ["resource2"]
 
+        # Test edge case: trying to delete nonexistent resources should return False
+        mcp_server._resource_names = "resource1;resource2;resource3"
+        assert mcp_server.delete_resource_names({"nonexistent_resource"})
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource3"]
+
+        # Test edge case: trying to delete nonexistent resources with tool names should return False
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2"
+        assert mcp_server.delete_resource_names({"resource_x", "resource_y"})
+        assert mcp_server.resource_names == ["resource1", "resource2"]
+
     def test_tool_names(self):
         mcp_server = G(MCPServer)
         assert mcp_server.tool_names == []
