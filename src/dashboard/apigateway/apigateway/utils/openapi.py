@@ -36,11 +36,17 @@ def generate_example(schema):
     if "enum" in schema:
         return random.choice(schema["enum"])
 
+    # 处理没有 type 字段的情况
+    if "type" not in schema:
+        return handle_default(schema)
+
     type_handlers = {
         "object": handle_object,
         "array": handle_array,
         "string": handle_string,
         "integer": handle_integer,
+        "boolean": handle_boolean,
+        "number": handle_number,
     }
 
     handler = type_handlers.get(schema["type"], handle_default)
@@ -51,8 +57,17 @@ def handle_object(schema):
     if "properties" not in schema:
         return {}
     example = {}
+    required_fields = schema.get("required", [])
+
     for key, value in schema["properties"].items():
-        example[key] = generate_example(value)
+        # 如果字段有默认值，使用默认值
+        if "default" in value:
+            example[key] = value["default"]
+        # 如果字段是可空的且不是必需的，可能返回 None
+        elif value.get("nullable", False) and key not in required_fields and random.choice([True, False]):
+            example[key] = None
+        else:
+            example[key] = generate_example(value)
     return example
 
 
@@ -70,6 +85,14 @@ def handle_string(schema):
 
 def handle_integer(schema):
     return fake.random_int(min=schema.get("minimum", 0), max=schema.get("maximum", 100))
+
+
+def handle_boolean(schema):
+    return fake.boolean()
+
+
+def handle_number(schema):
+    return fake.random_int(min=int(schema.get("minimum", 0)), max=int(schema.get("maximum", 100)))
 
 
 def handle_default(schema):
