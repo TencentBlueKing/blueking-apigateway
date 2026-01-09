@@ -35,12 +35,12 @@
       />
       <BkForm
         ref="batchApprovalFormRef"
-        :label-width="0"
         :model="formData"
+        form-type="vertical"
         class="m-t-20px"
       >
         <BkFormItem
-          label=""
+          :label="t('备注')"
           :rules="
             [
               {
@@ -88,6 +88,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Form } from 'bkui-vue';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
 import AgTable from '@/components/ag-table/Index.vue';
