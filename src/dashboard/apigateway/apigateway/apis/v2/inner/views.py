@@ -500,7 +500,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
     decorator=swagger_auto_schema(
         operation_description="MCPServer 申请权限/批量申请权限",
         request_body=serializers.MCPServerAppPermissionApplyCreateInputSLZ,
-        responses={status.HTTP_201_CREATED: serializers.MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
+        responses={status.HTTP_200_OK: serializers.MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
     ),
 )
@@ -528,7 +528,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             )
 
         output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)
+        return OKJsonResponse(status=status.HTTP_200_OK, data=output_slz.data)
 
 
 @method_decorator(
