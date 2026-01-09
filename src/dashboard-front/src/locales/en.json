@@ -1412,6 +1412,7 @@
   "API公钥（指纹）": "API public key (fingerprint)",
   " 更多详情": " More details",
   "启用中": "Enabled",
+  "未启用": "Disabled",
   "官网": "Official site",
   "立即启用": "Enable now",
   "启用网关成功": "Gateway enabled successfully",
