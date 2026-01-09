@@ -65,8 +65,16 @@
         document.head.appendChild(link);
       }
 
+      function loadFavIcon(href) {
+        const link = document.createElement("link");
+        link.rel = "icon";
+        link.href = window.__loadAssetsUrl__(href);
+        document.head.appendChild(link);
+      }
+
       loadScript("/bk_icon_font/iconcool.js");
       loadStyle("/bk_icon_font/style.css");
+      loadFavIcon("/favicon.png");
 
       fetch(window.__loadAssetsUrl__(".vite/manifest.json"))
         .then((res) => res.json())
