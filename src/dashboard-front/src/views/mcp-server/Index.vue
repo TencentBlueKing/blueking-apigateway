@@ -23,7 +23,10 @@
         :loading="isLoading"
         :z-index="99"
       >
-        <div class="server-list">
+        <div
+          ref="serverListRef"
+          class="server-list"
+        >
           <ServerItemCard
             v-for="server in serverList"
             :key="server.id"
@@ -67,6 +70,7 @@ import {
   getServers,
   patchServerStatus,
 } from '@/services/source/mcp-server';
+import { useFeatureFlag } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import CreateSlider from './components/CreateSlider.vue';
 import ServerItemCard from '@/components/ag-mcp-card/Index.vue';
@@ -79,17 +83,60 @@ const { gatewayId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
 const router = useRouter();
+const featureFlagStore = useFeatureFlag();
 
 const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
+const serverListRef = ref<HTMLDivElement>(null);
 const serverList = ref<MCPServerType[]>([]);
 const editingServerId = ref();
 const isLoading = ref(true);
 const pagination = ref({
   current: 1,
-  limit: window.innerWidth < 1620 ? 9 : 12,
+  limit: 0,
   count: 0,
   hasNoMore: false,
 });
+
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+
+const getSingleCardHeight = (): number => {
+  const firstCard = serverListRef.value?.querySelector('.ag-mcp-card-wrapper');
+  const addCard = serverListRef.value?.querySelector('.add-server-card');
+
+  // 如果有已渲染的卡片，取卡片最小高度，否则取添加卡片的高度
+  if (firstCard) {
+    // 卡片默认最小高度189px + 16px间距
+    return 189 + 16;
+  }
+  return (addCard as HTMLElement).offsetHeight + 16;
+};
+
+const getCardsPerRow = (): number => {
+  const wrapperWidth = window.innerWidth;
+  if (wrapperWidth >= 1280) return 3; // 大屏：每行3个
+  if (wrapperWidth < 1280 && wrapperWidth >= 768) return 2; // 中屏：每行2个
+  return 1; // 小屏：每行1个
+};
+
+const calculateMaxVisibleCards = (): number => {
+  // 通知栏高度40px
+  const noticeH = isShowNoticeAlert.value ? 40 : 0;
+  // 获取页面可用高度（排除顶部导航/内边距）, 44px=页面内边距(20+24)，104px=顶部预留高度
+  const wrapperHeight = window.innerHeight - 44 - 104 - noticeH;
+
+  // 获取单卡片高度和每行卡片数
+  const singleCardHeight = getSingleCardHeight();
+  const cardsPerRow = getCardsPerRow();
+
+  // 计算可展示行数
+  const maxRows = Math.floor(wrapperHeight / singleCardHeight);
+
+  // 计算最大可展示卡片数
+  const maxCards = Math.max(maxRows * cardsPerRow, 3);
+
+  // 预留一行空间用于触发加载更多
+  return maxCards + getCardsPerRow();
+};
 
 const fetchServerList = async () => {
   const { hasNoMore, current, limit } = pagination.value;
@@ -174,7 +221,7 @@ const handleDelete = async (id: number) => {
         await deleteServer(gatewayId, id);
         Message({
           theme: 'success',
-          message: t('已删除'),
+          message: t('删除成功'),
         });
         resetPagination();
       },
@@ -198,6 +245,14 @@ const handleCardClick = (id: number) => {
   });
 };
 
+const handleResize = () => {
+  const newLimit = calculateMaxVisibleCards();
+  if (pagination.value.limit !== newLimit) {
+    pagination.value.limit = newLimit || 3;
+    resetPagination();
+  }
+};
+
 const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
   if (entry?.isIntersecting) {
     fetchServerList();
@@ -215,6 +270,15 @@ const resetPagination = () => {
   });
   fetchServerList();
 };
+
+onMounted(() => {
+  pagination.value.limit = calculateMaxVisibleCards();
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -257,21 +321,27 @@ const resetPagination = () => {
 
 @media (min-width: 768px) {
   .add-server-card {
-    width: calc(50% - 12px);
+    width: calc(50% - 24px);
   }
 
   :deep(.ag-mcp-card-wrapper) {
-    width: calc(50% - 12px);
+    width: calc(50% - 24px);
   }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1280px) {
   .add-server-card {
     width: calc(33.333% - 16px);
   }
 
   :deep(.ag-mcp-card-wrapper) {
     width: calc(33.333% - 16px);
+  }
+}
+
+@media (max-width: 1320px) {
+  :deep(.mcp-card-title) {
+    min-width: 30px;
   }
 }
 </style>
