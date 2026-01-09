@@ -55,6 +55,27 @@ func GetBkAppCode(c *gin.Context) string {
 	return appCode.(string)
 }
 
+// GetAppCode is an alias for GetBkAppCode
+func GetAppCode(c *gin.Context) string {
+	return GetBkAppCode(c)
+}
+
+// GetAppCodeFromContext gets app code from context
+func GetAppCodeFromContext(ctx context.Context) string {
+	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
+		return appCode
+	}
+	return ""
+}
+
+// GetUsernameFromContext gets username from context
+func GetUsernameFromContext(ctx context.Context) string {
+	if username, ok := ctx.Value(constant.BkUsername).(string); ok {
+		return username
+	}
+	return ""
+}
+
 // SetInnerJWTToken ...
 func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 	c.Set(string(constant.BkGatewayInnerJWT), jwtToken)
@@ -98,6 +119,14 @@ func GetMCPServerID(c *gin.Context) int {
 	return mcpServerID.(int)
 }
 
+// GetMCPServerIDFromContext gets MCP server ID from context
+func GetMCPServerIDFromContext(ctx context.Context) int {
+	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(int); ok {
+		return mcpServerID
+	}
+	return 0
+}
+
 // SetGatewayID ...
 func SetGatewayID(c *gin.Context, gatewayID int) {
 	c.Set(string(constant.GatewayID), gatewayID)
@@ -113,6 +142,15 @@ func GetGatewayID(c *gin.Context) int {
 		return 0
 	}
 	return mcpServerID.(int)
+}
+
+// GetGatewayIDFromContext ...
+func GetGatewayIDFromContext(ctx context.Context) int {
+	gatewayID, ok := ctx.Value(constant.GatewayID).(int)
+	if !ok {
+		return 0
+	}
+	return gatewayID
 }
 
 // GetInnerJWTTokenFromContext ...
@@ -165,4 +203,42 @@ func GetBkApiAllowedHeaders(ctx context.Context) map[string]string {
 		return map[string]string{}
 	}
 	return allowedHeaders
+}
+
+// JWTClaimsForLazySigning 用于延迟签发 JWT 的 claims 信息
+type JWTClaimsForLazySigning struct {
+	AppCode      string
+	AppVerified  bool
+	Username     string
+	UserVerified bool
+	Issuer       string
+	Audience     []string
+}
+
+// SetJWTClaimsForLazySigning 保存 JWT claims 和私钥到 context，用于延迟签发
+func SetJWTClaimsForLazySigning(c *gin.Context, claims *JWTClaimsForLazySigning, privateKey []byte) {
+	c.Set(string(constant.BkGatewayJWTClaims), claims)
+	c.Set(string(constant.BkGatewayPrivateKey), privateKey)
+	if c.Request != nil {
+		ctx := c.Request.Context()
+		ctx = context.WithValue(ctx, constant.BkGatewayJWTClaims, claims)
+		ctx = context.WithValue(ctx, constant.BkGatewayPrivateKey, privateKey)
+		c.Request = c.Request.WithContext(ctx)
+	}
+}
+
+// GetJWTClaimsFromContext 从 context 获取 JWT claims
+func GetJWTClaimsFromContext(ctx context.Context) *JWTClaimsForLazySigning {
+	if claims, ok := ctx.Value(constant.BkGatewayJWTClaims).(*JWTClaimsForLazySigning); ok {
+		return claims
+	}
+	return nil
+}
+
+// GetPrivateKeyFromContext 从 context 获取私钥
+func GetPrivateKeyFromContext(ctx context.Context) []byte {
+	if key, ok := ctx.Value(constant.BkGatewayPrivateKey).([]byte); ok {
+		return key
+	}
+	return nil
 }

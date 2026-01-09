@@ -152,6 +152,11 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
+			// 添加日志中间件
+			mcpServer := mcpProxy.GetMCPServer(server.Name)
+			if mcpServer != nil {
+				AddLoggingMiddleware(mcpServer.GetServer(), server.Name)
+			}
 			// 加载并注册 Prompts
 			prompts := loadMCPServerPrompts(ctx, server.ID)
 			if len(prompts) > 0 {
@@ -174,7 +179,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		for _, tool := range mcpServer.GetTools() {
 			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
 			if !arrutil.Contains(server.ResourceNames, tool) {
-				mcpServer.UnregisterTool(tool)
+				mcpServer.RemoveTool(tool)
 				toolUpdated = true
 				continue
 			}

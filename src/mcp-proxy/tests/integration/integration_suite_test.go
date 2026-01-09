@@ -16,9 +16,32 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package integration_test
 
-var (
-	VerifyJWTToken  = verifyJWTToken
-	ParseBKJWTToken = parseBKJWTToken
+import (
+	"context"
+	"testing"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
+
+func TestIntegration(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Integration Test Suite")
+}
+
+var _ = BeforeSuite(func() {
+	// 等待 mcp-proxy 服务可用
+	client, err := NewTestClient()
+	Expect(err).NotTo(HaveOccurred())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	err = client.WaitForService(ctx, 30*time.Second)
+	if err != nil {
+		Skip("mcp-proxy service not available, skipping integration tests. Run 'make integration-up' first.")
+	}
+})

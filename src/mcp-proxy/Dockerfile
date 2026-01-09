@@ -13,6 +13,8 @@ RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2
 
 FROM tencentos/tencentos4-minimal:4.4-v20250922
 
+# Install curl for healthcheck
+RUN dnf install -y curl && dnf clean all
 
 ARG BINARY=bk-apigateway-mcp-proxy
 
