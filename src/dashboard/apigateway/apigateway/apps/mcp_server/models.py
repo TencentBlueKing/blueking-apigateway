@@ -85,10 +85,6 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         self._labels = ";".join(value)
 
     @property
-    def tools_count(self) -> int:
-        return len(self.tool_names)
-
-    @property
     def is_active(self) -> bool:
         return self.status == MCPServerStatusEnum.ACTIVE.value
 
@@ -162,6 +158,10 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         raise NotImplementedError(
             "Not supported, you should use update_resource_names or delete_resource_names instead"
         )
+
+    @property
+    def tools_count(self) -> int:
+        return len(self.tool_names)
 
     def gen_tool_name_map(self) -> Dict[str, str]:
         """生成工具名称映射"""
