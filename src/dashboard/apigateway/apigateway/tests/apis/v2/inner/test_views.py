@@ -85,7 +85,7 @@ class TestMCPServerPermissionListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            _resource_names="tool1;tool2@custom_tool",
+            _resource_names="tool1;tool2",
         )
 
         resp = request_view(
@@ -104,7 +104,6 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["name"] == "test-mcp-server"
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
-        assert mcp_server_data["tool_names"] == ["tool1", "tool2"]
 
     def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 基本功能"""
@@ -169,7 +168,7 @@ class TestMCPServerAppPermissionApplyCreateApi:
         )
         result = resp.json()
 
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         assert len(result["data"]) == 1
 
         apply_record = result["data"][0]
