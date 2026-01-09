@@ -126,11 +126,15 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
+        valid_resource_names = MCPServerHandler().get_valid_resource_names(
+            gateway_id=self.request.gateway.id, stage_id=request.data["stage_id"]
+        )
         ctx = {
             "gateway": self.request.gateway,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
             "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": valid_resource_names,
         }
         slz = MCPServerCreateInputSLZ(data=request.data, context=ctx)
         slz.is_valid(raise_exception=True)
@@ -349,16 +353,16 @@ class MCPServerToolsListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        tool_resources, labels, tool_name_map = MCPServerHandler.get_tools_resources_and_labels(
+        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
             gateway_id=request.gateway.id,
             stage_name=instance.stage.name,
-            resource_names=instance.resource_names_raw,
+            resource_names=instance.resource_names,
         )
 
         slz = MCPServerToolOutputSLZ(
             tool_resources,
             many=True,
-            context={"labels": labels, "tool_name_map": tool_name_map},
+            context={"labels": labels, "tool_name_map": instance.gen_tool_name_map()},
         )
 
         return OKJsonResponse(status=status.HTTP_200_OK, data=slz.data)

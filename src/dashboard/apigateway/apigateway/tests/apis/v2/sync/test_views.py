@@ -84,6 +84,7 @@ class TestSyncApi:
                     "labels": ["tag1", "tag2"],
                     "name": "server1",
                     "resource_names": [fake_resource.name],
+                    "tool_names": [fake_resource.name],
                     "is_public": True,
                     "description": "description",
                     "status": 1,

@@ -189,10 +189,10 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
             }
         }
 
-        tool_resources, labels, tool_name_map = MCPServerHandler.get_tools_resources_and_labels(
+        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
             gateway_id=instance.gateway.id,
             stage_name=instance.stage.name,
-            resource_names=instance.resource_names_raw,
+            resource_names=instance.resource_names,
         )
         instance.tools = tool_resources
 
@@ -212,7 +212,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "gateways": gateways,
                 "stages": stages,
                 "labels": labels,
-                "tool_name_map": tool_name_map,
+                "tool_name_map": instance.gen_tool_name_map(),
                 "prompts_count_map": prompts_count_map,
                 "prompts": prompts,
                 "user_custom_doc": user_custom_doc,

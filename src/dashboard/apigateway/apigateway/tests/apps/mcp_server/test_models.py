@@ -16,110 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
     TOOL_NAME_SEPARATOR,
     MCPServer,
-    get_pure_resource_names,
-    get_resource_name_tool_map,
-    parse_resource_name_with_tool,
 )
-
-
-class TestParseResourceNameWithTool:
-    """测试 parse_resource_name_with_tool 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1")
-        assert resource_name == "resource1"
-        assert tool_name == ""
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1@custom_tool")
-        assert resource_name == "resource1"
-        assert tool_name == "custom_tool"
-
-    def test_with_multiple_separators(self):
-        """测试包含多个分隔符的情况（只分割第一个）"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1@tool@extra")
-        assert resource_name == "resource1"
-        assert tool_name == "tool@extra"
-
-    def test_empty_string(self):
-        """测试空字符串"""
-        resource_name, tool_name = parse_resource_name_with_tool("")
-        assert resource_name == ""
-        assert tool_name == ""
-
-    def test_only_separator(self):
-        """测试只有分隔符"""
-        resource_name, tool_name = parse_resource_name_with_tool("@")
-        assert resource_name == ""
-        assert tool_name == ""
-
-    def test_separator_at_end(self):
-        """测试分隔符在末尾"""
-        resource_name, tool_name = parse_resource_name_with_tool("resource1@")
-        assert resource_name == "resource1"
-        assert tool_name == ""
-
-
-class TestGetPureResourceNames:
-    """测试 get_pure_resource_names 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_names = ["resource1", "resource2"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2"]
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = get_pure_resource_names(resource_names)
-        assert result == ["resource1", "resource2", "resource3"]
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = get_pure_resource_names([])
-        assert result == []
-
-
-class TestGetResourceNameToolMap:
-    """测试 get_resource_name_tool_map 函数"""
-
-    def test_without_tool_name(self):
-        """测试不带工具名的资源名称"""
-        resource_names = ["resource1", "resource2"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "", "resource2": ""}
-
-    def test_with_tool_name(self):
-        """测试带工具名的资源名称"""
-        resource_names = ["resource1@custom_tool1", "resource2@custom_tool2"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "custom_tool1", "resource2": "custom_tool2"}
-
-    def test_mixed(self):
-        """测试混合情况"""
-        resource_names = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-        result = get_resource_name_tool_map(resource_names)
-        assert result == {"resource1": "custom_tool", "resource2": "", "resource3": "tool3"}
-
-    def test_empty_list(self):
-        """测试空列表"""
-        result = get_resource_name_tool_map([])
-        assert result == {}
 
 
 class TestToolNameSeparator:
@@ -138,51 +42,6 @@ class TestMCPServer:
         mcp_server.labels = ["label1", "label2"]
         assert mcp_server.labels == ["label1", "label2"]
 
-    def test_resource_names_without_tool(self):
-        """测试不带工具名的 resource_names"""
-        mcp_server = G(MCPServer)
-        assert mcp_server.resource_names == []
-
-        mcp_server.resource_names = ["resource1", "resource2"]
-        assert mcp_server.resource_names == ["resource1", "resource2"]
-
-    def test_resource_names_with_tool(self):
-        """测试带工具名的 resource_names（返回纯资源名称）"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names = ["resource1@custom_tool", "resource2"]
-
-        # resource_names 返回纯资源名称
-        assert mcp_server.resource_names == ["resource1", "resource2"]
-
-    def test_resource_names_raw(self):
-        """测试 resource_names_raw 属性"""
-        mcp_server = G(MCPServer)
-        assert mcp_server.resource_names_raw == []
-
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
-
-    def test_resource_names_with_tool_property(self):
-        """测试 resource_names_with_tool 属性"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-
-        assert mcp_server.resource_names_with_tool == [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-
-    def test_resource_names_with_tool_setter(self):
-        """测试 resource_names_with_tool setter"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_with_tool = [
-            {"resource_name": "resource1", "tool_name": "custom_tool"},
-            {"resource_name": "resource2", "tool_name": ""},
-        ]
-
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
-        assert mcp_server.resource_names == ["resource1", "resource2"]
-
     def test_is_active(self):
         mcp_server = G(MCPServer)
         assert mcp_server.is_active is False
@@ -190,95 +49,107 @@ class TestMCPServer:
         mcp_server.status = MCPServerStatusEnum.ACTIVE.value
         assert mcp_server.is_active is True
 
-    def test_tools_count_without_tool_name(self):
+    def test_parse_resource_names_to_part(self):
+        mcp_server = G(MCPServer)
+        assert mcp_server._parse_resource_names_to_part(0) == []
+        assert mcp_server._parse_resource_names_to_part(1) == []
+
+        mcp_server._resource_names = "resource1;resource2;resource3"
+        assert mcp_server._parse_resource_names_to_part(0) == ["resource1", "resource2", "resource3"]
+        assert mcp_server._parse_resource_names_to_part(1) == ["resource1", "resource2", "resource3"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3@tool3"
+        assert mcp_server._parse_resource_names_to_part(0) == ["resource1", "resource2", "resource3"]
+        assert mcp_server._parse_resource_names_to_part(1) == ["tool1", "tool2", "tool3"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3"
+        assert mcp_server._parse_resource_names_to_part(0) == ["resource1", "resource2", "resource3"]
+        assert mcp_server._parse_resource_names_to_part(1) == ["tool1", "tool2", "resource3"]
+
+    def test_resource_names(self):
+        mcp_server = G(MCPServer)
+        assert mcp_server.resource_names == []
+
+        mcp_server._resource_names = "resource1;resource2"
+        assert mcp_server.resource_names == ["resource1", "resource2"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3"
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource3"]
+
+    def test_resource_names_setter(self):
+        mcp_server = G(MCPServer)
+        with pytest.raises(NotImplementedError):
+            mcp_server.resource_names = ["resource1", "resource2"]
+
+    def test_delete_resource_names(self):
+        mcp_server = G(MCPServer)
+        assert not mcp_server.delete_resource_names(set())
+
+        mcp_server._resource_names = "resource1;resource2;resource3"
+        assert mcp_server.delete_resource_names({"resource1", "resource2"})
+        assert mcp_server.resource_names == ["resource3"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3@tool3"
+        assert mcp_server.delete_resource_names({"resource1", "resource3"})
+        assert mcp_server.resource_names == ["resource2"]
+
+        # Test edge case: trying to delete nonexistent resources should return False
+        mcp_server._resource_names = "resource1;resource2;resource3"
+        assert mcp_server.delete_resource_names({"nonexistent_resource"})
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource3"]
+
+        # Test edge case: trying to delete nonexistent resources with tool names should return False
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2"
+        assert mcp_server.delete_resource_names({"resource_x", "resource_y"})
+        assert mcp_server.resource_names == ["resource1", "resource2"]
+
+    def test_tool_names(self):
+        mcp_server = G(MCPServer)
+        assert mcp_server.tool_names == []
+
+        mcp_server._resource_names = "resource1;resource2"
+        assert mcp_server.tool_names == ["resource1", "resource2"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3@tool3"
+        assert mcp_server.tool_names == ["tool1", "tool2", "tool3"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3"
+        assert mcp_server.tool_names == ["tool1", "tool2", "resource3"]
+
+    def test_tool_names_setter(self):
+        mcp_server = G(MCPServer)
+        with pytest.raises(NotImplementedError):
+            mcp_server.tool_names = ["tool1", "tool2"]
+
+    def test_tools_count(self):
         """测试不带工具名的 tools_count"""
         mcp_server = G(MCPServer)
         assert mcp_server.tools_count == 0
 
-        mcp_server.resource_names = ["resource1", "resource2"]
+        mcp_server._resource_names = "resource1;resource2"
         assert mcp_server.tools_count == 2
 
-    def test_tools_count_with_tool_name(self):
-        """测试带工具名的 tools_count"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-        assert mcp_server.tools_count == 2
-
-    def test_empty_resource_names(self):
-        """测试空资源名称的各种属性"""
-        mcp_server = G(MCPServer)
-        mcp_server._resource_names = ""
-
-        assert mcp_server.resource_names == []
-        assert mcp_server.resource_names_raw == []
-        assert mcp_server.resource_names_with_tool == []
-        assert mcp_server.tools_count == 0
-
-    def test_tool_names_property(self):
-        """测试 tool_names 属性"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-
-        assert mcp_server.tool_names == ["custom_tool", "", "tool3"]
-
-    def test_tool_names_empty(self):
-        """测试空资源时的 tool_names"""
-        mcp_server = G(MCPServer)
-        mcp_server._resource_names = ""
-
-        assert mcp_server.tool_names == []
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3@tool3"
+        assert mcp_server.tools_count == 3
 
     def test_update_resource_names(self):
-        """测试 update_resource_names 方法"""
         mcp_server = G(MCPServer)
+        with pytest.raises(ValueError):
+            mcp_server.update_resource_names(["resource1", "resource2"], ["tool1"])
+
+        mcp_server._resource_names = "resource1;resource2;resource3"
+        mcp_server.update_resource_names(["resource1", "resource2", "resource4"], ["tool1", "tool2", "tool4"])
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource4"]
+        assert mcp_server.tool_names == ["tool1", "tool2", "tool4"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3@tool3"
+        mcp_server.update_resource_names(["resource1", "resource2", "resource4"], ["tool11", "tool22", "tool44"])
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource4"]
+        assert mcp_server.tool_names == ["tool11", "tool22", "tool44"]
+
+        mcp_server._resource_names = "resource1@tool1;resource2@tool2;resource3"
         mcp_server.update_resource_names(
-            [
-                {"resource_name": "resource1", "tool_name": "custom_tool"},
-                {"resource_name": "resource2", "tool_name": ""},
-            ]
+            ["resource1", "resource2", "resource4"], ["resource1", "resource2", "resource4"]
         )
-
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
-        assert mcp_server.resource_names == ["resource1", "resource2"]
-
-    def test_remove_deleted_resources_some_deleted(self):
-        """测试 remove_deleted_resources 方法 - 部分删除"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2", "resource3@tool3"]
-
-        result = mcp_server.remove_deleted_resources({"resource2"})
-
-        assert result is True
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource3@tool3"]
-        assert mcp_server.resource_names == ["resource1", "resource3"]
-
-    def test_remove_deleted_resources_all_deleted(self):
-        """测试 remove_deleted_resources 方法 - 全部删除"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-
-        result = mcp_server.remove_deleted_resources({"resource1", "resource2"})
-
-        assert result is True
-        assert mcp_server.resource_names_raw == []
-        assert mcp_server.resource_names == []
-
-    def test_remove_deleted_resources_none_deleted(self):
-        """测试 remove_deleted_resources 方法 - 无删除"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-
-        result = mcp_server.remove_deleted_resources({"resource3", "resource4"})
-
-        assert result is False
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
-
-    def test_remove_deleted_resources_empty_set(self):
-        """测试 remove_deleted_resources 方法 - 空集合"""
-        mcp_server = G(MCPServer)
-        mcp_server.resource_names_raw = ["resource1@custom_tool", "resource2"]
-
-        result = mcp_server.remove_deleted_resources(set())
-
-        assert result is False
-        assert mcp_server.resource_names_raw == ["resource1@custom_tool", "resource2"]
+        assert mcp_server.resource_names == ["resource1", "resource2", "resource4"]
+        assert mcp_server.tool_names == ["resource1", "resource2", "resource4"]
