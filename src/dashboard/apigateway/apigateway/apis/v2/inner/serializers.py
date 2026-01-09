@@ -23,6 +23,7 @@ from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerProtocolTypeEnum,
 )
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
@@ -36,7 +37,10 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.service.mcp.mcp_server import build_mcp_server_detail_url
+from apigateway.service.mcp.mcp_server import (
+    build_mcp_server_detail_url,
+    build_mcp_server_permission_approval_url,
+)
 from apigateway.utils import time
 
 
@@ -343,6 +347,11 @@ class MCPServerBaseSLZ(serializers.Serializer):
         child=serializers.CharField(),
         help_text="工具名称列表",
     )
+    protocol_type = serializers.ChoiceField(
+        read_only=True,
+        help_text="MCPServer 协议类型",
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+    )
 
     def get_title(self, obj) -> str:
         title = obj.get("title", "") if isinstance(obj, dict) else getattr(obj, "title", "")
@@ -350,7 +359,8 @@ class MCPServerBaseSLZ(serializers.Serializer):
         return title if title else name
 
     def get_doc_link(self, obj):
-        return build_mcp_server_detail_url(obj["id"])
+        obj_id = obj.get("id") if isinstance(obj, dict) else obj.id
+        return build_mcp_server_detail_url(obj_id)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
@@ -386,6 +396,19 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionApplyCreateInputSLZ"
+
+
+class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
+    record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    def get_approval_url(self, obj) -> str:
+        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"
 
 
 class MCPServerAppPermissionListInputSLZ(serializers.Serializer):
@@ -431,6 +454,23 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     comment = serializers.CharField(read_only=True, help_text="备注")
     reason = serializers.CharField(read_only=True, help_text="申请原因")
     expire_days = serializers.IntegerField(read_only=True, help_text="过期天数")
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    def get_approval_url(self, obj) -> str:
+        """获取审批 URL"""
+        # 如果是字典格式（来自视图构造的数据）
+        if isinstance(obj, dict):
+            mcp_server_id = obj.get("mcp_server_id")
+            gateway_id = obj.get("gateway_id")  # 直接从 record 中获取 gateway_id
+
+            if gateway_id and mcp_server_id:
+                return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id)
+
+        # 如果是模型实例
+        if hasattr(obj, "mcp_server"):
+            return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+
+        return ""
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordBaseSLZ"

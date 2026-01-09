@@ -20,7 +20,13 @@ from unittest import mock
 
 from django_dynamic_fixture import G
 
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyStatusEnum,
+    MCPServerProtocolTypeEnum,
+    MCPServerStatusEnum,
+)
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.tests.utils.testing import get_response_json
 
@@ -63,3 +69,235 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+
+
+class TestMCPServerPermissionListApi:
+    def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表包含协议类型数据"""
+        # 创建 MCP Server
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            title="Test MCP Server",
+            description="Test Description",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="tool1;tool2@custom_tool",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["id"] == mcp_server.id
+        assert mcp_server_data["name"] == "test-mcp-server"
+        assert mcp_server_data["title"] == "Test MCP Server"
+        assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+        assert mcp_server_data["tool_names"] == ["tool1", "tool2"]
+
+    def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 基本功能"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-basic",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+
+class TestMCPServerAppPermissionApplyCreateApi:
+    def test_create_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试创建 MCP Server 权限申请并返回审批 URL"""
+        # 设置审批 URL 模板
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 确保 gateway 和 stage 状态正确
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.inner.mcp_server.permission.apply",
+            data={
+                "target_app_code": "test-app",
+                "mcp_server_ids": [mcp_server.id],
+                "applied_by": "test-user",
+                "reason": "Test reason",
+            },
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        assert len(result["data"]) == 1
+
+        apply_record = result["data"][0]
+        assert apply_record["bk_app_code"] == "test-app"
+        assert apply_record["mcp_server_id"] == mcp_server.id
+        assert "approval_url" in apply_record
+        assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in apply_record["approval_url"]
+
+
+class TestMCPServerAppPermissionListApi:
+    def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
+        """测试已申请权限列表包含协议类型数据"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        # 创建已批准的申请记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+
+
+class TestMCPServerAppPermissionRecordListApi:
+    def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试申请记录列表包含审批 URL"""
+        # 设置审批 URL 模板
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        )
+
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+            reason="Test reason",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        record_data = result["data"][0]["record"]
+        assert record_data["id"] == apply_record.id
+        assert "approval_url" in record_data
+        assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
+
+
+class TestMCPServerAppPermissionRecordRetrieveApi:
+    def test_retrieve_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试申请记录详情包含审批 URL"""
+        # 设置审批 URL 模板
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            applied_by="test-user",
+            handled_by="admin",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+            path_params={"record_id": apply_record.id},
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+
+        record_data = result["data"]["record"]
+        assert record_data["id"] == apply_record.id
+        assert "approval_url" in record_data
+        assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
