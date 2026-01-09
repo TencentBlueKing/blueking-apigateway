@@ -111,13 +111,6 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 
-		Describe("HandleMessage", func() {
-			It("should return nil when SSEHandler is nil", func() {
-				server.SSEHandler = nil
-				Expect(server.HandleMessage()).To(BeNil())
-			})
-		})
-
 		Describe("HandleMCP", func() {
 			It("should return nil when StreamableHTTPHandler is nil", func() {
 				server.StreamableHTTPHandler = nil
@@ -263,7 +256,6 @@ var _ = Describe("MCPServer", func() {
 				Expect(server.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
 				Expect(server.IsStreamableHTTP()).To(BeTrue())
 				Expect(server.HandleSSE()).To(BeNil())
-				Expect(server.HandleMessage()).To(BeNil())
 			})
 
 			It("should initialize with correct fields", func() {

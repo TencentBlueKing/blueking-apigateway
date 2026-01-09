@@ -1,6 +1,9 @@
 VERSION = `git describe --tags --abbrev=0`
 COMMIT=`git rev-parse HEAD`
 
+# 检测 Docker Compose 命令（兼容 V1 和 V2）
+DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo ""; fi)
+
 .PHONY: init
 init:
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -52,6 +55,43 @@ fmt:
 .PHONY: test
 test:
 	$(GINKGO) -r -mod=vendor --cover --coverprofile=.coverage.cov ./...
+
+.PHONY: integration
+integration:
+	@if [ -z "$(DOCKER_COMPOSE)" ]; then \
+		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."; \
+		exit 1; \
+	fi
+	cd tests/integration && $(DOCKER_COMPOSE) down -v || true
+	cd tests/integration && $(DOCKER_COMPOSE) up -d --build
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@echo "Checking mcp-proxy container status..."
+	@cd tests/integration && $(DOCKER_COMPOSE) ps
+	@echo "Waiting for mcp-proxy to be healthy..."
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+		if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8889/ping | grep -q "200"; then \
+			echo "mcp-proxy is ready!"; \
+			break; \
+		fi; \
+		echo "Waiting for mcp-proxy... ($$i/12)"; \
+		sleep 5; \
+		if [ $$i -eq 12 ]; then \
+			echo "mcp-proxy failed to start, showing logs:"; \
+			cd tests/integration && $(DOCKER_COMPOSE) logs mcp-proxy; \
+			exit 1; \
+		fi; \
+	done
+	$(GINKGO) -r -mod=vendor ./tests/integration/... || (cd tests/integration && $(DOCKER_COMPOSE) logs mcp-proxy && exit 1)
+	cd tests/integration && $(DOCKER_COMPOSE) down -v
+
+.PHONY: integration-down
+integration-down:
+	@if [ -z "$(DOCKER_COMPOSE)" ]; then \
+		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."; \
+		exit 1; \
+	fi
+	cd tests/integration && $(DOCKER_COMPOSE) down -v
 
 .PHONY: cov
 cov:

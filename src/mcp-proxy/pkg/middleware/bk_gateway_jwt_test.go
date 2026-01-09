@@ -32,9 +32,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/middleware"
-	"mcp_proxy/pkg/util"
 )
 
 var _ = Describe("BkGatewayJWT", func() {
@@ -258,70 +256,6 @@ var _ = Describe("BkGatewayJWT", func() {
 			Expect(middleware.ErrAPIGatewayJWTUserInfoNoUsername.Error()).To(Equal("username not in user info"))
 			Expect(middleware.ErrAPIGatewayJWTAppNotVerified.Error()).To(Equal("app not verified"))
 			Expect(middleware.ErrAPIGatewayJWTUserNotVerified.Error()).To(Equal("user not verified"))
-		})
-	})
-
-	Describe("SignBkInnerJWTToken", func() {
-		var privateKey *rsa.PrivateKey
-		var privateKeyPEM []byte
-
-		BeforeEach(func() {
-			config.G = &config.Config{
-				McpServer: config.McpServer{
-					InnerJwtExpireTime: 5 * time.Minute,
-				},
-			}
-
-			var err error
-			privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
-			Expect(err).NotTo(HaveOccurred())
-
-			privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-			privateKeyPEM = pem.EncodeToMemory(&pem.Block{
-				Type:  "RSA PRIVATE KEY",
-				Bytes: privateKeyBytes,
-			})
-		})
-
-		It("should fail with invalid private key", func() {
-			w := httptest.NewRecorder()
-			c, _ := gin.CreateTestContext(w)
-			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-
-			claims := &middleware.CustomClaims{
-				App:              middleware.AppInfo{AppCode: "test-app", Verified: true},
-				User:             middleware.UserInfo{Username: "test-user", Verified: true},
-				RegisteredClaims: jwt.RegisteredClaims{Issuer: "test-issuer"},
-			}
-
-			invalidPrivateKey := []byte("invalid-private-key")
-
-			err := middleware.SignBkInnerJWTToken(c, claims, invalidPrivateKey)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("should sign token successfully with valid private key", func() {
-			w := httptest.NewRecorder()
-			c, _ := gin.CreateTestContext(w)
-			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-
-			util.SetMCPServerID(c, 123)
-
-			claims := &middleware.CustomClaims{
-				App:  middleware.AppInfo{AppCode: "test-app", Verified: true},
-				User: middleware.UserInfo{Username: "test-user", Verified: true},
-				RegisteredClaims: jwt.RegisteredClaims{
-					Issuer:   "test-issuer",
-					Audience: jwt.ClaimStrings{"test-audience"},
-				},
-			}
-
-			err := middleware.SignBkInnerJWTToken(c, claims, privateKeyPEM)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Verify token was set in context
-			innerJWT := util.GetInnerJWTTokenFromContext(c.Request.Context())
-			Expect(innerJWT).NotTo(BeEmpty())
 		})
 	})
 

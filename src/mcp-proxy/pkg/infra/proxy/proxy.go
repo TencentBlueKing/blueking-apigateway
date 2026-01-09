@@ -27,16 +27,14 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
-	"github.com/ThinkInAIXYZ/go-mcp/protocol"
-	"github.com/ThinkInAIXYZ/go-mcp/server"
-	"github.com/ThinkInAIXYZ/go-mcp/transport"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
 	"github.com/go-openapi/runtime"
 	cli "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/runtime/logger"
 	"github.com/go-openapi/strfmt"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
@@ -51,17 +49,14 @@ type MCPProxy struct {
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
 	activeMCPServers map[string]struct{}
-	// message url prefix
-	messageUrlFormat string
 }
 
 // NewMCPProxy ...
-func NewMCPProxy(messageUrlFormat string) *MCPProxy {
+func NewMCPProxy() *MCPProxy {
 	return &MCPProxy{
 		mcpServers:       map[string]*MCPServer{},
 		rwLock:           &sync.RWMutex{},
 		activeMCPServers: map[string]struct{}{},
-		messageUrlFormat: messageUrlFormat,
 	}
 }
 
@@ -104,30 +99,70 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
 		var mcpServer *MCPServer
 
+		// 创建 MCP Server
+		server := mcp.NewServer(&mcp.Implementation{Name: config.Name}, nil)
+
 		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
-			// 创建 Streamable HTTP Transport
-			trans, httpHandler, err := transport.NewStreamableHTTPServerTransportAndHandler()
-			if err != nil {
-				return err
-			}
-			mcpServer = NewStreamableHTTPMCPServer(trans, httpHandler, config.Name, config.ResourceVersionID)
+			// 创建 Streamable HTTP Handler
+			httpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+				return server
+			}, nil)
+			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID)
 		} else {
-			// 默认使用 SSE Transport
-			// 这里注册的 messageEndpointURL 决定了通过sse接口拿到的message的url
-			trans, sseHandler, err := transport.NewSSEServerTransportAndHandler(
-				fmt.Sprintf(m.messageUrlFormat, config.Name))
-			if err != nil {
-				return err
-			}
-			mcpServer = NewMCPServer(trans, sseHandler, config.Name, config.ResourceVersionID)
+			// 默认使用 SSE Handler
+			sseHandler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+				return server
+			}, nil)
+			mcpServer = NewMCPServer(server, sseHandler, config.Name, config.ResourceVersionID)
 		}
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
-			tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
+			schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
+			if err != nil {
+				logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
+					zap.Error(err),
+					zap.String("tool_name", toolConfig.Name),
+					zap.String("mcp_server", config.Name),
+				)
+			}
+			// 默认提供空对象 schema，避免 AddTool panic
+			inputSchema := map[string]any{"type": "object"}
+			if len(schemaBytes) > 0 {
+				if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
+					logging.GetLogger().Error("failed to unmarshal tool input schema",
+						zap.Error(err),
+						zap.String("tool_name", toolConfig.Name),
+						zap.String("mcp_server", config.Name),
+					)
+					// 保持默认的空对象 schema
+					inputSchema = map[string]any{"type": "object"}
+				}
+			}
+			tool := &mcp.Tool{
+				Name:        toolConfig.Name,
+				Description: toolConfig.Description,
+				InputSchema: inputSchema,
+			}
+			// 处理 OutputSchema
+			if len(toolConfig.OutputSchema) > 0 {
+				var outputSchema map[string]any
+				if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
+					logging.GetLogger().Error("failed to unmarshal tool output schema",
+						zap.Error(err),
+						zap.String("tool_name", toolConfig.Name),
+						zap.String("mcp_server", config.Name),
+					)
+				} else {
+					// 确保 OutputSchema 包含 type: "object"，否则 SDK 会 panic
+					if _, ok := outputSchema["type"]; !ok {
+						outputSchema["type"] = "object"
+					}
+					tool.OutputSchema = outputSchema
+				}
+			}
 			toolHandler := genToolHandler(toolConfig)
-			mcpServer.RegisterTool(tool, toolHandler)
+			mcpServer.AddTool(tool, toolHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
 	}
@@ -165,10 +200,34 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		bytes, _ := toolConfig.ParamSchema.JSONSchemaBytes()
-		tool := protocol.NewToolWithRawSchema(toolConfig.Name, toolConfig.Description, bytes)
+		schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
+		if err != nil {
+			logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
+				zap.Error(err),
+				zap.String("tool_name", toolConfig.Name),
+				zap.String("mcp_server", name),
+			)
+		}
+		// 默认提供空对象 schema，避免 AddTool panic
+		inputSchema := map[string]any{"type": "object"}
+		if len(schemaBytes) > 0 {
+			if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
+				logging.GetLogger().Error("failed to unmarshal tool input schema",
+					zap.Error(err),
+					zap.String("tool_name", toolConfig.Name),
+					zap.String("mcp_server", name),
+				)
+				// 保持默认的空对象 schema
+				inputSchema = map[string]any{"type": "object"}
+			}
+		}
+		tool := &mcp.Tool{
+			Name:        toolConfig.Name,
+			Description: toolConfig.Description,
+			InputSchema: inputSchema,
+		}
 		toolHandler := genToolHandler(toolConfig)
-		mcpServer.RegisterTool(tool, toolHandler)
+		mcpServer.AddTool(tool, toolHandler)
 	}
 	// 更新资源版本号
 	mcpServer.SetResourceVersionID(resourceVersionID)
@@ -186,25 +245,6 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 			return
 		}
 		handler := mcpServer.HandleSSE()
-		if handler == nil {
-			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server %s does not support SSE protocol", name))
-			return
-		}
-		handler.ServeHTTP(c.Writer, c.Request)
-	}
-}
-
-// SseMessageHandler ...
-func (m *MCPProxy) SseMessageHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		name := c.Param("name")
-		mcpServer := m.GetMCPServer(name)
-		if mcpServer == nil {
-			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
-			log.Printf("name %s does not exist\n", name)
-			return
-		}
-		handler := mcpServer.HandleMessage()
 		if handler == nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server %s does not support SSE protocol", name))
 			return
@@ -269,7 +309,7 @@ func (m *MCPProxy) RegisterPromptsToMCPServer(serverName string, prompts []*Prom
 	}
 	for _, promptConfig := range prompts {
 		prompt, handler := genPromptAndHandler(promptConfig)
-		mcpServer.RegisterPrompt(prompt, handler)
+		mcpServer.AddPrompt(prompt, handler)
 	}
 }
 
@@ -287,29 +327,28 @@ func (m *MCPProxy) UpdateMCPServerPrompts(serverName string, prompts []*PromptCo
 	// 删除不再存在的 prompts
 	for _, existingPrompt := range mcpServer.GetPromptNames() {
 		if _, ok := newPromptNames[existingPrompt]; !ok {
-			mcpServer.UnregisterPrompt(existingPrompt)
+			mcpServer.RemovePrompt(existingPrompt)
 		}
 	}
 	// 注册新的 prompts
 	for _, promptConfig := range prompts {
 		prompt, handler := genPromptAndHandler(promptConfig)
-		mcpServer.RegisterPrompt(prompt, handler)
+		mcpServer.AddPrompt(prompt, handler)
 	}
 }
 
-func genPromptAndHandler(promptConfig *PromptConfig) (*protocol.Prompt, server.PromptHandlerFunc) {
-	prompt := &protocol.Prompt{
+func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler) {
+	prompt := &mcp.Prompt{
 		Name:        promptConfig.Name,
 		Description: promptConfig.Description,
 	}
-	handler := func(ctx context.Context, request *protocol.GetPromptRequest) (*protocol.GetPromptResult, error) {
-		return &protocol.GetPromptResult{
+	handler := func(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+		return &mcp.GetPromptResult{
 			Description: promptConfig.Description,
-			Messages: []*protocol.PromptMessage{
+			Messages: []*mcp.PromptMessage{
 				{
-					Role: protocol.RoleUser,
-					Content: &protocol.TextContent{
-						Type: "text",
+					Role: mcp.Role("user"),
+					Content: &mcp.TextContent{
 						Text: promptConfig.Content,
 					},
 				},
@@ -319,25 +358,111 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*protocol.Prompt, server.P
 	return prompt, handler
 }
 
-func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
+// loggingTransport 是一个带日志的 HTTP Transport
+type loggingTransport struct {
+	base      http.RoundTripper
+	logger    *zap.SugaredLogger
+	appCode   string
+	username  string
+	requestID string
+	toolName  string
+}
+
+// RoundTrip 实现 http.RoundTripper 接口
+func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	start := time.Now()
+
+	// 记录请求日志
+	t.logger.Infow("outgoing request",
+		"app_code", t.appCode,
+		"username", t.username,
+		"request_id", t.requestID,
+		"tool", t.toolName,
+		"method", req.Method,
+		"url", req.URL.String(),
+		"host", req.Host,
+	)
+
+	// 执行请求
+	resp, err := t.base.RoundTrip(req)
+
+	duration := time.Since(start)
+
+	if err != nil {
+		t.logger.Errorw("outgoing request failed",
+			"app_code", t.appCode,
+			"username", t.username,
+			"request_id", t.requestID,
+			"tool", t.toolName,
+			"method", req.Method,
+			"url", req.URL.String(),
+			"duration", duration,
+			"error", err,
+		)
+		return nil, err
+	}
+
+	// 记录响应日志
+	t.logger.Infow("outgoing response",
+		"app_code", t.appCode,
+		"username", t.username,
+		"request_id", t.requestID,
+		"tool", t.toolName,
+		"method", req.Method,
+		"url", req.URL.String(),
+		"status_code", resp.StatusCode,
+		"duration", duration,
+	)
+
+	return resp, nil
+}
+
+func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 	// 生成handler
-	handler := func(ctx context.Context, request *protocol.CallToolRequest) (*protocol.CallToolResult, error) {
+	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
-		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
-		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
-		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
-		var handlerRequest HandlerRequest
-		err := json.Unmarshal(request.RawArguments, &handlerRequest)
+		appCode := util.GetAppCodeFromContext(ctx)
+		username := util.GetUsernameFromContext(ctx)
+
+		// 在所有日志中添加 app_code 和 username
+		auditLog = auditLog.With(
+			zap.String("tool", toolApiConfig.String()),
+			zap.String("app_code", appCode),
+			zap.String("username", username),
+		)
+		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
+		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
-			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(request.RawArguments)), zap.Error(err))
+			auditLog.Error("sign inner jwt err", zap.Error(err))
+			return nil, fmt.Errorf("sign inner jwt failed: %w", err)
+		}
+		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
+		var handlerRequest HandlerRequest
+		argsBytes, err := json.Marshal(req.Params.Arguments)
+		if err != nil {
+			auditLog.Error("marshal arguments err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
 			return nil, err
 		}
-		tr := &http.Transport{
+		err = json.Unmarshal(argsBytes, &handlerRequest)
+		if err != nil {
+			auditLog.Error("unmarshal handler request err", zap.String("request",
+				string(argsBytes)), zap.Error(err))
+			return nil, err
+		}
+		// 创建带日志的 Transport
+		baseTransport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
-		client := &http.Client{Transport: tr}
+		logTransport := &loggingTransport{
+			base:      baseTransport,
+			logger:    logging.GetLogger(),
+			appCode:   appCode,
+			username:  username,
+			requestID: requestID,
+			toolName:  toolApiConfig.String(),
+		}
+		client := &http.Client{Transport: logTransport}
 		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
@@ -444,17 +569,15 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 			),
 		}
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
-		openAPIClient.SetLogger(logger.StandardLogger{})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
 			log.Println(msg)
 			// nolint:nilerr
-			return &protocol.CallToolResult{
-				Content: []protocol.Content{
-					&protocol.TextContent{
-						Type: "text",
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					&mcp.TextContent{
 						Text: msg,
 					},
 				},
@@ -463,10 +586,9 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		}
 		log.Printf("call %s result: %s\n", toolApiConfig, submit)
 		auditLog.Info("call tool", zap.Any("response", submit), zap.Any("header", headerInfo))
-		return &protocol.CallToolResult{
-			Content: []protocol.Content{
-				&protocol.TextContent{
-					Type: "text",
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{
 					Text: cast.ToString(submit),
 				},
 			},
