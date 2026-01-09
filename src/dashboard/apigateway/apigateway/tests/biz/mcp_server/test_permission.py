@@ -48,7 +48,7 @@ class TestMCPServerPermissionHandler:
         """Test sync_permissions when no resource names exist - should return early"""
         # Create MCP server with app permissions but no resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.resource_names = []  # No resource names
+        mcp_server._resource_names = ""  # No resource names
         mcp_server.save()
 
         # Create app permission
@@ -68,7 +68,7 @@ class TestMCPServerPermissionHandler:
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.resource_names = ["resource1", "resource2"]
+        mcp_server._resource_names = "resource1;resource2"
         mcp_server.save()
 
         # Create app permissions
@@ -123,7 +123,7 @@ class TestMCPServerPermissionHandler:
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.resource_names = ["resource1", "resource2"]
+        mcp_server._resource_names = "resource1;resource2"
         mcp_server.save()
 
         # Create app permissions
@@ -155,7 +155,7 @@ class TestMCPServerPermissionHandler:
 
         # Create MCP server with only one resource name
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.resource_names = ["resource1"]  # Only resource1
+        mcp_server._resource_names = "resource1"  # Only resource1
         mcp_server.save()
 
         # Create app permission for only one app
@@ -202,7 +202,7 @@ class TestMCPServerPermissionHandler:
 
         # Create MCP server with resource names
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.resource_names = ["resource2", "resource3"]  # Changed from resource1 to resource2,3
+        mcp_server._resource_names = "resource2;resource3"  # Changed from resource1 to resource2,3
         mcp_server.save()
 
         # Create app permissions

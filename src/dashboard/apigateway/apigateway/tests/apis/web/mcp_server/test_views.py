@@ -128,10 +128,8 @@ class TestMCPServerListCreateApi:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": [
-                {"resource_name": "resource1", "tool_name": ""},
-                {"resource_name": "resource2", "tool_name": ""},
-            ],
+            "resource_names": ["resource1", "resource2"],
+            "tool_names": ["resource1", "resource2"],
         }
 
         resp = request_view(
@@ -168,10 +166,8 @@ class TestMCPServerListCreateApi:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": [
-                {"resource_name": "resource1", "tool_name": ""},
-                {"resource_name": "resource2", "tool_name": ""},
-            ],
+            "resource_names": ["resource1", "resource2"],
+            "tool_names": ["resource1", "resource2"],
             "prompts": [
                 {
                     "id": 1,
@@ -238,10 +234,8 @@ class TestMCPServerRetrieveUpdateDestroyApi:
             "description": faker.pystr(),
             "is_public": False,
             "labels": ["new-label"],
-            "resource_names": [
-                {"resource_name": "resource1", "tool_name": ""},
-                {"resource_name": "resource3", "tool_name": ""},
-            ],
+            "resource_names": ["resource1", "resource3"],
+            "tool_names": ["tool1", "tool3"],
         }
 
         resp = request_view(
@@ -324,7 +318,7 @@ class TestMCPServerToolsListApi:
     def test_list(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
-            return_value=([], {}, {}),
+            return_value=([], {}),
         )
 
         resp = request_view(
@@ -1360,10 +1354,8 @@ class TestMCPServerProtocolType:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": [
-                {"resource_name": "resource1", "tool_name": ""},
-                {"resource_name": "resource2", "tool_name": ""},
-            ],
+            "resource_names": ["resource1", "resource2"],
+            "tool_names": ["tool1", "tool2"],
         }
 
         resp = request_view(
@@ -1397,10 +1389,8 @@ class TestMCPServerProtocolType:
             "stage_id": fake_stage.id,
             "is_public": True,
             "labels": ["test"],
-            "resource_names": [
-                {"resource_name": "resource1", "tool_name": ""},
-                {"resource_name": "resource2", "tool_name": ""},
-            ],
+            "resource_names": ["resource1", "resource2"],
+            "tool_names": ["tool1", "tool2"],
             "protocol_type": MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
         }
 
