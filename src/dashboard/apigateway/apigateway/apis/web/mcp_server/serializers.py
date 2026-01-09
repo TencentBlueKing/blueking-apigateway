@@ -139,13 +139,20 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
-        if len(resource_names) == 0:
-            raise serializers.ValidationError(_("资源名称列表不能为空"))
+        if resource_names is not None:
+            if len(resource_names) == 0:
+                raise serializers.ValidationError(_("资源名称列表不能为空"))
+            valid_resource_names = self.context["valid_resource_names"]
 
-        if len(resource_names) != len(set(resource_names)):
-            raise serializers.ValidationError(_("资源名称不能重复"))
+            if len(resource_names) != len(set(resource_names)):
+                raise serializers.ValidationError(_("资源名称不能重复"))
 
-        # 返回原始格式，由 model 层处理转换
+            for resource_name in resource_names:
+                if resource_name not in valid_resource_names:
+                    raise serializers.ValidationError(
+                        _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                        + f"resource_name={resource_name}"
+                    )
         return resource_names
 
     def validate_tool_names(self, tool_names):
@@ -274,13 +281,20 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
-        if len(resource_names) == 0:
-            raise serializers.ValidationError(_("资源名称列表不能为空"))
+        if resource_names is not None:
+            if len(resource_names) == 0:
+                raise serializers.ValidationError(_("资源名称列表不能为空"))
+            valid_resource_names = self.context["valid_resource_names"]
 
-        if len(resource_names) != len(set(resource_names)):
-            raise serializers.ValidationError(_("资源名称不能重复"))
+            if len(resource_names) != len(set(resource_names)):
+                raise serializers.ValidationError(_("资源名称不能重复"))
 
-        # 返回原始格式，由 model 层处理转换
+            for resource_name in resource_names:
+                if resource_name not in valid_resource_names:
+                    raise serializers.ValidationError(
+                        _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                        + f"resource_name={resource_name}"
+                    )
         return resource_names
 
     def validate_tool_names(self, tool_names):

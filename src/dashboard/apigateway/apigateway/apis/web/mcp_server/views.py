@@ -126,11 +126,15 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
+        valid_resource_names = MCPServerHandler().get_valid_resource_names(
+            gateway_id=self.request.gateway.id, stage_id=request.data["stage_id"]
+        )
         ctx = {
             "gateway": self.request.gateway,
             "created_by": request.user.username,
             "status": MCPServerStatusEnum.ACTIVE.value,
             "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": valid_resource_names,
         }
         slz = MCPServerCreateInputSLZ(data=request.data, context=ctx)
         slz.is_valid(raise_exception=True)

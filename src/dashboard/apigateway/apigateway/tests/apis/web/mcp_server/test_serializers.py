@@ -44,7 +44,13 @@ class TestMCPServerCreateInputSLZ:
             "is_public": True,
             "resource_names": [],
         }
-        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": {"resource1", "resource2"},
+        }
+
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert not slz.is_valid()
         assert "resource_names" in slz.errors
 
@@ -61,7 +67,12 @@ class TestMCPServerCreateInputSLZ:
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["custom_tool", "resource2"],
         }
-        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": {"resource1", "resource2"},
+        }
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert slz.is_valid(), slz.errors
         assert slz.validated_data["resource_names"] == ["resource1", "resource2"]
         assert slz.validated_data["tool_names"] == ["custom_tool", "resource2"]
@@ -76,13 +87,18 @@ class TestMCPServerCreateInputSLZ:
             "resource_names": ["resource1", "resource1"],
             "tool_names": ["tool1", "tool2"],
         }
-        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": {"resource1", "resource2"},
+        }
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert not slz.is_valid()
         assert "resource_names" in slz.errors
         error_msg = str(slz.errors["resource_names"])
         assert "重复" in error_msg
 
-    def test_validate_resource_names_duplicate_tool_name(self, fake_gateway, fake_stage):
+    def test_validate_tool_names_duplicate_tool_name(self, fake_gateway, fake_stage):
         """测试重复的 tool_name"""
         data = {
             "name": "test-mcp-server",
@@ -92,9 +108,14 @@ class TestMCPServerCreateInputSLZ:
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["same_tool", "same_tool"],
         }
-        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": {"resource1", "resource2"},
+        }
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert not slz.is_valid()
-        assert "resource_names" in slz.errors
+        assert "tool_names" in slz.errors
         # 验证错误信息包含重复提示
         error_msg = str(slz.errors["tool_names"])
         assert "重复" in error_msg
@@ -112,7 +133,12 @@ class TestMCPServerCreateInputSLZ:
             "resource_names": ["resource1", "resource2", "resource3"],
             "tool_names": ["resource1", "resource2", "resource3"],
         }
-        slz = MCPServerCreateInputSLZ(data=data, context={"gateway": fake_gateway, "source": CallSourceTypeEnum.Web})
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": {"resource1", "resource2", "resource3"},
+        }
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert slz.is_valid(), slz.errors
         assert slz.validated_data["resource_names"] == ["resource1", "resource2", "resource3"]
         assert slz.validated_data["tool_names"] == ["resource1", "resource2", "resource3"]
@@ -142,7 +168,7 @@ class TestMCPServerUpdateInputSLZ:
         data = {
             "description": "Updated description",
             "resource_names": ["invalid_resource"],
-            "tool_names": ["invalid_tool"],
+            "tool_names": ["invalid_resource"],
         }
         slz = MCPServerUpdateInputSLZ(
             instance=mcp_server,
@@ -170,7 +196,7 @@ class TestMCPServerUpdateInputSLZ:
         assert slz.validated_data["resource_names"] == ["resource1", "resource2"]
         assert slz.validated_data["tool_names"] == ["custom_tool", "resource2"]
 
-    def test_validate_resource_names_duplicate_tool_name(self, fake_gateway, fake_stage):
+    def test_validate_tool_names_duplicate_tool_name(self, fake_gateway, fake_stage):
         """测试重复的 tool_name"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
         data = {
@@ -184,7 +210,7 @@ class TestMCPServerUpdateInputSLZ:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert not slz.is_valid()
-        assert "resource_names" in slz.errors
+        assert "tool_names" in slz.errors
         error_msg = str(slz.errors["tool_names"])
         assert "重复" in error_msg
 

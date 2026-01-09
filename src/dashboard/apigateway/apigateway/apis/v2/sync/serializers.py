@@ -685,6 +685,9 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     resource_names = serializers.ListField(
         child=serializers.CharField(), required=True, help_text="MCPServer 资源名称列表"
     )
+    tool_names = serializers.ListField(
+        child=serializers.CharField(), required=False, help_text="MCPServer 工具名称列表, 默认等于 resource_names"
+    )
     name = serializers.CharField(required=True, help_text="MCPServer 名称", max_length=64)
     description = serializers.CharField(required=True, allow_blank=False, help_text="MCPServer 描述")
     title = serializers.CharField(
@@ -711,6 +714,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "stage_id",
             "labels",
             "resource_names",
+            "tool_names",
             "status",
             "protocol_type",
             "target_app_codes",
@@ -736,14 +740,37 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
     def create(self, validated_data):
         self._fill_data(validated_data)
-        instance = super().create(validated_data)
-        self._sync_permission(instance.id, validated_data.get("target_app_codes", []))
+
+        resource_names = validated_data.pop("resource_names", None)
+        tool_names = validated_data.pop("tool_names", None)
+        if not tool_names:
+            tool_names = resource_names
+
+        target_app_codes = validated_data.pop("target_app_codes", [])
+
+        instance = MCPServer(**validated_data)
+        if resource_names is not None:
+            instance.update_resource_names(resource_names, tool_names)
+        instance.save()
+
+        self._sync_permission(instance.id, target_app_codes)
         return instance
 
     def update(self, instance, validated_data):
         self._fill_data(validated_data)
+
+        resource_names = validated_data.pop("resource_names", None)
+        tool_names = validated_data.pop("tool_names", None)
+        if not tool_names:
+            tool_names = resource_names
+
+        target_app_codes = validated_data.pop("target_app_codes", [])
+
         instance = super().update(instance, validated_data)
-        self._sync_permission(instance.id, validated_data.get("target_app_codes", []))
+        instance.update_resource_names(resource_names, tool_names)
+        instance.save()
+
+        self._sync_permission(instance.id, target_app_codes)
         return instance
 
 

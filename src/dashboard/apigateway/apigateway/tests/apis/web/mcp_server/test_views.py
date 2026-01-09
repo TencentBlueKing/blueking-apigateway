@@ -129,6 +129,7 @@ class TestMCPServerListCreateApi:
             "is_public": True,
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
+            "tool_names": ["resource1", "resource2"],
         }
 
         resp = request_view(
@@ -166,6 +167,7 @@ class TestMCPServerListCreateApi:
             "is_public": True,
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
+            "tool_names": ["resource1", "resource2"],
             "prompts": [
                 {
                     "id": 1,
@@ -233,6 +235,7 @@ class TestMCPServerRetrieveUpdateDestroyApi:
             "is_public": False,
             "labels": ["new-label"],
             "resource_names": ["resource1", "resource3"],
+            "tool_names": ["tool1", "tool3"],
         }
 
         resp = request_view(
@@ -1352,6 +1355,7 @@ class TestMCPServerProtocolType:
             "is_public": True,
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
+            "tool_names": ["tool1", "tool2"],
         }
 
         resp = request_view(
@@ -1386,6 +1390,7 @@ class TestMCPServerProtocolType:
             "is_public": True,
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
+            "tool_names": ["tool1", "tool2"],
             "protocol_type": MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
         }
 
