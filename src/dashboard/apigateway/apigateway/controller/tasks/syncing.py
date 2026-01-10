@@ -22,6 +22,7 @@ from datetime import datetime
 
 from celery import shared_task
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
@@ -46,7 +47,7 @@ def distribute_global_resources():
 
 
 @shared_task(ignore_result=True)
-def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
+def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, data_plane_id: int):
     """滚动同步微网关配置，不会生成新的版本"""
     release = Release.objects.get(id=release_id)
 
@@ -59,13 +60,16 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         wait_another_release_done(release_history)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
-    logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
+    logger.info("rolling_update_release[gateway_id=%d, data_plane_id=%s] begin", gateway_id, data_plane_id)
 
-    distributor = GatewayResourceDistributor(release)
+    # Get data_plane - required
+    data_plane = DataPlane.objects.get(id=data_plane_id)
+
+    distributor = GatewayResourceDistributor(release, data_plane=data_plane)
 
     release_task_id = str(uuid.uuid4())
     procedure_logger = ReleaseProcedureLogger(
-        "rolling_update_release",
+        f"rolling_update_release (data_plane={data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,
@@ -104,12 +108,14 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
 
 
 @shared_task(ignore_result=True)
-def revoke_release(release_id: int, publish_id: int):
+def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     """删除环境的已发布的资源"""
-
     release = Release.objects.get(id=release_id)
 
-    distributor = GatewayResourceDistributor(release)
+    # Get data_plane - required
+    data_plane = DataPlane.objects.get(id=data_plane_id)
+
+    distributor = GatewayResourceDistributor(release, data_plane=data_plane)
     if publish_id == DELETE_PUBLISH_ID:
         is_success, err_msg = distributor.revoke(str(uuid.uuid4()), publish_id=publish_id)
         if not is_success:
@@ -124,7 +130,7 @@ def revoke_release(release_id: int, publish_id: int):
     PublishEventReporter.report_create_publish_task_success(release_history)
 
     procedure_logger = ReleaseProcedureLogger(
-        "revoke_release",
+        f"revoke_release (data_plane={data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,

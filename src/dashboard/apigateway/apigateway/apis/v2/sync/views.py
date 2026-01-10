@@ -120,6 +120,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
+            data_plane_names=slz.validated_data.get("data_planes"),
         )
         gateway = saver.save()
 
