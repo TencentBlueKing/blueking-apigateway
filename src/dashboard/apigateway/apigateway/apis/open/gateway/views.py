@@ -225,6 +225,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             bk_app_code=request.app.app_code,
             username=username,
             source=CallSourceTypeEnum.OpenAPI,
+            data_plane_names=data.get("data_planes"),
         )
         gateway = saver.save()
 

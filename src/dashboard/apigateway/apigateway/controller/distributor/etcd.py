@@ -16,13 +16,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
+from apigateway.apps.data_plane.models import DataPlane
+
+if TYPE_CHECKING:
+    import etcd3
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.registry.etcd import EtcdRegistry
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.controller.transformer import GatewayApisixResourceTransformer, GlobalApisixResourceTransformer
 from apigateway.core.models import Gateway, Release, Stage
+from apigateway.utils.etcd import new_etcd_client
 
 from .key_prefix import GatewayKeyPrefixHandler, GlobalKeyPrefixHandler
 
@@ -93,8 +98,10 @@ class GlobalResourceDistributor(BaseDistributor):
 
 
 class GatewayResourceDistributor(BaseDistributor):
-    def __init__(self, release: Release):
+    def __init__(self, release: Release, data_plane: DataPlane):
         self.release = release
+        self.data_plane = data_plane
+        self._etcd_client: "etcd3.Etcd3Client" = new_etcd_client(data_plane.etcd_configs)
 
     @property
     def gateway(self) -> Gateway:
@@ -106,7 +113,7 @@ class GatewayResourceDistributor(BaseDistributor):
 
     def _get_registry(self, gateway: Gateway, stage: Stage) -> EtcdRegistry:
         key_prefix = GatewayKeyPrefixHandler().get_release_key_prefix(gateway.name, stage.name)
-        return EtcdRegistry(key_prefix=key_prefix)
+        return EtcdRegistry(key_prefix=key_prefix, etcd_client=self._etcd_client)
 
     def distribute(
         self,
@@ -119,8 +126,9 @@ class GatewayResourceDistributor(BaseDistributor):
             publish_id=publish_id,
         )
         registry = self._get_registry(self.gateway, self.stage)
+
         procedure_logger = ReleaseProcedureLogger(
-            "gateway-distributing",
+            f"gateway-distributing (data_plane={self.data_plane.name})",
             logger=logger,
             gateway=self.gateway,
             stage=self.stage,
@@ -171,7 +179,7 @@ class GatewayResourceDistributor(BaseDistributor):
         registry = self._get_registry(self.gateway, self.stage)
 
         procedure_logger = ReleaseProcedureLogger(
-            "gateway-revoking",
+            f"gateway-revoking (data_plane={self.data_plane.name})",
             logger=logger,
             gateway=self.gateway,
             stage=self.stage,

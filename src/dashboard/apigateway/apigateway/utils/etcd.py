@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import Any, Dict, Optional
+
 import etcd3
 from django.conf import settings
 
@@ -46,5 +48,36 @@ def client(
     )
 
 
+def new_etcd_client(etcd_config: Optional[Dict[str, Any]] = None) -> etcd3.Etcd3Client:
+    """
+    Create a new ETCD client with the given configuration.
+
+    Args:
+        etcd_config: ETCD configuration dictionary with keys:
+            - host: ETCD host (default: "localhost")
+            - port: ETCD port (default: 2379)
+            - user: ETCD user (optional)
+            - password: ETCD password (optional)
+            - ca_cert: CA certificate path (optional)
+            - cert_cert: Client certificate path (optional)
+            - cert_key: Client key path (optional)
+            - timeout: Connection timeout (optional)
+            - grpc_options: gRPC options (optional)
+
+    Returns:
+        An Etcd3Client instance
+    """
+    if etcd_config is None:
+        etcd_config = settings.ETCD_CONFIG
+
+    return client(**etcd_config)
+
+
 def get_etcd_client() -> etcd3.Etcd3Client:
-    return client(**settings.ETCD_CONFIG)
+    """
+    Get ETCD client using default settings.ETCD_CONFIG.
+
+    This is kept for backward compatibility. For new code,
+    prefer using new_etcd_client() with explicit config.
+    """
+    return new_etcd_client(settings.ETCD_CONFIG)
