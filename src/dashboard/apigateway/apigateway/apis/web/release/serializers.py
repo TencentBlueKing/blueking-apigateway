@@ -108,17 +108,6 @@ class ReleaseStageSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.release.serializers.ReleaseStageSLZ"
 
 
-class DataPlaneSLZ(serializers.Serializer):
-    """Data plane serializer for display in release history"""
-
-    id = serializers.IntegerField(read_only=True, help_text="数据面 id")
-    name = serializers.CharField(read_only=True, help_text="数据面名称")
-    description = serializers.CharField(read_only=True, help_text="数据面描述")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.release.serializers.DataPlaneSLZ"
-
-
 class ReleaseHistoryOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="发布历史 id")
     stage = ReleaseStageSLZ()

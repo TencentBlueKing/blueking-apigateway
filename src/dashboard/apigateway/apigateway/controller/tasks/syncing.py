@@ -63,7 +63,19 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
     logger.info("rolling_update_release[gateway_id=%d, data_plane_id=%s] begin", gateway_id, data_plane_id)
 
     # Get data_plane - required
-    data_plane = DataPlane.objects.get(id=data_plane_id)
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        err_msg = f"data plane not found: id={data_plane_id}"
+        logger.exception(
+            "rolling_update_release failed: %s [gateway_id=%d, data_plane_id=%s]",
+            err_msg,
+            gateway_id,
+            data_plane_id,
+        )
+        if not is_cli_sync:
+            PublishEventReporter.report_distribute_config_failure(release_history, err_msg)
+        return False
 
     distributor = GatewayResourceDistributor(release, data_plane=data_plane)
 
@@ -113,7 +125,11 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     release = Release.objects.get(id=release_id)
 
     # Get data_plane - required
-    data_plane = DataPlane.objects.get(id=data_plane_id)
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        logger.exception("DataPlane(id=%s) not found, revoke_release aborted", data_plane_id)
+        return False
 
     distributor = GatewayResourceDistributor(release, data_plane=data_plane)
     if publish_id == DELETE_PUBLISH_ID:
@@ -130,7 +146,7 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     PublishEventReporter.report_create_publish_task_success(release_history)
 
     procedure_logger = ReleaseProcedureLogger(
-        f"revoke_release (data_plane={data_plane.name})",
+        f"revoke_release from data_plane({data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,

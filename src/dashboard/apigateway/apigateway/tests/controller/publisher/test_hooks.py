@@ -20,6 +20,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.hooks import (
     _pre_publish_check_is_gateway_ready_for_releasing,
@@ -193,8 +194,11 @@ class TestPrePublishSaveReleaseHistory:
         """Test successful release history creation"""
         mock_release_history = Mock(spec=ReleaseHistory)
         mock_create.return_value = mock_release_history
+        mock_data_plane = Mock(spec=DataPlane)
 
-        result = _pre_publish_save_release_history(mock_release, PublishSourceEnum.GATEWAY_ENABLE, "test_user")
+        result = _pre_publish_save_release_history(
+            mock_release, PublishSourceEnum.GATEWAY_ENABLE, "test_user", data_plane=mock_data_plane
+        )
 
         mock_create.assert_called_once_with(
             gateway=mock_release.gateway,
@@ -202,6 +206,7 @@ class TestPrePublishSaveReleaseHistory:
             source=PublishSourceEnum.GATEWAY_ENABLE.value,
             resource_version=mock_release.resource_version,
             created_by="test_user",
+            data_plane=mock_data_plane,
         )
         assert result == mock_release_history
 
@@ -210,8 +215,11 @@ class TestPrePublishSaveReleaseHistory:
         """Test release history creation with different source"""
         mock_release_history = Mock(spec=ReleaseHistory)
         mock_create.return_value = mock_release_history
+        mock_data_plane = Mock(spec=DataPlane)
 
-        result = _pre_publish_save_release_history(mock_release, PublishSourceEnum.CLI_SYNC, "cli_user")
+        result = _pre_publish_save_release_history(
+            mock_release, PublishSourceEnum.CLI_SYNC, "cli_user", data_plane=mock_data_plane
+        )
 
         mock_create.assert_called_once_with(
             gateway=mock_release.gateway,
@@ -219,6 +227,7 @@ class TestPrePublishSaveReleaseHistory:
             source=PublishSourceEnum.CLI_SYNC.value,
             resource_version=mock_release.resource_version,
             created_by="cli_user",
+            data_plane=mock_data_plane,
         )
         assert result == mock_release_history
 

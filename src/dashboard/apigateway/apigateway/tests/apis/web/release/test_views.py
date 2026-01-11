@@ -278,6 +278,7 @@ class TestReleaseHistoryRetrieveApi:
                     "source": history.source,
                     "status": f"{event_1.status}",
                     "duration": (event_1.created_time - history.created_time).total_seconds(),
+                    "data_plane": None,
                 },
             },
             {

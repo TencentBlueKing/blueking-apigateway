@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import etcd3
 from django.conf import settings
@@ -48,14 +48,14 @@ def client(
     )
 
 
-def new_etcd_client(etcd_config: Optional[Dict[str, Any]] = None) -> etcd3.Etcd3Client:
+def new_etcd_client(etcd_config: Dict[str, Any]) -> etcd3.Etcd3Client:
     """
     Create a new ETCD client with the given configuration.
 
     Args:
         etcd_config: ETCD configuration dictionary with keys:
-            - host: ETCD host (default: "localhost")
-            - port: ETCD port (default: 2379)
+            - host: ETCD host (required)
+            - port: ETCD port (required)
             - user: ETCD user (optional)
             - password: ETCD password (optional)
             - ca_cert: CA certificate path (optional)
@@ -67,9 +67,6 @@ def new_etcd_client(etcd_config: Optional[Dict[str, Any]] = None) -> etcd3.Etcd3
     Returns:
         An Etcd3Client instance
     """
-    if etcd_config is None:
-        etcd_config = settings.ETCD_CONFIG
-
     return client(**etcd_config)
 
 
@@ -77,7 +74,8 @@ def get_etcd_client() -> etcd3.Etcd3Client:
     """
     Get ETCD client using default settings.ETCD_CONFIG.
 
-    This is kept for backward compatibility. For new code,
-    prefer using new_etcd_client() with explicit config.
+    This function is kept for backward compatibility with existing code that doesn't
+    specify a data plane. Use new_etcd_client(etcd_config) when working with
+    multi-data-plane configurations.
     """
     return new_etcd_client(settings.ETCD_CONFIG)

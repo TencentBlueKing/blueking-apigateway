@@ -59,8 +59,7 @@ class GatewaySaver:
     Gateway saver that handles creating/updating gateways and binding to data planes.
 
     For new gateways:
-    - If data_plane_names is provided (open API sync), bind to those data planes by name
-    - If data_plane_id is provided (web API), bind to that specific data plane
+    - If data_plane_ids is provided, bind to those data planes
     - Otherwise, bind to the 'default' data plane
     """
 
@@ -71,8 +70,7 @@ class GatewaySaver:
         bk_app_code: str = "",
         username: str = "",
         source: Optional[CallSourceTypeEnum] = None,
-        data_plane_names: Optional[List[str]] = None,
-        data_plane_id: Optional[int] = None,
+        data_plane_ids: Optional[List[int]] = None,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
@@ -80,8 +78,7 @@ class GatewaySaver:
         self._gateway = self._get_gateway(id)
         self._gateway_data = data
         self._source = source
-        self._data_plane_names = data_plane_names
-        self._data_plane_id = data_plane_id
+        self._data_plane_ids = data_plane_ids
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -137,25 +134,37 @@ class GatewaySaver:
         """Bind newly created gateway to data plane(s)"""
         data_planes_to_bind: List[DataPlane] = []
 
-        # Priority 1: data_plane_names provided (from open API sync)
-        if self._data_plane_names:
-            for name in self._data_plane_names:
-                data_plane = DataPlane.objects.filter(name=name).first()
+        # If data_plane_ids provided, bind to those data planes
+        if self._data_plane_ids:
+            found_ids = set()
+            for data_plane_id in self._data_plane_ids:
+                data_plane = DataPlane.objects.filter(id=data_plane_id).first()
                 if data_plane:
                     data_planes_to_bind.append(data_plane)
+                    found_ids.add(data_plane_id)
                 else:
-                    logger.warning("Data plane with name '%s' not found, skipping", name)
+                    logger.warning("Data plane with id=%s not found, skipping", data_plane_id)
 
-        # Priority 2: data_plane_id provided (from web API)
-        elif self._data_plane_id:
-            data_plane = DataPlane.objects.filter(id=self._data_plane_id).first()
-            if data_plane:
-                data_planes_to_bind.append(data_plane)
-            else:
-                logger.warning("Data plane with id '%s' not found", self._data_plane_id)
+            # Log error if some data planes were not found
+            missing_ids = set(self._data_plane_ids) - found_ids
+            if missing_ids:
+                logger.error(
+                    "Gateway '%s': data_plane_ids %s were provided but not found; found: %s",
+                    gateway.name,
+                    list(missing_ids),
+                    list(found_ids),
+                )
 
         # Fallback: use the 'default' data plane
         if not data_planes_to_bind:
+            if self._data_plane_ids:
+                # Explicit data_plane_ids were provided but none found
+                logger.error(
+                    "Gateway '%s': all provided data_plane_ids %s not found; falling back to default data plane",
+                    gateway.name,
+                    self._data_plane_ids,
+                )
+
             default_data_plane = DataPlane.objects.get_default()
             if default_data_plane:
                 data_planes_to_bind.append(default_data_plane)

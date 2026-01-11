@@ -91,7 +91,15 @@ def release_gateway_by_registry(publish_id: int, data_plane_id: int):
         return None
 
     # Get data_plane - required
-    data_plane = DataPlane.objects.get(id=data_plane_id)
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        logger.exception(
+            "release_gateway_by_etcd: publish_id=%s, data_plane_id=%s, can't find data_plane",
+            publish_id,
+            data_plane_id,
+        )
+        return None
 
     # 改成了延迟更新发布关联数据，这里的 release 数据需要用 release_history 相关的数据来获取
     release = Release.objects.get_or_create_release(

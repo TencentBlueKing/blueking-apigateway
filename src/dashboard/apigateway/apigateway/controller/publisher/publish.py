@@ -98,7 +98,6 @@ def _trigger_rolling_update(
                 release_id=release.pk,
                 data_plane_id=data_plane.id,
             )
-    return True
 
 
 def _trigger_revoke_disable(
@@ -213,17 +212,18 @@ def trigger_gateway_publish(
 
     # rolling update release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
-        return _trigger_rolling_update(source, author, release_list, is_sync=is_sync)
+        _trigger_rolling_update(source, author, release_list, is_sync=is_sync)
+        return True
 
     # revoke disable release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
-        return _trigger_revoke_disable(
-            source, author, release_list, is_sync=is_sync, user_credentials=user_credentials
-        )
+        _trigger_revoke_disable(source, author, release_list, is_sync=is_sync, user_credentials=user_credentials)
+        return True
 
     # revoke delete release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
-        return _trigger_revoke_deleting(release_list, is_sync=is_sync)
+        _trigger_revoke_deleting(release_list, is_sync=is_sync)
+        return True
 
     # do nothing
     return None

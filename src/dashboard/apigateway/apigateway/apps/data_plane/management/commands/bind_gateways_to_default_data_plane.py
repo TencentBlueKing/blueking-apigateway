@@ -59,6 +59,11 @@ class Command(BaseCommand):
                 bound_count += 1
                 self.stdout.write(f"  Bound gateway '{gateway.name}' (id={gateway.id}) to default data plane")
             except Exception as e:
+                logger.exception(
+                    "Failed to bind gateway '%s' (id=%s) to default data plane",
+                    gateway.name,
+                    gateway.id,
+                )
                 self.stdout.write(
                     self.style.ERROR(f"  Failed to bind gateway '{gateway.name}' (id={gateway.id}): {e}")
                 )

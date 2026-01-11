@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from dataclasses import dataclass
 from typing import List
 
@@ -42,6 +43,8 @@ from apigateway.core.models import (
 )
 from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.django import get_model_dict
+
+logger = logging.getLogger(__name__)
 
 
 class ReleaseError(Exception):
@@ -118,7 +121,27 @@ class GatewayReleaser:
         if not data_planes:
             raise ReleaseError("Gateway must be bound to at least one active data plane")
 
-        # Create release and release history for each active data plane
+        # Create release instance once (independent of data plane)
+        instance = Release.objects.get_or_create_release(
+            gateway=self.gateway,
+            stage=self.stage,
+            resource_version=self.resource_version,
+            comment=self.comment,
+            username=self.username,
+        )
+
+        # Record audit log once (not per data plane)
+        Auditor.record_release_op_success(
+            op_type=OpTypeEnum.CREATE,
+            username=self.username or settings.GATEWAY_DEFAULT_CREATOR,
+            gateway_id=self.gateway.id,
+            instance_id=instance.id,
+            instance_name=f"{self.stage.name}:{instance.resource_version.version}",
+            data_before={},
+            data_after=get_model_dict(instance),
+        )
+
+        # Create release history and trigger release for each active data plane
         first_history = None
         for data_plane in data_planes:
             history = self._save_release_history(data_plane=data_plane)
@@ -131,31 +154,12 @@ class GatewayReleaser:
 
             PublishEventReporter.report_config_validate_success(history)
 
-            instance = Release.objects.get_or_create_release(
-                gateway=self.gateway,
-                stage=self.stage,
-                resource_version=self.resource_version,
-                comment=self.comment,
-                username=self.username,
-            )
-
-            # record audit log only for the first data plane to avoid duplicates
-            if history == first_history:
-                Auditor.record_release_op_success(
-                    op_type=OpTypeEnum.CREATE,
-                    username=self.username or settings.GATEWAY_DEFAULT_CREATOR,
-                    gateway_id=self.gateway.id,
-                    instance_id=instance.id,
-                    instance_name=f"{self.stage.name}:{instance.resource_version.version}",
-                    data_before={},
-                    data_after=get_model_dict(instance),
-                )
-
             # Trigger release for each data plane
             self._do_release(instance, history, data_plane)
 
         # first_history is guaranteed to be set because we checked for data_planes above
-        assert first_history is not None
+        if first_history is None:
+            raise ReleaseError("Failed to create release history for any data plane")
         return first_history
 
     def _pre_release(self):
@@ -171,6 +175,13 @@ class GatewayReleaser:
             if data_planes:
                 history = self._save_release_history(data_plane=data_planes[0])
                 PublishEventReporter.report_config_validate_failure(history, message)
+            else:
+                # No data planes available - log the error but still raise
+                logger.exception(
+                    "Gateway(id=%s) validation failed but has no data planes to record failure: %s",
+                    self.gateway.id,
+                    message,
+                )
             raise ReleaseError(message) from err
 
     def _validate(self):

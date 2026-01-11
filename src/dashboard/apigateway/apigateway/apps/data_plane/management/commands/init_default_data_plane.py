@@ -36,6 +36,15 @@ class Command(BaseCommand):
 
         # Get ETCD config from settings
         etcd_config = getattr(settings, "ETCD_CONFIG", {})
+        if not etcd_config:
+            self.stderr.write(
+                self.style.ERROR(
+                    "ETCD_CONFIG is not configured in settings. "
+                    "Please configure ETCD_CONFIG before initializing the default data plane."
+                )
+            )
+            raise ValueError("ETCD_CONFIG is required but not configured in settings")
+
         bk_api_url_tmpl = getattr(settings, "BK_API_URL_TMPL", "")
 
         # Try to get existing default data plane
