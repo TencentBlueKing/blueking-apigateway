@@ -310,8 +310,12 @@ const updateOption = async (option: any) => {
       emit('update-success');
     }
   }
-  catch (e) {
-    console.error('标签修改失败', e);
+  catch {
+    Message({
+      message: t('标签修改失败'),
+      theme: 'error',
+      width: 'auto',
+    });
   }
   finally {
     setTimeout(() => {

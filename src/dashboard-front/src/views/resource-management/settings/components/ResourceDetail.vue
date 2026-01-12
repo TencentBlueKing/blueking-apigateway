@@ -124,6 +124,7 @@
                     <BkTag
                       v-for="item in formData.labels"
                       :key="item.id"
+                      class="mr-4px"
                     >{{ item.name }}</BkTag>
                   </template>
                   <span v-else>--</span>

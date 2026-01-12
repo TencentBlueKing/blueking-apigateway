@@ -46,7 +46,10 @@
 <script lang="ts" setup>
 import ResponseParamsTable from './ResponseParamsTable.vue';
 import { type JSONSchema7 } from 'json-schema';
-import { uniqueId } from 'lodash-es';
+import {
+  last,
+  uniqueId,
+} from 'lodash-es';
 import { Message } from 'bkui-vue';
 
 interface IProp {
@@ -100,9 +103,15 @@ watch(() => detail, () => {
 }, { immediate: true });
 
 const addResponse = () => {
+  // 响应码查重，如果存在了，就递增
+  let code = '200';
+  if (responseList.value.length && responseList.value.some(item => item.code === code)) {
+    code = Number(last(responseList.value)!.code) + 1 + '';
+  }
+
   responseList.value.push({
     id: uniqueId(),
-    code: '200',
+    code,
     body: {
       type: 'object',
       description: '',
@@ -135,16 +144,25 @@ defineExpose({
   getValue: async () => {
     try {
       const result: any = {};
+      let hasDuplicateCode = false;
       for (const item of responseParamsTableRefs.value) {
         const { code, body } = await item.getValue();
+        // 检查重复状态码
+        if (result[code]) {
+          hasDuplicateCode = true;
+        }
         result[code] = body;
+      }
+      if (hasDuplicateCode) {
+        throw new Error('duplicate status code');
       }
       return result;
     }
-    catch {
+    catch (e) {
+      const error = e as Error;
       Message({
         theme: 'warning',
-        message: t('请填写完整的响应参数'),
+        message: error.message === 'invalid response params' ? t('请填写完整的响应参数') : t('响应参数中有重复的状态码，请修改'),
       });
       throw new Error('invalid response params');
     }

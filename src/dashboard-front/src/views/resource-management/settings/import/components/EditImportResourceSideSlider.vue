@@ -47,6 +47,7 @@
                 <BaseInfo
                   ref="baseInfoRef"
                   :detail="resource"
+                  :is-labels-editable="false"
                 />
               </template>
             </BkCollapsePanel>
@@ -91,7 +92,7 @@
                   :front-config="{
                     path: resource?.path || '',
                     method: resource?.method || 'GET',
-                    match_subpath: resource?.match_subpath || '',
+                    match_subpath: resource?.match_subpath || false,
                     enable_websocket: resource?.enable_websocket || false,
                   }"
                 />

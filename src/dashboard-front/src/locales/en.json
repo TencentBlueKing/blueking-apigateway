@@ -1682,6 +1682,7 @@
   "标签新建成功": "Label created successfully",
   "修改标签成功": "Label modified successfully",
   "标签修改成功": "Label modified successfully",
+  "标签修改失败": "Failed to modify label",
   "删除标签成功": "Label deleted successfully",
   "--": "--",
   "响应说明": "response instructions",
@@ -2208,5 +2209,7 @@
   "文件大小超过 10KB": "File size exceeds 10KB",
   "生成 JSON Schema 失败": "Failed to generate JSON Schema",
   "请填写完整的响应参数": "Please fill in the complete response parameters",
-  "请填写完整的请求参数": "Please fill in the complete request parameters"
+  "请填写完整的请求参数": "Please fill in the complete request parameters",
+  "表单加载失败": "Failed to load form",
+  "响应参数中有重复的状态码，请修改": "Has duplicate status code in response parameters, please modify"
 }
