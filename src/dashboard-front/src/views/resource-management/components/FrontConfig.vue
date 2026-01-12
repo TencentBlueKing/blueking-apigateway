@@ -127,7 +127,6 @@ const rules = ref<any>({
   path: [
     {
       validator: (value: string) => {
-        console.log('value', value);
         if (!value) return true;
         return value !== cloneData.value.path || frontConfigData.value.method !== cloneData.value.method;
       },

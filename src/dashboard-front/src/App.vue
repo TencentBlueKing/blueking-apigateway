@@ -143,7 +143,6 @@ const activeIndex = ref(0);
 const userLoaded = ref(false);
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
-const noticeApi = ref(`${envStore.env.BK_DASHBOARD_URL}/backend/notice/announcements/`);
 const curLeavePageData = ref({});
 
 const bkuiLocale = computed(() => {
@@ -156,6 +155,8 @@ const bkuiLocale = computed(() => {
 const apigwId = computed(() => {
   return route.params.id;
 });
+
+const noticeApi = computed(() => `${envStore.env.BK_DASHBOARD_FE_URL}/backend/notice/announcements/`);
 
 const menuList: IHeaderNav[] = [
   {
@@ -393,6 +394,7 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
     }
 
     &.PlatformToolsToolbox-navigation-content {
+
       :deep(.bk-navigation-wrapper) {
 
         .container-content,
