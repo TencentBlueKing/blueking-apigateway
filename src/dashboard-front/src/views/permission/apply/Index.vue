@@ -121,7 +121,6 @@
       >
         <template #expandedRow="{row}">
           <AgTable
-            :ref="(el: HTMLElement) => (childPermTableRef[row.id] = el)"
             v-model:table-data="row.resourceList"
             size="small"
             class="ag-expand-table"
@@ -223,7 +222,6 @@ const { t } = useI18n();
 
 const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
 const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
-const childPermTableRef = ref([]);
 const tableData = ref([]);
 const selections = ref([]);
 const selectedRowKeys = ref([]);
@@ -340,36 +338,28 @@ watch(
   { deep: true },
 );
 
+const setRowResources = () => {
+  tableData.value.forEach((row) => {
+    row.isSelectAll = true;
+    row.selection = [];
+    row.resourceList = sortByKey(resourceList.value.filter(resource => row.resource_ids.includes(resource.id)), 'path');
+  });
+};
+
 watch(
-  () => tableData,
-  (tables: IApprovalListItem[]) => {
-    tableData.value = initResourceList(tables.value);
+  resourceList,
+  () => {
+    setRowResources();
   },
-  { immediate: true },
+  {
+    deep: true,
+    immediate: true,
+  },
 );
 
 function getList() {
   permissionTableRef.value?.fetchData(filterData.value, { resetPage: true });
-};
-
-function initResourceList(resourceArr: IApprovalListItem[]) {
-  resourceArr.forEach((applyItem) => {
-    const results = [];
-    applyItem.resource_ids.forEach((resourceId: number) => {
-      resourceList.value.forEach((item) => {
-        if (item.id === resourceId) {
-          results.push(item);
-        }
-      });
-    });
-    applyItem = Object.assign(applyItem, {
-      isSelectAll: true,
-      selection: [],
-      resourceList: sortByKey(results, 'path'),
-    });
-  });
-  return resourceArr;
-};
+}
 
 function handleSearch() {
   getList();
@@ -547,7 +537,6 @@ const getResourceList = async () => {
   };
   const { results } = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = results || [];
-  tableData.value = initResourceList(tableData.value);
 };
 
 const handleRequestDone = () => {
@@ -773,6 +762,7 @@ onMounted(() => {
 }
 
 :deep(.t-table__header) {
+
   .t-table__ellipsis {
     font-weight: 700 !important;
     color: #63656e !important;
@@ -780,6 +770,7 @@ onMounted(() => {
 }
 
 :deep(.t-table__expanded-row) {
+
   .t-table__row-full-element {
     padding: 0;
   }
@@ -793,6 +784,7 @@ onMounted(() => {
 }
 
 :deep(.perm-apply-dot) {
+
   .dot {
     display: inline-block;
     width: 8px;
