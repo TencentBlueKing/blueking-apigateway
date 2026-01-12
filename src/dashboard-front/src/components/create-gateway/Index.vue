@@ -118,7 +118,7 @@
                 :api-base-url="envStore.tenantUserDisplayAPI"
                 multiple
                 :tenant-id="userStore.info.tenant_id"
-                @change="handleMemberChange"
+                @change="handleTenantUserChange"
               />
               <div
                 v-if="isShowMemberError"
@@ -668,6 +668,11 @@ const handleMemberChange = (member: string[]) => {
   isShowMemberError.value = !member.length;
 };
 
+const handleTenantUserChange = (members: { id: string }[]) => {
+  formData.value.maintainers = members.map(member => member.id);
+  isShowMemberError.value = !members.length;
+};
+
 const showGuide = async () => {
   const data = await getGuideDocs(newGateway.value?.id);
   markdownHtml.value = md.render(data.content);
@@ -917,7 +922,9 @@ const handleCancel = () => {
 }
 
 .member-selector-form {
+
   :deep(.bk-form-label) {
+
     &::after {
       position: absolute;
       top: 0;
@@ -929,6 +936,7 @@ const handleCancel = () => {
   }
 
   &.is-error {
+
     :deep(.bk-tag-input-trigger),
     :deep(.tags-container) {
       border-color: #ea3636;
