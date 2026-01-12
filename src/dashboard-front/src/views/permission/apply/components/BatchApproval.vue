@@ -35,12 +35,12 @@
       />
       <BkForm
         ref="batchApprovalFormRef"
-        :label-width="0"
         :model="formData"
+        form-type="vertical"
         class="m-t-20px"
       >
         <BkFormItem
-          label=""
+          :label="t('备注')"
           :rules="
             [
               {

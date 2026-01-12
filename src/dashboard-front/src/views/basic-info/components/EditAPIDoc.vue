@@ -140,20 +140,52 @@
                 {{ t('网关负责人') }}
               </div>
               <div class="value">
-                <EditMember
-                  v-if="!featureFlagStore.isTenantMode"
-                  mode="detail"
-                  width="600px"
-                  field="maintainers"
-                  :content="data?.maintainers"
-                />
-                <TenantUserSelector
-                  v-else
-                  :content="data?.maintainers"
-                  field="maintainers"
-                  mode="detail"
-                  width="600px"
-                />
+                <div class="mt--8px">
+                  <EditMember
+                    v-if="!featureFlagStore.isTenantMode"
+                    mode="detail"
+                    width="600px"
+                    field="maintainers"
+                    :content="data?.maintainers"
+                  />
+                  <TenantUserSelector
+                    v-else
+                    :content="data?.maintainers"
+                    field="maintainers"
+                    mode="detail"
+                    width="600px"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="li">
+              <div class="title">
+                {{ t('文档联系人') }}
+              </div>
+              <div class="value">
+                <div
+                  v-show="docForm.type === 'user'"
+                  class="mt--8px"
+                >
+                  <EditMember
+                    v-if="!featureFlagStore.isTenantMode"
+                    mode="detail"
+                    width="600px"
+                    field="contacts"
+                    :content="docForm.contacts"
+                  />
+                  <TenantUserSelector
+                    v-else
+                    :content="docForm.contacts"
+                    field="contacts"
+                    mode="detail"
+                    width="600px"
+                  />
+                </div>
+                <div v-show="docForm.type === 'service_account'">
+                  {{ docForm.service_account.name || '--' }}
+                </div>
               </div>
             </div>
 
@@ -325,8 +357,10 @@ const handleCommit = async () => {
 const handleUpdateIsShow = (value: boolean) => {
   nextTick(() => {
     formRef.value?.clearValidate();
-    selectorRef.value.isShowError = false;
-    selectorRef.value.isEditable = false;
+    if (selectorRef.value) {
+      selectorRef.value.isShowError = false;
+      selectorRef.value.isEditable = false;
+    }
   });
   emit('update:modelValue', value);
 };
