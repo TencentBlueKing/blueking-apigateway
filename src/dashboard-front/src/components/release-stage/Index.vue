@@ -727,7 +727,7 @@ defineExpose({ showReleaseSideslider });
     }
 
     .operate1 {
-      padding: 8px 100px 24px;
+      padding: 8px 40px 24px;
     }
 
     .operate2 {
