@@ -917,6 +917,25 @@ const toolNameRules = {
       message: () => `${t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）')}, ${t('中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）')}`,
       trigger: 'blur',
     },
+    {
+      validator: (value: string) => {
+        const trimValue = value.trim();
+        if (!trimValue) return;
+
+        const sameNameItems = resourceList.value?.filter((item: IMCPServerTool) => {
+          return item.tool_name?.trim() === trimValue;
+        }) || [];
+
+        const currentEditRowId = toolNameRowData.value?.id;
+        const filteredSameItems = currentEditRowId
+          ? sameNameItems.filter(item => item.id !== currentEditRowId)
+          : sameNameItems;
+
+        return filteredSameItems.length === 0;
+      },
+      message: t('工具名称不可重复'),
+      trigger: 'blur',
+    },
   ],
 };
 
@@ -1543,7 +1562,7 @@ const handleConfirmToolName = async (row) => {
     }
     const selectData = toolSelections.value.find(item => item.id === toolData.id);
     if (selectData) {
-      selectData.tool_name = row.tool_name;
+      selectData.tool_name = toolNameRowData.value.tool_name;
     }
     handleCancelToolName();
   }
@@ -1635,6 +1654,7 @@ const handleRefreshClick = async () => {
     return;
   }
   filterKeyword.value = '';
+  toolNameRowData.value = {};
   searchLoading.value = true;
   await fetchStageList();
   toolSelections.value = toolSelections.value.filter(item =>
