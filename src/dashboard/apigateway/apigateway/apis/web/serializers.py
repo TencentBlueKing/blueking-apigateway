@@ -35,6 +35,130 @@ class HostSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.serializers.HostSLZ"
 
 
+# Health Check Serializers
+class BaseHealthySLZ(serializers.Serializer):
+    """Base serializer for healthy configurations"""
+
+    http_statuses = serializers.ListField(
+        child=serializers.IntegerField(min_value=100, max_value=599),
+        required=False,
+        allow_null=True,
+        help_text="HTTP状态码列表",
+    )
+    successes = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="成功次数"
+    )
+
+
+class PassiveHealthySLZ(BaseHealthySLZ):
+    """Passive health check healthy configuration"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.PassiveHealthySLZ"
+
+
+class ActiveHealthySLZ(BaseHealthySLZ):
+    """Active health check healthy configuration"""
+
+    interval = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="检查间隔(秒)")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.ActiveHealthySLZ"
+
+
+class BaseUnhealthySLZ(serializers.Serializer):
+    """Base serializer for unhealthy configurations"""
+
+    http_statuses = serializers.ListField(
+        child=serializers.IntegerField(min_value=100, max_value=599),
+        required=False,
+        allow_null=True,
+        help_text="HTTP状态码列表",
+    )
+    http_failures = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="HTTP失败次数"
+    )
+    tcp_failures = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="TCP失败次数"
+    )
+    timeouts = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时次数")
+
+
+class PassiveUnhealthySLZ(BaseUnhealthySLZ):
+    """Passive health check unhealthy configuration"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.PassiveUnhealthySLZ"
+
+
+class ActiveUnhealthySLZ(BaseUnhealthySLZ):
+    """Active health check unhealthy configuration"""
+
+    interval = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="检查间隔(秒)")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.ActiveUnhealthySLZ"
+
+
+class ActiveCheckSLZ(serializers.Serializer):
+    """Active health check configuration"""
+
+    type = serializers.ChoiceField(
+        choices=[("http", "HTTP"), ("https", "HTTPS"), ("tcp", "TCP")], default="http", help_text="检查类型"
+    )
+    timeout = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时时间(秒)")
+    concurrency = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="并发数")
+    http_path = serializers.CharField(required=False, allow_null=True, help_text="HTTP检查路径")
+    host = serializers.CharField(required=False, allow_null=True, help_text="主机名")
+    port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True, help_text="端口")
+    https_verify_certificate = serializers.BooleanField(required=False, allow_null=True, help_text="HTTPS证书验证")
+    req_headers = serializers.ListField(
+        child=serializers.CharField(), required=False, allow_null=True, help_text="请求头"
+    )
+    healthy = ActiveHealthySLZ(required=False, allow_null=True, help_text="健康配置")
+    unhealthy = ActiveUnhealthySLZ(required=False, allow_null=True, help_text="不健康配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.ActiveCheckSLZ"
+
+
+class PassiveCheckSLZ(serializers.Serializer):
+    """Passive health check configuration"""
+
+    type = serializers.ChoiceField(
+        choices=[("http", "HTTP"), ("https", "HTTPS"), ("tcp", "TCP")], default="http", help_text="检查类型"
+    )
+    healthy = PassiveHealthySLZ(required=False, allow_null=True, help_text="健康配置")
+    unhealthy = PassiveUnhealthySLZ(required=False, allow_null=True, help_text="不健康配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.PassiveCheckSLZ"
+
+
+class CheckSLZ(serializers.Serializer):
+    """Health check configuration (active and/or passive)"""
+
+    active = ActiveCheckSLZ(required=False, allow_null=True, help_text="主动健康检查")
+    passive = PassiveCheckSLZ(required=False, allow_null=True, help_text="被动健康检查")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.serializers.CheckSLZ"
+
+    def validate(self, attrs):
+        """Ensure at least one of active or passive is provided"""
+        active = attrs.get("active")
+        passive = attrs.get("passive")
+
+        if not active and not passive:
+            raise serializers.ValidationError("至少需要配置主动健康检查或被动健康检查中的一项")
+
+        # Current requirement: only ONE of active or passive
+        if active and passive:
+            raise serializers.ValidationError("当前版本仅支持配置主动健康检查或被动健康检查中的一项，不能同时配置")
+
+        return attrs
+
+
 class BaseBackendConfigSLZ(serializers.Serializer):
     type = serializers.ChoiceField(
         choices=BackendConfigTypeEnum.get_choices(), default=BackendConfigTypeEnum.NODE.value, help_text="类型"
@@ -50,6 +174,7 @@ class BaseBackendConfigSLZ(serializers.Serializer):
         allow_empty=False,
         help_text="主机列表",
     )
+    checks = CheckSLZ(required=False, allow_null=True, help_text="健康检查配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.serializers.BaseBackendConfigSLZ"

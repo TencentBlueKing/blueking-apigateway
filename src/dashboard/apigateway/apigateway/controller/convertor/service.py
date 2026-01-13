@@ -24,14 +24,27 @@ from django.utils.encoding import force_bytes, force_str
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
 from apigateway.controller.models import (
+    ActiveCheck,
+    ActiveHealthy,
+    ActiveUnhealthy,
     BaseUpstream,
+    Check,
     GatewayApisixModel,
     Node,
+    PassiveCheck,
+    PassiveHealthy,
+    PassiveUnhealthy,
     Plugin,
     Service,
     Timeout,
 )
-from apigateway.controller.models.constants import UpstreamHashOnEnum, UpstreamSchemeEnum, UpstreamTypeEnum
+from apigateway.controller.models.constants import (
+    CheckActiveTypeEnum,
+    CheckPassiveTypeEnum,
+    UpstreamHashOnEnum,
+    UpstreamSchemeEnum,
+    UpstreamTypeEnum,
+)
 from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.constants import LoadBalanceTypeEnum
@@ -119,6 +132,11 @@ class ServiceConvertor(GatewayResourceConvertor):
                     )
 
                 upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
+
+            # Convert checks if present
+            checks_data = backend_config.get("checks")
+            if checks_data:
+                upstream.checks = self._convert_checks(checks_data)
 
             # FIXME: 如何处理 http/https 协议
             backend = Backend.objects.get(id=backend_id)
@@ -231,3 +249,71 @@ class ServiceConvertor(GatewayResourceConvertor):
         if self.gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES:
             return {"bk-legacy-invalid-params": Plugin()}
         return {}
+
+    def _convert_checks(self, checks_data: Dict) -> Check:
+        """Convert backend_config checks dict to controller Check model
+
+        Args:
+            checks_data: Dict from backend_config, e.g.:
+                {
+                    "active": {
+                        "type": "http",
+                        "timeout": 5,
+                        "http_path": "/health",
+                        "healthy": {"interval": 10, "successes": 2},
+                        "unhealthy": {"http_failures": 3}
+                    }
+                }
+
+        Returns:
+            Check: Pydantic Check model for APISIX
+        """
+        active_data = checks_data.get("active")
+        passive_data = checks_data.get("passive")
+
+        active_check = None
+        passive_check = None
+
+        if active_data:
+            # Convert nested healthy/unhealthy
+            healthy = None
+            unhealthy = None
+
+            if active_data.get("healthy"):
+                healthy = ActiveHealthy(**active_data["healthy"])
+
+            if active_data.get("unhealthy"):
+                unhealthy = ActiveUnhealthy(**active_data["unhealthy"])
+
+            # Create ActiveCheck with converted nested models
+            active_check = ActiveCheck(
+                type=CheckActiveTypeEnum(active_data.get("type", "http")),
+                timeout=active_data.get("timeout"),
+                concurrency=active_data.get("concurrency"),
+                http_path=active_data.get("http_path"),
+                host=active_data.get("host"),
+                port=active_data.get("port"),
+                https_verify_certificate=active_data.get("https_verify_certificate"),
+                req_headers=active_data.get("req_headers"),
+                healthy=healthy,
+                unhealthy=unhealthy,
+            )
+
+        if passive_data:
+            healthy = None
+            unhealthy = None
+
+            if passive_data.get("healthy"):
+                healthy = PassiveHealthy(**passive_data["healthy"])
+
+            if passive_data.get("unhealthy"):
+                unhealthy = PassiveUnhealthy(**passive_data["unhealthy"])
+
+            passive_check = PassiveCheck(
+                type=CheckPassiveTypeEnum(passive_data.get("type", "http")),
+                healthy=healthy,
+                unhealthy=unhealthy,
+            )
+
+        # This will validate that at least one is set
+        return Check(active=active_check, passive=passive_check)
