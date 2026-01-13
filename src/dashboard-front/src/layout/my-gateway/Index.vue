@@ -105,33 +105,56 @@
         >
           <template v-for="menu in menuList">
             <template v-if="menu.enabled">
-              <BkMenuGroup
-                :key="menu.name"
-                :name="menu.title"
-              >
-                <template v-for="child in menu.children">
-                  <BkMenuItem
-                    v-if="child.enabled && !(child.hideInProgrammable && gatewayStore.isProgrammableGateway)"
-                    :key="child.name"
-                    @click.stop="() => handleGoPage(child.name)"
-                  >
-                    <template #icon>
-                      <AgIcon
-                        :name="child.icon || ''"
-                        size="14"
-                      />
-                    </template>
-                    {{ child.title }}
+              <template v-if="menu.children?.length">
+                <BkSubmenu
+                  :key="menu.name"
+                  :title="menu.title"
+                >
+                  <template #icon>
+                    <AgIcon
+                      :name="menu.icon || ''"
+                      size="18"
+                    />
                     <BkBadge
-                      v-if="['PermissionApply'].includes(child.name) && permissionStore.count > 0"
-                      :count="permissionStore.count"
-                      :max="99"
+                      v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
+                      dot
                       theme="danger"
                       :class="{'en': locale !== 'zh-cn'}"
                     />
-                  </BkMenuItem>
-                </template>
-              </BkMenuGroup>
+                  </template>
+                  <template v-for="child in menu.children">
+                    <BkMenuItem
+                      v-if="child.enabled && !(child.hideInProgrammable && gatewayStore.isProgrammableGateway)"
+                      :key="child.name"
+                      @click.stop="() => handleGoPage(child.name)"
+                    >
+                      {{ child.title }}
+                      <BkBadge
+                        v-if="['PermissionApply'].includes(child.name ) && permissionStore.count > 0"
+                        :count="permissionStore.count"
+                        :max="99"
+                        theme="danger"
+                        :class="{'en': locale !== 'zh-cn'}"
+                      />
+                    </BkMenuItem>
+                  </template>
+                </BkSubmenu>
+              </template>
+              <template v-else>
+                <BkMenuItem
+                  v-if="!(menu.hideInProgrammable && gatewayStore.isProgrammableGateway)"
+                  :key="menu.name"
+                  @click.stop="() => handleGoPage(menu.name)"
+                >
+                  <template #icon>
+                    <AgIcon
+                      :name="menu.icon || ''"
+                      size="18"
+                    />
+                  </template>
+                  {{ menu.title }}
+                </BkMenuItem>
+              </template>
             </template>
           </template>
         </BkMenu>
@@ -211,7 +234,7 @@ const stageStore = useStage();
 // 选中的菜单
 const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
-const openedKeys = ref<string[]>([]);
+const openedKeys = ref<string[]>(['StageManagement', 'ResourceManagement']);
 const needMenu = ref(true);
 const pageName = ref('');
 // 当前网关Id
@@ -229,38 +252,31 @@ const menuList = computed<IMenu[]>(() => [
     name: 'StageManagement',
     enabled: true,
     title: t('环境管理'),
+    icon: 'resource',
     children: [
       {
         name: 'StageOverview',
         enabled: true,
         title: t('环境概览'),
-        icon: 'resource',
       },
       {
         name: 'StageReleaseRecord',
         enabled: true,
         title: t('发布记录'),
-        icon: 'fabujilu',
       },
     ],
   },
   {
-    name: 'Service',
+    name: 'BackendService',
     enabled: true,
     title: t('后端服务'),
-    children: [
-      {
-        name: 'BackendService',
-        enabled: true,
-        title: t('后端服务'),
-        icon: 'houduanfuwu',
-      },
-    ],
+    icon: 'fuwuguanli',
   },
   {
     name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
+    icon: 'ziyuanguanli',
     children: [
       {
         name: 'ResourceSetting',
@@ -268,13 +284,11 @@ const menuList = computed<IMenu[]>(() => [
         title: t('资源配置'),
         // 是否在可编程网关中隐藏
         hideInProgrammable: true,
-        icon: 'ziyuanguanli',
       },
       {
         name: 'ResourceVersion',
         enabled: true,
         title: t('资源版本'),
-        icon: 'ziyuanbanben',
       },
     ],
   },
@@ -282,102 +296,96 @@ const menuList = computed<IMenu[]>(() => [
     name: 'PermissionManage',
     enabled: true,
     title: t('权限管理'),
+    icon: 'quanxianguanli',
     children: [
       {
         name: 'PermissionApply',
         enabled: true,
         title: t('权限审批'),
-        icon: 'quanxianshenpi',
       },
       {
         name: 'PermissionApp',
         enabled: true,
         title: t('应用权限'),
-        icon: 'quanxianguanli',
       },
     ],
   },
   {
-    name: 'OperatingData',
+    name: 'apigwOperatingData',
     enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
     title: t('运行数据'),
+    icon: 'keguancexing',
     children: [
       {
         name: 'AccessLog',
         enabled: true,
         title: t('流水日志'),
-        icon: 'liushuirizhi',
       },
       {
         name: 'Dashboard',
         enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
         title: t('仪表盘'),
-        icon: 'yibiaopan',
       },
       {
         name: 'Report',
         enabled: featureFlagStore.flags.ENABLE_RUN_DATA_METRICS,
         title: t('统计报表'),
-        icon: 'tongjibaobiao',
       },
     ],
   },
   {
     name: 'MonitorAlarm',
     title: t('监控告警'),
+    icon: 'gaojingjilu',
     enabled: featureFlagStore.flags.ENABLE_MONITOR,
     children: [
       {
         name: 'MonitorAlarmStrategy',
         title: t('告警策略'),
         enabled: true,
-        icon: 'gaojingcelve',
       },
       {
         name: 'MonitorAlarmHistory',
         title: t('告警记录'),
         enabled: true,
-        icon: 'gaojingjilu',
       },
     ],
   },
   {
-    name: 'Tools',
-    title: t('工具'),
+    name: 'OnlineDebugging',
+    enabled: true,
+    title: t('在线调试'),
+    icon: 'zaixiandiaoshi',
+  },
+  {
+    name: 'MCP',
+    title: 'MCP',
+    icon: 'mcp-server',
     enabled: true,
     children: [
-      {
-        name: 'OnlineDebugging',
-        enabled: true,
-        title: t('在线调试'),
-        icon: 'zaixiandiaoshi',
-      },
       {
         name: 'MCPServer',
         enabled: true,
         title: 'MCP Server',
-        icon: 'mcp-server',
+      },
+      {
+        name: 'MCPServerPermission',
+        title: t('MCP 权限审批'),
+        enabled: true,
       },
     ],
   },
   {
-    name: 'Others',
-    title: t('其他'),
+    name: 'BasicInfo',
     enabled: true,
-    children: [
-      {
-        name: 'BasicInfo',
-        enabled: true,
-        title: t('基本信息'),
-        icon: 'jibenxinxi',
-      },
-      {
-        name: 'AuditLog',
-        enabled: true,
-        title: t('操作记录'),
-        icon: 'history',
-      },
-    ],
+    title: t('基本信息'),
+    icon: 'jibenxinxi',
+  },
+  {
+    name: 'AuditLog',
+    enabled: true,
+    title: t('操作记录'),
+    icon: 'history',
   },
 ]);
 
@@ -391,7 +399,6 @@ const needBkuiTablePage = computed(() => {
     'AuditLog',
     'MonitorAlarmStrategy',
     'MonitorAlarmHistory',
-    'ResourceVersion',
   ];
 });
 
@@ -412,13 +419,6 @@ const routerViewWrapperClass = computed(() => {
   }
   return `${initClass} ${displayBkuiTable}`;
 });
-
-watch(
-  () => gatewayStore?.currentGateway?.status,
-  () => {
-    Promise.all([getGatewayData(), getPermissionData()]);
-  },
-);
 
 // 监听当前路由
 watch(
