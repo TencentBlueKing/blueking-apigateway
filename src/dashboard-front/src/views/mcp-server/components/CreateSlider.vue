@@ -173,13 +173,10 @@
                 >
                   {{ item.label }}
                 </BkRadio>
+                <div class="text-14px color-#979ba5 lh-32px ml-8px">
+                  ({{ t('不推荐，建议使用Streamable HTTP') }})
+                </div>
               </BkRadioGroup>
-              <div
-                v-if="['sse'].includes(formData.protocol_type)"
-                class="text-12px color-#ea3636 lh-20px mb-4px"
-              >
-                {{ t('sse协议不太稳定, 未来会逐步下架') }}
-              </div>
               <div class="flex items-center bg-#f5f7fa h-32px text-12px pl-8px url">
                 <div class="min-w-55px color-#4d4f56">
                   {{ t('访问地址') }}:
@@ -305,6 +302,9 @@
                             :disabled-check-selection="toolDisabledSelection"
                             :columns="toolTableColumns"
                             :table-empty-type="toolTableEmptyType"
+                            :filter-value="toolFilterData"
+                            :row-class-name="handleSetToolRowClass"
+                            @filter-change="handleToolFilterChange"
                             @clear-filter="handleToolClearFilter"
                             @clear-selection="handleToolClearSelection"
                             @selection-change="handleToolSelectionChange"
@@ -341,8 +341,7 @@
                                   show-selection
                                   :show-settings="false"
                                   :show-first-full-row="promptSelections.length > 0"
-                                  :filter-value="promptFilterData"
-                                  :row-class-name="handleSetRowClass"
+                                  :row-class-name="handleSetPromptRowClass"
                                   :columns="promptTableColumns"
                                   :table-empty-type="promptTableEmptyType"
                                   @clear-filter="handlePromptClearFilter"
@@ -531,9 +530,11 @@ import { getVersionDetail } from '@/services/source/resource';
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { refDebounced } from '@vueuse/core';
 import {
+  Divider,
   Form,
   Input,
   Message,
+  PopConfirm,
   ResizeLayout,
 } from 'bkui-vue';
 import {
@@ -546,7 +547,7 @@ import {
   patchServer,
 } from '@/services/source/mcp-server';
 import { usePopInfoBox, useSidebar } from '@/hooks';
-import { MCP_PROTOCOL_TYPE } from '@/constants';
+import { HTTP_METHODS, MCP_PROTOCOL_TYPE } from '@/constants';
 import { copy } from '@/utils';
 import {
   useEnv,
@@ -591,6 +592,8 @@ const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const defaultFormData = ref<FormData>({
   name: '',
   description: '',
@@ -600,6 +603,7 @@ const defaultFormData = ref<FormData>({
   labels: [],
 });
 const formData = ref<FormData>(cloneDeep(defaultFormData.value));
+const toolNameRowData = ref({});
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
@@ -608,7 +612,6 @@ const isOverflow = ref(false);
 const url = ref('');
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
-const toolTableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const resizePreviewWidth = ref(297);
 const stageList = ref([]);
@@ -619,9 +622,24 @@ const toolSelections = ref([]);
 const promptSelections = ref([]);
 const allSelections = ref([]);
 const noPermPrompt = ref([]);
-const promptFilterData = ref({});
+const toolFilterData = ref({});
 const promptLabels = ref([]);
 const filterPromptValues = ref([]);
+
+const customMethodsList = computed(() => {
+  const methods = HTTP_METHODS.map(item => ({
+    label: item.name,
+    value: item.id,
+  }));
+
+  return [
+    {
+      label: 'All',
+      checkAll: true,
+    },
+    ...methods,
+  ];
+});
 
 const resourceTabList = shallowRef<{
   label: string
@@ -659,6 +677,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             class={[
               'truncate mr-4px',
               { 'color-#3a84ff cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
+              { 'color-#979ba5 hover:color-#3a84ff': !row.has_openapi_schema },
             ]}
             onMouseenter={e => toolTableRef.value?.handleCellEnter({
               e,
@@ -677,15 +696,137 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
   {
-    title: t('是否配置请求参数声明'),
-    colKey: 'isExistConfig',
+    title: t('工具名称'),
+    colKey: 'tool_name',
     ellipsis: true,
-    width: 220,
-    cell: (_, { row }: { row: IMCPServerTool }) => row.has_openapi_schema ? t('是') : t('否'),
+    cell: (_, { row }: { row: IMCPServerTool }) => {
+      row.tool_name = row.tool_name ?? row.name;
+      if (!row.tool_name) {
+        return '--';
+      }
+      return (
+        <div class="flex-row items-center relative overflow-hidden tool-name">
+          <div
+            v-bk-tooltips={{
+              placement: 'top',
+              content: row.tool_name,
+              disabled: !row.isOverflow,
+              extCls: 'max-w-480px',
+            }}
+            class={[
+              'truncate mr-4px',
+              { 'cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
+              { 'color-#979ba5': !row.has_openapi_schema },
+            ]}
+            onMouseenter={(e: MouseEvent) => {
+              toolTableRef.value?.handleCellEnter({
+                e,
+                row,
+              });
+            }}
+            onMouseLeave={e => toolTableRef.value?.handleCellLeave({
+              e,
+              row,
+            })}
+          >
+            { row.tool_name }
+          </div>
+          { row.has_openapi_schema && (
+            <PopConfirm
+              ref={popoverConfirmRef}
+              trigger="manual"
+              width="400"
+              placement="right"
+              extCls="tool-name-popover"
+              is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
+              onConfirm={() => handleConfirmToolName(row)}
+              onCancel={() => handleCancelToolName(row)}
+            >
+              {{
+                default: () => (
+                  <AgIcon
+                    name="edit-line"
+                    class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
+                    onClick={(e: MouseEvent) => {
+                      e?.stopPropagation();
+                      handleEditToolName(row);
+                    }}
+                    v-clickOutSide={(e: MouseEvent) => handleClickOutSide(e)}
+                  />
+                ),
+                content: () => (
+                  <div class="w-full break-all tool-name-popover-content">
+                    <span class="text-16px color-#313238">
+                      <span class="min-w-64px lh-24px">
+                        {t('工具名称')}
+                      </span>
+                      <Divider
+                        direction="vertical"
+                        type="solid"
+                      />
+                      <span class="text-14px color-#979ba5 lh-22px">
+                        { t('资源名称：{value}', { value: row.tool_name }) }
+                      </span>
+                    </span>
+                    <div class="mt-16px">
+                      <Form
+                        ref={toolNameRef}
+                        form-type="vertical"
+                        model={toolNameRowData.value}
+                        rules={toolNameRules}
+                      >
+                        <BkFormItem
+                          label={t('工具名称')}
+                          required={true}
+                          property="tool_name"
+                          class="tool-name-form-item"
+                        >
+                          <Input
+                            v-model={toolNameRowData.value.tool_name}
+                            placeholder={t('请输入工具名称')}
+                            maxlength={128}
+                            tooltipsOptions={{
+                              content: () => (
+                                <div>
+                                  { t('长度限制：最多 128 个字符') }
+                                  <br />
+                                  { t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）') }
+                                  <br />
+                                  { t('中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）') }
+                                </div>
+                              ),
+                              placement: 'right',
+                              disabled: false,
+                              allowHtml: true,
+                            }}
+                            autofocus={true}
+                          />
+                        </BkFormItem>
+                      </Form>
+                    </div>
+                  </div>
+                ),
+              }}
+            </PopConfirm>
+          )}
+        </div>
+      );
+    },
   },
   {
     title: t('请求方法'),
-    colKey: 'methods',
+    colKey: 'method',
+    filter: {
+      type: 'multiple',
+      popupProps: {
+        placement: 'bottom',
+        attach: 'body',
+      },
+      showConfirmAndReset: true,
+      resetValue: [],
+      placements: ['right'],
+      list: customMethodsList.value,
+    },
     cell: (_, { row }: { row: IMCPServerTool }) => (
       <BkTag
         theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
@@ -761,6 +902,24 @@ const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
 ]);
 const filterKeywordDebounced = refDebounced(filterKeyword, 300);
 
+const toolNameRules = {
+  tool_name: [
+    {
+      required: true,
+      message: t('请输入工具名称'),
+      trigger: 'blur',
+    },
+    {
+      validator: (value: string) => {
+        const reg = /^[a-zA-Z0-9][a-zA-Z0-9\-._]*[a-zA-Z0-9]$/;
+        return reg.test(value);
+      },
+      message: () => `${t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）')}, ${t('中间字符：允许字母、数字、连字符（-）、下划线（_）、点号（.）')}`,
+      trigger: 'blur',
+    },
+  ],
+};
+
 const methodTagThemeMap = {
   POST: 'info',
   GET: 'success',
@@ -786,13 +945,36 @@ const sliderTitle = computed(() => {
     ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
     : t('创建 MCP Server');
 });
+const toolTableEmptyType = computed(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
+  || toolFilterData.value?.method?.length > 0
+  ? 'searchEmpty'
+  : 'empty');
 const filteredToolList = computed(() => {
-  toolTableEmptyType.value = filterKeywordDebounced.value ? 'searchEmpty' : 'empty';
-  return resourceList.value.filter((resource: any) => {
-    const keyword = filterKeywordDebounced.value.trim().toLowerCase();
-    const matchName = resource.name.toLowerCase().includes(keyword);
-    const matchPath = resource.path.toLowerCase().includes(keyword);
-    return matchName || matchPath;
+  const keyword = filterKeywordDebounced.value.trim().toLowerCase();
+  const methodsData = toolFilterData.value?.method ?? [];
+  const currentResourceList = resourceList.value;
+
+  return currentResourceList.filter((resource) => {
+    const matchKeyword = (() => {
+      const targetStr = [
+        resource.name,
+        resource.path,
+        resource.tool_name,
+        resource.method,
+      ].join(' ').toLowerCase();
+      return keyword ? targetStr.includes(keyword) : true;
+    })();
+
+    const matchMethods = (() => {
+      const validMethodsData = Array.isArray(methodsData)
+        ? methodsData.map(m => m?.toString().toUpperCase().trim())
+        : [];
+      if (validMethodsData.length === 0) return true;
+
+      return validMethodsData.includes(resource.method);
+    })();
+
+    return matchKeyword && matchMethods;
   });
 });
 const filteredPromptList = computed(() => {
@@ -876,7 +1058,6 @@ const previewUrl = computed(() => {
     ? 'mcp'
     : formData.value.protocol_type}/`;
 });
-
 const escapedCodeContent = computed(() => {
   return escape(curPromptData.value?.content ?? '');
 });
@@ -932,7 +1113,7 @@ const resetResizeLayout = () => {
 const toolDisabledSelection = (row) => {
   row.selectionTip = t(toolSelections.value.map(item => item.name).includes(row.name) && !row.has_openapi_schema
     ? '该资源数据有变更，请确认一下请求参数是否正确配置。'
-    : '资源需要确认请求参数后才能添加到MCP Server');
+    : '该资源未配置请求参数声明，不能添加到 MCP');
   return !row.has_openapi_schema;
 };
 
@@ -951,7 +1132,14 @@ const clearValidate = () => {
   formRef.value?.clearValidate();
 };
 
-const handleSetRowClass = ({ row }) => {
+const handleSetToolRowClass = ({ row }: { row: IMCPServerTool }) => {
+  if (!row.has_openapi_schema) {
+    return 'is-disabled-tool';
+  }
+  return '';
+};
+
+const handleSetPromptRowClass = ({ row }: { row: IMCPServerPrompt }) => {
   if (row.id === curPromptData.value.id) {
     return 'cursor-pointer is-selected-prompt';
   }
@@ -1053,6 +1241,7 @@ const handleSubmit = async () => {
     submitLoading.value = true;
     let params = {
       resource_names: toolSelections.value.map(item => item.name),
+      tool_names: toolSelections.value.map(item => item.tool_name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
     };
     if (isEditMode.value) {
@@ -1118,6 +1307,7 @@ const fetchServer = async () => {
       is_public = true,
       stage = { id: 0 },
       resource_names = [],
+      tool_names = [],
       prompts = [],
     } = response ?? {};
     formData.value = {
@@ -1131,16 +1321,41 @@ const fetchServer = async () => {
       protocol_type,
     };
     url.value = response?.url ?? '';
-    // 渲染tool勾选数据
-    if (resource_names.length) {
-      toolSelections.value = resourceList.value
-        .filter(item => resource_names.includes(item.name))
-        .map(({ name, id }) => ({
+    // 仅当资源名称数组有有效数据时执行逻辑
+    if (resource_names?.length) {
+      const resourceNameToIndexMap = new Map();
+      resource_names.forEach((name, index) => {
+        resourceNameToIndexMap.set(name, index);
+      });
+      const hasToolNames = tool_names?.length > 0;
+
+      resourceList.value.forEach((item) => {
+        const nameIndex = resourceNameToIndexMap.get(item.name);
+        if (hasToolNames && nameIndex !== undefined && nameIndex > -1) {
+          item.tool_name = tool_names[nameIndex] || item.name;
+        }
+      });
+
+      const resourceToolData = resourceList.value.filter(item =>
+        resourceNameToIndexMap.has(item.name),
+      );
+
+      toolSelections.value = resourceToolData.map(({ name, id }) => {
+        const correctIndex = resourceNameToIndexMap.get(name);
+        const toolName = hasToolNames && correctIndex !== undefined
+          ? tool_names[correctIndex] || ''
+          : '';
+
+        return {
           name,
           id,
           mode_type: 'tool',
-        }));
+          tool_name: toolName,
+        };
+      });
+
       toolTableRef.value?.setSelectionData(toolSelections.value);
+      resourceNameToIndexMap.clear();
     }
     // 渲染prompt勾选数据
     if (prompts.length) {
@@ -1303,6 +1518,55 @@ const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ sele
   }
 };
 
+const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
+  toolFilterData.value = { ...filters };
+};
+
+const handleEditToolName = (row: IMCPServerTool) => {
+  const bodyEl = document.querySelector('body');
+  if (bodyEl) {
+    bodyEl.classList.add('overflow-hidden');
+  }
+  toolNameRowData.value = {
+    ...row,
+    tool_name: row.tool_name ?? row.name,
+    isShow: true,
+  };
+};
+
+const handleConfirmToolName = async (row) => {
+  try {
+    await toolNameRef.value?.validate();
+    const toolData = resourceList.value.find(item => item.id === row.id);
+    if (toolData) {
+      toolData.tool_name = toolNameRowData.value.tool_name;
+    }
+    const selectData = toolSelections.value.find(item => item.id === toolData.id);
+    if (selectData) {
+      selectData.tool_name = row.tool_name;
+    }
+    handleCancelToolName();
+  }
+  catch {
+    toolNameRowData.value.isShow = true;
+  }
+};
+
+const handleCancelToolName = () => {
+  toolNameRowData.value = {};
+  const bodyEl = document.querySelector('body');
+  if (bodyEl) {
+    bodyEl.classList.remove('overflow-hidden');
+  }
+};
+
+const handleClickOutSide = (e: MouseEvent) => {
+  const cell = (e.target as HTMLElement).closest('.tool-name-edit-icon');
+  if (!cell) {
+    handleCancelToolName();
+  }
+};
+
 /**
  * 设置搜索loading状态
  * @param isLoading - 是否显示loading
@@ -1357,6 +1621,7 @@ const handleClearSelections = (type?: string) => {
 
 const handleToolClearFilter = () => {
   filterKeyword.value = '';
+  toolFilterData.value = {};
   handleSetLoading(true);
 };
 
@@ -1430,12 +1695,14 @@ const resetSliderData = () => {
   allSelections.value = [];
   noPermPrompt.value = [];
   url.value = '';
+  filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
   resizeLayoutConfig = {
     min: 880,
     max: 1040,
   };
+  toolFilterData.value = {};
 };
 
 const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
@@ -1473,6 +1740,12 @@ defineExpose({
     background-color: transparent;
   }
 }
+
+.tool-name-popover {
+  .is-error {
+    margin-bottom: 36px;
+  }
+}
 </style>
 
 <style lang="scss" scoped>
@@ -1495,6 +1768,26 @@ defineExpose({
         .text-body {
           font-size: 12px;
           color: #979ba5;
+        }
+      }
+    }
+
+    :deep(.tool-name) {
+
+      &:hover {
+        .icon-ag-edit-line {
+          display: block;
+        }
+      }
+    }
+
+    :deep(.is-disabled-tool) {
+      td {
+        color: #979ba5;
+
+        .bk-tag {
+          color: #979ba5;
+          background-color: #f0f1f5;
         }
       }
     }
