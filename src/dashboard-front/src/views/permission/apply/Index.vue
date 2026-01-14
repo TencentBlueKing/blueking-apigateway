@@ -394,7 +394,7 @@ const getTableColumns = computed(() => {
                 size="10"
                 class="mr-4px"
               />
-              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
+              {`${row.grant_dimension_display} (${row.resourceList?.length || '--'})`}
             </div>
           );
         }
@@ -422,9 +422,9 @@ const getTableColumns = computed(() => {
       title: t('申请人'),
       ellipsis: true,
       cell: (h, { row }: { row?: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isEnableDisplayName
-          ? <span>{row.applied_by}</span>
-          : <span><bk-user-display-name user-id={row.applied_by} /></span>,
+        featureFlagStore.isEnableDisplayName
+          ? <span><bk-user-display-name user-id={row.applied_by} /></span>
+          : <span>{row.applied_by}</span>,
     },
     {
       colKey: 'created_time',
@@ -542,8 +542,9 @@ const getResourceList = async () => {
 const handleRequestDone = () => {
   const pageConf = permissionTableRef.value?.getPagination();
   if (pageConf) {
-    permissionStore.setCount(pageConf.total);
+    permissionStore.setCount(pageConf.total || 0);
   }
+  getResourceList();
 };
 
 // 批量审批
@@ -720,10 +721,6 @@ const handleClearSelection = () => {
   tableRef.value.handleResetSelection();
   selections.value = [];
 };
-
-onMounted(() => {
-  getResourceList();
-});
 </script>
 
 <style lang="scss" scoped>
