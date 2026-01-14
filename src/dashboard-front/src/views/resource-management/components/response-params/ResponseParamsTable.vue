@@ -363,7 +363,7 @@ const initTableData = (schema?: Record<string, any>) => {
   };
   // 响应没有响应体的情况（不会有 content 字段）
   if (body.content?.['application/json']?.schema) {
-    const { type } = body.content['application/json'].schema;
+    const { type } = schema || body.content['application/json'].schema;
     if (type === 'object') {
       const rowProperties = convertSchemaToBodyRow(schema || body?.content?.['application/json']?.schema);
       if (rowProperties) {
