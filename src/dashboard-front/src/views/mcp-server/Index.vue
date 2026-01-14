@@ -21,7 +21,7 @@
     <div class="page-wrapper">
       <BkLoading
         :loading="isLoading"
-        :z-index="999"
+        :z-index="99"
       >
         <div
           ref="serverListRef"
