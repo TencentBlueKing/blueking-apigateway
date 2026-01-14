@@ -77,10 +77,10 @@
                       @click="handleToolClick(tool.id, tool.name)"
                     >
                       <header
-                        v-bk-xss-html="getHighlightedHtml(tool.name)"
+                        v-bk-xss-html="getHighlightedHtml(tool.tool_name || tool.name)"
                         v-bk-tooltips="{
                           placement:'top',
-                          content: `${t('名称')}: ${tool.name}
+                          content: `${t('名称')}: ${tool.tool_name || tool.name}
                             ${t('描述')}: ${tool.description}`,
                           disabled: !tool.isOverflow,
                           extCls: 'max-w-480px',
@@ -94,7 +94,7 @@
                         v-bk-xss-html="getHighlightedHtml(tool.description)"
                         v-bk-tooltips="{
                           placement:'top',
-                          content: `${t('名称')}: ${tool.name}
+                          content: `${t('名称')}: ${tool.tool_name || tool.name}
                           ${t('描述')}: ${tool.description}`,
                           disabled: !tool.isOverflow,
                           extCls: 'max-w-480px',
@@ -128,10 +128,15 @@
           <template v-if="selectedTool">
             <header class="tool-name">
               <div
-                v-bk-tooltips="{content: selectedTool.name, disabled: selectedTool.name.length <= 30}"
+                v-bk-tooltips="{
+                  content: selectedTool.tool_name || selectedTool.name,
+                  disabled: selectedTool.tool_name
+                    ? selectedTool.tool_name.length <= 30
+                    : selectedTool.name.length <= 30
+                }"
                 class="name"
               >
-                {{ truncate(selectedTool.name) }}
+                {{ truncate(selectedTool.tool_name || selectedTool.name) }}
               </div>
               <BkButton
                 theme="primary"
@@ -150,7 +155,7 @@
             <div class="pl-40px pr-40px mb-16px">
               <AgDescription class="color-#979ba5 break-all gap-4px">
                 <template #description>
-                  {{ selectedTool.description }}
+                  {{ selectedTool?.description }}
                 </template>
               </AgDescription>
             </div>
@@ -308,7 +313,10 @@ const isLoading = ref(false);
 
 const filteredToolList = computed(() => {
   const regex = new RegExp(keyword.value, 'i');
-  return toolList.value.filter(tool => regex.test(tool.name) || regex.test(tool.description));
+  return toolList.value.filter((tool) => {
+    const searchName = tool.tool_name || tool.name;
+    return regex.test(searchName) || regex.test(tool.description);
+  });
 });
 // tool 分类列表
 const toolGroupList = computed(() => {
