@@ -1,3 +1,13 @@
+<!-- 2026-01-14 -->
+# V1.19.5 Release Log
+
+### Enhancements
+
+- MCP Server fixed sliding pagination failure issue at low resolution
+- MCP Server permission approval returns approval link
+
+---
+
 <!-- 2026-01-06 -->
 # V1.19.3 Release Log
 
