@@ -105,6 +105,43 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
 
+    def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试 MCP Server 权限列表包含审批 URL"""
+        # 设置审批 URL 模板
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            title="Test MCP Server",
+            description="Test Description",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="tool1;tool2",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert "approval_url" in permission_data
+        assert (
+            f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
+        )
+
     def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 基本功能"""
         mcp_server = G(
@@ -213,6 +250,49 @@ class TestMCPServerAppPermissionListApi:
 
         mcp_server_data = result["data"][0]["mcp_server"]
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+
+    def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试已申请权限列表包含审批 URL"""
+        # 设置审批 URL 模板
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        # 创建已批准的申请记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert "approval_url" in permission_data
+        assert (
+            f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
+        )
 
 
 class TestMCPServerAppPermissionRecordListApi:
