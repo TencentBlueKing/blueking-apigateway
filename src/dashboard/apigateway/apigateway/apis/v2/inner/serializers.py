@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import math
 
 from django.utils.translation import gettext as _
@@ -42,6 +43,8 @@ from apigateway.service.mcp.mcp_server import (
     build_mcp_server_permission_approval_url,
 )
 from apigateway.utils import time
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayListInputSLZ(serializers.Serializer):
