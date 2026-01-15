@@ -487,6 +487,8 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "action": action,
                         "expires_in": None,
                         "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
+                        "mcp_server_id": obj.id,
+                        "gateway_id": obj.gateway_id,
                     },
                 }
             )
@@ -569,6 +571,8 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "action": "",
                     "expires_in": None,
                     "handled_by": [obj.handled_by],
+                    "mcp_server_id": obj.mcp_server_id,
+                    "gateway_id": obj.mcp_server.gateway_id,
                 },
             }
             for obj in queryset
