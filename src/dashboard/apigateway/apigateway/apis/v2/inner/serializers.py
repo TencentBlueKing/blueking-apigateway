@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import math
 
 from django.utils.translation import gettext as _
@@ -42,6 +43,8 @@ from apigateway.service.mcp.mcp_server import (
     build_mcp_server_permission_approval_url,
 )
 from apigateway.utils import time
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayListInputSLZ(serializers.Serializer):
@@ -371,6 +374,27 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
     action = serializers.CharField(help_text="MCPServer 权限操作")
     expires_in = serializers.IntegerField(help_text="MCPServer 权限过期时间")
     handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
+    approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
+
+    def get_approval_url(self, obj) -> str:
+        """获取审批 URL"""
+        try:
+            # 如果是字典格式（来自视图构造的数据）
+            if isinstance(obj, dict):
+                mcp_server_id = obj.get("mcp_server_id")
+                gateway_id = obj.get("gateway_id")
+
+                if gateway_id and mcp_server_id:
+                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id)
+
+            # 如果是模型实例
+            if hasattr(obj, "mcp_server"):
+                return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+        except Exception:
+            # 记录错误但不中断响应
+            logger.warning("Failed to build approval URL for object: %s", obj)
+
+        return ""
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerPermissionBaseSLZ"
