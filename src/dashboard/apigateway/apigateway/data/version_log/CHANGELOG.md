@@ -1,13 +1,9 @@
-<!-- 2025-12-02 -->
+<!-- 2026-01-15 -->
 # V1.20.0 版本更新日志
-
-### 新增功能
-
-- MCP Proxy 调用传递两个 header：X-Bkapi-Mcp-Server-Id 及 X-Bkapi-Mcp-Server-Name
-- MCP Server 支持配置中文名，prompt 以及自定义文档
 
 ### 功能优化
 
+- MCP Server 专项需求优化
 - 删除网关按钮交互
 - 网关启用/停用做状态检测
 
@@ -18,6 +14,30 @@
 ### 其他
 
 - 重构发布模块，去 CRD 以支持更多种资源
+- 支持子路径 subpath
+
+---
+
+<!-- 2026-01-14 -->
+# V1.19.5 版本更新日志
+
+### 功能优化
+
+- MCP Server 修复滑动分页低分辨率失效问题
+- MCP Server 权限审批返回审批链接
+
+---
+
+<!-- 2026-01-06 -->
+# V1.19.3 版本更新日志
+
+### 新增功能
+
+- MCP Server 支持配置中文展示名
+- MCP Server 支持配置 Prompt
+- MCP Server 支持自定义使用指引
+- MCP Server 增加请求头 X-Bkapi-Mcp-Server-Id/X-Bkapi-Mcp-Server-Name
+- MCP Server 支持 Streamable HTTP 协议
 
 ---
 

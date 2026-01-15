@@ -1,13 +1,9 @@
-<!-- 2025-12-02 -->
+<!-- 2026-01-15 -->
 # V1.20.0 Release Log
-
-### Features
-
-- MCP Proxy calls pass two headers: X-Bkapi-Mcp-Server-Id and X-Bkapi-Mcp-Server-Name
-- MCP Server supports configuring Chinese name, prompt, and custom documentation
 
 ### Enhancements
 
+- MCP Server optimization for special requirements
 - Delete gateway button interaction
 - Gateway enable/disable status detection
 
@@ -18,6 +14,30 @@
 ### Other
 
 - Refactor release module, remove CRD to support more resource types
+- Support subpath
+
+---
+
+<!-- 2026-01-14 -->
+# V1.19.5 Release Log
+
+### Enhancements
+
+- MCP Server fixed sliding pagination failure issue at low resolution
+- MCP Server permission approval returns approval link
+
+---
+
+<!-- 2026-01-06 -->
+# V1.19.3 Release Log
+
+### Features
+
+- MCP Server supports configuring Chinese display name
+- MCP Server supports configuring Prompt
+- MCP Server supports custom usage guidance
+- MCP Server adds request headers X-Bkapi-Mcp-Server-Id/X-Bkapi-Mcp-Server-Name
+- MCP Server supports Streamable HTTP protocol
 
 ---
 
