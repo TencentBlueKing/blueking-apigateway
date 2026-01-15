@@ -88,6 +88,7 @@ import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import { t } from '@/locales';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import CopyButton from '@/components/copy-button/Index.vue';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -165,6 +166,12 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: 'commit_id',
         colKey: 'commit_id',
+        cell: (h, { row }) => (
+          <div v-bk-tooltips={row?.commit_id}>
+            { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
+            <CopyButton class="ml-4px" source={row?.commit_id} />
+          </div>
+        ),
       },
       {
         title: t('版本号'),
