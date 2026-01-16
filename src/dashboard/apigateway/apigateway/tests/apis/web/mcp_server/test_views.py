@@ -24,6 +24,7 @@ from ddf import G
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -32,6 +33,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermission,
     MCPServerAppPermissionApply,
+    MCPServerCategory,
     MCPServerExtend,
 )
 from apigateway.utils.time import now_datetime
@@ -51,6 +53,35 @@ def fake_mcp_server(fake_gateway, fake_stage, faker):
         is_public=True,
         _resource_names="resource1;resource2",
     )
+
+
+@pytest.fixture
+def fake_categories():
+    """创建测试分类"""
+    official_category = G(
+        MCPServerCategory,
+        name="official",
+        display_name="官方",
+        description="官方提供的 MCP Server",
+        type=MCPServerCategoryTypeEnum.OFFICIAL.value,
+        sort_order=1,
+        is_active=True,
+    )
+
+    devops_category = G(
+        MCPServerCategory,
+        name="devops",
+        display_name="运维工具",
+        description="运维相关的工具和服务",
+        type=MCPServerCategoryTypeEnum.DEVOPS.value,
+        sort_order=3,
+        is_active=True,
+    )
+
+    return {
+        "official": official_category,
+        "devops": devops_category,
+    }
 
 
 @pytest.fixture
@@ -78,13 +109,17 @@ class TestMCPServerListCreateApi:
         assert resp.status_code == 200
         assert result["data"]["count"] >= 1
 
-        # 验证返回的数据中包含 updated_time 字段
+        # 验证返回的数据中包含分类相关字段
         mcp_server_data = next(
             (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
             None,
         )
         assert mcp_server_data is not None
         assert "updated_time" in mcp_server_data
+        assert "created_time" in mcp_server_data
+        assert "categories" in mcp_server_data
+        assert "is_official" in mcp_server_data
+        assert "is_featured" in mcp_server_data
 
     def test_list_with_prompts_count(self, request_view, fake_gateway, fake_mcp_server):
         """测试列表接口返回 prompts_count"""
@@ -114,6 +149,71 @@ class TestMCPServerListCreateApi:
         )
         assert mcp_server_data is not None
         assert mcp_server_data["prompts_count"] == 2
+
+    def test_list_with_categories(self, request_view, fake_gateway, fake_mcp_server, fake_categories):
+        """测试列表接口返回分类信息"""
+        # 给 mcp_server 添加分类
+        fake_mcp_server.categories.add(fake_categories["official"], fake_categories["devops"])
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+
+        # 找到对应的数据
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert len(mcp_server_data["categories"]) == 2
+        assert mcp_server_data["is_official"] is True
+        assert mcp_server_data["is_featured"] is False
+
+        # 验证分类信息
+        category_names = [cat["name"] for cat in mcp_server_data["categories"]]
+        assert "official" in category_names
+        assert "devops" in category_names
+
+    def test_create_with_categories(self, mocker, request_view, fake_gateway, fake_stage, fake_categories):
+        """测试创建 MCPServer 时设置分类"""
+        mocker.patch(
+            "apigateway.biz.validators.MCPServerHandler.get_valid_resource_names",
+            return_value=["resource1", "resource2"],
+        )
+
+        data = {
+            "name": "test-mcp-server",
+            "title": "测试 MCP Server",
+            "description": "测试描述",
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "resource_names": ["resource1", "resource2"],
+            "tool_names": ["resource1", "resource2"],
+            "category_ids": [fake_categories["official"].id, fake_categories["devops"].id],
+        }
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data=data,
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 201
+        result = resp.json()
+
+        # 验证创建的 MCPServer 有正确的分类
+        mcp_server = MCPServer.objects.get(id=result["data"]["id"])
+        assert mcp_server.categories.count() == 2
+        assert mcp_server.is_official() is True
+        assert mcp_server.is_featured() is False
 
     def test_create(self, mocker, request_view, fake_gateway, fake_stage, faker):
         mocker.patch(
@@ -1614,3 +1714,117 @@ class TestMCPServerRemotePromptsBatchApi:
         assert resp.status_code == 200
         assert len(result["data"]["prompts"]) == 1
         assert result["data"]["prompts"][0]["id"] == 1
+
+
+class TestMCPServerCategoriesListApi:
+    """测试 MCPServer 分类列表 API"""
+
+    def test_list_categories_success(self, request_view, fake_gateway):
+        """测试成功获取分类列表"""
+        # 创建不同类型的分类
+        official_category = G(
+            MCPServerCategory,
+            name="official",
+            display_name="官方",
+            type=MCPServerCategoryTypeEnum.OFFICIAL.value,
+            is_active=True,
+            sort_order=1,
+        )
+        featured_category = G(
+            MCPServerCategory,
+            name="featured",
+            display_name="精选",
+            type=MCPServerCategoryTypeEnum.FEATURED.value,
+            is_active=True,
+            sort_order=2,
+        )
+        devops_category = G(
+            MCPServerCategory,
+            name="devops",
+            display_name="运维工具",
+            type=MCPServerCategoryTypeEnum.DEVOPS.value,
+            is_active=True,
+            sort_order=3,
+        )
+        monitoring_category = G(
+            MCPServerCategory,
+            name="monitoring",
+            display_name="监控告警",
+            type=MCPServerCategoryTypeEnum.MONITORING.value,
+            is_active=True,
+            sort_order=4,
+        )
+        # 创建一个非活跃的分类
+        inactive_category = G(
+            MCPServerCategory,
+            name="inactive",
+            display_name="非活跃",
+            type=MCPServerCategoryTypeEnum.DEV_TOOLS.value,
+            is_active=False,
+            sort_order=5,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.categories_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "data" in result
+
+        # 应该只返回活跃的且非官方/精选的分类
+        categories = result["data"]
+        assert len(categories) == 2  # 只有 devops 和 monitoring
+
+        # 验证返回的分类不包含官方和精选
+        category_types = [cat["type"] for cat in categories]
+        assert MCPServerCategoryTypeEnum.OFFICIAL.value not in category_types
+        assert MCPServerCategoryTypeEnum.FEATURED.value not in category_types
+        assert MCPServerCategoryTypeEnum.DEVOPS.value in category_types
+        assert MCPServerCategoryTypeEnum.MONITORING.value in category_types
+
+        # 验证排序
+        assert categories[0]["name"] == "devops"
+        assert categories[1]["name"] == "monitoring"
+
+        # 验证字段完整性
+        for category in categories:
+            assert "id" in category
+            assert "name" in category
+            assert "display_name" in category
+            assert "description" in category
+            assert "type" in category
+            assert "sort_order" in category
+
+    def test_list_categories_empty(self, request_view, fake_gateway):
+        """测试没有可用分类时的情况"""
+        # 只创建官方和精选分类
+        G(
+            MCPServerCategory,
+            name="official",
+            display_name="官方",
+            type=MCPServerCategoryTypeEnum.OFFICIAL.value,
+            is_active=True,
+        )
+        G(
+            MCPServerCategory,
+            name="featured",
+            display_name="精选",
+            type=MCPServerCategoryTypeEnum.FEATURED.value,
+            is_active=True,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.categories_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "data" in result
+        assert len(result["data"]) == 0  # 应该为空

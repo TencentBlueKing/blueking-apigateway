@@ -24,6 +24,7 @@ from .views import (
     MCPServerAppPermissionApplyUpdateStatusApi,
     MCPServerAppPermissionDestroyApi,
     MCPServerAppPermissionListCreateApi,
+    MCPServerCategoriesListApi,
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
     MCPServerRemotePromptsBatchApi,
@@ -40,6 +41,7 @@ from .views import (
 urlpatterns = [
     # list or create gateway mcp server
     path("", MCPServerListCreateApi.as_view(), name="mcp_server.list_create"),
+    path("-/categories/", MCPServerCategoriesListApi.as_view(), name="mcp_server.categories_list"),
     path(
         "<int:mcp_server_id>/",
         include(

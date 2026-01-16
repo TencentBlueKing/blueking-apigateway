@@ -24,7 +24,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.django.translation import get_current_language_code
@@ -39,6 +39,7 @@ from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPServerCategoryOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
@@ -76,16 +77,22 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
                 | Q(_labels__icontains=keyword)
             )
 
+        # 分类筛选
+        category = slz.validated_data.get("category")
+        if category:
+            queryset = queryset.filter(categories__name=category, categories__is_active=True)
+
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)
         if user_tenant_id:
             queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
 
-        # optimize query by using select_related
-        queryset = queryset.select_related("gateway", "stage")
+        # optimize query by using select_related and prefetch_related
+        queryset = queryset.select_related("gateway", "stage").prefetch_related("categories")
 
-        # order by updated_time desc
-        queryset = queryset.order_by("-updated_time")
+        # 排序
+        order_by = slz.validated_data.get("order_by", "-updated_time")
+        queryset = queryset.order_by(order_by)
 
         # note: the stage offline will update related mcp server status to inactive,
         # the stage publish will update the mcp server resource_names,
@@ -139,7 +146,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
     ),
 )
 class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
-    queryset = MCPServer.objects.all()
+    queryset = MCPServer.objects.select_related("gateway", "stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
@@ -259,3 +266,46 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCP 市场分类列表",
+        responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceCategoryListApi(generics.ListAPIView):
+    """MCP 市场分类列表 API"""
+
+    queryset = MCPServerCategory.objects.filter(is_active=True).order_by("sort_order", "id")
+    serializer_class = MCPServerCategoryOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        # 计算每个分类下的 MCPServer 数量
+        # 只统计公开、启用且网关和环境都是活跃状态的 MCPServer
+        category_stats = {}
+
+        # 获取符合条件的 MCPServer 查询集
+        valid_mcp_servers = MCPServer.objects.filter(
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+
+        # 应用租户过滤
+        user_tenant_id = get_user_tenant_id(request)
+        if user_tenant_id:
+            valid_mcp_servers = gateway_mcp_server_filter_by_user_tenant_id(valid_mcp_servers, user_tenant_id)
+
+        # 统计每个分类的 MCPServer 数量
+        for category in queryset:
+            count = valid_mcp_servers.filter(categories=category, categories__is_active=True).distinct().count()
+            category_stats[category.id] = count
+
+        serializer = self.get_serializer(queryset, many=True, context={"category_stats": category_stats})
+        return OKJsonResponse(data=serializer.data)

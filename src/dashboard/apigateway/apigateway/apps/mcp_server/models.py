@@ -30,6 +30,7 @@ from .constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -39,6 +40,35 @@ from .constants import (
 TOOL_NAME_SEPARATOR = "@"
 POSITION_RESOURCE_NAME = 0
 POSITION_TOOL_NAME = 1
+
+
+class MCPServerCategory(TimestampedModelMixin, OperatorModelMixin):
+    """MCPServer 分类表"""
+
+    name = models.CharField(max_length=64, unique=True, help_text=_("分类名称"))
+    display_name = models.CharField(max_length=128, help_text=_("分类显示名称"))
+    description = models.TextField(blank=True, default="", help_text=_("分类描述"))
+    type = models.CharField(
+        max_length=32,
+        choices=MCPServerCategoryTypeEnum.get_choices(),
+        help_text=_("分类类型"),
+    )
+    is_active = models.BooleanField(default=True, help_text=_("是否启用"))
+    sort_order = models.IntegerField(default=0, help_text=_("排序顺序，数字越小越靠前"))
+
+    def __str__(self):
+        return f"<MCPServerCategory: {self.pk}/{self.name}>"
+
+    class Meta:
+        verbose_name = _("MCPServer 分类")
+        verbose_name_plural = _("MCPServer 分类")
+        db_table = "mcp_server_category"
+        ordering = ["sort_order", "id"]
+
+    @property
+    def is_special_category(self) -> bool:
+        """是否为特殊分类（官方、精选）"""
+        return self.type in [MCPServerCategoryTypeEnum.OFFICIAL.value, MCPServerCategoryTypeEnum.FEATURED.value]
 
 
 class MCPServer(TimestampedModelMixin, OperatorModelMixin):
@@ -64,6 +94,14 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         choices=MCPServerProtocolTypeEnum.get_choices(),
         default=MCPServerProtocolTypeEnum.SSE.value,
         help_text="MCP 协议类型",
+    )
+
+    # 分类关联（多对多关系）
+    categories = models.ManyToManyField(
+        MCPServerCategory,
+        blank=True,
+        related_name="mcp_servers",
+        help_text=_("MCPServer 所属分类"),
     )
 
     def __str__(self):
@@ -184,6 +222,22 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
             else:
                 result.append(resource_name)
         self._resource_names = ";".join(result)
+
+    def get_category_names(self) -> List[str]:
+        """获取分类名称列表"""
+        return list(self.categories.filter(is_active=True).values_list("name", flat=True))
+
+    def get_category_display_names(self) -> List[str]:
+        """获取分类显示名称列表"""
+        return list(self.categories.filter(is_active=True).values_list("display_name", flat=True))
+
+    def is_official(self) -> bool:
+        """是否为官方 MCPServer"""
+        return self.categories.filter(type=MCPServerCategoryTypeEnum.OFFICIAL.value, is_active=True).exists()
+
+    def is_featured(self) -> bool:
+        """是否为精选 MCPServer"""
+        return self.categories.filter(type=MCPServerCategoryTypeEnum.FEATURED.value, is_active=True).exists()
 
 
 class MCPServerAppPermission(TimestampedModelMixin, OperatorModelMixin):

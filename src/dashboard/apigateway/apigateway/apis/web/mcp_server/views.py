@@ -30,6 +30,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
+    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
@@ -37,6 +38,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermission,
     MCPServerAppPermissionApply,
+    MCPServerCategory,
     MCPServerExtend,
 )
 from apigateway.biz.audit import Auditor
@@ -61,6 +63,7 @@ from .serializers import (
     MCPServerAppPermissionCreateInputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
+    MCPServerCategoryOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListOutputSLZ,
@@ -100,7 +103,12 @@ from .serializers import (
 )
 class MCPServerListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
-        queryset = MCPServer.objects.filter(gateway=self.request.gateway).order_by("-status", "-updated_time")
+        queryset = (
+            MCPServer.objects.filter(gateway=self.request.gateway)
+            .select_related("stage")
+            .prefetch_related("categories")
+            .order_by("-status", "-updated_time")
+        )
 
         page = self.paginate_queryset(queryset)
 
@@ -190,7 +198,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
-    queryset = MCPServer.objects.all()
+    queryset = MCPServer.objects.select_related("stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
@@ -840,3 +848,31 @@ class MCPServerRemotePromptsBatchApi(generics.CreateAPIView):
 
         output_slz = MCPServerRemotePromptsBatchOutputSLZ({"prompts": prompts})
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取可用的 MCPServer 分类列表（排除官方和精选）",
+        responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerCategoriesListApi(generics.ListAPIView):
+    """获取可用的 MCPServer 分类列表，排除官方和精选分类"""
+
+    def list(self, request, *args, **kwargs):
+        # 排除官方和精选分类，只返回用户可选择的分类
+        excluded_types = [
+            MCPServerCategoryTypeEnum.OFFICIAL.value,
+            MCPServerCategoryTypeEnum.FEATURED.value,
+        ]
+
+        queryset = (
+            MCPServerCategory.objects.filter(is_active=True)
+            .exclude(type__in=excluded_types)
+            .order_by("sort_order", "id")
+        )
+
+        slz = MCPServerCategoryOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)

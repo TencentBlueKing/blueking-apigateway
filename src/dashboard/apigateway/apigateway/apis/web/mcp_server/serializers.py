@@ -32,6 +32,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermissionApply,
+    MCPServerCategory,
 )
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.permission.permission import ResourcePermissionHandler
@@ -40,6 +41,20 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 logger = logging.getLogger(__name__)
+
+
+class MCPServerCategoryOutputSLZ(serializers.Serializer):
+    """MCPServer 分类输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="分类 ID")
+    name = serializers.CharField(read_only=True, help_text="分类名称")
+    display_name = serializers.CharField(read_only=True, help_text="分类显示名称")
+    description = serializers.CharField(read_only=True, help_text="分类描述")
+    type = serializers.CharField(read_only=True, help_text="分类类型")
+    sort_order = serializers.IntegerField(read_only=True, help_text="排序顺序")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCategoryOutputSLZ"
 
 
 def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -118,6 +133,12 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=MCPServerProtocolTypeEnum.SSE.value,
         help_text="MCPServer 协议类型",
     )
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text="MCPServer 分类 ID 列表",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
@@ -133,6 +154,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "tool_names",
             "prompts",
             "protocol_type",
+            "category_ids",
         )
         lookup_field = "id"
         validators = [MCPServerValidator()]
@@ -167,10 +189,28 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
         return tool_names
 
+    def validate_category_ids(self, category_ids):
+        """验证分类 ID 列表"""
+        if not category_ids:
+            return category_ids
+
+        # 检查分类是否存在且启用
+        valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+        valid_category_ids = set(valid_categories.values_list("id", flat=True))
+
+        invalid_ids = set(category_ids) - valid_category_ids
+        if invalid_ids:
+            raise serializers.ValidationError(
+                _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
+            )
+
+        return category_ids
+
     def create(self, validated_data):
         prompts = validated_data.pop("prompts", [])
         resource_names = validated_data.pop("resource_names")
         tool_names = validated_data.pop("tool_names")
+        category_ids = validated_data.pop("category_ids", [])
 
         validated_data["gateway_id"] = self.context["gateway"].id
         validated_data["created_by"] = self.context["created_by"]
@@ -180,6 +220,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         instance = MCPServer(**validated_data)
         instance.update_resource_names(resource_names, tool_names)
         instance.save()
+
+        # 设置分类
+        if category_ids:
+            categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+            instance.categories.set(categories)
 
         # 保存 prompts
         if prompts:
@@ -227,6 +272,12 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
     updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 创建时间")
+
+    # 分类信息
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方")
+    is_featured = serializers.SerializerMethodField(help_text="是否为精选")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
@@ -236,6 +287,19 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name, obj.protocol_type)
+
+    def get_categories(self, obj):
+        """获取分类信息"""
+        categories = obj.categories.filter(is_active=True).order_by("sort_order")
+        return MCPServerCategoryOutputSLZ(categories, many=True).data
+
+    def get_is_official(self, obj) -> bool:
+        """是否为官方"""
+        return obj.is_official()
+
+    def get_is_featured(self, obj) -> bool:
+        """是否为精选"""
+        return obj.is_featured()
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -277,6 +341,11 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="MCP 协议类型",
     )
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="MCPServer 分类 ID 列表",
+    )
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
@@ -308,6 +377,23 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
         return tool_names
 
+    def validate_category_ids(self, category_ids):
+        """验证分类 ID 列表"""
+        if not category_ids:
+            return category_ids
+
+        # 检查分类是否存在且启用
+        valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+        valid_category_ids = set(valid_categories.values_list("id", flat=True))
+
+        invalid_ids = set(category_ids) - valid_category_ids
+        if invalid_ids:
+            raise serializers.ValidationError(
+                _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
+            )
+
+        return category_ids
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
         model = MCPServer
@@ -320,11 +406,13 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "tool_names",
             "prompts",
             "protocol_type",
+            "category_ids",
         )
         lookup_field = "id"
 
     def update(self, instance, validated_data):
         prompts = validated_data.pop("prompts", None)
+        category_ids = validated_data.pop("category_ids", None)
 
         resource_names = validated_data.pop("resource_names", None)
         tool_names = validated_data.pop("tool_names", None)
@@ -345,6 +433,14 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
         # 一次性保存所有更改
         instance.save()
+
+        # 更新分类
+        if category_ids is not None:
+            if category_ids:
+                categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+                instance.categories.set(categories)
+            else:
+                instance.categories.clear()
 
         # 如果传入了 prompts，则更新
         if prompts is not None:
