@@ -35,6 +35,9 @@ const (
 	McpServerStatusInactive = 0
 )
 
+// ToolNameSeparator 工具名分隔符：resource_name@tool_name
+const ToolNameSeparator = "@"
+
 // MCPServer ...
 type MCPServer struct {
 	ID            int         `gorm:"primaryKey;autoIncrement;column:id"`
@@ -60,6 +63,68 @@ func (m *MCPServer) GetProtocolType() string {
 // IsStreamableHTTP 判断是否为 Streamable HTTP 协议
 func (m *MCPServer) IsStreamableHTTP() bool {
 	return m.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP
+}
+
+// GetPureResourceNames 获取纯资源名称列表（去除工具名部分）
+// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+// 返回：[resource_name_1, resource_name_2, resource_name_3]
+func (m *MCPServer) GetPureResourceNames() []string {
+	if len(m.ResourceNames) == 0 {
+		return []string{}
+	}
+
+	result := make([]string, 0, len(m.ResourceNames))
+	for _, item := range m.ResourceNames {
+		if strings.Contains(item, ToolNameSeparator) {
+			parts := strings.SplitN(item, ToolNameSeparator, 2)
+			result = append(result, parts[0])
+		} else {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// GetToolNames 获取工具名列表（与 GetPureResourceNames 顺序对应）
+// 如果没有设置工具名，使用资源名
+// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+// 返回：[resource_name_1, tool_name_2, tool_name_3]
+func (m *MCPServer) GetToolNames() []string {
+	if len(m.ResourceNames) == 0 {
+		return []string{}
+	}
+
+	result := make([]string, 0, len(m.ResourceNames))
+	for _, item := range m.ResourceNames {
+		if strings.Contains(item, ToolNameSeparator) {
+			parts := strings.SplitN(item, ToolNameSeparator, 2)
+			if len(parts) > 1 && parts[1] != "" {
+				result = append(result, parts[1])
+			} else {
+				result = append(result, parts[0])
+			}
+		} else {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// GetToolNameMap 生成资源名到工具名的映射
+// 返回：{resource_name_1: resource_name_1, resource_name_2: tool_name_2, resource_name_3: tool_name_3}
+func (m *MCPServer) GetToolNameMap() map[string]string {
+	pureResourceNames := m.GetPureResourceNames()
+	toolNames := m.GetToolNames()
+
+	result := make(map[string]string, len(pureResourceNames))
+	for i, resourceName := range pureResourceNames {
+		if i < len(toolNames) {
+			result[resourceName] = toolNames[i]
+		} else {
+			result[resourceName] = resourceName
+		}
+	}
+	return result
 }
 
 // IsActive ...

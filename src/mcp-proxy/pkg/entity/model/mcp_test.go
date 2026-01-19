@@ -94,6 +94,130 @@ var _ = Describe("MCP Models", func() {
 				Entry("unknown protocol type", "unknown", false),
 			)
 		})
+
+		Describe("GetPureResourceNames", func() {
+			It("should return empty slice for empty resource names", func() {
+				server := &model.MCPServer{ResourceNames: model.ArrayString{}}
+				Expect(server.GetPureResourceNames()).To(BeEmpty())
+			})
+
+			It("should return resource names without tool name separator", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{"resource1", "resource2", "resource3"},
+				}
+				result := server.GetPureResourceNames()
+				Expect(result).To(HaveLen(3))
+				Expect(result).To(Equal([]string{"resource1", "resource2", "resource3"}))
+			})
+
+			It("should extract pure resource names from mixed format", func() {
+				// 数据库格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{
+						"resource1",
+						"resource2@custom_tool2",
+						"resource3@custom_tool3",
+					},
+				}
+				result := server.GetPureResourceNames()
+				Expect(result).To(HaveLen(3))
+				Expect(result).To(Equal([]string{"resource1", "resource2", "resource3"}))
+			})
+
+			It("should handle resource name with @ but no tool name", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{"resource1@"},
+				}
+				result := server.GetPureResourceNames()
+				Expect(result).To(HaveLen(1))
+				Expect(result[0]).To(Equal("resource1"))
+			})
+		})
+
+		Describe("GetToolNames", func() {
+			It("should return empty slice for empty resource names", func() {
+				server := &model.MCPServer{ResourceNames: model.ArrayString{}}
+				Expect(server.GetToolNames()).To(BeEmpty())
+			})
+
+			It("should return resource names as tool names when no mapping", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{"resource1", "resource2"},
+				}
+				result := server.GetToolNames()
+				Expect(result).To(HaveLen(2))
+				Expect(result).To(Equal([]string{"resource1", "resource2"}))
+			})
+
+			It("should extract tool names from mixed format", func() {
+				// 数据库格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{
+						"resource1",
+						"resource2@custom_tool2",
+						"resource3@custom_tool3",
+					},
+				}
+				result := server.GetToolNames()
+				Expect(result).To(HaveLen(3))
+				Expect(result).To(Equal([]string{"resource1", "custom_tool2", "custom_tool3"}))
+			})
+
+			It("should use resource name when tool name is empty after separator", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{"resource1@"},
+				}
+				result := server.GetToolNames()
+				Expect(result).To(HaveLen(1))
+				Expect(result[0]).To(Equal("resource1"))
+			})
+		})
+
+		Describe("GetToolNameMap", func() {
+			It("should return empty map for empty resource names", func() {
+				server := &model.MCPServer{ResourceNames: model.ArrayString{}}
+				result := server.GetToolNameMap()
+				Expect(result).To(BeEmpty())
+			})
+
+			It("should map resource name to itself when no tool name", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{"resource1", "resource2"},
+				}
+				result := server.GetToolNameMap()
+				Expect(result).To(HaveLen(2))
+				Expect(result["resource1"]).To(Equal("resource1"))
+				Expect(result["resource2"]).To(Equal("resource2"))
+			})
+
+			It("should map resource name to tool name when specified", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{
+						"resource1",
+						"resource2@custom_tool2",
+						"resource3@custom_tool3",
+					},
+				}
+				result := server.GetToolNameMap()
+				Expect(result).To(HaveLen(3))
+				Expect(result["resource1"]).To(Equal("resource1"))
+				Expect(result["resource2"]).To(Equal("custom_tool2"))
+				Expect(result["resource3"]).To(Equal("custom_tool3"))
+			})
+
+			It("should handle complex tool names with special characters", func() {
+				server := &model.MCPServer{
+					ResourceNames: model.ArrayString{
+						"get_users@list_all_users",
+						"create_user@add_new_user",
+					},
+				}
+				result := server.GetToolNameMap()
+				Expect(result).To(HaveLen(2))
+				Expect(result["get_users"]).To(Equal("list_all_users"))
+				Expect(result["create_user"]).To(Equal("add_new_user"))
+			})
+		})
 	})
 
 	Describe("MCPServerAppPermission", func() {
