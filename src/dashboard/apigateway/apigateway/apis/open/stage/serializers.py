@@ -156,7 +156,9 @@ class ActiveCheckSLZ(serializers.Serializer):
         choices=[("http", "HTTP"), ("https", "HTTPS"), ("tcp", "TCP")], default="http", help_text="检查类型"
     )
     timeout = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时时间(秒)")
-    concurrency = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="并发数")
+    concurrency = serializers.IntegerField(
+        min_value=1, max_value=100, required=False, allow_null=True, help_text="并发数"
+    )
     http_path = serializers.CharField(required=False, allow_null=True, help_text="HTTP检查路径")
     https_verify_certificate = serializers.BooleanField(required=False, allow_null=True, help_text="HTTPS证书验证")
     # NOTE: 暂时不支持，后续再支持

@@ -195,8 +195,7 @@ class TestCheckSLZ:
                 "type": "http",
                 "timeout": 5,
                 "http_path": "/health",
-                "host": "example.com",
-                "port": 8080,
+                "concurrency": 10,
                 "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
                 "unhealthy": {"interval": 5, "http_failures": 3, "http_statuses": [500, 502, 503]},
             }
