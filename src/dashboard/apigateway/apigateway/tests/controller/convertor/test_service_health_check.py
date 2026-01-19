@@ -182,7 +182,6 @@ class TestHealthCheckConversion:
                     "active": {
                         "type": "tcp",
                         "timeout": 3,
-                        "port": 8080,
                         "unhealthy": {"tcp_failures": 2},
                     }
                 },
@@ -198,7 +197,6 @@ class TestHealthCheckConversion:
         service = services[0]
 
         assert service.upstream.checks.active.type.value == "tcp"
-        assert service.upstream.checks.active.port == 8080
         assert service.upstream.checks.active.unhealthy.tcp_failures == 2
 
     def test_serialization_excludes_none(self, mocker, fake_release_data, fake_backend):

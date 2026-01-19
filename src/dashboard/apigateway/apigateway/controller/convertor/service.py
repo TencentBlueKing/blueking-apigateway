@@ -291,10 +291,11 @@ class ServiceConvertor(GatewayResourceConvertor):
                 timeout=active_data.get("timeout"),
                 concurrency=active_data.get("concurrency"),
                 http_path=active_data.get("http_path"),
-                host=active_data.get("host"),
-                port=active_data.get("port"),
                 https_verify_certificate=active_data.get("https_verify_certificate"),
-                req_headers=active_data.get("req_headers"),
+                # NOTE: 暂时不支持，后续再支持
+                # host=active_data.get("host"),
+                # port=active_data.get("port"),
+                # req_headers=active_data.get("req_headers"),
                 healthy=healthy,
                 unhealthy=unhealthy,
             )

@@ -131,16 +131,6 @@ class TestActiveCheckSLZ:
         slz = ActiveCheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_invalid_port(self):
-        data = {"port": 99999}
-        slz = ActiveCheckSLZ(data=data)
-        assert not slz.is_valid()
-
-    def test_valid_port_range(self):
-        data = {"port": 8080}
-        slz = ActiveCheckSLZ(data=data)
-        assert slz.is_valid()
-
     def test_https_type(self):
         data = {"type": "https", "http_path": "/health", "https_verify_certificate": True}
         slz = ActiveCheckSLZ(data=data)
@@ -150,12 +140,6 @@ class TestActiveCheckSLZ:
         data = {"type": "tcp", "port": 8080}
         slz = ActiveCheckSLZ(data=data)
         assert slz.is_valid()
-
-    def test_req_headers(self):
-        data = {"type": "http", "http_path": "/health", "req_headers": ["Authorization: Bearer token"]}
-        slz = ActiveCheckSLZ(data=data)
-        assert slz.is_valid()
-        assert slz.validated_data["req_headers"] == ["Authorization: Bearer token"]
 
 
 class TestPassiveCheckSLZ:
@@ -199,13 +183,6 @@ class TestCheckSLZ:
         assert slz.is_valid()
         assert slz.validated_data["passive"] is not None
         assert slz.validated_data.get("active") is None
-
-    def test_both_active_and_passive_rejected(self):
-        """Current requirement: only one of active/passive allowed"""
-        data = {"active": {"type": "http"}, "passive": {"type": "http"}}
-        slz = CheckSLZ(data=data)
-        assert not slz.is_valid()
-        assert "当前版本仅支持配置" in str(slz.errors)
 
     def test_neither_active_nor_passive(self):
         data = {}

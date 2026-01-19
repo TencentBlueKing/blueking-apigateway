@@ -158,12 +158,13 @@ class ActiveCheckSLZ(serializers.Serializer):
     timeout = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时时间(秒)")
     concurrency = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="并发数")
     http_path = serializers.CharField(required=False, allow_null=True, help_text="HTTP检查路径")
-    host = serializers.CharField(required=False, allow_null=True, help_text="主机名")
-    port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True, help_text="端口")
     https_verify_certificate = serializers.BooleanField(required=False, allow_null=True, help_text="HTTPS证书验证")
-    req_headers = serializers.ListField(
-        child=serializers.CharField(), required=False, allow_null=True, help_text="请求头"
-    )
+    # NOTE: 暂时不支持，后续再支持
+    # host = serializers.CharField(required=False, allow_null=True, help_text="主机名")
+    # port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True, help_text="端口")
+    # req_headers = serializers.ListField(
+    #     child=serializers.CharField(), required=False, allow_null=True, help_text="请求头"
+    # )
     healthy = ActiveHealthySLZ(required=False, allow_null=True, help_text="健康配置")
     unhealthy = ActiveUnhealthySLZ(required=False, allow_null=True, help_text="不健康配置")
 
@@ -200,10 +201,6 @@ class CheckSLZ(serializers.Serializer):
 
         if not active and not passive:
             raise serializers.ValidationError("至少需要配置主动健康检查或被动健康检查中的一项")
-
-        # Current requirement: only ONE of active or passive
-        if active and passive:
-            raise serializers.ValidationError("当前版本仅支持配置主动健康检查或被动健康检查中的一项，不能同时配置")
 
         return attrs
 
