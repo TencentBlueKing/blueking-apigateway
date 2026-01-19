@@ -246,7 +246,7 @@ class TestBackendConfigSLZ:
         data = {
             "loadbalance": "roundrobin",
             "timeout": 30,
-            "hosts": [{"host": "example.com", "weight": 100}],
+            "hosts": [{"host": "http://example.com", "weight": 100}],
         }
         slz = BackendConfigSLZ(data=data)
         assert slz.is_valid()
@@ -257,7 +257,7 @@ class TestBackendConfigSLZ:
         data = {
             "loadbalance": "roundrobin",
             "timeout": 30,
-            "hosts": [{"host": "example.com", "weight": 100}],
+            "hosts": [{"host": "http://example.com", "weight": 100}],
             "checks": {
                 "active": {
                     "type": "http",
@@ -276,7 +276,7 @@ class TestBackendConfigSLZ:
         data = {
             "loadbalance": "roundrobin",
             "timeout": 30,
-            "hosts": [{"host": "example.com", "weight": 100}],
+            "hosts": [{"host": "http://example.com", "weight": 100}],
             "checks": {"passive": {"type": "http", "unhealthy": {"http_failures": 3}}},
         }
         slz = BackendConfigSLZ(data=data)
@@ -289,7 +289,7 @@ class TestBackendConfigSLZ:
         data = {
             "loadbalance": "roundrobin",
             "timeout": 30,
-            "hosts": [{"host": "example.com", "weight": 100}],
+            "hosts": [{"host": "http://example.com", "weight": 100}],
             "checks": None,
         }
         slz = BackendConfigSLZ(data=data)

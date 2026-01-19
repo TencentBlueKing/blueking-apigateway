@@ -163,7 +163,7 @@ class TestBackendHealthCheckApi:
         """Test creating a backend with active health check"""
         fake_gateway = fake_stage.gateway
         data = {
-            "name": "backend-with-health-check",
+            "name": "backend-health-chk",
             "description": "test health check",
             "type": "http",
             "configs": [
@@ -196,7 +196,7 @@ class TestBackendHealthCheckApi:
         assert response.status_code == 201
 
         # Verify backend was created with health check config
-        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-with-health-check").first()
+        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-health-chk").first()
         assert backend is not None
 
     def test_retrieve_with_health_check(self, request_view, fake_stage):
@@ -205,7 +205,7 @@ class TestBackendHealthCheckApi:
 
         # Create backend with health check
         data = {
-            "name": "backend-retrieve-test",
+            "name": "backend-retrieve",
             "description": "test",
             "type": "http",
             "configs": [
@@ -235,7 +235,7 @@ class TestBackendHealthCheckApi:
         )
         assert create_response.status_code == 201
 
-        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-retrieve-test").first()
+        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-retrieve").first()
         assert backend is not None
 
         # Retrieve the backend
