@@ -202,12 +202,10 @@ class TestActiveCheck:
             type=CheckActiveTypeEnum.HTTP,
             timeout=5,
             http_path="/health",
-            host="example.com",
         )
         assert check.type == CheckActiveTypeEnum.HTTP
         assert check.timeout == 5
         assert check.http_path == "/health"
-        assert check.host == "example.com"
 
     def test_active_check_default_type(self):
         """Test active check default type"""
