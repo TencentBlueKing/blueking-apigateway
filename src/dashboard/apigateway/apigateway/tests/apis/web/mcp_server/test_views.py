@@ -22,9 +22,10 @@ import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
-    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -58,22 +59,23 @@ def fake_mcp_server(fake_gateway, fake_stage, faker):
 @pytest.fixture
 def fake_categories():
     """创建测试分类"""
+    # 先清理已有的分类数据（可能由迁移文件创建）
+    MCPServerCategory.objects.all().delete()
+
     official_category = G(
         MCPServerCategory,
-        name="official",
+        name=OFFICIAL_MCP_CATEGORY_NAME,
         display_name="官方",
         description="官方提供的 MCP Server",
-        type=MCPServerCategoryTypeEnum.OFFICIAL.value,
         sort_order=1,
         is_active=True,
     )
 
     devops_category = G(
         MCPServerCategory,
-        name="devops",
+        name="DevOps",
         display_name="运维工具",
         description="运维相关的工具和服务",
-        type=MCPServerCategoryTypeEnum.DEVOPS.value,
         sort_order=3,
         is_active=True,
     )
@@ -177,8 +179,8 @@ class TestMCPServerListCreateApi:
 
         # 验证分类信息
         category_names = [cat["name"] for cat in mcp_server_data["categories"]]
-        assert "official" in category_names
-        assert "devops" in category_names
+        assert OFFICIAL_MCP_CATEGORY_NAME in category_names
+        assert "DevOps" in category_names
 
     def test_create_with_categories(self, mocker, request_view, fake_gateway, fake_stage, fake_categories):
         """测试创建 MCPServer 时设置分类"""
@@ -1721,45 +1723,43 @@ class TestMCPServerCategoriesListApi:
 
     def test_list_categories_success(self, request_view, fake_gateway):
         """测试成功获取分类列表"""
+        # 先清理已有的分类数据（可能由迁移文件创建）
+        MCPServerCategory.objects.all().delete()
+
         # 创建不同类型的分类
-        official_category = G(
+        G(
             MCPServerCategory,
-            name="official",
+            name=OFFICIAL_MCP_CATEGORY_NAME,
             display_name="官方",
-            type=MCPServerCategoryTypeEnum.OFFICIAL.value,
             is_active=True,
             sort_order=1,
         )
-        featured_category = G(
+        G(
             MCPServerCategory,
-            name="featured",
+            name=FEATURED_MCP_CATEGORY_NAME,
             display_name="精选",
-            type=MCPServerCategoryTypeEnum.FEATURED.value,
             is_active=True,
             sort_order=2,
         )
-        devops_category = G(
+        G(
             MCPServerCategory,
-            name="devops",
+            name="DevOps",
             display_name="运维工具",
-            type=MCPServerCategoryTypeEnum.DEVOPS.value,
             is_active=True,
             sort_order=3,
         )
-        monitoring_category = G(
+        G(
             MCPServerCategory,
-            name="monitoring",
+            name="Monitoring",
             display_name="监控告警",
-            type=MCPServerCategoryTypeEnum.MONITORING.value,
             is_active=True,
             sort_order=4,
         )
         # 创建一个非活跃的分类
-        inactive_category = G(
+        G(
             MCPServerCategory,
-            name="inactive",
+            name="Inactive",
             display_name="非活跃",
-            type=MCPServerCategoryTypeEnum.DEV_TOOLS.value,
             is_active=False,
             sort_order=5,
         )
@@ -1777,18 +1777,18 @@ class TestMCPServerCategoriesListApi:
 
         # 应该只返回活跃的且非官方/精选的分类
         categories = result["data"]
-        assert len(categories) == 2  # 只有 devops 和 monitoring
+        assert len(categories) == 2  # 只有 DevOps 和 Monitoring
 
         # 验证返回的分类不包含官方和精选
-        category_types = [cat["type"] for cat in categories]
-        assert MCPServerCategoryTypeEnum.OFFICIAL.value not in category_types
-        assert MCPServerCategoryTypeEnum.FEATURED.value not in category_types
-        assert MCPServerCategoryTypeEnum.DEVOPS.value in category_types
-        assert MCPServerCategoryTypeEnum.MONITORING.value in category_types
+        category_names = [cat["name"] for cat in categories]
+        assert OFFICIAL_MCP_CATEGORY_NAME not in category_names
+        assert FEATURED_MCP_CATEGORY_NAME not in category_names
+        assert "DevOps" in category_names
+        assert "Monitoring" in category_names
 
         # 验证排序
-        assert categories[0]["name"] == "devops"
-        assert categories[1]["name"] == "monitoring"
+        assert categories[0]["name"] == "DevOps"
+        assert categories[1]["name"] == "Monitoring"
 
         # 验证字段完整性
         for category in categories:
@@ -1796,24 +1796,24 @@ class TestMCPServerCategoriesListApi:
             assert "name" in category
             assert "display_name" in category
             assert "description" in category
-            assert "type" in category
             assert "sort_order" in category
 
     def test_list_categories_empty(self, request_view, fake_gateway):
         """测试没有可用分类时的情况"""
+        # 先清理已有的分类数据（可能由迁移文件创建）
+        MCPServerCategory.objects.all().delete()
+
         # 只创建官方和精选分类
         G(
             MCPServerCategory,
-            name="official",
+            name=OFFICIAL_MCP_CATEGORY_NAME,
             display_name="官方",
-            type=MCPServerCategoryTypeEnum.OFFICIAL.value,
             is_active=True,
         )
         G(
             MCPServerCategory,
-            name="featured",
+            name=FEATURED_MCP_CATEGORY_NAME,
             display_name="精选",
-            type=MCPServerCategoryTypeEnum.FEATURED.value,
             is_active=True,
         )
 

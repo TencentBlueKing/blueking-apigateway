@@ -27,10 +27,11 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
-    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
@@ -863,14 +864,14 @@ class MCPServerCategoriesListApi(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         # 排除官方和精选分类，只返回用户可选择的分类
-        excluded_types = [
-            MCPServerCategoryTypeEnum.OFFICIAL.value,
-            MCPServerCategoryTypeEnum.FEATURED.value,
+        excluded_names = [
+            OFFICIAL_MCP_CATEGORY_NAME,
+            FEATURED_MCP_CATEGORY_NAME,
         ]
 
         queryset = (
             MCPServerCategory.objects.filter(is_active=True)
-            .exclude(type__in=excluded_types)
+            .exclude(name__in=excluded_names)
             .order_by("sort_order", "id")
         )
 

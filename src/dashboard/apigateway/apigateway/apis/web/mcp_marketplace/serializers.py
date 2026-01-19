@@ -28,10 +28,9 @@ class MCPServerCategoryOutputSLZ(serializers.Serializer):
     """MCPServer 分类输出序列化器"""
 
     id = serializers.IntegerField(read_only=True, help_text="分类 ID")
-    name = serializers.CharField(read_only=True, help_text="分类名称")
+    name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
     display_name = serializers.CharField(read_only=True, help_text="分类显示名称")
     description = serializers.CharField(read_only=True, help_text="分类描述")
-    type = serializers.CharField(read_only=True, help_text="分类类型")
     sort_order = serializers.IntegerField(read_only=True, help_text="排序顺序")
     mcp_server_count = serializers.SerializerMethodField(help_text="该分类下的 MCPServer 数量")
 

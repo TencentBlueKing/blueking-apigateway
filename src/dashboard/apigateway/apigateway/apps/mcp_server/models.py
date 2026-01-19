@@ -27,10 +27,11 @@ from apigateway.core.models import Gateway, Stage
 from apigateway.utils.time import NeverExpiresTime
 
 from .constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
-    MCPServerCategoryTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -45,14 +46,9 @@ POSITION_TOOL_NAME = 1
 class MCPServerCategory(TimestampedModelMixin, OperatorModelMixin):
     """MCPServer 分类表"""
 
-    name = models.CharField(max_length=64, unique=True, help_text=_("分类名称"))
+    name = models.CharField(max_length=64, unique=True, help_text=_("分类名称（英文标识）"))
     display_name = models.CharField(max_length=128, help_text=_("分类显示名称"))
     description = models.TextField(blank=True, default="", help_text=_("分类描述"))
-    type = models.CharField(
-        max_length=32,
-        choices=MCPServerCategoryTypeEnum.get_choices(),
-        help_text=_("分类类型"),
-    )
     is_active = models.BooleanField(default=True, help_text=_("是否启用"))
     sort_order = models.IntegerField(default=0, help_text=_("排序顺序，数字越小越靠前"))
 
@@ -66,9 +62,19 @@ class MCPServerCategory(TimestampedModelMixin, OperatorModelMixin):
         ordering = ["sort_order", "id"]
 
     @property
+    def is_official(self) -> bool:
+        """是否为官方分类"""
+        return self.name == OFFICIAL_MCP_CATEGORY_NAME
+
+    @property
+    def is_featured(self) -> bool:
+        """是否为精选分类"""
+        return self.name == FEATURED_MCP_CATEGORY_NAME
+
+    @property
     def is_special_category(self) -> bool:
         """是否为特殊分类（官方、精选）"""
-        return self.type in [MCPServerCategoryTypeEnum.OFFICIAL.value, MCPServerCategoryTypeEnum.FEATURED.value]
+        return self.is_official or self.is_featured
 
 
 class MCPServer(TimestampedModelMixin, OperatorModelMixin):
@@ -233,11 +239,11 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
 
     def is_official(self) -> bool:
         """是否为官方 MCPServer"""
-        return self.categories.filter(type=MCPServerCategoryTypeEnum.OFFICIAL.value, is_active=True).exists()
+        return self.categories.filter(name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True).exists()
 
     def is_featured(self) -> bool:
         """是否为精选 MCPServer"""
-        return self.categories.filter(type=MCPServerCategoryTypeEnum.FEATURED.value, is_active=True).exists()
+        return self.categories.filter(name=FEATURED_MCP_CATEGORY_NAME, is_active=True).exists()
 
 
 class MCPServerAppPermission(TimestampedModelMixin, OperatorModelMixin):

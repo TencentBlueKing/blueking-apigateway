@@ -35,28 +35,35 @@ class MCPServerCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "id",
         "name",
         "display_name",
-        "type",
         "is_active",
         "sort_order",
+        "is_special_category_display",
         "created_time",
         "updated_time",
     ]
     search_fields = ["name", "display_name", "description"]
-    list_filter = ["type", "is_active"]
+    list_filter = ["is_active"]
     list_editable = ["sort_order", "is_active"]
     ordering = ["sort_order", "id"]
 
     fieldsets = (
-        (None, {"fields": ("name", "display_name", "description", "type")}),
+        (None, {"fields": ("name", "display_name", "description")}),
         ("状态和排序", {"fields": ("is_active", "sort_order")}),
     )
 
     def get_readonly_fields(self, request, obj=None):
-        """官方和精选分类的类型不允许修改"""
+        """官方和精选分类的名称不允许修改"""
         readonly_fields = ["created_time", "updated_time"]
         if obj and obj.is_special_category:
-            readonly_fields.append("type")
+            readonly_fields.append("name")
         return readonly_fields
+
+    def is_special_category_display(self, obj):
+        """显示是否为特殊分类"""
+        return obj.is_special_category
+
+    is_special_category_display.short_description = "特殊分类"  # type: ignore
+    is_special_category_display.boolean = True  # type: ignore
 
 
 class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):

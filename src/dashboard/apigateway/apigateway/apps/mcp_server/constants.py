@@ -77,14 +77,6 @@ class MCPServerProtocolTypeEnum(StructuredEnum):
     STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
 
 
-class MCPServerCategoryTypeEnum(StructuredEnum):
-    """MCPServer 分类类型"""
-
-    OFFICIAL = EnumField("official", label=_("官方"))
-    FEATURED = EnumField("featured", label=_("精选"))
-    DEVOPS = EnumField("devops", label=_("运维工具"))
-    MONITORING = EnumField("monitoring", label=_("监控告警"))
-    CONFIG_MANAGEMENT = EnumField("config_management", label=_("配置管理"))
-    DEV_TOOLS = EnumField("dev_tools", label=_("开发工具"))
-    OFFICE_APPS = EnumField("office_apps", label=_("办公应用"))
-    OPERATION_SUPPORT = EnumField("operation_support", label=_("运营支持"))
+# MCPServer 分类名称常量 - 用于判断特殊分类
+OFFICIAL_MCP_CATEGORY_NAME = "Official"
+FEATURED_MCP_CATEGORY_NAME = "Featured"
