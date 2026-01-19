@@ -101,7 +101,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		}
 
 		// 获取纯资源名列表和工具名映射
-		pureResourceNames := server.GetPureResourceNames()
+		pureResourceNames := server.GetResourceNames()
 		toolNameMap := server.GetToolNameMap()
 		toolNames := server.GetToolNames()
 

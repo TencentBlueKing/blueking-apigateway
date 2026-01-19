@@ -65,10 +65,9 @@ func (m *MCPServer) IsStreamableHTTP() bool {
 	return m.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP
 }
 
-// GetPureResourceNames 获取纯资源名称列表（去除工具名部分）
-// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
-// 返回：[resource_name_1, resource_name_2, resource_name_3]
-func (m *MCPServer) GetPureResourceNames() []string {
+// parseResourceNames 解析资源名列表的底层方法
+// position: 0 表示获取资源名（parts[0]），1 表示获取工具名（parts[1]）
+func (m *MCPServer) parseResourceNames(position int) []string {
 	if len(m.ResourceNames) == 0 {
 		return []string{}
 	}
@@ -77,28 +76,7 @@ func (m *MCPServer) GetPureResourceNames() []string {
 	for _, item := range m.ResourceNames {
 		if strings.Contains(item, ToolNameSeparator) {
 			parts := strings.SplitN(item, ToolNameSeparator, 2)
-			result = append(result, parts[0])
-		} else {
-			result = append(result, item)
-		}
-	}
-	return result
-}
-
-// GetToolNames 获取工具名列表（与 GetPureResourceNames 顺序对应）
-// 如果没有设置工具名，使用资源名
-// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
-// 返回：[resource_name_1, tool_name_2, tool_name_3]
-func (m *MCPServer) GetToolNames() []string {
-	if len(m.ResourceNames) == 0 {
-		return []string{}
-	}
-
-	result := make([]string, 0, len(m.ResourceNames))
-	for _, item := range m.ResourceNames {
-		if strings.Contains(item, ToolNameSeparator) {
-			parts := strings.SplitN(item, ToolNameSeparator, 2)
-			if len(parts) > 1 && parts[1] != "" {
+			if position == 1 && len(parts) > 1 && parts[1] != "" {
 				result = append(result, parts[1])
 			} else {
 				result = append(result, parts[0])
@@ -110,18 +88,40 @@ func (m *MCPServer) GetToolNames() []string {
 	return result
 }
 
+// GetResourceNames 获取资源名称列表（去除工具名部分）
+// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+// 返回：[resource_name_1, resource_name_2, resource_name_3]
+func (m *MCPServer) GetResourceNames() []string {
+	return m.parseResourceNames(0)
+}
+
+// GetToolNames 获取工具名列表（与 GetResourceNames 顺序对应）
+// 如果没有设置工具名，使用资源名
+// 数据库存储格式：resource_name_1;resource_name_2@tool_name_2;resource_name_3@tool_name_3
+// 返回：[resource_name_1, tool_name_2, tool_name_3]
+func (m *MCPServer) GetToolNames() []string {
+	return m.parseResourceNames(1)
+}
+
 // GetToolNameMap 生成资源名到工具名的映射
 // 返回：{resource_name_1: resource_name_1, resource_name_2: tool_name_2, resource_name_3: tool_name_3}
 func (m *MCPServer) GetToolNameMap() map[string]string {
-	pureResourceNames := m.GetPureResourceNames()
-	toolNames := m.GetToolNames()
+	if len(m.ResourceNames) == 0 {
+		return map[string]string{}
+	}
 
-	result := make(map[string]string, len(pureResourceNames))
-	for i, resourceName := range pureResourceNames {
-		if i < len(toolNames) {
-			result[resourceName] = toolNames[i]
+	result := make(map[string]string, len(m.ResourceNames))
+	for _, item := range m.ResourceNames {
+		if strings.Contains(item, ToolNameSeparator) {
+			parts := strings.SplitN(item, ToolNameSeparator, 2)
+			resourceName := parts[0]
+			if len(parts) > 1 && parts[1] != "" {
+				result[resourceName] = parts[1]
+			} else {
+				result[resourceName] = resourceName
+			}
 		} else {
-			result[resourceName] = resourceName
+			result[item] = item
 		}
 	}
 	return result
