@@ -16,11 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from rest_framework import serializers
 
-from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerProtocolTypeEnum,
+    MCPServerStatusEnum,
+)
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 
@@ -63,6 +68,20 @@ class MCPServerListInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListInputSLZ"
+
+
+def _get_active_categories_from_prefetch(obj) -> List:
+    """
+    从预加载的数据中获取激活的分类列表，避免 N+1 查询。
+
+    如果已经通过 prefetch_related 预加载了 categories，则在内存中过滤和排序；
+    否则回退到数据库查询。
+    """
+    # 使用预取的 categories 关系数据，在内存中过滤和排序
+    return sorted(
+        (cat for cat in obj.categories.all() if cat.is_active),
+        key=lambda cat: cat.sort_order,
+    )
 
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
@@ -122,17 +141,19 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return prompts_count_map.get(obj.id, 0)
 
     def get_categories(self, obj):
-        """获取分类信息"""
-        categories = obj.categories.filter(is_active=True).order_by("sort_order")
-        return MCPServerCategoryOutputSLZ(categories, many=True).data
+        """获取分类信息，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return MCPServerCategoryOutputSLZ(active_categories, many=True).data
 
     def get_is_official(self, obj) -> bool:
-        """是否为官方"""
-        return obj.is_official()
+        """是否为官方，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return any(cat.name == OFFICIAL_MCP_CATEGORY_NAME for cat in active_categories)
 
     def get_is_featured(self, obj) -> bool:
-        """是否为精选"""
-        return obj.is_featured()
+        """是否为精选，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return any(cat.name == FEATURED_MCP_CATEGORY_NAME for cat in active_categories)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):

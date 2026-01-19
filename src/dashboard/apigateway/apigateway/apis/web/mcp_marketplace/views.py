@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -80,7 +80,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         # 分类筛选
         category = slz.validated_data.get("category")
         if category:
-            queryset = queryset.filter(categories__name=category, categories__is_active=True)
+            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
 
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)
@@ -279,33 +279,35 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 class MCPMarketplaceCategoryListApi(generics.ListAPIView):
     """MCP 市场分类列表 API"""
 
-    queryset = MCPServerCategory.objects.filter(is_active=True).order_by("sort_order", "id")
     serializer_class = MCPServerCategoryOutputSLZ
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        # 获取用户租户 ID，用于过滤
+        user_tenant_id = get_user_tenant_id(request)
 
-        # 计算每个分类下的 MCPServer 数量
-        # 只统计公开、启用且网关和环境都是活跃状态的 MCPServer
-        category_stats = {}
-
-        # 获取符合条件的 MCPServer 查询集
-        valid_mcp_servers = MCPServer.objects.filter(
-            is_public=True,
-            status=MCPServerStatusEnum.ACTIVE.value,
-            gateway__status=GatewayStatusEnum.ACTIVE.value,
-            stage__status=StageStatusEnum.ACTIVE.value,
+        # 构建 MCPServer 过滤条件
+        mcp_server_filter = Q(
+            mcp_servers__is_public=True,
+            mcp_servers__status=MCPServerStatusEnum.ACTIVE.value,
+            mcp_servers__gateway__status=GatewayStatusEnum.ACTIVE.value,
+            mcp_servers__stage__status=StageStatusEnum.ACTIVE.value,
         )
 
-        # 应用租户过滤
-        user_tenant_id = get_user_tenant_id(request)
+        # 如果有租户过滤，添加租户条件
         if user_tenant_id:
-            valid_mcp_servers = gateway_mcp_server_filter_by_user_tenant_id(valid_mcp_servers, user_tenant_id)
+            mcp_server_filter &= Q(mcp_servers__gateway__tenant_id=user_tenant_id) | Q(
+                mcp_servers__gateway__tenant_mode="global"
+            )
 
-        # 统计每个分类的 MCPServer 数量
-        for category in queryset:
-            count = valid_mcp_servers.filter(categories=category, categories__is_active=True).distinct().count()
-            category_stats[category.id] = count
+        # 使用 annotate 一次性统计每个分类的 MCPServer 数量，避免 N+1 查询
+        queryset = (
+            MCPServerCategory.objects.filter(is_active=True)
+            .annotate(mcp_server_count=Count("mcp_servers", filter=mcp_server_filter, distinct=True))
+            .order_by("sort_order", "id")
+        )
+
+        # 构建统计数据字典
+        category_stats = {cat.id: cat.mcp_server_count for cat in queryset}
 
         serializer = self.get_serializer(queryset, many=True, context={"category_stats": category_stats})
         return OKJsonResponse(data=serializer.data)

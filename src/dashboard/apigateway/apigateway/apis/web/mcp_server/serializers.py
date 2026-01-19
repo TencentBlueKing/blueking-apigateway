@@ -23,6 +23,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -54,6 +56,35 @@ class MCPServerCategoryOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCategoryOutputSLZ"
+
+
+def validate_category_ids_common(category_ids: List[int]) -> List[int]:
+    """
+    通用的分类 ID 验证逻辑，检查分类是否存在且启用。
+
+    Args:
+        category_ids: 分类 ID 列表
+
+    Returns:
+        验证通过的分类 ID 列表
+
+    Raises:
+        serializers.ValidationError: 如果存在无效的分类 ID
+    """
+    if not category_ids:
+        return category_ids
+
+    # 检查分类是否存在且启用
+    valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+    valid_category_ids = set(valid_categories.values_list("id", flat=True))
+
+    invalid_ids = set(category_ids) - valid_category_ids
+    if invalid_ids:
+        raise serializers.ValidationError(
+            _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
+        )
+
+    return category_ids
 
 
 def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -190,20 +221,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
     def validate_category_ids(self, category_ids):
         """验证分类 ID 列表"""
-        if not category_ids:
-            return category_ids
-
-        # 检查分类是否存在且启用
-        valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
-        valid_category_ids = set(valid_categories.values_list("id", flat=True))
-
-        invalid_ids = set(category_ids) - valid_category_ids
-        if invalid_ids:
-            raise serializers.ValidationError(
-                _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
-            )
-
-        return category_ids
+        return validate_category_ids_common(category_ids)
 
     def create(self, validated_data):
         prompts = validated_data.pop("prompts", [])
@@ -288,17 +306,25 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return build_mcp_server_url(obj.name, obj.protocol_type)
 
     def get_categories(self, obj):
-        """获取分类信息"""
-        categories = obj.categories.filter(is_active=True).order_by("sort_order")
-        return MCPServerCategoryOutputSLZ(categories, many=True).data
+        """获取分类信息，利用预加载的数据避免 N+1 查询"""
+        # 使用预取的 categories 关系数据
+        categories = obj.categories.all()
+        # 在内存中过滤和排序
+        active_categories = sorted(
+            (cat for cat in categories if cat.is_active),
+            key=lambda cat: cat.sort_order,
+        )
+        return MCPServerCategoryOutputSLZ(active_categories, many=True).data
 
     def get_is_official(self, obj) -> bool:
-        """是否为官方"""
-        return obj.is_official()
+        """是否为官方，利用预加载的数据避免 N+1 查询"""
+        categories = obj.categories.all()
+        return any(cat.name == OFFICIAL_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
 
     def get_is_featured(self, obj) -> bool:
-        """是否为精选"""
-        return obj.is_featured()
+        """是否为精选，利用预加载的数据避免 N+1 查询"""
+        categories = obj.categories.all()
+        return any(cat.name == FEATURED_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -378,20 +404,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
     def validate_category_ids(self, category_ids):
         """验证分类 ID 列表"""
-        if not category_ids:
-            return category_ids
-
-        # 检查分类是否存在且启用
-        valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
-        valid_category_ids = set(valid_categories.values_list("id", flat=True))
-
-        invalid_ids = set(category_ids) - valid_category_ids
-        if invalid_ids:
-            raise serializers.ValidationError(
-                _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
-            )
-
-        return category_ids
+        return validate_category_ids_common(category_ids)
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"

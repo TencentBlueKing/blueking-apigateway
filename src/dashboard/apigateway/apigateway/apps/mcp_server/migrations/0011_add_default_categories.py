@@ -68,9 +68,19 @@ def create_default_categories(apps, schema_editor):
 
 
 def reverse_create_default_categories(apps, schema_editor):
-    """删除默认分类"""
+    """删除默认分类（仅删除本迁移中创建的分类，避免误删用户自定义分类）"""
     MCPServerCategory = apps.get_model('mcp_server', 'MCPServerCategory')
-    MCPServerCategory.objects.all().delete()
+    default_category_names = [
+        'Official',
+        'Featured',
+        'DevOps',
+        'Monitoring',
+        'ConfigManagement',
+        'DevTools',
+        'OfficeApps',
+        'OperationSupport',
+    ]
+    MCPServerCategory.objects.filter(name__in=default_category_names).delete()
 
 
 class Migration(migrations.Migration):
