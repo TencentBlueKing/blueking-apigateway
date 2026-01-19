@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -24,7 +24,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.django.translation import get_current_language_code
@@ -39,6 +39,7 @@ from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPServerCategoryOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRetrieveOutputSLZ,
@@ -76,16 +77,22 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
                 | Q(_labels__icontains=keyword)
             )
 
+        # 分类筛选
+        category = slz.validated_data.get("category")
+        if category:
+            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
+
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)
         if user_tenant_id:
             queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
 
-        # optimize query by using select_related
-        queryset = queryset.select_related("gateway", "stage")
+        # optimize query by using select_related and prefetch_related
+        queryset = queryset.select_related("gateway", "stage").prefetch_related("categories")
 
-        # order by updated_time desc
-        queryset = queryset.order_by("-updated_time")
+        # 排序
+        order_by = slz.validated_data.get("order_by", "-updated_time")
+        queryset = queryset.order_by(order_by)
 
         # note: the stage offline will update related mcp server status to inactive,
         # the stage publish will update the mcp server resource_names,
@@ -139,7 +146,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
     ),
 )
 class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
-    queryset = MCPServer.objects.all()
+    queryset = MCPServer.objects.select_related("gateway", "stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
@@ -259,3 +266,48 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCP 市场分类列表",
+        responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceCategoryListApi(generics.ListAPIView):
+    """MCP 市场分类列表 API"""
+
+    serializer_class = MCPServerCategoryOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        # 获取用户租户 ID，用于过滤
+        user_tenant_id = get_user_tenant_id(request)
+
+        # 构建 MCPServer 过滤条件
+        mcp_server_filter = Q(
+            mcp_servers__is_public=True,
+            mcp_servers__status=MCPServerStatusEnum.ACTIVE.value,
+            mcp_servers__gateway__status=GatewayStatusEnum.ACTIVE.value,
+            mcp_servers__stage__status=StageStatusEnum.ACTIVE.value,
+        )
+
+        # 如果有租户过滤，添加租户条件
+        if user_tenant_id:
+            mcp_server_filter &= Q(mcp_servers__gateway__tenant_id=user_tenant_id) | Q(
+                mcp_servers__gateway__tenant_mode="global"
+            )
+
+        # 使用 annotate 一次性统计每个分类的 MCPServer 数量，避免 N+1 查询
+        queryset = (
+            MCPServerCategory.objects.filter(is_active=True)
+            .annotate(mcp_server_count=Count("mcp_servers", filter=mcp_server_filter, distinct=True))
+            .order_by("sort_order", "id")
+        )
+
+        # 构建统计数据字典
+        category_stats = {cat.id: cat.mcp_server_count for cat in queryset}
+
+        serializer = self.get_serializer(queryset, many=True, context={"category_stats": category_stats})
+        return OKJsonResponse(data=serializer.data)

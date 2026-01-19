@@ -19,12 +19,15 @@
 from django.urls import include, path
 
 from .views import (
+    MCPMarketplaceCategoryListApi,
     MCPMarketplaceServerListApi,
     MCPMarketplaceServerRetrieveApi,
     MCPMarketplaceServerToolDocRetrieveApi,
 )
 
 urlpatterns = [
+    # 分类列表
+    path("categories/", MCPMarketplaceCategoryListApi.as_view(), name="mcp_marketplace.category.list"),
     path(
         "servers/",
         include(
@@ -50,5 +53,5 @@ urlpatterns = [
                 ),
             ]
         ),
-    )
+    ),
 ]
