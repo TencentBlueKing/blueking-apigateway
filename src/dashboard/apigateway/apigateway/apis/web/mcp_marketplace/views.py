@@ -15,10 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import base64
-import json
-from urllib.parse import quote
-
 from django.conf import settings
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
@@ -288,30 +284,6 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
     serializer_class = MCPServerConfigListOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
-    def _build_cursor_install_url(self, instance, mcp_url: str) -> str:
-        """
-        生成 Cursor 一键配置 URL
-
-        格式: cursor://anysphere.cursor-deeplink/mcp/install?name=<NAME>&config=<BASE64_CONFIG>
-        """
-        config = {
-            "url": mcp_url,
-            "headers": {
-                "X-Bkapi-Authorization": json.dumps(
-                    {
-                        "bk_app_code": "your_app_code",
-                        "bk_app_secret": "your_app_secret",
-                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
-                    }
-                )
-            },
-        }
-        config_json = json.dumps(config)
-        config_base64 = base64.b64encode(config_json.encode()).decode()
-        return (
-            f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(instance.name)}&config={quote(config_base64)}"
-        )
-
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -328,39 +300,7 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
         user_tenant_id = get_user_tenant_id(request)
         check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
 
-        language_code = get_current_language_code()
-        mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
-        configs = []
-
-        for tool in settings.MCP_CONFIG_TOOLS:
-            template_name = f"mcp_server/{language_code}/config/{tool['name']}.md"
-
-            context = {
-                "name": instance.name,
-                "url": mcp_url,
-                "description": instance.description,
-                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
-                "protocol_type": instance.protocol_type,
-            }
-
-            if tool["name"] == "aidev":
-                context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
-
-            content = render_to_string(template_name, context=context)
-
-            install_url = ""
-            if tool["name"] == "cursor":
-                install_url = self._build_cursor_install_url(instance, mcp_url)
-
-            configs.append(
-                {
-                    "name": tool["name"],
-                    "display_name": tool["display_name"],
-                    "content": content,
-                    "install_url": install_url,
-                }
-            )
-
+        configs = MCPServerHandler.build_agent_client_configs(instance)
         return OKJsonResponse(data={"configs": configs})
 
 

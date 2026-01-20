@@ -767,7 +767,7 @@ class TestMCPServerConfigListApi:
             return_value="# Config Content",
         )
         # 模拟配置了 AIDEV_AGENT_CREATE_URL（AIDev 启用）
-        settings.MCP_CONFIG_TOOLS = [
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
             {"name": "codebuddy", "display_name": "CodeBuddy"},
             {"name": "cursor", "display_name": "Cursor"},
             {"name": "claude", "display_name": "Claude"},

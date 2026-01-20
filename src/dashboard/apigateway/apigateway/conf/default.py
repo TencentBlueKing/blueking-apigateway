@@ -563,7 +563,7 @@ BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
 # MCP Server 配置工具列表
-MCP_CONFIG_TOOLS = [
+MCP_CONFIG_AGENT_CLIENTS = [
     {"name": "codebuddy", "display_name": "CodeBuddy"},
     {"name": "cursor", "display_name": "Cursor"},
     {"name": "claude", "display_name": "Claude"},
@@ -571,7 +571,7 @@ MCP_CONFIG_TOOLS = [
 
 # 如果配置了 AIDEV_AGENT_CREATE_URL，则添加 AIDev 到配置列表
 if AIDEV_AGENT_CREATE_URL:
-    MCP_CONFIG_TOOLS.append({"name": "aidev", "display_name": "AIDev"})
+    MCP_CONFIG_AGENT_CLIENTS.append({"name": "aidev", "display_name": "AIDev"})
 
 
 # ==============================================================================
