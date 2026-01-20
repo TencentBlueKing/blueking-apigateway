@@ -37,6 +37,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.core.models import Stage
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -323,6 +324,126 @@ class TestMCPServerListCreateApi:
         assert resp.status_code == 200
         assert len(result["data"]["results"]) >= 2
 
+    def test_list_with_stage_filter(self, request_view, fake_gateway, fake_stage):
+        """测试列表接口按环境筛选"""
+        # 创建另一个环境
+        other_stage = G(Stage, gateway=fake_gateway, name="other_stage")
+
+        # 创建两个不同环境的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_stage1",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServer,
+            name="server_stage2",
+            gateway=fake_gateway,
+            stage=other_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 按环境筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"stage_id": fake_stage.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        # 验证只返回指定环境的 MCPServer
+        for item in result["data"]["results"]:
+            assert item["stage"]["id"] == fake_stage.id
+
+    def test_list_with_label_filter(self, request_view, fake_gateway, fake_stage):
+        """测试列表接口按标签筛选"""
+        # 创建带标签的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_with_label",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server1.labels = ["important", "production"]
+        server1.save()
+
+        G(
+            MCPServer,
+            name="server_without_label",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 按标签筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"label": "important"},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["name"] == server1.name
+
+    def test_list_with_category_filter(self, request_view, fake_gateway, fake_stage, fake_categories):
+        """测试列表接口按分类筛选"""
+        # 创建带分类的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_with_category",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server1.categories.add(fake_categories["official"])
+
+        server2 = G(
+            MCPServer,
+            name="server_devops",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server2.categories.add(fake_categories["devops"])
+
+        # 按分类筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"category": OFFICIAL_MCP_CATEGORY_NAME},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["name"] == server1.name
+
+        # 筛选另一个分类
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"category": "DevOps"},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["name"] == server2.name
+
     def test_create_with_categories(self, mocker, request_view, fake_gateway, fake_stage, fake_categories):
         """测试创建 MCPServer 时设置分类"""
         mocker.patch(
@@ -591,6 +712,109 @@ class TestMCPServerGuidelineRetrieveApi:
 
         assert resp.status_code == 200
         assert "content" in result["data"]
+
+
+class TestMCPServerConfigListApi:
+    def test_retrieve_config_list(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试获取配置列表（默认 AIDEV 关闭）"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.views.render_to_string",
+            return_value="# Config Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.config_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "configs" in result["data"]
+        # 默认 AIDEV_ENABLED=False，只有 3 个配置项
+        assert len(result["data"]["configs"]) >= 3
+
+        # 验证基本配置项名称
+        config_names = [config["name"] for config in result["data"]["configs"]]
+        assert "cursor" in config_names
+        assert "codebuddy" in config_names
+        assert "claude" in config_names
+
+        # 验证每个配置项都有必要的字段
+        for config in result["data"]["configs"]:
+            assert "name" in config
+            assert "display_name" in config
+            assert "content" in config
+            assert "install_url" in config
+
+        # 验证 Cursor 有 install_url（一键配置链接）
+        cursor_config = next((c for c in result["data"]["configs"] if c["name"] == "cursor"), None)
+        assert cursor_config is not None
+        assert cursor_config["install_url"].startswith("cursor://anysphere.cursor-deeplink/mcp/install")
+
+        # 验证其他工具没有 install_url（暂不支持）
+        for config in result["data"]["configs"]:
+            if config["name"] != "cursor":
+                assert config["install_url"] == ""
+
+    def test_retrieve_config_list_with_aidev_enabled(
+        self, mocker, settings, request_view, fake_gateway, fake_mcp_server
+    ):
+        """测试获取配置列表（配置了 AIDEV_CREATE_URL）"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.views.render_to_string",
+            return_value="# Config Content",
+        )
+        # 模拟配置了 AIDEV_AGENT_CREATE_URL（AIDev 启用）
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "codebuddy", "display_name": "CodeBuddy"},
+            {"name": "cursor", "display_name": "Cursor"},
+            {"name": "claude", "display_name": "Claude"},
+            {"name": "aidev", "display_name": "AIDev"},
+        ]
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.config_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "configs" in result["data"]
+        assert len(result["data"]["configs"]) == 4
+
+        # 验证配置项名称包含 aidev
+        config_names = [config["name"] for config in result["data"]["configs"]]
+        assert "cursor" in config_names
+        assert "codebuddy" in config_names
+        assert "claude" in config_names
+        assert "aidev" in config_names
+
+    def test_retrieve_config_list_display_names(self, mocker, request_view, fake_gateway, fake_mcp_server):
+        """测试配置项显示名称"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_server.views.render_to_string",
+            return_value="# Config Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.config_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+
+        # 验证显示名称
+        config_map = {config["name"]: config["display_name"] for config in result["data"]["configs"]}
+        assert config_map["cursor"] == "Cursor"
+        assert config_map["codebuddy"] == "CodeBuddy"
+        assert config_map["claude"] == "Claude"
 
 
 class TestMCPServerToolDocRetrieveApi:

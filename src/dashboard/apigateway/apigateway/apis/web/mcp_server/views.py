@@ -66,7 +66,9 @@ from .serializers import (
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
     MCPServerCategoryOutputSLZ,
+    MCPServerConfigListOutputSLZ,
     MCPServerCreateInputSLZ,
+    MCPServerFilterOptionsOutputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
@@ -130,6 +132,21 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         filter_status = slz.validated_data.get("status")
         if filter_status is not None:
             queryset = queryset.filter(status=filter_status)
+
+        # 环境筛选
+        stage_id = slz.validated_data.get("stage_id")
+        if stage_id is not None:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        # 标签筛选
+        label = slz.validated_data.get("label")
+        if label:
+            queryset = queryset.filter(_labels__icontains=label)
+
+        # 分类筛选
+        category = slz.validated_data.get("category")
+        if category:
+            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
 
         # 排序（支持多字段排序，如 "-status,-updated_time"）
         order_by = slz.validated_data.get("order_by", "-status,-updated_time")
@@ -437,6 +454,27 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         slz = self.get_serializer({"content": content})
 
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerConfigListApi(generics.RetrieveAPIView):
+    """获取 MCPServer 配置列表，支持多种 AI 工具的配置"""
+
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerConfigListOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        configs = MCPServerHandler.build_agent_client_configs(instance)
+        return OKJsonResponse(data={"configs": configs})
 
 
 @method_decorator(
@@ -908,12 +946,14 @@ class MCPServerCategoriesListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_200_OK: MCPServerFilterOptionsOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerFilterOptionsApi(generics.ListAPIView):
     """获取 MCPServer 搜索过滤选项，用于前端下拉列表"""
+
+    serializer_class = MCPServerFilterOptionsOutputSLZ
 
     def list(self, request, *args, **kwargs):
         gateway = self.request.gateway

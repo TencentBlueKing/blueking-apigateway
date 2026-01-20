@@ -25,6 +25,7 @@ from .views import (
     MCPServerAppPermissionDestroyApi,
     MCPServerAppPermissionListCreateApi,
     MCPServerCategoriesListApi,
+    MCPServerConfigListApi,
     MCPServerFilterOptionsApi,
     MCPServerGuidelineRetrieveApi,
     MCPServerListCreateApi,
@@ -65,6 +66,7 @@ urlpatterns = [
                     ),
                 ),
                 path("guideline/", MCPServerGuidelineRetrieveApi.as_view(), name="mcp_server.guideline_retrieve"),
+                path("configs/", MCPServerConfigListApi.as_view(), name="mcp_server.config_list"),
                 path(
                     "user-custom-doc/",
                     MCPServerUserCustomDocApi.as_view(),

@@ -541,6 +541,57 @@ class TestMCPMarketplaceServerToolDocRetrieveApi:
         assert "content" in result["data"]
 
 
+class TestMCPMarketplaceServerConfigListApi:
+    def test_retrieve_config_list(self, mocker, request_view, fake_public_mcp_server):
+        """测试获取配置列表"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            return_value="# Config Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.config_list",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "configs" in result["data"]
+        assert len(result["data"]["configs"]) >= 3
+
+        # 验证配置项名称
+        config_names = [config["name"] for config in result["data"]["configs"]]
+        assert "cursor" in config_names
+        assert "codebuddy" in config_names
+        assert "claude" in config_names
+
+        # 验证每个配置项都有必要的字段
+        for config in result["data"]["configs"]:
+            assert "name" in config
+            assert "display_name" in config
+            assert "content" in config
+            assert "install_url" in config
+
+        # 验证 Cursor 有 install_url
+        cursor_config = next((c for c in result["data"]["configs"] if c["name"] == "cursor"), None)
+        assert cursor_config is not None
+        assert cursor_config["install_url"].startswith("cursor://anysphere.cursor-deeplink/mcp/install")
+
+    def test_retrieve_config_list_not_public(self, mocker, request_view, fake_public_mcp_server):
+        """测试未公开的 MCPServer 无法访问配置列表"""
+        fake_public_mcp_server.is_public = False
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.config_list",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+
+        assert resp.status_code == 404
+
+
 class TestMCPMarketplaceCategoryListApi:
     def test_list_categories(self, request_view, fake_categories):
         """测试分类列表接口"""

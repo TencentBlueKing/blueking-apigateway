@@ -15,13 +15,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import base64
 import datetime
 import json
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import quote
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 
 from apigateway.apps.mcp_server.constants import (
@@ -50,6 +54,7 @@ from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
@@ -402,6 +407,78 @@ class MCPServerHandler:
             return ""
 
         return extend.content
+
+    @staticmethod
+    def _build_cursor_install_url(name: str, mcp_url: str) -> str:
+        """
+        生成 Cursor 一键配置 URL
+
+        格式: cursor://anysphere.cursor-deeplink/mcp/install?name=<NAME>&config=<BASE64_CONFIG>
+        """
+        config = {
+            "url": mcp_url,
+            "headers": {
+                "X-Bkapi-Authorization": json.dumps(
+                    {
+                        "bk_app_code": "your_app_code",
+                        "bk_app_secret": "your_app_secret",
+                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                    }
+                )
+            },
+        }
+        config_json = json.dumps(config)
+        config_base64 = base64.b64encode(config_json.encode()).decode()
+        return f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(name)}&config={quote(config_base64)}"
+
+    @staticmethod
+    def build_agent_client_configs(instance: MCPServer) -> List[Dict[str, Any]]:
+        """
+        构建 MCPServer 的 Agent 客户端配置列表
+
+        Args:
+            instance: MCPServer 实例
+
+        Returns:
+            配置列表，每个配置包含 name, display_name, content, install_url
+        """
+        language_code = get_current_language_code()
+        mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
+        configs = []
+
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            template_name = f"mcp_server/{language_code}/config/{client['name']}.md"
+
+            # 构建模板上下文
+            context = {
+                "name": instance.name,
+                "url": mcp_url,
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "protocol_type": instance.protocol_type,
+            }
+
+            # AIDev 需要额外的创建链接
+            if client["name"] == "aidev":
+                context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
+
+            content = render_to_string(template_name, context=context)
+
+            # 生成一键配置 URL（目前只有 Cursor 支持）
+            install_url = ""
+            if client["name"] == "cursor":
+                install_url = MCPServerHandler._build_cursor_install_url(instance.name, mcp_url)
+
+            configs.append(
+                {
+                    "name": client["name"],
+                    "display_name": client["display_name"],
+                    "content": content,
+                    "install_url": install_url,
+                }
+            )
+
+        return configs
 
 
 class MCPServerPermissionHandler:

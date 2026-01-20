@@ -69,6 +69,12 @@ class MCPServerListInputSLZ(serializers.Serializer):
         required=False,
         help_text="MCPServer 状态筛选",
     )
+    stage_id = serializers.IntegerField(
+        required=False,
+        help_text="环境 ID 筛选",
+    )
+    label = serializers.CharField(allow_blank=True, required=False, help_text="标签筛选")
+    category = serializers.CharField(allow_blank=True, required=False, help_text="分类筛选，支持分类名称")
     order_by = serializers.ChoiceField(
         choices=[
             ("updated_time", "按更新时间排序"),
@@ -772,3 +778,30 @@ class MCPServerFilterOptionsOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerFilterOptionsOutputSLZ"
+
+
+class MCPServerConfigItemOutputSLZ(serializers.Serializer):
+    """MCPServer 单个配置项输出序列化器"""
+
+    name = serializers.CharField(read_only=True, help_text="配置名称（如 cursor, codebuddy, claude, aidev）")
+    display_name = serializers.CharField(read_only=True, help_text="配置显示名称")
+    content = serializers.CharField(read_only=True, help_text="配置内容（markdown 格式）")
+    install_url = serializers.CharField(
+        read_only=True, allow_blank=True, required=False, help_text="一键配置 URL（如果支持）"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigItemOutputSLZ"
+
+
+class MCPServerConfigListOutputSLZ(serializers.Serializer):
+    """MCPServer 配置列表输出序列化器"""
+
+    configs = serializers.ListField(
+        child=MCPServerConfigItemOutputSLZ(),
+        read_only=True,
+        help_text="配置列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigListOutputSLZ"
