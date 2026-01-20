@@ -17,6 +17,10 @@
 #
 
 
+import base64
+import json
+from urllib.parse import quote
+
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -66,7 +70,9 @@ from .serializers import (
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
     MCPServerCategoryOutputSLZ,
+    MCPServerConfigListOutputSLZ,
     MCPServerCreateInputSLZ,
+    MCPServerFilterOptionsOutputSLZ,
     MCPServerGuidelineOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
@@ -130,6 +136,21 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         filter_status = slz.validated_data.get("status")
         if filter_status is not None:
             queryset = queryset.filter(status=filter_status)
+
+        # 环境筛选
+        stage_id = slz.validated_data.get("stage_id")
+        if stage_id is not None:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        # 标签筛选
+        label = slz.validated_data.get("label")
+        if label:
+            queryset = queryset.filter(_labels__icontains=label)
+
+        # 分类筛选
+        category = slz.validated_data.get("category")
+        if category:
+            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
 
         # 排序（支持多字段排序，如 "-status,-updated_time"）
         order_by = slz.validated_data.get("order_by", "-status,-updated_time")
@@ -437,6 +458,92 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         slz = self.get_serializer({"content": content})
 
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerConfigListApi(generics.RetrieveAPIView):
+    """获取 MCPServer 配置列表，支持多种 AI 工具的配置"""
+
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerConfigListOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def _build_cursor_install_url(self, instance, mcp_url: str) -> str:
+        """
+        生成 Cursor 一键配置 URL
+
+        格式: cursor://anysphere.cursor-deeplink/mcp/install?name=<NAME>&config=<BASE64_CONFIG>
+        """
+        # 构建 Cursor 配置 JSON
+        config = {
+            "url": mcp_url,
+            "headers": {
+                "X-Bkapi-Authorization": json.dumps(
+                    {
+                        "bk_app_code": "your_app_code",
+                        "bk_app_secret": "your_app_secret",
+                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                    }
+                )
+            },
+        }
+
+        # 将配置转为 JSON 字符串并 Base64 编码
+        config_json = json.dumps(config)
+        config_base64 = base64.b64encode(config_json.encode()).decode()
+
+        # 构建 deeplink URL
+        return (
+            f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(instance.name)}&config={quote(config_base64)}"
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        language_code = get_current_language_code()
+        mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
+        configs = []
+
+        for tool in settings.MCP_CONFIG_TOOLS:
+            template_name = f"mcp_server/{language_code}/config/{tool['name']}.md"
+
+            # 构建模板上下文
+            context = {
+                "name": instance.name,
+                "url": mcp_url,
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "protocol_type": instance.protocol_type,
+            }
+
+            # AIDev 需要额外的创建链接
+            if tool["name"] == "aidev":
+                context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
+
+            content = render_to_string(template_name, context=context)
+
+            # 生成一键配置 URL（目前只有 Cursor 支持）
+            install_url = ""
+            if tool["name"] == "cursor":
+                install_url = self._build_cursor_install_url(instance, mcp_url)
+
+            configs.append(
+                {
+                    "name": tool["name"],
+                    "display_name": tool["display_name"],
+                    "content": content,
+                    "install_url": install_url,
+                }
+            )
+
+        return OKJsonResponse(data={"configs": configs})
 
 
 @method_decorator(
@@ -908,12 +1015,14 @@ class MCPServerCategoriesListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_200_OK: MCPServerFilterOptionsOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerFilterOptionsApi(generics.ListAPIView):
     """获取 MCPServer 搜索过滤选项，用于前端下拉列表"""
+
+    serializer_class = MCPServerFilterOptionsOutputSLZ
 
     def list(self, request, *args, **kwargs):
         gateway = self.request.gateway
