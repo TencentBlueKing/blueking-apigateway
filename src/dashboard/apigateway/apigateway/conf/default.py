@@ -567,6 +567,7 @@ MCP_CONFIG_AGENT_CLIENTS = [
     {"name": "codebuddy", "display_name": "CodeBuddy"},
     {"name": "cursor", "display_name": "Cursor"},
     {"name": "claude", "display_name": "Claude"},
+    {"name": "vscode", "display_name": "VSCode"},
 ]
 
 # 如果配置了 AIDEV_AGENT_CREATE_URL，则添加 AIDev 到配置列表
