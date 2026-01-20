@@ -58,6 +58,36 @@ class MCPServerCategoryOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCategoryOutputSLZ"
 
 
+class MCPServerListInputSLZ(serializers.Serializer):
+    """MCPServer 列表查询输入序列化器"""
+
+    keyword = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
+    )
+    status = serializers.ChoiceField(
+        choices=MCPServerStatusEnum.get_choices(),
+        required=False,
+        help_text="MCPServer 状态筛选",
+    )
+    order_by = serializers.ChoiceField(
+        choices=[
+            ("updated_time", "按更新时间排序"),
+            ("-updated_time", "按更新时间倒序"),
+            ("created_time", "按创建时间排序"),
+            ("-created_time", "按创建时间倒序"),
+            ("name", "按名称字母顺序排序"),
+            ("-name", "按名称字母倒序排序"),
+            ("-status", "按状态排序（启用优先）"),
+        ],
+        default="-status,-updated_time",
+        required=False,
+        help_text="排序方式",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListInputSLZ"
+
+
 def validate_category_ids_common(category_ids: List[int]) -> List[int]:
     """
     通用的分类 ID 验证逻辑，检查分类是否存在且启用。
@@ -719,3 +749,26 @@ class MCPServerRemotePromptsBatchOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsBatchOutputSLZ"
+
+
+class MCPServerFilterOptionsOutputSLZ(serializers.Serializer):
+    """MCPServer 搜索过滤选项输出序列化器，用于前端下拉列表"""
+
+    stages = serializers.ListField(
+        child=serializers.DictField(),
+        read_only=True,
+        help_text="可用的环境列表",
+    )
+    labels = serializers.ListField(
+        child=serializers.CharField(),
+        read_only=True,
+        help_text="所有可用的标签列表",
+    )
+    categories = serializers.ListField(
+        child=serializers.DictField(),
+        read_only=True,
+        help_text="可用的分类列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerFilterOptionsOutputSLZ"
