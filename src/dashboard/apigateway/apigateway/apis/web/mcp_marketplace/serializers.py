@@ -60,6 +60,8 @@ class MCPServerListInputSLZ(serializers.Serializer):
             ("-updated_time", "按更新时间倒序"),
             ("created_time", "按创建时间排序"),
             ("-created_time", "按创建时间倒序"),
+            ("name", "按名称字母顺序排序"),
+            ("-name", "按名称字母倒序排序"),
         ],
         default="-updated_time",
         required=False,

@@ -219,6 +219,57 @@ class TestMCPMarketplaceServerListApi:
         assert resp.status_code == 200
         assert len(result["data"]["results"]) >= 2
 
+    def test_list_with_order_by_name(self, request_view, fake_public_mcp_server):
+        """测试按名称字母顺序排序"""
+        # 创建多个 mcp_server 用于测试排序
+        server_a = G(
+            MCPServer,
+            name="aaa_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        server_z = G(
+            MCPServer,
+            name="zzz_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        # 测试按名称正序排序
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"order_by": "name"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        results = result["data"]["results"]
+        assert len(results) >= 3
+
+        # 验证 aaa_server 在 zzz_server 之前
+        names = [item["name"] for item in results]
+        assert names.index("aaa_server") < names.index("zzz_server")
+
+        # 测试按名称倒序排序
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"order_by": "-name"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        results = result["data"]["results"]
+
+        # 验证 zzz_server 在 aaa_server 之前
+        names = [item["name"] for item in results]
+        assert names.index("zzz_server") < names.index("aaa_server")
+
     def test_list_with_prompts_count(self, request_view, fake_public_mcp_server):
         """测试列表接口返回 prompts_count"""
         # 给 mcp_server 添加 prompts

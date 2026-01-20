@@ -19,6 +19,7 @@
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -67,6 +68,7 @@ from .serializers import (
     MCPServerCategoryOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerGuidelineOutputSLZ,
+    MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRemotePromptsBatchInputSLZ,
     MCPServerRemotePromptsBatchOutputSLZ,
@@ -89,6 +91,7 @@ from .serializers import (
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取网关的 MCPServer 列表",
+        query_serializer=MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -104,12 +107,34 @@ from .serializers import (
 )
 class MCPServerListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
+        slz = MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
         queryset = (
             MCPServer.objects.filter(gateway=self.request.gateway)
             .select_related("stage")
             .prefetch_related("categories")
-            .order_by("-status", "-updated_time")
         )
+
+        # 关键词搜索
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(
+                Q(name__icontains=keyword)
+                | Q(title__icontains=keyword)
+                | Q(description__icontains=keyword)
+                | Q(_labels__icontains=keyword)
+            )
+
+        # 状态筛选
+        filter_status = slz.validated_data.get("status")
+        if filter_status is not None:
+            queryset = queryset.filter(status=filter_status)
+
+        # 排序（支持多字段排序，如 "-status,-updated_time"）
+        order_by = slz.validated_data.get("order_by", "-status,-updated_time")
+        order_fields = [field.strip() for field in order_by.split(",") if field.strip()]
+        queryset = queryset.order_by(*order_fields) if order_fields else queryset.order_by("-status", "-updated_time")
 
         page = self.paginate_queryset(queryset)
 
@@ -877,3 +902,44 @@ class MCPServerCategoriesListApi(generics.ListAPIView):
 
         slz = MCPServerCategoryOutputSLZ(queryset, many=True)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerFilterOptionsApi(generics.ListAPIView):
+    """获取 MCPServer 搜索过滤选项，用于前端下拉列表"""
+
+    def list(self, request, *args, **kwargs):
+        gateway = self.request.gateway
+
+        # 获取环境列表
+        stages = [
+            {"id": stage.id, "name": stage.name} for stage in Stage.objects.filter(gateway=gateway).order_by("id")
+        ]
+
+        # 获取所有标签（从该网关的 MCPServer 中提取所有唯一标签）
+        mcp_servers = MCPServer.objects.filter(gateway=gateway)
+        labels_set = set()
+        for mcp_server in mcp_servers:
+            if mcp_server.labels:
+                labels_set.update(mcp_server.labels)
+        labels = sorted(labels_set)
+
+        categories = [
+            {"id": cat.id, "name": cat.name, "display_name": cat.display_name}
+            for cat in MCPServerCategory.objects.filter(is_active=True).order_by("sort_order", "id")
+        ]
+
+        return OKJsonResponse(
+            data={
+                "stages": stages,
+                "labels": labels,
+                "categories": categories,
+            }
+        )
