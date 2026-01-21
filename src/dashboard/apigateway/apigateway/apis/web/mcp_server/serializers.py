@@ -74,7 +74,7 @@ class MCPServerListInputSLZ(serializers.Serializer):
         help_text="环境 ID 筛选",
     )
     label = serializers.CharField(allow_blank=True, required=False, help_text="标签筛选")
-    category = serializers.CharField(
+    categories = serializers.CharField(
         allow_blank=True, required=False, help_text="分类筛选，支持单个或多个分类名称，多个分类以逗号分隔"
     )
     order_by = serializers.ChoiceField(
@@ -95,7 +95,7 @@ class MCPServerListInputSLZ(serializers.Serializer):
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListInputSLZ"
 
-    def validate_category(self, value):
+    def validate_categories(self, value):
         """解析分类参数，支持多个分类名称（逗号分隔）"""
         if not value:
             return []

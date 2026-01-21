@@ -79,7 +79,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
             )
 
         # 分类筛选（支持多个分类）
-        categories = slz.validated_data.get("category")
+        categories = slz.validated_data.get("categories")
         if categories:
             queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 

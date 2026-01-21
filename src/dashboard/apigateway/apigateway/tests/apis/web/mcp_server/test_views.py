@@ -421,7 +421,7 @@ class TestMCPServerListCreateApi:
             method="GET",
             view_name="mcp_server.list_create",
             path_params={"gateway_id": fake_gateway.id},
-            data={"category": OFFICIAL_MCP_CATEGORY_NAME},
+            data={"categories": OFFICIAL_MCP_CATEGORY_NAME},
             gateway=fake_gateway,
         )
         result = resp.json()
@@ -435,7 +435,7 @@ class TestMCPServerListCreateApi:
             method="GET",
             view_name="mcp_server.list_create",
             path_params={"gateway_id": fake_gateway.id},
-            data={"category": "DevOps"},
+            data={"categories": "DevOps"},
             gateway=fake_gateway,
         )
         result = resp.json()
@@ -479,7 +479,7 @@ class TestMCPServerListCreateApi:
             method="GET",
             view_name="mcp_server.list_create",
             path_params={"gateway_id": fake_gateway.id},
-            data={"category": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
+            data={"categories": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
             gateway=fake_gateway,
         )
         result = resp.json()
@@ -520,7 +520,7 @@ class TestMCPServerListCreateApi:
             method="GET",
             view_name="mcp_server.list_create",
             path_params={"gateway_id": fake_gateway.id},
-            data={"category": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
+            data={"categories": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
             gateway=fake_gateway,
         )
         result = resp.json()
@@ -545,7 +545,7 @@ class TestMCPServerListCreateApi:
             method="GET",
             view_name="mcp_server.list_create",
             path_params={"gateway_id": fake_gateway.id},
-            data={"category": ""},
+            data={"categories": ""},
             gateway=fake_gateway,
         )
         result = resp.json()

@@ -165,7 +165,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": OFFICIAL_MCP_CATEGORY_NAME},
+            data={"categories": OFFICIAL_MCP_CATEGORY_NAME},
         )
         result = resp.json()
 
@@ -177,7 +177,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": "DevOps"},
+            data={"categories": "DevOps"},
         )
         result = resp.json()
 
@@ -215,7 +215,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
+            data={"categories": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
         )
         result = resp.json()
 
@@ -249,7 +249,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
+            data={"categories": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
         )
         result = resp.json()
 
@@ -265,7 +265,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": ""},
+            data={"categories": ""},
         )
         result = resp.json()
 
