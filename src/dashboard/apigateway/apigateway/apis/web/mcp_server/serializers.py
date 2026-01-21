@@ -74,7 +74,9 @@ class MCPServerListInputSLZ(serializers.Serializer):
         help_text="环境 ID 筛选",
     )
     label = serializers.CharField(allow_blank=True, required=False, help_text="标签筛选")
-    category = serializers.CharField(allow_blank=True, required=False, help_text="分类筛选，支持分类名称")
+    categories = serializers.CharField(
+        allow_blank=True, required=False, help_text="分类筛选，支持单个或多个分类名称，多个分类以逗号分隔"
+    )
     order_by = serializers.ChoiceField(
         choices=[
             ("updated_time", "按更新时间排序"),
@@ -92,6 +94,13 @@ class MCPServerListInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListInputSLZ"
+
+    def validate_categories(self, value):
+        """解析分类参数，支持多个分类名称（逗号分隔）"""
+        if not value:
+            return []
+        # 解析逗号分隔的分类名称，去除空白
+        return [cat.strip() for cat in value.split(",") if cat.strip()]
 
 
 def validate_category_ids_common(category_ids: List[int]) -> List[int]:
