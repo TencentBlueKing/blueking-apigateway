@@ -143,10 +143,10 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         if label:
             queryset = queryset.filter(_labels__icontains=label)
 
-        # 分类筛选
-        category = slz.validated_data.get("category")
-        if category:
-            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
+        # 分类筛选（支持多个分类）
+        categories = slz.validated_data.get("categories")
+        if categories:
+            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 
         # 排序（支持多字段排序，如 "-status,-updated_time"）
         order_by = slz.validated_data.get("order_by", "-status,-updated_time")
