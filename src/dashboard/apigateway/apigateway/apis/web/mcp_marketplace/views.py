@@ -78,10 +78,10 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
                 | Q(_labels__icontains=keyword)
             )
 
-        # 分类筛选
-        category = slz.validated_data.get("category")
-        if category:
-            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
+        # 分类筛选（支持多个分类）
+        categories = slz.validated_data.get("category")
+        if categories:
+            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)

@@ -23,6 +23,7 @@ from ddf import G
 
 from apigateway.apis.web.mcp_server.serializers import (
     MCPServerCreateInputSLZ,
+    MCPServerListInputSLZ,
     MCPServerUpdateInputSLZ,
 )
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
@@ -263,3 +264,72 @@ class TestMCPServerUpdateInputSLZ:
         )
         assert slz.is_valid(), slz.errors
         assert "resource_names" not in slz.validated_data
+
+
+class TestMCPServerListInputSLZ:
+    """测试 MCPServerListInputSLZ 序列化器"""
+
+    def test_validate_category_single(self):
+        """测试单个分类"""
+        data = {"category": "official"}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["category"] == ["official"]
+
+    def test_validate_category_multiple(self):
+        """测试多个分类（逗号分隔）"""
+        data = {"category": "official,DevOps,featured"}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["category"] == ["official", "DevOps", "featured"]
+
+    def test_validate_category_multiple_with_spaces(self):
+        """测试多个分类带空格"""
+        data = {"category": " official , DevOps , featured "}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["category"] == ["official", "DevOps", "featured"]
+
+    def test_validate_category_empty_string(self):
+        """测试空字符串"""
+        data = {"category": ""}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["category"] == []
+
+    def test_validate_category_not_provided(self):
+        """测试未提供分类参数"""
+        data = {}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        # 未提供时，category 字段不在 validated_data 中或为空列表
+        category = slz.validated_data.get("category")
+        assert category is None or category == []
+
+    def test_validate_category_with_empty_segments(self):
+        """测试带空段的分类（如 'official,,DevOps'）"""
+        data = {"category": "official,,DevOps,"}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        # 空段应该被过滤掉
+        assert slz.validated_data["category"] == ["official", "DevOps"]
+
+    def test_validate_category_only_spaces(self):
+        """测试只有空格的分类"""
+        data = {"category": "   "}
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["category"] == []
+
+    def test_validate_category_with_other_params(self):
+        """测试分类与其他参数一起使用"""
+        data = {
+            "keyword": "test",
+            "category": "official,DevOps",
+            "order_by": "-updated_time",
+        }
+        slz = MCPServerListInputSLZ(data=data)
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["keyword"] == "test"
+        assert slz.validated_data["category"] == ["official", "DevOps"]
+        assert slz.validated_data["order_by"] == "-updated_time"

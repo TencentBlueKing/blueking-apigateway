@@ -444,6 +444,115 @@ class TestMCPServerListCreateApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["name"] == server2.name
 
+    def test_list_with_multiple_categories_filter(self, request_view, fake_gateway, fake_stage, fake_categories):
+        """测试列表接口按多个分类筛选（逗号分隔）"""
+        # 创建带分类的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_official",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server1.categories.add(fake_categories["official"])
+
+        server2 = G(
+            MCPServer,
+            name="server_devops",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server2.categories.add(fake_categories["devops"])
+
+        # 创建无分类的 MCPServer
+        server3 = G(
+            MCPServer,
+            name="server_no_category",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 筛选多个分类
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"category": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+        result_names = [item["name"] for item in result["data"]["results"]]
+        assert server1.name in result_names
+        assert server2.name in result_names
+        # 无分类的 server 不应该在结果中
+        assert server3.name not in result_names
+
+    def test_list_with_multiple_categories_filter_with_spaces(
+        self, request_view, fake_gateway, fake_stage, fake_categories
+    ):
+        """测试列表接口按多个分类筛选（带空格）"""
+        # 创建带分类的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_official",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server1.categories.add(fake_categories["official"])
+
+        server2 = G(
+            MCPServer,
+            name="server_devops",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server2.categories.add(fake_categories["devops"])
+
+        # 筛选多个分类（带空格，验证空格会被正确处理）
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"category": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+
+    def test_list_with_empty_category_filter(self, request_view, fake_gateway, fake_stage, fake_categories):
+        """测试列表接口空分类筛选"""
+        # 创建带分类的 MCPServer
+        server1 = G(
+            MCPServer,
+            name="server_official",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server1.categories.add(fake_categories["official"])
+
+        # 空分类应该返回所有结果
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"category": ""},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] >= 1
+
     def test_create_with_categories(self, mocker, request_view, fake_gateway, fake_stage, fake_categories):
         """测试创建 MCPServer 时设置分类"""
         mocker.patch(
