@@ -42,7 +42,16 @@ urlpatterns = [
                     include(
                         [
                             # GET /api/v2/inner/gateways/{gateway_name}/
-                            path("", views.GatewayRetrieveApi.as_view(), name="openapi.v2.inner.gateway.retrieve"),
+                            # DELETE /api/v2/inner/gateways/{gateway_name}/
+                            path(
+                                "", views.GatewayRetrieveDestroyApi.as_view(), name="openapi.v2.inner.gateway.retrieve"
+                            ),
+                            # PUT /api/v2/inner/gateways/{gateway_name}/status/
+                            path(
+                                "status/",
+                                views.GatewayUpdateStatusApi.as_view(),
+                                name="openapi.v2.inner.gateway.update_status",
+                            ),
                             path(
                                 "permissions/",
                                 include(

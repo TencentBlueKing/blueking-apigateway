@@ -25,6 +25,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -40,7 +41,8 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.mcp_server import MCPServerPermissionHandler
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
@@ -49,8 +51,9 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway
+from apigateway.controller.publisher.publish import trigger_gateway_publish
+from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.models import Gateway, Release
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -126,7 +129,21 @@ class GatewayListApi(generics.ListAPIView):
         tags=["OpenAPI.V2.Inner"],
     ),
 )
-class GatewayRetrieveApi(generics.RetrieveAPIView):
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="删除网关，仅支持 bp- 开头的网关",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
+    """
+    获取/删除网关
+    - 删除：网关必须处于停用状态才能删除
+    - 删除：仅支持 bp- 开头的网关，避免误操作
+    """
+
     permission_classes = [OpenAPIV2GatewayNamePermission]
     serializer_class = serializers.GatewayRetrieveOutputSLZ
     lookup_url_kwarg = "gateway_name"
@@ -139,6 +156,37 @@ class GatewayRetrieveApi(generics.RetrieveAPIView):
         instance = self.get_object()
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
+
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 校验网关名称前缀
+        _validate_gateway_name_prefix(instance.name)
+
+        instance_id = instance.id
+
+        # 网关为"停用"状态，才可以删除
+        if instance.is_active:
+            raise error_codes.FAILED_PRECONDITION.format(_("请先停用网关，然后再删除。"), replace=True)
+
+        # 触发网关删除发布，只对已发布的 stage 进行下架
+        # is_sync=True 因为需要先删除环境再删除数据库数据，否则异步任务会失败
+        released_stage_ids = Release.objects.filter(gateway_id=instance_id).values_list("stage_id", flat=True)
+        for stage_id in released_stage_ids:
+            trigger_gateway_publish(
+                PublishSourceEnum.GATEWAY_DELETE,
+                request.user.username,
+                instance_id,
+                stage_id,
+                is_sync=True,
+                user_credentials=None,
+            )
+
+        # 删除网关及相关数据
+        GatewayHandler.delete_gateway(instance_id)
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
@@ -706,3 +754,73 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         slz = self.get_serializer(mcp_server_permission_record)
         return OKJsonResponse(data=slz.data)
+
+
+# ===================== 网关状态变更/删除 API =====================
+
+# 状态变更和删除操作限制只能操作 bp- 开头的网关，避免误操作
+GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX = "bp-"
+
+
+def _validate_gateway_name_prefix(gateway_name: str) -> None:
+    """校验网关名称前缀，状态变更和删除操作只允许操作 bp- 开头的网关"""
+    if not gateway_name.startswith(GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX):
+        raise error_codes.INVALID_ARGUMENT.format(
+            _("只允许操作以 '{prefix}' 开头的网关，当前网关名称：{name}").format(
+                prefix=GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX, name=gateway_name
+            ),
+            replace=True,
+        )
+
+
+@method_decorator(
+    name="put",
+    decorator=swagger_auto_schema(
+        operation_description="更新网关状态（停用/启用），仅支持 bp- 开头的网关",
+        request_body=serializers.GatewayUpdateStatusInputSLZ,
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class GatewayUpdateStatusApi(generics.UpdateAPIView):
+    """
+    更新网关状态
+    - 停用网关：status=0
+    - 启用网关：status=1
+    - 仅支持 bp- 开头的网关，避免误操作
+    """
+
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = serializers.GatewayUpdateStatusInputSLZ
+    lookup_url_kwarg = "gateway_name"
+    lookup_field = "name"
+
+    def get_queryset(self):
+        return Gateway.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 校验网关名称前缀
+        _validate_gateway_name_prefix(instance.name)
+
+        slz = self.get_serializer(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        new_status = slz.validated_data["status"]
+        is_need_publish = new_status != instance.status
+
+        # 更新网关状态
+        instance.status = new_status
+        instance.save(update_fields=["status", "updated_time"])
+
+        # 网关停用时，将网关下所有 MCPServer 设置为停用
+        if new_status == GatewayStatusEnum.INACTIVE.value:
+            MCPServerHandler.disable_servers(gateway_id=instance.id)
+
+        # 触发网关发布
+        if is_need_publish:
+            source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
+            trigger_gateway_publish(source, request.user.username, instance.id, user_credentials=None)
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

@@ -380,3 +380,161 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
         assert record_data["id"] == apply_record.id
         assert "approval_url" in record_data
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
+
+
+class TestGatewayUpdateStatusApi:
+    """测试网关状态更新接口（停用/启用）"""
+
+    def test_update_status_with_invalid_gateway_name_prefix(self, request_to_view, request_factory, fake_gateway):
+        """测试非 bp- 开头的网关不允许操作"""
+        fake_gateway.name = "test-gateway"  # 不是 bp- 开头
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        request = request_factory.put("", data={"status": 0}, content_type="application/json")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 400
+        assert "bp-" in result["error"]["message"]
+
+    def test_disable_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
+        """测试停用 bp- 开头的网关成功"""
+        fake_gateway.name = "bp-test-gateway"
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        # Mock 触发发布
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.trigger_gateway_publish",
+            return_value=None,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.MCPServerHandler.disable_servers",
+            return_value=None,
+        )
+
+        request = request_factory.put("", data={"status": 0}, content_type="application/json")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 204
+
+        # 验证网关状态已更新
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.status == GatewayStatusEnum.INACTIVE.value
+
+    def test_enable_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
+        """测试启用 bp- 开头的网关成功"""
+        fake_gateway.name = "bp-test-gateway"
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+
+        # Mock 触发发布
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.trigger_gateway_publish",
+            return_value=None,
+        )
+
+        request = request_factory.put("", data={"status": 1}, content_type="application/json")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.update_status",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 204
+
+        # 验证网关状态已更新
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.status == GatewayStatusEnum.ACTIVE.value
+
+
+class TestGatewayDestroyApi:
+    """测试网关删除接口"""
+
+    def test_destroy_with_invalid_gateway_name_prefix(self, request_to_view, request_factory, fake_gateway):
+        """测试非 bp- 开头的网关不允许删除"""
+        fake_gateway.name = "test-gateway"  # 不是 bp- 开头
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+
+        request = request_factory.delete("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.retrieve",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 400
+        assert "bp-" in result["error"]["message"]
+
+    def test_destroy_active_gateway_failed(self, request_to_view, request_factory, fake_gateway):
+        """测试删除启用状态的网关失败"""
+        fake_gateway.name = "bp-test-gateway"
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        request = request_factory.delete("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.retrieve",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 400
+        assert "停用" in result["error"]["message"]
+
+    def test_destroy_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
+        """测试删除 bp- 开头的停用网关成功"""
+        fake_gateway.name = "bp-test-gateway"
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+
+        gateway_id = fake_gateway.id
+
+        # Mock 触发发布和删除网关
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.trigger_gateway_publish",
+            return_value=None,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.GatewayHandler.delete_gateway",
+            return_value=None,
+        )
+
+        request = request_factory.delete("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.retrieve",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+
+        assert response.status_code == 204
