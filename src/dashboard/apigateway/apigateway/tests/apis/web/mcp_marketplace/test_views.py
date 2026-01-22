@@ -165,7 +165,7 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": OFFICIAL_MCP_CATEGORY_NAME},
+            data={"categories": OFFICIAL_MCP_CATEGORY_NAME},
         )
         result = resp.json()
 
@@ -177,13 +177,100 @@ class TestMCPMarketplaceServerListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
-            data={"category": "DevOps"},
+            data={"categories": "DevOps"},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["id"] == other_server.id
+
+    def test_list_with_multiple_categories_filter(self, request_view, fake_public_mcp_server, fake_categories):
+        """测试多分类筛选（逗号分隔）"""
+        # 给 mcp_server 添加分类
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 创建另一个不同分类的 mcp_server
+        other_server = G(
+            MCPServer,
+            name="other_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        other_server.categories.add(fake_categories["devops"])
+
+        # 创建第三个无分类的 mcp_server
+        no_category_server = G(
+            MCPServer,
+            name="no_category_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        # 筛选多个分类（官方 + 运维工具）
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"categories": f"{OFFICIAL_MCP_CATEGORY_NAME},DevOps"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+        result_ids = [item["id"] for item in result["data"]["results"]]
+        assert fake_public_mcp_server.id in result_ids
+        assert other_server.id in result_ids
+        # 无分类的 server 不应该在结果中
+        assert no_category_server.id not in result_ids
+
+    def test_list_with_multiple_categories_filter_with_spaces(
+        self, request_view, fake_public_mcp_server, fake_categories
+    ):
+        """测试多分类筛选（带空格）"""
+        # 给 mcp_server 添加分类
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 创建另一个不同分类的 mcp_server
+        other_server = G(
+            MCPServer,
+            name="other_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        other_server.categories.add(fake_categories["devops"])
+
+        # 筛选多个分类（带空格）
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"categories": f" {OFFICIAL_MCP_CATEGORY_NAME} , DevOps "},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+
+    def test_list_with_empty_category_filter(self, request_view, fake_public_mcp_server, fake_categories):
+        """测试空分类筛选"""
+        # 给 mcp_server 添加分类
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 空分类应该返回所有结果
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"categories": ""},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] >= 1
 
     def test_list_with_order_by(self, request_view, fake_public_mcp_server):
         """测试排序功能"""
@@ -218,6 +305,57 @@ class TestMCPMarketplaceServerListApi:
 
         assert resp.status_code == 200
         assert len(result["data"]["results"]) >= 2
+
+    def test_list_with_order_by_name(self, request_view, fake_public_mcp_server):
+        """测试按名称字母顺序排序"""
+        # 创建多个 mcp_server 用于测试排序
+        server_a = G(
+            MCPServer,
+            name="aaa_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        server_z = G(
+            MCPServer,
+            name="zzz_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        # 测试按名称正序排序
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"order_by": "name"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        results = result["data"]["results"]
+        assert len(results) >= 3
+
+        # 验证 aaa_server 在 zzz_server 之前
+        names = [item["name"] for item in results]
+        assert names.index("aaa_server") < names.index("zzz_server")
+
+        # 测试按名称倒序排序
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+            data={"order_by": "-name"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        results = result["data"]["results"]
+
+        # 验证 zzz_server 在 aaa_server 之前
+        names = [item["name"] for item in results]
+        assert names.index("zzz_server") < names.index("aaa_server")
 
     def test_list_with_prompts_count(self, request_view, fake_public_mcp_server):
         """测试列表接口返回 prompts_count"""
@@ -488,6 +626,57 @@ class TestMCPMarketplaceServerToolDocRetrieveApi:
 
         assert resp.status_code == 200
         assert "content" in result["data"]
+
+
+class TestMCPMarketplaceServerConfigListApi:
+    def test_retrieve_config_list(self, mocker, request_view, fake_public_mcp_server):
+        """测试获取配置列表"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            return_value="# Config Content",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.config_list",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "configs" in result["data"]
+        assert len(result["data"]["configs"]) >= 3
+
+        # 验证配置项名称
+        config_names = [config["name"] for config in result["data"]["configs"]]
+        assert "cursor" in config_names
+        assert "codebuddy" in config_names
+        assert "claude" in config_names
+
+        # 验证每个配置项都有必要的字段
+        for config in result["data"]["configs"]:
+            assert "name" in config
+            assert "display_name" in config
+            assert "content" in config
+            assert "install_url" in config
+
+        # 验证 Cursor 有 install_url
+        cursor_config = next((c for c in result["data"]["configs"] if c["name"] == "cursor"), None)
+        assert cursor_config is not None
+        assert cursor_config["install_url"].startswith("cursor://anysphere.cursor-deeplink/mcp/install")
+
+    def test_retrieve_config_list_not_public(self, mocker, request_view, fake_public_mcp_server):
+        """测试未公开的 MCPServer 无法访问配置列表"""
+        fake_public_mcp_server.is_public = False
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.config_list",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+
+        assert resp.status_code == 404
 
 
 class TestMCPMarketplaceCategoryListApi:

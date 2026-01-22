@@ -23,6 +23,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.web.mcp_server.serializers import MCPServerConfigListOutputSLZ
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.gateway.type import GatewayTypeHandler
@@ -77,10 +78,10 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
                 | Q(_labels__icontains=keyword)
             )
 
-        # 分类筛选
-        category = slz.validated_data.get("category")
-        if category:
-            queryset = queryset.filter(categories__name=category, categories__is_active=True).distinct()
+        # 分类筛选（支持多个分类）
+        categories = slz.validated_data.get("categories")
+        if categories:
+            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)
@@ -266,6 +267,41 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 
         slz = MCPServerToolDocOutputSLZ(doc)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
+    """获取 MCP 市场中某个 Server 的配置列表"""
+
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerConfigListOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 验证 MCPServer 访问权限
+        if not instance.is_public:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未公开，无法访问。"))
+        if instance.status != MCPServerStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未启用，无法访问。"))
+        if instance.gateway.status != GatewayStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关未启用，无法访问。"))
+        if instance.stage.status != StageStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
+
+        user_tenant_id = get_user_tenant_id(request)
+        check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
+
+        configs = MCPServerHandler.build_agent_client_configs(instance)
+        return OKJsonResponse(data={"configs": configs})
 
 
 @method_decorator(

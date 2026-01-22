@@ -86,6 +86,15 @@ export interface IMarketplaceDetails extends IMarketplaceItem {
   maintainers: string[]
 }
 
+export interface IMCPMarketCategory {
+  name: string
+  display_name: string
+  description: string
+  id: number
+  sort_order: number
+  mcp_server_count: number
+}
+
 /**
  *  获取网关的 MCPServer 列表
  */
@@ -177,3 +186,9 @@ export const getMcpPermissionsApplicant = (apigwId: number, mcp_server_id: numbe
  */
 export const updateMcpPermissions = (apigwId: number, mcp_server_id: number, id: number, data: any) =>
   http.patch(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/${id}/status/`, data);
+
+/**
+ *  获取 MCP 市场分类列表
+ */
+export const getMcpMarketplaceCategories = () =>
+  http.get('/mcp-marketplace/categories/');
