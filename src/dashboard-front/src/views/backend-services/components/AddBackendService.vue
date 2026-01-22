@@ -21,6 +21,7 @@
       v-model="sliderConfig.isShow"
       ext-cls="backend-service-slider"
       :init-data="initData"
+      render-directive="if"
       @closed="handleCancel"
       @compare="handleCompare"
     >
@@ -137,196 +138,204 @@
                 <div class="stage">
                   <BkCollapse
                     v-model="activeIndex"
-                    :list="stageConfig"
                     header-icon="right-shape"
                   >
-                    <template #title="slotProps">
-                      <span class="stage-name">
-                        {{ slotProps.name || slotProps.configs?.stage?.name }}
-                      </span>
-                    </template>
-                    <template #content="slotProps">
-                      <BkForm
-                        :ref="(el:HTMLElement) => getStageConfigRef(el, slotProps.$index)"
-                        class="stage-config-form"
-                        :model="slotProps"
-                        form-type="vertical"
-                      >
-                        <BkFormItem
-                          :label="t('负载均衡类型')"
-                          property="configs.loadbalance"
-                          class="mt-20px relative"
-                          required
-                          :rules="configRules.loadbalance"
+                    <BkCollapsePanel
+                      v-for="(stage, index) in stageConfig"
+                      :key="stage.id"
+                      :name="stage.id"
+                      :title="stage.configs?.stage?.name || stage.name"
+                      icon="right-shape"
+                    >
+                      <template #content>
+                        <BkForm
+                          :ref="(el:HTMLElement) => getStageConfigRef(el, index)"
+                          class="stage-config-form"
+                          :model="stage"
+                          form-type="vertical"
                         >
-                          <BkSelect
-                            v-model="slotProps.configs.loadbalance"
-                            :clearable="false"
-                            :disabled="disabled"
-                            @change="(value: string) => handleLoadBalanceChange(value, slotProps.id)"
+                          <BkFormItem
+                            :label="t('负载均衡类型')"
+                            property="configs.loadbalance"
+                            class="mt-20px relative"
+                            required
+                            :rules="configRules.loadbalance"
                           >
-                            <BkOption
-                              v-for="option of loadbalanceList"
-                              :key="option.id"
-                              :value="option.id"
-                              :label="option.name"
-                            />
-                          </BkSelect>
-                          <BkLink
-                            class="absolute right-0 top--30px"
-                            theme="primary"
-                            :href="envStore.env.DOC_LINKS.LOADBALANCE"
-                            target="_blank"
-                          >
-                            <AgIcon
-                              name="jump"
-                              size="12"
-                              class="mr-4px"
-                            />
-                            <span class="text-12px">{{ t('帮助文档') }}</span>
-                          </BkLink>
-                        </BkFormItem>
-
-                        <!-- hash_on -->
-                        <BkFormItem
-                          v-if="slotProps.configs.loadbalance === 'chash'"
-                          :label="t('哈希位置')"
-                          property="configs.hash_on"
-                          required
-                        >
-                          <BkSelect
-                            v-model="slotProps.configs.hash_on"
-                            :clearable="false"
-                            :filterable="false"
-                            :disabled="disabled"
-                            @change="(value: string) => handleHashOnChange(value, slotProps.id)"
-                          >
-                            <BkOption
-                              v-for="type in hashOnOptions"
-                              :id="type.id"
-                              :key="type.id"
-                              :name="type.name"
-                            />
-                          </BkSelect>
-                        </BkFormItem>
-
-                        <KeyFormItem
-                          v-if="slotProps.configs.loadbalance === 'chash'"
-                          :stage-config="slotProps"
-                          label="Key"
-                          property="configs.key"
-                          :disabled="disabled"
-                          required
-                          @change="handleHashOnKeyChange"
-                        />
-
-                        <BkFormItem
-                          v-for="(hostItem, i) in slotProps.configs.hosts"
-                          :key="i"
-                          :label="t('后端服务地址')"
-                          :rules="configRules.host"
-                          :property="`configs.hosts.${i}.host`"
-                          class="backend-item-cls"
-                          :class="[{ 'form-item-special': i !== 0 }]"
-                          required
-                        >
-                          <div class="flex items-center host-item">
-                            <BkInput
-                              :key="i"
-                              v-model="hostItem.host"
+                            <BkSelect
+                              v-model="stage.configs.loadbalance"
+                              :clearable="false"
                               :disabled="disabled"
-                              :placeholder="t('格式如：host:port')"
+                              @change="(value: string) => handleLoadBalanceChange(value, stage.id)"
                             >
-                              <template #prefix>
-                                <BkSelect
-                                  v-model="hostItem.scheme"
-                                  class="scheme-select-cls w-80px"
-                                  :filterable="false"
-                                  :clearable="false"
-                                  :disabled="disabled"
+                              <BkOption
+                                v-for="option of loadbalanceList"
+                                :key="option.id"
+                                :value="option.id"
+                                :label="option.name"
+                              />
+                            </BkSelect>
+                            <BkLink
+                              class="absolute right-0 top--30px"
+                              theme="primary"
+                              :href="envStore.env.DOC_LINKS.LOADBALANCE"
+                              target="_blank"
+                            >
+                              <AgIcon
+                                name="jump"
+                                size="12"
+                                class="mr-4px"
+                              />
+                              <span class="text-12px">{{ t('帮助文档') }}</span>
+                            </BkLink>
+                          </BkFormItem>
+
+                          <!-- hash_on -->
+                          <BkFormItem
+                            v-if="stage.configs.loadbalance === 'chash'"
+                            :label="t('哈希位置')"
+                            property="configs.hash_on"
+                            required
+                          >
+                            <BkSelect
+                              v-model="stage.configs.hash_on"
+                              :clearable="false"
+                              :filterable="false"
+                              :disabled="disabled"
+                              @change="(value: string) => handleHashOnChange(value, stage.id)"
+                            >
+                              <BkOption
+                                v-for="type in hashOnOptions"
+                                :id="type.id"
+                                :key="type.id"
+                                :name="type.name"
+                              />
+                            </BkSelect>
+                          </BkFormItem>
+
+                          <KeyFormItem
+                            v-if="stage.configs.loadbalance === 'chash'"
+                            :stage-config="stage"
+                            label="Key"
+                            property="configs.key"
+                            :disabled="disabled"
+                            required
+                            @change="handleHashOnKeyChange"
+                          />
+
+                          <BkFormItem
+                            v-for="(hostItem, i) in stage.configs.hosts"
+                            :key="i"
+                            :label="t('后端服务地址')"
+                            :rules="configRules.host"
+                            :property="`configs.hosts.${i}.host`"
+                            class="backend-item-cls"
+                            :class="[{ 'form-item-special': i !== 0 }]"
+                            required
+                          >
+                            <div class="flex items-center host-item">
+                              <BkInput
+                                :key="i"
+                                v-model="hostItem.host"
+                                :disabled="disabled"
+                                :placeholder="t('格式如：host:port')"
+                              >
+                                <template #prefix>
+                                  <BkSelect
+                                    v-model="hostItem.scheme"
+                                    class="scheme-select-cls w-80px"
+                                    :filterable="false"
+                                    :clearable="false"
+                                    :disabled="disabled"
+                                  >
+                                    <BkOption
+                                      v-for="(item, index) in schemeList"
+                                      :key="index"
+                                      :value="item.value"
+                                      :label="item.value"
+                                    />
+                                  </BkSelect>
+                                  <div class="slash">
+                                    ://
+                                  </div>
+                                </template>
+                                <template
+                                  v-if="
+                                    ['weighted-roundrobin'].includes(
+                                      stage?.configs?.loadbalance
+                                    )
+                                  "
+                                  #suffix
                                 >
-                                  <BkOption
-                                    v-for="(item, index) in schemeList"
-                                    :key="index"
-                                    :value="item.value"
-                                    :label="item.value"
-                                  />
-                                </BkSelect>
-                                <div class="slash">
-                                  ://
+                                  <BkFormItem
+                                    :rules="configRules.weight"
+                                    :property="`configs.hosts.${i}.weight`"
+                                    label=""
+                                    class="weight-input"
+                                  >
+                                    <BkInput
+                                      v-model="hostItem.weight"
+                                      :disabled="disabled"
+                                      class="suffix-slot-cls weights-input"
+                                      :placeholder="t('权重')"
+                                      type="number"
+                                      :min="1"
+                                      :max="10000"
+                                    />
+                                  </BkFormItem>
+                                </template>
+                              </BkInput>
+                              <i
+                                class="add-host-btn apigateway-icon icon-ag-plus-circle-shape"
+                                @click="() => handleAddServiceAddress(stage.name)"
+                              />
+                              <i
+                                class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape"
+                                :class="{ disabled: stage.configs.hosts.length < 2 }"
+                                @click="() => handleDeleteServiceAddress(stage.name, i)"
+                              />
+                            </div>
+                          </BkFormItem>
+
+                          <BkFormItem
+                            :label="t('超时时间')"
+                            :property="'configs.timeout'"
+                            class="timeout-item"
+                            required
+                            :rules="configRules.timeout"
+                            :error-display-type="'normal'"
+                          >
+                            <BkInput
+                              v-model="stage.configs.timeout"
+                              type="number"
+                              :min="1"
+                              :max="300"
+                              :disabled="disabled"
+                              class="time-input"
+                            >
+                              <template #suffix>
+                                <div
+                                  class="group-text group-text-style"
+                                  :class="locale === 'en' ? 'long' : ''"
+                                >
+                                  {{ t('秒') }}
                                 </div>
                               </template>
-                              <template
-                                v-if="
-                                  ['weighted-roundrobin'].includes(
-                                    slotProps?.configs?.loadbalance
-                                  )
-                                "
-                                #suffix
-                              >
-                                <BkFormItem
-                                  :rules="configRules.weight"
-                                  :property="`configs.hosts.${i}.weight`"
-                                  label=""
-                                  class="weight-input"
-                                >
-                                  <BkInput
-                                    v-model="hostItem.weight"
-                                    :disabled="disabled"
-                                    class="suffix-slot-cls weights-input"
-                                    :placeholder="t('权重')"
-                                    type="number"
-                                    :min="1"
-                                    :max="10000"
-                                  />
-                                </BkFormItem>
-                              </template>
                             </BkInput>
-                            <i
-                              class="add-host-btn apigateway-icon icon-ag-plus-circle-shape"
-                              @click="() => handleAddServiceAddress(slotProps.name)"
-                            />
-                            <i
-                              class="delete-host-btn apigateway-icon icon-ag-minus-circle-shape"
-                              :class="{ disabled: slotProps.configs.hosts.length < 2 }"
-                              @click="() => handleDeleteServiceAddress(slotProps.name, i)"
-                            />
-                          </div>
-                        </BkFormItem>
-                        <BkFormItem
-                          :label="t('超时时间')"
-                          :property="'configs.timeout'"
-                          class="timeout-item"
-                          required
-                          :rules="configRules.timeout"
-                          :error-display-type="'normal'"
-                        >
-                          <BkInput
-                            v-model="slotProps.configs.timeout"
-                            type="number"
-                            :min="1"
-                            :max="300"
-                            :disabled="disabled"
-                            class="time-input"
-                          >
-                            <template #suffix>
-                              <div
-                                class="group-text group-text-style"
-                                :class="locale === 'en' ? 'long' : ''"
-                              >
-                                {{ t('秒') }}
-                              </div>
-                            </template>
-                          </BkInput>
-                          <span
-                            class="timeout-tip"
-                            :class="locale === 'en' ? 'long' : ''"
-                          >
-                            {{ t('最大 300 秒') }}
-                          </span>
-                        </BkFormItem>
-                      </BkForm>
-                    </template>
+                            <span
+                              class="timeout-tip"
+                              :class="locale === 'en' ? 'long' : ''"
+                            >
+                              {{ t('最大 300 秒') }}
+                            </span>
+                          </BkFormItem>
+
+                          <HealthChecks
+                            ref="health-checks"
+                            :checks="stage.configs.checks"
+                          />
+                        </BkForm>
+                      </template>
+                    </BkCollapsePanel>
                   </BkCollapse>
                 </div>
               </template>
@@ -404,9 +413,18 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from 'lodash-es';
-import { Form, Input, Message } from 'bkui-vue';
-import { AngleUpFill, Success } from 'bkui-lib/icon';
+import {
+  cloneDeep,
+  isEqual,
+} from 'lodash-es';
+import {
+  Form, Input,
+  Message,
+} from 'bkui-vue';
+import {
+  AngleUpFill,
+  Success,
+} from 'bkui-lib/icon';
 import {
   useEnv,
   useGateway,
@@ -418,9 +436,10 @@ import {
   getBackendServiceDetail,
   updateBackendService,
 } from '@/services/source/backend-services.ts';
-import { type IStageListItem, getStageList } from '@/services/source/stage';
+import { getStageList } from '@/services/source/stage';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
+import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 
 interface IProps {
   editId?: number
@@ -453,16 +472,17 @@ const curServiceDetail = ref({
 });
 const initData = ref();
 const stageConfig = ref([]);
-const activeIndex = ref([]);
+const activeIndex = ref<number[]>([]);
 const stageList = ref([]);
 const stageConfigRef = ref([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
-const finalConfigs = ref([]);
-const nameRef = ref<InstanceType<typeof Input>>(null);
+const nameRef = ref<InstanceType<typeof Input>>();
 const baseInfoEl = useTemplateRef<InstanceType<typeof Form> & IFormMethod>(
   'baseInfoRef',
 );
+const healthChecksRef = useTemplateRef('health-checks');
+
 let publishDialog = reactive({
   isShow: false,
   stageNames: [],
@@ -659,7 +679,7 @@ const handleConfirm = async () => {
     }
     return;
   }
-  finalConfigs.value = stageConfig.value.map((item) => {
+  const finalConfigs = stageConfig.value.map((item, index) => {
     const id = !editId ? item.id : item.configs.stage.id;
     const results = {
       timeout: item.configs.timeout,
@@ -673,13 +693,19 @@ const handleConfirm = async () => {
     if (item.configs.key) {
       Object.assign(results, { key: item.configs.key });
     }
+    if (healthChecksRef.value?.[index]) {
+      const checks = healthChecksRef.value[index].getValue();
+      if (checks) {
+        Object.assign(results, { checks: healthChecksRef.value[index].getValue() });
+      }
+    }
     return results;
   });
   const { name, description } = baseInfo.value;
   const params = {
     name,
     description,
-    configs: finalConfigs.value,
+    configs: finalConfigs,
   };
   if (editId) {
     const detailContent = {
@@ -781,16 +807,14 @@ const handleCompare = (callback) => {
 
 const getStageListData = async () => {
   const res = await getStageList(apigwId.value);
-  res?.forEach((item: IStageListItem, index: number) => {
-    activeIndex.value.push(index);
-  });
+  activeIndex.value = res.map(item => item.id);
   isPublish.value = res?.some(item => item.publish_id !== 0);
   stageList.value = [...res];
 };
 
 const getInfo = async () => {
   const res = await getBackendServiceDetail(apigwId.value, editId);
-  curServiceDetail.value = cloneDeep(res);
+  curServiceDetail.value = res;
   stageConfig.value = res.configs.map((item) => {
     return {
       configs: item,
