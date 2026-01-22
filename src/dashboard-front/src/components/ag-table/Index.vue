@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -114,6 +114,7 @@ import { useRequest } from 'vue-request';
 import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
 import type { ITableMethod } from '@/types/common';
+import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
 import router from '@/router';
@@ -134,6 +135,7 @@ interface IProps {
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
   maxLimitConfig?: Record<string, any> | null
+  hiddenColumn?: string[]
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -168,6 +170,8 @@ const {
   showPagination = true,
   // 展示外边框
   bordered = false,
+  // 默认不显示的表格列
+  hiddenColumn = [],
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -391,11 +395,13 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
 
 watch(tableSetting, () => {
   if (!tableSetting.value && showSettings) {
+    // 过滤掉需要隐藏的列
+    const visibleColumn = tableColumns.value?.filter(tc => !hiddenColumn.includes(tc.colKey));
     tableSetting.value = {
       size: 'medium',
       rowSize: 'medium',
-      checked: tableColumns.value?.map(col => col.colKey),
-      fields: tableColumns.value.map((col) => {
+      checked: visibleColumn.map(col => col.colKey),
+      fields: visibleColumn.map((col) => {
         return {
           label: col.displayTitle ?? col.title,
           field: col.colKey,
@@ -435,7 +441,7 @@ const fetchData = (
     pagination.value.current = 1;
   }
   run({
-    ...params,
+    ...filterSimpleEmpty(params),
     ...offsetAndLimit.value,
   });
 };
@@ -547,8 +553,8 @@ const handleRadioFilterClick = () => {
       const confirmBtn = document.querySelector('.t-table__filter--bottom-buttons > .t-button--theme-primary');
       radioClickHandler = (event: MouseEvent) => {
         const radioLabel = event.target.closest('label.t-radio');
-        const radioInput = radioLabel.querySelector('input.t-radio__former');
-        if (radioInput.checked) {
+        const radioInput = radioLabel?.querySelector('input.t-radio__former');
+        if (radioInput?.checked) {
           confirmBtn.click();
         }
       };
