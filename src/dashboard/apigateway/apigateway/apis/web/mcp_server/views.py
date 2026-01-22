@@ -144,9 +144,19 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
             queryset = queryset.filter(_labels__icontains=label)
 
         # 分类筛选（支持多个分类）
+        # 当选择的分类中包含 Official 或 Featured 时，使用 AND 逻辑，确保返回的结果同时满足所有选择的分类
+        # 当选择的分类中不包含这些特殊分类时，使用 OR 逻辑
         categories = slz.validated_data.get("categories")
         if categories:
-            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
+            special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
+            if special_categories & set(categories):
+                # 包含 Official 或 Featured 分类时，使用 AND 逻辑：必须同时属于所有选择的分类
+                for category in categories:
+                    queryset = queryset.filter(categories__name=category, categories__is_active=True)
+                queryset = queryset.distinct()
+            else:
+                # 不包含特殊分类时，使用 OR 逻辑：属于任意一个选择的分类即可
+                queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 
         # 排序（支持多字段排序，如 "-status,-updated_time"）
         order_by = slz.validated_data.get("order_by", "-status,-updated_time")

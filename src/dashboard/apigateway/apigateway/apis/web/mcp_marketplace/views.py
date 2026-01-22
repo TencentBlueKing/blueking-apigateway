@@ -24,7 +24,11 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.mcp_server.serializers import MCPServerConfigListOutputSLZ
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerStatusEnum,
+)
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
@@ -79,9 +83,19 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
             )
 
         # 分类筛选（支持多个分类）
+        # 当选择的分类中包含 Official 或 Featured 时，使用 AND 逻辑，确保返回的结果同时满足所有选择的分类
+        # 当选择的分类中不包含这些特殊分类时，使用 OR 逻辑
         categories = slz.validated_data.get("categories")
         if categories:
-            queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
+            special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
+            if special_categories & set(categories):
+                # 包含 Official 或 Featured 分类时，使用 AND 逻辑：必须同时属于所有选择的分类
+                for category in categories:
+                    queryset = queryset.filter(categories__name=category, categories__is_active=True)
+                queryset = queryset.distinct()
+            else:
+                # 不包含特殊分类时，使用 OR 逻辑：属于任意一个选择的分类即可
+                queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
 
         # tenant_id filter here
         user_tenant_id = get_user_tenant_id(request)
@@ -321,7 +335,7 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
         # 获取用户租户 ID，用于过滤
         user_tenant_id = get_user_tenant_id(request)
 
-        # 构建 MCPServer 过滤条件
+        # 构建分类统计过滤条件
         mcp_server_filter = Q(
             mcp_servers__is_public=True,
             mcp_servers__status=MCPServerStatusEnum.ACTIVE.value,
