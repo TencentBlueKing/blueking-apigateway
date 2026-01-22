@@ -345,6 +345,7 @@ ignore_imports = [
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
     # -- django commands
     "apigateway.apps.*.management.commands.* -> apigateway.core.models",
+    "apigateway.apps.*.management.commands.* -> apigateway.core.constants",
     "apigateway.core.management.commands.* -> apigateway.biz.gateway",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
