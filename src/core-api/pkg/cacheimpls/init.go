@@ -33,17 +33,18 @@ func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 	}
 }
 
-// NOTE: 如果 retrieve* 失败, 会cache 5s, 避免对 db 的频繁操作(并且有singleflight, 保证只有一个请求会去 db 拉数据)
+// NOTE: 如果 retrieve* 失败，会 cache 5s, 避免对 db 的频繁操作 (并且有 singleflight, 保证只有一个请求会去 db 拉数据)
 
 var (
-	// NOTE: 以下几个cache, 业务逻辑侧会保证 id/name -> obj 是确定的不会变的
+	// NOTE: 以下几个 cache, 业务逻辑侧会保证 id/name -> obj 是确定的不会变的
 
 	// gateway_id => gateway or gateway_name => gateway will never change
-	gatewayCache = memory.NewCache(
+	gatewayCache memory.Cache = NewCacheWithFallback(
 		"gateway",
 		tracedFuncWrapper("gateway", retrieveGatewayByName),
 		2*time.Hour,
 		newRandomDuration(30),
+		24*time.Hour, // fallback TTL
 	)
 
 	// NOTE: public_key should not be changed, if support changed, we should change the cache here
@@ -102,41 +103,46 @@ var (
 	//       这是下一阶段的目标 => 现阶段先不搞? 还是尽快加入发布订阅?
 
 	// stage_name => stage, may change in some cases
-	stageCache = memory.NewCache(
+	stageCache memory.Cache = NewCacheWithFallback(
 		"stage",
 		tracedFuncWrapper("stage", retrieveStageByGatewayIDStageName),
 		5*time.Minute,
 		newRandomDuration(30),
+		12*time.Hour, // fallback TTL
 	)
 
 	// 某个环境发布后, 1 分钟生效?
 	// stage_id => release, may change frequently
-	releaseCache = memory.NewCache(
+	releaseCache memory.Cache = NewCacheWithFallback(
 		"release",
 		tracedFuncWrapper("release", retrieveStageByGatewayIDStageID),
 		1*time.Minute,
 		newRandomDuration(10),
+		12*time.Hour, // fallback TTL
 	)
 
-	releaseHistoryCache = memory.NewCache(
+	releaseHistoryCache memory.Cache = NewCacheWithFallback(
 		"release_history",
 		tracedFuncWrapper("release_history", retrieveReleaseHistory),
 		1*time.Minute,
 		newRandomDuration(10),
+		12*time.Hour, // fallback TTL
 	)
 
 	// app_code + gateway_id => permission, may change frequently
-	appGatewayPermissionCache = memory.NewCache(
+	appGatewayPermissionCache memory.Cache = NewCacheWithFallback(
 		"app_gateway_permission",
 		tracedFuncWrapper("app_gateway_permission", retrieveAppGatewayPermission),
 		1*time.Minute,
 		newRandomDuration(10),
+		12*time.Hour, // fallback TTL
 	)
 	// app_code + gateway_id + resource_id => permission , may change frequently
-	appResourcePermissionCache = memory.NewCache(
+	appResourcePermissionCache memory.Cache = NewCacheWithFallback(
 		"app_resource_permission",
 		tracedFuncWrapper("app_resource_permission", retrieveAppResourcePermission),
 		1*time.Minute,
 		newRandomDuration(10),
+		12*time.Hour, // fallback TTL
 	)
 )
