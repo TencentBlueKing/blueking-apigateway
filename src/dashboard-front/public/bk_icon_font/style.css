@@ -629,3 +629,15 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-wenjian:before {
 	content: "\e1eb";
 }
+.icon-ag-tishici:before {
+	content: "\e1f1";
+}
+.icon-ag-manual-shoudongchuli:before {
+	content: "\e1f0";
+}
+.icon-ag-paixu:before {
+	content: "\e1f2";
+}
+.icon-ag-quanbu:before {
+	content: "\e1f3";
+}
