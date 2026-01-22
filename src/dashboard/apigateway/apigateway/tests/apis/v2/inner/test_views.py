@@ -403,7 +403,7 @@ class TestGatewayUpdateStatusApi:
         result = get_response_json(response)
 
         assert response.status_code == 400
-        assert "bp-" in result["message"]
+        assert "bp-" in result["error"]["message"]
 
     def test_disable_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
         """测试停用 bp- 开头的网关成功"""
@@ -481,13 +481,13 @@ class TestGatewayDestroyApi:
 
         response = request_to_view(
             request,
-            view_name="openapi.v2.inner.gateway.destroy",
+            view_name="openapi.v2.inner.gateway.retrieve",
             path_params={"gateway_name": fake_gateway.name},
         )
         result = get_response_json(response)
 
         assert response.status_code == 400
-        assert "bp-" in result["message"]
+        assert "bp-" in result["error"]["message"]
 
     def test_destroy_active_gateway_failed(self, request_to_view, request_factory, fake_gateway):
         """测试删除启用状态的网关失败"""
@@ -501,13 +501,13 @@ class TestGatewayDestroyApi:
 
         response = request_to_view(
             request,
-            view_name="openapi.v2.inner.gateway.destroy",
+            view_name="openapi.v2.inner.gateway.retrieve",
             path_params={"gateway_name": fake_gateway.name},
         )
         result = get_response_json(response)
 
         assert response.status_code == 400
-        assert "停用" in result["message"]
+        assert "停用" in result["error"]["message"]
 
     def test_destroy_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
         """测试删除 bp- 开头的停用网关成功"""
@@ -533,7 +533,7 @@ class TestGatewayDestroyApi:
 
         response = request_to_view(
             request,
-            view_name="openapi.v2.inner.gateway.destroy",
+            view_name="openapi.v2.inner.gateway.retrieve",
             path_params={"gateway_name": fake_gateway.name},
         )
 

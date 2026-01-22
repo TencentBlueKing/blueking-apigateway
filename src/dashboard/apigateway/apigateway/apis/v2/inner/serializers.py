@@ -38,6 +38,7 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
@@ -534,16 +535,9 @@ class GatewayUpdateStatusInputSLZ(serializers.Serializer):
     """网关状态更新输入序列化器（用于下架/停用网关）"""
 
     status = serializers.ChoiceField(
-        choices=[(0, "停用"), (1, "启用")],
+        choices=GatewayStatusEnum.get_choices(),
         help_text="网关状态，0：停用，1：启用",
     )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayUpdateStatusInputSLZ"
-
-
-class GatewayDeleteInputSLZ(serializers.Serializer):
-    """网关删除输入序列化器"""
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.inner.serializers.GatewayDeleteInputSLZ"
