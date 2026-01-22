@@ -112,21 +112,44 @@
       </template>
     </AgDescription>
 
-    <BkOverflowTitle
-      type="tips"
-      class="max-w-56px mr-8px mt-12px"
-    >
-      <BkTag
-        v-bk-tooltips="{
-          content: server.stage?.name,
-          disabled: server.stage?.name?.length < 4,
-          extCls: 'max-w-480px',
-        }"
-        class="bg-#e1ecff! color-#1768ef! border-transparent!"
+    <div class="flex items-baseline mt-12px">
+      <BkOverflowTitle
+        type="tips"
+        class="max-w-56px mr-8px"
       >
-        {{ server.stage?.name }}
-      </BkTag>
-    </BkOverflowTitle>
+        <BkTag
+          v-bk-tooltips="{
+            content: server?.stage?.name,
+            extCls: 'max-w-480px',
+          }"
+          class="bg-#e1ecff color-#1768ef hover:bg-#e1ecff"
+        >
+          {{ server?.stage?.name }}
+        </BkTag>
+      </BkOverflowTitle>
+
+      <template v-if="server?.categories?.length">
+        <template
+          v-for="category of server.categories"
+          :key="category.id"
+        >
+          <BkOverflowTitle
+            type="tips"
+            class="mr-8px"
+          >
+            <BkTag
+              v-bk-tooltips="{
+                content: category.display_name,
+                extCls: 'max-w-480px',
+              }"
+              class="color-#313238"
+            >
+              {{ category.display_name }}
+            </BkTag>
+          </BkOverflowTitle>
+        </template>
+      </template>
+    </div>
 
     <div class="divider" />
 
@@ -199,7 +222,7 @@
 
 <script lang="ts" setup>
 import { locale, t } from '@/locales';
-import { type IMCPServer } from '@/services/source/mcp-server"';
+import { type IMCPServer } from '@/services/source/mcp-server';
 import { useFeatureFlag } from '@/stores';
 import { getUtcTimeAgo, setupDayjsLocale } from '@/utils/dayUtc';
 import AgDescription from '@/components/ag-description/Index.vue';
