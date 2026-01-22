@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -149,6 +149,36 @@
                 allow-create
                 collapse-tags
                 has-delete-icon
+              />
+            </BkFormItem>
+            <BkFormItem
+              :label="t('分类')"
+              property="categories"
+              required
+              :rules="[
+                {
+                  validator: (value: string[]) => value?.length > 0,
+                  message: t('分类不能为空'),
+                  trigger: 'blur',
+                },
+              ]"
+            >
+              <BkTagInput
+                ref="categoriesRef"
+                v-model="formData.categories"
+                v-clickOutSide="handleClickOutSide"
+                trigger="focus"
+                display-key="display_name"
+                search-key="display_name"
+                save-key="name"
+                has-delete-icon
+                :placeholder="t('通过 display_name 或 name 搜索分类')"
+                :max-data="1"
+                :disabled="noValidStage"
+                :list="categoriesList"
+                :tag-tpl="renderCategoryTagTpl"
+                :tpl="renderCategoryTpl"
+                :filter-callback="handleSearchCategory"
               />
             </BkFormItem>
             <BkFormItem
@@ -536,11 +566,14 @@ import {
   Message,
   PopConfirm,
   ResizeLayout,
+  TagInput,
 } from 'bkui-vue';
 import {
+  type IMCPServerCategory,
   type IMCPServerPrompt,
   type IMCPServerTool,
   createServer,
+  getMcpCategoryList,
   getServer,
   getServerPrompts,
   getServerPromptsDetail,
@@ -587,6 +620,7 @@ let loadingTimer: NodeJS.Timeout | null = null;
 const nameRef = ref<InstanceType<typeof Input>>(null);
 const titleRef = ref<InstanceType<typeof Input>>(null);
 const descriptionRef = ref<InstanceType<typeof Input>>(null);
+const categoriesRef = ref<InstanceType<typeof TagInput>>(null);
 const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
@@ -601,6 +635,7 @@ const defaultFormData = ref<FormData>({
   stage_id: 0,
   is_public: true,
   labels: [],
+  categories: [],
 });
 const formData = ref<FormData>(cloneDeep(defaultFormData.value));
 const toolNameRowData = ref({});
@@ -625,7 +660,9 @@ const noPermPrompt = ref([]);
 const toolFilterData = ref({});
 const promptLabels = ref([]);
 const filterPromptValues = ref([]);
+const categoriesList = ref<IMCPServerCategory[]>([]);
 
+const apigwId = computed(() => gatewayStore.currentGateway?.id);
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
@@ -1081,25 +1118,52 @@ const escapedCodeContent = computed(() => {
   return escape(curPromptData.value?.content ?? '');
 });
 
-watch(isShow, async () => {
-  if (isShow.value) {
-    clearValidate();
-    if (isEnablePrompt.value) {
-      await Promise.allSettled([
-        fetchStageList(),
-        fetchPromptResources(),
-      ]);
-    }
-    else {
-      resourceTabList.value = resourceTabList.value.filter(item => !['prompt'].includes(item.value));
-      await fetchStageList();
-    }
-    initSidebarFormData(getDiffFormData());
-    if (isEditMode.value) {
-      await fetchServer();
-    }
+/**
+ * 获取公共异步数据（提取重复逻辑，降低耦合）
+ * @param {boolean} isEnablePrompt  是否启用 Prompt 功能
+ */
+const fetchCommonData = async (isEnablePrompt: boolean) => {
+  // 定义基础请求列表
+  const requestList = [fetchStageList(), fetchCategoryList()];
+  // 启用 Prompt 时，追加 Prompt 资源请求
+  if (isEnablePrompt) {
+    requestList.push(fetchPromptResources());
   }
-});
+  else {
+    // 禁用 Prompt 时，过滤掉 prompt 相关的标签
+    resourceTabList.value = resourceTabList.value.filter(
+      item => !['prompt'].includes(item.value),
+    );
+  }
+  const results = await Promise.allSettled(requestList);
+  // 处理单个请求的失败情况
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      Message({
+        theme: 'error',
+        message: JSON.stringify(result?.reason?.stack),
+      });
+    }
+  });
+};
+
+/**
+ * 处理 isShow 状态变化的核心逻辑
+ * @param {boolean} isShowVal 当前 isShow 的值
+ */
+const handleIsShowChange = async (isShowVal: boolean) => {
+  // 仅在 isShow 为 true 时执行后续逻辑
+  if (!isShowVal) return;
+
+  clearValidate();
+  await fetchCommonData(isEnablePrompt.value);
+  initSidebarFormData(getDiffFormData());
+  if (isEditMode.value) {
+    await fetchServer();
+  }
+};
+
+watch(isShow, handleIsShowChange, { immediate: false });
 
 const getDiffFormData = () => {
   return {
@@ -1136,11 +1200,46 @@ const toolDisabledSelection = (row) => {
   return !row.has_openapi_schema;
 };
 
+const handleSearchCategory = (tagValue: string, tagKey: string, list: IMCPServerCategory[]) =>
+  list.filter((cg: IMCPServerCategory) => {
+    if (!tagValue) return list;
+    return cg.name?.toLowerCase().indexOf(tagValue) > -1 || cg[tagKey].indexOf(tagValue) > -1;
+  });
+
 const handleMouseenter = (e: MouseEvent) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
     isOverflow.value = cell.scrollWidth > cell.clientWidth;
   }
+};
+
+const renderCategoryTpl = (node, highlightKeyword, h) => {
+  // 先转义原始内容，再执行高亮（确保高亮后的 HTML 仅包含安全标签）
+  const escapedName = escape(node.name);
+  const escapedDisplayName = escape(node.display_name);
+  const highlightedName = highlightKeyword(escapedName);
+  const innerHTML = `${highlightedName} (${escapedDisplayName})`;
+
+  return h('div', { class: 'bk-selector-node' }, [
+    h('span', {
+      class: 'text',
+      innerHTML,
+    }),
+  ]);
+};
+
+const renderCategoryTagTpl = (node, h) => {
+  // 转义所有用户输入内容，避免恶意代码执行
+  const escapedName = escape(node.name);
+  const escapedDisplayName = escape(node.display_name);
+  const innerHTML = `<span>${escapedName}</span> (${escapedDisplayName})`;
+
+  return h('div', { class: 'tag' }, [
+    h('span', {
+      class: 'text',
+      innerHTML,
+    }),
+  ]);
 };
 
 const handleMouseleave = () => {
@@ -1214,29 +1313,34 @@ const isExistPrivatePrompt = (): Promise<boolean> => {
 };
 
 const handleSubmit = async () => {
+  const {
+    name,
+    title,
+    description,
+    categories,
+  } = formData.value;
   try {
     await formRef.value?.validate();
   }
   catch {
-    const {
-      name,
-      title,
-      description,
-    } = formData.value;
     // 自动focus到必填项
     if (!name) {
       nameRef.value?.focus();
       handleScrollView(nameRef.value?.$el);
       return;
     }
-    if (!title?.trim().length < 3) {
+    if (title?.trim().length < 3) {
       titleRef.value?.focus();
       handleScrollView(titleRef.value?.$el);
       return;
     }
-    if (!description.length < 10) {
-      titleRef.value?.focus();
-      handleScrollView(titleRef.value?.$el);
+    if (description.length < 10) {
+      descriptionRef.value?.focus();
+      handleScrollView(descriptionRef.value?.$el);
+      return;
+    }
+    if (!categories?.length) {
+      handleScrollView(categoriesRef.value?.$el);
       return;
     }
   }
@@ -1254,14 +1358,13 @@ const handleSubmit = async () => {
   isValidate = await isExistPrivatePrompt();
   if (!isValidate) return;
 
-  const currentGatewayId = gatewayStore.currentGateway?.id;
-
   try {
     submitLoading.value = true;
     let params = {
       resource_names: toolSelections.value.map(item => item.name),
       tool_names: toolSelections.value.map(item => item.tool_name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
+      category_ids: categoriesList.value.filter(cg => categories.includes(cg.name)).map(cname => cname.id),
     };
     if (isEditMode.value) {
       const { description, is_public, protocol_type, labels, title } = formData.value as FormData;
@@ -1272,7 +1375,7 @@ const handleSubmit = async () => {
         labels,
         title,
       });
-      await patchServer(currentGatewayId, serverId, params);
+      await patchServer(apigwId.value, serverId, params);
       Message({
         theme: 'success',
         message: t('编辑成功'),
@@ -1284,7 +1387,7 @@ const handleSubmit = async () => {
         ...formData.value,
         name: `${serverNamePrefix.value}${formData.value.name}`,
       };
-      await createServer(currentGatewayId, params);
+      await createServer(apigwId.value, params);
       Message({
         theme: 'success',
         message: t('创建成功'),
@@ -1328,6 +1431,7 @@ const fetchServer = async () => {
       resource_names = [],
       tool_names = [],
       prompts = [],
+      categories = [],
     } = response ?? {};
     formData.value = {
       ...formData.value,
@@ -1338,6 +1442,7 @@ const fetchServer = async () => {
       is_public,
       stage_id: stage.id || 0,
       protocol_type,
+      categories: categories.map(item => item.name),
     };
     url.value = response?.url ?? '';
     // 仅当资源名称数组有有效数据时执行逻辑
@@ -1433,8 +1538,7 @@ const fetchStageResources = async () => {
 };
 
 const fetchPromptResources = async () => {
-  if (!gatewayStore.currentGateway?.id) return;
-  const res = await getServerPrompts(gatewayStore.currentGateway.id);
+  const res = await getServerPrompts(apigwId.value);
   promptTableData.value = res?.prompts ?? [];
 
   if (promptTableData.value.length) {
@@ -1453,7 +1557,7 @@ const fetchPromptResources = async () => {
 const fetchPromptResourcesDetail = async () => {
   promptDetailLoading.value = true;
   try {
-    const res = await getServerPromptsDetail(gatewayStore.currentGateway?.id, { ids: [curPromptData.value.id] });
+    const res = await getServerPromptsDetail(apigwId.value, { ids: [curPromptData.value.id] });
     curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
   }
   catch {
@@ -1462,6 +1566,18 @@ const fetchPromptResourcesDetail = async () => {
   finally {
     promptDetailLoading.value = false;
   }
+};
+
+// 获取MCP分类
+const fetchCategoryList = async () => {
+  const res = await getMcpCategoryList(apigwId.value);
+  categoriesList.value = (res ?? []).map((cg) => {
+    return {
+      ...cg,
+      tips: cg.description,
+      id: String(cg.id),
+    };
+  });
 };
 
 const handlePromptRowClick = ({

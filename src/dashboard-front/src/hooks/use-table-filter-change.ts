@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -38,8 +38,17 @@ export function useTableFilterChange() {
     searchParams?: Ref<ISearchValue[]>
   }) {
     Object.entries(filterItem).forEach(([colKey, checkValues]) => {
+      // 判断是不是多选
       const isMultiple = Array.isArray(checkValues);
-      if (checkValues?.length) {
+      // value是否有值, 多选单选需要单独区分
+      let isExistData = false;
+      if (isMultiple) {
+        isExistData = String(checkValues)?.length > 0;
+      }
+      else {
+        isExistData = (checkValues != null && checkValues !== '');
+      }
+      if (isExistData) {
         Object.assign(filterData.value, { [colKey]: checkValues });
         const searchOption = searchOptions?.value?.find(option => option.id === colKey);
         const filterOption = searchParams?.value?.find(searchItem => searchItem.id === colKey);
