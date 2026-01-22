@@ -255,6 +255,11 @@ VALUES (1, 'test-sse-server', 'Test SSE MCP Server', 1, '', 'echo;ping', 1, 1, '
 INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
 VALUES (2, 'test-http-server', 'Test HTTP MCP Server', 1, '', 'echo;ping', 1, 1, 'streamable_http', 1, NOW(), NOW());
 
+-- 测试用 MCP Server (带工具名映射，SSE 协议)
+-- resource_names 格式: resource_name@tool_name，其中 echo 映射为 echo_message, ping 保持原名
+INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
+VALUES (3, 'test-renamed-server', 'Test MCP Server with Tool Rename', 1, '', 'echo@echo_message;ping', 1, 1, 'sse', 1, NOW(), NOW());
+
 -- 测试用 Prompts (存储在 mcp_server_extend 表)
 INSERT INTO `mcp_server_extend` (`id`, `mcp_server_id`, `type`, `content`, `created_by`, `updated_by`, `created_time`, `updated_time`)
 VALUES (1, 1, 'prompts', '[{"id":1,"name":"Test Prompt","code":"test-prompt","content":"This is a test prompt for integration testing.","labels":[],"is_public":true,"space_code":"","space_name":""}]', 'admin', 'admin', NOW(), NOW());
@@ -269,3 +274,7 @@ VALUES (1, 1, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
 
 INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
 VALUES (2, 2, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- 权限给带工具名映射的 MCP Server
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (3, 3, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());

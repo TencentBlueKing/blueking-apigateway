@@ -216,6 +216,90 @@ var _ = Describe("SSE Protocol", func() {
 			Expect(result).NotTo(BeNil())
 		})
 	})
+
+	Describe("SSE Tool Name Mapping", func() {
+		It("should list tools with renamed tool names via SSE protocol", func() {
+			// 使用带工具名映射的 MCP Server
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-renamed-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 列出工具
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Tools).NotTo(BeNil())
+
+			// 验证工具名使用了映射后的名称
+			// echo 应该映射为 echo_message, ping 保持原名
+			toolNames := make([]string, len(result.Tools))
+			for i, tool := range result.Tools {
+				toolNames[i] = tool.Name
+			}
+			Expect(toolNames).To(ContainElement("echo_message"))
+			Expect(toolNames).To(ContainElement("ping"))
+			Expect(toolNames).NotTo(ContainElement("echo"))
+		})
+
+		It("should call renamed tool via SSE protocol", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-renamed-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 使用映射后的工具名调用工具
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo_message",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"message": "Hello from renamed tool",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
 })
 
 // jwtRoundTripper 是一个自定义的 http.RoundTripper，用于在每个请求中添加 JWT 认证头

@@ -29,7 +29,13 @@ import (
 // OpenapiToMcpToolConfig ...
 // nolint:gocyclo
 // This function takes an OpenAPI specification and a map of operation IDs and returns a slice of ToolConfig structs.
-func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]struct{}) []*ToolConfig {
+// operationIDMap: 用于过滤需要转换的 operationID
+// toolNameMap: 用于将 operationID (资源名) 映射到工具名，如果为 nil 或不存在，则使用 operationID 作为工具名
+func OpenapiToMcpToolConfig(
+	openApiSpec *openapi3.T,
+	operationIDMap map[string]struct{},
+	toolNameMap map[string]string,
+) []*ToolConfig {
 	// Initialize a slice of ToolConfig structs
 	var toolConfigs []*ToolConfig
 	// Iterate through each path in the OpenAPI specification
@@ -56,11 +62,18 @@ func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]s
 			if description == "" {
 				description = operation.Summary
 			}
+			// 获取工具名：优先使用 toolNameMap 中的映射，否则使用 operationID
+			toolName := operation.OperationID
+			if toolNameMap != nil {
+				if mappedName, ok := toolNameMap[operation.OperationID]; ok && mappedName != "" {
+					toolName = mappedName
+				}
+			}
 			toolConfig := &ToolConfig{
 				Host:        urlInfo.Host,
 				BasePath:    urlInfo.Path,
 				Schema:      urlInfo.Scheme,
-				Name:        operation.OperationID,
+				Name:        toolName,
 				Method:      method,
 				Url:         path,
 				Description: description,

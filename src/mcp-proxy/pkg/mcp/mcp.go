@@ -99,6 +99,12 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 			logging.GetLogger().Errorf("get mcp server[%s] release error: %v", server.Name, err)
 			continue
 		}
+
+		// 获取资源名列表和工具名映射
+		resourceNames := server.GetResourceNames()
+		toolNameMap := server.GetToolNameMap()
+		toolNames := server.GetToolNames()
+
 		wouldReloadOpenapiSpec := true
 		// 判断mcp server是否已经存在
 		if mcpProxy.IsMCPServerExist(server.Name) {
@@ -113,11 +119,11 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				wouldReloadOpenapiSpec = true
 			} else if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
 				// 判断资源版本是否变化
-				// 检查 resource_names 是否有新增的工具
+				// 检查 tool_names 是否有新增的工具（使用工具名而非原始 resource_names 进行比较）
 				currentTools := mcpServer.GetTools()
 				hasNewTools := false
-				for _, resourceName := range server.ResourceNames {
-					if !arrutil.Contains(currentTools, resourceName) {
+				for _, toolName := range toolNames {
+					if !arrutil.Contains(currentTools, toolName) {
 						hasNewTools = true
 						break
 					}
@@ -146,8 +152,9 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 		// 如果mcp server不存在，添加mcp server
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
+			// 使用纯资源名列表和工具名映射来添加 MCP Server
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
-				conf.resourceVersion, conf.openapiFileData, server.ResourceNames, server.GetProtocolType())
+				conf.resourceVersion, conf.openapiFileData, resourceNames, toolNameMap, server.GetProtocolType())
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
@@ -164,7 +171,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Infof("registered %d prompts for mcp server[%s]", len(prompts), server.Name)
 			}
 			logging.GetLogger().Infof("add mcp server[%s] protocol:%s, tool:%d, prompt:%d success",
-				server.Name, server.GetProtocolType(), len(server.ResourceNames), len(prompts))
+				server.Name, server.GetProtocolType(), len(resourceNames), len(prompts))
 			continue
 		}
 
@@ -177,8 +184,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 		var toolUpdated bool
 		for _, tool := range mcpServer.GetTools() {
-			// 如果当前mcp server的工具不在当前生效的资源列表中，删除该工具
-			if !arrutil.Contains(server.ResourceNames, tool) {
+			// 如果当前mcp server的工具不在当前生效的工具名列表中，删除该工具
+			if !arrutil.Contains(toolNames, tool) {
 				mcpServer.RemoveTool(tool)
 				toolUpdated = true
 				continue
@@ -188,9 +195,9 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		var resourceVersionUpdated bool
 		// 如果资源版本发生变化，更新mcp server
 		if wouldReloadOpenapiSpec && conf != nil {
-			// 更新mcp server
+			// 使用纯资源名列表和工具名映射来更新 MCP Server
 			err = mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, server.Name, conf.resourceVersion,
-				conf.openapiFileData, server.ResourceNames)
+				conf.openapiFileData, resourceNames, toolNameMap)
 			if err != nil {
 				return err
 			}

@@ -170,8 +170,11 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 }
 
 // AddMCPServerFromOpenAPISpec nolint:gofmt
+// operationIDList: 需要注册的 operationID 列表（即纯资源名列表）
+// toolNameMap: 资源名到工具名的映射，如果为 nil 则使用资源名作为工具名
 func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
-	resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string, protocolType string,
+	resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
+	toolNameMap map[string]string, protocolType string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -179,7 +182,7 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:              name,
-		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap),
+		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
 		ResourceVersionID: resourceVersionID,
 		ProtocolType:      protocolType,
 	}
@@ -187,8 +190,11 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 }
 
 // UpdateMCPServerFromOpenApiSpec nolint:gofmt
+// operationIDList: 需要注册的 operationID 列表（即纯资源名列表）
+// toolNameMap: 资源名到工具名的映射，如果为 nil 则使用资源名作为工具名
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
-	mcpServer *MCPServer, name string, resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
+	mcpServer *MCPServer, name string, resourceVersionID int, openAPISpec *openapi3.T,
+	operationIDList []string, toolNameMap map[string]string,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -196,7 +202,7 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	mcpServerConfig := &MCPServerConfig{
 		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openAPISpec, operationIDMap),
+		Tools: OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
