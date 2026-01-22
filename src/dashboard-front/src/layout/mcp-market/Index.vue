@@ -471,6 +471,7 @@ onUnmounted(() => {
           display: flex;
           align-items: center;
           font-size: 12px;
+          height: 36px;
 
           .icon-circle {
             width: 4px;
