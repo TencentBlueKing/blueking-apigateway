@@ -756,18 +756,18 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         return OKJsonResponse(data=slz.data)
 
 
-# ===================== 网关下架/删除 API =====================
+# ===================== 网关状态变更/删除 API =====================
 
-# 限制只能操作 bp- 开头的网关，避免误操作
-ALLOWED_GATEWAY_NAME_PREFIX = "bp-"
+# 状态变更和删除操作限制只能操作 bp- 开头的网关，避免误操作
+GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX = "bp-"
 
 
 def _validate_gateway_name_prefix(gateway_name: str) -> None:
-    """校验网关名称前缀，只允许操作 bp- 开头的网关"""
-    if not gateway_name.startswith(ALLOWED_GATEWAY_NAME_PREFIX):
+    """校验网关名称前缀，状态变更和删除操作只允许操作 bp- 开头的网关"""
+    if not gateway_name.startswith(GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX):
         raise error_codes.INVALID_ARGUMENT.format(
             _("只允许操作以 '{prefix}' 开头的网关，当前网关名称：{name}").format(
-                prefix=ALLOWED_GATEWAY_NAME_PREFIX, name=gateway_name
+                prefix=GATEWAY_STATUS_CHANGE_AND_DELETE_ALLOWED_PREFIX, name=gateway_name
             ),
             replace=True,
         )
