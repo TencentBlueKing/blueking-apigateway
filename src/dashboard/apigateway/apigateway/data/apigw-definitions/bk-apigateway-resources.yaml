@@ -1991,6 +1991,64 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/inner/gateways/{gateway_name}/status/:
+    put:
+      operationId: v2_inner_update_gateway_status
+      description: 更新网关状态（停用/启用），仅支持 bp- 开头的网关
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: put
+          path: /backend/api/v2/inner/gateways/{gateway_name}/status/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Update gateway status (disable/enable), only supports gateways starting with bp-
+  /api/v2/inner/gateways/{gateway_name}/delete/:
+    delete:
+      operationId: v2_inner_delete_gateway
+      description: 删除网关，仅支持 bp- 开头的网关
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: delete
+          path: /backend/api/v2/inner/gateways/{gateway_name}/delete/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Delete gateway, only supports gateways starting with bp-
   /api/v2/inner/gateways/{gateway_name}/permissions/resources/:
     get:
       operationId: v2_inner_list_gateway_permission_resources

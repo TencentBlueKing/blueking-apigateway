@@ -525,3 +525,25 @@ class MCPServerAppPermissionRecordRetrieveOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ"
+
+
+# ===================== Gateway 下架/删除相关序列化器 =====================
+
+
+class GatewayUpdateStatusInputSLZ(serializers.Serializer):
+    """网关状态更新输入序列化器（用于下架/停用网关）"""
+
+    status = serializers.ChoiceField(
+        choices=[(0, "停用"), (1, "启用")],
+        help_text="网关状态，0：停用，1：启用",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayUpdateStatusInputSLZ"
+
+
+class GatewayDeleteInputSLZ(serializers.Serializer):
+    """网关删除输入序列化器"""
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.GatewayDeleteInputSLZ"
