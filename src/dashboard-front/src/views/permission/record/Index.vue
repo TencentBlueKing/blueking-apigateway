@@ -16,37 +16,29 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="permission-record-container page-wrapper-padding">
+  <div class="permission-record-container">
     <div class="header">
-      <BkForm class="flex">
+      <BkForm
+        class="flex"
+        label-width="120"
+      >
         <BkFormItem
-          :label="t('选择时间')"
-          :label-width="locale === 'en' ? 108 : 80"
-          class="ag-form-item-datepicker m-b-15px"
+          :label="t('蓝鲸应用ID')"
+          label-width="98"
         >
-          <BkDatePicker
-            :key="dateKey"
-            v-model="dateValue"
-            style="width: 320px"
-            :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'"
-            use-shortcut-text
-            :shortcuts="shortcutsRange"
-            :shortcut-selected-index="shortcutSelectedIndex"
-            @shortcut-change="handleShortcutChange"
-            @change="handleChange"
-            @clear="handlePickClear"
-            @pick-success="handlePickSuccess"
-            @selection-mode-change="handleSelectionModeChange"
+          <BkInput
+            v-model="filterData.bk_app_code"
+            :placeholder="t('请输入应用ID，按Enter搜索')"
+            clearable
+            class="w-282px"
           />
         </BkFormItem>
         <BkFormItem
           :label="t('授权维度')"
-          label-width="108"
         >
           <BkSelect
             v-model="filterData.grant_dimension"
-            class="w-150px"
+            class="w-282px"
           >
             <BkOption
               v-for="option of AUTHORIZATION_DIMENSION"
@@ -57,15 +49,23 @@
           </BkSelect>
         </BkFormItem>
         <BkFormItem
-          :label="t('蓝鲸应用ID')"
-          class="flex-grow"
-          label-width="119"
+          :label="t('选择时间')"
+          class="ag-form-item-datepicker m-b-15px"
         >
-          <BkInput
-            v-model="filterData.bk_app_code"
-            :placeholder="t('请输入应用ID，按Enter搜索')"
-            clearable
-            style="max-width: 320px"
+          <BkDatePicker
+            :key="dateKey"
+            v-model="dateValue"
+            class="w-282px"
+            :placeholder="t('选择日期时间范围')"
+            :type="'datetimerange'"
+            use-shortcut-text
+            :shortcuts="shortcutsRange"
+            :shortcut-selected-index="shortcutSelectedIndex"
+            @shortcut-change="handleShortcutChange"
+            @change="handleChange"
+            @clear="handlePickClear"
+            @pick-success="handlePickSuccess"
+            @selection-mode-change="handleSelectionModeChange"
           />
         </BkFormItem>
       </BkForm>
@@ -226,7 +226,7 @@ import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
 
@@ -579,6 +579,12 @@ const handleClearFilter = () => {
 
 <style lang="scss" scoped>
 .permission-record-container {
+  margin: 16px;
+  background-color: #fff;
+  padding: 16px 16px 34px;
+  .record-content {
+    border: 1px solid #DCDEE5;
+  }
 
   .record-expand-alert {
     padding: 20px;
