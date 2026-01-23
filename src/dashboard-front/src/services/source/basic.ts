@@ -45,18 +45,19 @@ export function getFeatureFlags(params: {
     ALLOW_UPLOAD_SDK_TO_REPOSITORY: boolean
     ENABLE_AI_COMPLETION: boolean
     ENABLE_BK_NOTICE: boolean
+    ENABLE_DISPLAY_NAME_RENDER: boolean
+    ENABLE_GATEWAY_OPERATION_STATUS: boolean
+    ENABLE_HEALTH_CHECK: boolean
+    ENABLE_MCP_SERVER_PROMPT: boolean
     ENABLE_MONITOR: boolean
     ENABLE_MULTI_TENANT_MODE: boolean
     ENABLE_RUN_DATA: boolean
     ENABLE_RUN_DATA_METRICS: boolean
     ENABLE_SDK: boolean
-    ENABLE_DISPLAY_NAME_RENDER: boolean
-    ENABLE_MCP_SERVER_PROMPT: boolean
     GATEWAY_APP_BINDING_ENABLED: boolean
     MENU_ITEM_ESB_API: boolean
     MENU_ITEM_ESB_API_DOC: boolean
     SYNC_ESB_TO_APIGW_ENABLED: boolean
-    ENABLE_GATEWAY_OPERATION_STATUS: boolean
   }>(`${path}/settings/feature-flags/`, params);
 }
 

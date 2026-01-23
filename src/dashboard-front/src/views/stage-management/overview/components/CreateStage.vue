@@ -310,6 +310,7 @@
                           </BkFormItem>
 
                           <HealthChecks
+                            v-if="featureFlagStore.flags.ENABLE_HEALTH_CHECK"
                             :ref="(el) => setHealthChecksRef(el, backend)"
                             :checks="backend.config.checks"
                           />
@@ -772,6 +773,7 @@ import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import {
   useEnv,
+  useFeatureFlag,
   useGateway,
 } from '@/stores';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
@@ -790,6 +792,7 @@ const { t, locale } = useI18n();
 const route = useRoute();
 const envStore = useEnv();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
 const isAdsorb = ref(false);
@@ -1153,7 +1156,7 @@ const handleConfirm = async () => {
 // 新建环境
 const handleConfirmCreate = async () => {
   const params = cloneDeep(curStageData.value);
-  if (Object.keys(healthCheckRefMap).length) {
+  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
     Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
       const backend = params.backends.find(backend => backend.id === Number(backendId));
       if (backend) {
