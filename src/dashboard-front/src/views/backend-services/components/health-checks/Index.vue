@@ -20,12 +20,14 @@
         <ActiveChecks
           ref="active-checks"
           v-model:enabled="isActiveEnabled"
+          :disabled="disabled"
           :checks="checks?.active"
           class="mt-18px mb-24px"
         />
         <PassiveChecks
           ref="passive-checks"
           v-model:enabled="isPassiveEnabled"
+          :disabled="disabled"
           :checks="checks?.passive"
         />
       </BkFormItem>
@@ -39,9 +41,15 @@ import PassiveChecks from './components/PassiveChecks.vue';
 import type { IHealthCheck } from '@/services/source/backend-services.ts';
 import { isPlainObject } from 'lodash-es';
 
-interface IProps { checks?: IHealthCheck }
+interface IProps {
+  checks?: IHealthCheck
+  disabled?: boolean
+}
 
-const { checks = undefined } = defineProps<IProps>();
+const {
+  checks = undefined,
+  disabled = false,
+} = defineProps<IProps>();
 
 const { t } = useI18n();
 
