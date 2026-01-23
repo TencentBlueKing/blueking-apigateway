@@ -20,6 +20,8 @@ package cacheimpls
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache"
@@ -72,6 +74,7 @@ func NewCacheWithFallback(
 // Get retrieves a value from the cache.
 // If the primary cache succeeds, the value is also stored in the fallback cache.
 // If the primary cache fails (e.g., DB error), it tries to return the fallback value.
+// NOTE: only fallback if the error is not sql.ErrNoRows
 func (c *CacheWithFallback) Get(ctx context.Context, key cache.Key) (any, error) {
 	value, err := c.primary.Get(ctx, key)
 	if err == nil {
@@ -80,9 +83,16 @@ func (c *CacheWithFallback) Get(ctx context.Context, key cache.Key) (any, error)
 		return value, nil
 	}
 
-	// Error: try fallback cache
+	// err != nil
+
+	// only fallback if the error is not sql.ErrNoRows
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	// not sql.ErrNoRows, try fallback cache
 	if fallbackValue, found := c.fallback.Get(key.Key()); found {
-		logging.GetLogger().Warnw("using fallback cache due to error",
+		logging.GetLogger().Errorw("using fallback cache due to error",
 			"cache", c.name, "key", key.Key(), "error", err)
 		return fallbackValue, nil // fallbackValue can be nil
 	}

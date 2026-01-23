@@ -20,6 +20,7 @@ package cacheimpls
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -153,6 +154,72 @@ func TestCacheWithFallback_Get(t *testing.T) {
 		fallbackValue, found := c.fallback.Get(key.Key())
 		assert.True(t, found)
 		assert.Nil(t, fallbackValue)
+	})
+
+	t.Run("sql.ErrNoRows should not fallback even with cached data", func(t *testing.T) {
+		t.Parallel()
+
+		callCount := 0
+		expectedValue := "old_value"
+		retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
+			callCount++
+			if callCount == 1 {
+				return expectedValue, nil
+			}
+			return nil, sql.ErrNoRows
+		}
+
+		c := NewCacheWithFallback(
+			"test_cache",
+			retrieveFunc,
+			1*time.Millisecond, // Very short expiration
+			nil,
+			30*time.Minute,
+		)
+
+		key := testCacheKey{key: "test_key"}
+
+		// First call - should succeed and populate fallback
+		value, err := c.Get(context.Background(), key)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedValue, value)
+
+		// Verify fallback has the value
+		fallbackValue, found := c.fallback.Get(key.Key())
+		assert.True(t, found)
+		assert.Equal(t, expectedValue, fallbackValue)
+
+		// Wait for primary cache to expire
+		time.Sleep(10 * time.Millisecond)
+
+		// Second call - sql.ErrNoRows should NOT use fallback
+		value, err = c.Get(context.Background(), key)
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, sql.ErrNoRows))
+		assert.Nil(t, value)
+	})
+
+	t.Run("sql.ErrNoRows without fallback data", func(t *testing.T) {
+		t.Parallel()
+
+		retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
+			return nil, sql.ErrNoRows
+		}
+
+		c := NewCacheWithFallback(
+			"test_cache",
+			retrieveFunc,
+			5*time.Minute,
+			nil,
+			30*time.Minute,
+		)
+
+		key := testCacheKey{key: "test_key"}
+		value, err := c.Get(context.Background(), key)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, sql.ErrNoRows))
+		assert.Nil(t, value)
 	})
 }
 
