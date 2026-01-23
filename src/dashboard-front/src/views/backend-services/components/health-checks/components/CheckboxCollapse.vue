@@ -1,20 +1,27 @@
 <template>
   <div class="collapse">
     <div class="header">
-      <div class="prefix">
-        <BkCheckbox v-model="enabled" />
+      <div
+        v-bk-tooltips="{content: t('当前只有一个后端服务地址，存在多个后端服务地址才可以配置健康检查'), disabled: !disabled}"
+        class="prefix"
+      >
+        <BkCheckbox
+          v-model="enabled"
+          :disabled="disabled"
+          @change="handleCheckboxChanged"
+        />
       </div>
       <div
         class="title"
-        @click="collapsed = !collapsed"
+        @click="handleTitleClicked"
       >
         <div class="name">
           {{ name }}
         </div>
         <div class="desc">
           <BkOverflowTitle
+            resizeable
             type="tips"
-            class="overflow-hidden"
           >
             {{ desc }}
           </BkOverflowTitle>
@@ -45,6 +52,7 @@
 interface IProps {
   name?: string
   desc?: string
+  disabled?: boolean
 }
 
 const enabled = defineModel<boolean>({ default: false });
@@ -54,7 +62,28 @@ const collapsed = defineModel<boolean>('collapsed', { default: true });
 const {
   name = '',
   desc = '',
+  disabled = false,
 } = defineProps<IProps>();
+
+const { t } = useI18n();
+
+watch(() => disabled, () => {
+  if (disabled) {
+    collapsed.value = true;
+  }
+});
+
+const handleCheckboxChanged = (checked: boolean) => {
+  collapsed.value = !checked;
+};
+
+const handleTitleClicked = () => {
+  if (disabled) {
+    collapsed.value = true;
+    return;
+  }
+  collapsed.value = !collapsed.value;
+};
 
 </script>
 
@@ -94,7 +123,7 @@ const {
       }
 
       .desc {
-        width: calc(100% - 68px);
+         width: calc(100% - 68px);
         font-size: 12px;
         line-height: 20px;
         color: #4D4F56;

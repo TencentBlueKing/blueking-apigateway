@@ -332,6 +332,7 @@
                           <HealthChecks
                             v-if="featureFlagStore.flags.ENABLE_HEALTH_CHECK"
                             ref="health-checks"
+                            :disabled="stage.configs.hosts.length < 2"
                             :checks="stage.configs.checks"
                           />
                         </BkForm>
