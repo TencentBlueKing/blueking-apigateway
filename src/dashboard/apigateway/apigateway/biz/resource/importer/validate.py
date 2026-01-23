@@ -59,6 +59,7 @@ class ResourceImportValidator:
         self._validate_name()
         self._validate_match_subpath()
         self._validate_resource_count()
+        self._validate_resource_field_length()
         self._validate_label_count()
         self._validate_label_name()
         self._validate_plugin_type()
@@ -218,6 +219,77 @@ class ResourceImportValidator:
                 _("每个网关最多创建 {count} 个资源。").format(count=max_resource_count), "$.paths", absolute_path=[]
             )
             self.schema_validate_result.append(validate_err)
+
+    def _validate_resource_field_length(self):
+        """校验资源字段长度是否超出数据库限制"""
+        # 定义字段长度限制，与 Resource 模型保持一致
+        field_limits = {
+            "name": 256,
+            "description": 512,
+            "description_en": 512,
+            "path": 2048,
+        }
+
+        for resource_data in self.resource_data_list:
+            # 校验 name 长度
+            if resource_data.name and len(resource_data.name) > field_limits["name"]:
+                validate_err = SchemaValidateErr(
+                    _(
+                        "资源名称长度超出限制，operationId={name} 长度为 {length}，最大允许长度为 {max_length}。"
+                    ).format(
+                        name=resource_data.name[:50] + "..." if len(resource_data.name) > 50 else resource_data.name,
+                        length=len(resource_data.name),
+                        max_length=field_limits["name"],
+                    ),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
+            # 校验 description 长度
+            if resource_data.description and len(resource_data.description) > field_limits["description"]:
+                validate_err = SchemaValidateErr(
+                    _(
+                        "资源描述长度超出限制，资源 {name} 的 description 长度为 {length}，最大允许长度为 {max_length}。"
+                    ).format(
+                        name=resource_data.name,
+                        length=len(resource_data.description),
+                        max_length=field_limits["description"],
+                    ),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.summary",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
+            # 校验 description_en 长度
+            if resource_data.description_en and len(resource_data.description_en) > field_limits["description_en"]:
+                validate_err = SchemaValidateErr(
+                    _(
+                        "资源英文描述长度超出限制，资源 {name} 的 description_en 长度为 {length}，最大允许长度为 {max_length}。"
+                    ).format(
+                        name=resource_data.name,
+                        length=len(resource_data.description_en),
+                        max_length=field_limits["description_en"],
+                    ),
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource.descriptionEn",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
+
+            # 校验 path 长度
+            if resource_data.path and len(resource_data.path) > field_limits["path"]:
+                validate_err = SchemaValidateErr(
+                    _(
+                        "资源路径长度超出限制，资源 {name} 的 path 长度为 {length}，最大允许长度为 {max_length}。"
+                    ).format(
+                        name=resource_data.name,
+                        length=len(resource_data.path),
+                        max_length=field_limits["path"],
+                    ),
+                    f"$.paths.{resource_data.path[:50]}...",
+                    absolute_path=[],
+                )
+                self.schema_validate_result.append(validate_err)
 
     def _validate_label_count(self):
         label_names = self._get_label_names()
