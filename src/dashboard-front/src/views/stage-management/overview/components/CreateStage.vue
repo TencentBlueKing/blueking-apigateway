@@ -1186,6 +1186,17 @@ const handleConfirmCreate = async () => {
 // 编辑环境
 const handleConfirmEdit = async () => {
   const params = cloneDeep(curStageData.value);
+  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
+    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
+      const backend = params.backends.find(backend => backend.id === Number(backendId));
+      if (backend) {
+        const checks = healthCheckRef.getValue();
+        if (checks) {
+          Object.assign(backend.config, { checks });
+        }
+      }
+    });
+  }
   // 删除冗余参数
   params.backends.forEach((v: any) => {
     delete v.name;
