@@ -186,22 +186,34 @@ class TestMCPMarketplaceServerListApi:
         assert result["data"]["results"][0]["id"] == other_server.id
 
     def test_list_with_multiple_categories_filter(self, request_view, fake_public_mcp_server, fake_categories):
-        """测试多分类筛选（逗号分隔）"""
-        # 给 mcp_server 添加分类
+        """测试多分类筛选（逗号分隔）- 包含 Official 时使用 AND 逻辑"""
+        # 给 mcp_server 同时添加 official 和 devops 分类
         fake_public_mcp_server.categories.add(fake_categories["official"])
+        fake_public_mcp_server.categories.add(fake_categories["devops"])
 
-        # 创建另一个不同分类的 mcp_server
-        other_server = G(
+        # 创建只有 devops 分类的 mcp_server
+        devops_only_server = G(
             MCPServer,
-            name="other_server",
+            name="devops_only_server",
             gateway=fake_public_mcp_server.gateway,
             stage=fake_public_mcp_server.stage,
             status=MCPServerStatusEnum.ACTIVE.value,
             is_public=True,
         )
-        other_server.categories.add(fake_categories["devops"])
+        devops_only_server.categories.add(fake_categories["devops"])
 
-        # 创建第三个无分类的 mcp_server
+        # 创建只有 official 分类的 mcp_server
+        official_only_server = G(
+            MCPServer,
+            name="official_only_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        official_only_server.categories.add(fake_categories["official"])
+
+        # 创建无分类的 mcp_server
         no_category_server = G(
             MCPServer,
             name="no_category_server",
@@ -211,7 +223,7 @@ class TestMCPMarketplaceServerListApi:
             is_public=True,
         )
 
-        # 筛选多个分类（官方 + 运维工具）
+        # 筛选多个分类（官方 + 运维工具）- 使用 AND 逻辑，只返回同时属于两个分类的 server
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
@@ -220,21 +232,19 @@ class TestMCPMarketplaceServerListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 2
-        result_ids = [item["id"] for item in result["data"]["results"]]
-        assert fake_public_mcp_server.id in result_ids
-        assert other_server.id in result_ids
-        # 无分类的 server 不应该在结果中
-        assert no_category_server.id not in result_ids
+        # 只有 fake_public_mcp_server 同时属于 official 和 devops 分类
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["id"] == fake_public_mcp_server.id
 
     def test_list_with_multiple_categories_filter_with_spaces(
         self, request_view, fake_public_mcp_server, fake_categories
     ):
-        """测试多分类筛选（带空格）"""
-        # 给 mcp_server 添加分类
+        """测试多分类筛选（带空格）- 包含 Official 时使用 AND 逻辑"""
+        # 给 mcp_server 同时添加 official 和 devops 分类
         fake_public_mcp_server.categories.add(fake_categories["official"])
+        fake_public_mcp_server.categories.add(fake_categories["devops"])
 
-        # 创建另一个不同分类的 mcp_server
+        # 创建只有 devops 分类的 mcp_server
         other_server = G(
             MCPServer,
             name="other_server",
@@ -245,7 +255,7 @@ class TestMCPMarketplaceServerListApi:
         )
         other_server.categories.add(fake_categories["devops"])
 
-        # 筛选多个分类（带空格）
+        # 筛选多个分类（带空格）- 使用 AND 逻辑
         resp = request_view(
             method="GET",
             view_name="mcp_marketplace.server.list",
@@ -254,7 +264,8 @@ class TestMCPMarketplaceServerListApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 2
+        # 只有 fake_public_mcp_server 同时属于 official 和 devops 分类
+        assert result["data"]["count"] == 1
 
     def test_list_with_empty_category_filter(self, request_view, fake_public_mcp_server, fake_categories):
         """测试空分类筛选"""

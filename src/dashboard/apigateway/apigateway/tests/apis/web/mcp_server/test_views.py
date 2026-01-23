@@ -445,17 +445,19 @@ class TestMCPServerListCreateApi:
         assert result["data"]["results"][0]["name"] == server2.name
 
     def test_list_with_multiple_categories_filter(self, request_view, fake_gateway, fake_stage, fake_categories):
-        """测试列表接口按多个分类筛选（逗号分隔）"""
-        # 创建带分类的 MCPServer
+        """测试列表接口按多个分类筛选（逗号分隔）- 包含 Official 时使用 AND 逻辑"""
+        # 创建同时属于 official 和 devops 分类的 MCPServer
         server1 = G(
             MCPServer,
-            name="server_official",
+            name="server_official_devops",
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
         )
         server1.categories.add(fake_categories["official"])
+        server1.categories.add(fake_categories["devops"])
 
+        # 创建只有 devops 分类的 MCPServer
         server2 = G(
             MCPServer,
             name="server_devops",
@@ -465,8 +467,18 @@ class TestMCPServerListCreateApi:
         )
         server2.categories.add(fake_categories["devops"])
 
-        # 创建无分类的 MCPServer
+        # 创建只有 official 分类的 MCPServer
         server3 = G(
+            MCPServer,
+            name="server_official",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server3.categories.add(fake_categories["official"])
+
+        # 创建无分类的 MCPServer
+        server4 = G(
             MCPServer,
             name="server_no_category",
             gateway=fake_gateway,
@@ -474,7 +486,7 @@ class TestMCPServerListCreateApi:
             status=MCPServerStatusEnum.ACTIVE.value,
         )
 
-        # 筛选多个分类
+        # 筛选多个分类（包含 Official 时使用 AND 逻辑）
         resp = request_view(
             method="GET",
             view_name="mcp_server.list_create",
@@ -485,27 +497,26 @@ class TestMCPServerListCreateApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 2
-        result_names = [item["name"] for item in result["data"]["results"]]
-        assert server1.name in result_names
-        assert server2.name in result_names
-        # 无分类的 server 不应该在结果中
-        assert server3.name not in result_names
+        # 只有 server1 同时属于 official 和 devops 分类
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["name"] == server1.name
 
     def test_list_with_multiple_categories_filter_with_spaces(
         self, request_view, fake_gateway, fake_stage, fake_categories
     ):
-        """测试列表接口按多个分类筛选（带空格）"""
-        # 创建带分类的 MCPServer
+        """测试列表接口按多个分类筛选（带空格）- 包含 Official 时使用 AND 逻辑"""
+        # 创建同时属于 official 和 devops 分类的 MCPServer
         server1 = G(
             MCPServer,
-            name="server_official",
+            name="server_official_devops",
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
         )
         server1.categories.add(fake_categories["official"])
+        server1.categories.add(fake_categories["devops"])
 
+        # 创建只有 devops 分类的 MCPServer
         server2 = G(
             MCPServer,
             name="server_devops",
@@ -515,7 +526,7 @@ class TestMCPServerListCreateApi:
         )
         server2.categories.add(fake_categories["devops"])
 
-        # 筛选多个分类（带空格，验证空格会被正确处理）
+        # 筛选多个分类（带空格，验证空格会被正确处理）- 包含 Official 时使用 AND 逻辑
         resp = request_view(
             method="GET",
             view_name="mcp_server.list_create",
@@ -526,7 +537,8 @@ class TestMCPServerListCreateApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 2
+        # 只有 server1 同时属于 official 和 devops 分类
+        assert result["data"]["count"] == 1
 
     def test_list_with_empty_category_filter(self, request_view, fake_gateway, fake_stage, fake_categories):
         """测试列表接口空分类筛选"""
