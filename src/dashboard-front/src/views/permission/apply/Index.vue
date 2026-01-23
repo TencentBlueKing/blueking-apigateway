@@ -17,7 +17,7 @@
  */
 <template>
   <CustomHeader />
-  <div class="permission-apply-container page-wrapper-padding">
+  <div class="permission-apply-container">
     <div class="flex justify-between header">
       <BkButton
         v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }"
@@ -27,64 +27,47 @@
       >
         {{ t("批量审批") }}
       </BkButton>
-      <BkForm class="flex header-filter">
-        <BkFormItem label-width="108">
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('授权维度') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkSelect
-                v-model="filterData.grant_dimension"
-                class="w-150px"
-              >
-                <BkOption
-                  v-for="option of AUTHORIZATION_DIMENSION"
-                  :id="option.id"
-                  :key="option.id"
-                  :name="option.name"
-                />
-              </BkSelect>
-            </div>
-          </div>
+      <BkForm
+        class="flex header-filter"
+        label-width="120"
+      >
+        <BkFormItem :label="t('蓝鲸应用ID')">
+          <BkInput
+            v-model="filterData.bk_app_code"
+            class="w-282px"
+            clearable
+            :placeholder="t('请输入应用ID')"
+          />
         </BkFormItem>
-        <BkFormItem label-width="119">
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('蓝鲸应用ID') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkInput
-                v-model="filterData.bk_app_code"
-                class="w-150px"
-                clearable
-                :placeholder="t('请输入应用ID')"
-              />
-            </div>
-          </div>
+        <BkFormItem
+          :label="t('授权维度')"
+        >
+          <BkSelect
+            v-model="filterData.grant_dimension"
+            class="w-282px"
+          >
+            <BkOption
+              v-for="option of AUTHORIZATION_DIMENSION"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
         </BkFormItem>
         <BkFormItem
           v-if="!featureFlagStore.isTenantMode"
-          label-width="90"
+          :label="t('申请人')"
         >
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('申请人') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkInput
-                v-model="filterData.applied_by"
-                class="w-150px"
-                clearable
-                :placeholder="t('请输入用户')"
-              />
-            </div>
-          </div>
+          <BkInput
+            v-model="filterData.applied_by"
+            class="w-282px"
+            clearable
+            :placeholder="t('请输入用户')"
+          />
         </BkFormItem>
         <BkFormItem
           v-else
           :label="t('申请人')"
-          label-width="90"
         >
           <BkUserSelector
             v-model="filterData.applied_by"
@@ -724,6 +707,14 @@ const handleClearSelection = () => {
 </script>
 
 <style lang="scss" scoped>
+.permission-apply-container {
+  margin: 16px;
+  background-color: #fff;
+  padding: 16px 16px 34px;
+  .apply-content {
+    border: 1px solid #DCDEE5;
+  }
+}
 .apply-expand-alert {
   padding: 20px;
   line-height: 60px;
