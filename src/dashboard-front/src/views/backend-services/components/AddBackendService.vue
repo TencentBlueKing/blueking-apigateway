@@ -330,6 +330,7 @@
                           </BkFormItem>
 
                           <HealthChecks
+                            v-if="featureFlagStore.flags.ENABLE_HEALTH_CHECK"
                             ref="health-checks"
                             :checks="stage.configs.checks"
                           />
@@ -427,6 +428,7 @@ import {
 } from 'bkui-lib/icon';
 import {
   useEnv,
+  useFeatureFlag,
   useGateway,
 } from '@/stores';
 import type { IFormMethod } from '@/types/common';
@@ -456,6 +458,7 @@ const { t, locale } = useI18n();
 const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
 
 const hostReg = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})*(:\d+)?$|^\[([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\](:\d+)?$/;
 const activeKey = ref(['base-info', 'stage-config']);
@@ -693,7 +696,7 @@ const handleConfirm = async () => {
     if (item.configs.key) {
       Object.assign(results, { key: item.configs.key });
     }
-    if (healthChecksRef.value?.[index]) {
+    if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && healthChecksRef.value?.[index]) {
       const checks = healthChecksRef.value[index].getValue();
       if (checks) {
         Object.assign(results, { checks: healthChecksRef.value[index].getValue() });
