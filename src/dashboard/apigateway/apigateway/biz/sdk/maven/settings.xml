@@ -151,18 +151,13 @@ under the License.
    | server for that repository.
    |-->
   <mirrors>
-    <!-- mirror
-     | Specifies a repository mirror site to use instead of a given repository. The repository that
-     | this mirror serves has an ID that matches the mirrorOf element of this mirror. IDs are used
-     | for inheritance and direct lookup purposes, and must be unique across the set of mirrors.
-     |
+    <!-- 自定义镜像源，通过 -DmirrorUrl=xxx 参数传递，用于国内网络加速 -->
     <mirror>
-      <id>mirrorId</id>
-      <mirrorOf>repositoryId</mirrorOf>
-      <name>Human Readable Name for this Mirror.</name>
-      <url>http://my.repository.com/repo/path</url>
+      <id>custom-mirror</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Custom Maven Mirror</name>
+      <url>${mirrorUrl}</url>
     </mirror>
-     -->
     <mirror>
       <id>maven-default-http-blocker</id>
       <mirrorOf>external:http:*</mirrorOf>
