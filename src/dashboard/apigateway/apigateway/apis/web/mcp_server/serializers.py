@@ -39,6 +39,8 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
+from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
@@ -50,12 +52,20 @@ class MCPServerCategoryOutputSLZ(serializers.Serializer):
 
     id = serializers.IntegerField(read_only=True, help_text="分类 ID")
     name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
-    display_name = serializers.CharField(read_only=True, help_text="分类显示名称")
+    display_name = serializers.SerializerMethodField(help_text="分类显示名称（根据语言环境返回）")
     description = serializers.CharField(read_only=True, help_text="分类描述")
     sort_order = serializers.IntegerField(read_only=True, help_text="排序顺序")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCategoryOutputSLZ"
+
+    def get_display_name(self, obj) -> str:
+        """根据当前语言环境返回分类名称：英文环境返回 name，中文环境返回 display_name"""
+        language_code = get_current_language_code()
+        # 英文环境返回 name，否则返回 display_name
+        if language_code == LanguageCodeEnum.EN.value:
+            return obj.name
+        return obj.display_name
 
 
 class MCPServerListInputSLZ(serializers.Serializer):
