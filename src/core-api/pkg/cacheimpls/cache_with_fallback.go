@@ -49,6 +49,7 @@ type CacheWithFallback struct {
 // - randomExtraExpirationFunc: the function to generate random extra expiration duration
 // - fallbackTTL: the fallback cache TTL (should be longer than primary)
 // - options: additional options for the primary cache
+// NOTE: only Get/Set/Delete with fallback logic, other methods are not supported
 func NewCacheWithFallback(
 	name string,
 	retrieveFunc memory.RetrieveFunc,
@@ -92,7 +93,7 @@ func (c *CacheWithFallback) Get(ctx context.Context, key cache.Key) (any, error)
 
 	// not sql.ErrNoRows, try fallback cache
 	if fallbackValue, found := c.fallback.Get(key.Key()); found {
-		logging.GetLogger().Errorw("using fallback cache due to error",
+		logging.GetLogger().Warnw("using fallback cache due to error",
 			"cache", c.name, "key", key.Key(), "error", err)
 		return fallbackValue, nil // fallbackValue can be nil
 	}
