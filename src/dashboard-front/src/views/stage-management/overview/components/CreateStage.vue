@@ -312,6 +312,7 @@
                           <HealthChecks
                             v-if="featureFlagStore.flags.ENABLE_HEALTH_CHECK"
                             :ref="(el) => setHealthChecksRef(el, backend)"
+                            :disabled="backend.config.hosts.length < 2"
                             :checks="backend.config.checks"
                           />
                         </BkForm>
