@@ -53,10 +53,9 @@ func NewCacheWithFallback(
 	expiration time.Duration,
 	randomExtraExpirationFunc backend.RandomExtraExpirationDurationFunc,
 	fallbackTTL time.Duration,
-	options ...memory.Option,
 ) *CacheWithFallback {
 	// Create primary cache with the same behavior as before
-	primary := memory.NewCache(name, retrieveFunc, expiration, randomExtraExpirationFunc, options...)
+	primary := memory.NewCache(name, retrieveFunc, expiration, randomExtraExpirationFunc)
 
 	// Create fallback cache with longer TTL
 	// Cleanup interval is fallbackTTL + 5 minutes
