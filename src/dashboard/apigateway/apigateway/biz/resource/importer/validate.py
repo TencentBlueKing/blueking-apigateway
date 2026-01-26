@@ -237,7 +237,7 @@ class ResourceImportValidator:
                     _(
                         "资源名称长度超出限制，operationId={name} 长度为 {length}，最大允许长度为 {max_length}。"
                     ).format(
-                        name=resource_data.name[:50] + "..." if len(resource_data.name) > 50 else resource_data.name,
+                        name=resource_data.name,
                         length=len(resource_data.name),
                         max_length=field_limits["name"],
                     ),
@@ -286,7 +286,7 @@ class ResourceImportValidator:
                         length=len(resource_data.path),
                         max_length=field_limits["path"],
                     ),
-                    f"$.paths.{resource_data.path[:50]}...",
+                    f"$.paths.{resource_data.path}",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
