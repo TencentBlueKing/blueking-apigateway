@@ -95,6 +95,14 @@ export interface IMCPMarketCategory {
   mcp_server_count: number
 }
 
+// MCP配置
+export interface IMarketplaceConfig {
+  name: string
+  display_name: string
+  content: string
+  install_url: string
+}
+
 /**
  *  获取网关的 MCPServer 列表
  */
@@ -190,5 +198,11 @@ export const updateMcpPermissions = (apigwId: number, mcp_server_id: number, id:
 /**
  *  获取 MCP 市场分类列表
  */
-export const getMcpMarketplaceCategories = () =>
-  http.get('/mcp-marketplace/categories/');
+export const getMcpMarketplaceCategories = () => http.get('/mcp-marketplace/categories/');
+
+/**
+ *获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）
+ * @param apigwId 网关id
+ */
+export const getMcpAIConfigList = (mcp_server_id: number): Promise<{ configs: IMarketplaceConfig[] }> =>
+  http.get(`/mcp-marketplace/servers/${mcp_server_id}/configs/`);

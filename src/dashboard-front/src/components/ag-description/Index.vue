@@ -147,20 +147,26 @@ const checkOverflow = () => {
     const fontSizeInPx = getFontSizeInPx.value;
     const lineHeightValue = getLineHeightValue.value;
     const maxLinesHeight = maxLines * fontSizeInPx * lineHeightValue;
-    isOverflow = contentRef.value.scrollHeight > maxLinesHeight;
+    isOverflow = contentRef.value.scrollHeight > maxLinesHeight && contentRef.value.clientHeight >= maxLinesHeight;
   }
 
   isShowExpand.value = isOverflow;
 };
 
+const updateCheckOverflow = () => {
+  setTimeout(checkOverflow, 0);
+};
+
 onMounted(() => {
   // 先强制渲染一次内容，再判断溢出
-  setTimeout(checkOverflow, 0);
+  updateCheckOverflow();
 });
 
 watchEffect(() => {
-  setTimeout(checkOverflow, 0);
+  updateCheckOverflow();
 });
+
+defineExpose({ updateCheckOverflow });
 </script>
 
 <style scoped lang="scss">
@@ -179,6 +185,7 @@ watchEffect(() => {
     overflow: hidden;
     transition: all 0.2s ease;
     max-height: fit-content;
+    box-sizing: border-box;
 
     // 收起状态 + 设置了dynamicMaxHeight：限制最大高度（优先级高于行数）
     &.has-max-height {

@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -59,7 +59,7 @@
         <div class="column">
           <div class="apigw-form-item">
             <div class="label">
-              {{ `${t('访问地址')}：` }}
+              {{ t('访问地址') }}:
             </div>
             <div class="value url">
               <p
@@ -76,7 +76,7 @@
           </div>
           <div class="apigw-form-item">
             <div class="label">
-              {{ `${t('环境')}：` }}
+              {{ t('环境') }}:
             </div>
             <div class="value">
               {{ server.stage?.name || '--' }}
@@ -84,7 +84,7 @@
           </div>
           <div class="apigw-form-item">
             <div class="label">
-              {{ `${t('描述')}：` }}
+              {{ t('描述') }}:
             </div>
             <div
               class="value description max-w-256px!"
@@ -97,8 +97,27 @@
                 }"
                 class="truncate"
               >
-                {{ server.description || '--' }}
+                {{ server?.description || '--' }}
               </p>
+            </div>
+          </div>
+          <div class="apigw-form-item">
+            <div class="label">
+              {{ t('分类') }}:
+            </div>
+            <div class="value lh-22px!">
+              <template v-if="server?.categories?.length">
+                <BkTag
+                  v-for="category of server?.categories"
+                  :key="category"
+                  class="mr-8px"
+                >
+                  {{ category.display_name }}
+                </BkTag>
+              </template>
+              <template v-else>
+                --
+              </template>
             </div>
           </div>
         </div>
@@ -147,56 +166,82 @@
         </BkDropdown>
       </div>
     </section>
-    <section class="tab-wrapper">
-      <BkTab
-        v-model:active="active"
-        class="mcp-tab"
-        type="card-tab"
+    <section
+      :class="[
+        `tab-wrapper mcp-detail-${active}`,
+        {'flex items-baseline': isShowConfig }
+      ]"
+    >
+      <BkResizeLayout
+        placement="right"
+        :border="false"
+        :min="isShowConfig ? 416 : 0"
+        :initial-divide="isShowConfig ? '416px' : 0"
+        :class="isShowConfig ? 'gap-16px' : ''"
       >
-        <BkTabPanel
-          v-for="item in filteredPanels"
-          :key="item.name"
-          :name="item.name"
-          render-directive="if"
+        <template
+          v-if="isShowConfig"
+          #aside
         >
-          <template #label>
-            <div class="flex items-center">
-              {{ item.label }}
-              <div
-                v-if="item.count > 0"
-                class="count"
-                :class="[active === item.name ? 'on' : 'off']"
-              >
-                {{ item.count }}
+          <!-- 配置 -->
+          <ServerConfig
+            :list="mcpConfigList"
+            class="h-full bg-white mcp-detail-config"
+          />
+        </template>
+        <template #main>
+          <BkTab
+            v-model:active="active"
+            class="mcp-tab"
+            type="card-tab"
+          >
+            <BkTabPanel
+              v-for="item in filteredPanels"
+              :key="item.name"
+              :name="item.name"
+              render-directive="if"
+            >
+              <template #label>
+                <div class="flex items-center">
+                  {{ item.label }}
+                  <div
+                    v-if="item.count > 0"
+                    class="count"
+                    :class="[active === item.name ? 'on' : 'off']"
+                  >
+                    {{ item.count }}
+                  </div>
+                </div>
+              </template>
+              <div class="panel-content">
+                <ServerTools
+                  v-if="item.name === 'tools'"
+                  :server="server"
+                  @update-count="(count) => updateCount(count, item.name)"
+                />
+                <ServerPrompts
+                  v-if="item.name === 'prompts'"
+                  :server="server"
+                  @update-count="(count) => updateCount(count, item.name)"
+                />
+                <AuthApplications
+                  v-if="item.name === 'auth'"
+                  :mcp-server-id="serverId"
+                />
+                <Guideline
+                  v-if="item.name === 'guide'"
+                  v-model:is-exist-custom-guide="isExistCustomGuide"
+                  show-usage-guide
+                  :markdown-str="markdownStr"
+                  :config-list="mcpConfigList"
+                  :gateway-id="gatewayId"
+                  @guide-change="handleGuideChange"
+                />
               </div>
-            </div>
-          </template>
-          <div class="panel-content">
-            <ServerTools
-              v-if="item.name === 'tools'"
-              :server="server"
-              @update-count="(count) => updateCount(count, item.name)"
-            />
-            <ServerPrompts
-              v-if="item.name === 'prompts'"
-              :server="server"
-              @update-count="(count) => updateCount(count, item.name)"
-            />
-            <AuthApplications
-              v-if="item.name === 'auth'"
-              :mcp-server-id="serverId"
-            />
-            <Guideline
-              v-if="active === 'guide'"
-              v-model:is-exist-custom-guide="isExistCustomGuide"
-              show-usage-guide
-              :markdown-str="markdownStr"
-              :gateway-id="gatewayId"
-              @guide-change="handleGuideChange"
-            />
-          </div>
-        </BkTabPanel>
-      </BkTab>
+            </BkTabPanel>
+          </BkTab>
+        </template>
+      </BkResizeLayout>
     </section>
   </div>
   <CreateSlider
@@ -209,8 +254,10 @@
 <script lang="ts" setup>
 import { copy } from '@/utils';
 import {
+  type IMCPAIConfig,
   deleteServer,
   getCustomServerGuideDoc,
+  getMcpAIConfigList,
   getServer,
   getServerGuideDoc,
   patchServerStatus,
@@ -226,6 +273,7 @@ import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
+import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 
@@ -261,8 +309,10 @@ const markdownStr = ref('');
 
 const active = ref('tools');
 const panels = ref(MCP_TAB_LIST);
+const mcpConfigList = ref<IMCPAIConfig[]>([]);
 const editingServerId = ref<number>();
 
+const isShowConfig = computed(() => ['guide'].includes(active.value));
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
@@ -284,6 +334,11 @@ const fetchCustomGuide = async () => {
   const res = await getCustomServerGuideDoc(gatewayId, serverId.value);
   markdownStr.value = res?.content ?? '';
   isExistCustomGuide.value = markdownStr.value.length > 0;
+};
+
+const fetchMcpAIConfigList = async () => {
+  const res = await getMcpAIConfigList(gatewayId, serverId.value);
+  mcpConfigList.value = res?.configs ?? [];
 };
 
 const handleUpdated = async () => {
@@ -311,7 +366,7 @@ watch(() => route.params, async () => {
   const { serverId: id } = route.params;
   if (id) {
     serverId.value = Number(id);
-    handleUpdated();
+    Promise.allSettled([handleUpdated(), fetchMcpAIConfigList()]);
   }
 }, {
   immediate: true,
@@ -416,6 +471,7 @@ const updateCount = (count?: number, panelName?: string) => {
   padding: 20px;
 
   .tab-wrapper {
+
     :deep(.bk-tab-header) {
       .bk-tab-header-item:last-child {
         &::after {
@@ -428,12 +484,33 @@ const updateCount = (count?: number, panelName?: string) => {
       padding: 0;
       background-color: #ffffff;
     }
+
+    .bk-resize-layout-right {
+
+      :deep(>.bk-resize-layout-aside) {
+        display: none;
+      }
+    }
+
+    &.mcp-detail-guide {
+
+      .bk-resize-layout-right {
+
+        :deep(>.bk-resize-layout-aside) {
+          display: block;
+
+          .bk-resize-trigger {
+            background-color: #ffffff;
+          }
+        }
+      }
+    }
   }
 }
 
 .server-info {
   display: flex;
-  min-height: 100px;
+  align-items: center;
   padding: 24px;
   margin-bottom: 16px;
   background: #fff;
@@ -442,7 +519,7 @@ const updateCount = (count?: number, panelName?: string) => {
   .server-name {
     position: relative;
     display: flex;
-    min-height: 100px;
+    min-height: 120px;
     margin-right: 16px;
     background-color: #f0f5ff;
     border-radius: 8px;
@@ -507,25 +584,25 @@ const updateCount = (count?: number, panelName?: string) => {
 
   .info {
     display: flex;
-    width: 300px;
 
     .apigw-form-item {
       display: flex;
       font-size: 12px;
       line-height: 32px;
       color: #4d4f56;
-      align-items: center;
+      align-items: baseline;
       flex-wrap: wrap;
 
       .value {
         flex: 1;
         color: #313238;
+        margin-left: 8px;
 
         &.url,
         &.description {
-          display: flex;
           max-width: 230px;
-          align-items: center;
+          display: flex;
+          align-items: baseline;
 
           i {
             padding: 3px;
@@ -542,9 +619,6 @@ const updateCount = (count?: number, panelName?: string) => {
         padding: 2px 5px;
         font-size: 10px;
         line-height: 1;
-
-        // color: #fe9c00;
-        // background: #fff1db;
         border-radius: 2px;
       }
     }

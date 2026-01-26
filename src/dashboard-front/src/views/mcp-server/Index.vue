@@ -30,7 +30,6 @@
       >
         <template #mcpServerAdd>
           <BkButton
-            v-if="isTableView"
             theme="primary"
             @click="handleAddServerClick"
           >
