@@ -30,9 +30,9 @@ jobs:
       working-directory: src/core-api
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v8
+      uses: golangci/golangci-lint-action@v9
       with:
-        version: v2.1.6
+        version: v2.6
         working-directory: src/core-api
 
     - name: Aqua Security Trivy
