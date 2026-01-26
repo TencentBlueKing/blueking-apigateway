@@ -57,7 +57,8 @@ func retrieveAppGatewayPermission(ctx context.Context, k cache.Key) (any, error)
 	}
 
 	if err != nil {
-		logging.GetLogger().Errorw("retrieveAppGatewayPermission", "appCode", key.AppCode, "gatewayID", key.GatewayID, "err", err)
+		logging.GetLogger().Errorw("retrieveAppGatewayPermission",
+			"appCode", key.AppCode, "gatewayID", key.GatewayID, "err", err)
 	}
 
 	return perm, err

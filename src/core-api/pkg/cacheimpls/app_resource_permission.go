@@ -68,7 +68,8 @@ func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (any, error
 	}
 
 	if err != nil {
-		logging.GetLogger().Errorw("retrieveAppResourcePermission", "appCode", key.AppCode, "gatewayID", key.GatewayID, "resourceID", key.ResourceID, "err", err)
+		logging.GetLogger().Errorw("retrieveAppResourcePermission",
+			"appCode", key.AppCode, "gatewayID", key.GatewayID, "resourceID", key.ResourceID, "err", err)
 	}
 
 	return perm, err
