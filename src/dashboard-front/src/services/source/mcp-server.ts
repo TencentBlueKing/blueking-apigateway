@@ -93,6 +93,14 @@ export interface IMCPServerCategory {
   sort_order: number
 }
 
+// MCP配置
+export interface IMCPAIConfig {
+  name: string
+  display_name: string
+  content: string
+  install_url: string
+}
+
 // 列表
 export const getServers = (apigwId: number, data: {
   offset: number
@@ -210,3 +218,10 @@ export const getMcpCategoryList = (apigwId: number): Promise<{
   count: number
 }> =>
   http.get(`${path}/${apigwId}/mcp-servers/-/categories/`);
+
+/**
+ * 获取 MCPServer 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）
+ * @param apigwId 网关id
+ */
+export const getMcpAIConfigList = (apigwId: number, mcp_server_id: number): Promise<{ configs: IMCPAIConfig[] }> =>
+  http.get(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/configs/`);
