@@ -3,9 +3,9 @@
     "mcpServers": {
         "{{name}}": {
 {% if protocol_type == "streamable_http" %}
-            "type": "http",
+            "transportType": "streamable-http",
 {% else %}
-            "type": "sse",
+            "transportType": "sse",
 {% endif %}
             "url": "{{url}}",
             "description": "{{description}}",
