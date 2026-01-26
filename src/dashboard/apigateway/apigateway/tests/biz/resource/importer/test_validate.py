@@ -357,3 +357,63 @@ class TestResourceImportValidator:
             return
 
         assert len(validator.schema_validate_result) > 0
+
+    @pytest.mark.parametrize(
+        "resource_updates, expected_error_count",
+        [
+            # 正常情况：所有字段长度在限制内
+            (
+                {"name": "normal_name", "description": "normal description", "path": "/normal/path"},
+                0,
+            ),
+            # name 超长 (限制 256)
+            (
+                {"name": "a" * 300},
+                1,
+            ),
+            # description 超长 (限制 512)
+            (
+                {"description": "a" * 600},
+                1,
+            ),
+            # description_en 超长 (限制 512)
+            (
+                {"description_en": "a" * 600},
+                1,
+            ),
+            # path 超长 (限制 2048)
+            (
+                {"path": "/" + "a" * 2100},
+                1,
+            ),
+            # 多个字段同时超长
+            (
+                {"name": "a" * 300, "description": "a" * 600},
+                2,
+            ),
+            # 边界情况：刚好在限制内
+            (
+                {"name": "a" * 256, "description": "a" * 512},
+                0,
+            ),
+            # 边界情况：刚好超出限制
+            (
+                {"name": "a" * 257, "description": "a" * 513},
+                2,
+            ),
+            # 空值不校验
+            (
+                {"description": "", "description_en": None},
+                0,
+            ),
+        ],
+    )
+    def test_validate_resource_field_length(
+        self, fake_gateway, fake_resource_data, resource_updates, expected_error_count
+    ):
+        resource_data_list = [
+            fake_resource_data.copy(update=resource_updates, deep=True),
+        ]
+        validator = ResourceImportValidator(fake_gateway, resource_data_list, False)
+        validator._validate_resource_field_length()
+        assert len(validator.schema_validate_result) == expected_error_count
