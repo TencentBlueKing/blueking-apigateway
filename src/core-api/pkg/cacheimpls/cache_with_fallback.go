@@ -61,8 +61,8 @@ func NewCacheWithFallback(
 	primary := memory.NewCache(name, retrieveFunc, expiration, randomExtraExpirationFunc)
 
 	// Create fallback cache with longer TTL
-	// Cleanup interval is fallbackTTL + 5 minutes
-	fallback := gocache.New(fallbackTTL, fallbackTTL+5*time.Minute)
+	// Cleanup interval is 5 minutes
+	fallback := gocache.New(fallbackTTL, 10*time.Minute)
 
 	return &CacheWithFallback{
 		name:        name,
