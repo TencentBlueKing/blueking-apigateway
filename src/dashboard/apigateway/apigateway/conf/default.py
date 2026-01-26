@@ -731,6 +731,10 @@ MAVEN_MIRRORS_CONFIG = {
         "repository_id": env.str("DEFAULT_MAVEN_REPOSITORY_ID", "bkpaas-maven"),
         "username": env.str("DEFAULT_MAVEN_USERNAME", "bk_apigateway"),
         "password": env.str("DEFAULT_MAVEN_PASSWORD", "bk_apigateway"),
+        # 是否跳过 SSL 证书校验，用于内网 HTTPS 部署的 bkrepo
+        "ssl_insecure": env.bool("DEFAULT_MAVEN_SSL_INSECURE", False),
+        # Maven 镜像源 URL，用于国内网络环境加速依赖下载，如阿里云镜像 https://maven.aliyun.com/repository/public
+        "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", ""),
     }
 }
 
