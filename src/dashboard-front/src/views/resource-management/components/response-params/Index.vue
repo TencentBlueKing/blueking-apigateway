@@ -18,9 +18,10 @@
 
 <template>
   <div class="response-params-table-wrapper">
-    <template
+    <div
       v-for="response in responseList"
       :key="response.id"
+      class="mb-12px"
     >
       <ResponseParamsTable
         ref="responseParamsTableRefs"
@@ -29,7 +30,7 @@
         @delete="() => handleDelete(response)"
         @change-code="(code) => response.code = code"
       />
-    </template>
+    </div>
     <div v-if="!readonly">
       <BkButton
         text

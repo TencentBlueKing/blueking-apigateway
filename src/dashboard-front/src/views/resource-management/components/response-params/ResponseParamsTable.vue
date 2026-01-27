@@ -70,13 +70,11 @@
           <div class="response-table-wrapper">
             <div
               v-if="!readonly"
-              class="text-right mb-6px"
+              class="mb-16px"
             >
               <IconButton
-                text
                 theme="primary"
-                icon="upload"
-                @click="handleImportSchema"
+                @click="handleEditJSON"
               >
                 {{ t('通过 JSON 生成') }}
               </IconButton>
@@ -217,6 +215,10 @@
       </BkCollapsePanel>
     </BkCollapse>
   </div>
+  <JsonEditorSlider
+    v-model="isEditorSliderVisible"
+    @confirm="handleEditorConfirm"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -228,8 +230,8 @@ import {
 import { Message } from 'bkui-vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ResponseParamsSubTable from './ResponseParamsSubTable.vue';
-import { useFileSystemAccess } from '@vueuse/core';
 import toJsonSchema from 'to-json-schema';
+import JsonEditorSlider from '../JsonEditorSlider.vue';
 
 interface ITableRow {
   id: string
@@ -263,20 +265,13 @@ const emit = defineEmits<{
   'change-code': [code: string]
 }>();
 
-const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
-  dataType: 'Text',
-  types: [{
-    description: 'text',
-    accept: { 'text/plain': ['.txt', '.json'] },
-  }],
-});
-
 const { t } = useI18n();
 
 const tableData = ref<ITableRow[]>([]);
 const activeIndex = ref<string[]>(['currentCollapse']);
 const localCode = ref('');
 const isEditingCode = ref(false);
+const isEditorSliderVisible = ref(false);
 
 const tableRef = ref();
 const subTableRefs = useTemplateRef('sub-table-refs');
@@ -519,44 +514,19 @@ const handleDelete = () => {
   emit('delete');
 };
 
-const handleImportSchema = async () => {
-  await open();
-  // 文件大小限制为 10KB
-  if (fileSize.value > 10 * 1024) {
-    Message({
-      theme: 'warning',
-      message: t('文件大小超过 10KB'),
-    });
-    return;
-  }
+const handleEditJSON = () => {
+  isEditorSliderVisible.value = true;
+};
 
-  if (importedJsonText.value) {
-    let jsonObject: any = {};
-    try {
-      jsonObject = JSON.parse(importedJsonText.value);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('请选择合法的 JSON'),
-      });
-      return;
-    }
-    try {
-      const schema = toJsonSchema(jsonObject);
-      initTableData(schema);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('生成 JSON Schema 失败'),
-      });
-    }
+const handleEditorConfirm = (jsonObject: Record<string, any>) => {
+  try {
+    const schema = toJsonSchema(jsonObject);
+    initTableData(schema);
   }
-  else {
+  catch {
     Message({
       theme: 'error',
-      message: t('请选择合法的 JSON'),
+      message: t('生成 JSON Schema 失败'),
     });
   }
 };
