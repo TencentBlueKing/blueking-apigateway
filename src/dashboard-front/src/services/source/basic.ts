@@ -156,4 +156,9 @@ export const getVersionLog = () => http.get('/version-log/');
 /**
  * 将国际化语言设置保存到用户管理中
  */
-export const saveUserLanguage = (url: string, params: { language: string }) => http.put(url, params);
+export const saveUserLanguage = (
+  url: string,
+  params: { language: string },
+  tenant_id: string | null,
+) =>
+  http.put(url, params, tenant_id ? { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } } : {});
