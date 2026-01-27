@@ -248,7 +248,10 @@
 <script setup lang="tsx">
 import { cloneDeep } from 'lodash-es';
 import { Message } from 'bkui-vue';
-import { useGateway } from '@/stores';
+import {
+  useEnv,
+  useGateway,
+} from '@/stores';
 import {
   getBackendServiceDetail,
   getBackendServiceList,
@@ -278,6 +281,7 @@ const emit = defineEmits(['service-init']);
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
+const envStore = useEnv();
 
 const backRef = ref();
 const frontPath = ref('');
@@ -581,9 +585,15 @@ const handleCheckPath = async () => {
         ...acc,
         ...item.backend_urls.map((url, index) => {
           const rowSpan = index === 0 ? item.backend_urls.length : 0;
+          // path 需要去掉第一个斜杠
+          const path = backConfigData.value.config.path.startsWith('/') ? backConfigData.value.config.path.slice(1) : backConfigData.value.config.path;
+          const backendUrl = envStore.env.BK_API_RESOURCE_URL_TMPL
+            .replace('{api_name}', gatewayStore.currentGateway?.name || '')
+            .replace('{stage_name}', item.stage.name)
+            .replace('{resource_path}', path);
           return {
             stage: item.stage,
-            backend_url: url || '',
+            backend_url: backendUrl,
             rowSpan,
           };
         }),
