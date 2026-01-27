@@ -1,33 +1,3 @@
-## 配置
-
-支持 MCP 协议的客户端通过以下配置使用
-
-{% if protocol_type == "streamable_http" %}
-```json
-{
-    "mcpServers": {
-      "{{name}}": {
-        "type": "streamableHttp",
-        "url": "{{url}}",
-        "description": "{{description}}"
-      }
-    }
-}
-```
-{% else %}
-```json
-{
-    "mcpServers": {
-      "{{name}}": {
-        "type": "sse",
-        "url": "{{url}}",
-        "description": "{{description}}"
-      }
-    }
-}
-```
-{% endif %}
-
 ## 认证
 
 目前 MCP proxy 接入了蓝鲸 API 网关，目前需要进行 `用户认证` 和 `应用认证` 双重认证，在配置 MCP Server 的过程中，还需要额外配置认证请求头，值为 JSON 格式字符串。
@@ -41,7 +11,7 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{bk_login_ti
 > 推荐使用 `access_token`, 有效期较长，具体获取方法见 [access_token 说明]({{bk_access_token_doc_url}})
 
 ```shell
-X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "access_token": "z"}
+X-Bkapi-Authorization: {"access_token": "z"}
 ```
 
 ## 其他
