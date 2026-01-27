@@ -389,7 +389,7 @@ watch(
 
   // 屏幕宽度小于1920px时，padding自动适配
   @media (max-width: 1920px) {
-    padding: 0 calc(80px * (100vw / 1920)); // 小屏幕按比例缩放边距
+    padding: 0 calc(#{'80px * (100vw / 1920)'}); // 小屏幕按比例缩放边距
   }
 
   // 极小屏幕强制最小边距，避免挤压
@@ -471,7 +471,7 @@ watch(
           }
 
           .member-item {
-            lin-height: 22px;
+            line-height: 22px;
           }
         }
       }
