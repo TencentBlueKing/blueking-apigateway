@@ -449,13 +449,19 @@ class MCPServerHandler:
         for client in settings.MCP_CONFIG_AGENT_CLIENTS:
             template_name = f"mcp_server/{language_code}/config/{client['name']}.md"
 
+            # 根据 protocol_type 和客户端类型确定 transport_type
+            if instance.protocol_type == "streamable_http":
+                transport_type = "streamable-http" if client["name"] == "codebuddy" else "http"
+            else:
+                transport_type = "sse"
+
             # 构建模板上下文
             context = {
                 "name": instance.name,
                 "url": mcp_url,
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
-                "protocol_type": instance.protocol_type,
+                "transport_type": transport_type,
             }
 
             # AIDev 需要额外的创建链接
