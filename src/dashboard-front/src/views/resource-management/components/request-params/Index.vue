@@ -31,13 +31,11 @@
     </div>
     <div
       v-if="!readonly && !disabled"
-      class="text-right mb-6px"
+      class="mb-16px"
     >
       <IconButton
-        text
         theme="primary"
-        icon="upload"
-        @click="handleImportSchema"
+        @click="handleEditJSON"
       >
         {{ t('通过 JSON 生成') }}
       </IconButton>
@@ -262,6 +260,10 @@
       </BkButton>
     </div>
   </div>
+  <JsonEditorSlider
+    v-model="isEditorSliderVisible"
+    @confirm="handleEditorConfirm"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -272,8 +274,8 @@ import {
   type JSONSchema7,
   type JSONSchema7TypeName,
 } from 'json-schema';
-import { useFileSystemAccess } from '@vueuse/core';
 import toJsonSchema from 'to-json-schema';
+import JsonEditorSlider from '../JsonEditorSlider.vue';
 
 interface ITableRow {
   id: string
@@ -327,14 +329,6 @@ const {
   readonly = false,
 } = defineProps<IProp>();
 
-const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
-  dataType: 'Text',
-  types: [{
-    description: 'text',
-    accept: { 'text/plain': ['.txt', '.json'] },
-  }],
-});
-
 const { t } = useI18n();
 
 const tableRef = ref();
@@ -353,6 +347,8 @@ const tableData = ref<ITableRow[]>([
 ]);
 
 const invalidRowIdMap = ref<Record<string, boolean>>({});
+
+const isEditorSliderVisible = ref(false);
 
 const inList = [
   {
@@ -688,77 +684,51 @@ const handleTableMounted = () => {
   tableRef.value?.setAllRowExpand(true);
 };
 
-const handleImportSchema = async () => {
-  await open();
-  // 文件大小限制为 10KB
-  if (fileSize.value > 10 * 1024) {
-    Message({
-      theme: 'warning',
-      message: t('文件大小超过 10KB'),
+const handleEditJSON = () => {
+  isEditorSliderVisible.value = true;
+};
+
+const handleEditorConfirm = (jsonObject: Record<string, any>) => {
+  try {
+    const schema = toJsonSchema(jsonObject);
+
+    const row = {
+      id: uniqueId(),
+      name: t('根节点'),
+      in: 'body',
+      type: 'object' as JSONSchema7TypeName,
+      required: false,
+      description: '',
+    };
+
+    // 是否已存在 request body 表格行
+    const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
+    if (currentBodyRowIndex > -1) {
+      Object.assign(row, tableData.value[currentBodyRowIndex]);
+    }
+
+    const subBody = convertSchemaToBodyRow(schema);
+    if (subBody) {
+      Object.assign(row, { body: subBody });
+    }
+
+    // 替换行
+    if (currentBodyRowIndex > -1) {
+      tableData.value[currentBodyRowIndex] = row;
+    }
+    // 插入新行
+    else {
+      tableData.value.push(row);
+    }
+
+    nextTick(() => {
+      tableRef.value?.setAllRowExpand(true);
     });
-    return;
   }
-
-  if (importedJsonText.value) {
-    let jsonObject: any = {};
-    try {
-      jsonObject = JSON.parse(importedJsonText.value);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('请选择合法的 JSON'),
-      });
-      return;
-    }
-
-    try {
-      const schema = toJsonSchema(jsonObject);
-
-      const row = {
-        id: uniqueId(),
-        name: t('根节点'),
-        in: 'body',
-        type: 'object' as JSONSchema7TypeName,
-        required: false,
-        description: '',
-      };
-
-      // 是否已存在 request body 表格行
-      const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
-      if (currentBodyRowIndex > -1) {
-        Object.assign(row, tableData.value[currentBodyRowIndex]);
-      }
-
-      const subBody = convertSchemaToBodyRow(schema);
-      if (subBody) {
-        Object.assign(row, { body: subBody });
-      }
-
-      // 替换行
-      if (currentBodyRowIndex > -1) {
-        tableData.value[currentBodyRowIndex] = row;
-      }
-      // 插入新行
-      else {
-        tableData.value.push(row);
-      }
-
-      nextTick(() => {
-        tableRef.value?.setAllRowExpand(true);
-      });
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('生成 JSON Schema 失败'),
-      });
-    }
-  }
-  else {
+  catch {
     Message({
-      theme: 'warning',
-      message: t('请选择合法的 JSON'),
+      theme: 'error',
+      message: t('生成 JSON Schema 失败'),
     });
   }
 };
@@ -949,4 +919,5 @@ defineExpose({
   border-top: none;
   align-content: center;
 }
+
 </style>
