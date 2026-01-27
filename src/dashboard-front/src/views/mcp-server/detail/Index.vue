@@ -312,7 +312,7 @@ const panels = ref(MCP_TAB_LIST);
 const mcpConfigList = ref<IMCPAIConfig[]>([]);
 const editingServerId = ref<number>();
 
-const isShowConfig = computed(() => ['guide'].includes(active.value));
+const isShowConfig = computed(() => ['guide'].includes(active.value) && mcpConfigList.value.length > 0);
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {

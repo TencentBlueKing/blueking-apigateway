@@ -43,7 +43,7 @@
 
     <div class="main">
       <div class="base-info">
-        <div class="pt-16px pb-12px flex justify-between lh-22px header">
+        <div class="flex justify-between lh-22px header">
           <div class="flex max-w-[calc(100%-300px)] gap-8px">
             <div class="flex items-baseline min-w-0 title">
               <BkOverflowTitle
@@ -341,7 +341,7 @@ const mcpId = computed(() => {
   return route.params.id;
 });
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
-const isShowConfig = computed(() => ['tools', 'guide'].includes(active.value));
+const isShowConfig = computed(() => ['tools', 'guide'].includes(active.value) && mcpConfigList.value.length > 0);
 
 const handleCopy = (str: string) => {
   copy(str);
@@ -384,148 +384,149 @@ watch(
 
 <style lang="scss" scoped>
 .mcp-market-detail-wrapper {
-  width: 100%;
-  max-width: 1920px;
-
-  // 屏幕宽度小于1920px时，padding自动适配
-  @media (max-width: 1920px) {
-    padding: 0 calc(#{'80px * (100vw / 1920)'}); // 小屏幕按比例缩放边距
-  }
-
-  // 极小屏幕强制最小边距，避免挤压
-  @media (max-width: 768px) {
-    padding: 0 20px;
-  }
-}
-
-.top-bar {
-  position: sticky;
-  top: 0;
-  height: 64px;
-  padding: 0 24px;
-  background-color: #ffffff;
-  z-index: 999;
-  box-shadow: 0 3px 4px 0 #0000000a;
-
-  .icon {
-    margin-right: 4px;
-    color: #3a84ff;
-    cursor: pointer;
-  }
-
-  .top-bar-title {
-    font-size: 16px;
-    color: #313238;
-  }
-}
-
-.main {
-  width: 100%;
-  margin: 24px auto;
-  padding: 0 80px;
-  background-color: #f5f7fa;
   box-sizing: border-box;
 
-  .base-info {
+  .top-bar {
+    position: sticky;
+    top: 0;
+    height: 52px;
     padding: 0 24px;
-    margin-bottom: 16px;
     background-color: #ffffff;
-    border-radius: 2px;
-    box-shadow: 0 2px 4px 0 #1919290d;
+    z-index: 999;
+    box-shadow: 0 3px 4px 0 #0000000a;
 
-    .header {
-      border-bottom: 1px solid #EAEBF0;
-
-      .title {
-        margin-right: 16px;
-        font-size: 20px;
-        font-weight: bold;
-        color: #313238;
-      }
+    .icon {
+      margin-right: 4px;
+      color: #3a84ff;
+      cursor: pointer;
     }
 
-    .info-content {
-      margin-top: 24px;
+    .top-bar-title {
+      font-size: 16px;
+      color: #313238;
+    }
+  }
 
-      .info-item {
-        display: flex;
-        align-items: baseline;
-        font-size: 14px;
-        line-height: 40px;
+  .main {
+    max-width: 1920px;
+    margin: 24px auto;
+    padding: 0 80px;
+    background-color: #f5f7fa;
+    box-sizing: border-box;
 
-        .label {
-          flex-shrink: 0;
-          color: #4d4f56;
-          margin-right: 12px;
-          text-align: right;
-        }
+    .base-info {
+      margin-bottom: 16px;
+      background-color: #ffffff;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
 
-        .value {
-          flex: 1;
+      .header {
+        padding: 18px 24px 12px 24px;
+        border-bottom: 1px solid #eaebf0;
+
+        .title {
+          margin-right: 16px;
+          font-size: 20px;
+          font-weight: 700;
           color: #313238;
-          line-height: 22px;
+        }
+      }
 
-          .icon {
-            color: #3a84ff;
-            cursor: pointer;
+      .info-content {
+        padding: 24px 24px 20px 24px;
+
+        .info-item {
+          display: flex;
+          align-items: baseline;
+          font-size: 14px;
+          line-height: 40px;
+
+          .label {
+            flex-shrink: 0;
+            color: #4d4f56;
+            margin-right: 12px;
+            text-align: right;
           }
 
-          .member-item {
+          .value {
+            flex: 1;
+            color: #313238;
             line-height: 22px;
+
+            .icon {
+              color: #3a84ff;
+              cursor: pointer;
+            }
+
+            .member-item {
+              line-height: 22px;
+            }
           }
+
         }
       }
     }
-  }
-}
 
-.count {
-  padding: 2px 8px;
-  margin-left: 8px;
-  font-size: 12px;
-  line-height: 12px;
-  border-radius: 8px;
+    // 屏幕宽度小于1680px时，padding自动适配
+    @media (max-width: 1680px) {
+      padding: 0 calc(100vw / 24); // 小屏幕按比例缩放边距
+    }
 
-  &.on {
-    color: #3a84ff;
-    background: #E1ECFF;
-  }
-
-  &.off {
-    color: #4d4f56;
-  }
-}
-
-.tab-wrapper {
-  :deep(.bk-tab-content) {
-    padding: 0;
-    background-color: #ffffff;
-  }
-
-  .bk-resize-layout-right {
-    :deep(>.bk-resize-layout-aside) {
-      display: none;
+    // 极小屏幕强制最小边距，避免挤压
+    @media (max-width: 768px) {
+      padding: 0 24px;
     }
   }
 
-  &.mcp-detail-tools,
-  &.mcp-detail-guide {
-    width: 100%;
+  .count {
+    padding: 2px 8px;
+    margin-left: 8px;
+    font-size: 12px;
+    line-height: 12px;
+    border-radius: 8px;
+
+    &.on {
+      color: #3a84ff;
+      background: #E1ECFF;
+    }
+
+    &.off {
+      color: #4d4f56;
+    }
+  }
+
+  .tab-wrapper {
+    :deep(.bk-tab-content) {
+      padding: 0;
+      background-color: #ffffff;
+    }
 
     .bk-resize-layout-right {
-
       :deep(>.bk-resize-layout-aside) {
-        display: block;
-
-        .bk-resize-trigger {
-          background-color: #ffffff;
-        }
+        display: none;
       }
+    }
 
-      :deep(>.bk-resize-layout-main) {
-        width: 62.5% !important;
+    &.mcp-detail-tools,
+    &.mcp-detail-guide {
+      width: 100%;
+
+      .bk-resize-layout-right {
+
+        :deep(>.bk-resize-layout-aside) {
+          display: block;
+
+          .bk-resize-trigger {
+            background-color: #ffffff;
+          }
+        }
+
+        :deep(>.bk-resize-layout-main) {
+          width: 62.5% !important;
+        }
       }
     }
   }
 }
+
 </style>

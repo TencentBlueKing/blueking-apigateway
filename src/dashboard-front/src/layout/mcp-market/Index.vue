@@ -148,7 +148,7 @@
                   v-if="server?.is_featured"
                   #mcpStatus
                 >
-                  <div class="bg-# card-header-status">
+                  <div class="bg-#f8b64f featured card-header-status">
                     {{ t('精选') }}
                   </div>
                 </template>
@@ -241,6 +241,9 @@ const searchData = computed(() => [
   },
 ]);
 const categoriesCount = computed(() => {
+  if (activeCategoryName.value.includes('all')) {
+    return pagination.value.count;
+  }
   return categoriesList.value?.reduce((accumulator: number, current: IMCPMarketCategory) => {
     return accumulator + current.mcp_server_count;
   }, 0);
@@ -321,6 +324,13 @@ const getList = async () => {
       hasNoMore: mcpMarketList.value.length >= count,
       current: current + 1,
     };
+    // 处理每个分类筛选结果
+    if (activeCategoryName.value) {
+      const curCate = categoriesList.value.find(cat => cat.name === activeCategoryName.value);
+      if (curCate) {
+        curCate.mcp_server_count = count;
+      }
+    }
   }
   catch {
     cardEmptyType.value = 'error';
@@ -402,7 +412,6 @@ const handleCardClick = (id: number) => {
 const handleClearFilter = () => {
   filterData.value = { order_by: '-updated_time' };
   searchValue.value = [];
-  resetPagination();
 };
 
 const handleRefresh = () => {
