@@ -1,13 +1,13 @@
 <template>
-  <div class="custom-configure-wrapper pl-16px pr-16px">
-    <div class="color-#313238 text-16px font-700 pl-8px pt-10px configure-title">
+  <div class="custom-configure-wrapper">
+    <div class="color-#313238 text-16px font-700 pl-24px pt-10px configure-title">
       {{ t('配置') }}
     </div>
 
     <BkTab
       v-model:active="activeTab"
       :type="tabType"
-      class="flex-1"
+      class="server-config-tab flex-1"
       :border="false"
       @change="handleConfigChange"
     >
@@ -21,7 +21,7 @@
 
     <Guide
       :markdown-html="selectedConfigContent"
-      class="pt-16px bg-white"
+      class="p-16px bg-white"
     />
   </div>
 </template>
@@ -86,3 +86,21 @@ const handleConfigChange = (tab: string) => {
   manualActiveTab.value = tab;
 };
 </script>
+
+<style lang="scss" scoped>
+:deep(.server-config-tab) {
+
+  .bk-tab-header {
+    padding: 0 24px;
+
+    &-nav {
+      display: flex;
+      gap: 32px;
+    }
+
+    &-item {
+      padding: 0 8px;
+    }
+  }
+}
+</style>

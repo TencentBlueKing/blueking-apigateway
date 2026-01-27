@@ -368,6 +368,10 @@ onUnmounted(() => {
     font-size: 12px;
     color: #ffffff;
     border-radius: 0 2px 0 99px;
+
+    &.featured {
+      min-width: 44px;
+    }
   }
 
   &:hover {

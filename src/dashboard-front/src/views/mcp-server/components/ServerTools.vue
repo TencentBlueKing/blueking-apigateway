@@ -973,11 +973,11 @@ $code-color: #63656e;
 
     .title {
       padding: 0;
-      margin: 25px 0 10px;
-      font-size: 16px;
-      font-weight: bold;
+      margin: 25px 0 17px;
+      font-size: 14px;
+      font-weight: 700;
       line-height: 22px;
-      color: #313238;
+      color: #4d4f56;
       text-align: left;
     }
   }
