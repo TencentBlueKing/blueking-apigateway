@@ -19,6 +19,7 @@
 <template>
   <div class="mcp-market-wrapper">
     <img
+      ref="bannerRef"
       :src="bannerImg"
       alt="banner"
       class="banner"
@@ -36,7 +37,7 @@
           @click.stop="handleCategoryChange('all')"
         >
           <div class="mcp-categorize-content">
-            <svg class="icon svg-icon w-14px">
+            <svg class="icon svg-icon w-16px">
               <use xlink:href="#icon-ag-quanbu" />
             </svg>
             <div class="categorize-text">
@@ -64,9 +65,8 @@
             <div
               v-bk-tooltips="{
                 placement:'top',
-                content: categorize.display_name ,
+                content: categorize.display_name,
                 disabled: !categorize.isOverflow,
-                extCls: 'max-w-120px',
               }"
               class="truncate categorize-text"
               @mouseenter="(e: MouseEvent) => handleMouseenter(e, categorize)"
@@ -174,6 +174,7 @@ import {
   getMcpMarketplace,
   getMcpMarketplaceCategories,
 } from '@/services/source/mcp-market';
+import { type IPagination } from '@/types/common';
 import { vIntersectionObserver } from '@vueuse/components';
 import { useFeatureFlag } from '@/stores';
 import mcpBanner from '@/images/mcp-banner.jpg';
@@ -200,6 +201,7 @@ const mcpTabList = shallowRef([
     id: 'Featured',
   },
 ]);
+const bannerRef = ref<HTMLImageElement>(null);
 const mcpCategorizeRef = ref<HTMLDivElement>(null);
 const isLoading = ref(false);
 const bannerLoaded = ref(false);
@@ -208,15 +210,16 @@ const isFirstLoad = ref(true);
 // 标记Banner加载完成后是否已初始化过分页
 const isBannerLoadedInit = ref(false);
 const mcpCategorizeWidth = ref(0);
+const cachedViewportHeight = ref(0);
 const activeStatusTab = ref('all');
 const activeCategoryName = ref('all');
 const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error'>('');
 const filterData = ref({ order_by: '-updated_time' });
 const searchValue = ref([]);
 const mcpMarketList = ref<IMarketplaceItem[]>([]);
-const categoriesList = ref<IMCPMarketCategory>([]);
+const categoriesList = ref<IMCPMarketCategory[]>([]);
 
-const pagination = ref({
+const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
   current: 1,
   limit: 0,
   count: 0,
@@ -245,25 +248,25 @@ const categoriesCount = computed(() => {
 
 // 获取banner高度的方法，增加图片加载监听
 const getBannerHeight = (): number => {
-  const bannerEl = document.querySelector('.mcp-market-wrapper .banner') as HTMLImageElement;
-  if (!bannerEl) return 0;
+  if (!bannerRef.value) return 0;
 
   // 若图片已加载，直接返回高度
   if (bannerLoaded.value) {
-    return bannerEl.offsetHeight;
+    return bannerRef.value.offsetHeight;
   }
 
   // 监听图片加载事件
-  bannerEl.addEventListener('load', () => {
+  bannerRef.value.addEventListener('load', () => {
     bannerLoaded.value = true;
     // 图片加载完成后重新计算分页limit
     if (!isBannerLoadedInit.value) {
       isBannerLoadedInit.value = true;
       resetPagination();
     }
-  });
+  }, { once: true });
+
   // 加载中先返回默认高度（或图片的固有高度）
-  return bannerEl.naturalHeight || 0;
+  return bannerRef.value.naturalHeight || 0;
 };
 
 const calculateMaxVisibleCards = (): number => {
@@ -378,8 +381,8 @@ const handleSearch = () => {
   resetPagination();
 };
 
-const handleMouseenter = (e: MouseEvent, row: IMCPMarketCategory) => {
-  const cell = (e.target as HTMLElement).closest('.truncate');
+const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMCPMarketCategory) => {
+  const cell = e.target.closest('.truncate');
   if (cell) {
     row.isOverflow = cell.scrollWidth > cell.offsetWidth;
   }
@@ -414,12 +417,17 @@ const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
 };
 
 const handleResize = debounce(() => {
-  const newLimit = calculateMaxVisibleCards();
-  if (pagination.value.limit !== newLimit) {
-    pagination.value.limit = newLimit || 3;
-    resetPagination();
+  const newViewportHeight = window.innerHeight;
+  // 仅当视口高度变化超过 30px 时才重新计算
+  if (Math.abs(newViewportHeight - (cachedViewportHeight.value || 0)) > 30) {
+    cachedViewportHeight.value = newViewportHeight;
+    const newLimit = calculateMaxVisibleCards();
+    if (pagination.value.limit !== newLimit) {
+      pagination.value.limit = newLimit || 3;
+      resetPagination();
+    }
   }
-}, 300);
+}, 500);
 
 watch(
   () => searchValue.value,
@@ -455,6 +463,8 @@ onUnmounted(() => {
     padding: 24px;
 
     .mcp-categorize {
+      position: sticky;
+      top: 24px;
 
       .mcp-categorize-item {
         display: flex;
@@ -470,7 +480,7 @@ onUnmounted(() => {
           flex: 1;
           display: flex;
           align-items: center;
-          font-size: 12px;
+          font-size: 14px;
           height: 36px;
 
           .icon-circle {

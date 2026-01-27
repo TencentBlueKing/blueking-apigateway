@@ -173,6 +173,7 @@ export const MCP_PROTOCOL_TYPE = [
   },
 ];
 
+//  MCP详情选项卡
 export const MCP_TAB_LIST = [
   {
     name: 'tools',
