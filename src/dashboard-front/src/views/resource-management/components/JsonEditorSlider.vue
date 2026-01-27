@@ -52,6 +52,7 @@
         </BkButton>
         <BkButton
           class="w-88px"
+          @click="visible = false"
         >
           {{ t("取消") }}
         </BkButton>
