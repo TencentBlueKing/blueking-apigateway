@@ -71,7 +71,7 @@ func GetMCPServerPermission(ctx context.Context, bkAppCode string, mcpServerID i
 	var ok bool
 	permission, ok = value.(*model.MCPServerAppPermission)
 	if !ok {
-		err = errors.New("not model.McpServerAppPermission in cache")
+		err = errors.New("invalid cache value: expected *model.MCPServerAppPermission")
 		return
 	}
 	return

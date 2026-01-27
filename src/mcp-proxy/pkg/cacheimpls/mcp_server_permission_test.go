@@ -91,7 +91,7 @@ var _ = Describe("MCPServerPermission", func() {
 
 			_, err := cacheimpls.GetMCPServerPermission(context.Background(), "test-app", 123)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("not model.McpServerAppPermission in cache"))
+			Expect(err.Error()).To(ContainSubstring("invalid cache value: expected *model.MCPServerAppPermission"))
 		})
 	})
 })

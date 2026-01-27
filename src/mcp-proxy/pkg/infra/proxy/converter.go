@@ -70,18 +70,6 @@ func OpenapiToMcpToolConfig(openApiSpec *openapi3.T, operationIDMap map[string]s
 			paramSchema := jsonschema.Schema{
 				Type: j.WithSimpleTypes(jsonschema.Object),
 			}
-			// 暂时只支持json格式的请求体
-			if operation.RequestBody != nil && operation.RequestBody.Value != nil {
-				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok && content != nil {
-					schema := content.Schema.Value
-					marshalJSON, _ := schema.MarshalJSON()
-					var jsonSchema jsonschema.Schema
-					_ = json.Unmarshal(marshalJSON, &jsonSchema)
-					paramSchema.WithPatternPropertiesItem("body_param", jsonschema.SchemaOrBool{
-						TypeObject: &jsonSchema,
-					})
-				}
-			}
 			if operation.Parameters != nil {
 				headerParamSchema := jsonschema.Schema{
 					Type: j.WithSimpleTypes(jsonschema.Object),

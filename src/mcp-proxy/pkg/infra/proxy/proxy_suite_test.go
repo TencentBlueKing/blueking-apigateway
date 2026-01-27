@@ -23,7 +23,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/logging"
 )
+
+var _ = BeforeSuite(func() {
+	// Initialize logger for tests
+	logging.InitLogger(&config.Config{})
+})
 
 func TestProxy(t *testing.T) {
 	RegisterFailHandler(Fail)

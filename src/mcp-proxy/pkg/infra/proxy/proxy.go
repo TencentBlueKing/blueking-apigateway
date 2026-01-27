@@ -24,7 +24,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -64,7 +63,7 @@ func NewMCPProxy() *MCPProxy {
 func (m *MCPProxy) AddMCPServer(name string, mcpServer *MCPServer) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
-	log.Printf("add mcp server: %s\n", name)
+	logging.GetLogger().Infof("add mcp server: %s", name)
 	m.mcpServers[name] = mcpServer
 }
 
@@ -241,7 +240,7 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 		mcpServer := m.GetMCPServer(name)
 		if mcpServer == nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
-			log.Printf("name %s does not exist\n", name)
+			logging.GetLogger().Warnf("mcp server name %s does not exist", name)
 			return
 		}
 		handler := mcpServer.HandleSSE()
@@ -260,7 +259,7 @@ func (m *MCPProxy) StreamableHTTPHandler() gin.HandlerFunc {
 		mcpServer := m.GetMCPServer(name)
 		if mcpServer == nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server name %s does not exist", name))
-			log.Printf("name %s does not exist\n", name)
+			logging.GetLogger().Warnf("mcp server name %s does not exist", name)
 			return
 		}
 		handler := mcpServer.HandleMCP()
@@ -571,9 +570,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
-			msg := fmt.Sprintf("call %s error:%s\n", toolApiConfig, err.Error())
+			msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
-			log.Println(msg)
 			// nolint:nilerr
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{
@@ -584,8 +582,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				IsError: true,
 			}, nil
 		}
-		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.Any("response", submit), zap.Any("header", headerInfo))
+		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
+			zap.Any("response", submit), zap.Any("header", headerInfo))
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
 				&mcp.TextContent{
