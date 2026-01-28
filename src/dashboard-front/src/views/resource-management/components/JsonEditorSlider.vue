@@ -110,6 +110,7 @@ const handleImportJSON = async () => {
 
 const handleEditorConfirm = () => {
   try {
+    source.value = editorRef.value!.getValue();
     emit('confirm', JSON.parse(source.value));
     visible.value = false;
   }
