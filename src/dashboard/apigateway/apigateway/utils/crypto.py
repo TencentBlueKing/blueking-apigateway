@@ -20,8 +20,10 @@ import base64
 import hashlib
 from typing import Tuple, Union
 
+from blue_krill.encrypt.handler import EncryptHandler
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from django.conf import settings
 from django.utils.encoding import force_bytes
 
 
@@ -82,3 +84,17 @@ def calculate_fingerprint(content):
     key = base64.b64decode("".join(content.splitlines()[1:-1]).encode("ascii"))
     fp_plain = hashlib.md5(key).hexdigest()
     return ":".join(a + b for a, b in zip(fp_plain[::2], fp_plain[1::2]))
+
+
+class BkCrypto:
+    def __init__(self):
+        self._encrypt_handler = EncryptHandler(
+            encrypt_cipher_type=settings.ENCRYPT_CIPHER_TYPE,
+            secret_key=settings.BKKRILL_ENCRYPT_SECRET_KEY,
+        )
+
+    def encrypt(self, plaintext) -> str:
+        return self._encrypt_handler.encrypt(plaintext)
+
+    def decrypt(self, encrypted_text) -> str:
+        return self._encrypt_handler.decrypt(encrypted_text)

@@ -52,7 +52,9 @@ class TestGatewayResourceDistributor:
         mock_release.gateway.name = "test-gateway"
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         assert isinstance(distributor, BaseDistributor)
 
     def test_gateway_property(self, mocker):
@@ -60,7 +62,9 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mocker.Mock()
         mock_release.gateway.name = "test-gateway"
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         assert distributor.gateway == mock_release.gateway
 
     def test_stage_property(self, mocker):
@@ -68,7 +72,9 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         assert distributor.stage == mock_release.stage
 
     def test_get_registry(self, mocker):
@@ -85,8 +91,10 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mock_gateway
         mock_release.stage = mock_stage
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         # FIXME: mock release
-        distributor = GatewayResourceDistributor(mock_release)
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         registry = distributor._get_registry(mock_gateway, mock_stage)
 
         # Verify EtcdRegistry was called with correct key_prefix
@@ -115,7 +123,9 @@ class TestGatewayResourceDistributor:
 
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         assert success is True
@@ -136,7 +146,9 @@ class TestGatewayResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         assert success is False
@@ -161,7 +173,9 @@ class TestGatewayResourceDistributor:
 
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.revoke(release_task_id="test-task-id", publish_id=DELETE_PUBLISH_ID)
 
         assert success is True
@@ -186,7 +200,9 @@ class TestGatewayResourceDistributor:
 
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.revoke(release_task_id="test-task-id", publish_id=123)
 
         assert success is True
@@ -207,7 +223,9 @@ class TestGatewayResourceDistributor:
 
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GatewayResourceDistributor(mock_release)
+        mock_data_plane = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.revoke(release_task_id="test-task-id", publish_id=123)
 
         assert success is False

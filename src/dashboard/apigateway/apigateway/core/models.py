@@ -597,7 +597,8 @@ class ReleasedResource(TimestampedModelMixin):
 class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
     """
     Release History
-    Store the release history records
+    Store the release history records.
+    Each release to a data_plane creates a separate ReleaseHistory record.
     """
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
@@ -613,6 +614,16 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         max_length=64,
         choices=PublishSourceEnum.get_choices(),
         default=PublishSourceEnum.VERSION_PUBLISH.value,
+    )
+
+    # Data plane this release was published to (nullable for backward compatibility)
+    data_plane = models.ForeignKey(
+        "data_plane.DataPlane",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="release_histories",
+        help_text="The data plane this release was published to",
     )
 
     objects: ClassVar[managers.ReleaseHistoryManager] = managers.ReleaseHistoryManager()
