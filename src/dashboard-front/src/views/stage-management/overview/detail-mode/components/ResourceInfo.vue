@@ -445,7 +445,11 @@ const handleClearQueries = () => {
 };
 
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
-  Object.assign(filterValue.value, filters);
+  Object.assign(
+    filterValue.value,
+    filters,
+    { method: filters.method?.filter((item: string | undefined) => !!item) || [] },
+  );
 };
 
 const hasNoVerification = (row: any) => {
