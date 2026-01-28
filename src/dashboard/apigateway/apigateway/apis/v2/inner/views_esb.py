@@ -245,7 +245,7 @@ class EsbAppPermissionApplyRecordListApi(generics.ListAPIView):
         manager.patch_permission_apply_records(page)
 
         slz = serializers.EsbAppPermissionApplyRecordListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(slz.data)
 
 
 @method_decorator(

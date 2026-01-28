@@ -18,6 +18,7 @@
 #
 from unittest import mock
 
+from django.utils import timezone
 from django_dynamic_fixture import G
 
 from apigateway.apps.mcp_server.constants import (
@@ -26,6 +27,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.tests.utils.testing import get_response_json
@@ -538,3 +540,52 @@ class TestGatewayDestroyApi:
         )
 
         assert response.status_code == 204
+
+
+class TestAppPermissionRecordListApi:
+    """测试申请记录列表 API 分页响应"""
+
+    def test_list_with_pagination(self, request_view, fake_gateway):
+        """测试申请记录列表返回分页参数"""
+        # 创建申请记录
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            handled_time=timezone.now(),
+            status="approved",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        # 验证分页参数存在
+        assert "count" in result["data"]
+        assert "results" in result["data"]
+        # 验证数据
+        assert result["data"]["count"] == 1
+        assert len(result["data"]["results"]) == 1
+        assert result["data"]["results"][0]["id"] == record.id
+
+    def test_list_empty_with_pagination(self, request_view, fake_gateway):
+        """测试空列表返回分页参数"""
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.permission.apply-records",
+            data={"target_app_code": "non-existent-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        # 验证分页参数存在
+        assert result["data"]["count"] == 0
+        assert result["data"]["results"] == []
