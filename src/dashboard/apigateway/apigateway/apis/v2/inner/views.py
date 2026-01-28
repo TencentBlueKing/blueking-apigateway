@@ -372,7 +372,7 @@ class AppPermissionRecordListApi(generics.ListAPIView):
 
         page = self.paginate_queryset(queryset)
         slz = serializers.AppPermissionRecordListOutputSLZ(page, many=True)
-        return OKJsonResponse(data=slz.data)
+        return self.get_paginated_response(slz.data)
 
 
 @method_decorator(
