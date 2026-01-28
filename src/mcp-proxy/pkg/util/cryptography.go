@@ -79,7 +79,11 @@ func ParsePrivateKey(privateKeyText []byte) (any, error) {
 		privateKey, err = x509.ParsePKCS8PrivateKey(block.Bytes)
 		// If no error occurred, ensure it's an RSA key
 		if err == nil {
-			privateKey, _ = privateKey.(*rsa.PrivateKey) // Ensure it's an RSA key
+			rsaKey, ok := privateKey.(*rsa.PrivateKey)
+			if !ok {
+				return nil, fmt.Errorf("expected RSA private key, got %T", privateKey)
+			}
+			privateKey = rsaKey
 		}
 	default:
 		return nil, fmt.Errorf("unsupported PEM block type: %s", block.Type)

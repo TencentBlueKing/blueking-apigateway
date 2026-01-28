@@ -50,7 +50,7 @@ func MCPServerPermissionMiddleware() func(c *gin.Context) {
 		}
 
 		// 判断权限是否有效
-		if !permission.Expires.After(time.Now()) {
+		if permission.Expires.Before(time.Now()) {
 			util.ForbiddenJSONResponse(c,
 				fmt.Sprintf("appCode[%s] to call mcp server[%s] permission is expired", appCode,
 					c.Param("name")))
