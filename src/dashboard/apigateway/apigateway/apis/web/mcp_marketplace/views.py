@@ -34,6 +34,7 @@ from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.validators import check_user_can_access_gateway
@@ -322,6 +323,7 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取 MCP 市场分类列表",
+        query_serializer=MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -332,10 +334,13 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
     serializer_class = MCPServerCategoryOutputSLZ
 
     def list(self, request, *args, **kwargs):
+        slz = MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
         # 获取用户租户 ID，用于过滤
         user_tenant_id = get_user_tenant_id(request)
 
-        # 构建分类统计过滤条件
+        # 构建分类统计过滤条件（和 MCPMarketplaceServerListApi 保持一致）
         mcp_server_filter = Q(
             mcp_servers__is_public=True,
             mcp_servers__status=MCPServerStatusEnum.ACTIVE.value,
@@ -343,11 +348,30 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
             mcp_servers__stage__status=StageStatusEnum.ACTIVE.value,
         )
 
-        # 如果有租户过滤，添加租户条件
-        if user_tenant_id:
-            mcp_server_filter &= Q(mcp_servers__gateway__tenant_id=user_tenant_id) | Q(
-                mcp_servers__gateway__tenant_mode="global"
+        # 关键字筛选
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            mcp_server_filter &= (
+                Q(mcp_servers__name__icontains=keyword)
+                | Q(mcp_servers__title__icontains=keyword)
+                | Q(mcp_servers__description__icontains=keyword)
+                | Q(mcp_servers___labels__icontains=keyword)
             )
+
+        # 如果有租户过滤，使用和 MCPMarketplaceServerListApi 一样的筛选逻辑
+        if user_tenant_id:
+            # 运营租户可以看到 全租户网关 + 自己租户网关的 MCP Server
+            if user_tenant_id == TENANT_ID_OPERATION:
+                mcp_server_filter &= Q(mcp_servers__gateway__tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
+                    mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+                    mcp_servers__gateway__tenant_id=user_tenant_id,
+                )
+            else:
+                # 其他租户只能看到本租户网关的 MCP Server
+                mcp_server_filter &= Q(
+                    mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+                    mcp_servers__gateway__tenant_id=user_tenant_id,
+                )
 
         # 使用 annotate 一次性统计每个分类的 MCPServer 数量，避免 N+1 查询
         queryset = (
