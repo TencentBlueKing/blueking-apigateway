@@ -756,6 +756,187 @@ class TestMCPMarketplaceCategoryListApi:
         assert resp.status_code == 200
         assert len(result["data"]) == 0
 
+    def test_list_categories_with_keyword_filter(self, request_view, fake_categories, fake_public_mcp_server):
+        """测试分类列表关键字筛选 - 统计数量应根据关键字过滤"""
+        # 给 mcp_server 添加分类
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 创建另一个 mcp_server，名称不同
+        other_server = G(
+            MCPServer,
+            name="other_unique_name",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        other_server.categories.add(fake_categories["official"])
+
+        # 不带关键字，应该统计 2 个
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 2
+
+        # 带关键字筛选，只匹配 other_unique_name
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"keyword": "other_unique"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 1
+
+        # 带不匹配的关键字，应该统计 0 个
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"keyword": "nonexistent_keyword"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 0
+
+    def test_list_categories_with_keyword_filter_by_title(self, request_view, fake_categories, fake_public_mcp_server):
+        """测试分类列表关键字筛选 - 按 title 筛选"""
+        fake_public_mcp_server.title = "特殊标题测试"
+        fake_public_mcp_server.save()
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 按 title 筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"keyword": "特殊标题"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 1
+
+    def test_list_categories_with_keyword_filter_by_description(
+        self, request_view, fake_categories, fake_public_mcp_server
+    ):
+        """测试分类列表关键字筛选 - 按 description 筛选"""
+        fake_public_mcp_server.description = "独特描述内容用于测试"
+        fake_public_mcp_server.save()
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 按 description 筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"keyword": "独特描述"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 1
+
+    def test_list_categories_with_keyword_filter_by_labels(
+        self, request_view, fake_categories, fake_public_mcp_server
+    ):
+        """测试分类列表关键字筛选 - 按 labels 筛选"""
+        fake_public_mcp_server.labels = ["unique_test_label", "other"]
+        fake_public_mcp_server.save()
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 按 labels 筛选
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            data={"keyword": "unique_test_label"},
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        assert official_category["mcp_server_count"] == 1
+
+    def test_list_categories_excludes_inactive_mcp_servers(
+        self, request_view, fake_categories, fake_public_mcp_server
+    ):
+        """测试分类列表统计不包含未启用的 MCPServer"""
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 创建一个未启用的 mcp_server
+        inactive_server = G(
+            MCPServer,
+            name="inactive_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            is_public=True,
+        )
+        inactive_server.categories.add(fake_categories["official"])
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        # 只统计启用的
+        assert official_category["mcp_server_count"] == 1
+
+    def test_list_categories_excludes_non_public_mcp_servers(
+        self, request_view, fake_categories, fake_public_mcp_server
+    ):
+        """测试分类列表统计不包含非公开的 MCPServer"""
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        # 创建一个非公开的 mcp_server
+        private_server = G(
+            MCPServer,
+            name="private_server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+        private_server.categories.add(fake_categories["official"])
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        official_category = next(
+            (cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME),
+            None,
+        )
+        # 只统计公开的
+        assert official_category["mcp_server_count"] == 1
+
 
 class TestMCPServerCategoryModel:
     """测试 MCPServerCategory 模型"""
