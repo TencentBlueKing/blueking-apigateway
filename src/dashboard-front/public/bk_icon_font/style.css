@@ -641,3 +641,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-quanbu:before {
 	content: "\e1f3";
 }
+.icon-ag-anzhuang:before {
+	content: "\e1f5";
+}

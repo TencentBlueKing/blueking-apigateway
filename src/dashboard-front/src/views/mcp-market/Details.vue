@@ -43,9 +43,9 @@
 
     <div class="main">
       <div class="base-info">
-        <div class="flex justify-between lh-22px header">
-          <div class="flex max-w-[calc(100%-300px)] gap-8px">
-            <div class="flex items-baseline min-w-0 title">
+        <div class="flex items-center justify-between header">
+          <div class="flex items-center max-w-[calc(100%-300px)] gap-8px">
+            <div class="flex items-center min-w-0 title">
               <BkOverflowTitle
                 type="tips"
                 class="truncate"
@@ -61,7 +61,7 @@
             </div>
             <div class="flex items-baseline flex-shrink-0">
               <BkTag
-                v-if="mcpDetails?.gateway?.is_official"
+                v-if="mcpDetails?.is_official"
                 theme="success"
                 class="mr-8px"
               >
@@ -94,12 +94,23 @@
             <div class="label">
               {{ t('访问地址') }}:
             </div>
-            <div class="value">
-              {{ mcpDetails?.url }}
+            <div class="w-full flex items-baseline value">
+              <div
+                v-bk-tooltips="{
+                  content: mcpDetails?.url ?? '',
+                  disabled: !mcpDetails?.isOverflow,
+                  extCls: 'max-w-[calc(100%-100px)]'
+                }"
+                class="max-w-[calc(100%-100px)] truncate"
+                @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
+                @mouseleave="(e: MouseEvent) => handleMouseleave(e, mcpDetails)"
+              >
+                {{ mcpDetails?.url }}
+              </div>
               <AgIcon
                 name="copy"
                 size="16"
-                class="icon"
+                class="shrink-0 ml-8px icon"
                 @click="() => handleCopy(mcpDetails?.url)"
               />
             </div>
@@ -111,10 +122,12 @@
             <div
               v-bk-tooltips="{
                 content: mcpDetails?.description ?? '',
-                disabled: mcpDetails?.description?.length < 1,
-                extCls: 'max-w-[calc(100%-160px)]'
+                disabled: !mcpDetails?.isOverflow,
+                extCls: 'max-w-[calc(100%-100px)]'
               }"
               class="truncate value"
+              @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
+              @mouseleave="(e: MouseEvent) => handleMouseleave(e, mcpDetails)"
             >
               {{ mcpDetails?.description }}
             </div>
@@ -373,6 +386,17 @@ const handleShowGuide = () => {
   isShowGuideSlider.value = true;
 };
 
+const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceDetails) => {
+  const cell = e.target.closest('.truncate');
+  if (cell) {
+    row.isOverflow = cell.scrollWidth > cell.offsetWidth;
+  }
+};
+
+const handleMouseleave = (_: MouseEvent, row: IMarketplaceDetails) => {
+  row.isOverflow = false;
+};
+
 watch(
   () => mcpId.value,
   () => {
@@ -421,7 +445,8 @@ watch(
       box-shadow: 0 2px 4px 0 #1919290d;
 
       .header {
-        padding: 18px 24px 12px 24px;
+        padding: 0 24px;
+        height: 52px;
         border-bottom: 1px solid #eaebf0;
 
         .title {

@@ -1,6 +1,24 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2026 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
 <template>
   <div class="custom-configure-wrapper">
-    <div class="color-#313238 text-16px font-700 pl-24px pt-10px configure-title">
+    <div class="color-#313238 text-16px font-700 pl-24px pt-10px lh-22px configure-title">
       {{ t('配置') }}
     </div>
 
@@ -21,6 +39,7 @@
 
     <Guide
       :markdown-html="selectedConfigContent"
+      :install-url="installUrl"
       class="p-16px bg-white"
     />
   </div>
@@ -44,6 +63,7 @@ const {
 } = defineProps<IProps>();
 
 const manualActiveTab = ref('');
+const installUrl = ref('');
 
 const activeTab = computed(() => {
   if (list.length > 0 && !manualActiveTab.value) {
@@ -56,8 +76,8 @@ const activeTab = computed(() => {
 const selectedConfigContent = computed(() => {
   if (!activeTab.value) return '';
   const curTab = list.find(item => item.name === activeTab.value);
+  installUrl.value = curTab?.install_url ?? '';
   if (!curTab || !curTab.content) return '';
-
   // 初始化markdown解析器
   const md = new MarkdownIt({
     linkify: false,
