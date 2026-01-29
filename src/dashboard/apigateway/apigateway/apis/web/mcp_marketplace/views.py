@@ -358,6 +358,13 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
                 | Q(mcp_servers___labels__icontains=keyword)
             )
 
+        # 分类筛选（支持多个分类）
+        categories = slz.validated_data.get("categories")
+        if categories:
+            mcp_server_filter &= Q(
+                mcp_servers__categories__name__in=categories, mcp_servers__categories__is_active=True
+            )
+
         # 如果有租户过滤，使用和 MCPMarketplaceServerListApi 一样的筛选逻辑
         if user_tenant_id:
             # 运营租户可以看到 全租户网关 + 自己租户网关的 MCP Server
