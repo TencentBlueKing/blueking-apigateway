@@ -111,15 +111,40 @@ const handleConfigChange = (tab: string) => {
 :deep(.server-config-tab) {
 
   .bk-tab-header {
-    padding: 0 24px;
+    padding-left: 16px;
+    padding-right: 24px;
 
     &-nav {
       display: flex;
       gap: 32px;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #dcdee5;
+        border-radius: 3px;
+
+        &:hover {
+          background-color: #b4bccc;
+        }
+      }
+
+      &::-webkit-scrollbar-track {
+        background-color: transparent;
+        border-radius: 3px;
+      }
+
+      // 兼容非webkit内核浏览器
+      scrollbar-width: thin;
+      scrollbar-color: #dcdee5 transparent;
     }
 
     &-item {
       padding: 0 8px;
+      flex-shrink: 0;
     }
   }
 }
