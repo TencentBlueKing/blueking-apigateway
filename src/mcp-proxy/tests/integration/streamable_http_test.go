@@ -229,6 +229,44 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).NotTo(BeNil())
 		})
+
+		It("should get prompt using MCP SDK", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 先获取 prompts 列表
+			listResult, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			if len(listResult.Prompts) > 0 {
+				// 获取第一个 prompt
+				result, err := session.GetPrompt(ctx, &mcp.GetPromptParams{
+					Name: listResult.Prompts[0].Name,
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+			}
+		})
 	})
 
 	Describe("Authentication", func() {

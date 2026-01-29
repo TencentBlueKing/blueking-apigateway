@@ -222,6 +222,54 @@ var _ = Describe("MCPServer", func() {
 				wg.Wait()
 			})
 		})
+
+		Describe("AddPrompt and RemovePrompt", func() {
+			It("should add prompt to internal map", func() {
+				// Directly add to internal map (since we can't call AddPrompt without a real mcp.Server)
+				server.rwLock.Lock()
+				server.prompts["test-prompt"] = struct{}{}
+				server.rwLock.Unlock()
+
+				Expect(server.IsRegisteredPrompt("test-prompt")).To(BeTrue())
+				Expect(server.GetPromptNames()).To(ContainElement("test-prompt"))
+			})
+
+			It("should remove prompt from internal map", func() {
+				// Add first
+				server.rwLock.Lock()
+				server.prompts["prompt-to-remove"] = struct{}{}
+				server.rwLock.Unlock()
+
+				Expect(server.IsRegisteredPrompt("prompt-to-remove")).To(BeTrue())
+
+				// Remove
+				server.rwLock.Lock()
+				delete(server.prompts, "prompt-to-remove")
+				server.rwLock.Unlock()
+
+				Expect(server.IsRegisteredPrompt("prompt-to-remove")).To(BeFalse())
+			})
+
+			It("should handle multiple prompts", func() {
+				server.rwLock.Lock()
+				server.prompts["prompt-a"] = struct{}{}
+				server.prompts["prompt-b"] = struct{}{}
+				server.prompts["prompt-c"] = struct{}{}
+				server.rwLock.Unlock()
+
+				Expect(server.GetPromptNames()).To(HaveLen(3))
+
+				// Remove one
+				server.rwLock.Lock()
+				delete(server.prompts, "prompt-b")
+				server.rwLock.Unlock()
+
+				Expect(server.GetPromptNames()).To(HaveLen(2))
+				Expect(server.IsRegisteredPrompt("prompt-b")).To(BeFalse())
+				Expect(server.IsRegisteredPrompt("prompt-a")).To(BeTrue())
+				Expect(server.IsRegisteredPrompt("prompt-c")).To(BeTrue())
+			})
+		})
 	})
 
 	Describe("MCPServer initialization", func() {

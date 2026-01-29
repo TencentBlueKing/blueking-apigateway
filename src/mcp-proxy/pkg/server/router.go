@@ -69,13 +69,17 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 		})
 	})
 
-	// pprof with basic auth (仅在启用时注册)
-	pprofGroup := router.Group("/debug/pprof")
-	pprofGroup.Use(gin.BasicAuth(gin.Accounts{
-		cfg.PProf.Username: cfg.PProf.Password,
-	}))
-	pprof.RouteRegister(pprofGroup, "")
-	logging.GetLogger().Infof("pprof enabled with basic auth at /debug/pprof")
+	// pprof with basic auth (仅在配置了用户名密码时启用)
+	if cfg.PProf.Username != "" && cfg.PProf.Password != "" {
+		pprofGroup := router.Group("/debug/pprof")
+		pprofGroup.Use(gin.BasicAuth(gin.Accounts{
+			cfg.PProf.Username: cfg.PProf.Password,
+		}))
+		pprof.RouteRegister(pprofGroup, "")
+		logging.GetLogger().Infof("pprof enabled with basic auth at /debug/pprof")
+	} else {
+		logging.GetLogger().Warnf("pprof disabled: PPROF_USERNAME and PPROF_PASSWORD environment variables not set")
+	}
 
 	// metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
