@@ -47,6 +47,9 @@ def format_response_rewrite_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if config.get("body") == "":
         del config["body"]
+    # 去除 states_code 的异常配置
+    if config.get("status_code") == "" or config.get("status_code") == 0:
+        del config["status_code"]
 
     headers = config["headers"]
     new_headers = {}
