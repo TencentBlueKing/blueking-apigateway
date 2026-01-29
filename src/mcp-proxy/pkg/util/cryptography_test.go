@@ -21,6 +21,8 @@ package util_test
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -156,6 +158,25 @@ var _ = Describe("Cryptography", func() {
 
 			_, err := util.ParsePrivateKey(pemData)
 			Expect(err).To(HaveOccurred())
+		})
+
+		It("should fail with PKCS8 non-RSA key (ECDSA)", func() {
+			// Generate an ECDSA key (non-RSA)
+			ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			Expect(err).NotTo(HaveOccurred())
+
+			privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(ecdsaKey)
+			Expect(err).NotTo(HaveOccurred())
+
+			pemBlock := &pem.Block{
+				Type:  "PRIVATE KEY",
+				Bytes: privateKeyBytes,
+			}
+			pemData := pem.EncodeToMemory(pemBlock)
+
+			_, err = util.ParsePrivateKey(pemData)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("expected RSA private key"))
 		})
 	})
 })

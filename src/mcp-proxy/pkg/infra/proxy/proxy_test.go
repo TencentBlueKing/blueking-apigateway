@@ -316,4 +316,56 @@ var _ = Describe("MCPProxy", func() {
 			}).NotTo(Panic())
 		})
 	})
+
+	Describe("genPromptAndHandler", func() {
+		It("should generate prompt with correct name and description", func() {
+			config := &PromptConfig{
+				Name:        "test-prompt",
+				Description: "Test prompt description",
+				Content:     "This is the prompt content",
+			}
+
+			prompt, handler := genPromptAndHandler(config)
+
+			Expect(prompt).NotTo(BeNil())
+			Expect(prompt.Name).To(Equal("test-prompt"))
+			Expect(prompt.Description).To(Equal("Test prompt description"))
+			Expect(handler).NotTo(BeNil())
+		})
+
+		It("should generate handler that returns correct result", func() {
+			config := &PromptConfig{
+				Name:        "greeting-prompt",
+				Description: "A greeting prompt",
+				Content:     "Hello, how can I help you?",
+			}
+
+			_, handler := genPromptAndHandler(config)
+
+			ctx := context.Background()
+			result, err := handler(ctx, nil)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Description).To(Equal("A greeting prompt"))
+			Expect(result.Messages).To(HaveLen(1))
+			Expect(string(result.Messages[0].Role)).To(Equal("user"))
+		})
+
+		It("should handle empty config", func() {
+			config := &PromptConfig{}
+
+			prompt, handler := genPromptAndHandler(config)
+
+			Expect(prompt).NotTo(BeNil())
+			Expect(prompt.Name).To(BeEmpty())
+			Expect(prompt.Description).To(BeEmpty())
+			Expect(handler).NotTo(BeNil())
+
+			ctx := context.Background()
+			result, err := handler(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.Messages).To(HaveLen(1))
+		})
+	})
 })
