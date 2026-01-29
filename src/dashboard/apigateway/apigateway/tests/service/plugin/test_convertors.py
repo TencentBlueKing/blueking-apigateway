@@ -299,6 +299,30 @@ class TestResponseRewriteConvertor:
                     "headers": {},
                 },
             ),
+            (
+                {
+                    "status_code": "",
+                    "body": "",
+                    "headers": {
+                        "add": [],
+                    },
+                },
+                {
+                    "headers": {},
+                },
+            ),
+            (
+                {
+                    "status_code": 0,
+                    "body": "",
+                    "headers": {
+                        "add": [],
+                    },
+                },
+                {
+                    "headers": {},
+                },
+            ),
         ],
     )
     def test_convert(self, data, expected):
