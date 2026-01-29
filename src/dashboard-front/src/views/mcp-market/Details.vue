@@ -202,7 +202,7 @@
         <BkResizeLayout
           placement="right"
           :border="false"
-          :initial-divide="isShowConfig ? '31.12%' : 0"
+          :initial-divide="isShowConfig ? divideRatio : 0"
           :class="isShowConfig ? 'gap-16px' : ''"
         >
           <template
@@ -315,6 +315,7 @@
 
 <script lang="ts" setup>
 import { copy } from '@/utils';
+import { useMcpConfigDivideRatio } from '@/hooks';
 import {
   useEnv,
   useFeatureFlag,
@@ -339,6 +340,21 @@ const router = useRouter();
 const route = useRoute();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
+const { divideRatio } = useMcpConfigDivideRatio([
+  {
+    maxWidth: 1440,
+    divide: '40%',
+  },
+  {
+    minWidth: 1440,
+    maxWidth: 1919,
+    divide: '34%',
+  },
+  {
+    minWidth: 1920,
+    divide: '30%',
+  },
+]);
 
 const active = ref('tools');
 const toolsCount = ref<number>(0);

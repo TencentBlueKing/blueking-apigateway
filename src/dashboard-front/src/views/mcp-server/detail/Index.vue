@@ -175,8 +175,7 @@
       <BkResizeLayout
         placement="right"
         :border="false"
-        :min="isShowConfig ? 416 : 0"
-        :initial-divide="isShowConfig ? '416px' : 0"
+        :initial-divide="isShowConfig ? divideRatio : 0"
         :class="isShowConfig ? 'gap-16px' : ''"
       >
         <template
@@ -263,7 +262,7 @@ import {
   patchServerStatus,
 } from '@/services/source/mcp-server';
 import { Message } from 'bkui-vue';
-import { usePopInfoBox } from '@/hooks';
+import { useMcpConfigDivideRatio, usePopInfoBox } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { MCP_TAB_LIST } from '@/constants';
 import router from '@/router';
@@ -285,6 +284,7 @@ const { t } = useI18n();
 const route = useRoute();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
+const { divideRatio } = useMcpConfigDivideRatio();
 
 const createSliderRef = ref();
 const serverId = ref(0);
@@ -306,7 +306,6 @@ const server = ref<MCPServerType>({
 const showDropdown = ref(false);
 const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
-
 const active = ref('tools');
 const panels = ref(MCP_TAB_LIST);
 const mcpConfigList = ref<IMCPAIConfig[]>([]);

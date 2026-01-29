@@ -73,12 +73,11 @@
               property="name"
               :rules="[
                 {
-                  required: true,
+                  validator: (value: string) => value?.trim()?.length > 0,
                   message: t('服务名称不能为空'),
-                  trigger: 'blur',
-                },
+                  trigger: 'change',
+                }
               ]"
-              required
             >
               <BkInput
                 ref="nameRef"
@@ -100,7 +99,7 @@
                 {
                   validator: (value: string) => value?.trim()?.length >= 3,
                   message: t('服务展示名不能小于3个字符'),
-                  trigger: 'blur',
+                  trigger: 'change',
                 },
               ]"
               class="custom-form-item-required"
@@ -120,7 +119,7 @@
                 {
                   validator: (value: string) => value?.trim()?.length >= 10,
                   message: t('描述不能小于10个字符'),
-                  trigger: 'blur',
+                  trigger: 'change',
                 },
               ]"
               class="custom-form-item-required"
@@ -159,14 +158,13 @@
                 {
                   validator: (value: string[]) => value?.length > 0,
                   message: t('分类不能为空'),
-                  trigger: 'blur',
+                  trigger: 'change',
                 },
               ]"
             >
               <BkTagInput
                 ref="categoriesRef"
                 v-model="formData.categories"
-                v-clickOutSide="handleClickOutSide"
                 trigger="focus"
                 display-key="display_name"
                 search-key="display_name"
@@ -1848,7 +1846,14 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
   });
 };
 
+const handleCategoriesBlur = () => {
+  setTimeout(() => {
+    categoriesRef.value?.handleBlur();
+  }, 200);
+};
+
 const handleBeforeClose = () => {
+  handleCategoriesBlur();
   const results = isSidebarClosed(JSON.stringify(getDiffFormData()));
   return results;
 };
@@ -1858,6 +1863,7 @@ const handleCancel = () => {
   handleClearSelections();
   clearValidate();
   resetSliderData();
+  handleCategoriesBlur();
   isShow.value = false;
 };
 
