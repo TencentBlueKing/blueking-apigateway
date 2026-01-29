@@ -46,3 +46,5 @@ export * from './use-table-setting';
 export * from './use-sticky-bottom';
 // 操作锁
 export * from './use-operation-lock';
+// Mcp配置自适应5个tab宽度
+export * from './use-mcp-config-divide-ratio';

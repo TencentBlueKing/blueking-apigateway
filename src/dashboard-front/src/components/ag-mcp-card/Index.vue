@@ -118,32 +118,22 @@
         class="max-w-56px mr-8px"
       >
         <BkTag
-          v-bk-tooltips="{
-            content: server?.stage?.name,
-            extCls: 'max-w-480px',
-          }"
           class="bg-#e1ecff color-#1768ef hover:bg-#e1ecff"
         >
           {{ server?.stage?.name }}
         </BkTag>
       </BkOverflowTitle>
 
-      <template v-if="server?.categories?.length">
+      <template v-if="categoriesFilter?.length">
         <template
-          v-for="category of server.categories"
+          v-for="category of categoriesFilter"
           :key="category.id"
         >
           <BkOverflowTitle
             type="tips"
             class="mr-8px"
           >
-            <BkTag
-              v-bk-tooltips="{
-                content: category.display_name,
-                extCls: 'max-w-480px',
-              }"
-              class="color-#313238"
-            >
+            <BkTag class="color-#313238">
               {{ category.display_name }}
             </BkTag>
           </BkOverflowTitle>
@@ -246,6 +236,7 @@ const emit = defineEmits<IEmits>();
 const featureFlagStore = useFeatureFlag();
 
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0);
+const categoriesFilter = computed(() => server?.categories?.filter(cg => !['Official', 'Featured'].includes(cg.name)));
 
 const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
 const isOverflow = ref(false);

@@ -24,7 +24,9 @@
     <slot name="mcpServerTab" />
     <!-- 搜索组件 -->
     <div class="flex-1">
+      <slot name="customSearch" />
       <BkSearchSelect
+        v-if="!slots?.customSearch"
         v-model="searchValue"
         class="bg-#fff"
         :data="searchData"
@@ -109,6 +111,8 @@ const {
 
 const emit = defineEmits<IEmits>();
 
+const slots = useSlots();
+
 const isOpen = ref(false);
 
 // 发布时间选项
@@ -119,7 +123,7 @@ const publishTimeDropData = ref([
   },
   {
     label: t('字母 A-Z'),
-    value: '-name',
+    value: 'name',
   },
 ]);
 

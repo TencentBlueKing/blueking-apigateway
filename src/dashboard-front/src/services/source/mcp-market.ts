@@ -24,6 +24,8 @@ export interface IMarketplace {
   limit: number
   offset: number
   keyword?: string
+  order_by?: string
+  categories?: string
 }
 
 export interface IStageReleaseCheckMcp {
@@ -198,7 +200,7 @@ export const updateMcpPermissions = (apigwId: number, mcp_server_id: number, id:
 /**
  *  获取 MCP 市场分类列表
  */
-export const getMcpMarketplaceCategories = () => http.get('/mcp-marketplace/categories/');
+export const getMcpMarketplaceCategories = (data: IMarketplace) => http.get('/mcp-marketplace/categories/', data);
 
 /**
  *获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）
