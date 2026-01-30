@@ -90,7 +90,7 @@
       <BkTableColumn
         :label="t('位置')"
         prop="in"
-        width="100"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -121,7 +121,7 @@
       <BkTableColumn
         :label="t('类型')"
         prop="type"
-        width="100"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -151,7 +151,7 @@
       <BkTableColumn
         :label="t('必填')"
         prop="required"
-        width="100"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -171,7 +171,7 @@
       </BkTableColumn>
       <BkTableColumn
         :label="t('默认值')"
-        :width="readonly ? 150 : 300"
+        :width="readonly ? 160 : 300"
         prop="default"
       >
         <template #default="{ row }">
@@ -194,7 +194,6 @@
       <BkTableColumn
         :label="t('备注')"
         prop="description"
-        width="300"
       >
         <template #default="{ row }">
           <div
@@ -216,7 +215,7 @@
         v-if="!readonly"
         :label="t('操作')"
         fixed="right"
-        width="110"
+        width="140"
       >
         <template #default="{ row, index }">
           <div>

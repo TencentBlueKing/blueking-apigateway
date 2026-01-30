@@ -222,6 +222,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'created_time',
     title: t('生成时间'),
+    width: 160,
+    ellipsis: true,
   },
   {
     colKey: 'sdk',
