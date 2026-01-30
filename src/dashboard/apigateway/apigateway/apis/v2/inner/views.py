@@ -713,7 +713,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取全量公开的 MCPServer 列表（应用态接口）",
+        operation_description="获取全量的 MCPServer 列表（应用态接口）",
         query_serializer=serializers.MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
         tags=["OpenAPI.V2.Inner"],
@@ -722,8 +722,8 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 class MCPServerListApi(generics.ListAPIView):
     """
     获取全量 MCP Server 列表
-    - 应用态接口，返回所有的 MCP Server
-    - 只返回活跃状态：is_public=True, status=ACTIVE, gateway.status=ACTIVE, stage.status=ACTIVE
+    - 应用态接口，返回所有的 MCP Server（包括公开和非公开）
+    - 只返回活跃状态：status=ACTIVE, gateway.status=ACTIVE, stage.status=ACTIVE
     - 返回格式参考 v2_open_list_mcp_server，新增 prompt 相关数据
     """
 
@@ -733,7 +733,7 @@ class MCPServerListApi(generics.ListAPIView):
         slz = serializers.MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        # mcp server should be public and active
+        # mcp server should be active
         queryset = MCPServer.objects.filter(status=MCPServerStatusEnum.ACTIVE.value)
         # gateway should be active
         queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
@@ -749,8 +749,9 @@ class MCPServerListApi(generics.ListAPIView):
         # optimize query by using select_related
         queryset = queryset.select_related("gateway", "stage")
 
-        # order by updated_time desc
-        queryset = queryset.order_by("-updated_time")
+        # order by specified field
+        order_by = slz.validated_data.get("order_by", "-updated_time")
+        queryset = queryset.order_by(order_by)
 
         page = self.paginate_queryset(queryset)
 

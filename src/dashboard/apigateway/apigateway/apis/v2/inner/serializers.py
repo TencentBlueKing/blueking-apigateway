@@ -528,6 +528,12 @@ class MCPServerListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
+    order_by = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        default="-updated_time",
+        help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"

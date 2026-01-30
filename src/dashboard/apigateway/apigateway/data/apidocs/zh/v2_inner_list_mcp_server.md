@@ -10,6 +10,7 @@
 | 参数名称    | 参数类型   | 必选 | 描述                                      |
 |---------|--------|----|-----------------------------------------|
 | keyword | string | 否  | MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述 |
+| order_by | string | 否  | 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time |
 
 
 ### 响应示例
