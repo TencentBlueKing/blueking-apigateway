@@ -340,7 +340,12 @@ class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         try:
             # created_time 在极端情况下可能重复，因此，添加字段 id
-            instance = ReleaseHistory.objects.filter(gateway=request.gateway).latest("created_time", "id")
+            # select_related data_plane to avoid N+1 queries
+            instance = (
+                ReleaseHistory.objects.filter(gateway=request.gateway)
+                .select_related("data_plane")
+                .latest("created_time", "id")
+            )
         except ReleaseHistory.DoesNotExist:
             return OKJsonResponse(data={})
 
@@ -369,7 +374,7 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
     lookup_url_kwarg = "history_id"
 
     def get_queryset(self):
-        return ReleaseHistory.objects.filter(gateway=self.request.gateway)
+        return ReleaseHistory.objects.filter(gateway=self.request.gateway).select_related("data_plane")
 
     def retrieve(self, request, *args, **kwargs):
         release_history = self.get_object()

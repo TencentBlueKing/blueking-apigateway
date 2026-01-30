@@ -16,13 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from dataclasses import dataclass
+from typing import List
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
@@ -40,6 +43,8 @@ from apigateway.core.models import (
 )
 from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.django import get_model_dict
+
+logger = logging.getLogger(__name__)
 
 
 class ReleaseError(Exception):
@@ -78,7 +83,12 @@ class GatewayReleaser:
             username=username,
         )
 
-    def _save_release_history(self) -> ReleaseHistory:
+    def _get_active_data_planes(self) -> List[DataPlane]:
+        """Get all active data planes bound to this gateway"""
+        return GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(self.gateway.id)
+
+    def _save_release_history(self, data_plane: DataPlane) -> ReleaseHistory:
+        """Create a release history record for a specific data plane"""
         return ReleaseHistory.objects.create(
             gateway_id=self.gateway.id,
             stage_id=self.stage.id,
@@ -86,9 +96,14 @@ class GatewayReleaser:
             resource_version_id=self.resource_version.id,
             comment=self.comment,
             created_by=self.username,
+            data_plane=data_plane,
         )
 
-    def release(self):
+    def release(self) -> ReleaseHistory:
+        """
+        Release to all active data planes.
+        Returns the first ReleaseHistory for backward compatibility.
+        """
         self._pre_release()
 
         # 如果是编程网关，查询一下 deploy 部署历史
@@ -101,15 +116,12 @@ class GatewayReleaser:
             if deploy_history:
                 self.username = deploy_history.created_by
 
-        # save release history
-        history = self._save_release_history()
-        if deploy_history:
-            # 补充 publish_id
-            deploy_history.publish_id = history.id
-            deploy_history.save()
+        # Get active data planes - must have at least one
+        data_planes = self._get_active_data_planes()
+        if not data_planes:
+            raise ReleaseError("Gateway must be bound to at least one active data plane")
 
-        PublishEventReporter.report_config_validate_success(history)
-
+        # Create release instance once (independent of data plane)
         instance = Release.objects.get_or_create_release(
             gateway=self.gateway,
             stage=self.stage,
@@ -118,7 +130,7 @@ class GatewayReleaser:
             username=self.username,
         )
 
-        # record audit log
+        # Record audit log once (not per data plane)
         Auditor.record_release_op_success(
             op_type=OpTypeEnum.CREATE,
             username=self.username or settings.GATEWAY_DEFAULT_CREATOR,
@@ -129,12 +141,26 @@ class GatewayReleaser:
             data_after=get_model_dict(instance),
         )
 
-        # 发布，仅对微网关生效
-        self._do_release(instance, history)
+        # Create release history and trigger release for each active data plane
+        first_history = None
+        for data_plane in data_planes:
+            history = self._save_release_history(data_plane=data_plane)
 
-        # self._post_release()
+            if first_history is None:
+                first_history = history
+                if deploy_history:
+                    deploy_history.publish_id = history.id
+                    deploy_history.save()
 
-        return history
+            PublishEventReporter.report_config_validate_success(history)
+
+            # Trigger release for each data plane
+            self._do_release(instance, history, data_plane)
+
+        # first_history is guaranteed to be set because we checked for data_planes above
+        if first_history is None:
+            raise ReleaseError("Failed to create release history for any data plane")
+        return first_history
 
     def _pre_release(self):
         # 环境、部署信息校验
@@ -144,8 +170,18 @@ class GatewayReleaser:
             self._validate()
         except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            history = self._save_release_history()
-            PublishEventReporter.report_config_validate_failure(history, message)
+            # Get the first active data_plane for error recording
+            data_planes = self._get_active_data_planes()
+            if data_planes:
+                history = self._save_release_history(data_plane=data_planes[0])
+                PublishEventReporter.report_config_validate_failure(history, message)
+            else:
+                # No data planes available - log the error but still raise
+                logger.exception(
+                    "Gateway(id=%s) validation failed but has no data planes to record failure: %s",
+                    self.gateway.id,
+                    message,
+                )
             raise ReleaseError(message) from err
 
     def _validate(self):
@@ -153,8 +189,13 @@ class GatewayReleaser:
         publish_validator = PublishValidator(self.gateway, self.stage, self.resource_version)
         publish_validator()
 
-    def _do_release(self, release: Release, release_history: ReleaseHistory):  # noqa: B027
-        """发布资源版本"""
+    def _do_release(
+        self,
+        release: Release,
+        release_history: ReleaseHistory,
+        data_plane: DataPlane,
+    ):
+        """发布资源版本到指定数据面"""
         release_success_callback = update_release_data_after_success.si(
             publish_id=release_history.id,
             release_id=release.id,
@@ -166,7 +207,11 @@ class GatewayReleaser:
         # create publish event
         PublishEventReporter.report_create_publish_task_doing(release_history)
 
-        task = release_gateway_by_registry.si(publish_id=release_history.pk)  # type: ignore
+        # Pass data_plane_id to the task so it can use the correct ETCD config
+        task = release_gateway_by_registry.si(
+            publish_id=release_history.pk,
+            data_plane_id=data_plane.id,
+        )
 
         # 使用 celery 的编排能力，task 执行成功才会执行 release_success_callback
         delay_on_commit(task | release_success_callback)

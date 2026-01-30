@@ -21,6 +21,7 @@ from datetime import datetime
 
 from celery import shared_task
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version import ResourceDocVersionHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
@@ -80,13 +81,24 @@ def _release_gateway(
 
 
 @shared_task(ignore_result=True)
-def release_gateway_by_registry(publish_id):
+def release_gateway_by_registry(publish_id: int, data_plane_id: int):
     """发布资源到共享网关，为了使得类似环境变量等引用生效，同时会将所有配置都进行同步"""
-    logger.info("release_gateway_by_etcd: publish_id=%s", publish_id)
+    logger.info("release_gateway_by_etcd: publish_id=%s, data_plane_id=%s", publish_id, data_plane_id)
 
     release_history = ReleaseHistory.objects.get(id=publish_id)
     if not release_history:
         logger.error("release_gateway_by_etcd:publish_id=%s, can't find release_history", publish_id)
+        return None
+
+    # Get data_plane - required
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        logger.exception(
+            "release_gateway_by_etcd: publish_id=%s, data_plane_id=%s, can't find data_plane",
+            publish_id,
+            data_plane_id,
+        )
         return None
 
     # 改成了延迟更新发布关联数据，这里的 release 数据需要用 release_history 相关的数据来获取
@@ -97,16 +109,17 @@ def release_gateway_by_registry(publish_id):
         comment=release_history.comment,
         username=release_history.created_by,
     )
+
     procedure_logger = ReleaseProcedureLogger(
-        "release_gateway_by_etcd",
+        f"release_gateway_by_etcd (data_plane={data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,
-        release_task_id=publish_id,
+        release_task_id=str(publish_id),
         publish_id=publish_id,
     )
     return _release_gateway(
-        distributor=GatewayResourceDistributor(release),
+        distributor=GatewayResourceDistributor(release, data_plane=data_plane),
         release_history=release_history,
         procedure_logger=procedure_logger,
     )

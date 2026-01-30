@@ -20,6 +20,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import (
     _trigger_revoke_deleting,
@@ -68,6 +69,7 @@ class TestTriggerRollingUpdate:
         release.resource_version = mock_resource_version
         return release
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.rolling_update_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -78,6 +80,7 @@ class TestTriggerRollingUpdate:
         mock_check,
         mock_reporter,
         mock_rolling_update,
+        mock_get_data_planes,
         mock_release,
     ):
         """Test successful rolling update"""
@@ -85,6 +88,9 @@ class TestTriggerRollingUpdate:
         mock_release_history.pk = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_rolling_update(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -93,12 +99,13 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is True
+        assert result is None
         mock_save_history.assert_called_once()
         mock_check.assert_called_once()
         mock_reporter.report_config_validate_success.assert_called_once()
         mock_reporter.report_create_publish_task_doing.assert_called_once()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.rolling_update_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -107,10 +114,16 @@ class TestTriggerRollingUpdate:
         mock_check,
         mock_reporter,
         mock_rolling_update,
+        mock_get_data_planes,
         mock_release,
     ):
         """Test rolling update for CLI sync source"""
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_data_plane._state = Mock()
+        mock_data_plane._state.db = None
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_rolling_update(
             PublishSourceEnum.CLI_SYNC,
@@ -119,11 +132,12 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is True
+        assert result is None
         mock_check.assert_called_once()
         mock_reporter.report_config_validate_success.assert_called_once()
         mock_reporter.report_create_publish_task_doing.assert_called_once()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.rolling_update_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -134,12 +148,16 @@ class TestTriggerRollingUpdate:
         mock_check,
         mock_reporter,
         mock_rolling_update,
+        mock_get_data_planes,
         mock_release,
     ):
         """Test rolling update when check fails"""
         mock_release_history = Mock(spec=ReleaseHistory)
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (False, "Gateway not ready")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_rolling_update(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -148,10 +166,11 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is True
+        assert result is None
         mock_reporter.report_config_validate_failure.assert_called_once()
         mock_rolling_update.assert_not_called()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.rolling_update_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -162,6 +181,7 @@ class TestTriggerRollingUpdate:
         mock_check,
         mock_reporter,
         mock_rolling_update,
+        mock_get_data_planes,
         mock_release,
     ):
         """Test rolling update in sync mode"""
@@ -169,6 +189,9 @@ class TestTriggerRollingUpdate:
         mock_release_history.pk = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_rolling_update(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -177,13 +200,15 @@ class TestTriggerRollingUpdate:
             is_sync=True,
         )
 
-        assert result is True
+        assert result is None
         mock_rolling_update.assert_called_once_with(
             gateway_id=1,
             publish_id=123,
             release_id=1,
+            data_plane_id=1,
         )
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.delay_on_commit")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -194,6 +219,7 @@ class TestTriggerRollingUpdate:
         mock_check,
         mock_reporter,
         mock_delay_on_commit,
+        mock_get_data_planes,
         mock_release,
     ):
         """Test rolling update in async mode"""
@@ -201,6 +227,9 @@ class TestTriggerRollingUpdate:
         mock_release_history.pk = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_rolling_update(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -209,7 +238,7 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is True
+        assert result is None
         mock_delay_on_commit.assert_called_once()
 
 
@@ -244,6 +273,7 @@ class TestTriggerRevokeDisable:
         release.pk = 1
         release.id = 1
         release.gateway = mock_gateway
+        release.gateway_id = 1
         release.stage = mock_stage
         release.resource_version = mock_resource_version
         return release
@@ -253,6 +283,7 @@ class TestTriggerRevokeDisable:
         """Create a mock user credentials"""
         return Mock(spec=UserCredentials)
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.revoke_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -265,6 +296,7 @@ class TestTriggerRevokeDisable:
         mock_check,
         mock_reporter,
         mock_revoke_release,
+        mock_get_data_planes,
         mock_release,
         mock_user_credentials,
     ):
@@ -273,6 +305,9 @@ class TestTriggerRevokeDisable:
         mock_release_history.id = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -289,6 +324,7 @@ class TestTriggerRevokeDisable:
         mock_reporter.report_config_validate_success.assert_called_once()
         mock_reporter.report_create_publish_task_doing.assert_called_once()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.revoke_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -301,6 +337,7 @@ class TestTriggerRevokeDisable:
         mock_check,
         mock_reporter,
         mock_revoke_release,
+        mock_get_data_planes,
         mock_release,
         mock_user_credentials,
     ):
@@ -308,6 +345,9 @@ class TestTriggerRevokeDisable:
         mock_release_history = Mock(spec=ReleaseHistory)
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (False, "Gateway not ready")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -321,6 +361,7 @@ class TestTriggerRevokeDisable:
         mock_reporter.report_config_validate_failure.assert_called_once()
         mock_revoke_release.assert_not_called()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.revoke_release")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -333,6 +374,7 @@ class TestTriggerRevokeDisable:
         mock_check,
         mock_reporter,
         mock_revoke_release,
+        mock_get_data_planes,
         mock_release,
         mock_user_credentials,
     ):
@@ -341,6 +383,9 @@ class TestTriggerRevokeDisable:
         mock_release_history.id = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -350,12 +395,14 @@ class TestTriggerRevokeDisable:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is not None  # In sync mode, returns result of revoke_release
+        assert result is None
         mock_revoke_release.assert_called_once_with(
             release_id=1,
             publish_id=123,
+            data_plane_id=1,
         )
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.delay_on_commit")
     @patch("apigateway.controller.publisher.publish.PublishEventReporter")
     @patch("apigateway.controller.publisher.publish._pre_publish_check_is_gateway_ready_for_releasing")
@@ -368,6 +415,7 @@ class TestTriggerRevokeDisable:
         mock_check,
         mock_reporter,
         mock_delay_on_commit,
+        mock_get_data_planes,
         mock_release,
         mock_user_credentials,
     ):
@@ -376,6 +424,9 @@ class TestTriggerRevokeDisable:
         mock_release_history.id = 123
         mock_save_history.return_value = mock_release_history
         mock_check.return_value = (True, "")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_revoke_disable(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -420,41 +471,60 @@ class TestTriggerRevokeDeleting:
         release.pk = 1
         release.id = 1
         release.gateway = mock_gateway
+        release.gateway_id = 1
         release.stage = mock_stage
         release.resource_version = mock_resource_version
         return release
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_data_planes")
     @patch("apigateway.controller.publisher.publish.revoke_release")
-    def test_trigger_revoke_deleting_sync_mode(self, mock_revoke_release, mock_release):
+    def test_trigger_revoke_deleting_sync_mode(self, mock_revoke_release, mock_get_data_planes, mock_release):
         """Test revoke deleting in sync mode"""
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
+
         result = _trigger_revoke_deleting([mock_release], is_sync=True)
 
-        assert result is not None  # In sync mode, returns result of revoke_release
+        assert result is None
         mock_revoke_release.assert_called_once_with(
             release_id=1,
             publish_id=-2,  # DELETE_PUBLISH_ID
+            data_plane_id=1,
         )
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_data_planes")
     @patch("apigateway.controller.publisher.publish.delay_on_commit")
-    def test_trigger_revoke_deleting_async_mode(self, mock_delay_on_commit, mock_release):
+    def test_trigger_revoke_deleting_async_mode(self, mock_delay_on_commit, mock_get_data_planes, mock_release):
         """Test revoke deleting in async mode"""
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
+
         result = _trigger_revoke_deleting([mock_release], is_sync=False)
 
         assert result is None
         mock_delay_on_commit.assert_called_once()
 
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_data_planes")
     @patch("apigateway.controller.publisher.publish.revoke_release")
-    def test_trigger_revoke_deleting_multiple_releases(self, mock_revoke_release):
+    def test_trigger_revoke_deleting_multiple_releases(self, mock_revoke_release, mock_get_data_planes):
         """Test revoke deleting with multiple releases"""
         release1 = Mock(spec=Release)
         release1.id = 1
+        release1.gateway_id = 1
         release2 = Mock(spec=Release)
         release2.id = 2
+        release2.gateway_id = 2
+
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
 
         result = _trigger_revoke_deleting([release1, release2], is_sync=True)
 
-        assert result is not None  # Returns result from first revoke_release call
-        assert mock_revoke_release.call_count == 1  # Only first one called (early return)
+        assert result is None
+        assert mock_revoke_release.call_count == 2  # Called for both releases
 
 
 class TestTriggerGatewayPublish:
@@ -519,7 +589,7 @@ class TestTriggerGatewayPublish:
     ):
         """Test rolling update trigger"""
         mock_filter.return_value.prefetch_related.return_value.all.return_value = [mock_release]
-        mock_trigger_rolling_update.return_value = True
+        mock_trigger_rolling_update.return_value = None
 
         result = trigger_gateway_publish(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -550,7 +620,7 @@ class TestTriggerGatewayPublish:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is None
+        assert result is True
         mock_trigger_revoke_disable.assert_called_once()
 
     @patch("apigateway.controller.publisher.publish._trigger_revoke_deleting")
@@ -571,7 +641,7 @@ class TestTriggerGatewayPublish:
             gateway_id=1,
         )
 
-        assert result is None
+        assert result is True
         mock_trigger_revoke_deleting.assert_called_once()
 
     @patch("apigateway.controller.publisher.publish.Release.objects.filter")
