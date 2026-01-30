@@ -17,7 +17,7 @@
  */
 <template>
   <CustomHeader />
-  <div class="permission-apply-container">
+  <div class="permission-apply-container page-wrapper-padding">
     <div class="flex justify-between header">
       <BkButton
         v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }"
@@ -708,9 +708,6 @@ const handleClearSelection = () => {
 
 <style lang="scss" scoped>
 .permission-apply-container {
-  margin: 16px;
-  background-color: #fff;
-  padding: 16px 16px 34px;
   .apply-content {
     border: 1px solid #DCDEE5;
   }

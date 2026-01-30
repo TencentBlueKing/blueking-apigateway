@@ -277,7 +277,6 @@ const route = useRoute();
 
 const columnKey = ref(-1);
 const tableKey = ref(0);
-const defaultMcpId = ref(0);
 const filterData = ref({
   bk_app_code: '',
   applied_by: '',
@@ -373,7 +372,7 @@ const handleTabChange = (name: string) => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   const { bk_app_code, applied_by, mcp_server_id } = filterData.value;
-  if (bk_app_code || applied_by || mcp_server_id !== defaultMcpId.value) {
+  if (bk_app_code || applied_by || mcp_server_id) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
@@ -383,7 +382,7 @@ const updateTableEmptyConfig = () => {
 const resetSearch = () => {
   filterData.value.bk_app_code = '';
   filterData.value.applied_by = '';
-  filterData.value.mcp_server_id = defaultMcpId.value;
+  filterData.value.mcp_server_id = '';
   columnKey.value = +new Date();
 };
 
@@ -495,7 +494,6 @@ watch(
   (val) => {
     if (val) {
       filterData.value.mcp_server_id = Number(val) || 0;
-      defaultMcpId.value = Number(val) || 0;
     }
   },
   { immediate: true },

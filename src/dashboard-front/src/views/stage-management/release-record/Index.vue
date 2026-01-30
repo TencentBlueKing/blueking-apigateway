@@ -152,6 +152,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('已发布的环境'),
         colKey: 'stage.name',
+        ellipsis: true,
       },
       {
         colKey: 'type',
@@ -176,6 +177,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('版本号'),
         colKey: 'version',
+        width: 200,
       },
       {
         colKey: 'deployStatus',
@@ -200,6 +202,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         colKey: 'operator',
         title: t('操作人'),
+        width: 100,
         cell: (h, { row }: any) => (
           <div>
             {
@@ -238,15 +241,18 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('已发布的环境'),
         colKey: 'stage.name',
+        ellipsis: true,
       },
       {
         colKey: 'type',
         title: t('类型'),
+        width: 100,
         cell: (h, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
       },
       {
         colKey: 'version',
         title: t('版本号'),
+        width: 200,
         cell: (h, { row }: any) => (
           <bk-button
             text
@@ -280,6 +286,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         colKey: 'operator',
         title: t('操作人'),
+        width: 100,
         cell: (h, { row }: any) => (
           <div>
             {
@@ -307,6 +314,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('耗时'),
         colKey: 'duration',
+        width: 100,
       },
       {
         colKey: 'actions',
