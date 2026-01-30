@@ -309,6 +309,7 @@
                               type="number"
                               :min="1"
                               :max="300"
+                              :precision="0"
                               :disabled="disabled"
                               class="time-input"
                             >
@@ -559,7 +560,7 @@ const configRules = {
         return true;
       },
       message: t('超时时间不能小于1且不能大于300'),
-      trigger: 'blur',
+      trigger: 'change',
     },
   ],
 };

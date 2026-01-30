@@ -165,7 +165,7 @@
                 <BkButton
                   text
                   theme="primary"
-                  @click="selectedTag = ''"
+                  @click="handleClearFilterKey"
                 >
                   {{ t('清空选项') }}
                 </BkButton>
@@ -261,7 +261,7 @@
                                   class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((stageItem.name))"
                                   @mouseleave="handleScopeLeave"
-                                  @click="handeleJumpStage(stageItem)"
+                                  @click="() => handleJumpStage(stageItem)"
                                 >
                                   {{ stageItem.name }}
                                   <AgIcon
@@ -300,7 +300,7 @@
                                   class="scope-li mb-5px"
                                   @mouseenter="handleScopeHover((resourceItem.name))"
                                   @mouseleave="handleScopeLeave"
-                                  @click="handeleJumpResource(resourceItem)"
+                                  @click="() => handleJumpResource(resourceItem)"
                                 >
                                   {{ resourceItem.name }}
                                   <AgIcon
@@ -566,26 +566,19 @@ watch(
   },
 );
 
-watch(searchValue, () => {
-  // 清空搜索框
-  if (!searchValue.value) {
-    const params = {
-      scope_type: scopeType.value,
-      scope_id: scopeId.value,
-      tag: selectedTag.value,
-    };
-    getPluginListDetails(params);
-  }
-});
-
-watch(selectedTag, () => {
-  getPluginListDetails({
+watch([selectedTag, searchValue], () => {
+  const params = {
     scope_type: scopeType.value,
     scope_id: scopeId.value,
-    tag: selectedTag.value,
-    keyword: searchValue.value,
-  });
-});
+  };
+  if (selectedTag.value) {
+    Object.assign(params, { tag: selectedTag.value });
+  }
+  if (searchValue.value) {
+    Object.assign(params, { keyword: searchValue.value });
+  }
+  getPluginListDetails(params);
+}, { deep: true });
 
 // 监听是否成功添加
 watch(
@@ -727,7 +720,7 @@ const handleDeletePlugin = (item: any) => {
 };
 
 // 跳转stage
-const handeleJumpStage = (item: any) => {
+const handleJumpStage = (item: any) => {
   const { name } = item;
   const isRouteStage = route.path.includes('stage');
   const query = { stage: name };
@@ -742,8 +735,9 @@ const handeleJumpStage = (item: any) => {
     });
   }
 };
+
 // 跳转resource
-const handeleJumpResource = (item: any) => {
+const handleJumpResource = (item: any) => {
   const { id } = item;
   const isRouteStage = route.path.includes('stage');
   if (isRouteStage) {
@@ -777,6 +771,7 @@ const resetData = () => {
   isVisible.value = false;
   state.curStep = 1;
   searchValue.value = '';
+  selectedTag.value = '';
   curChooseCode.value = '';
 };
 
@@ -807,6 +802,7 @@ const getPluginListDetails = async (params: {
     ]);
     pluginList.value = pluginRes.results || [];
     pluginTags.value = tagRes.tags || [];
+    updateTableEmptyConfig();
   }
   catch {
     pluginList.value = [];
@@ -846,11 +842,9 @@ const handleSearch = async (keyword?: string) => {
   };
   try {
     await getPluginListDetails(params);
-    updateTableEmptyConfig();
     tableEmptyConf.value.isAbnormal = false;
   }
-  catch (error) {
-    console.log('error', error);
+  catch {
     tableEmptyConf.value.isAbnormal = false;
   }
 };
@@ -871,12 +865,8 @@ const handleClosePluginSlider = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  if (searchValue.value || !pluginListDate.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (searchValue.value) {
-    tableEmptyConf.value.emptyType = 'empty';
+  if (searchValue.value || selectedTag.value) {
+    tableEmptyConf.value.emptyType = 'search-empty';
     return;
   }
   tableEmptyConf.value.emptyType = '';
