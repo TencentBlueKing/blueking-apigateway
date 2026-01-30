@@ -1208,6 +1208,35 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/open/mcp-servers/{mcp_server_id}/:
+    get:
+      operationId: v2_open_retrieve_mcp_server
+      description: 获取 mcp_server 详情
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/{mcp_server_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
   /api/v2/open/mcp-servers/{mcp_server_id}/permissions/:
     get:
       operationId: v2_open_list_mcp_server_permissions
@@ -2363,6 +2392,35 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/mcp-servers/:
+    get:
+      operationId: v2_inner_list_mcp_server
+      description: 获取全量的 MCPServer 列表（应用态接口）
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/mcp-servers/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

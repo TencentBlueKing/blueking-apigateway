@@ -23,6 +23,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -35,7 +36,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
-from apigateway.biz.mcp_server import MCPServerPermissionHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
@@ -52,6 +53,7 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -67,6 +69,7 @@ from .serializers import (
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
+    MCPServerRetrieveOutputSLZ,
     UserMCPServerListInputSLZ,
     UserMCPServerListOutputSLZ,
 )
@@ -689,3 +692,85 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 resource_data.name,
             )
             return None
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取单个 MCPServer 的详细信息（用户态接口）",
+        responses={status.HTTP_200_OK: MCPServerRetrieveOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class MCPServerRetrieveApi(generics.RetrieveAPIView):
+    """
+    获取单个 MCPServer 的详细信息
+    - 用户态接口，需要用户认证权限验证
+    - 返回内容涵盖 MCP 市场详情页所需信息
+    """
+
+    permission_classes = [OpenAPIV2Permission]
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerRetrieveOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 验证 MCPServer 状态
+        if instance.status != MCPServerStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未启用，无法访问。"))
+        if instance.gateway.status != GatewayStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关未启用，无法访问。"))
+        if instance.stage.status != StageStatusEnum.ACTIVE.value:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
+
+        # 验证用户访问权限：公开的可以直接访问，私有的需要用户是网关维护者
+        if not instance.is_public and request.user.username not in instance.gateway.maintainers:
+            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未公开，无法访问。"))
+
+        # 生成使用指南
+        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
+        guideline = render_to_string(
+            template_name,
+            context={
+                "name": instance.name,
+                "url": build_mcp_server_url(instance.name, instance.protocol_type),
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
+                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
+                "user_tenant_id": "",
+                "protocol_type": instance.protocol_type,
+            },
+        )
+        instance.guideline = guideline
+
+        # 获取工具列表和标签
+        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
+            gateway_id=instance.gateway.id,
+            stage_name=instance.stage.name,
+            resource_names=instance.resource_names,
+        )
+        instance.tools = tool_resources
+
+        # 设置维护者
+        instance.maintainers = instance.gateway.maintainers
+
+        # 获取 prompts_count 和 prompts 列表
+        prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
+        prompts = MCPServerHandler.get_prompts(instance.id)
+
+        # 获取用户自定义文档
+        user_custom_doc = MCPServerHandler.get_user_custom_doc(instance.id)
+
+        serializer = self.get_serializer(
+            instance,
+            context={
+                "labels": labels,
+                "prompts_count_map": prompts_count_map,
+                "prompts": prompts,
+                "user_custom_doc": user_custom_doc,
+            },
+        )
+        return OKJsonResponse(data=serializer.data)

@@ -77,6 +77,12 @@ urlpatterns = [
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.open.mcp_server.list",
                 ),
+                # GET /api/v2/open/mcp-servers/{mcp_server_id}/
+                path(
+                    "<int:mcp_server_id>/",
+                    views.MCPServerRetrieveApi.as_view(),
+                    name="openapi.v2.open.mcp_server.retrieve",
+                ),
                 # GET /api/v2/open/mcp-servers/{mcp_server_id}/permissions/
                 path(
                     "<int:mcp_server_id>/permissions/",

@@ -40,7 +40,8 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.mcp_server import MCPServerPermissionHandler
+from apigateway.biz.gateway.type import GatewayTypeHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
@@ -49,8 +50,9 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.constants import GatewayStatusEnum
-from apigateway.core.models import Gateway
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Stage
+from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -706,3 +708,86 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         slz = self.get_serializer(mcp_server_permission_record)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取全量的 MCPServer 列表（应用态接口）",
+        query_serializer=serializers.MCPServerListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerListApi(generics.ListAPIView):
+    """
+    获取全量 MCP Server 列表
+    - 应用态接口，返回所有的 MCP Server（包括公开和非公开）
+    - 只返回活跃状态：status=ACTIVE, gateway.status=ACTIVE, stage.status=ACTIVE
+    - 返回格式参考 v2_open_list_mcp_server，新增 prompt 相关数据
+    """
+
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        # mcp server should be active
+        queryset = MCPServer.objects.filter(status=MCPServerStatusEnum.ACTIVE.value)
+        # gateway should be active
+        queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
+        # the stage should be active
+        queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
+
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(
+                Q(name__icontains=keyword) | Q(title__icontains=keyword) | Q(description__icontains=keyword)
+            )
+
+        # optimize query by using select_related
+        queryset = queryset.select_related("gateway", "stage")
+
+        # order by specified field
+        order_by = slz.validated_data.get("order_by", "-updated_time")
+        queryset = queryset.order_by(order_by)
+
+        page = self.paginate_queryset(queryset)
+
+        gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
+        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
+        gateways = {
+            gateway.id: {
+                "id": gateway.id,
+                "name": gateway.name,
+                "maintainers": gateway.maintainers,
+                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[gateway.id].gateway_type),
+            }
+            for gateway in Gateway.objects.filter(id__in=gateway_ids)
+        }
+
+        stage_ids = [mcp_server.stage.id for mcp_server in page]
+        stages = {
+            stage.id: {
+                "id": stage.id,
+                "name": stage.name,
+            }
+            for stage in Stage.objects.filter(id__in=stage_ids)
+        }
+
+        # 获取 prompts_count
+        mcp_server_ids = [mcp_server.id for mcp_server in page]
+        prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
+        output_slz = serializers.MCPServerListOutputSLZ(
+            page,
+            many=True,
+            context={
+                "gateways": gateways,
+                "stages": stages,
+                "prompts_count_map": prompts_count_map,
+            },
+        )
+
+        return self.get_paginated_response(output_slz.data)
