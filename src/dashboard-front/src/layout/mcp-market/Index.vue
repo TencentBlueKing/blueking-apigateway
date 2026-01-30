@@ -238,7 +238,7 @@ const categoriesCount = computed(() => {
   if (activeCategoryName.value.includes('all')) {
     // 正在切换分类时，返回空/加载占位（避免显示旧值）
     if (isSwitchingCategory.value) {
-      return 0;
+      return '...';
     }
     return pagination.value.count ?? 0;
   }
@@ -354,8 +354,8 @@ const getList = async () => {
       hasNoMore: mcpMarketList.value.length >= count,
       current: current + 1,
     };
-    // 处理每个分类筛选结果
-    if (activeCategoryName.value) {
+    // 处理每个分类下官方/精选筛选结果
+    if (activeCategoryName.value && !activeStatusTab.value.includes('all')) {
       const curCate = categoriesList.value.find(cat => cat.name === activeCategoryName.value);
       if (curCate) {
         curCate.mcp_server_count = count;
@@ -374,7 +374,12 @@ const getList = async () => {
 };
 
 const fetchCategoryList = async () => {
-  const res = await getMcpMarketplaceCategories(getFilterParams.value);
+  // 如果右侧选择了全部，分类接口的categories不需要传
+  const params = { ...getFilterParams.value };
+  if (activeStatusTab.value.includes('all')) {
+    delete params.categories;
+  }
+  const res = await getMcpMarketplaceCategories(params);
   categoriesList.value = (res ?? []).filter(cg => !['Official', 'Featured'].includes(cg.name));
   mcpCategorizeWidth.value = mcpCategorizeRef.value?.offsetWidth;
 };
@@ -391,6 +396,10 @@ const resetPagination = async () => {
     hasNoMore: false,
   });
   await getList();
+};
+
+const fetchInitData = () => {
+  Promise.allSettled([fetchCategoryList(), resetPagination()]);
 };
 
 const handleCategoryChange = async (value: string) => {
@@ -410,18 +419,12 @@ const handleCategoryChange = async (value: string) => {
 const handleTopTabChange = (value: string) => {
   if (value === activeStatusTab.value) return;
   activeStatusTab.value = value;
-  resetPagination();
-  fetchCategoryList();
+  fetchInitData();
 };
 
 const handleSortChange = (sort: string) => {
   filterData.value.order_by = sort;
   resetPagination();
-};
-
-const handleSearch = () => {
-  resetPagination();
-  fetchCategoryList();
 };
 
 const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceItem) => {
@@ -450,7 +453,7 @@ const handleClearFilter = () => {
 };
 
 const handleRefresh = () => {
-  resetPagination();
+  fetchInitData();
 };
 
 const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
@@ -473,6 +476,8 @@ const handleResize = debounce(() => {
   }
 }, 500);
 
+const handleSearch = debounce(() => fetchInitData(), 300);
+
 watch(
   () => filterData.value.keyword,
   () => {
@@ -482,11 +487,7 @@ watch(
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
-  Promise.allSettled([fetchCategoryList()])
-    .then(() => {
-      // 分类加载完成后再初始化分页，避免分类数据缺失
-      resetPagination();
-    });
+  fetchInitData();
 });
 
 onUnmounted(() => {
