@@ -160,11 +160,13 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('蓝鲸应用ID'),
     colKey: 'bk_app_code',
     ellipsis: true,
+    width: 200,
   },
   {
     title: t('授权维度'),
     colKey: 'grant_dimension',
     ellipsis: true,
+    width: 120,
     cell: (h, { row }: { row: IPermission }) => {
       return (
         <span class="ag-auto-text">
@@ -212,6 +214,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
+    width: 120,
     cell: (h, { row }: { row: IPermission }) => {
       return (
         <span style={{ color: permissionStore.getDurationTextColor(row.expires) }}>
@@ -224,6 +227,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('授权类型'),
     colKey: 'grant_type',
     ellipsis: true,
+    width: 120,
     cell: (h, { row }: { row: IPermission }) => {
       return (
         <span>
@@ -236,6 +240,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
+    width: 120,
     cell: (h, { row }: { row: IPermission }) => {
       return (
         <div>

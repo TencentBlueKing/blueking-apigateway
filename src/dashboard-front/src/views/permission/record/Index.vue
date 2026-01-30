@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <div class="permission-record-container">
+  <div class="permission-record-container page-wrapper-padding">
     <div class="header">
       <BkForm
         class="flex"
@@ -579,9 +579,6 @@ const handleClearFilter = () => {
 
 <style lang="scss" scoped>
 .permission-record-container {
-  margin: 16px;
-  background-color: #fff;
-  padding: 16px 16px 34px;
   .record-content {
     border: 1px solid #DCDEE5;
   }

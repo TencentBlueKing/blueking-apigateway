@@ -94,14 +94,18 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('SDK 版本号'),
     colKey: 'version_number',
+    ellipsis: true,
   },
   {
     title: t('SDK 名称'),
     colKey: 'name',
+    width: 200,
+    ellipsis: true,
   },
   {
     title: t('资源版本'),
     colKey: 'resource_version',
+    ellipsis: true,
     cell: (h, { row }) => (
       <bk-button
         text
@@ -146,10 +150,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('生成时间'),
     colKey: 'created_time',
+    width: 180,
+    ellipsis: true,
   },
   {
     title: t('操作'),
     colKey: 'operate',
+    width: 160,
     cell: (h, { row }) => {
       return (
         <div class="flex gap-10px">
