@@ -48,11 +48,11 @@
     </p>
     <BkContainer
       class="ag-kv-box"
-      :col="14"
+      :col="15"
       :margin="6"
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.name') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("资源名称") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -63,7 +63,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("资源地址") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -74,7 +74,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.description') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("描述") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -85,7 +85,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.api_labels') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("标签") }}:</label>
         </BkCol>
         <BkCol
@@ -122,7 +122,7 @@
             ),
         }"
       >
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("认证方式") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -139,7 +139,7 @@
           ),
         }"
       >
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("校验应用权限") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -160,7 +160,7 @@
             checkDiff('localData.allow_apply_permission'),
         }"
       >
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("是否公开") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -186,11 +186,11 @@
     </p>
     <BkContainer
       class="ag-kv-box"
-      :col="14"
+      :col="15"
       :margin="6"
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.method') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("请求方法") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -201,7 +201,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.path') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("请求路径") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -212,7 +212,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.match_subpath') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("匹配所有子路径") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -223,7 +223,7 @@
       </BkRow>
 
       <BkRow :class="{ 'ag-diff': checkDiff('localData.enable_websocket') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -243,12 +243,12 @@
       {{ t("请求/响应参数") }}
     </p>
     <BkContainer
-      :col="14"
+      :col="15"
       :margin="6"
       class="ag-kv-box"
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.openapi_schema') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">&nbsp;</label>
         </BkCol>
         <BkCol :span="10">
@@ -274,14 +274,14 @@
       </p>
       <BkContainer
         class="ag-kv-box"
-        :col="14"
+        :col="15"
         :margin="6"
         :class="{ 'box-diff': checkDiff('localData.proxy.type') }"
       >
         <BkRow
           :class="{ 'ag-diff': checkDiff('localData.proxy.backend_name') }"
         >
-          <BkCol :span="4">
+          <BkCol :span="5">
             <label class="ag-key">{{ t("后端服务:") }}</label>
           </BkCol>
           <BkCol :span="10">
@@ -295,7 +295,7 @@
           <BkRow
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.method') }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">{{ t("请求方法") }}:</label>
             </BkCol>
             <BkCol :span="10">
@@ -310,7 +310,7 @@
               'ag-diff': checkDiff('localData.proxy.config.timeout'),
             }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">{{ t("自定义超时时间:") }}</label>
             </BkCol>
             <BkCol :span="10">
@@ -323,7 +323,7 @@
           <BkRow
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.path') }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">{{ t("请求路径:") }}</label>
             </BkCol>
             <BkCol :span="10">
@@ -338,7 +338,7 @@
           <BkRow
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.code') }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">Status Code:</label>
             </BkCol>
             <BkCol :span="10">
@@ -351,7 +351,7 @@
           <BkRow
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.body') }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">Response Body:</label>
             </BkCol>
             <BkCol :span="10">
@@ -370,7 +370,7 @@
           <BkRow
             :class="{ 'ag-diff': checkDiff('localData.proxy.config.headers') }"
           >
-            <BkCol :span="4">
+            <BkCol :span="5">
               <label class="ag-key">Headers:</label>
             </BkCol>
             <BkCol :span="10">
@@ -399,11 +399,11 @@
     </p>
     <BkContainer
       class="ag-kv-box"
-      :col="14"
+      :col="15"
       :margin="6"
     >
       <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.zh') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
         </BkCol>
         <BkCol :span="10">
@@ -413,7 +413,7 @@
         </BkCol>
       </BkRow>
       <BkRow :class="{ 'ag-diff': checkDiff('localData.doc_updated_time.en') }">
-        <BkCol :span="4">
+        <BkCol :span="5">
           <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
         </BkCol>
         <BkCol :span="10">

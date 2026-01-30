@@ -16,90 +16,92 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <PrimaryTable
-    ref="primaryTableRef"
-    v-model:selected-row-keys="selectedRowKeys"
-    class="primary-table-wrapper"
-    :class="[
-      {
-        'primary-table-no-data': !localTableData.length,
-        'primary-table-no-border': !bordered,
-        'primary-table-show-pagination': showPagination
-      }
-    ]"
-    :size="tableSetting?.rowSize ?? 'medium'"
-    :data="localTableData"
-    :columns="tableColumns"
-    :pagination="showPagination ? pagination : null"
-    :loading="loading"
-    :filter-row="null"
-    :hover="false"
-    :bordered="bordered"
-    :table-layout="tableLayout"
-    :row-key="tableRowKey"
-    :max-height="clientHeight"
-    :bk-ui-settings="tableSetting"
-    v-bind="$attrs"
-    @bk-ui-settings-change="handleSettingChange"
-    @row-mouseenter="handleRowEnter"
-    @row-mouseleave="handleRowLeave"
-    @page-change="handlePageChange"
-    @select-change="handleSelectionChange"
-  >
-    <template #firstFullRow>
-      <template v-if="isShowSelectionRow">
-        <slot
-          v-if="slots.firstFullRow"
-          name="firstFullRow"
-          v-bind="{
-            selections,
-            isAllSelection,
-            handleSelectionChange
-          }"
-        />
-        <div
-          v-if="!slots.firstFullRow"
-          class="table-first-full-row"
-        >
-          <span class="normal-text">
-            <span>{{ t('已选') }}</span>
-            <span class="count">{{ selections.length }}</span>
-            <span>{{ t('条') }}</span>
-            <span class="m-r4px">,</span>
-          </span>
-          <span
-            class="hight-light-text"
-            @click="handleResetSelection"
-          >
-            {{ t('清除选择') }}
-          </span>
-        </div>
-      </template>
-    </template>
-    <template
-      v-if="slots.expandedRow"
-      #expandedRow="slotProps"
+  <ConfigProvider :global-config="localeConfig">
+    <PrimaryTable
+      ref="primaryTableRef"
+      v-model:selected-row-keys="selectedRowKeys"
+      class="primary-table-wrapper"
+      :class="[
+        {
+          'primary-table-no-data': !localTableData.length,
+          'primary-table-no-border': !bordered,
+          'primary-table-show-pagination': showPagination
+        }
+      ]"
+      :size="tableSetting?.rowSize ?? 'medium'"
+      :data="localTableData"
+      :columns="tableColumns"
+      :pagination="showPagination ? pagination : null"
+      :loading="loading"
+      :filter-row="null"
+      :hover="false"
+      :bordered="bordered"
+      :table-layout="tableLayout"
+      :row-key="tableRowKey"
+      :max-height="clientHeight"
+      :bk-ui-settings="tableSetting"
+      v-bind="$attrs"
+      @bk-ui-settings-change="handleSettingChange"
+      @row-mouseenter="handleRowEnter"
+      @row-mouseleave="handleRowLeave"
+      @page-change="handlePageChange"
+      @select-change="handleSelectionChange"
     >
-      <slot
-        name="expandedRow"
-        v-bind="slotProps"
-      />
-    </template>
-    <template #loading>
-      <Loading :loading="loading" />
-    </template>
-    <template #empty>
-      <slot name="empty">
-        <TableEmpty
-          :error="error"
-          :empty-type="tableEmptyType"
-          :query-list-params="params"
-          @clear-filter="handlerClearFilter"
-          @refresh="handleRefresh"
+      <template #firstFullRow>
+        <template v-if="isShowSelectionRow">
+          <slot
+            v-if="slots.firstFullRow"
+            name="firstFullRow"
+            v-bind="{
+              selections,
+              isAllSelection,
+              handleSelectionChange
+            }"
+          />
+          <div
+            v-if="!slots.firstFullRow"
+            class="table-first-full-row"
+          >
+            <span class="normal-text">
+              <span>{{ t('已选') }}</span>
+              <span class="count">{{ selections.length }}</span>
+              <span>{{ t('条') }}</span>
+              <span class="m-r4px">,</span>
+            </span>
+            <span
+              class="hight-light-text"
+              @click="handleResetSelection"
+            >
+              {{ t('清除选择') }}
+            </span>
+          </div>
+        </template>
+      </template>
+      <template
+        v-if="slots.expandedRow"
+        #expandedRow="slotProps"
+      >
+        <slot
+          name="expandedRow"
+          v-bind="slotProps"
         />
-      </slot>
-    </template>
-  </PrimaryTable>
+      </template>
+      <template #loading>
+        <Loading :loading="loading" />
+      </template>
+      <template #empty>
+        <slot name="empty">
+          <TableEmpty
+            :error="error"
+            :empty-type="tableEmptyType"
+            :query-list-params="params"
+            @clear-filter="handlerClearFilter"
+            @refresh="handleRefresh"
+          />
+        </slot>
+      </template>
+    </PrimaryTable>
+  </ConfigProvider>
 </template>
 
 <script setup lang="tsx">
@@ -109,6 +111,9 @@ import {
   type PrimaryTableProps,
   type TableRowData,
 } from '@blueking/tdesign-ui';
+import { ConfigProvider } from 'tdesign-vue-next';
+import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
+import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
@@ -357,6 +362,8 @@ const offsetAndLimit = computed(() => {
     limit: pagination.value!.pageSize || 10,
   };
 });
+
+const localeConfig = computed(() => locale.value === 'zh-cn' ? cnConfig : enConfig);
 
 /**
  * 请求表格数据

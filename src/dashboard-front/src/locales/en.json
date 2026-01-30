@@ -2246,5 +2246,7 @@
   "失败次数": "Failures",
   "{code} 不是合法的 HTTP 状态码": "{code} is not a valid HTTP status code",
   "高级配置": "Advanced",
-  "当前只有一个后端服务地址，存在多个后端服务地址才可以配置健康检查": "Health check can only be configured when there are multiple backend service addresses"
+  "当前只有一个后端服务地址，存在多个后端服务地址才可以配置健康检查": "Health check can only be configured when there are multiple backend service addresses",
+  "全部分类": "All Categories",
+  "清空选项": "Reset filters"
 }

@@ -934,7 +934,7 @@ const rules = {
     {
       validator: (val: number) => !(val < 0 || val > 300),
       message: t('超时时间不能小于1且不能大于300'),
-      trigger: 'blur',
+      trigger: 'change',
     },
   ],
 };
