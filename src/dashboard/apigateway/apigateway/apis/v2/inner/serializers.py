@@ -42,6 +42,7 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
+    build_mcp_server_url,
 )
 from apigateway.utils import time
 
@@ -526,6 +527,78 @@ class MCPServerAppPermissionRecordRetrieveOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordRetrieveOutputSLZ"
+
+
+class MCPServerListInputSLZ(serializers.Serializer):
+    keyword = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
+    )
+    order_by = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        default="-updated_time",
+        help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
+
+
+class MCPServerListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
+    description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
+
+    is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
+
+    labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
+    resource_names = serializers.ListField(read_only=True, help_text="MCPServer 资源名称")
+
+    status = serializers.CharField(read_only=True, help_text="MCPServer 状态")
+
+    protocol_type = serializers.ChoiceField(
+        read_only=True,
+        help_text="MCPServer 协议类型",
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+    )
+
+    oauth2_enabled = serializers.BooleanField(read_only=True, help_text="是否开启 OAuth2 认证")
+
+    stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
+    gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
+
+    tools_count = serializers.IntegerField(read_only=True, help_text="MCPServer 工具数量")
+    prompts_count = serializers.SerializerMethodField(help_text="MCPServer Prompts 数量")
+    url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
+    detail_url = serializers.SerializerMethodField(help_text="MCPServer 网关站点详情 URL")
+
+    updated_by = serializers.CharField(read_only=True, help_text="更新人")
+    created_by = serializers.CharField(read_only=True, help_text="创建人")
+    updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
+
+    def get_stage(self, obj):
+        return self.context["stages"][obj.stage.id]
+
+    def get_gateway(self, obj):
+        return self.context["gateways"][obj.gateway.id]
+
+    def get_url(self, obj) -> str:
+        return build_mcp_server_url(obj.name, obj.protocol_type)
+
+    def get_detail_url(self, obj) -> str:
+        return build_mcp_server_detail_url(obj.id)
+
+    def get_prompts_count(self, obj) -> int:
+        prompts_count_map = self.context.get("prompts_count_map", {})
+        return prompts_count_map.get(obj.id, 0)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListOutputSLZ"
 
 
 # ===================== Gateway 下架/删除相关序列化器 =====================

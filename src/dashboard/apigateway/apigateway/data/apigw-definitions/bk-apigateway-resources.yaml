@@ -2035,6 +2035,12 @@ paths:
             type: boolean
           description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
           example: true
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 搜索关键字，模糊匹配 name 或 description
+          example: apigateway
       responses:
         '200':
           description: 成功返回网关列表
@@ -2096,6 +2102,63 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/open/gateways/batch-query/:
+    post:
+      operationId: v2_open_batch_query_gateways
+      description: 批量根据网关名称查询网关展示名称和描述
+      tags:
+        - v2_open
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - names
+              properties:
+                names:
+                  type: array
+                  items:
+                    type: string
+                  description: 网关名称列表
+                  example: ["bk-apigateway", "bk-esb"]
+      responses:
+        '200':
+          description: 成功返回网关信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: 网关名称
+                        description:
+                          type: string
+                          description: 网关描述
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/open/gateways/batch-query/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Batch query gateway display name and description by gateway names
   /api/v2/open/gateways/{gateway_name}/:
     get:
       operationId: v2_open_get_gateway
@@ -2238,6 +2301,16 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: keyword
+          description: 搜索关键字，模糊匹配资源 name、description 或标签名称
+          schema:
+            type: string
+        - in: query
+          name: brief
+          description: 是否简要返回，true 时仅返回 id 和 name
+          schema:
+            type: boolean
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -2361,6 +2434,74 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/info/:
+    get:
+      operationId: v2_open_retrieve_gateway_resource_info
+      description: 根据资源名称获取网关下单个资源的基本信息
+      tags:
+        - v2_open
+      parameters:
+        - in: path
+          name: gateway_name
+          description: 网关名称
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: resource_name
+          description: 资源名称
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回资源基本信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 资源 ID
+                      name:
+                        type: string
+                        description: 资源名称
+                      description:
+                        type: string
+                        description: 资源描述
+                      method:
+                        type: string
+                        description: 请求方法
+                      path:
+                        type: string
+                        description: 资源路径
+                      match_subpath:
+                        type: boolean
+                        description: 是否匹配子路径
+                      is_public:
+                        type: boolean
+                        description: 是否公开
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/resources/{resource_name}/info/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Get basic info of a single resource under a gateway by resource name
   /api/v2/open/gateway/{gateway_name}/public_key/:
     get:
       operationId: v2_open_get_gateway_public_key
@@ -2574,6 +2715,12 @@ paths:
             type: string
           description: 筛选条件，支持模糊匹配 MCPServer 名称或描述
           example: test
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: 分类名称，精确过滤 MCPServer 所属分类
+          example: official
         - name: limit
           in: query
           schema:
@@ -2688,6 +2835,106 @@ paths:
         pluginConfigs: [ ]
         authConfig:
           userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/open/mcp-servers/batch-query/:
+    post:
+      operationId: v2_open_batch_query_mcp_servers
+      description: 批量根据 MCPServer 名称查询 MCPServer 展示名称、描述和分类
+      tags:
+        - v2_open
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - names
+              properties:
+                names:
+                  type: array
+                  items:
+                    type: string
+                  description: MCPServer 名称列表
+                  example: ["test-mcp-server", "another-mcp-server"]
+      responses:
+        '200':
+          description: 成功返回 MCPServer 信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: MCPServer 名称
+                        title:
+                          type: string
+                          description: MCPServer 中文名/显示名称
+                        description:
+                          type: string
+                          description: MCPServer 描述
+                        categories:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                                description: 分类名称
+                              display_name:
+                                type: string
+                                description: 分类显示名称
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/open/mcp-servers/batch-query/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Batch query MCP server display name, description and categories by names
+  /api/v2/open/mcp-servers/{mcp_server_id}/:
+    get:
+      operationId: v2_open_retrieve_mcp_server
+      description: 获取 mcp_server 详情
+      tags:
+        - v2_open
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: { }
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/mcp-servers/{mcp_server_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: true
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: None
@@ -5971,6 +6218,35 @@ paths:
           name: default
           method: get
           path: /backend/api/v2/inner/mcp-server/permissions/apply-records/{record_id}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: None
+  /api/v2/inner/mcp-servers/:
+    get:
+      operationId: v2_inner_list_mcp_server
+      description: 获取全量的 MCPServer 列表（应用态接口）
+      tags:
+      - v2_inner
+      responses:
+        default:
+          description: ''
+          content:
+            application/json:
+              schema: {}
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/mcp-servers/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
