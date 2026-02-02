@@ -78,7 +78,7 @@ import ServerItemCard from '@/components/ag-mcp-card/Index.vue';
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
 
 interface IProps { gatewayId?: number }
-
+console.log(5555)
 const { gatewayId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
