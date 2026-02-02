@@ -36,6 +36,8 @@ from apigateway.apps.plugin.constants import (
 )
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
 from apigateway.biz.audit import Auditor
+from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
@@ -511,10 +513,13 @@ class ScopePluginConfigListApi(generics.ListAPIView, ScopeValidationMixin):
             scope_id=scope_id,
         ).order_by("-config__type__priority")
 
+        language_code = get_current_language_code()
         data = [
             {
                 "code": binding.config.type.code,
-                "name": binding.config.type.name,
+                "name": binding.config.type.name_en
+                if language_code == LanguageCodeEnum.EN.value
+                else binding.config.type.name,
                 "config": binding.get_config(),
                 "config_id": binding.config.id,
             }
