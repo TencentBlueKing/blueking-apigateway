@@ -181,7 +181,7 @@
           />
         </template>
         <template v-else-if="isDynamicFormPlugin">
-          <component
+          <Component
             :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
             ref="formRef"
             v-model="schemaFormData"

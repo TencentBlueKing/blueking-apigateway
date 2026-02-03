@@ -60,8 +60,6 @@ interface IProps {
   routeMode: string
 }
 
-interface IEmits { (e: 'update:modelValue', value: any): void }
-
 const formData = defineModel<IIPRestriction>('modelValue', {
   required: true,
   type: Object,
@@ -72,8 +70,6 @@ const {
   componentMap = {},
   disabled = false,
 } = defineProps<IProps>();
-
-const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 
@@ -128,7 +124,14 @@ const formRules = computed(() => {
 });
 
 const getValue = () => {
-  return cloneDeep(formData.value);
+  const data = cloneDeep(formData.value);
+  if (selectedOptionIndex.value === 0) {
+    delete data.blacklist;
+  }
+  else if (selectedOptionIndex.value === 1) {
+    delete data.whitelist;
+  }
+  return data;
 };
 
 const validate = async (): Promise<boolean> => {
@@ -152,11 +155,9 @@ const clearValidate = () => {
   return formRef.value?.clearValidate();
 };
 
-// 切换类型时重置模型值
+// 切换类型时重置校验
 const handleOptionChange = () => {
   clearValidate();
-  formData.value = {};
-  emit('update:modelValue', {});
 };
 
 watch(
