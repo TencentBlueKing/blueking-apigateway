@@ -113,8 +113,10 @@
                     <AgIcon
                       v-if="row.type === 'object'"
                       :class="{ expanded: row.properties?.length }"
-                      class="expand-icon"
-                      name="right-shape"
+                      color="#979BA5"
+                      size="10"
+                      name="circle-shape"
+                      class="ml-12px"
                     />
                   </td>
                   <!-- 字段名 -->
@@ -199,7 +201,7 @@
                 <tr>
                   <td
                     :colspan="readonly ? 4 : 5"
-                    class="pl-16px"
+                    class="p-0!"
                   >
                     <ResponseParamsSubTable
                       ref="sub-table-refs"
@@ -557,6 +559,24 @@ defineExpose({
 
 <style lang="scss" scoped>
 
+table {
+
+  thead {
+
+    th {
+      border-right: 1px solid #dcdee5;
+    }
+  }
+
+  td {
+    padding: 0;
+
+    &:not(:last-child) {
+      border-right: 1px solid #dcdee5;
+    }
+  }
+}
+
 .response-params-table-wrapper {
 
   :deep(.table-collapse) {
@@ -622,6 +642,7 @@ defineExpose({
   width: 100%;
   border: 1px solid #dcdee5;
   border-collapse: collapse;
+  border-bottom: none;
   border-spacing: 0;
 
   .table-head-row-cell,
@@ -631,10 +652,7 @@ defineExpose({
 
     &.arrow-col {
       width: 32px;
-
-      .expand-icon.expanded {
-        transform: rotate(90deg);
-      }
+      border-right: none;
     }
 
     &.type-col {
@@ -675,8 +693,10 @@ defineExpose({
     }
 
     .table-body-row {
+      border-bottom: 1px solid #dcdee5;
 
       .table-body-row-cell {
+        height: 42px;
 
         &.arrow-col {
           text-align: center;
