@@ -484,7 +484,7 @@
                                   <div
                                     v-bk-tooltips="{
                                       placement:'top',
-                                      content: checks.name,
+                                      content: checks.tool_name || checks.name,
                                       disabled: !isOverflow,
                                       extCls: 'max-w-290px',
                                     }"
@@ -492,7 +492,7 @@
                                     @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
                                     @mouseleave="handleMouseleave"
                                   >
-                                    {{ checks.name }}
+                                    {{ checks.tool_name || checks.name }}
                                   </div>
                                   <BkTag
                                     v-if="!['tool'].includes(checks.mode_type)"
@@ -549,7 +549,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep, escape, uniq, uniqBy } from 'lodash-es';
+import { cloneDeep, escape, uniq } from 'lodash-es';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type ISearchItem } from 'bkui-lib/search-select/utils';
 import { InfoLine } from 'bkui-lib/icon';
@@ -1192,10 +1192,18 @@ const resetResizeLayout = () => {
 };
 
 const toolDisabledSelection = (row) => {
-  row.selectionTip = t(toolSelections.value.map(item => item.name).includes(row.name) && !row.has_openapi_schema
-    ? '该资源数据有变更，请确认一下请求参数是否正确配置。'
-    : '该资源未配置请求参数声明，不能添加到 MCP');
-  return !row.has_openapi_schema;
+  // 先判断当前行是否已被勾选（存在于 toolSelections 中）
+  const isSelected = toolSelections.value.some(item => item.id === row.id);
+
+  // 设置禁用提示语
+  row.selectionTip = isSelected
+    ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
+    : t('该资源未配置请求参数声明，不能添加到 MCP');
+
+  // 已勾选（isSelected=true）→ 允许取消勾选（返回 false，不禁用）
+  // 未勾选（isSelected=false）+ 无openapi_schema → 禁止勾选（返回 true，禁用）
+  // 有openapi_schema → 正常勾选（返回 false，不禁用）
+  return !row.has_openapi_schema && !isSelected;
 };
 
 const handleSearchCategory = (tagValue: string, tagKey: string, list: IMCPServerCategory[]) =>
@@ -1616,39 +1624,26 @@ const handleRemoveResource = ({
   allSelections.value = allSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
 };
 
-const handleSelectionChange = (selections: any[], type: 'tool' | 'prompt') => {
-  const filteredItems = allSelections.value.filter(item => item.mode_type !== type);
-  const mergedItems = [...filteredItems, ...selections];
-  const uniqueItems = uniqBy(mergedItems, 'id');
-  allSelections.value = [...uniqueItems];
-};
-
 const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
   toolSelections.value = selections;
-  if (!selections.length) {
-    allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
-  }
-  else {
-    const toolItems = selections.map(item => ({
-      ...item,
-      mode_type: 'tool',
-    }));
-    handleSelectionChange(toolItems, 'tool');
-  }
+  // 保留 Prompt 项，替换工具项
+  const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
+  const toolItems = selections.map(item => ({
+    ...item,
+    mode_type: 'tool',
+  }));
+  allSelections.value = [...promptItems, ...toolItems];
 };
 
 const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
   promptSelections.value = selections;
-  if (!selections.length) {
-    allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
-  }
-  else {
-    const promptItems = selections.map(item => ({
-      ...item,
-      mode_type: 'prompt',
-    }));
-    handleSelectionChange(promptItems, 'prompt');
-  }
+  // 保留工具项，替换 Prompt 项
+  const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
+  const promptItems = selections.map(item => ({
+    ...item,
+    mode_type: 'prompt',
+  }));
+  allSelections.value = [...toolItems, ...promptItems];
 };
 
 const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
@@ -1721,16 +1716,6 @@ const handleSetLoading = (isLoading: boolean, delay = 500) => {
   }
 };
 
-const handleToolClearSelection = () => {
-  toolSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => !['tool'].includes(item.mode_type));
-};
-
-const handlePromptClearSelection = () => {
-  promptSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => ['tool'].includes(item.mode_type));
-};
-
 const handleClearSelections = (type?: string) => {
   const typeMap = {
     tool: () => {
@@ -1750,6 +1735,16 @@ const handleClearSelections = (type?: string) => {
     },
   };
   return typeMap[type ?? 'all']?.();
+};
+
+const handleToolClearSelection = () => {
+  toolSelections.value = [];
+  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
+};
+
+const handlePromptClearSelection = () => {
+  promptSelections.value = [];
+  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
 };
 
 const handleToolClearFilter = () => {
