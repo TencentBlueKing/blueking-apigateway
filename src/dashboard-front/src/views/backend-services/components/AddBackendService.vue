@@ -819,7 +819,7 @@ const getStageListData = async () => {
 
 const getInfo = async () => {
   const res = await getBackendServiceDetail(apigwId.value, editId);
-  curServiceDetail.value = res;
+  curServiceDetail.value = cloneDeep(res);
   stageConfig.value = res.configs.map((item) => {
     return {
       configs: item,
