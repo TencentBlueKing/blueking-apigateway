@@ -153,14 +153,7 @@
             <BkFormItem
               :label="t('分类')"
               property="categories"
-              required
-              :rules="[
-                {
-                  validator: (value: string[]) => value?.length > 0,
-                  message: t('分类不能为空'),
-                  trigger: 'change',
-                },
-              ]"
+              class="custom-form-item-required"
             >
               <BkTagInput
                 ref="categoriesRef"
@@ -178,6 +171,12 @@
                 :tpl="renderCategoryTpl"
                 :filter-callback="handleSearchCategory"
               />
+              <div
+                v-if="!formData.categories.length"
+                class="color-#ea3636 text-12px pt-4px lh-16px"
+              >
+                {{ t('分类不能为空') }}
+              </div>
             </BkFormItem>
             <BkFormItem
               class="form-protocol-type"
@@ -1368,7 +1367,7 @@ const handleSubmit = async () => {
     submitLoading.value = true;
     let params = {
       resource_names: toolSelections.value.map(item => item.name),
-      tool_names: toolSelections.value.map(item => item.tool_name),
+      tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
       category_ids: categoriesList.value.filter(cg => categories.includes(cg.name)).map(cname => cname.id),
     };
