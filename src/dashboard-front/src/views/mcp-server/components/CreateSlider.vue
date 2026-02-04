@@ -170,9 +170,10 @@
                 :tag-tpl="renderCategoryTagTpl"
                 :tpl="renderCategoryTpl"
                 :filter-callback="handleSearchCategory"
+                @focus="handleCategoryFocus"
               />
               <div
-                v-if="!formData.categories.length"
+                v-if="!formData.categories.length && isCategoryFocus"
                 class="color-#ea3636 text-12px pt-4px lh-16px"
               >
                 {{ t('分类不能为空') }}
@@ -641,6 +642,7 @@ const submitLoading = ref(false);
 const searchLoading = ref(false);
 const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
+const isCategoryFocus = ref(false);
 const url = ref('');
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
@@ -1211,11 +1213,19 @@ const handleSearchCategory = (tagValue: string, tagKey: string, list: IMCPServer
     return cg.name?.toLowerCase().indexOf(tagValue) > -1 || cg[tagKey].indexOf(tagValue) > -1;
   });
 
+const handleCategoryFocus = () => {
+  isCategoryFocus.value = true;
+};
+
 const handleMouseenter = (e: MouseEvent) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
     isOverflow.value = cell.scrollWidth > cell.clientWidth;
   }
+};
+
+const handleMouseleave = () => {
+  isOverflow.value = false;
 };
 
 const renderCategoryTpl = (node, highlightKeyword, h) => {
@@ -1245,10 +1255,6 @@ const renderCategoryTagTpl = (node, h) => {
       innerHTML,
     }),
   ]);
-};
-
-const handleMouseleave = () => {
-  isOverflow.value = false;
 };
 
 const clearValidate = () => {
@@ -1841,6 +1847,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
 };
 
 const handleCategoriesBlur = () => {
+  isCategoryFocus.value = false;
   setTimeout(() => {
     categoriesRef.value?.handleBlur();
   }, 200);
