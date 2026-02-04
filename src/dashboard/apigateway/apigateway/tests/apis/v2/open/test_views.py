@@ -320,3 +320,61 @@ class TestParseDatetimeStrToTimestampApi:
         assert resp.status_code == 400
         result = resp.json()
         assert "error" in result or "message" in result
+
+
+class TestOAuthProtectedResourceApi:
+    def test_get_oauth_protected_resource_success(self, request_view, settings):
+        """测试成功获取 OAuth 保护资源元数据"""
+        settings.BK_AUTH_URL = "https://bkauth.example.com"
+        resource_url = "https://api.example.com/resource"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.well_known.oauth_protected_resource",
+            data={"resource": resource_url},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["resource"] == resource_url
+        assert result["authorization_servers"] == ["https://bkauth.example.com"]
+        assert result["bearer_methods_supported"] == ["header"]
+
+    def test_get_oauth_protected_resource_returns_settings_auth_url(self, request_view, settings):
+        """测试返回的 authorization_servers 使用 settings.BK_AUTH_URL"""
+        settings.BK_AUTH_URL = "https://custom-auth.example.com"
+        resource_url = "https://api.example.com/another-resource"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.well_known.oauth_protected_resource",
+            data={"resource": resource_url},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["authorization_servers"] == ["https://custom-auth.example.com"]
+
+    def test_get_oauth_protected_resource_missing_resource_param(self, request_view, settings):
+        """测试缺少 resource 参数时返回错误"""
+        settings.BK_AUTH_URL = "https://bkauth.example.com"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.well_known.oauth_protected_resource",
+            data={},
+        )
+
+        assert resp.status_code == 400
+
+    def test_get_oauth_protected_resource_empty_resource_param(self, request_view, settings):
+        """测试 resource 参数为空时返回错误"""
+        settings.BK_AUTH_URL = "https://bkauth.example.com"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.well_known.oauth_protected_resource",
+            data={"resource": ""},
+        )
+
+        assert resp.status_code == 400

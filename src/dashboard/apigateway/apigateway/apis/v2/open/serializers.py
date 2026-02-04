@@ -503,3 +503,10 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.LogSearchByRequestIdOutputSLZ"
+
+
+class OAuthProtectedResourceInputSLZ(serializers.Serializer):
+    resource = serializers.CharField(required=True, help_text="The resource URL")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.OAuthProtectedResourceInputSLZ"

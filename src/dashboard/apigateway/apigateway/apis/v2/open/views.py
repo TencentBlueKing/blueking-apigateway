@@ -26,6 +26,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -77,6 +78,7 @@ from .serializers import (
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
+    OAuthProtectedResourceInputSLZ,
     ParseDatetimeStrToTimestampInputSLZ,
     ParseDatetimeStrToTimestampOutputSLZ,
     UserMCPServerListInputSLZ,
@@ -801,3 +803,32 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
 
         output_slz = LogSearchByRequestIdOutputSLZ(results, many=True)
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 OAuth 保护资源元数据",
+        query_serializer=OAuthProtectedResourceInputSLZ,
+        responses={status.HTTP_200_OK: "OAuth Protected Resource Metadata"},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class OAuthProtectedResourceApi(generics.RetrieveAPIView):
+    """OAuth Protected Resource Metadata endpoint (RFC 9728)"""
+
+    permission_classes = []  # type: ignore  # No permission check required
+
+    def retrieve(self, request, *args, **kwargs):
+        slz = OAuthProtectedResourceInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        resource = slz.validated_data["resource"]
+
+        return JsonResponse(
+            {
+                "resource": resource,
+                "authorization_servers": [settings.BK_AUTH_URL],
+                "bearer_methods_supported": ["header"],
+            }
+        )
