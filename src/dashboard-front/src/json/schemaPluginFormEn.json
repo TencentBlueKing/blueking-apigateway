@@ -1,0 +1,1227 @@
+{
+  "bk-cors": {
+    "id": 2,
+    "language": "en",
+    "notes": "The cors Plugins lets you enable CORS easily.",
+    "example": "Purpose: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "allow_methods",
+          "allow_headers",
+          "max_age"
+        ],
+        "properties": {
+          "allow_origins": {
+            "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+            "default": ""
+          },
+          "allow_origins_by_regex": {
+            "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
+            },
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_methods": {
+            "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+            "maxLength": 100,
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "allow_headers": {
+            "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "expose_headers": {
+            "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "default": ""
+          },
+          "max_age": {
+            "description": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
+            "type": "integer",
+            "default": 86400,
+            "ui:rules": [
+              "required"
+            ],
+            "ui:component": {
+              "name": "bfInput",
+              "min": -1,
+              "unit": "Seconds"
+            }
+          },
+          "allow_credential": {
+            "description": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 1,
+    "type_code": "bk-cors",
+    "type_name": "Cross-Origin Resource Sharing (CORS)"
+  },
+  "bk-ip-restriction": {
+    "id": 6,
+    "language": "en",
+    "notes": "This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses. Support CIDR. One piece of data per line, and supports blank lines and comment lines (beginning with #).",
+    "example": "Purpose: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: \n       # comment\n       192.168.1.1\n       192.168.1.2",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist"
+            ],
+            "title": "White list",
+            "properties": {
+              "whitelist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "whitelist",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          },
+          {
+            "required": [
+              "blacklist"
+            ],
+            "title": "Black list",
+            "properties": {
+              "blacklist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "blacklist",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          }
+        ],
+        "ui:oneOf": {
+          "title": "Type"
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 3,
+    "type_code": "bk-ip-restriction",
+    "type_name": "IP restriction"
+  },
+  "bk-access-token-source": {
+    "id": 23,
+    "language": "en",
+    "notes": "Get `Authorization: Bearer {access_token}` or `X-API-KEY: {access_token}` from the request header and convert it into `X-Bkapi-Authorization: {\"access_token\": \"{access_token}\"}`.",
+    "example": "Purpose: When the source is bearer, get Authorization from the request header; When the source is api_key, get X-API-KEY from the request header \n\nsource: bearer",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "title": "source",
+            "type": "string",
+            "enum": [
+              "bearer",
+              "api_key"
+            ],
+            "default": "bearer",
+            "description": "The source of the authentication token, default is bearer"
+          }
+        }
+      }
+    },
+    "type_id": 13,
+    "type_code": "bk-access-token-source",
+    "type_name": "AccessToken Source"
+  },
+  "bk-username-required": {
+    "id": 24,
+    "language": "",
+    "notes": "Forcing the caller to pass the X-Bk-Username header header",
+    "example": "",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {},
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 14,
+    "type_code": "bk-username-required",
+    "type_name": "Forcing the caller to pass the X-Bk-Username header header"
+  },
+  "bk-request-body-limit": {
+    "id": 26,
+    "language": "en",
+    "notes": "Limit the size of the request body, with a maximum of 33554432 (32 M).",
+    "example": "Purpose: Limit the request body size to 100 B.\\n\\n max_body_size: 100",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "max_body_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 33554432,
+            "description": "Maximum message body size in bytes."
+          }
+        },
+        "required": [
+          "max_body_size"
+        ]
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 15,
+    "type_code": "bk-request-body-limit",
+    "type_name": "Limit the request body"
+  },
+  "bk-user-restriction": {
+    "id": 28,
+    "language": "en",
+    "notes": "Restrict access to resources by whitelisting or blacklisting users. Note: The corresponding resource authentication method needs to be configured to enable user authentication.",
+    "example": "Purpose: Only User admin are allowed to request the current interface\\n\\nType: whitelist\\nwhitelist: [\"admin\"]\\nmessage: \"The bk-user is not allowed\"",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist",
+              "message"
+            ],
+            "title": "whitelist",
+            "properties": {
+              "whitelist": {
+                "title": "whitelist",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "message": {
+                "type": "string",
+                "default": "The bk-user is not allowed",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          },
+          {
+            "required": [
+              "blacklist",
+              "message"
+            ],
+            "title": "blacklist",
+            "properties": {
+              "blacklist": {
+                "title": "blacklist",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "message": {
+                "type": "string",
+                "default": "The bk-user is not allowed",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          }
+        ],
+        "ui:oneOf": {
+          "title": "Type"
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 16,
+    "type_code": "bk-user-restriction",
+    "type_name": "User access restriction"
+  },
+  "bk-rate-limit": {
+    "id": 8,
+    "language": "en",
+    "notes": "rate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.",
+    "example": "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "title": "Rate Limit",
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "object",
+                "title": "Default App Rate Limit",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 10px 16px"
+                  }
+                },
+                "required": [
+                  "tokens",
+                  "period"
+                ],
+                "properties": {
+                  "tokens": {
+                    "type": "integer",
+                    "title": "Count",
+                    "default": 100,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 1
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  },
+                  "period": {
+                    "type": "integer",
+                    "title": "Time Range",
+                    "default": 1,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "select",
+                      "datasource": [
+                        {
+                          "label": "Second",
+                          "value": 1
+                        },
+                        {
+                          "label": "Minute",
+                          "value": 60
+                        },
+                        {
+                          "label": "Hour",
+                          "value": 3600
+                        },
+                        {
+                          "label": "Day",
+                          "value": 86400
+                        }
+                      ],
+                      "clearable": false
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  }
+                }
+              },
+              "specials": {
+                "type": "array",
+                "title": "Special Apps Rate Limit",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 20px 16px"
+                  }
+                },
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "tokens",
+                    "period",
+                    "bk_app_code"
+                  ],
+                  "ui:group": {
+                    "style": {
+                      "background": "#FFF",
+                      "padding": "10px 10px 10px 10px"
+                    }
+                  },
+                  "properties": {
+                    "tokens": {
+                      "type": "integer",
+                      "title": "Count",
+                      "default": 200,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "bfInput",
+                        "min": 1
+                      },
+                      "ui:props": {
+                        "labelWidth": 90
+                      }
+                    },
+                    "period": {
+                      "type": "integer",
+                      "title": "Time Range",
+                      "default": 1,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "select",
+                        "datasource": [
+                          {
+                            "label": "Second",
+                            "value": 1
+                          },
+                          {
+                            "label": "Minute",
+                            "value": 60
+                          },
+                          {
+                            "label": "Hour",
+                            "value": 3600
+                          },
+                          {
+                            "label": "Day",
+                            "value": 86400
+                          }
+                        ],
+                        "clearable": false
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    },
+                    "bk_app_code": {
+                      "type": "string",
+                      "title": "App Id",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [
+        [
+          {
+            "prop": "rates",
+            "group": [
+              [
+                {
+                  "prop": "default",
+                  "container": {
+                    "grid-template-columns": "250px 200px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period"
+                    ]
+                  ]
+                }
+              ],
+              [
+                {
+                  "prop": "specials",
+                  "container": {
+                    "grid-template-columns": "250px 200px 250px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period",
+                      "bk_app_code"
+                    ]
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      ],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 4,
+    "type_code": "bk-rate-limit",
+    "type_name": "Rate Limit"
+  },
+  "bk-header-rewrite": {
+    "id": 4,
+    "language": "en",
+    "notes": "Allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.",
+    "example": "Purpose: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete: X-test",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "properties": {
+          "set": {
+            "description": "set headers",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can set the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "value",
+                  "description": "You can set the value of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "set",
+            "type": "array",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "At least one operation is required when setting or removing request headers."
+              }
+            ]
+          },
+          "remove": {
+            "description": "remove headers",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can remove the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "remove",
+            "type": "array",
+            "uniqueItems": true,
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "At least one operation is required when setting or removing request headers."
+              }
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    "type_id": 2,
+    "type_code": "bk-header-rewrite",
+    "type_name": "Header transformation"
+  },
+  "bk-mock": {
+    "id": 11,
+    "language": "en",
+    "notes": "for mocking an API, it returns data in the format specified and the request is not forwarded to the Upstream.",
+    "example": "Purpose: Return json response with status code 200 and response header foo:bar\\n\\nResponse status code: 200\\nResponse body: {\"hello\": \"world\"}\\nResponse header: \\n      Content-Type: application/json\\n      foo: bar",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "response_status": {
+            "type": "integer",
+            "default": 200,
+            "title": "response_status",
+            "minimum": 100
+          },
+          "response_example": {
+            "title": "response_example",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "response_headers": {
+            "description": "Set the response headers",
+            "title": "response_headers",
+            "type": "array",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can set the key of the response header. The key of the response header cannot contain a colon (:).",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "value",
+                  "description": "You can set the value of the response header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 7,
+    "type_code": "bk-mock",
+    "type_name": "mocking"
+  },
+  "fault-injection": {
+    "id": 17,
+    "language": "en",
+    "notes": "The fault-injection plug-in is a fault injection plug-in that can be used with other plug-ins and executed before the other plug-ins are executed. abort and delay must be configured at least one, and both can be used at the same time.",
+    "example": "Purpose: When the request parameter name is equal to jack and age is 18, return 400 reject status code and response body \\n\\n\"abort\": {\\n \"http_status\": 400,\\n \"body\": \"not valid request params\",\\n \"vars\": [[[\"arg_name\", \"==\", \"jack\"], [\"arg_age\", \"==\", 18]]]\\n}\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "abort": {
+            "description": "Interrupted state",
+            "title": "abort",
+            "type": "object",
+            "properties": {
+              "http_status": {
+                "description": "Returns the HTTP status code to the client.",
+                "title": "Interrupt status code",
+                "type": "integer"
+              },
+              "body": {
+                "description": "Response data is returned to the client. NGINX variables such as client addr: $remote_addr\n are supported",
+                "title": "Interrupt responder",
+                "type": "string",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              },
+              "percentage": {
+                "description": "The proportion of requests that will be interrupted.",
+                "title": "Proportion of interrupt requests",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "string",
+                "title": "Interrupt rules",
+                "description": "The fault injection rule is executed. The fault note is executed only after the rule matches. vars is a list of expressions from lua-resty-expr.",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          },
+          "delay": {
+            "description": "Delay status",
+            "title": "delay",
+            "type": "object",
+            "properties": {
+              "duration": {
+                "title": "Delay time",
+                "description": "The delay time can only be filled with integers",
+                "type": "string"
+              },
+              "percentage": {
+                "description": "The percentage of requests that will be delayed",
+                "title": "Proportion of Delayed requests",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "string",
+                "title": "Delay rules",
+                "description": "Execute the request delay rule. The request is delayed only when the rule matches. vars is a list of expressions from lua-resty-expr.",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 10,
+    "type_code": "fault-injection",
+    "type_name": "fault-injection"
+  },
+  "request-validation": {
+    "id": 15,
+    "language": "en",
+    "notes": "Used to validate requests forwarded to upstream services in advance. The plug-in uses the JSON Schema mechanism for data validation, which validates the requested Body and Header data. At least one of the body_schema or header_schema needs to be configured, and both can be used at the same time.",
+    "example": "Purpose: When the boolean_payload argument is not filled, 400 reject status code and reject information are returned \\n\\n\"body_schema\": {\"type\": \"object\",\"required\": [\"bool_payload\"],\"properties\": {\"bool_payload\": {\"type\": \"boolean\"}}}\\n\"header_schema\": {}\\n\"rejected_code\": 400\\n\"rejected_msg\": \"not valid request body\"",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "body_schema": {
+            "type": "string",
+            "maxLength": 51200,
+            "description": "request body JSON Schema",
+            "title": "body JSON Schema",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "header_schema": {
+            "type": "string",
+            "maxLength": 51200,
+            "title": "header JSON Schema",
+            "description": "request header JSON Schema",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "rejected_code": {
+            "type": "integer",
+            "default": 400,
+            "title": "rejected_code",
+            "minimum": 200
+          },
+          "rejected_msg": {
+            "title": "rejected_msg",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 9,
+    "type_code": "request-validation",
+    "type_name": "request_validation"
+  },
+  "proxy-cache": {
+    "id": 31,
+    "language": "en",
+    "notes": "Provides the ability to cache back-end response data. Only get and head requests are supported, and resources with status code of 200 take effect.",
+    "example": "Purpose: The response data of GET request can be cached for 300 seconds.\\n\\n cache_method: [\"GET\"] \\n cache_ttl: 300",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cache_method": {
+            "description": "Cache method, only supported: GET, HEAD.",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "minItems": 1,
+            "default": [
+              {
+                "key": "GET"
+              }
+            ]
+          },
+          "cache_ttl": {
+            "type": "integer",
+            "description": "Cache time, in seconds.",
+            "default": 300,
+            "minimum": 1,
+            "maximum": 3600
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 18,
+    "type_code": "proxy-cache",
+    "type_name": "Proxy Cache"
+  },
+  "api-breaker": {
+    "id": 13,
+    "language": "en",
+    "notes": "API circuit breaker functionality to protect Upstream services.",
+    "example": "Purpose: When the backend service returns a status code of 502 and this happens 3 times, a circuit breaker is triggered. It will return a response body with “helloworld”, a status code of 502, and a response header of foo:bar.\\nThe first time the unhealthy state is triggered, the circuit breaker lasts for 2 seconds. After the circuit breaker time elapses, requests will be forwarded to the upstream service again. If it continues to return a status code of 502 and the count reaches 3 times again, the circuit breaker time is extended to 4 seconds. This pattern continues (2, 4, 8, 16, …) until the preset maximum circuit breaker time of 300 seconds is reached. \\nWhen the upstream service is in an unhealthy state, if a forwarded request returns a status code of 200 and this happens 2 times, the upstream service is considered to have recovered to a healthy state. \\n\\n\\nbreak_response_code: 502\\nbreak_response_body: helloworld\\nbreak_response_headers: [ { \"key\": \"foo\", \"value\": \"bar\" } ]\\nmax_breaker_sec: 300\\nunhealthy: { \"http_statuses\": [ 500, 503 ], \"failures\": 3 }\\nhealthy: { \"http_statuses\": [ 200 ], \"successes\": 2 }",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "break_response_code"
+        ],
+        "properties": {
+          "break_response_code": {
+            "description": "HTTP error code returned when the upstream service is in an unhealthy state.",
+            "title": "Fuse response status code",
+            "default": 502,
+            "type": "integer",
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "break_response_body": {
+            "description": "HTTP response body information returned when the upstream service is in an unhealthy state.",
+            "title": "Fuse response body",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "break_response_headers": {
+            "description": "The HTTP response header returned when the upstream service is in an unhealthy state.",
+            "type": "array",
+            "minItems": 0,
+            "title": "Fuse response head",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can set the key of the response header. The key of the request header cannot contain a colon (:).",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "value",
+                  "description": "You can set the value of the response header, and the key of the request header cannot contain a colon (:).",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              }
+            }
+          },
+          "max_breaker_sec": {
+            "description": "The maximum duration of the upstream service meltdown, in seconds. The minimum duration is 3 seconds.",
+            "title": "Maximum fusing time",
+            "type": "integer",
+            "default": 300,
+            "ui:component": {
+              "name": "bfInput",
+              "min": 3
+            }
+          },
+          "unhealthy": {
+            "description": "HTTP status code and number of abnormal requests when the upstream service is in an unhealthy state.",
+            "title": "Unhealthy state",
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "title": "Unhealthy status code",
+                "minItems": 1,
+                "description": "HTTP status code when the upstream service is in unhealthy state.",
+                "items": {
+                  "type": "integer",
+                  "default": 500,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 500,
+                    "max": 599
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "failures": {
+                "description": "Number of unhealthy requests triggered by the upstream service within a certain period.",
+                "title": "Unhealthy times",
+                "type": "integer",
+                "default": 3,
+                "ui:component": {
+                  "name": "bfInput",
+                  "min": 1
+                }
+              }
+            }
+          },
+          "healthy": {
+            "description": "HTTP status code and number of consecutive normal requests when the upstream service is in the health state.",
+            "title": "Health state",
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "title": "Health status code",
+                "minItems": 1,
+                "description": "HTTP status code when the upstream service is in the healthy state.",
+                "items": {
+                  "type": "integer",
+                  "default": 200,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 200,
+                    "max": 499
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "successes": {
+                "description": "Number of consecutive normal requests that the upstream service triggers the health status.",
+                "title": "Healthy number",
+                "type": "integer",
+                "default": 3,
+                "ui:component": {
+                  "name": "bfInput",
+                  "min": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 8,
+    "type_code": "api-breaker",
+    "type_name": "Circuit Breaker"
+  },
+  "redirect": {
+    "id": 21,
+    "language": "en",
+    "notes": "The redirect Plugin can be used to configure redirects.",
+    "example": "uri: /test/default.html, \\nret_code: 301\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "title": "URI",
+            "description": "URI to redirect to. Can contain Nginx variables. For example, /test/index.html, $uri/index.html, ${uri}/index.html, https://example.com/foo/bar. If you refer to a variable name that doesn't exist, instead of throwing an error, it will treat it as an empty variable.",
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(\\\\\\$[0-9a-zA-Z_]+|\\$\\{[0-9a-zA-Z_]+\\}|\\$[0-9a-zA-Z_]+|\\$|[^$\\\\]+)*$"
+          },
+          "ret_code": {
+            "title": "HTTP response code",
+            "type": "integer",
+            "minimum": 200,
+            "default": 302
+          }
+        }
+      }
+    },
+    "type_id": 12,
+    "type_code": "redirect",
+    "type_name": "Redirect"
+  },
+  "response-rewrite": {
+    "id": 19,
+    "language": "en",
+    "notes": "The response-rewrite Plugin rewrites the content returned by the Upstream.\\nThis Plugin can be useful in these scenarios:\\nTo set custom status_code and Location fields in the header to redirect.",
+    "example": "\"status_code\": 200, \\n\"body\": {\\\"code\\\":\\\"ok\\\",\\\"message\\\":\\\"new json body\\\"}, \\n\"headers\": {\\n  \"add\": [\"X-Server-balancer-addr: test\"],\\n  \"set\": {\"X-Server-id\": 3},\\n  \"remove\": [\"X-TO-BE-REMOVED\"]\\n}, \\n \"vars\": [[[\"arg_name\", \"==\", \"jack\"], [\"arg_age\", \"==\", 18]]]\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "status_code": {
+            "title": "status code",
+            "description": "New HTTP status code in the response. If unset, falls back to the original status code.",
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 598
+          },
+          "body": {
+            "title": "body",
+            "description": "New body of the response. The content-length would also be reset.",
+            "type": "string"
+          },
+          "body_base64": {
+            "description": "When set, the body passed in body will be decoded before writing to the client which is used in some image and Protobuffer scenarios. Note that this field only allows decoding the body passed in plugin configuration and does not decode upstream response.",
+            "type": "boolean",
+            "default": false
+          },
+          "headers": {
+            "type": "object",
+            "properties": {
+              "add": {
+                "description": "add headers",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "description": "You can set the key of the response header, but colons (:) cannot appear in the key of the response header.",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    },
+                    "value": {
+                      "title": "value",
+                      "description": "You can set the value of the response header.",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\s\\S]*$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  }
+                },
+                "minItems": 0,
+                "title": "add",
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "set": {
+                "title": "set",
+                "type": "array",
+                "minItems": 0,
+                "description": "set headers",
+                "ui:component": {
+                  "name": "bfArray"
+                },
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "description": "You can set the key of the response header, but colons (:) cannot appear in the key of the response header.",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    },
+                    "value": {
+                      "title": "value",
+                      "description": "You can set the value of the response header.",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\s\\S]*$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  }
+                }
+              },
+              "remove": {
+                "description": "remove headers",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "description": "You can remove the key of the response header, but colons (:) cannot appear in the key of the response header.",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "title": "remove",
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              }
+            }
+          },
+          "vars": {
+            "type": "string",
+            "title": "vars",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            },
+            "description": "Nginx variable expressions to conditionally execute the rewrite. The Plugin will be executed unconditionally if this value is empty."
+          }
+        }
+      }
+    },
+    "type_id": 11,
+    "type_code": "response-rewrite",
+    "type_name": "Response Rewrite"
+  }
+}
