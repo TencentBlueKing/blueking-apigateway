@@ -357,6 +357,7 @@
               v-model:show-example="isExampleVisible"
               :cur-plugin="curChoosePlugin"
               :scope-info="curScopeInfo"
+              :edit-plugin="curEditPlugin"
               :type="curType"
               :plugin-list="pluginList"
               :binding-plugins="curBindingPlugins"
