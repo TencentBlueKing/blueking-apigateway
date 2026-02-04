@@ -282,7 +282,7 @@ import {
   cloneDeep,
   snakeCase,
 } from 'lodash-es';
-import { creatPlugin, getPluginForm, updatePluginConfig } from '@/services/source/plugin-manage';
+import { createPlugin, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
 // @ts-expect-error missing module type
 import createForm from '@blueking/bkui-form';
@@ -293,10 +293,13 @@ import {
   useStage,
 } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
+import { locale, t } from '@/locales';
 import {
   PLUGIN_ICONS,
   PLUGIN_ICONS_MIN,
 } from '@/constants';
+import schemaPluginFormCnJson from '@/json/schemaPluginFormCn.json';
+import schemaPluginFormEnJson from '@/json/schemaPluginFormEn.json';
 import ProxyCacheForm from '@/components/plugin-form/proxy-cache/Index.vue';
 import BkUserRestriction from '@/components/plugin-form/bk-user-restriction/Index.vue';
 import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/Index.vue';
@@ -351,7 +354,6 @@ const stageStore = useStage();
 const envStore = useEnv();
 const BkSchemaForm = createForm();
 
-const { t } = useI18n();
 const schemaFormData = ref({});
 const formConfig = ref({
   schema: {},
@@ -445,7 +447,7 @@ const handleAdd = async () => {
       if (isAdd.value) {
         data.name = curPlugin?.name;
         data.type_id = typeId.value;
-        await creatPlugin(apigwId, scopeType, scopeId, code, data);
+        await createPlugin(apigwId, scopeType, scopeId, code, data);
         emit('on-change', 'addSuccess');
       }
       else {
@@ -525,10 +527,10 @@ const handleCancel = () => {
 
 const getSchemaFormData = async (code: string) => {
   try {
-    const { apigwId } = scopeInfo;
     isPluginFormLoading.value = true;
-    const res = await getPluginForm(apigwId, code);
-
+    // 下架动态获取插件表单配置接口，前端读取对应语言下的静态插件配置json文件
+    const schemaPluginData = locale.value?.toLowerCase()?.indexOf('en') > -1 ? schemaPluginFormEnJson[code] : schemaPluginFormCnJson[code];
+    const res = schemaPluginData ?? {};
     // 当使用 select 组件切换到 ip 访问保护插件时，schemaFormData 没有被正确地设置
     // 需要手动重置 schemaFormData
     if (code === 'bk-ip-restriction') {
@@ -563,9 +565,9 @@ const handleChoosePlugin = () => {
 
 // 切换使用示例可见状态
 // 初次渲染若内容为空就去请求一次内容
-const toggleShowExample = async () => {
+const toggleShowExample = () => {
   if (!exampleContent.value) {
-    await getSchemaFormData(choosePlugin.value);
+    getSchemaFormData(choosePlugin.value);
   }
   showExample.value = !showExample.value;
 };
@@ -578,12 +580,11 @@ const handleDocClick = () => {
   }
 };
 
-const init = async () => {
+const init = () => {
   isStage.value = scopeInfo.scopeType === 'stage';
   isAdd.value = type === 'add';
   curPluginInfo.value = curPlugin;
-  const { code } = curPlugin;
-  getSchemaFormData(code);
+  getSchemaFormData(curPlugin?.code);
 };
 init();
 

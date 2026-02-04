@@ -1,0 +1,1249 @@
+{
+  "bk-cors": {
+    "id": 1,
+    "language": "",
+    "notes": "为 API 增加 CORS（Cross-Origin Resource Sharing，跨域资源共享）的返回头。",
+    "example": "作用：允许 https://a.example.com:8081, https://b.example.com:8081 这两个站点发起跨域请求\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "allow_methods",
+          "allow_headers",
+          "max_age"
+        ],
+        "properties": {
+          "allow_origins": {
+            "description": "允许跨域访问的 Origin，格式为 scheme://host:port，示例如 https://example.com:8081。如果你有多个 Origin，请使用 , 分隔。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Origin 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Origin 均通过，但请注意这样存在安全隐患。allow_origins、allow_origins_by_regex 只能一个有效。",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+            "maxLength": 4096,
+            "default": "",
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_origins_by_regex": {
+            "description": "使用正则表示的允许跨域访问的 Origin，示例如 '^https://.*\\.example\\.com:8081$'，此正则允许 https://a.example.com:8081, https://b.example.com:8081。allow_origins、allow_origins_by_regex 只能一个有效。",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
+            },
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_methods": {
+            "description": "允许跨域访问的 Method，比如：GET，POST 等。如果你有多个 Method，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Method 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Method 都通过，但请注意这样存在安全隐患。",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+            "maxLength": 100,
+            "ui:rules": [
+              "required"
+            ],
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_headers": {
+            "description": "允许跨域访问时请求方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许所有 Header 通过。你也可以在启用了 allow_credential 后使用 ** 强制允许所有 Header 都通过，但请注意这样存在安全隐患。",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "ui:rules": [
+              "required"
+            ],
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "expose_headers": {
+            "description": "允许跨域访问时响应方携带哪些非 CORS 规范 以外的 Header。如果你有多个 Header，请使用 , 分割。当 allow_credential 为 false 时，可以使用 * 来表示允许任意 Header。你也可以在启用了 allow_credential 后使用 ** 强制允许任意 Header，但请注意这样存在安全隐患。",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "default": "",
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "max_age": {
+            "description": "浏览器缓存 CORS 结果的最大时间，单位为秒。在这个时间范围内，浏览器会复用上一次的检查结果，-1 表示不缓存。请注意各个浏览器允许的最大时间不同。",
+            "type": "integer",
+            "default": 86400,
+            "ui:rules": [
+              "required"
+            ],
+            "ui:component": {
+              "name": "bfInput",
+              "min": -1,
+              "unit": "秒"
+            },
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_credential": {
+            "description": "是否允许跨域访问的请求方携带凭据（如 Cookie 等）。根据 CORS 规范，如果设置该选项为 true，那么将不能在其他属性中使用 *。",
+            "type": "boolean",
+            "default": true,
+            "ui:props": {
+              "labelWidth": 200
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 1,
+    "type_code": "bk-cors",
+    "type_name": "跨域资源共享（CORS）"
+  },
+  "bk-ip-restriction": {
+    "id": 5,
+    "language": "",
+    "notes": "通过将 IP 地址列入白名单或黑名单来限制对资源的访问。支持 CIDR。每行一条数据, 并且支持空行及注释行（以 # 开头）。",
+    "example": "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： \n      # comment\n       192.168.1.1\n       192.168.1.2",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist"
+            ],
+            "title": "白名单",
+            "properties": {
+              "whitelist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "白名单",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          },
+          {
+            "required": [
+              "blacklist"
+            ],
+            "title": "黑名单",
+            "properties": {
+              "blacklist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "黑名单",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          }
+        ],
+        "ui:oneOf": {
+          "title": "类型"
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 3,
+    "type_code": "bk-ip-restriction",
+    "type_name": "IP 访问保护"
+  },
+  "bk-access-token-source": {
+    "id": 22,
+    "language": "",
+    "notes": "从请求 header 中获取 `Authorization: Bearer {access_token}` 或 `X-API-KEY: {access_token}` 转成 `X-Bkapi-Authorization: {\"access_token\": \"{access_token}\"}`。",
+    "example": "作用：来源为 bearer 时，从请求 header 中获取 Authorization，来源为 api_key 时，从请求 header 中获取 X-API-KEY \\n\\n source: bearer",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "title": "来源",
+            "type": "string",
+            "enum": [
+              "bearer",
+              "api_key"
+            ],
+            "default": "bearer",
+            "description": "认证令牌的来源，默认是 bearer"
+          }
+        }
+      }
+    },
+    "type_id": 13,
+    "type_code": "bk-access-token-source",
+    "type_name": "access_token 来源"
+  },
+  "bk-username-required": {
+    "id": 24,
+    "language": "",
+    "notes": "Forcing the caller to pass the X-Bk-Username header header",
+    "example": "",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {},
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 14,
+    "type_code": "bk-username-required",
+    "type_name": "强制要求调用方传递 X-Bk-Username header 头"
+  },
+  "bk-request-body-limit": {
+    "id": 25,
+    "language": "",
+    "notes": "限制请求体大小，最大值 33554432（32 M）。",
+    "example": "作用：限制请求体大小为 100 B\\n\\n max_body_size: 100",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "max_body_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 33554432,
+            "description": "最大请求体大小（以字节为单位）。"
+          }
+        },
+        "required": [
+          "max_body_size"
+        ]
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 15,
+    "type_code": "bk-request-body-limit",
+    "type_name": "限制请求体大小"
+  },
+  "bk-user-restriction": {
+    "id": 27,
+    "language": "",
+    "notes": "通过将用户列入白名单或黑名单来限制对资源的访问，注意：对应资源认证方式需要配置开启用户认证。",
+    "example": "作用：仅允许用户 admin 请求当前接口\\n\\n类型：白名单\\n白名单： [\"admin\"]\\nmessage: \"The bk-user is not allowed\"",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist",
+              "message"
+            ],
+            "title": "白名单",
+            "properties": {
+              "whitelist": {
+                "title": "白名单",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "message": {
+                "type": "string",
+                "default": "The bk-user is not allowed",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          },
+          {
+            "required": [
+              "blacklist",
+              "message"
+            ],
+            "title": "黑名单",
+            "properties": {
+              "blacklist": {
+                "title": "黑名单",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "key",
+                      "type": "string",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "message": {
+                "type": "string",
+                "default": "The bk-user is not allowed",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          }
+        ],
+        "ui:oneOf": {
+          "title": "类型"
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 16,
+    "type_code": "bk-user-restriction",
+    "type_name": "用户访问限制"
+  },
+  "bk-rate-limit": {
+    "id": 7,
+    "language": "",
+    "notes": "限制每个应用调用的请求频率。默认应用频率限制对所有应用生效，特殊应用频率限制对指定应用单独生效。\n如果在环境和资源上都配置，两个都会生效，并且在环境上配置表示对应用访问环境下所有资源的总访问频率进行限制。",
+    "example": "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制：次数：100 时间范围：秒\n特殊应用频率限制：次数：200  时间范围：秒  蓝鲸应用 ID: demo",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "title": "频率控制",
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "object",
+                "title": "默认应用频率限制",
+                "description": "每个应用可以调用的默认频率，以应用维度进行限制",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 10px 16px"
+                  }
+                },
+                "required": [
+                  "tokens",
+                  "period"
+                ],
+                "properties": {
+                  "tokens": {
+                    "type": "integer",
+                    "title": "次数",
+                    "default": 100,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 1
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  },
+                  "period": {
+                    "type": "integer",
+                    "title": "时间范围",
+                    "default": 1,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "select",
+                      "datasource": [
+                        {
+                          "label": "秒",
+                          "value": 1
+                        },
+                        {
+                          "label": "分",
+                          "value": 60
+                        },
+                        {
+                          "label": "时",
+                          "value": 3600
+                        },
+                        {
+                          "label": "天",
+                          "value": 86400
+                        }
+                      ],
+                      "clearable": false
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  }
+                }
+              },
+              "specials": {
+                "type": "array",
+                "title": "特殊应用频率限制",
+                "description": "特殊应用可以调用的频率限制，例如针对某些应用给到更大的调用频率",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 20px 16px"
+                  }
+                },
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "tokens",
+                    "period",
+                    "bk_app_code"
+                  ],
+                  "ui:group": {
+                    "style": {
+                      "background": "#FFF",
+                      "padding": "10px 10px 10px 10px"
+                    }
+                  },
+                  "properties": {
+                    "tokens": {
+                      "type": "integer",
+                      "title": "次数",
+                      "default": 200,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "bfInput",
+                        "min": 1
+                      },
+                      "ui:props": {
+                        "labelWidth": 90
+                      }
+                    },
+                    "period": {
+                      "type": "integer",
+                      "title": "时间范围",
+                      "default": 1,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "select",
+                        "datasource": [
+                          {
+                            "label": "秒",
+                            "value": 1
+                          },
+                          {
+                            "label": "分",
+                            "value": 60
+                          },
+                          {
+                            "label": "时",
+                            "value": 3600
+                          },
+                          {
+                            "label": "天",
+                            "value": 86400
+                          }
+                        ],
+                        "clearable": false
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    },
+                    "bk_app_code": {
+                      "type": "string",
+                      "title": "蓝鲸应用 ID",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [
+        [
+          {
+            "prop": "rates",
+            "group": [
+              [
+                {
+                  "prop": "default",
+                  "container": {
+                    "grid-template-columns": "250px 200px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period"
+                    ]
+                  ]
+                }
+              ],
+              [
+                {
+                  "prop": "specials",
+                  "container": {
+                    "grid-template-columns": "250px 200px 250px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period",
+                      "bk_app_code"
+                    ]
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      ],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 4,
+    "type_code": "bk-rate-limit",
+    "type_name": "频率控制"
+  },
+  "bk-header-rewrite": {
+    "id": 3,
+    "language": "",
+    "notes": "对请求添加或删除请求头。\n注意设置的值中支持`$`符号，（变量，不存在则为空）; `$arg_foo`获取 query string 中`foo`的值，`$http_bar`可以获取 header 中 `bar`的值。",
+    "example": "作用：设置 header `X-Api-Version: 1`，并且删除 header `X-test`\n\n设置：X-Api-Version: 1\n删除：X-test",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "properties": {
+          "set": {
+            "description": "设置的请求头",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "键",
+                  "description": "您可以设置请求头的键，请求头的键中不能包含冒号（:）。",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "值",
+                  "description": "您可以设置请求头的值。",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "设置",
+            "type": "array",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "请求头设置或删除至少需要配置一个"
+              }
+            ]
+          },
+          "remove": {
+            "description": "删除的请求头",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "键",
+                  "description": "您可以删除请求头的键，请求头的键中不能包含冒号（:）。",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "删除",
+            "type": "array",
+            "uniqueItems": true,
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "请求头设置或删除至少需要配置一个"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    "type_id": 2,
+    "type_code": "bk-header-rewrite",
+    "type_name": "Header 转换"
+  },
+  "bk-mock": {
+    "id": 10,
+    "language": "",
+    "notes": "模拟 API 响应，返回指定格式，并且请求不会转发到上游。",
+    "example": "作用：返回 json response，状态码为 200，并且携带响应头 foo:bar\\n\\n响应状态码：200\\n响应体：{\"hello\": \"world\"}\\n响应头：\\n      Content-Type: application/json\\n      foo: bar",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "response_status": {
+            "type": "integer",
+            "default": 200,
+            "title": "响应状态码",
+            "minimum": 100
+          },
+          "response_example": {
+            "title": "响应体",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "response_headers": {
+            "description": "设置响应头",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "键",
+                  "description": "You can set the key of the request header. The key of the request header cannot contain a colon (:).",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "值",
+                  "description": "You can set the value of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "响应头",
+            "type": "array",
+            "ui:component": {
+              "name": "bfArray"
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 7,
+    "type_code": "bk-mock",
+    "type_name": "mocking"
+  },
+  "fault-injection": {
+    "id": 16,
+    "language": "",
+    "notes": "故障注入，该插件可以和其他插件一起使用，并在其他插件执行前被执行，至少要配置中断和延迟中的任意一个，两者也可以同时使用。",
+    "example": "作用：当请求参数 name 等于 jack，并且 age 等于 18 的时候，则返回 400 拒绝状态码和响应内容\\n\\n\"abort\": {\\n    \"http_status\": 400,\\n    \"body\": \"not valid request params\",\\n    \"vars\": [[[\"arg_name\", \"==\", \"jack\"], [\"arg_age\", \"==\", 18]]]\\n}\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "abort": {
+            "description": "中断状态",
+            "title": "abort",
+            "type": "object",
+            "properties": {
+              "http_status": {
+                "description": "返回给客户端的 HTTP 状态码",
+                "title": "中断状态码",
+                "type": "integer"
+              },
+              "body": {
+                "description": "返回给客户端的响应数据。支持使用 NGINX 变量，如 client addr: $remote_addr\n",
+                "title": "中断响应体",
+                "type": "string",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              },
+              "percentage": {
+                "description": "将被中断的请求占比，0-100",
+                "title": "中断请求占比",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "string",
+                "title": "中断规则",
+                "description": "执行故障注入的规则，当规则匹配通过后才会执行故障注。vars 是一个表达式的列表，来自 lua-resty-expr。",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          },
+          "delay": {
+            "description": "延迟状态",
+            "title": "delay",
+            "type": "object",
+            "properties": {
+              "duration": {
+                "title": "延迟时间",
+                "description": "延迟时间，单位秒，只能填入整数",
+                "type": "number"
+              },
+              "percentage": {
+                "description": "将被延迟的请求占比，0-100",
+                "title": "延迟请求占比",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "vars": {
+                "type": "string",
+                "title": "延迟规则",
+                "description": "执行请求延迟的规则，当规则匹配通过后才会延迟请求。vars 是一个表达式列表，来自 lua-resty-expr。",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 10,
+    "type_code": "fault-injection",
+    "type_name": "故障注入"
+  },
+  "request-validation": {
+    "id": 14,
+    "language": "",
+    "notes": "用于提前验证向上游服务转发的请求。该插件使用 JSON Schema 机制进行数据验证，可以验证请求的 Body 以及 Header 的数据。至少需要配置 body_schema 或 header_schema 中的一个，两者也可以同时使用。",
+    "example": "作用：当请求体中没有包含 boolean_payload 时，则返回 400 拒绝状态码和拒绝信息\\n\\n\"body_schema\": {\"type\": \"object\",\"required\": [\"bool_payload\"],\"properties\": {\"bool_payload\": {\"type\": \"boolean\"}}}\\n\"header_schema\": {}\\n\"rejected_code\": 400\\n\"rejected_msg\": \"not valid request body\"",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "body_schema": {
+            "type": "string",
+            "maxLength": 51200,
+            "title": "请求体 JSON Schema",
+            "description": "request body 数据的 JSON Schema",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "header_schema": {
+            "type": "string",
+            "maxLength": 51200,
+            "title": "请求头 JSON Schema",
+            "description": "request header 数据的 JSON Schema",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "rejected_code": {
+            "type": "integer",
+            "default": 400,
+            "title": "拒绝状态码",
+            "minimum": 200
+          },
+          "rejected_msg": {
+            "title": "拒绝信息",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 9,
+    "type_code": "request-validation",
+    "type_name": "请求校验"
+  },
+  "proxy-cache": {
+    "id": 30,
+    "language": "",
+    "notes": "提供缓存后端响应数据的能力，仅支持 GET, HEAD 请求，并且状态码为 200 的资源生效。",
+    "example": "作用：可缓存 GET 请求的响应数据 300 秒\\n\\n cache_method: [\"GET\"] \\n cache_ttl: 300",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "cache_method": {
+            "description": "缓存方法，仅支持：GET, HEAD",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "minItems": 1,
+            "default": [
+              {
+                "key": "GET"
+              }
+            ]
+          },
+          "cache_ttl": {
+            "type": "integer",
+            "description": "缓存时间，最大值 3600 秒。",
+            "default": 300,
+            "minimum": 1,
+            "maximum": 3600
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 18,
+    "type_code": "proxy-cache",
+    "type_name": "代理缓存"
+  },
+  "api-breaker": {
+    "id": 12,
+    "language": "",
+    "notes": "实现了 API 熔断机制，帮助开发者保护后端服务。",
+    "example": "作用：当后端服务返回状态码 500 或 503，并达到 3 次，则触发熔断，返回响应体 helloworld，状态码为 502，并且携带响应头 foo:bar。\\n第一次触发不健康状态时，熔断 2 秒。超过熔断时间后，将重新开始转发请求到上游服务，如果继续返回 500 状态码，当计数再次达到 3 次时，熔断 4 秒。依次类推（2，4，8，16，……），直到达到预设的最大熔断时间 300 秒。\\n当上游服务处于不健康状态时，如果后端服务返回状态码 200，并达到 2 次时，则认为上游服务恢复至健康状态。\\n\\n\\nbreak_response_code：502\\nbreak_response_body：helloworld\\nbreak_response_headers： [ { \"key\": \"foo\", \"value\": \"bar\" } ]\\nmax_breaker_sec：300\\nunhealthy： { \"http_statuses\": [ 500, 503 ], \"failures\": 3 }\\nhealthy： { \"http_statuses\": [ 200 ], \"successes\": 2 }",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "break_response_code"
+        ],
+        "properties": {
+          "break_response_code": {
+            "description": "当上游服务处于不健康状态时返回的 HTTP 错误码。",
+            "title": "熔断响应状态码",
+            "type": "integer",
+            "default": 502,
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "break_response_body": {
+            "description": "当上游服务处于不健康状态时返回的 HTTP 响应体信息。",
+            "title": "熔断响应体",
+            "type": "string",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            }
+          },
+          "break_response_headers": {
+            "description": "当上游服务处于不健康状态时返回的 HTTP 响应头信息。",
+            "type": "array",
+            "minItems": 0,
+            "title": "熔断响应头",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "title": "键",
+                  "description": "您可以设置响应头的键，请求头的键中不能包含冒号（:）。",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "值",
+                  "description": "您可以设置响应头的值，请求头的键中不能包含冒号（:）。",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              }
+            }
+          },
+          "max_breaker_sec": {
+            "description": "上游服务熔断的最大持续时间，以秒为单位，最小 3 秒。",
+            "title": "最大熔断时间",
+            "type": "integer",
+            "default": 300,
+            "ui:component": {
+              "name": "bfInput",
+              "min": 3
+            }
+          },
+          "unhealthy": {
+            "description": "当上游服务处于不健康状态时的 HTTP 的状态码和异常请求次数。",
+            "title": "不健康状态",
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "title": "不健康状态码",
+                "minItems": 1,
+                "description": "上游服务处于不健康状态时的 HTTP 状态码。",
+                "items": {
+                  "type": "integer",
+                  "default": 503,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 500,
+                    "max": 599
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "failures": {
+                "description": "上游服务在一定时间内触发不健康状态的异常请求次数。",
+                "title": "不健康次数",
+                "type": "integer",
+                "default": 3,
+                "ui:component": {
+                  "name": "bfInput",
+                  "min": 1
+                }
+              }
+            }
+          },
+          "healthy": {
+            "description": "上游服务处于健康状态时的 HTTP 状态码和连续正常请求次数。",
+            "title": "健康状态",
+            "type": "object",
+            "properties": {
+              "http_statuses": {
+                "type": "array",
+                "title": "健康状态码",
+                "minItems": 1,
+                "description": "上游服务处于健康状态时的 HTTP 状态码。",
+                "items": {
+                  "type": "integer",
+                  "default": 200,
+                  "ui:component": {
+                    "name": "bfInput",
+                    "min": 200,
+                    "max": 499
+                  }
+                },
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "successes": {
+                "description": "上游服务触发健康状态的连续正常请求次数。",
+                "title": "健康次数",
+                "type": "integer",
+                "default": 3,
+                "ui:component": {
+                  "name": "bfInput",
+                  "min": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 8,
+    "type_code": "api-breaker",
+    "type_name": "熔断"
+  },
+  "redirect": {
+    "id": 20,
+    "language": "",
+    "notes": "用于配置 URI 重定向。",
+    "example": "重定向 URI: /test/default.html, \\nHTTP 响应码: 301\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "title": "重定向 URI",
+            "description": "要重定向到的 URI，可以包含 NGINX 变量。例如：/test/index.html，$uri/index.html，${uri}/index.html，https://example.com/foo/bar。如果你引入了一个不存在的变量，它不会报错，而是将其视为一个空变量。",
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(\\\\\\$[0-9a-zA-Z_]+|\\$\\{[0-9a-zA-Z_]+\\}|\\$[0-9a-zA-Z_]+|\\$|[^$\\\\]+)*$"
+          },
+          "ret_code": {
+            "title": "HTTP 响应码",
+            "type": "integer",
+            "minimum": 200,
+            "default": 302
+          }
+        }
+      }
+    },
+    "type_id": 12,
+    "type_code": "redirect",
+    "type_name": "重定向"
+  },
+  "response-rewrite": {
+    "id": 18,
+    "language": "",
+    "notes": "插件支持修改上游服务返回的 Body 和 Header 信息。\n该插件可以应用在以下场景中：\n通过设置标头中的 status_code 和 Location 字段实现重定向。",
+    "example": "\"status_code\": 200, \\n\"body\": {\\\"code\\\":\\\"ok\\\",\\\"message\\\":\\\"new json body\\\"}, \\n\"headers\": {\\n  \"add\": [\"X-Server-balancer-addr: test\"],\\n  \"set\": {\"X-Server-id\": 3},\\n  \"remove\": [\"X-TO-BE-REMOVED\"]\\n}, \\n \"vars\": [[[\"arg_name\", \"==\", \"jack\"], [\"arg_age\", \"==\", 18]]]\\n",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "status_code": {
+            "title": "状态码",
+            "description": "修改上游返回状态码，默认保留原始响应代码。",
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 598
+          },
+          "body": {
+            "title": "响应体",
+            "description": "修改上游返回的 body 内容，如果设置了新内容，header 里面的 content-length 字段也会被去掉。",
+            "type": "string"
+          },
+          "body_base64": {
+            "description": "当设置时，在写给客户端之前，在body中传递的主体将被解码，这在一些图像和 Protobuffer 场景中使用。注意，这个字段只允许对插件配置中传递的主体进行解码，并不对上游响应进行解码。",
+            "type": "boolean",
+            "default": false
+          },
+          "headers": {
+            "type": "object",
+            "properties": {
+              "add": {
+                "description": "添加新的请求头",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "title": "键",
+                      "description": "您可以设置响应头的键，响应头的键中不能包含冒号（:）。",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    },
+                    "value": {
+                      "title": "值",
+                      "description": "您可以设置响应头的值。",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\s\\S]*$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  }
+                },
+                "minItems": 0,
+                "title": "添加请求头",
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              },
+              "set": {
+                "type": "array",
+                "title": "设置请求头",
+                "minItems": 0,
+                "description": "设置请求头。",
+                "ui:component": {
+                  "name": "bfArray"
+                },
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "title": "键",
+                      "description": "您可以设置响应头的键，响应头的键中不能包含冒号（:）。",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    },
+                    "value": {
+                      "title": "值",
+                      "description": "您可以设置响应头的值，响应头的键中不能包含冒号（:）。",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\s\\S]*$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  }
+                }
+              },
+              "remove": {
+                "description": "删除请求头",
+                "items": {
+                  "properties": {
+                    "key": {
+                      "title": "键",
+                      "description": "您可以删除响应头的键，响应头的键中不能包含冒号（:）。",
+                      "type": "string",
+                      "maxLength": 1024,
+                      "pattern": "^[\\w-]+$",
+                      "ui:rules": [
+                        "required"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "minItems": 0,
+                "title": "删除请求头",
+                "type": "array",
+                "uniqueItems": true,
+                "ui:component": {
+                  "name": "bfArray"
+                }
+              }
+            }
+          },
+          "vars": {
+            "type": "string",
+            "title": "表达式列表",
+            "ui:component": {
+              "type": "textarea",
+              "rows": 10
+            },
+            "description": "vars 是一个表达式列表，只有满足条件的请求和响应才会修改 body 和 header 信息，来自 lua-resty-expr。如果 vars 字段为空，那么所有的重写动作都会被无条件的执行。"
+          }
+        }
+      }
+    },
+    "type_id": 11,
+    "type_code": "response-rewrite",
+    "type_name": "Response 转换"
+  }
+}
