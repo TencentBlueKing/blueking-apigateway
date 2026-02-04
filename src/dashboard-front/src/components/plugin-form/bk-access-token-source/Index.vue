@@ -54,7 +54,7 @@ const form = ref<IFormModel>({
 watch(() => data, () => {
   if (data) {
     form.value.source = data.source || 'bearer';
-    form.value.allow_fallback = data.allow_fallback || true;
+    form.value.allow_fallback = data.allow_fallback ?? true;
   }
 }, {
   immediate: true,
