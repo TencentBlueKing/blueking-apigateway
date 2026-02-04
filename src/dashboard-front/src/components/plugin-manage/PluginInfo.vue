@@ -495,8 +495,12 @@ const handleAdd = async () => {
       Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
       schemaFormData.value = formValue;
     }
-    // 强制要求调用方传递 X-Bk-Username header 头 插件。没有表单，需要手动传 yaml: '{}'
-    else if (choosePlugin.value === 'bk-username-required') {
+    // 没有表单的插件，需要手动传 yaml: '{}'
+    else if ([
+      'bk-status-rewrite',
+      'bk-username-required',
+      'bk-legacy-invalid-params',
+    ].includes(choosePlugin.value)) {
       Object.assign(data, { yaml: '{}' });
     }
   }
