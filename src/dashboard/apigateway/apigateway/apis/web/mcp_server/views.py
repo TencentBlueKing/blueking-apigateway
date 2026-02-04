@@ -687,10 +687,22 @@ class MCPServerAppPermissionQuerySetMixin:
 
 class MCPServerAppPermissionApplyQuerySetMixin:
     def get_queryset(self):
-        return MCPServerAppPermissionApply.objects.filter(
-            mcp_server_id=self.kwargs["mcp_server_id"],
+        """
+        获取权限申请记录的查询集
+        支持从查询参数中获取 mcp_server_id，不传则查询所有
+        """
+        # 优先从查询参数获取 mcp_server_id
+        mcp_server_id = self.request.query_params.get("mcp_server_id")
+        
+        queryset = MCPServerAppPermissionApply.objects.filter(
             mcp_server__gateway=self.request.gateway,
         )
+        
+        # 如果传入了 mcp_server_id，则过滤
+        if mcp_server_id:
+            queryset = queryset.filter(mcp_server_id=int(mcp_server_id))
+        
+        return queryset
 
 
 @method_decorator(

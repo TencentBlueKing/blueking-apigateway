@@ -45,6 +45,17 @@ urlpatterns = [
     path("", MCPServerListCreateApi.as_view(), name="mcp_server.list_create"),
     path("-/categories/", MCPServerCategoriesListApi.as_view(), name="mcp_server.categories_list"),
     path("-/filter-options/", MCPServerFilterOptionsApi.as_view(), name="mcp_server.filter_options"),
+    # 权限申请记录接口（支持可选的 mcp_server_id 查询参数）
+    path(
+        "-/app-permission-apply/",
+        MCPServerAppPermissionApplyListApi.as_view(),
+        name="mcp_server.app-permission-apply.list",
+    ),
+    path(
+        "-/app-permission-apply/applicant/",
+        MCPServerAppPermissionApplyApplicantListApi.as_view(),
+        name="mcp_server.app-permission-apply.applicant_list",
+    ),
     path(
         "<int:mcp_server_id>/",
         include(
@@ -90,16 +101,6 @@ urlpatterns = [
                                 "app-permission-apply/",
                                 include(
                                     [
-                                        path(
-                                            "",
-                                            MCPServerAppPermissionApplyListApi.as_view(),
-                                            name="mcp_server.app-permission-apply.list",
-                                        ),
-                                        path(
-                                            "applicant/",
-                                            MCPServerAppPermissionApplyApplicantListApi.as_view(),
-                                            name="mcp_server.app-permission-apply.applicant_list",
-                                        ),
                                         path(
                                             "<int:id>/status/",
                                             MCPServerAppPermissionApplyUpdateStatusApi.as_view(),
