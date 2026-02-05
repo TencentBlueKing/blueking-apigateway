@@ -2173,6 +2173,7 @@
   "该插件无需任何参数": "No params needed",
   "搜索版本号": "Search version number",
   "请输入 SDK 版本号，资源版本或语言": "Search SDK version number, resource version or language",
+  "服务名称只能包含小写字母、数字和短横线": "Service names can only contain lowercase letters, numbers, and hyphens",
   "服务展示名不能小于3个字符": "The service display name must be at least 3 characters long",
   "描述不能小于10个字符": "The description must be at least 10 characters long",
   "环境不能为空": "Environment cannot be empty",

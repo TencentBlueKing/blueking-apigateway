@@ -553,7 +553,7 @@ const handleSearch = () => {
   const params = { order_by: filterData.value.order_by || '-updated_time' };
   searchValue.value.forEach((option) => {
     if (option.values) {
-      params[option.id] = ['keyword', 'stage_id'].includes(option.id)
+      params[option.id] = !['categories'].includes(option.id)
         ? option.values?.[0]?.id
         : option.values.map(item => item.id);
     };

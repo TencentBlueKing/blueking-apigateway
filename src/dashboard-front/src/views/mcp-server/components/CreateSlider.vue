@@ -73,11 +73,17 @@
               property="name"
               :rules="[
                 {
-                  validator: (value: string) => value?.trim()?.length > 0,
+                  required: true,
                   message: t('服务名称不能为空'),
+                  trigger: 'change',
+                },
+                {
+                  validator: (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/?.test(value),
+                  message: t('服务名称只能包含小写字母、数字和短横线'),
                   trigger: 'change',
                 }
               ]"
+              class="custom-form-item-required"
             >
               <BkInput
                 ref="nameRef"
@@ -173,7 +179,7 @@
                 @focus="handleCategoryFocus"
               />
               <div
-                v-if="!formData.categories.length && isCategoryFocus"
+                v-if="isCategoryEmpty"
                 class="color-#ea3636 text-12px pt-4px lh-16px"
               >
                 {{ t('分类不能为空') }}
@@ -676,6 +682,7 @@ const customMethodsList = computed(() => {
     ...methods,
   ];
 });
+const isCategoryEmpty = computed(() => !formData.value.categories.length && isCategoryFocus.value);
 
 const resourceTabList = shallowRef<{
   label: string
@@ -1350,13 +1357,16 @@ const handleSubmit = async () => {
       handleScrollView(descriptionRef.value?.$el);
       return;
     }
-    if (!categories?.length) {
-      handleScrollView(categoriesRef.value?.$el);
-      return;
-    }
   }
 
   let isValidate = toolSelections.value.length > 0;
+  isCategoryFocus.value = !categories?.length;
+
+  if (isCategoryEmpty.value) {
+    handleScrollView(categoriesRef.value?.$el);
+    return;
+  }
+
   if (!isValidate) {
     handleScrollView(resourceRef.value);
     Message({
