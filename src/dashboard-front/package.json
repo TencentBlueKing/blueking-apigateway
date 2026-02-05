@@ -31,7 +31,7 @@
     "@vueuse/integrations": "^13.6.0",
     "@vueuse/router": "^13.6.0",
     "axios": "^1.11.0",
-    "bkui-vue": "2.0.2-beta.63",
+    "bkui-vue": "2.0.2-beta.93",
     "change-case": "^5.4.4",
     "dayjs": "^1.11.13",
     "echarts": "^5.6.0",

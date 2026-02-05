@@ -58,15 +58,12 @@
             <BkSelect
               v-else
               :ref="(el: HTMLElement | null) => setInputRefs(el, `name-input-`, index, column?.index)"
-              :key="componentKey"
               v-model="row.name"
+              :placeholder="t('请输入')"
               class="edit-select"
               allow-create
               filterable
               @change="() => handleNameChange(index, row.name)"
-              @input="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
-              @blur="() => handleHeaderKeySelectBlur(row, `name-input-`, index, column?.index)"
-              @select="(value: string) => handleHeaderKeySelect(row, value)"
             >
               <BkOption
                 v-for="item in headersNameList"
@@ -266,8 +263,6 @@ const typeList = ref<{
   },
 ]);
 
-const componentKey = ref(0);
-
 const formRefs = ref(new Map());
 const setRefs = (el: HTMLElement | null, prefix: string, index: number) => {
   if (el && index !== undefined) {
@@ -437,32 +432,6 @@ watch(
     immediate: true,
   },
 );
-
-// Headers 选择器失焦后，去获取用户手动输入的值
-const handleHeaderKeySelectBlur = (row: IRowType, inputRefNamePrefix: string, index: number, columnIndex: number) => {
-  try {
-    if (inputRefNamePrefix && index !== undefined && columnIndex !== undefined) {
-      const selectRef = formInputRef.value.get(`${inputRefNamePrefix}${index}-${columnIndex}`);
-      if (!selectRef?.curSearchValue) {
-        row.name = '';
-        selectRef?.handleClear();
-      }
-      else {
-        row.name = selectRef?.curSearchValue || '';
-      }
-    }
-  }
-  catch (error) {
-    console.log(error);
-  }
-};
-
-const handleHeaderKeySelect = (row: IRowType, value: string) => {
-  setTimeout(() => {
-    row.name = value;
-    componentKey.value += 1;
-  });
-};
 
 defineExpose({
   validate,
