@@ -175,7 +175,13 @@ paths:
           path: /{mcp_server_name}/sse
           matchSubpath: false
           timeout: 0
-        pluginConfigs: [ ]
+        pluginConfigs:
+        - type: bk-oauth2-protected-resource
+          yaml: '{}'
+        - type: bk-oauth2-verify
+          yaml: '{}'
+        - type: bk-oauth2-audience-validate
+          yaml: '{}'
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
@@ -204,7 +210,13 @@ paths:
           path: /{mcp_server_name}/sse/message
           matchSubpath: false
           timeout: 0
-        pluginConfigs: [ ]
+        pluginConfigs:
+        - type: bk-oauth2-protected-resource
+          yaml: '{}'
+        - type: bk-oauth2-verify
+          yaml: '{}'
+        - type: bk-oauth2-audience-validate
+          yaml: '{}'
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
@@ -289,7 +301,13 @@ paths:
           path: /{mcp_server_name}/mcp
           matchSubpath: false
           timeout: 0
-        pluginConfigs: [ ]
+        pluginConfigs:
+        - type: bk-oauth2-protected-resource
+          yaml: '{}'
+        - type: bk-oauth2-verify
+          yaml: '{}'
+        - type: bk-oauth2-audience-validate
+          yaml: '{}'
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
@@ -317,7 +335,13 @@ paths:
           path: /{mcp_server_name}/mcp
           matchSubpath: false
           timeout: 0
-        pluginConfigs: [ ]
+        pluginConfigs:
+        - type: bk-oauth2-protected-resource
+          yaml: '{}'
+        - type: bk-oauth2-verify
+          yaml: '{}'
+        - type: bk-oauth2-audience-validate
+          yaml: '{}'
         authConfig:
           userVerifiedRequired: true
           appVerifiedRequired: true
