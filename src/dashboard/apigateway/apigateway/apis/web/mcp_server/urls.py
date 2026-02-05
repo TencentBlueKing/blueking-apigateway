@@ -45,6 +45,12 @@ urlpatterns = [
     path("", MCPServerListCreateApi.as_view(), name="mcp_server.list_create"),
     path("-/categories/", MCPServerCategoriesListApi.as_view(), name="mcp_server.categories_list"),
     path("-/filter-options/", MCPServerFilterOptionsApi.as_view(), name="mcp_server.filter_options"),
+    # 授权审批列表（网关级别，支持按 mcp_server_id 筛选）
+    path(
+        "-/app-permission-apply/",
+        MCPServerAppPermissionApplyListApi.as_view(),
+        name="mcp_server.app-permission-apply.list",
+    ),
     path(
         "<int:mcp_server_id>/",
         include(
@@ -90,11 +96,6 @@ urlpatterns = [
                                 "app-permission-apply/",
                                 include(
                                     [
-                                        path(
-                                            "",
-                                            MCPServerAppPermissionApplyListApi.as_view(),
-                                            name="mcp_server.app-permission-apply.list",
-                                        ),
                                         path(
                                             "applicant/",
                                             MCPServerAppPermissionApplyApplicantListApi.as_view(),
