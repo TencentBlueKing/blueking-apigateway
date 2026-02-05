@@ -177,7 +177,7 @@ export const deleteMcpPermissions = (apigwId: number, mcp_server_id: number, id:
  * @param data
  */
 export const getMcpAppPermissionApply = (apigwId: number, data: IMcpAppPermissionApply) =>
-  http.get(`${path}/${apigwId}/mcp-servers/${data?.mcp_server_id}/permissions/app-permission-apply/`, data);
+  http.get(`${path}/${apigwId}/mcp-servers/-/app-permission-apply/`, data);
 
 /**
  *  授权审批申请人列表

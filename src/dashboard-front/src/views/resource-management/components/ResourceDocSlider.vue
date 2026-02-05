@@ -28,7 +28,7 @@
       @hidden="handleHidden"
     >
       <template #default>
-        <BkLoading :loading="isLoading">
+        <BkLoading :loading="isLoading || isTranslating">
           <main class="main-wrap">
             <div
               class="ag-markdown-view"
