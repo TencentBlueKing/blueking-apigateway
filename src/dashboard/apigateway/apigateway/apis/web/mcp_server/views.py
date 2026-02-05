@@ -789,7 +789,7 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionApplyListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -805,8 +805,14 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
         else:
             status_list = [MCPServerAppPermissionApplyStatusEnum.PENDING.value]
 
+        # 根据 mcp_server_id 查询参数过滤，不传则查询当前网关下所有
+        queryset = MCPServerAppPermissionApply.objects.filter(mcp_server__gateway=request.gateway)
+        mcp_server_id = data.get("mcp_server_id")
+        if mcp_server_id:
+            queryset = queryset.filter(mcp_server_id=mcp_server_id)
+
         queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
-            self.get_queryset(),
+            queryset,
             status_list,
             data.get("bk_app_code"),
             data.get("applied_by"),

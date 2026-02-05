@@ -1247,7 +1247,8 @@ class TestMCPServerAppPermissionDestroyApi:
 
 
 class TestMCPServerAppPermissionApplyListApi:
-    def test_list_pending(self, request_view, fake_gateway, fake_mcp_server):
+    def test_list_pending_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server):
+        """测试按 mcp_server_id 查询"""
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
@@ -1260,16 +1261,17 @@ class TestMCPServerAppPermissionApplyListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_server.app-permission-apply.list",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
-            data={"state": "unprocessed"},
+            data={"state": "unprocessed", "mcp_server_id": fake_mcp_server.id},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
 
-    def test_list_processed(self, request_view, fake_gateway, fake_mcp_server):
+    def test_list_processed_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server):
+        """测试按 mcp_server_id 查询已处理的审批"""
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
@@ -1282,14 +1284,65 @@ class TestMCPServerAppPermissionApplyListApi:
         resp = request_view(
             method="GET",
             view_name="mcp_server.app-permission-apply.list",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
-            data={"state": "processed"},
+            data={"state": "processed", "mcp_server_id": fake_mcp_server.id},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
+
+    def test_list_all_mcp_servers_without_mcp_server_id(self, request_view, fake_gateway, fake_stage, faker):
+        """测试不传 mcp_server_id 查询网关下所有 MCP Server 的审批"""
+        # 创建两个 MCP Server（使用 _resource_names 字段存储资源名称）
+        mcp_server_1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="mcp-server-1",
+            _resource_names="resource1",
+        )
+        mcp_server_2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="mcp-server-2",
+            _resource_names="resource2",
+        )
+
+        # 为两个 MCP Server 分别创建审批记录
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_1,
+            bk_app_code="app-1",
+            applied_by="user1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_2,
+            bk_app_code="app-2",
+            applied_by="user2",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        # 不传 mcp_server_id，查询所有
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"state": "unprocessed"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+        bk_app_codes = {item["bk_app_code"] for item in result["data"]["results"]}
+        assert bk_app_codes == {"app-1", "app-2"}
 
 
 class TestMCPServerAppPermissionApplyApplicantListApi:
@@ -1490,9 +1543,9 @@ class TestMCPServerAppPermissionApplyListApiWithFilters:
         resp = request_view(
             method="GET",
             view_name="mcp_server.app-permission-apply.list",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
-            data={"state": "unprocessed", "bk_app_code": "target-app"},
+            data={"state": "unprocessed", "mcp_server_id": fake_mcp_server.id, "bk_app_code": "target-app"},
         )
         result = resp.json()
 
@@ -1521,15 +1574,63 @@ class TestMCPServerAppPermissionApplyListApiWithFilters:
         resp = request_view(
             method="GET",
             view_name="mcp_server.app-permission-apply.list",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
-            data={"state": "unprocessed", "applied_by": "target-user"},
+            data={"state": "unprocessed", "mcp_server_id": fake_mcp_server.id, "applied_by": "target-user"},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == "target-user"
+
+    def test_list_filter_by_bk_app_code_without_mcp_server_id(self, request_view, fake_gateway, fake_stage, faker):
+        """测试不传 mcp_server_id 时按 bk_app_code 过滤"""
+        mcp_server_1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="mcp-server-1",
+            _resource_names="resource1",
+        )
+        mcp_server_2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="mcp-server-2",
+            _resource_names="resource2",
+        )
+
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_1,
+            bk_app_code="target-app",
+            applied_by="user1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_2,
+            bk_app_code="other-app",
+            applied_by="user2",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        # 不传 mcp_server_id，只按 bk_app_code 过滤
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"state": "unprocessed", "bk_app_code": "target-app"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "target-app"
 
 
 class TestMCPServerStageReleaseCheckApiNoChanges:

@@ -676,6 +676,7 @@ class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
 
 
 class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
+    mcp_server_id = serializers.IntegerField(required=False, help_text="MCPServer ID，不传则查询所有")
     bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, help_text="申请人")
     state = serializers.ChoiceField(
