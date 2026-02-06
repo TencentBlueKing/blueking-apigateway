@@ -159,4 +159,18 @@ urlpatterns = [
             ]
         ),
     ),
+    # .well-known endpoints
+    path(
+        ".well-known/",
+        include(
+            [
+                # GET /api/v2/open/.well-known/oauth-protected-resource
+                path(
+                    "oauth-protected-resource",
+                    views.OAuthProtectedResourceApi.as_view(),
+                    name="openapi.v2.open.well_known.oauth_protected_resource",
+                ),
+            ]
+        ),
+    ),
 ]

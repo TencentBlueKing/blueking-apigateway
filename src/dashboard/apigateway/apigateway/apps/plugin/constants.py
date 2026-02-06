@@ -45,6 +45,10 @@ class PluginTypeCodeEnum(StructuredEnum):
     AI_PROXY = EnumField("ai-proxy", label=_("AI 代理"))
     AI_RATE_LIMITING = EnumField("ai-rate-limiting", label=_("AI 速率限制"))
 
+    BK_OAUTH2_PROTECTED_RESOURCE = EnumField("bk-oauth2-protected-resource", label=_("OAuth2 保护资源"))
+    BK_OAUTH2_VERIFY = EnumField("bk-oauth2-verify", label=_("OAuth2 验证"))
+    BK_OAUTH2_AUDIENCE_VALIDATE = EnumField("bk-oauth2-audience-validate", label=_("OAuth2 受众验证"))
+
 
 class PluginTypeScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
