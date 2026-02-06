@@ -325,7 +325,7 @@ class TestParseDatetimeStrToTimestampApi:
 class TestOAuthProtectedResourceApi:
     def test_get_oauth_protected_resource_success(self, request_view, settings):
         """测试成功获取 OAuth 保护资源元数据"""
-        settings.BK_AUTH_URL = "https://bkauth.example.com"
+        settings.BK_AUTH_SERVER_URL = "https://bkauth.example.com"
         resource_url = "https://api.example.com/resource"
 
         resp = request_view(
@@ -341,8 +341,8 @@ class TestOAuthProtectedResourceApi:
         assert result["bearer_methods_supported"] == ["header"]
 
     def test_get_oauth_protected_resource_returns_settings_auth_url(self, request_view, settings):
-        """测试返回的 authorization_servers 使用 settings.BK_AUTH_URL"""
-        settings.BK_AUTH_URL = "https://custom-auth.example.com"
+        """测试返回的 authorization_servers 使用 settings.BK_AUTH_SERVER_URL"""
+        settings.BK_AUTH_SERVER_URL = "https://custom-auth.example.com"
         resource_url = "https://api.example.com/another-resource"
 
         resp = request_view(
@@ -357,7 +357,7 @@ class TestOAuthProtectedResourceApi:
 
     def test_get_oauth_protected_resource_missing_resource_param(self, request_view, settings):
         """测试缺少 resource 参数时返回错误"""
-        settings.BK_AUTH_URL = "https://bkauth.example.com"
+        settings.BK_AUTH_SERVER_URL = "https://bkauth.example.com"
 
         resp = request_view(
             method="GET",
@@ -369,7 +369,7 @@ class TestOAuthProtectedResourceApi:
 
     def test_get_oauth_protected_resource_empty_resource_param(self, request_view, settings):
         """测试 resource 参数为空时返回错误"""
-        settings.BK_AUTH_URL = "https://bkauth.example.com"
+        settings.BK_AUTH_SERVER_URL = "https://bkauth.example.com"
 
         resp = request_view(
             method="GET",

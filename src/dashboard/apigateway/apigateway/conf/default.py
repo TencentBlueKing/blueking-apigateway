@@ -532,7 +532,7 @@ BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
 BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 # BKAuth 站点地址 用于 OAuth2 跳转
-BK_AUTH_URL = env.str("BK_AUTH_URL", "")
+BK_AUTH_SERVER_URL = env.str("BK_AUTH_SERVER_URL", "")
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
 )

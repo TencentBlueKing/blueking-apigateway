@@ -828,7 +828,7 @@ class OAuthProtectedResourceApi(generics.RetrieveAPIView):
         return JsonResponse(
             {
                 "resource": resource,
-                "authorization_servers": [settings.BK_AUTH_URL],
+                "authorization_servers": [settings.BK_AUTH_SERVER_URL],
                 "bearer_methods_supported": ["header"],
             }
         )
