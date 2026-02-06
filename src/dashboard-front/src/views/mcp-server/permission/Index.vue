@@ -324,6 +324,7 @@ const applyActionDialogConf = reactive({
 });
 const curAction = ref({
   id: 0,
+  mcp_server_id: 0,
   status: '',
   comment: '',
 });
@@ -437,6 +438,7 @@ const handleFilterData = (payload: Record<string, string>, curData: Record<strin
 const handleApprove = (row: any, status: string) => {
   curAction.value = {
     id: row.id,
+    mcp_server_id: row.mcp_server.id,
     status,
     comment: status === 'approved' ? t('通过') : t('驳回'),
   };
@@ -456,7 +458,7 @@ const handleSubmitApprove = async () => {
     await approveForm.value?.validate();
     await updateMcpPermissions(
       gatewayStore.apigwId,
-      filterData.value.mcp_server_id,
+      curAction.value.mcp_server_id,
       curAction.value.id,
       curAction.value,
     );
@@ -504,6 +506,10 @@ watch(
   (val) => {
     if (val && !featureFlagStore.isTenantMode) {
       getApplicant();
+    }
+    if (!val) {
+      filterData.value.applied_by = '';
+      applicantList.value = [];
     }
   },
   { immediate: true },
