@@ -40,18 +40,18 @@
         {{ t('通过 JSON 生成') }}
       </IconButton>
     </div>
-    <BkTable
+    <AgTable
       v-if="!disabled"
-      ref="tableRef"
-      :cell-class="getCellClass"
       :data="tableData"
-      :border="['outer', 'row']"
       class="request-params-table"
-      row-hover="auto"
-      @vue:mounted="handleTableMounted"
+      :immediate="false"
+      :show-pagination="false"
+      bordered
+      :expand-icon="false"
+      :expanded-row-keys="expandedRowKeys"
     >
-      <BkTableColumn
-        :label="t('参数名')"
+      <TableColumn
+        :title="t('参数名')"
         prop="name"
       >
         <template #default="{ row }">
@@ -86,9 +86,9 @@
             </template>
           </BkInput>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('位置')"
+      </TableColumn>
+      <TableColumn
+        :title="t('位置')"
         prop="in"
         width="140"
       >
@@ -117,9 +117,9 @@
             />
           </BkSelect>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('类型')"
+      </TableColumn>
+      <TableColumn
+        :title="t('类型')"
         prop="type"
         width="140"
       >
@@ -147,11 +147,11 @@
             />
           </BkSelect>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('必填')"
+      </TableColumn>
+      <TableColumn
+        :title="t('必填')"
         prop="required"
-        width="140"
+        width="100"
       >
         <template #default="{ row }">
           <div
@@ -168,11 +168,10 @@
             theme="primary"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('默认值')"
+      </TableColumn>
+      <TableColumn
+        :title="t('默认值')"
         :width="readonly ? 160 : 300"
-        prop="default"
       >
         <template #default="{ row }">
           <div
@@ -190,10 +189,10 @@
             class="edit-input"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('备注')"
-        prop="description"
+      </TableColumn>
+      <TableColumn
+        :title="t('备注')"
+        width="260"
       >
         <template #default="{ row }">
           <div
@@ -210,15 +209,15 @@
             class="edit-input"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
+      </TableColumn>
+      <TableColumn
         v-if="!readonly"
-        :label="t('操作')"
+        :title="t('操作')"
         fixed="right"
         width="140"
       >
         <template #default="{ row, index }">
-          <div>
+          <div class="pl-16px">
             <AgIcon
               v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
@@ -234,8 +233,8 @@
             />
           </div>
         </template>
-      </BkTableColumn>
-      <template #expandRow="row">
+      </TableColumn>
+      <template #expandedRow="{row}">
         <div v-if="row?.in === 'body'">
           <RequestParamsTable
             ref="sub-table-ref"
@@ -244,7 +243,7 @@
           />
         </div>
       </template>
-    </BkTable>
+    </AgTable>
     <div
       v-if="!disabled && !readonly"
       class="add-param-btn-row"
@@ -275,6 +274,8 @@ import {
 } from 'json-schema';
 import toJsonSchema from 'to-json-schema';
 import JsonEditorSlider from '../JsonEditorSlider.vue';
+import AgTable from '@/components/ag-table/Index.vue';
+import { TableColumn } from '@blueking/tdesign-ui';
 
 interface ITableRow {
   id: string
@@ -330,7 +331,6 @@ const {
 
 const { t } = useI18n();
 
-const tableRef = ref();
 const subTableRef = useTemplateRef('sub-table-ref');
 
 const tableData = ref<ITableRow[]>([
@@ -344,6 +344,7 @@ const tableData = ref<ITableRow[]>([
     description: '',
   },
 ]);
+const expandedRowKeys = ref<string[]>([]);
 
 const invalidRowIdMap = ref<Record<string, boolean>>({});
 
@@ -486,10 +487,8 @@ watch(() => detail, () => {
         Object.assign(row, { body: subBody });
       }
       tableData.value.push(row);
+      expandedRowKeys.value.push(row.id);
     }
-    nextTick(() => {
-      tableRef.value?.setAllRowExpand(true);
-    });
   }
 }, { immediate: true });
 
@@ -518,13 +517,6 @@ const genBodyRow = (id?: string) => {
   };
 };
 
-const getCellClass = (payload: { index: number }) => {
-  if (payload.index !== 6) {
-    return 'custom-table-cell';
-  }
-  return '';
-};
-
 const handleInChange = (row: ITableRow) => {
   const _row = tableData.value.find(data => data.id === row.id);
   if (_row) {
@@ -549,10 +541,8 @@ const handleInChange = (row: ITableRow) => {
       }
       delete _row.body;
     }
+    expandedRowKeys.value.push(_row.id);
   }
-  nextTick(() => {
-    tableRef.value?.setAllRowExpand(true);
-  });
 };
 
 const handleTypeChange = (row: ITableRow) => {
@@ -679,10 +669,6 @@ const isTypeDisabled = (paramIn: string, type: string) => {
   return type === 'object' || type === 'array';
 };
 
-const handleTableMounted = () => {
-  tableRef.value?.setAllRowExpand(true);
-};
-
 const handleEditJSON = () => {
   isEditorSliderVisible.value = true;
 };
@@ -719,10 +705,6 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
     else {
       tableData.value.push(row);
     }
-
-    nextTick(() => {
-      tableRef.value?.setAllRowExpand(true);
-    });
   }
   catch {
     Message({
@@ -744,10 +726,6 @@ const setInvalidRowId = () => {
 const clearInvalidState = (rowId: string) => {
   delete invalidRowIdMap.value[rowId];
 };
-
-onMounted(() => {
-  tableRef.value?.setAllRowExpand(true);
-});
 
 defineExpose({
   getValue: async () => {
@@ -778,6 +756,14 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+
+// 默认单元格高度和内边距
+
+:deep(.t-table.t-size-m td) {
+  height: 42px;
+  padding: 0;
+}
+
 .request-params-table-wrapper {
   padding-bottom: 22px;
 }
@@ -862,41 +848,6 @@ defineExpose({
     font-size: 12px;
     cursor: auto;
   }
-
-  .td-text {
-    padding: 0 16px;
-  }
-
-  // :deep(.bk-table-body-content) {
-
-  :deep(.bk-table-body) {
-
-    .custom-table-cell {
-
-      .cell {
-        padding: 0;
-
-        &:hover {
-          cursor: pointer;
-        }
-      }
-    }
-
-    // 展开行样式
-
-    .row_expend {
-
-      td {
-        border-right: none;
-      }
-
-      // 展开行没有内容时，不应渲染，避免出现多余的 1px 高的元素
-
-      &:not(:has(.request-param-body-table)) {
-        display: none !important;
-      }
-    }
-  }
 }
 
 // 输入框和 placeholder 样式
@@ -917,6 +868,18 @@ defineExpose({
   border: 1px solid #dcdee5;
   border-top: none;
   align-content: center;
+}
+
+:deep(.t-table) {
+
+  .t-table__content {
+    border-bottom: none;
+    border-radius: 0;
+
+    .t-table__body .t-table__expanded-row .t-table__expanded-row-inner .t-table__row-full-element {
+      padding: 0;
+    }
+  }
 }
 
 </style>

@@ -47,6 +47,7 @@
       @page-change="handlePageChange"
       @select-change="handleSelectionChange"
     >
+      <slot />
       <template #firstFullRow>
         <template v-if="isShowSelectionRow">
           <slot
