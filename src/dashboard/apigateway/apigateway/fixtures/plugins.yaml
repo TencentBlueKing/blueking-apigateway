@@ -1322,6 +1322,81 @@
         "formData": {},
         "rules": {}
       }
+- model: plugin.plugintype
+  fields:
+    code: bk-oauth2-protected-resource
+    name: OAuth2 受保护资源
+    name_en: OAuth2 Protected Resource
+    is_public: false
+    scope: resource
+    priority: 18740
+    _tags: "认证,Authentication"
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-oauth2-protected-resource
+    notes: OAuth2 protected resource plugin
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.plugintype
+  fields:
+    code: bk-oauth2-verify
+    name: OAuth2 验证
+    name_en: OAuth2 Verify
+    is_public: false
+    scope: resource
+    priority: 18732
+    _tags: "认证,Authentication"
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-oauth2-verify
+    notes: OAuth2 verify plugin
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+- model: plugin.plugintype
+  fields:
+    code: bk-oauth2-audience-validate
+    name: OAuth2 Audience 校验
+    name_en: OAuth2 Audience Validate
+    is_public: false
+    scope: resource
+    priority: 17678
+    _tags: "认证,Authentication"
+    schema: null
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-oauth2-audience-validate
+    notes: OAuth2 audience validate plugin
+    style: dynamic
+    default_value: ''
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
 - model: schema.schema
   fields:
     created_time: 2023-02-02 14:54:21.010753+00:00
