@@ -25,12 +25,28 @@
     >
       <tbody class="table-body">
         <tr class="table-body-row">
-          <td class="table-body-row-cell">
-            <AgIcon name="right-shape" />
+          <td
+            class="table-body-row-cell indicator"
+            :style="iconCellStyle"
+          >
+            <AgIcon
+              color="#979BA5"
+              size="10"
+              name="circle-shape"
+              class="ml-12px"
+            />
+            <div
+              v-show="!!row.body?.length"
+              class="level-line"
+              :style="{
+                'left': `${(level + 1) * 16}px`,
+                'height': `${countRowChildren(row) * 42}px`
+              }"
+            />
           </td>
           <!-- 字段名 -->
           <td
-            class="table-body-row-cell"
+            class="table-body-row-cell name"
             :class="{ 'has-error': invalidRowIdMap[row.id] }"
           >
             <div
@@ -99,7 +115,7 @@
           </td>
           <!-- 字段默认值 -->
           <td
-            :style="readonly ? 'width: 150px' : undefined"
+            :style="readonly ? 'width: 160px' : undefined"
             class="table-body-row-cell default"
           >
             <div
@@ -149,16 +165,20 @@
           </td>
         </tr>
       </tbody>
-      <tfoot v-if="row.body?.length">
+      <tfoot
+        v-if="row.body?.length"
+        class="table-foot"
+      >
         <tr>
           <td
+            class="sub-table-cell"
             :colspan="readonly ? 6 : 7"
-            class="pl-16px"
           >
             <RequestParamsTable
               ref="recursive-sub-table-refs"
               v-model="row.body"
               :readonly="readonly"
+              :level="level + 1"
             />
           </td>
         </tr>
@@ -170,11 +190,17 @@
 <script lang="ts" setup>
 import { uniqueId } from 'lodash-es';
 
+interface IProps {
+  readonly?: boolean
+  level?: number
+}
+
 const tableData = defineModel<IBodyRow[]>();
 
-const { readonly = false } = defineProps<IProps>();
-
-interface IProps { readonly?: boolean }
+const {
+  readonly = false,
+  level = 0,
+} = defineProps<IProps>();
 
 const { t } = useI18n();
 
@@ -215,6 +241,22 @@ const typeList = [
     value: 'object',
   },
 ];
+
+const iconCellStyle = computed(() => ({
+  paddingLeft: `${level * 16}px`,
+  width: `${level * 16 + 32}px`,
+}));
+
+const countRowChildren = (row: IBodyRow) => {
+  if (!row.body?.length) {
+    return 0;
+  }
+  let count = row.body.length;
+  row.body.forEach((child) => {
+    count += countRowChildren(child);
+  });
+  return count;
+};
 
 const genBodyRow = (id?: string) => {
   return {
@@ -315,11 +357,7 @@ defineExpose({
   border-spacing: 0;
 
   .table-body {
-
-    td {
-      border-top: 1px solid #dcdee5;
-      border-bottom: none !important;
-    }
+    border-bottom: none;
 
     .readonly-value-wrapper {
       padding-left: 16px;
@@ -328,17 +366,29 @@ defineExpose({
     }
 
     .table-body-row {
+       border-bottom: 1px solid #dcdee5;
 
       .table-body-row-cell {
         height: 42px;
 
-        &:first-child {
-          width: 32px;
-          text-align: center;
+        &.indicator {
+          position: relative;
+
+          .level-line {
+            position: absolute;
+            top: 32px;
+            z-index: 999;
+            width: 1px;
+            background-color: #DCDEE5;
+          }
+        }
+
+        &.name {
+          border-left: none;
         }
 
         &.type {
-          width: 100px;
+          width: 140px;
         }
 
         &.required {
@@ -350,11 +400,11 @@ defineExpose({
         }
 
         &.description {
-          width: 300px;
+          width: 260px;
         }
 
         &.actions {
-          width: 110px;
+          width: 140px;
           padding-left: 16px;
         }
 
@@ -396,6 +446,13 @@ defineExpose({
           }
         }
       }
+    }
+  }
+
+  .table-foot {
+
+    .sub-table-cell {
+      border-top: none;
     }
   }
 }
