@@ -9,20 +9,62 @@ paths:
   /api/v1/apis/:
     get:
       operationId: get_apis
-      description: 查询网关
+      description: 查询网关列表
       tags:
       - v1
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    description: 返回码，0 表示成功
+                    example: 0
+                  message:
+                    type: string
+                    description: 错误信息
+                    example: OK
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 网关ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 网关名称
+                          example: bk-apigateway
+                        description:
+                          type: string
+                          description: 网关描述
+                          example: 蓝鲸API网关
+                        maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 网关管理员
+                          example: ["admin"]
+              example:
+                code: 0
+                message: OK
+                data:
+                  - id: 1
+                    name: bk-apigateway
+                    description: ""
+                    maintainers: ["admin"]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
         enableWebsocket: false
+        noneSchema: true
         backend:
           name: default
           method: get
@@ -34,19 +76,80 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: true
-        descriptionEn: None
+        descriptionEn: Query gateway list
   /api/v1/apis/{api_name}/permissions/apply/:
     post:
       operationId: apply_permissions
       description: 申请网关API访问权限
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - grant_dimension
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用，应于当前请求的应用一致
+                  example: my-app
+                expire_days:
+                  type: integer
+                  description: 过期时间，0 或未提供表示永久，180 表示 6 个月，360 表示 12 个月
+                  example: 360
+                grant_dimension:
+                  type: string
+                  description: 授权维度，api 表示按网关申请权限
+                  enum:
+                    - api
+                  example: api
+                reason:
+                  type: string
+                  description: 申请原因
+                  example: test
+            example:
+              target_app_code: my-app
+              expire_days: 360
+              grant_dimension: api
+              reason: test
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回申请记录ID
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      record_id:
+                        type: integer
+                        description: 权限申请单的单据ID
+                        example: 12345
+              example:
+                code: 0
+                message: OK
+                data:
+                  record_id: 12345
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -63,19 +166,69 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Apply for gateway API access permission
   /api/v1/apis/{api_name}/permissions/grant/:
     post:
       operationId: grant_permissions
       description: 网关为应用主动授权
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - grant_dimension
+              properties:
+                target_app_code:
+                  type: string
+                  description: 待授权应用
+                  example: bk-sops
+                expire_days:
+                  type: integer
+                  description: 过期时间，单位天；0或不提供时表示永久权限
+                  example: 360
+                grant_dimension:
+                  type: string
+                  description: 授权维度，可选值：api(按网关授权)
+                  enum:
+                    - api
+                  example: api
+            example:
+              target_app_code: bk-sops
+              expire_days: 360
+              grant_dimension: api
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+              example:
+                code: 0
+                message: OK
+                data: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -92,19 +245,67 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Grant permissions to application
   /api/v1/apis/{api_name}/permissions/revoke/:
     delete:
       operationId: revoke_permissions
       description: 回收应用访问网关 API 的权限
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_codes
+                - grant_dimension
+              properties:
+                target_app_codes:
+                  type: array
+                  items:
+                    type: string
+                  description: 待回收权限的应用列表
+                  example: ["my-app"]
+                grant_dimension:
+                  type: string
+                  description: 授权维度，可选值：api(按网关授权)
+                  enum:
+                    - api
+                  example: api
+            example:
+              target_app_codes: ["my-app"]
+              grant_dimension: api
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
+              example:
+                code: 0
+                message: OK
+                data: null
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -121,19 +322,52 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Revoke application gateway API access permission
   /api/v1/apis/{api_name}/public_key/:
     get:
       operationId: get_apigw_public_key
       description: 获取网关公钥
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关公钥
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      issuer:
+                        type: string
+                        description: 签发者
+                        example: APIGW
+                      public_key:
+                        type: string
+                        description: 网关公钥
+                        example: "-----BEGIN PUBLIC KEY-----\nMIIBIjAN..."
+              example:
+                code: 0
+                message: OK
+                data:
+                  issuer: ""
+                  public_key: "xxx"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -150,7 +384,7 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Get gateway public key
 
   /api/v2/mcp-servers/{mcp_server_name}/sse:
     get:
@@ -384,12 +618,51 @@ paths:
       description: 添加网关关联应用
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_codes
+              properties:
+                target_app_codes:
+                  type: array
+                  items:
+                    type: string
+                  description: 目标应用列表
+                  example: ["my-app"]
+            example:
+              target_app_codes: ["my-app"]
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+              example:
+                code: 0
+                message: OK
+                data: {}
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -406,19 +679,92 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Add gateway related apps
   /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/:
     get:
       operationId: get_released_resources
       description: 查询已发布资源列表
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: stage_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 环境名
+          example: prod
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回已发布资源列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: 资源数量
+                        example: 2
+                      has_next:
+                        type: boolean
+                        description: 分页，后续是否有数据
+                        example: false
+                      has_previous:
+                        type: boolean
+                        description: 分页，前面是否有数据
+                        example: false
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 3
+                            name:
+                              type: string
+                              example: echo
+                            description:
+                              type: string
+                              example: ""
+                            method:
+                              type: string
+                              example: GET
+                            url:
+                              type: string
+                              example: "https://bkapi.example.com/api/echo/prod/echo/"
+                            match_subpath:
+                              type: boolean
+                              example: false
+                            enable_websocket:
+                              type: boolean
+                              example: false
+                            app_verified_required:
+                              type: boolean
+                              example: false
+                            resource_perm_required:
+                              type: boolean
+                              example: false
+                            user_verified_required:
+                              type: boolean
+                              example: false
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -435,13 +781,71 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: true
-        descriptionEn: None
+        descriptionEn: Query released resources list
   /api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/:
     get:
       operationId: get_released_resource
       description: 查询发布资源详情(包含接口参数)
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: stage_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 环境名
+          example: prod
+        - name: resource_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 资源名称
+          example: updatePet
+      responses:
+        '200':
+          description: 成功返回资源详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 资源ID
+                        example: 2448
+                      name:
+                        type: string
+                        description: 资源名称
+                        example: updatePet
+                      method:
+                        type: string
+                        description: 资源请求方法
+                        example: PUT
+                      path:
+                        type: string
+                        description: 资源请求地址
+                        example: /api/v3/pet
+                      schema:
+                        type: object
+                        description: 资源协议数据（OpenAPI 3.0 格式）
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -458,19 +862,55 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: true
-        descriptionEn:
+        descriptionEn: Query released resource details with parameters
   /api/v1/apis/{api_name}/resource-docs/import/by-archive/:
     post:
       operationId: import_resource_docs_by_archive
       description: 通过文档归档文件导入资源文档
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 资源文档的归档文件对象
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
+              example:
+                code: 0
+                message: OK
+                data: null
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -487,19 +927,66 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Import resource docs by archive file
   /api/v1/apis/{api_name}/resource-docs/import/by-swagger/:
     post:
       operationId: import_resource_docs_by_swagger
       description: 通过 Swagger 格式导入文档
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - language
+                - swagger
+              properties:
+                language:
+                  type: string
+                  description: 文档语言，可选值：zh 表示中文，en 表示英文
+                  enum:
+                    - zh
+                    - en
+                  example: zh
+                swagger:
+                  type: string
+                  description: swagger 描述文件的内容
+                  example: "xxx"
+            example:
+              language: zh
+              swagger: "xxx"
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
+              example:
+                code: 0
+                message: OK
+                data: null
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -516,19 +1003,96 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Import resource docs by swagger
   /api/v1/apis/{api_name}/resources/sync/:
     post:
       operationId: sync_resources
       description: 同步资源
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: 网关资源 swagger 描述，可为 yaml 格式文本
+                  example: "xxx"
+                delete:
+                  type: boolean
+                  description: 是否删除未指定的资源
+                  example: false
+                doc_language:
+                  type: string
+                  description: 生成接口文档的语言：en 英文，zh 中文，不传不生成
+                  enum:
+                    - zh
+                    - en
+                  example: zh
+            example:
+              content: "xxx"
+              delete: false
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功响应
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      added:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 新增的资源
+                      updated:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 更新的资源
+                      deleted:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 删除的资源
+              example:
+                code: 0
+                message: OK
+                data:
+                  added: [{"id": 1}]
+                  updated: [{"id": 2}]
+                  deleted: [{"id": 3}]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -545,19 +1109,81 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Sync resources
   /api/v1/apis/{api_name}/resource_versions/:
     get:
       operationId: list_resource_versions
       description: 查询资源版本
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: version
+          in: query
+          schema:
+            type: string
+          description: 版本号
+          example: "1.0.0"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回资源版本列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      has_next:
+                        type: boolean
+                        example: false
+                      has_previous:
+                        type: boolean
+                        example: false
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            version:
+                              type: string
+                              example: "1.0.0"
+                            title:
+                              type: string
+                              example: test
+                            comment:
+                              type: string
+                              example: ""
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -580,12 +1206,75 @@ paths:
       description: 创建资源版本
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+              properties:
+                version:
+                  type: string
+                  description: 版本号，须符合 Semver 规范
+                  example: "1.0.0"
+                title:
+                  type: string
+                  description: 版本标题
+                  example: 发布新版本
+                comment:
+                  type: string
+                  description: 版本说明
+                  example: 这是一个什么样的新版本
+            example:
+              version: "1.0.0"
+              title: 发布新版本
+              comment: 这是一个什么样的新版本
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功创建资源版本
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 资源版本ID
+                        example: 1
+                      version:
+                        type: string
+                        description: 版本号
+                        example: "1.0.0"
+                      title:
+                        type: string
+                        description: 版本标题
+                        example: 发布新版本
+              example:
+                code: 0
+                message: OK
+                data:
+                  id: 1
+                  version: "1.0.0"
+                  title: 发布新版本
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -602,19 +1291,47 @@ paths:
           userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
-        descriptionEn: None
+        descriptionEn: Create resource version
   /api/v1/apis/{api_name}/resource_versions/latest/:
     get:
       operationId: get_latest_resource_version
       description: 获取网关最新版本
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回最新资源版本
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        description: 资源版本的版本号
+                        example: "1.0.1"
+              example:
+                code: 0
+                message: OK
+                data:
+                  version: "1.0.1"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -638,12 +1355,74 @@ paths:
       description: 发布版本
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+              properties:
+                version:
+                  type: string
+                  description: 待发布版本的版本号
+                  example: "1.0.0"
+                stage_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 待发布环境列表
+                  example: ["prod", "test", "dev"]
+                comment:
+                  type: string
+                  description: 发布日志
+                  example: 发布
+            example:
+              version: "1.0.0"
+              stage_names: ["prod", "test", "dev"]
+              comment: 发布
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功发布版本
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        description: 发布版本号
+                        example: "1.0.0"
+                      stage_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 发布环境名列表
+                        example: ["prod", "test", "dev"]
+              example:
+                code: 0
+                message: OK
+                data:
+                  version: "1.0.0"
+                  stage_names: ["prod", "test", "dev"]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -667,12 +1446,79 @@ paths:
       description: 生成 SDK
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resource_version
+              properties:
+                resource_version:
+                  type: string
+                  description: 资源版本的版本号
+                  example: "1.0.1"
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  description: 需要生成SDK的语言列表，可选值：python，默认为 python SDK
+                  example: ["python"]
+                version:
+                  type: string
+                  description: SDK 版本号，未设置时，将使用资源版本的版本号
+                  example: "1.0.1"
+            example:
+              resource_version: "1.0.1"
+              languages: ["python"]
+              version: "1.0.1"
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功生成 SDK
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: SDK 名称
+                          example: bkapi-test
+                        version:
+                          type: string
+                          description: SDK 版本号
+                          example: "1.0.1"
+                        url:
+                          type: string
+                          description: SDK 下载地址
+                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+              example:
+                code: 0
+                message: OK
+                data:
+                  - name: bkapi-test
+                    version: "1.0.1"
+                    url: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -696,12 +1542,52 @@ paths:
       description: 查询环境
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回环境列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 环境ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 环境名称
+                          example: prod
+                        description:
+                          type: string
+                          description: 环境描述
+                          example: 正式环境
+              example:
+                code: 0
+                message: OK
+                data:
+                  - id: 1
+                    name: prod
+                    description: 正式环境
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -725,12 +1611,135 @@ paths:
       description: 同步环境
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - proxy_http
+              properties:
+                name:
+                  type: string
+                  description: 环境名称
+                  example: prod
+                description:
+                  type: string
+                  description: 描述
+                  example: 正式环境
+                vars:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: 环境变量，包含变量名、值，变量名、值均为字符串类型
+                  example:
+                    foo: bar
+                proxy_http:
+                  type: object
+                  description: 代理配置
+                  required:
+                    - timeout
+                    - upstreams
+                  properties:
+                    timeout:
+                      type: integer
+                      description: 超时时间，单位秒，取值范围 1 ~ 300
+                      example: 60
+                    upstreams:
+                      type: object
+                      description: 后端服务地址
+                      required:
+                        - loadbalance
+                        - hosts
+                      properties:
+                        loadbalance:
+                          type: string
+                          description: 负载均衡类型，可选值：roundrobin
+                          example: roundrobin
+                        hosts:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              host:
+                                type: string
+                                description: 后端服务域名、IP + 端口
+                                example: "http://api.example.com"
+                              weight:
+                                type: integer
+                                description: 权重，可选值 1 ~ 10000
+                                example: 100
+                    transform_headers:
+                      type: object
+                      description: Header 转换配置
+                      properties:
+                        set:
+                          type: object
+                          additionalProperties:
+                            type: string
+                          description: 设置 Header
+                        delete:
+                          type: array
+                          items:
+                            type: string
+                          description: 删除 Header
+            example:
+              name: prod
+              description: 正式环境
+              vars:
+                foo: bar
+              proxy_http:
+                timeout: 60
+                upstreams:
+                  loadbalance: roundrobin
+                  hosts:
+                    - host: "http://api.example.com"
+                      weight: 100
+                transform_headers:
+                  set:
+                    X-Token: foo
+                  delete: ["X-Test"]
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步环境
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 环境ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 环境名称
+                        example: demo
+              example:
+                code: 0
+                message: OK
+                data:
+                  id: 1
+                  name: demo
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -754,12 +1763,61 @@ paths:
       description: 查询网关环境资源版本
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回环境列表及资源版本
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: 环境名称
+                          example: prod
+                        resource_version:
+                          type: object
+                          nullable: true
+                          description: 资源版本
+                          properties:
+                            version:
+                              type: string
+                              description: 版本
+                              example: "1.0.1"
+                        released:
+                          type: boolean
+                          description: 是否已发布
+                          example: true
+              example:
+                code: 0
+                message: OK
+                data:
+                  - name: prod
+                    resource_version:
+                      version: "1.0.1"
+                    released: true
+                  - name: test
+                    resource_version: null
+                    released: false
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -783,12 +1841,53 @@ paths:
       description: 修改网关状态
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: integer
+                  description: 网关状态，0：表示停用，1：表示启用
+                  enum:
+                    - 0
+                    - 1
+                  example: 1
+            example:
+              status: 1
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功更新网关状态
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
+              example:
+                code: 0
+                message: OK
+                data: null
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -812,12 +1911,70 @@ paths:
       description: 同步网关
       tags:
       - v1
+      parameters:
+        - name: api_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: 网关描述
+                  example: just for test
+                maintainers:
+                  type: array
+                  items:
+                    type: string
+                  description: 网关管理员
+                  example: ["admin"]
+                is_public:
+                  type: boolean
+                  description: 网关是否公开，默认公开
+                  example: true
+            example:
+              description: just for test
+              maintainers: ["admin"]
+              is_public: true
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步网关
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 网关ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 网关名称
+                        example: demo
+              example:
+                code: 0
+                message: OK
+                data:
+                  id: 1
+                  name: demo
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -841,12 +1998,63 @@ paths:
       description: 获取网关列表
       tags:
       - v2_open
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: 网关名称，用于过滤网关
+          example: bk-apigateway
+        - name: fuzzy
+          in: query
+          schema:
+            type: boolean
+          description: 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配
+          example: true
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 网关 ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 网关名称
+                          example: bk-apigateway
+                        description:
+                          type: string
+                          description: 网关描述
+                          example: 蓝鲸 API 网关
+                        maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 网关管理员
+                          example: ["admin"]
+                        doc_maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 文档管理员
+                          example: ["admin"]
+              example:
+                data:
+                  - id: 1
+                    name: bk-apigateway
+                    description: 蓝鲸 API 网关
+                    maintainers: ["admin"]
+                    doc_maintainers: ["admin"]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -870,12 +2078,49 @@ paths:
       description: 获取网关
       tags:
       - v2_open
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关信息
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 网关 ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 网关名称
+                        example: bk-apigateway
+                      description:
+                        type: string
+                        description: 网关描述
+                        example: ""
+                      maintainers:
+                        type: array
+                        items:
+                          type: string
+                        description: 网关管理员
+                        example: ["admin"]
+              example:
+                data:
+                  id: 1
+                  name: bk-apigateway
+                  description: ""
+                  maintainers: ["admin"]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1098,12 +2343,42 @@ paths:
       description: 获取网关公钥(废弃)
       tags:
       - v2_open
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关公钥
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: ""
+                  data:
+                    type: object
+                    properties:
+                      issuer:
+                        type: string
+                        description: 颁发者
+                        example: APIGW
+                      public_key:
+                        type: string
+                        description: 公钥
+                        example: "-----BEGIN PUBLIC KEY-----\nMIIBIjAN..."
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: true
@@ -1127,12 +2402,42 @@ paths:
       description: 获取网关公钥
       tags:
       - v2_open
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关公钥
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: ""
+                  data:
+                    type: object
+                    properties:
+                      issuer:
+                        type: string
+                        description: 颁发者
+                        example: APIGW
+                      public_key:
+                        type: string
+                        description: 公钥
+                        example: "-----BEGIN PUBLIC KEY-----\nMIIBIjAN..."
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1156,12 +2461,65 @@ paths:
       description: 申请网关权限
       tags:
         - v2_open
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: bk-apigateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - grant_dimension
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用，应于当前请求的应用一致
+                  example: my-app
+                expire_days:
+                  type: integer
+                  description: 过期时间，0 或未提供表示永久，180 表示 6 个月，360 表示 12 个月
+                  example: 360
+                grant_dimension:
+                  type: string
+                  description: 授权维度，api 表示按网关申请权限
+                  enum:
+                    - api
+                  example: api
+                reason:
+                  type: string
+                  description: 申请原因
+                  example: test
+            example:
+              target_app_code: my-app
+              expire_days: 360
+              grant_dimension: api
+              reason: test
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回申请记录
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      record_id:
+                        type: integer
+                        description: 权限申请单的单据ID
+                        example: 12345
+              example:
+                data:
+                  record_id: 12345
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1185,12 +2543,113 @@ paths:
       description: 获取公开的 mcp_server 列表
       tags:
         - v2_open
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 筛选条件，支持模糊匹配 MCPServer 名称或描述
+          example: test
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回 mcp_server 列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: 总数
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: mcp_server ID
+                              example: 2
+                            name:
+                              type: string
+                              description: mcp_server 名称
+                              example: test
+                            title:
+                              type: string
+                              description: mcp_server 中文名/显示名称
+                              example: 测试服务
+                            description:
+                              type: string
+                              nullable: true
+                              description: mcp_server 描述
+                            is_public:
+                              type: boolean
+                              description: mcp_server 是否公开
+                              example: true
+                            status:
+                              type: integer
+                              description: mcp_server 状态（0：已停用，1：启用中）
+                              example: 1
+                            protocol_type:
+                              type: string
+                              description: MCP 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议）
+                              example: sse
+                            tools_count:
+                              type: integer
+                              description: mcp_server 工具数量
+                              example: 0
+                            url:
+                              type: string
+                              description: mcp_server 访问地址
+                              example: ""
+                            detail_url:
+                              type: string
+                              description: mcp_server 网关站点详情地址
+                              example: ""
+                            gateway:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  description: 网关 ID
+                                name:
+                                  type: string
+                                  description: 网关名称
+                                maintainers:
+                                  type: array
+                                  items:
+                                    type: string
+                                  description: 网关管理员
+                                is_official:
+                                  type: boolean
+                                  description: 是否为官方网关
+                            stage:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  description: 环境 ID
+                                name:
+                                  type: string
+                                  description: 环境名称
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1214,12 +2673,79 @@ paths:
       description: 获取 mcp_server 的权限列表
       tags:
         - v2_open
+      parameters:
+        - name: mcp_server_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: mcp_server ID
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回权限列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 权限记录 ID
+                              example: 1
+                            bk_app_code:
+                              type: string
+                              description: 蓝鲸应用编码
+                              example: bk-001
+                            expires:
+                              type: string
+                              description: 过期时间
+                              example: "2100-01-01 08:00:00 +0800"
+                            grant_type:
+                              type: string
+                              description: 授权类型（grant：授权，apply：申请）
+                              example: apply
+                            mcp_server:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  description: mcp_server ID
+                                name:
+                                  type: string
+                                  description: mcp_server 名称
+                                title:
+                                  type: string
+                                  description: mcp_server 中文名/显示名称
+                                description:
+                                  type: string
+                                  nullable: true
+                                  description: mcp_server 描述
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1243,12 +2769,79 @@ paths:
       description: 获取 app_code 的权限列表
       tags:
         - v2_open
+      parameters:
+        - name: bk_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 蓝鲸应用编码
+          example: bk-001
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回权限列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 权限记录 ID
+                              example: 1
+                            bk_app_code:
+                              type: string
+                              description: 蓝鲸应用编码
+                              example: bk-001
+                            expires:
+                              type: string
+                              description: 过期时间
+                              example: "2100-01-01 08:00:00 +0800"
+                            grant_type:
+                              type: string
+                              description: 授权类型（grant：授权，apply：申请）
+                              example: apply
+                            mcp_server:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  description: mcp_server ID
+                                name:
+                                  type: string
+                                  description: mcp_server 名称
+                                title:
+                                  type: string
+                                  description: mcp_server 中文名/显示名称
+                                description:
+                                  type: string
+                                  nullable: true
+                                  description: mcp_server 描述
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1272,12 +2865,70 @@ paths:
       description: 指定应用发起 mcp_server 权限申请
       tags:
         - v2_open
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bk_app_code
+                - mcp_server_ids
+                - applied_by
+                - reason
+              properties:
+                bk_app_code:
+                  type: string
+                  description: 蓝鲸应用编码
+                  example: bk-001
+                mcp_server_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: mcp_server ID 列表
+                  example: [1, 2, 3]
+                applied_by:
+                  type: string
+                  description: 申请人
+                  example: admin
+                reason:
+                  type: string
+                  description: 申请原因
+                  example: 业务需要
+            example:
+              bk_app_code: bk-001
+              mcp_server_ids: [1, 2, 3]
+              applied_by: admin
+              reason: 业务需要
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回申请记录
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        record_id:
+                          type: integer
+                          description: 申请记录 ID
+                          example: 10
+                        bk_app_code:
+                          type: string
+                          description: 蓝鲸应用编码
+                          example: bk-001
+                        mcp_server_id:
+                          type: integer
+                          description: mcp_server ID
+                          example: 1
+                        approval_url:
+                          type: string
+                          description: 权限审批 URL
+                          example: "http://dashboard.example.com/123/mcp/permission?serverId=1"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1301,12 +2952,117 @@ paths:
       description: 获取指定应用的 mcp_server 权限申请记录列表
       tags:
         - v2_open
+      parameters:
+        - name: bk_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 蓝鲸应用编码
+          example: bk-001
+        - name: mcp_server_id
+          in: query
+          schema:
+            type: integer
+          description: mcp_server ID
+          example: 1
+        - name: record_id
+          in: query
+          schema:
+            type: integer
+          description: 申请记录 ID
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回申请记录列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 申请记录 ID
+                          example: 1
+                        bk_app_code:
+                          type: string
+                          description: 蓝鲸应用编码
+                          example: bk-001
+                        applied_by:
+                          type: string
+                          description: 申请人
+                          example: admin
+                        applied_time:
+                          type: string
+                          description: 申请时间
+                          example: "2025-06-09 11:13:26 +0800"
+                        handled_by:
+                          type: string
+                          description: 审批人
+                          example: admin
+                        handled_time:
+                          type: string
+                          description: 审批时间
+                          example: "2025-07-02 14:29:04 +0800"
+                        status:
+                          type: string
+                          description: 审批状态
+                          example: approved
+                        status_display:
+                          type: string
+                          description: 审批状态描述
+                          example: 通过
+                        comment:
+                          type: string
+                          description: 审批内容
+                          example: ""
+                        reason:
+                          type: string
+                          description: 申请理由
+                          example: ""
+                        expire_days:
+                          type: integer
+                          description: 过期时间
+                          example: 0
+                        approval_url:
+                          type: string
+                          description: 权限审批 URL
+                          example: "http://dashboard.example.com/123/mcp/permission?serverId=1"
+                        mcp_server:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: mcp_server ID
+                            name:
+                              type: string
+                              description: mcp_server 名称
+                            title:
+                              type: string
+                              description: mcp_server 中文名/显示名称
+                            description:
+                              type: string
+                              nullable: true
+                              description: mcp_server 描述
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1330,12 +3086,106 @@ paths:
       description: 获取 mcp_server 列表
       tags:
         - v2_open
+      parameters:
+        - name: is_public
+          in: query
+          schema:
+            type: boolean
+          description: 是否公开，true：公开，false：不公开，不传或传空则查询全部
+          example: true
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 筛选条件，支持模糊匹配 MCPServer 名称或描述
+          example: test
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回 mcp_server 列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: mcp_server ID
+                            name:
+                              type: string
+                              description: mcp_server 名称
+                            title:
+                              type: string
+                              description: mcp_server 中文名/显示名称
+                            description:
+                              type: string
+                              nullable: true
+                              description: mcp_server 描述
+                            is_public:
+                              type: boolean
+                              description: mcp_server 是否公开
+                            status:
+                              type: integer
+                              description: mcp_server 状态（0：已停用，1：启用中）
+                            protocol_type:
+                              type: string
+                              description: MCP 协议类型
+                            tools_count:
+                              type: integer
+                              description: mcp_server 工具数量
+                            url:
+                              type: string
+                              description: mcp_server 访问地址
+                            application_url:
+                              type: string
+                              description: 应用态 URL
+                            least_privilege:
+                              type: string
+                              description: 最低权限要求（application / application_and_user）
+                            gateway:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
+                                maintainers:
+                                  type: array
+                                  items:
+                                    type: string
+                                is_official:
+                                  type: boolean
+                            stage:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                name:
+                                  type: string
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -1530,12 +3380,42 @@ paths:
       description: 获取网关公钥
       tags:
       - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关公钥
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: ""
+                  data:
+                    type: object
+                    properties:
+                      issuer:
+                        type: string
+                        description: 颁发者
+                        example: APIGW
+                      public_key:
+                        type: string
+                        description: 公钥
+                        example: "-----BEGIN PUBLIC KEY-----\nMIIBIjAN..."
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1559,12 +3439,38 @@ paths:
       description: 添加网关的关联应用
       tags:
       - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - related_app_codes
+              properties:
+                related_app_codes:
+                  type: array
+                  items:
+                    type: string
+                  description: 应用编码列表
+                  example: ["bk_apigateway"]
+            example:
+              related_app_codes: ["bk_apigateway"]
       responses:
-        default:
-          description: ''
+        '201':
+          description: 成功添加关联应用
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1588,12 +3494,112 @@ paths:
       description: 同步网关stage
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - backends
+              properties:
+                name:
+                  type: string
+                  description: 环境名称
+                  example: stag
+                description:
+                  type: string
+                  description: 中文描述
+                  example: 预发布环境
+                description_en:
+                  type: string
+                  description: 英文描述
+                  example: Staging Env
+                vars:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: 环境变量
+                  example:
+                    api_sub_path: "/test"
+                backends:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - config
+                    properties:
+                      name:
+                        type: string
+                        description: 后端服务名称
+                        example: default
+                      config:
+                        type: object
+                        required:
+                          - timeout
+                          - loadbalance
+                          - hosts
+                        properties:
+                          timeout:
+                            type: integer
+                            description: 超时时间（单位：秒）
+                            example: 60
+                          loadbalance:
+                            type: string
+                            description: 负载均衡类型
+                            example: roundrobin
+                          hosts:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                host:
+                                  type: string
+                                  description: 后端服务域名、IP + 端口
+                                weight:
+                                  type: integer
+                                  description: 权重
+                plugin_configs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        description: 插件类型
+                        example: bk-rate-limit
+                      yaml:
+                        type: string
+                        description: YAML 格式的插件配置
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步环境
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 环境ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 环境名称
+                        example: demo
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1618,12 +3624,109 @@ paths:
       description: 同步网关 stage mcp_servers
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: stage_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 环境名
+          example: prod
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mcp_servers
+              properties:
+                mcp_servers:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - description
+                      - resource_names
+                    properties:
+                      name:
+                        type: string
+                        description: MCP Server 名字
+                        example: mcp1
+                      title:
+                        type: string
+                        description: MCP Server 中文名/显示名称
+                        example: 服务1
+                      description:
+                        type: string
+                        description: MCP Server 描述
+                        example: description
+                      labels:
+                        type: array
+                        items:
+                          type: string
+                        description: MCP Server 标签
+                        example: ["tag1", "tag2"]
+                      resource_names:
+                        type: array
+                        items:
+                          type: string
+                        description: MCP Server 关联的 resource 列表
+                        example: ["resource1"]
+                      is_public:
+                        type: boolean
+                        description: 是否公开，默认不公开
+                        example: true
+                      status:
+                        type: integer
+                        description: 状态：1：启用，0：关闭(默认关闭)
+                        example: 1
+                      protocol_type:
+                        type: string
+                        description: MCP 协议类型：sse（默认）、streamable_http
+                        example: sse
+                      target_app_codes:
+                        type: array
+                        items:
+                          type: string
+                        description: 主动授权的应用列表
+                        example: ["app1", "app2"]
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步 MCP Servers
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: MCP Server ID
+                          example: 1
+                        name:
+                          type: string
+                          description: MCP Server name
+                          example: gateway-stage-server1
+                        action:
+                          type: string
+                          description: 操作类型
+                          enum:
+                            - created
+                            - updated
+                          example: created
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1648,12 +3751,58 @@ paths:
       description: 同步网关
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: 网关描述
+                  example: just for test
+                maintainers:
+                  type: array
+                  items:
+                    type: string
+                  description: 网关管理员
+                  example: ["admin"]
+                is_public:
+                  type: boolean
+                  description: 网关是否公开，默认公开
+                  example: true
+            example:
+              description: just for test
+              maintainers: ["admin"]
+              is_public: true
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步网关
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 网关ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 网关名称
+                        example: demo
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1677,12 +3826,76 @@ paths:
       description: 同步网关资源
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: 网关资源 swagger 描述，可为 yaml 格式文本
+                  example: "xxx"
+                delete:
+                  type: boolean
+                  description: 是否删除未指定的资源
+                  example: false
+                doc_language:
+                  type: string
+                  description: 生成接口文档的语言：en 英文，zh 中文，不传不生成
+                  enum:
+                    - zh
+                    - en
+                  example: zh
+            example:
+              content: "xxx"
+              delete: false
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功同步资源
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      added:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 新增的资源
+                      updated:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 更新的资源
+                      deleted:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                        description: 删除的资源
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1706,12 +3919,34 @@ paths:
       description: 同步网关资源文档
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 资源文档的归档文件对象
       responses:
-        default:
-          description: ''
+        '201':
+          description: 成功导入资源文档
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1735,12 +3970,66 @@ paths:
       description: 生成网关sdk
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resource_version
+              properties:
+                resource_version:
+                  type: string
+                  description: 资源版本的版本号
+                  example: "1.0.1"
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  description: 需要生成SDK的语言列表，可选值：python
+                  example: ["python"]
+                version:
+                  type: string
+                  description: SDK 版本号，未设置时，将使用资源版本的版本号
+                  example: "1.0.1"
+            example:
+              resource_version: "1.0.1"
+              languages: ["python"]
+              version: "1.0.1"
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功生成 SDK
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: SDK 名称
+                          example: bkapi-test
+                        version:
+                          type: string
+                          description: SDK 版本号
+                          example: "1.0.1"
+                        url:
+                          type: string
+                          description: SDK 下载地址
+                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1764,12 +4053,71 @@ paths:
       description: 获取网关权限列表
       tags:
       - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
+        - name: bk_app_code
+          in: query
+          schema:
+            type: string
+          description: 应用编码
+          example: bk_apigateway
+        - name: grant_dimension
+          in: query
+          schema:
+            type: string
+            enum:
+              - gateway
+              - resource
+          description: 授权维度，gateway 为网关，resource 为资源
+          example: gateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回权限列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        description: 总数
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 权限记录 ID
+                              example: 1
+                            bk_app_code:
+                              type: string
+                              description: 应用编码
+                              example: bk_apigateway
+                            expires:
+                              type: string
+                              description: 过期时间
+                              example: "2100-01-01T00:00:00Z"
+                            grant_dimension:
+                              type: string
+                              description: 授权维度
+                              example: gateway
+                            resource_id:
+                              type: integer
+                              description: 资源 ID(resource 维度时存在)
+                            resource_name:
+                              type: string
+                              description: 资源名称 (resource 维度时存在)
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1794,12 +4142,49 @@ paths:
       description: 网关权限授权
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - grant_dimension
+              properties:
+                target_app_code:
+                  type: string
+                  description: 待授权应用
+                  example: bk-sops
+                expire_days:
+                  type: integer
+                  description: 过期时间，单位天；0或不提供时表示永久权限
+                  example: 360
+                grant_dimension:
+                  type: string
+                  description: 授权维度，可选值：api(按网关授权)
+                  enum:
+                    - api
+                  example: api
+            example:
+              target_app_code: bk-sops
+              expire_days: 360
+              grant_dimension: api
       responses:
-        default:
-          description: ''
+        '201':
+          description: 成功授权
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1824,12 +4209,53 @@ paths:
       description: 网关资源版本创建
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+              properties:
+                version:
+                  type: string
+                  description: 版本号，须符合 Semver 规范
+                  example: "1.0.0"
+                comment:
+                  type: string
+                  description: 版本说明
+                  example: 这是一个什么样的新版本
+            example:
+              version: "1.0.0"
+              comment: 这是一个什么样的新版本
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功创建资源版本
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 资源版本ID
+                        example: 1
+                      version:
+                        type: string
+                        description: 版本号
+                        example: "1.0.0"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1852,12 +4278,67 @@ paths:
       description: 查询网关资源版本列表
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+        - name: version
+          in: query
+          schema:
+            type: string
+          description: 版本号
+          example: "1.0.0"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: 最大返回条目数量，默认为 10
+          example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 相对于完整未分页数据的起始位置，默认为 0
+          example: 0
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回资源版本列表
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      has_next:
+                        type: boolean
+                        example: false
+                      has_previous:
+                        type: boolean
+                        example: false
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            version:
+                              type: string
+                              description: 版本号
+                              example: "1.0.0"
+                            comment:
+                              type: string
+                              description: 版本说明
+                              example: ""
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1881,12 +4362,29 @@ paths:
       description: 获取网关资源版本最新版本
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回最新资源版本
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        description: 资源版本的版本号
+                        example: "1.0.1"
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1910,12 +4408,62 @@ paths:
       description: 网关资源版本发布
       tags:
         - v2_sync
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名
+          example: demo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - version
+              properties:
+                version:
+                  type: string
+                  description: 待发布版本的版本号
+                  example: "1.0.0"
+                stage_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 待发布环境列表
+                  example: ["prod", "test", "dev"]
+                comment:
+                  type: string
+                  description: 发布日志
+                  example: 发布
+            example:
+              version: "1.0.0"
+              stage_names: ["prod", "test", "dev"]
+              comment: 发布
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功发布版本
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        description: 发布版本号
+                        example: "1.0.0"
+                      stage_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 发布环境名列表
+                        example: ["prod", "test", "dev"]
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -1939,12 +4487,60 @@ paths:
       description: 获取网关列表
       tags:
       - v2_inner
+      x-bk-apigateway-noneSchema: true
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 网关ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 网关名称
+                          example: bk-apigateway
+                        description:
+                          type: string
+                          description: 网关描述
+                          example: ""
+                        maintainers:
+                          type: array
+                          items:
+                            type: string
+                          description: 网关管理员
+                          example: ["admin"]
+                        doc_maintainers:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              description: 类型，user 表示用户，service_account 表示服务号
+                              example: user
+                            contacts:
+                              type: array
+                              items:
+                                type: string
+                              description: 联系人
+                              example: ["admin"]
+                            service_account:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                  description: 服务号名称
+                                link:
+                                  type: string
+                                  description: 服务号链接
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -1968,12 +4564,63 @@ paths:
       description: 获取网关
       tags:
       - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关详情
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 网关ID
+                        example: 1
+                      name:
+                        type: string
+                        description: 网关名称
+                        example: bk-apigateway
+                      description:
+                        type: string
+                        description: 网关描述
+                        example: ""
+                      maintainers:
+                        type: array
+                        items:
+                          type: string
+                        description: 网关管理员
+                        example: ["admin"]
+                      doc_maintainers:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            description: 类型，user 表示用户，service_account 表示服务号
+                          contacts:
+                            type: array
+                            items:
+                              type: string
+                            description: 联系人
+                          service_account:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                                description: 服务号名称
+                              link:
+                                type: string
+                                description: 服务号链接
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -1996,12 +4643,17 @@ paths:
       description: 删除网关，仅支持 bp- 开头的网关
       tags:
       - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称，必须以 bp- 开头
+          example: bp-test
       responses:
-        default:
-          description: ''
-          content:
-            application/json:
-              schema: {}
+        '204':
+          description: 成功删除网关，无响应体
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2025,12 +4677,32 @@ paths:
       description: 更新网关状态（停用/启用），仅支持 bp- 开头的网关
       tags:
       - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称，必须以 bp- 开头
+          example: bp-test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: integer
+                  description: 网关状态，0：停用，1：启用
+                  example: 0
+            example:
+              status: 0
       responses:
-        default:
-          description: ''
-          content:
-            application/json:
-              schema: {}
+        '204':
+          description: 成功更新网关状态，无响应体
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2054,12 +4726,77 @@ paths:
       description: 获取网关资源
       tags:
       - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回网关资源列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 资源ID
+                          example: 2321
+                        name:
+                          type: string
+                          description: 资源名称
+                          example: test
+                        gateway_name:
+                          type: string
+                          description: 网关名称
+                          example: test-gateway
+                        gateway_id:
+                          type: integer
+                          description: 网关ID
+                          example: 6
+                        description:
+                          type: string
+                          description: 资源描述
+                          example: ""
+                        description_en:
+                          type: string
+                          nullable: true
+                          description: 资源英文描述
+                        expires_in:
+                          type: integer
+                          nullable: true
+                          description: 有效期
+                        permission_level:
+                          type: string
+                          description: 权限级别
+                          example: normal
+                        permission_status:
+                          type: string
+                          description: 权限状态
+                          example: pending
+                        permission_action:
+                          type: string
+                          description: 权限操作
+                        doc_link:
+                          type: string
+                          description: 文档地址
+                          example: "http://test.com/"
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2112,12 +4849,68 @@ paths:
       description: 网关资源权限申请
       tags:
       - v2_inner
+      parameters:
+        - name: gateway_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 网关名称
+          example: bk-apigateway
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - expire_days
+                - grant_dimension
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用，应于当前请求的应用一致
+                  example: bk-001
+                resource_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 资源ID列表
+                  example: []
+                reason:
+                  type: string
+                  description: 申请理由
+                  example: ""
+                expire_days:
+                  type: integer
+                  description: 过期时间，0：永久，180：6个月，360：12个月
+                  example: 180
+                grant_dimension:
+                  type: string
+                  description: 授权维度，api：按网关，resource：按资源
+                  example: api
+            example:
+              target_app_code: ""
+              resource_ids: []
+              reason: ""
+              expire_days: 180
+              grant_dimension: api
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回申请记录ID
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      record_id:
+                        type: integer
+                        description: 权限申请单的单据ID
+                        example: 6
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2170,12 +4963,73 @@ paths:
       description: 已申请权限列表
       tags:
       - v2_inner
+      parameters:
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
+        - name: expire_days_range
+          in: query
+          schema:
+            type: integer
+          description: 过期时间范围
+          example: 30
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回已申请权限列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 资源ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 资源名称
+                          example: test
+                        gateway_name:
+                          type: string
+                          description: 网关名称
+                          example: test
+                        gateway_id:
+                          type: integer
+                          description: 网关ID
+                          example: 4
+                        description:
+                          type: string
+                          description: 资源描述
+                        description_en:
+                          type: string
+                          description: 资源英文描述
+                        expires_in:
+                          type: integer
+                          nullable: true
+                          description: 有效期
+                        permission_level:
+                          type: string
+                          description: 权限级别
+                          example: normal
+                        permission_status:
+                          type: string
+                          description: 权限状态
+                          example: owned
+                        permission_action:
+                          type: string
+                          description: 权限操作
+                        doc_link:
+                          type: string
+                          description: 文档地址
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2228,12 +5082,84 @@ paths:
       description: 资源权限申请记录详情
       tags:
       - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 申请记录 ID
+          example: 1
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回资源权限申请记录详情
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 申请ID
+                        example: 1
+                      bk_app_code:
+                        type: string
+                        description: 蓝鲸应用编码
+                        example: test
+                      applied_by:
+                        type: string
+                        description: 申请人
+                        example: admin
+                      applied_time:
+                        type: string
+                        description: 申请时间
+                        example: "2025-01-01 00:00:00 +0800"
+                      handled_by:
+                        type: array
+                        items:
+                          type: string
+                        description: 审批人
+                        example: ["admin"]
+                      handled_time:
+                        type: string
+                        nullable: true
+                        description: 审批时间
+                      apply_status:
+                        type: string
+                        description: 审批状态
+                        example: pending
+                      apply_status_display:
+                        type: string
+                        description: 审批状态描述
+                        example: 待审批
+                      grant_dimension:
+                        type: string
+                        description: 授权维度，api：按网关，resource：按资源
+                        example: api
+                      comment:
+                        type: string
+                        description: 审批内容
+                      reason:
+                        type: string
+                        description: 申请理由
+                      expire_days:
+                        type: integer
+                        description: 过期时间
+                        example: 180
+                      gateway_name:
+                        type: string
+                        description: 网关名称
+                        example: test
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2286,12 +5212,79 @@ paths:
       description: 查询系统权限组件
       tags:
       - v2_inner
+      parameters:
+        - name: system_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 系统 ID
+          example: 1
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回系统权限组件列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 组件ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 组件名称
+                          example: get_doc_link_by_path
+                        system_name:
+                          type: string
+                          description: 系统名称
+                          example: BK_DOCS_CENTER
+                        system_id:
+                          type: integer
+                          description: 系统ID
+                          example: 16
+                        description:
+                          type: string
+                          description: 组件描述
+                          example: 根据md名查询md所在链接
+                        description_en:
+                          type: string
+                          description: 组件英文描述
+                          example: Query the link of the document according to the MD name
+                        expires_in:
+                          type: integer
+                          nullable: true
+                          description: 有效期
+                        permission_level:
+                          type: string
+                          description: 权限级别
+                          example: unlimited
+                        permission_status:
+                          type: string
+                          description: 权限状态
+                          example: unlimited
+                        permission_action:
+                          type: string
+                          description: 权限操作
+                        doc_link:
+                          type: string
+                          description: 文档地址
+                        tag:
+                          type: string
+                          description: 标签
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2344,12 +5337,49 @@ paths:
       description: ESB 组件权限续期
       tags:
       - v2_inner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - expire_days
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用，应于当前请求的应用一致
+                  example: bk-001
+                component_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 组件ID列表
+                  example: []
+                expire_days:
+                  type: integer
+                  description: 过期时间，0：永久，180：6个月，360：12个月
+                  example: 180
+                reason:
+                  type: string
+                  description: 申请原因
+                  example: ""
+            example:
+              target_app_code: "string"
+              expire_days: 180
+              component_ids: []
+              reason: ""
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功续期
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2373,12 +5403,74 @@ paths:
       description: 已申请权限列表
       tags:
       - v2_inner
+      parameters:
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 待授权应用
+          example: bk-001
+        - name: expire_days_range
+          in: query
+          schema:
+            type: integer
+          description: 过期时间范围
+          example: 30
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回已申请权限列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: 组件ID
+                          example: 1
+                        name:
+                          type: string
+                          description: 组件名称
+                          example: test
+                        system_name:
+                          type: string
+                          description: 系统名称
+                        system_id:
+                          type: integer
+                          description: 系统ID
+                        description:
+                          type: string
+                          description: 组件描述
+                        description_en:
+                          type: string
+                          description: 组件英文描述
+                        expires_in:
+                          type: integer
+                          nullable: true
+                          description: 有效期
+                        permission_level:
+                          type: string
+                          description: 权限级别
+                          example: normal
+                        permission_status:
+                          type: string
+                          description: 权限状态
+                          example: owned
+                        permission_action:
+                          type: string
+                          description: 权限操作
+                        doc_link:
+                          type: string
+                          description: 文档地址
+                        tag:
+                          type: string
+                          description: 标签
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2431,12 +5523,90 @@ paths:
       description: 查询应用权限申请记录详情
       tags:
       - v2_inner
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 记录 ID
+          example: 1
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
+        - name: applied_by
+          in: query
+          schema:
+            type: string
+          description: 申请人
+          example: admin
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回应用权限申请记录详情
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: 申请ID
+                        example: 1
+                      bk_app_code:
+                        type: string
+                        description: 蓝鲸应用编码
+                        example: test
+                      applied_by:
+                        type: string
+                        description: 申请人
+                        example: admin
+                      applied_time:
+                        type: string
+                        description: 申请时间
+                        example: "2025-01-01 00:00:00 +0800"
+                      handled_by:
+                        type: array
+                        items:
+                          type: string
+                        description: 审批人
+                        example: ["admin"]
+                      handled_time:
+                        type: string
+                        nullable: true
+                        description: 审批时间
+                      apply_status:
+                        type: string
+                        description: 审批状态
+                        example: pending
+                      apply_status_display:
+                        type: string
+                        description: 审批状态描述
+                        example: 待审批
+                      grant_dimension:
+                        type: string
+                        description: 授权维度，api：按网关，resource：按资源
+                        example: api
+                      comment:
+                        type: string
+                        description: 审批内容
+                      reason:
+                        type: string
+                        description: 申请理由
+                      expire_days:
+                        type: integer
+                        description: 过期时间
+                        example: 180
+                      gateway_name:
+                        type: string
+                        description: 网关名称
+                        example: test
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2489,12 +5659,51 @@ paths:
       description: 'mcp_server 权限申请/批量申请'
       tags:
       - v2_inner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_app_code
+                - mcp_server_ids
+                - applied_by
+                - reason
+              properties:
+                target_app_code:
+                  type: string
+                  description: 申请权限的应用，应于当前请求的应用一致
+                  example: test
+                mcp_server_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: mcp_server ID 列表
+                  example: [1, 2]
+                applied_by:
+                  type: string
+                  description: 申请人
+                  example: admin
+                reason:
+                  type: string
+                  description: 申请理由
+                  example: test
+            example:
+              target_app_code: test
+              mcp_server_ids: [1, 2]
+              applied_by: admin
+              reason: test
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功申请权限
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -2547,12 +5756,123 @@ paths:
       description: 'mcp_server 申请记录列表'
       tags:
       - v2_inner
+      parameters:
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 申请权限的应用，应于当前请求的应用一致
+          example: bk-001
+        - name: applied_by
+          in: query
+          schema:
+            type: string
+          description: 申请人
+          example: admin
+        - name: applied_time_start
+          in: query
+          schema:
+            type: integer
+          description: 申请开始时间
+        - name: applied_time_end
+          in: query
+          schema:
+            type: integer
+          description: 申请截止时间
+        - name: apply_status
+          in: query
+          schema:
+            type: string
+          description: 申请状态，approved：全部通过，rejected：全部驳回，pending：待审批
+          example: pending
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: 查询条件
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回 mcp_server 申请记录列表
           content:
             application/json:
-              schema: {}
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        mcp_server:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: mcp_server ID
+                              example: 1
+                            name:
+                              type: string
+                              description: mcp_server 名称
+                              example: bk-apigateway-prod-s1
+                            title:
+                              type: string
+                              description: mcp_server 中文名/显示名称
+                              example: 测试服务
+                            description:
+                              type: string
+                              description: mcp_server 描述
+                              example: test
+                            tools_count:
+                              type: integer
+                              description: mcp_server 工具数量
+                              example: 1
+                            doc_link:
+                              type: string
+                              description: mcp_server 文档访问地址
+                        record:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 申请记录 ID
+                              example: 1
+                            applied_by:
+                              type: string
+                              description: 申请人
+                              example: admin
+                            applied_time:
+                              type: string
+                              description: 申请时间
+                              example: "2025-01-01 00:00:00 +0800"
+                            handled_by:
+                              type: array
+                              items:
+                                type: string
+                              description: 审批人
+                              example: ["admin"]
+                            handled_time:
+                              type: string
+                              nullable: true
+                              description: 审批时间
+                            apply_status:
+                              type: string
+                              description: 审批状态（approved：通过，rejected：驳回，pending：待审批）
+                              example: pending
+                            apply_status_display:
+                              type: string
+                              description: 审批状态描述
+                              example: 待审批
+                            comment:
+                              type: string
+                              description: 审批内容
+                            reason:
+                              type: string
+                              description: 申请理由
+                            expire_days:
+                              type: integer
+                              description: 过期时间
+                              example: 0
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
