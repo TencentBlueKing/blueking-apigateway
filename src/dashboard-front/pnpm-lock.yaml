@@ -14,12 +14,9 @@ importers:
       '@blueking/bk-user-selector':
         specifier: ^0.0.35
         version: 0.0.35(@blueking/bkui-library@0.0.0-beta.6)
-      '@blueking/bkui-form':
-        specifier: 1.0.0-beta.6
-        version: 1.0.0-beta.6
       '@blueking/date-picker':
         specifier: 2.0.0-beta.48
-        version: 2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(dayjs@1.11.13)(vue@3.5.18(typescript@5.8.3))
+        version: 2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(dayjs@1.11.13)(vue@3.5.18(typescript@5.8.3))
       '@blueking/login-modal':
         specifier: ^1.0.6
         version: 1.0.6
@@ -28,7 +25,7 @@ importers:
         version: 2.0.5(dompurify@3.2.6)
       '@blueking/release-note':
         specifier: 0.0.1-beta.17
-        version: 0.0.1-beta.17(bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))
+        version: 0.0.1-beta.17(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))
       '@blueking/tdesign-ui':
         specifier: 0.0.2-beta.13
         version: 0.0.2-beta.13(vue@3.5.18(typescript@5.8.3))
@@ -60,8 +57,8 @@ importers:
         specifier: ^1.11.0
         version: 1.11.0
       bkui-vue:
-        specifier: 2.0.2-beta.63
-        version: 2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
+        specifier: 2.0.2-beta.93
+        version: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -421,10 +418,6 @@ packages:
     engines: {node: '>=18.16.0'}
     peerDependencies:
       '@blueking/bkui-library': ^0.0.0-beta.4
-
-  '@blueking/bkui-form@1.0.0-beta.6':
-    resolution: {integrity: sha512-Bxhz8KZgUO3/DkHYFGhRDIuSzjtISjf8nAS8bJHRRA7NdFpDQ7ILUIV5eyZW+7AsArCMk6QNXO5H2BQes2n8nA==}
-    engines: {node: '>= 12.16.3', npm: '>= 6.4.1'}
 
   '@blueking/bkui-library@0.0.0-beta.6':
     resolution: {integrity: sha512-1M6pNDIOQYWzOu3uVRxo0h67d+huTbBQYDjj8+QF4Ka3HSe/mLgSrIkaZhhUVlJJl5zP8HK+UwXpkWcjL8zIsw==}
@@ -1568,14 +1561,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ajv-formats@2.1.1:
-    resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
-
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
     peerDependencies:
@@ -1583,11 +1568,6 @@ packages:
     peerDependenciesMeta:
       ajv:
         optional: true
-
-  ajv-i18n@4.2.0:
-    resolution: {integrity: sha512-v/ei2UkCEeuKNXh8RToiFsUclmU+G57LO1Oo22OagNMENIw+Yb8eMwvHu7Vn9fmkjJyv6XclhJ8TbuigSglPkg==}
-    peerDependencies:
-      ajv: ^8.0.0-beta.0
 
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
@@ -1662,8 +1642,8 @@ packages:
   birpc@2.5.0:
     resolution: {integrity: sha512-VSWO/W6nNQdyP520F1mhf+Lc2f8pjGQOtoHHm7Ze8Go1kX7akpVIrtTa0fn+HB0QJEDVacl6aO08YE0PgXfdnQ==}
 
-  bkui-vue@2.0.2-beta.63:
-    resolution: {integrity: sha512-mnAxKA8DzHxD7vEx3J2iSXUEQyCMxaS4cpwbAmwoUdJbQ2cHw6Z5f5mhrvwwjnOuDN68XQpZ7QGO0+h8OEcgtQ==}
+  bkui-vue@2.0.2-beta.93:
+    resolution: {integrity: sha512-26KnnB4jL1l9VyzUfeW9rr2nM+SEPei5x07gv9jQBT209JnyRwKGOqiMDimMeLNpWm+lAide5BhmDx6tfO36CA==}
     peerDependencies:
       highlight.js: ~11.5.0
       vue: ^3.2.0
@@ -3982,20 +3962,14 @@ snapshots:
       lodash: 4.17.21
       sortablejs: 1.15.6
 
-  '@blueking/bkui-form@1.0.0-beta.6':
-    dependencies:
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      ajv-i18n: 4.2.0(ajv@8.17.1)
-
   '@blueking/bkui-library@0.0.0-beta.6':
     dependencies:
       '@vue/runtime-dom': 3.5.18
 
-  '@blueking/date-picker@2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(dayjs@1.11.13)(vue@3.5.18(typescript@5.8.3))':
+  '@blueking/date-picker@2.0.0-beta.48(@blueking/bkui-library@0.0.0-beta.6)(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(dayjs@1.11.13)(vue@3.5.18(typescript@5.8.3))':
     dependencies:
       '@blueking/bkui-library': 0.0.0-beta.6
-      bkui-vue: 2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
+      bkui-vue: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
       dayjs: 1.11.13
       vue: 3.5.18(typescript@5.8.3)
 
@@ -4005,9 +3979,9 @@ snapshots:
     dependencies:
       dompurify: 3.2.6
 
-  '@blueking/release-note@0.0.1-beta.17(bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))':
+  '@blueking/release-note@0.0.1-beta.17(bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)))(markdown-it@13.0.2)(vue@3.5.18(typescript@5.8.3))':
     dependencies:
-      bkui-vue: 2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
+      bkui-vue: 2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3))
       markdown-it: 13.0.2
       vue: 3.5.18(typescript@5.8.3)
 
@@ -5124,16 +5098,8 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  ajv-formats@2.1.1(ajv@8.17.1):
-    optionalDependencies:
-      ajv: 8.17.1
-
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
-      ajv: 8.17.1
-
-  ajv-i18n@4.2.0(ajv@8.17.1):
-    dependencies:
       ajv: 8.17.1
 
   ajv@6.12.6:
@@ -5201,7 +5167,7 @@ snapshots:
 
   birpc@2.5.0: {}
 
-  bkui-vue@2.0.2-beta.63(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)):
+  bkui-vue@2.0.2-beta.93(highlight.js@11.11.1)(vue@3.5.18(typescript@5.8.3)):
     dependencies:
       '@floating-ui/dom': 1.5.4
       '@popperjs/core': 2.11.8
