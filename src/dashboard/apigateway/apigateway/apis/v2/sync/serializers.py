@@ -889,10 +889,6 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         self._sync_permission(instance.id, target_app_codes)
 
-        # 如果开启了 OAuth2 认证，自动为 bk_app_code=public 授权
-        if instance.oauth2_enabled:
-            MCPServerHandler.sync_oauth2_permissions(instance)
-
         return instance
 
     def update(self, instance, validated_data):
@@ -910,10 +906,6 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
-
-        # 同步 OAuth2 权限（开启则授权 public，关闭则撤销）
-        if "oauth2_enabled" in validated_data:
-            MCPServerHandler.sync_oauth2_permissions(instance)
 
         return instance
 

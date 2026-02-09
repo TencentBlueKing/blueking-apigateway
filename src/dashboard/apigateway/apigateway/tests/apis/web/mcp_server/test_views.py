@@ -2555,8 +2555,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
+        mock_sync_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
             return_value=None,
         )
 
@@ -2584,9 +2584,8 @@ class TestMCPServerOAuth2Enabled:
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
         assert mcp_server.oauth2_enabled is True
 
-        # 验证 sync_oauth2_permissions 被调用（传入的是 MCPServer 实例）
-        mock_sync_oauth2.assert_called_once()
-        assert mock_sync_oauth2.call_args[0][0].id == mcp_server.id
+        # 验证 sync_permissions 被调用（oauth2 权限在 sync_permissions 内部处理）
+        mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_with_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
         """测试创建 MCPServer 时不开启 OAuth2 认证"""
@@ -2594,8 +2593,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
+        mock_sync_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
             return_value=None,
         )
 
@@ -2623,8 +2622,8 @@ class TestMCPServerOAuth2Enabled:
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
         assert mcp_server.oauth2_enabled is False
 
-        # 验证 sync_oauth2_permissions 未被调用
-        mock_sync_oauth2.assert_not_called()
+        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_default_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
         """测试创建 MCPServer 时默认 OAuth2 认证关闭"""
@@ -2632,8 +2631,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
+        mock_sync_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
             return_value=None,
         )
 
@@ -2661,8 +2660,8 @@ class TestMCPServerOAuth2Enabled:
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
         assert mcp_server.oauth2_enabled is False
 
-        # 验证 sync_oauth2_permissions 未被调用
-        mock_sync_oauth2.assert_not_called()
+        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_update_enable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
         """测试更新 MCPServer 时开启 OAuth2 认证"""
@@ -2670,12 +2669,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mocker.patch(
+        mock_sync_permissions = mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
-            return_value=None,
-        )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
             return_value=None,
         )
 
@@ -2701,9 +2696,8 @@ class TestMCPServerOAuth2Enabled:
         fake_mcp_server.refresh_from_db()
         assert fake_mcp_server.oauth2_enabled is True
 
-        # 验证 sync_oauth2_permissions 被调用（传入的是 MCPServer 实例）
-        mock_sync_oauth2.assert_called_once()
-        assert mock_sync_oauth2.call_args[0][0].id == fake_mcp_server.id
+        # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
+        mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_disable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
         """测试更新 MCPServer 时关闭 OAuth2 认证"""
@@ -2711,12 +2705,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mocker.patch(
+        mock_sync_permissions = mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
-            return_value=None,
-        )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
             return_value=None,
         )
 
@@ -2742,9 +2732,8 @@ class TestMCPServerOAuth2Enabled:
         fake_mcp_server.refresh_from_db()
         assert fake_mcp_server.oauth2_enabled is False
 
-        # 关闭 OAuth2 时也应调用 sync_oauth2_permissions（用于撤销 public 权限）
-        mock_sync_oauth2.assert_called_once()
-        assert mock_sync_oauth2.call_args[0][0].id == fake_mcp_server.id
+        # 关闭 OAuth2 时 sync_permissions 也被调用（内部会撤销 public 权限）
+        mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_full_with_oauth2_enabled(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
         """测试全量更新 MCPServer 时开启 OAuth2 认证"""
@@ -2752,12 +2741,8 @@ class TestMCPServerOAuth2Enabled:
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
         )
-        mocker.patch(
+        mock_sync_permissions = mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
-            return_value=None,
-        )
-        mock_sync_oauth2 = mocker.patch(
-            "apigateway.biz.mcp_server.MCPServerHandler.sync_oauth2_permissions",
             return_value=None,
         )
 
@@ -2782,9 +2767,8 @@ class TestMCPServerOAuth2Enabled:
         fake_mcp_server.refresh_from_db()
         assert fake_mcp_server.oauth2_enabled is True
 
-        # 验证 sync_oauth2_permissions 被调用（传入的是 MCPServer 实例）
-        mock_sync_oauth2.assert_called_once()
-        assert mock_sync_oauth2.call_args[0][0].id == fake_mcp_server.id
+        # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
+        mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_list_returns_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
         """测试列表接口返回 oauth2_enabled 字段"""
