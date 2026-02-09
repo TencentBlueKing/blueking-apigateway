@@ -19,7 +19,6 @@
 
 import pytest
 from ddf import G
-
 from django.conf import settings
 
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
