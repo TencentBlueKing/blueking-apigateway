@@ -407,6 +407,7 @@
             :scope-info="curScopeInfo"
             :edit-plugin="curEditPlugin"
             :type="curType"
+            :plugin-list="pluginList"
             @on-change="handleOperate"
           />
         </div>
@@ -465,7 +466,7 @@ const stageStore = useStage();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
-const pluginInfoRef = ref<InstanceType<typeof PluginInfo>>(null);
+const pluginInfoRef = ref<InstanceType<typeof PluginInfo>>();
 const scopeType = ref('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);

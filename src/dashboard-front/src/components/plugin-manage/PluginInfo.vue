@@ -151,14 +151,15 @@
         />
 
         <!-- 免用户认证应用白名单策略 -->
-        <div v-if="formStyle === 'raw'">
-          <div class="white-list">
-            <WhitelistTable
-              ref="whitelist"
-              :type="type"
-              :yaml-str="editPlugin?.yaml || ''"
-            />
-          </div>
+        <div
+          v-if="choosePlugin === 'bk-verified-user-exempted-apps'"
+          class="white-list"
+        >
+          <WhitelistTable
+            ref="whitelist"
+            :type="type"
+            :yaml-str="editPlugin?.yaml || ''"
+          />
         </div>
         <template
           v-else-if="[
@@ -177,28 +178,19 @@
           <Component
             :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
             ref="formRef"
-            :data="schemaFormData"
+            :data="formData"
           />
         </template>
         <template v-else-if="isDynamicFormPlugin">
           <Component
             :is="pluginFormCompMap[choosePlugin as keyof typeof pluginFormCompMap]"
             ref="formRef"
-            v-model="schemaFormData"
+            v-model="formData"
             :route-mode="choosePlugin"
             :schema="formConfig.schema"
             :layout="formConfig.layout"
           />
         </template>
-        <BkSchemaForm
-          v-else-if="Object.keys(schemaFormData || {}).length"
-          ref="formRef"
-          v-model="schemaFormData"
-          class="mt-20px plugin-form"
-          :schema="formConfig.schema"
-          :layout="formConfig.layout"
-          :rules="formConfig.rules"
-        />
         <div
           v-else
           class="color-#63656e text-14px"
@@ -284,8 +276,6 @@ import {
 } from 'lodash-es';
 import { createPlugin, updatePluginConfig } from '@/services/source/plugin-manage';
 import { Message } from 'bkui-vue';
-// @ts-expect-error missing module type
-import createForm from '@blueking/bkui-form';
 import { json2Yaml, yaml2Json } from '@/utils';
 import WhitelistTable from './WhitelistTable.vue';
 import {
@@ -293,7 +283,6 @@ import {
   useStage,
 } from '@/stores';
 import { onClickOutside } from '@vueuse/core';
-import { locale, t } from '@/locales';
 import {
   PLUGIN_ICONS,
   PLUGIN_ICONS_MIN,
@@ -314,6 +303,7 @@ import ResponseRewrite from '@/components/plugin-form/response-rewrite/Index.vue
 import FaultInjection from '@/components/plugin-form/fault-injection/Index.vue';
 import RequestValidate from '@/components/plugin-form/request-validation/Index.vue';
 import ApiBreaker from '@/components/plugin-form/api-breaker/Index.vue';
+import { PLUGIN_FORM_EXAMPLE_MAP } from '@/constants/plugin-form-examples.ts';
 
 interface IProps {
   curPlugin: any
@@ -350,11 +340,11 @@ interface IProps {
   bindingPlugins?: any[]
 }
 
+const { t, locale } = useI18n();
 const stageStore = useStage();
 const envStore = useEnv();
-const BkSchemaForm = createForm();
 
-const schemaFormData = ref({});
+const formData = ref({});
 const formConfig = ref({
   schema: {},
   layout: {},
@@ -366,8 +356,6 @@ const whitelist = ref();
 const curPluginInfo = ref<any>(curPlugin);
 const choosePlugin = ref<string>(curPluginInfo.value?.code);
 const showChoosePlugin = ref(false);
-const isPluginFormLoading = ref(false);
-const infoNotes = ref('');
 const isAdd = ref(false);
 const isStage = ref(false);
 const editAlert = ref(t('修改插件配置将会直接影响线上环境，请谨慎操作'));
@@ -376,10 +364,6 @@ const pluginCodeFirst = computed(() => {
     return code?.charAt(3)?.toUpperCase();
   };
 });
-const typeId = ref<number>();
-const formStyle = ref<string>();
-// 右侧插件使用示例内容
-const exampleContent = ref('');
 // 插件切换 select
 const pluginSelectRef = ref<HTMLElement>();
 
@@ -400,10 +384,10 @@ const pluginFormCompMap = {
   'bk-cors': BkCors,
 };
 
-const dynamicFormPlugin = shallowRef(['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit']);
+const dynamicFormPlugin = ['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'];
 
 const isDynamicFormPlugin = computed(() => {
-  return dynamicFormPlugin.value.includes(choosePlugin.value);
+  return dynamicFormPlugin.includes(choosePlugin.value);
 });
 
 const isBound = computed(() => {
@@ -412,9 +396,21 @@ const isBound = computed(() => {
   };
 });
 
-// 把后端返回的带 \n 的文本块转换成换行标签，当做 html 渲染
+const typeId = computed(() => {
+  const plugin = pluginList.find(plugin => plugin.code === choosePlugin.value);
+  return plugin?.id ?? 0;
+});
+
+const infoNotes = computed(() => {
+  const plugin = pluginList.find(plugin => plugin.code === choosePlugin.value);
+  return plugin?.notes ?? '';
+});
+
+// 右侧插件使用示例内容
+// 把带 \n 的文本块转换成换行标签，当做 html 渲染
 const exampleHtml = computed(() => {
-  return exampleContent.value.replace(/\\n/gm, '<br/>');
+  const example = PLUGIN_FORM_EXAMPLE_MAP[choosePlugin.value] || '';
+  return example.replace(/\\n/gm, '<br/>');
 });
 
 watch(
@@ -467,10 +463,10 @@ const handleAdd = async () => {
     }
   };
 
-  // 免用户认证应用白名单
   const data = {};
   try {
-    if (formStyle.value === 'raw') {
+    // 免用户认证应用白名单
+    if (code === 'bk-verified-user-exempted-apps') {
       Object.assign(data, { yaml: whitelist.value?.sendPolicyData().data });
     }
     if ([
@@ -484,7 +480,7 @@ const handleAdd = async () => {
       'fault-injection',
       'request-validation',
       'api-breaker',
-      ...dynamicFormPlugin.value,
+      ...dynamicFormPlugin,
     ].includes(choosePlugin.value)) {
       if (isDynamicFormPlugin.value) {
         // 动态插件需要调用下子组件的验证
@@ -495,7 +491,7 @@ const handleAdd = async () => {
       }
       const formValue = await formRef.value!.getValue();
       Object.assign(data, { yaml: json2Yaml(JSON.stringify(formValue)).data });
-      schemaFormData.value = formValue;
+      formData.value = formValue;
     }
     // 没有表单的插件，需要手动传 yaml: '{}'
     else if ([
@@ -511,7 +507,7 @@ const handleAdd = async () => {
   }
 
   if (isAdd.value) {
-    Object.assign(data, schemaFormData.value);
+    Object.assign(data, formData.value);
   }
   await doSubmit(data);
 };
@@ -525,32 +521,16 @@ const handleCancel = () => {
   emit('on-change', 'editCancel');
 };
 
-const getSchemaFormData = async (code: string) => {
-  try {
-    isPluginFormLoading.value = true;
-    // 下架动态获取插件表单配置接口，前端读取对应语言下的静态插件配置json文件
-    const schemaPluginData = locale.value?.toLowerCase()?.indexOf('en') > -1 ? schemaPluginFormEnJson[code] : schemaPluginFormCnJson[code];
-    const res = schemaPluginData ?? {};
-    // 当使用 select 组件切换到 ip 访问保护插件时，schemaFormData 没有被正确地设置
-    // 需要手动重置 schemaFormData
-    if (code === 'bk-ip-restriction') {
-      schemaFormData.value = { whitelist: '' };
-    }
-
-    isPluginFormLoading.value = false;
-    infoNotes.value = res.notes;
-    formConfig.value = res.config;
-    typeId.value = res.type_id;
-    formStyle.value = res.style;
-    exampleContent.value = res.example || '';
-
-    if (!isAdd.value) {
-      const yamlData = yaml2Json(editPlugin?.yaml).data;
-      schemaFormData.value = { ...(yamlData as object) };
-    }
+const setFormData = () => {
+  if (isDynamicFormPlugin.value) {
+    const schemaPluginData = (locale.value === 'en'
+      ? schemaPluginFormEnJson[choosePlugin.value as keyof typeof schemaPluginFormEnJson]
+      : schemaPluginFormCnJson[choosePlugin.value as keyof typeof schemaPluginFormCnJson]) ?? {};
+    formConfig.value = schemaPluginData.config;
   }
-  catch (error) {
-    console.log('error', error);
+  if (!isAdd.value) {
+    const yamlData = yaml2Json(editPlugin?.yaml).data;
+    formData.value = { ...(yamlData as object) };
   }
 };
 
@@ -558,17 +538,13 @@ const handleChoosePlugin = () => {
   const plugin = pluginList?.filter((item: any) => item.code === choosePlugin.value)[0];
   if (plugin) {
     curPluginInfo.value = plugin;
-    getSchemaFormData(choosePlugin.value);
+    setFormData();
     emit('choose-plugin', plugin);
   }
 };
 
 // 切换使用示例可见状态
-// 初次渲染若内容为空就去请求一次内容
 const toggleShowExample = () => {
-  if (!exampleContent.value) {
-    getSchemaFormData(choosePlugin.value);
-  }
   showExample.value = !showExample.value;
 };
 
@@ -584,13 +560,13 @@ const init = () => {
   isStage.value = scopeInfo.scopeType === 'stage';
   isAdd.value = type === 'add';
   curPluginInfo.value = curPlugin;
-  getSchemaFormData(curPlugin?.code);
+  setFormData();
 };
 init();
 
 // 设置编辑插件配置数据回显
 const setPluginInfo = (plugin) => {
-  schemaFormData.value = cloneDeep(plugin?.config);
+  formData.value = cloneDeep(plugin?.config);
 };
 
 // 点击了插件 select 区域外且未 focus 到该组件时，隐藏整个 select
