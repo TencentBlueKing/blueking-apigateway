@@ -1153,6 +1153,12 @@ const fetchCommonData = async (isEnablePrompt: boolean) => {
   });
 };
 
+// 获取常用环境列表 分类列表数据，设置默认初始化表单
+const getCommonListData = async () => {
+  await fetchCommonData(isEnablePrompt.value);
+  initSidebarFormData(getDiffFormData());
+};
+
 /**
  * 处理 isShow 状态变化的核心逻辑
  * @param {boolean} isShowVal 当前 isShow 的值
@@ -1162,11 +1168,10 @@ const handleIsShowChange = async (isShowVal: boolean) => {
   if (!isShowVal) return;
 
   clearValidate();
-  await fetchCommonData(isEnablePrompt.value);
-  initSidebarFormData(getDiffFormData());
   if (isEditMode.value) {
     await fetchServer();
   }
+  getCommonListData();
 };
 
 watch(isShow, handleIsShowChange, { immediate: false });
@@ -1431,8 +1436,10 @@ const isCurrentStageValid = computed(() =>
 const fetchStageList = async () => {
   const response = await getStageList(gatewayId.value);
   stageList.value = response || [];
-  const validStage = stageList.value.find(stage => stage.status === 1);
-  formData.value.stage_id = validStage?.id ?? undefined;
+  // 如果新建的话默认填充第一项
+  if (!isEditMode.value) {
+    formData.value.stage_id = stageList.value.find(stage => stage.status === 1)?.id ?? 0;
+  }
   if (formData.value.stage_id) {
     await fetchStageResources();
   }
