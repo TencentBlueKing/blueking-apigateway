@@ -77,6 +77,9 @@ class MCPServerProtocolTypeEnum(StructuredEnum):
     STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
 
 
+# OAuth2 认证开启后自动授权的 bk_app_code
+MCP_SERVER_PUBLIC_APP_CODE = "public"
+
 # MCPServer 分类名称常量 - 用于判断特殊分类
 OFFICIAL_MCP_CATEGORY_NAME = "Official"
 FEATURED_MCP_CATEGORY_NAME = "Featured"

@@ -75,6 +75,7 @@ class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "gateway",
         "stage",
         "is_public",
+        "oauth2_enabled",
         "status",
         "get_categories_display",
         "created_by",
@@ -82,12 +83,12 @@ class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "updated_time",
     ]
     search_fields = ["id", "name", "title", "gateway__name", "_labels"]
-    list_filter = ["gateway", "is_public", "status", "categories"]
+    list_filter = ["gateway", "is_public", "status", "oauth2_enabled", "categories"]
     filter_horizontal = ["categories"]
 
     fieldsets = (
         (None, {"fields": ("name", "title", "description", "gateway", "stage")}),
-        ("状态和权限", {"fields": ("status", "is_public", "protocol_type")}),
+        ("状态和权限", {"fields": ("status", "is_public", "oauth2_enabled", "protocol_type")}),
         ("分类", {"fields": ("categories",)}),
         ("资源配置", {"fields": ("_labels", "_resource_names"), "classes": ("collapse",)}),
     )

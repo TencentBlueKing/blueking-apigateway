@@ -202,6 +202,10 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
         slz.save()
 
+        # 如果开启了 OAuth2 认证，自动为 public 应用授权
+        if slz.instance.oauth2_enabled:
+            MCPServerHandler.sync_oauth2_permissions(slz.instance)
+
         # record audit log
         Auditor.record_mcp_server_op_success(
             op_type=OpTypeEnum.CREATE,
@@ -289,8 +293,12 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # sync the permissions, if any changes in the resource_names
-        MCPServerHandler.sync_permissions(instance.id)
+        # 同步 OAuth2 权限（开启则授权 public，关闭则撤销）；内部会同步资源权限
+        if "oauth2_enabled" in slz.validated_data:
+            MCPServerHandler.sync_oauth2_permissions(instance)
+        else:
+            # sync the permissions, if any changes in the resource_names
+            MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(
             op_type=OpTypeEnum.MODIFY,
