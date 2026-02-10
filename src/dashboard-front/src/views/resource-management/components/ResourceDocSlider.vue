@@ -416,6 +416,7 @@ const handleTranslateClick = async () => {
       initData();
       emit('fetch');
       isTranslating.value = false;
+      handleSelectLanguage(targetLanguage);
     }
     else {
       InfoBox({
@@ -445,6 +446,7 @@ const handleTranslateClick = async () => {
           initData();
           emit('fetch');
           isTranslating.value = false;
+          handleSelectLanguage(targetLanguage);
         },
       });
     }
