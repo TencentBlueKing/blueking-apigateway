@@ -490,6 +490,7 @@ class MCPServerHandler:
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
+                "oauth2_enabled": instance.oauth2_enabled,
             }
 
             # AIDev 需要额外的创建链接

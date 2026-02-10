@@ -937,6 +937,42 @@ class TestMCPServerConfigListApi:
         assert config_map["codebuddy"] == "CodeBuddy"
         assert config_map["claude"] == "Claude"
 
+    def test_retrieve_config_list_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试 OAuth2 开启时，配置中不包含认证请求头"""
+        fake_mcp_server.oauth2_enabled = True
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.config_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        for config in result["data"]["configs"]:
+            assert "X-Bkapi-Authorization" not in config["content"]
+            assert "headers" not in config["content"]
+
+    def test_retrieve_config_list_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试 OAuth2 关闭时，配置中包含认证请求头"""
+        fake_mcp_server.oauth2_enabled = False
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.config_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        for config in result["data"]["configs"]:
+            assert "X-Bkapi-Authorization" in config["content"]
+            assert "headers" in config["content"]
+
 
 class TestMCPServerToolDocRetrieveApi:
     def test_retrieve(self, mocker, request_view, fake_gateway, fake_mcp_server):
