@@ -134,7 +134,7 @@
               :label="t('标签')"
               property="labels"
             >
-              <BkTag-input
+              <BkTagInput
                 v-model="formData.labels"
                 :disabled="noValidStage"
                 allow-create
@@ -858,6 +858,9 @@ const previewUrl = computed(() => {
 watch(isShow, async () => {
   if (isShow.value) {
     clearValidate();
+    if (isEditMode.value) {
+      await fetchServer();
+    }
     if (isEnablePrompt.value) {
       await Promise.allSettled([
         fetchStageList(),
@@ -867,9 +870,6 @@ watch(isShow, async () => {
     else {
       resourceTabList.value = resourceTabList.value.filter(item => !['prompt'].includes(item.value));
       await fetchStageList();
-    }
-    if (isEditMode.value) {
-      await fetchServer();
     }
     const initFormData = {
       formData: formData.value,
@@ -1070,8 +1070,10 @@ const isCurrentStageValid = computed(() =>
 const fetchStageList = async () => {
   const response = await getStageList(gatewayId.value);
   stageList.value = response || [];
-  const validStage = stageList.value.find(stage => stage.status === 1);
-  formData.value.stage_id = validStage?.id ?? undefined;
+  // 如果新建的话默认填充第一项
+  if (!isEditMode.value) {
+    formData.value.stage_id = stageList.value.find(stage => stage.status === 1)?.id ?? 0;
+  }
   if (formData.value.stage_id) {
     await fetchStageResources();
   }
