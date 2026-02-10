@@ -4,7 +4,7 @@ This project is a proxy for mcp
 
 ## develop
 
-- `go 1.24` required
+- `go >= 1.24.4` required
 
 build and run
 
