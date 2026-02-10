@@ -227,8 +227,6 @@
     :header-position="'left'"
     :title="applyActionDialogConf.title"
     :is-show="applyActionDialogConf.isShow"
-    :loading="applyActionDialogConf.isLoading"
-    @confirm="handleSubmitApprove"
     @closed="applyActionDialogConf.isShow = false"
   >
     <BkForm
@@ -252,6 +250,20 @@
         />
       </BkFormItem>
     </BkForm>
+    <template #footer>
+      <BkButton
+        theme="primary"
+        :disabled="applyActionDialogConf.isLoading"
+        :loading="applyActionDialogConf.isLoading"
+        class="mr-8px"
+        @click="handleSubmitApprove"
+      >
+        {{ t('确定') }}
+      </BkButton>
+      <BkButton @click="applyActionDialogConf.isShow = false">
+        {{ t('取消') }}
+      </BkButton>
+    </template>
   </BkDialog>
 </template>
 
@@ -476,7 +488,7 @@ const handleSubmitApprove = async () => {
     });
   }
   finally {
-    applyActionDialogConf.isLoading = true;
+    applyActionDialogConf.isLoading = false;
   }
 };
 
@@ -508,9 +520,9 @@ watch(
       getApplicant();
     }
     if (!val) {
-      filterData.value.applied_by = '';
       applicantList.value = [];
     }
+    filterData.value.applied_by = '';
   },
   { immediate: true },
 );
