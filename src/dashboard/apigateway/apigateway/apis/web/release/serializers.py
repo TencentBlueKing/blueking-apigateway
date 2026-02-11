@@ -117,6 +117,7 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
     source = serializers.CharField(read_only=True, help_text="发布来源")
     duration = serializers.SerializerMethodField(read_only=True, help_text="发布耗时 (s)")
     status = serializers.SerializerMethodField(read_only=True, help_text="发布状态")
+    data_plane = serializers.SerializerMethodField(read_only=True, help_text="数据面信息")
 
     class Meta:
         ref_name = "apigateway.apis.web.release.serializers.ReleaseHistoryOutputSLZ"
@@ -148,6 +149,16 @@ class ReleaseHistoryOutputSLZ(serializers.Serializer):
 
         # 0 代表还没到达终态
         return 0
+
+    def get_data_plane(self, obj: ReleaseHistory):
+        """Get data plane info for display"""
+        if not obj.data_plane:
+            return None
+        return {
+            "id": obj.data_plane.id,
+            "name": obj.data_plane.name,
+            "description": obj.data_plane.description,
+        }
 
 
 class ReleaseHistoryEventInfoSLZ(serializers.Serializer):

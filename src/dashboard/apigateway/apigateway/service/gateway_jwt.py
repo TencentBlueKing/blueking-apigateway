@@ -15,13 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from blue_krill.encrypt.handler import EncryptHandler
 from django.conf import settings
 from django.utils.encoding import force_bytes, smart_str
 
 from apigateway.common.encrypt.cipher import AESGCMCipher
 from apigateway.core.models import JWT, Gateway
-from apigateway.utils.crypto import KeyGenerator
+from apigateway.utils.crypto import BkCrypto, KeyGenerator
 
 
 class CustomCrypto:
@@ -36,20 +35,6 @@ class CustomCrypto:
 
     def decrypt(self, encrypted_text) -> str:
         return self._jwt_cipher.decrypt_from_hex(encrypted_text)
-
-
-class BkCrypto:
-    def __init__(self):
-        self._encrypt_handler = EncryptHandler(
-            encrypt_cipher_type=settings.ENCRYPT_CIPHER_TYPE,
-            secret_key=settings.BKKRILL_ENCRYPT_SECRET_KEY,
-        )
-
-    def encrypt(self, plaintext) -> str:
-        return self._encrypt_handler.encrypt(plaintext)
-
-    def decrypt(self, encrypted_text) -> str:
-        return self._encrypt_handler.decrypt(encrypted_text)
 
 
 def get_jwt_crypto():
