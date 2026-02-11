@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node replace-index-html.js index.dev.html && vite",
+    "dev:tenant": "node replace-index-html.js index.dev.html && vite --mode tenant",
     "build": "node replace-index-html.js index.prod.html && run-p type-check \"build-only {@}\" --",
     "preview": "node replace-index-html.js index.dev.html && vite preview",
     "build-only": "node replace-index-html.js index.prod.html && vite build",
