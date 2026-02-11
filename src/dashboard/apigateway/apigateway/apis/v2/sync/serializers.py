@@ -831,6 +831,11 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     target_app_codes = serializers.ListSerializer(
         help_text="主动授权的app_code", child=serializers.CharField(), allow_empty=True, default=list, required=False
     )
+    oauth2_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权",
+    )
 
     class Meta:
         model = MCPServer
@@ -846,6 +851,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "status",
             "protocol_type",
             "target_app_codes",
+            "oauth2_enabled",
         )
         lookup_field = "id"
         non_model_fields = ["target_app_codes"]
@@ -882,6 +888,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
+
         return instance
 
     def update(self, instance, validated_data):
@@ -899,6 +906,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
+
         return instance
 
 

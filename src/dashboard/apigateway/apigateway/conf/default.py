@@ -564,6 +564,9 @@ BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 # AIDEV 平台配置（配置了 AIDEV_AGENT_CREATE_URL 则启用 AIDev）
 AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
+# MCP Server OAuth2 认证开启后自动授权的 bk_app_code
+MCP_SERVER_PUBLIC_APP_CODE = env.str("MCP_SERVER_PUBLIC_APP_CODE", "public")
+
 # MCP Server 配置工具列表
 MCP_CONFIG_AGENT_CLIENTS = [
     {"name": "codebuddy", "display_name": "CodeBuddy"},

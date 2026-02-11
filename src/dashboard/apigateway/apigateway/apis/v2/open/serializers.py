@@ -197,6 +197,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         choices=MCPServerProtocolTypeEnum.get_choices(),
     )
 
+    oauth2_enabled = serializers.BooleanField(read_only=True, help_text="是否开启 OAuth2 认证")
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 

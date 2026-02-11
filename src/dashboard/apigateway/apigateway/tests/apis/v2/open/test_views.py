@@ -322,6 +322,64 @@ class TestParseDatetimeStrToTimestampApi:
         assert "error" in result or "message" in result
 
 
+class TestMCPServerListApiOAuth2:
+    """测试 MCPServer 列表接口返回 oauth2_enabled 字段"""
+
+    def test_list_returns_oauth2_enabled(self, request_view, fake_gateway, settings):
+        """测试 MCPServer 列表接口正确返回 oauth2_enabled 字段"""
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            oauth2_enabled=True,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_data is not None
+        assert mcp_data["oauth2_enabled"] is True
+
+    def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, settings):
+        """测试 MCPServer 列表接口返回 oauth2_enabled=False"""
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            oauth2_enabled=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_data is not None
+        assert mcp_data["oauth2_enabled"] is False
+
+
 class TestOAuthProtectedResourceApi:
     def test_get_oauth_protected_resource_success(self, request_view, settings):
         """测试成功获取 OAuth 保护资源元数据"""
