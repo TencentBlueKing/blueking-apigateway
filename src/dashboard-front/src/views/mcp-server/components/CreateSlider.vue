@@ -604,7 +604,6 @@ interface FormData {
   stage_id: number | undefined
   is_public: boolean
   labels: string[]
-
 }
 
 const { serverId = 0 } = defineProps<IProps>();
@@ -1130,7 +1129,7 @@ const escapedCodeContent = computed(() => {
  */
 const fetchCommonData = async (isEnablePrompt: boolean) => {
   // 定义基础请求列表
-  const requestList = [fetchStageList(), fetchCategoryList()];
+  const requestList = isEditMode.value ? [fetchCategoryList()] : [fetchStageList(), fetchCategoryList()];
   // 启用 Prompt 时，追加 Prompt 资源请求
   if (isEnablePrompt) {
     requestList.push(fetchPromptResources());
@@ -1475,6 +1474,7 @@ const fetchServer = async () => {
     url.value = response?.url ?? '';
     // 仅当资源名称数组有有效数据时执行逻辑
     if (resource_names?.length) {
+      await fetchStageList();
       const resourceNameToIndexMap = new Map();
       resource_names.forEach((name, index) => {
         resourceNameToIndexMap.set(name, index);
