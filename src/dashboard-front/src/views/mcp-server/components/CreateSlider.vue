@@ -855,30 +855,66 @@ const previewUrl = computed(() => {
   return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type) ? 'mcp' : formData.value.protocol_type}/`;
 });
 
-watch(isShow, async () => {
-  if (isShow.value) {
-    clearValidate();
-    if (isEditMode.value) {
-      await fetchServer();
-    }
-    if (isEnablePrompt.value) {
-      await Promise.allSettled([
-        fetchStageList(),
-        fetchPromptResources(),
-      ]);
-    }
-    else {
-      resourceTabList.value = resourceTabList.value.filter(item => !['prompt'].includes(item.value));
-      await fetchStageList();
-    }
-    const initFormData = {
-      formData: formData.value,
-      toolSelections: toolSelections.value,
-      promptSelections: promptSelections.value,
-    };
-    initSidebarFormData(initFormData);
+/**
+ * 获取公共异步数据（提取重复逻辑，降低耦合）
+ * @param {boolean} isEnablePrompt  是否启用 Prompt 功能
+ */
+const fetchCommonData = async (isEnablePrompt: boolean) => {
+  // 定义基础请求列表
+  const requestList = isEditMode.value ? [] : [fetchStageList()];
+  // 启用 Prompt 时，追加 Prompt 资源请求
+  if (isEnablePrompt) {
+    requestList.push(fetchPromptResources());
   }
-});
+  else {
+    // 禁用 Prompt 时，过滤掉 prompt 相关的标签
+    resourceTabList.value = resourceTabList.value.filter(
+      item => !['prompt'].includes(item.value),
+    );
+  }
+  if (!requestList.length) return;
+  const results = await Promise.allSettled(requestList);
+  // 处理单个请求的失败情况
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      Message({
+        theme: 'error',
+        message: JSON.stringify(result?.reason?.stack),
+      });
+    }
+  });
+};
+
+// 获取常用环境列表 分类列表数据，设置默认初始化表单
+const getCommonListData = async () => {
+  await fetchCommonData(isEnablePrompt.value);
+  initSidebarFormData(getDiffFormData());
+};
+
+/**
+ * 处理 isShow 状态变化的核心逻辑
+ * @param {boolean} isShowVal 当前 isShow 的值
+ */
+const handleIsShowChange = async (isShowVal: boolean) => {
+  // 仅在 isShow 为 true 时执行后续逻辑
+  if (!isShowVal) return;
+
+  clearValidate();
+  if (isEditMode.value) {
+    await fetchServer();
+  }
+  getCommonListData();
+};
+
+watch(isShow, handleIsShowChange, { immediate: false });
+
+const getDiffFormData = () => {
+  return {
+    formData: formData.value,
+    toolSelections: toolSelections.value,
+    promptSelections: promptSelections.value,
+  };
+};
 
 const resetResizeLayout = () => {
   nextTick(() => {
@@ -1106,6 +1142,7 @@ const fetchServer = async () => {
     url.value = response?.url ?? '';
     // 渲染tool勾选数据
     if (resource_names.length) {
+      await fetchStageList();
       toolSelections.value = resourceList.value
         .filter(item => resource_names.includes(item.name))
         .map(({ name, id }) => ({
@@ -1142,6 +1179,9 @@ const fetchServer = async () => {
   }
   catch {
     formData.value = cloneDeep(defaultFormData.value);
+  }
+  finally {
+    initSidebarFormData(getDiffFormData());
   }
 };
 
@@ -1415,12 +1455,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
 };
 
 const handleBeforeClose = () => {
-  const diffFormData = {
-    formData: formData.value,
-    toolSelections: toolSelections.value,
-    promptSelections: promptSelections.value,
-  };
-  const results = isSidebarClosed(JSON.stringify(diffFormData));
+  const results = isSidebarClosed(JSON.stringify(getDiffFormData()));
   return results;
 };
 
