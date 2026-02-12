@@ -1,20 +1,20 @@
 /*
- * TencentBlueKing is pleased to support the open source community by making
- * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- *     http://opensource.org/licenses/MIT
- *
- * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * We undertake not to change the open source license (MIT license) applicable
- * to the current version of the project delivered to anyone in the future.
- */
+* TencentBlueKing is pleased to support the open source community by making
+* 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+* Copyright (C) 2025 Tencent. All rights reserved.
+* Licensed under the MIT License (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the License at
+*
+*     http://opensource.org/licenses/MIT
+*
+* Unless required by applicable law or agreed to in writing, software distributed under
+* the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* We undertake not to change the open source license (MIT license) applicable
+* to the current version of the project delivered to anyone in the future.
+*/
 
 <template>
   <div class="release-sideslider">
@@ -23,6 +23,7 @@
       :width="960"
       :title="`${t('资源详情')}【${info.version || ''}】`"
       quick-close
+      render-directive="if"
       @hidden="handleHidden"
     >
       <template #default>
@@ -40,9 +41,9 @@
                 clearable
               />
               <div class="sideslider-lf-ul">
-                <template v-if="getResources?.length">
+                <template v-if="filteredResources.length">
                   <div
-                    v-for="item in getResources"
+                    v-for="item in filteredResources"
                     :key="item.name"
                     class="sideslider-lf-li"
                     :class="[
@@ -97,20 +98,20 @@
                     </template>
                   </BkCollapsePanel>
                   <BkCollapsePanel
-                    v-for="(source, index) in info?.resources"
-                    :key="source?.name"
+                    v-for="(resource, index) in displayedResources"
+                    :key="resource.name"
                     :name="index + 2"
-                    :class="`source-${source.name}`"
+                    :class="`source-${resource.name}`"
                     class="mb-12px"
                   >
                     <span
-                      :data-name="`resource-${source.name}`"
-                      :data-id="source.id"
+                      :data-name="`resource-${resource.name}`"
+                      :data-id="resource.id"
                     >
-                      <BkTag :theme="getMethodsTheme(source.method)">
-                        {{ source.method }}
+                      <BkTag :theme="getMethodsTheme(resource.method)">
+                        {{ resource.method }}
                       </BkTag>
-                      <span class="log-name">{{ source.name }}</span>
+                      <span class="log-name">{{ resource.name }}</span>
                     </span>
                     <template #content>
                       <div class="sideslider-rg-content">
@@ -129,7 +130,7 @@
                             <BkCol :span="10">
                               <div class="ag-value">
                                 <BkTag theme="success">
-                                  {{ source.name }}
+                                  {{ resource.name }}
                                 </BkTag>
                               </div>
                             </BkCol>
@@ -141,7 +142,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source.path }}
+                                {{ resource.path }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -152,7 +153,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source.description }}
+                                {{ resource.description }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -163,10 +164,10 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value tags">
-                                <template v-if="source.gateway_label_ids?.length">
+                                <template v-if="resource.gateway_label_ids?.length">
                                   <BkTag
                                     v-for="tag in labels?.filter((label) => {
-                                      if (source.gateway_label_ids?.includes(label.id))
+                                      if (resource.gateway_label_ids?.includes(label.id))
                                         return true;
                                     })"
                                     :key="tag.id"
@@ -189,7 +190,7 @@
                               <div class="ag-value">
                                 {{
                                   getResourceAuth(
-                                    source?.contexts?.resource_auth?.config
+                                    resource.contexts?.resource_auth?.config
                                   )
                                 }}
                               </div>
@@ -204,7 +205,7 @@
                               <div class="ag-value">
                                 {{
                                   getPermRequired(
-                                    source?.contexts?.resource_auth?.config
+                                    resource.contexts?.resource_auth?.config
                                   )
                                 }}
                               </div>
@@ -217,9 +218,9 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source?.is_public ? t("是") : t("否") }}
+                                {{ resource.is_public ? t("是") : t("否") }}
                                 {{
-                                  source?.allow_apply_permission
+                                  resource.allow_apply_permission
                                     ? `(${t("允许申请权限")})`
                                     : `(${t("不允许申请权限")})`
                                 }}
@@ -242,8 +243,8 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                <BkTag :theme="getMethodsTheme(source.method)">
-                                  {{ source.method }}
+                                <BkTag :theme="getMethodsTheme(resource.method)">
+                                  {{ resource.method }}
                                 </BkTag>
                               </div>
                             </BkCol>
@@ -255,7 +256,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source.path }}
+                                {{ resource.path }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -266,7 +267,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source.enable_websocket ? t("是") : t("否") }}
+                                {{ resource.enable_websocket ? t("是") : t("否") }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -277,7 +278,8 @@
                         </p>
                         <div>
                           <BkContainer
-                            v-if="!Object.keys(source.openapi_schema || {}).length || source.openapi_schema.none_schema"
+                            v-if="!Object.keys(resource.openapi_schema || {}).length
+                              || resource.openapi_schema.none_schema"
                             class="ag-kv-box pb-24px"
                             :col="14"
                             :margin="6"
@@ -297,7 +299,7 @@
                           </BkContainer>
                           <RequestParams
                             v-else
-                            :detail="source"
+                            :detail="resource"
                             readonly
                           />
                         </div>
@@ -318,7 +320,7 @@
                               <BkCol :span="10">
                                 <div class="ag-value">
                                   {{
-                                    source?.proxy?.backend?.name
+                                    resource.proxy?.backend?.name
                                   }}
                                 </div>
                               </BkCol>
@@ -330,9 +332,9 @@
                               </BkCol>
                               <BkCol :span="10">
                                 <div class="ag-value">
-                                  <BkTag :theme="getMethodsTheme(source?.proxy?.config?.method)">
+                                  <BkTag :theme="getMethodsTheme(resource.proxy?.config?.method)">
                                     {{
-                                      source?.proxy?.config?.method
+                                      resource.proxy?.config?.method
                                     }}
                                   </BkTag>
                                 </div>
@@ -346,7 +348,7 @@
                               <BkCol :span="10">
                                 <div class="ag-value">
                                   {{
-                                    source?.proxy?.config?.timeout
+                                    resource.proxy?.config?.timeout
                                   }}
                                 </div>
                               </BkCol>
@@ -359,7 +361,7 @@
                               <BkCol :span="10">
                                 <div class="ag-value">
                                   {{
-                                    source?.proxy?.config?.path
+                                    resource.proxy?.config?.path
                                   }}
                                 </div>
                               </BkCol>
@@ -371,8 +373,8 @@
                           </p>
                           <div>
                             <ResponseParams
-                              v-if="Object.keys(source.openapi_schema?.responses || {}).length"
-                              :detail="source"
+                              v-if="Object.keys(resource.openapi_schema?.responses || {}).length"
+                              :detail="resource"
                               readonly
                             />
                             <BkContainer
@@ -411,7 +413,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source?.doc_updated_time?.zh || '--' }}
+                                {{ resource.doc_updated_time?.zh || '--' }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -421,7 +423,7 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ source?.doc_updated_time?.en || '--' }}
+                                {{ resource.doc_updated_time?.en || '--' }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -429,7 +431,7 @@
 
                         <template v-if="info.schema_version === '2.0'">
                           <template
-                            v-for="plugin in source.plugins"
+                            v-for="plugin in resource.plugins"
                             :key="plugin.id"
                           >
                             <p class="title mt-15px">
@@ -478,6 +480,7 @@ const route = useRoute();
 const activeIndex = ref([1]);
 const info = ref<any>({});
 const currentSource = ref<any>({});
+const displayedResources = shallowRef<any[]>([]);
 
 // 网关标签
 const labels = ref<any[]>([]);
@@ -489,6 +492,14 @@ const renderIsShow = ref(false);
 const isLoading = ref(false);
 
 const resourceCollapseWrapper = useTemplateRef('resource-collapse-wrapper');
+
+// 资源分批加载配置
+const resourceTrunkConfig = {
+  // 每次渲染 50 条
+  chunkSize: 50,
+  index: 0,
+  rawData: [],
+};
 
 useScroll(resourceCollapseWrapper, {
   onStop: () => {
@@ -502,7 +513,7 @@ useScroll(resourceCollapseWrapper, {
     }
     if (topPanel) {
       const id = topPanel.dataset.id;
-      const topResource = info.value.resources.find(item => item.id === Number(id));
+      const topResource = displayedResources.value.find(item => item.id === Number(id));
       if (topResource) {
         currentSource.value = topResource;
         const listItem = document.querySelector(`.sideslider-lf-li[data-resource-id="${id}"]`);
@@ -520,8 +531,8 @@ useScroll(resourceCollapseWrapper, {
 // 网关id
 const apigwId = computed(() => +route.params.id);
 
-// 搜索
-const getResources = computed(() => {
+// 筛选后资源列表
+const filteredResources = computed(() => {
   if (keywords.value === '') {
     exceptionType.value = 'empty';
     exceptionDesc.value = t('暂无数据');
@@ -530,32 +541,32 @@ const getResources = computed(() => {
     exceptionType.value = 'search-empty';
     exceptionDesc.value = t('搜索结果为空');
   }
-  return info.value?.resources?.filter((item: any) => item.name?.includes(keywords.value));
+  return displayedResources.value.filter((item: any) => item.name?.includes(keywords.value));
 });
 
 watch(
   () => isShow,
-  async (v: boolean) => {
+  (v: boolean) => {
     renderIsShow.value = v;
     if (v) {
-      isLoading.value = true;
-      await getInfo();
-      isLoading.value = false;
+      getInfo();
     }
   },
 );
 
-// 获取详情数据
-const getInfo = async () => {
-  if (!id || !apigwId.value) return;
+const renderResourceChunk = () => {
+  const total = resourceTrunkConfig.rawData.length;
+  if (resourceTrunkConfig.index >= total) {
+    return;
+  }
 
-  const res = await getVersionDetail(apigwId.value, id);
-  info.value = res;
-  currentSource.value = res.resources[0] || {};
-
-  activeIndex.value = [1];
-  res?.resources?.forEach((item: any, index: number) => {
-    activeIndex.value?.push(index + 2);
+  // 截取一小段
+  const chunk = resourceTrunkConfig.rawData.slice(
+    resourceTrunkConfig.index,
+    resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
+  );
+  chunk.forEach((item: any, index: number) => {
+    activeIndex.value.push(index + 2);
 
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
@@ -563,8 +574,31 @@ const getInfo = async () => {
       }
     }
   });
+
+  // 更新数据 (注意：shallowRef 需要赋值给 .value 才能触发更新)
+  // 这里使用解构赋值来触发 shallowRef 的更新机制
+  displayedResources.value = [...displayedResources.value, ...chunk];
+
+  resourceTrunkConfig.index += resourceTrunkConfig.chunkSize;
+
+  // 在下一帧继续执行
+  requestAnimationFrame(renderResourceChunk);
 };
-getInfo();
+
+// 获取详情数据
+const getInfo = async () => {
+  if (!id || !apigwId.value) return;
+
+  isLoading.value = true;
+  const { resources, ...rest } = await getVersionDetail(apigwId.value, id);
+  info.value = rest;
+  resourceTrunkConfig.rawData = resources || [];
+  currentSource.value = resources[0] || {};
+
+  activeIndex.value = [1];
+  isLoading.value = false;
+  renderResourceChunk();
+};
 
 const getResourceAuth = (authStr: string) => {
   if (!authStr) return '';
@@ -624,16 +658,14 @@ const renderTitle = (name: string) => {
 const handleHidden = () => {
   emits('hidden');
 };
+
+onMounted(() => {
+  getInfo();
+});
+
 </script>
 
 <style lang="scss" scoped>
-.mb8 {
-  margin-bottom: 8px;
-}
-
-.mb12 {
-  margin-bottom: 12px;
-}
 
 .sideslider-content {
   display: flex;
