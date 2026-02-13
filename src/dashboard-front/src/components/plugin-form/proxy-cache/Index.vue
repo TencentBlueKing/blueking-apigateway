@@ -86,7 +86,7 @@ const rules = {
 
 watch(() => data, () => {
   if (data) {
-    form.value.cache_method = data.cache_method?.map(method => method.key) || ['GET'];
+    form.value.cache_method = data.cache_method?.map((method: any) => method.key) || ['GET'];
     form.value.cache_ttl = data.cache_ttl || 300;
   }
 }, {
@@ -97,7 +97,7 @@ watch(() => data, () => {
 defineExpose({
   getValue: () => formRef.value.validate().then(() => ({
     cache_ttl: form.value.cache_ttl,
-    cache_method: form.value.cache_method.map(key => ({ key })),
+    cache_method: form.value.cache_method.map((key: any) => ({ key })),
   })),
 });
 

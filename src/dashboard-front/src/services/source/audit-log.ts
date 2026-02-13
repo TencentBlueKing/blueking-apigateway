@@ -16,6 +16,9 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysAuditsLogsListQuery } from '@/services/types/query/gateways.ts';
 
 export interface IAuditLog {
   // 操作类型
@@ -44,6 +47,6 @@ export interface IAuditLog {
  * @param params
  * @returns
  */
-export async function getAuditLogList(apigwId: number, params: IAuditLog) {
-  return http.get(`/gateways/${apigwId}/audits/logs/`, params);
+export async function getAuditLogList(apigwId: number, params: IGatewaysAuditsLogsListQuery) {
+  return http.get<ICountAndResults<IAuditEventLogOutput>>(`/gateways/${apigwId}/audits/logs/`, params);
 }

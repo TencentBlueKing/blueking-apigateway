@@ -51,8 +51,8 @@ interface IProps {
   dialogParams?: IDialogParams
 }
 
-interface Emits {
-  (e: 'update:dialogParams', value: IDialogParams)
+interface IEmits {
+  (e: 'update:dialogParams', value: IDialogParams): void
   (e: 'confirm'): void
 }
 
@@ -68,7 +68,7 @@ const {
     isShow: false,
   },
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+const emits = defineEmits<IEmits>();
 
 const tableColumns = shallowRef([
   {
@@ -80,12 +80,12 @@ const tableColumns = shallowRef([
     field: 'grant_dimension',
     render: ({ row }: { row?: IPermission }) => {
       function getSearchDimensionText() {
-        if (['resource'].includes(row.grant_dimension)) return t('按资源');
-        if (['api'].includes(row.grant_dimension)) return t('按网关');
+        if (['resource'].includes(row!.grant_dimension)) return t('按资源');
+        if (['api'].includes(row!.grant_dimension)) return t('按网关');
         return '--';
       }
       return (
-        <span class="ag-auto-text">{ getSearchDimensionText(row.grant_dimension) }</span>
+        <span class="ag-auto-text">{ getSearchDimensionText() }</span>
       );
     },
   },
@@ -94,7 +94,7 @@ const tableColumns = shallowRef([
     field: 'resource_name ',
     render: ({ row }: { row?: IPermission }) => {
       return (
-        <span>{ row.resource_name || '--' }</span>
+        <span>{ row!.resource_name || '--' }</span>
       );
     },
   },
@@ -103,7 +103,7 @@ const tableColumns = shallowRef([
     field: 'resource_path ',
     render: ({ row }: { row?: IPermission }) => {
       return (
-        <span>{ row.resource_path || '--' }</span>
+        <span>{ row!.resource_path || '--' }</span>
       );
     },
   },
@@ -112,7 +112,7 @@ const tableColumns = shallowRef([
     field: 'expires',
     render: ({ row }: { row?: IPermission }) => {
       return (
-        <span>{ row.expires || t('永久有效') }</span>
+        <span>{ row!.expires || t('永久有效') }</span>
       );
     },
   },
@@ -121,7 +121,7 @@ const tableColumns = shallowRef([
 
 const removeDialogConfig = computed({
   get: () => dialogParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:dialogParams', params);
   },
 });

@@ -202,12 +202,26 @@
 <script lang="tsx" setup>
 import ChartView from './Chart.vue';
 import moment from 'moment';
+import { Button } from 'bkui-vue';
+const BkButton = Button;
 import {
   type ITimeChartResponse,
   getApigwErrorRequest,
   getApigwRuntimeRequest,
   getApigwSystemSummary,
 } from '@/services/source/runTime';
+
+// 运行时请求数据项类型（API 返回的实际结构）
+interface IRuntimeRequestItem {
+  req_app_code?: string
+  req_component_name?: string
+  req_url?: string
+  requests?: { error_count?: number; count?: number }
+  perc95_resp_time?: { value?: number }
+  avg_resp_time?: { value?: number }
+  rate_availability?: { value?: number; value_str?: string }
+  [key: string]: any
+}
 
 const route = useRoute();
 const { t } = useI18n();
@@ -227,7 +241,7 @@ const startTime = ref(Date.now() - 60 * 60 * 1000);
 const dayStartTime = ref(Date.now() - 24 * 60 * 60 * 1000);
 const isDataLoading = ref(true);
 const isSummaryDataLoading = ref(true);
-const summaryData = ref({
+const summaryData = ref<any>({
   avg_resp_time: { value: '' },
   perc95_resp_time: { value_str: '' },
   rate_availability: { value_str: '' },
@@ -245,8 +259,8 @@ const initColumns = ref([
     label: t('错误 / 总次数'),
     field: 'error_count',
     sort: true,
-    sortFn: handleSortCount,
-    render: ({ row }: { row?: ITimeChartResponse }) => {
+    sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortCount(a, b),
+    render: ({ row }: { row?: IRuntimeRequestItem }) => {
       return (
         <div>
           <span>
@@ -258,7 +272,7 @@ const initColumns = ref([
             v-if="row?.requests?.error_count"
             text
             class="m-l-5px"
-            onClick={() => handleShowDetail(row)}
+            onClick={() => handleShowDetail(row!)}
           >
             { t('详情') }
           </BkButton>
@@ -270,8 +284,8 @@ const initColumns = ref([
     label: t('统计响应时间(ms)'),
     field: 'perc95_resp_time',
     sort: true,
-    sortFn: handleSortRespTime,
-    render: ({ row }: { row?: ITimeChartResponse }) => {
+    sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortRespTime(a, b),
+    render: ({ row }: { row?: IRuntimeRequestItem }) => {
       return (
         <span>
           { row?.perc95_resp_time?.value }
@@ -283,8 +297,8 @@ const initColumns = ref([
     label: t('平均响应时间(ms)'),
     field: 'avg_resp_time',
     sort: true,
-    sortFn: handleSortAvgTime,
-    render: ({ row }: { row?: ITimeChartResponse }) => {
+    sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortAvgTime(a, b),
+    render: ({ row }: { row?: IRuntimeRequestItem }) => {
       return (
         <span>
           { row?.avg_resp_time?.value }
@@ -296,8 +310,8 @@ const initColumns = ref([
     label: t('可用率'),
     field: 'rate_availability',
     sort: true,
-    sortFn: handleSortRate,
-    render: ({ row }: { row?: ITimeChartResponse }) => {
+    sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortRate(a, b),
+    render: ({ row }: { row?: IRuntimeRequestItem }) => {
       return (
         <span>
           { row?.rate_availability?.value_str }
@@ -316,36 +330,36 @@ const principalFlag = computed(() => {
 });
 
 const getTableColumns = computed(() => {
-  const tabMap = {
+  const tabMap: Record<string, () => any[]> = {
     req_app_code: () => {
-      const results = [...initColumns.values.slice(0, 1),
+      const results = [...initColumns.value.slice(0, 1),
         [{
           label: 'app_code',
           field: 'req_app_code',
         }],
-        ...initColumns.values.slice(1)];
+        ...initColumns.value.slice(1)];
       return results;
     },
     req_component_name: () => {
-      const results = [...initColumns.values.slice(0, 1),
+      const results = [...initColumns.value.slice(0, 1),
         [{
           label: t('组件名'),
           field: 'req_component_name',
         }],
-        ...initColumns.values.slice(1)];
+        ...initColumns.value.slice(1)];
       return results;
     },
     req_url: () => {
-      const results = [...initColumns.values.slice(0, 1),
+      const results = [...initColumns.value.slice(0, 1),
         [{
           label: 'URL',
           field: 'req_url',
         }],
-        ...initColumns.values.slice(1)];
+        ...initColumns.value.slice(1)];
       return results;
     },
   };
-  return tabMap[active]?.() ?? tabMap['req_component_name']?.();
+  return tabMap[active.value]?.() ?? tabMap['req_component_name']?.();
 });
 
 const init = () => {
@@ -453,7 +467,7 @@ const clearAutoRefresh = () => {
   clearInterval(timer.value);
 };
 
-const handleShowDetail = async (data: ITimeChartResponse) => {
+const handleShowDetail = async (data: IRuntimeRequestItem) => {
   isErrorDataLoading.value = true;
   errorRequests.value = [];
   detailDialog.visible = true;
@@ -461,14 +475,15 @@ const handleShowDetail = async (data: ITimeChartResponse) => {
 
   try {
     const res = await getApigwErrorRequest({
-      system: system.value,
+      system: system.value as string,
       appCode: data.req_app_code || '',
       componentName: data.req_component_name || '',
       requestUrl: data.req_url || '',
       start: startTime.value,
       end: endTime.value,
     });
-    errorRequests.value = res.data.data_list.map((item) => {
+    console.log(res);
+    errorRequests.value = (res as any).data.data_list.map((item: any) => {
       const datetime = moment(item.timestamp).format('MM-DD HH:mm');
       const endTime = moment(item.req_end_time).valueOf();
       const startTime = moment(item.req_start_time).valueOf();
@@ -505,7 +520,7 @@ watch(
 
 watch(
   () => detailDialog.visible,
-  (value) => {
+  (value: any) => {
     if (value) {
       clearAutoRefresh();
     }

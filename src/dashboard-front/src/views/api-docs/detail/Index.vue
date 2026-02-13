@@ -154,7 +154,7 @@
                             >
                               <div class="flex items-center">
                                 <header
-                                  :ref="el => setNameRef(el, api.id)"
+                                  :ref="(el: any) => setNameRef(el, api.id)"
                                   v-bk-xss-html="getHighlightedHtml(api.name)"
                                   v-bk-tooltips="{ content: api.name, disabled: !overflowMap[api.id]?.name }"
                                   class="res-item-name mr-8px"
@@ -167,7 +167,7 @@
                                 </BkTag>
                               </div>
                               <main
-                                :ref="el => setDescRef(el, api.id)"
+                                :ref="(el: any) => setDescRef(el, api.id)"
                                 v-bk-xss-html="getHighlightedHtml(api.description)"
                                 v-bk-tooltips="{ content: api.description, disabled: !overflowMap[api.id]?.desc }"
                                 class="res-item-desc"
@@ -235,7 +235,7 @@ import {
   getGatewaysDetailsDocs,
 } from '@/services/source/docs';
 import {
-  getComponenSystemDetail,
+  getComponentSystemDetail,
   getComponentSystemList,
   getESBSDKDetail,
   getSystemAPIList,
@@ -262,6 +262,8 @@ import SDKInstructionSlider from '../components/SDKInstructionSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
+
+import type { IExtractApiReturn } from '@/services/types/utils';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -304,14 +306,18 @@ const searchPlaceholder = computed(() => {
 
 const filteredApiList = computed(() => {
   const regex = new RegExp(keyword.value, 'i');
-  return apiList.value.filter(api => regex.test(api.name) || regex.test(api.description));
+  return apiList.value.filter((api: IResource & IComponent) => regex.test(api.name) || regex.test(api.description));
 });
 
 // API 分类列表
 const apiGroupList = computed(() => {
-  return filteredApiList.value.reduce((groupList, api) => {
+  return filteredApiList.value.reduce((groupList: {
+    id: number
+    name: string
+    apiList: typeof apiList.value
+  }[], api: IResource & IComponent) => {
     const { id, name } = api.labels[0];
-    const group = groupList.find(item => item.id === id);
+    const group = groupList.find((item: any) => item.id === id);
 
     if (group) {
       group.apiList.push(api);
@@ -332,17 +338,17 @@ const apiGroupList = computed(() => {
 });
 
 const allSystemList = computed(() => {
-  const curBoard = boardList.value.find(item => item.board === board.value);
+  const curBoard = boardList.value.find((item: IBoard) => item.board === board.value);
   const systems: ISystem[] = [];
   if (curBoard) {
-    curBoard.categories.forEach(cat => cat.systems.forEach(system => systems.push(system)));
+    curBoard.categories.forEach((cat: any) => cat.systems.forEach((system: ISystem) => systems.push(system)));
   }
   return systems;
 });
 
 // 分类列表变化时更新 collapse 展开状态
 watch(apiGroupList, () => {
-  activeGroupPanelNames.value = apiGroupList.value.map(item => item.name);
+  activeGroupPanelNames.value = apiGroupList.value.map((item: any) => item.name);
 });
 
 watch([filteredApiList, keyword], async () => {
@@ -358,7 +364,7 @@ watch(() => route.query, async () => {
 
   if (route.query?.apiName) {
     curComponentApiName.value = route.query.apiName as string;
-    curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
+    curApi.value = apiList.value.find((api: IResource & IComponent) => api.name === curComponentApiName.value) ?? null;
     navList.value = [];
 
     if (curApi.value) {
@@ -371,11 +377,11 @@ const fetchTargetBasics = async () => {
   try {
     if (curTab.value === 'gateway') {
       const { sdks: sdksResponse, ...restResponse } = await getGatewaysDetailsDocs(curTargetName.value);
-      curTargetBasics.value = restResponse;
-      sdks.value = sdksResponse;
+      curTargetBasics.value = restResponse as any;
+      sdks.value = sdksResponse as any;
     }
     else if (curTab.value === 'component') {
-      curTargetBasics.value = await getComponenSystemDetail(board.value, curTargetName.value);
+      curTargetBasics.value = await getComponentSystemDetail(board.value, curTargetName.value) as any;
     }
   }
   catch {
@@ -392,7 +398,7 @@ const fetchEsbSdks = async () => {
     sdks.value = [{
       language: 'python',
       ...response,
-    }];
+    }] as any;
   }
   catch {
     sdks.value = [];
@@ -406,14 +412,14 @@ const fetchApigwStages = async () => {
       offset: 0,
     };
 
-    stageList.value = await getApigwStagesDocs(curTargetName.value, query);
+    stageList.value = await getApigwStagesDocs(curTargetName.value, query) as IStage[];
 
-    const requestedStage = stageList.value.find(stage => stage.name === route.query?.stage);
+    const requestedStage = stageList.value.find((stage: IStage) => stage.name === route.query?.stage);
     if (requestedStage) {
       curStageName.value = requestedStage.name;
     }
     else {
-      const prodStage = stageList.value.find(stage => stage.name === 'prod');
+      const prodStage = stageList.value.find((stage: IStage) => stage.name === 'prod');
       curStageName.value = prodStage?.name || stageList.value[0]?.name || '';
     }
   }
@@ -432,14 +438,14 @@ const fetchApiList = async () => {
         offset: 0,
         stage_name: curStageName.value,
       };
-      res = await getApigwResourcesDocs(curTargetName.value, query) as (IResource & IComponent)[];
+      res = await getApigwResourcesDocs(curTargetName.value, query) as unknown as (IResource & IComponent)[];
     }
     else if (curTab.value === 'component') {
-      res = await getSystemAPIList(board.value, curTargetName.value) as (IResource & IComponent)[];
+      res = await getSystemAPIList(board.value, curTargetName.value) as unknown as (IResource & IComponent)[];
     }
     apiList.value = res ?? [];
     // 为 api 添加默认分类
-    apiList.value.forEach((api) => {
+    apiList.value.forEach((api: IResource & IComponent) => {
       if (!api.labels?.length) {
         api.labels = [{
           id: -1,
@@ -453,7 +459,7 @@ const fetchApiList = async () => {
     }
 
     if (curComponentApiName.value) {
-      curApi.value = apiList.value.find(api => api.name === curComponentApiName.value) ?? null;
+      curApi.value = apiList.value.find((api: IResource & IComponent) => api.name === curComponentApiName.value) ?? null;
     }
     else {
       curApi.value = apiList.value[0] ?? null;
@@ -508,7 +514,7 @@ md.renderer.rules.heading_open = function (tokens, idx, options, env, self) {
   // 找到 ### 标题，并且只包含一行文本的 token
   if (curToken.markup === '###' && nextToken?.type === 'inline') {
     let headingText = nextToken.content;
-    if (navList.value.find(item => item.name === headingText)) {
+    if (navList.value.find((item: INavItem) => item.name === headingText)) {
       headingText = `${headingText}${count}`;
       count = count + 1;
     }
@@ -532,10 +538,10 @@ const getApigwResourceDoc = async () => {
     let res: any;
     if (curTab.value === 'gateway') {
       const query = { stage_name: curStageName.value };
-      res = await getApigwResourceDocDocs(curTargetName.value, curApi.value.name, query);
+      res = await getApigwResourceDocDocs(curTargetName.value, curApi.value!.name, query);
     }
     else if (curTab.value === 'component') {
-      res = await getSystemComponentDoc(board.value, curTargetName.value, curApi.value.name);
+      res = await getSystemComponentDoc(board.value, curTargetName.value, curApi.value!.name);
     }
     const { content, updated_time } = res;
     curApiMarkdownHtml.value = md.render(content);
@@ -639,8 +645,8 @@ const handleSystemChange = async (system: ISystem) => {
   curTargetName.value = system.name;
   curComponentApiName.value = '';
   router.replace({
-    path: curTargetName.value,
-    params: { ...route.params },
+    name: 'ApiDocDetail',
+    params: { ...route.params, targetName: curTargetName.value },
   });
   await init();
 };
@@ -920,21 +926,21 @@ onBeforeMount(() => {
         .res-item-desc {
           display: -webkit-box;
           overflow: hidden;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 1;
           font-size: 12px;
           line-height: 20px;
           color: #979ba5;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 1;
         }
 
         .res-item-name {
           display: block;
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
           font-size: 14px;
           line-height: 22px;
           color: #313238;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         &:hover,

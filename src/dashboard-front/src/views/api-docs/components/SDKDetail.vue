@@ -27,11 +27,11 @@
         <span
           v-bk-overflow-tips
           class="column-value"
-        >{{ sdk.name || sdk.sdk_name || '--' }}</span>
+        >{{ sdk?.name || sdk?.sdk_name || '--' }}</span>
       </div>
     </div>
     <div
-      v-if="sdk.sdk_description"
+      v-if="sdk?.sdk_description"
       class="row-item mb-10px"
     >
       <div class="key">
@@ -41,7 +41,7 @@
         <span
           v-bk-overflow-tips
           class="column-value"
-        >{{ sdk.sdk_description || '--' }}</span>
+        >{{ sdk?.sdk_description || '--' }}</span>
       </div>
     </div>
     <div class="row-item mb-10px">
@@ -52,7 +52,7 @@
         <span
           v-bk-overflow-tips
           class="column-value"
-        >{{ sdk.version || sdk.sdk_version_number || '--' }}</span>
+        >{{ sdk?.version || sdk?.sdk_version_number || '--' }}</span>
       </div>
     </div>
 
@@ -64,27 +64,27 @@
         <BkPopover
           placement="top"
           width="600"
-          :disabled="!sdk.url && !sdk.sdk_download_url"
+          :disabled="!sdk?.url && !sdk?.sdk_download_url"
         >
           <main class="column-value ">
-            {{ sdk.url || sdk.sdk_download_url || '--' }}
+            {{ sdk?.url || sdk?.sdk_download_url || '--' }}
           </main>
           <template #content>
             <div class="break-all whitespace-normal">
-              {{ sdk.url || sdk.sdk_download_url }}
+              {{ sdk?.url || sdk?.sdk_download_url }}
             </div>
           </template>
         </BkPopover>
       </div>
       <aside class="suffix">
         <i
-          v-if="sdk.url || sdk.sdk_download_url"
+          v-if="sdk?.url || sdk?.sdk_download_url"
           v-bk-tooltips="t('复制')"
           class="doc-copy  icon-hover apigateway-icon icon-ag-copy ag-doc-icon"
-          @click="copy(sdk.url || sdk.sdk_download_url)"
+          @click="copy((sdk?.url || sdk?.sdk_download_url) ?? '')"
         />
         <i
-          v-if="sdk.url || sdk.sdk_download_url"
+          v-if="sdk?.url || sdk?.sdk_download_url"
           v-bk-tooltips="t('下载')"
           class="ag-doc-icon doc-download-line  icon-hover apigateway-icon icon-ag-download-line"
           @click="handleDownload"
@@ -98,16 +98,16 @@
       </div>
       <div class="value">
         <BkPopover
-          v-if="sdk.install_command || sdk.sdk_install_command"
+          v-if="sdk?.install_command || sdk?.sdk_install_command"
           placement="top"
           width="600"
         >
           <main class="column-value ">
-            {{ sdk.install_command || sdk.sdk_install_command }}
+            {{ sdk?.install_command || sdk?.sdk_install_command }}
           </main>
           <template #content>
             <div class="break-all whitespace-normal">
-              {{ sdk.install_command || sdk.sdk_install_command }}
+              {{ sdk?.install_command || sdk?.sdk_install_command }}
             </div>
           </template>
         </BkPopover>
@@ -115,10 +115,10 @@
       </div>
       <aside class="suffix">
         <i
-          v-if="sdk.install_command || sdk.sdk_install_command"
+          v-if="sdk?.install_command || sdk?.sdk_install_command"
           v-bk-tooltips="t('复制')"
           class="ag-doc-icon doc-copy icon-hover apigateway-icon icon-ag-copy"
-          @click="() => copy(sdk.install_command || sdk.sdk_install_command)"
+          @click="() => copy((sdk?.install_command || sdk?.sdk_install_command) ?? '')"
         />
       </aside>
     </div>
@@ -188,8 +188,9 @@ interface IProps {
 }
 
 const handleDownload = () => {
-  if (sdk.url || sdk.sdk_download_url) {
-    window.open(sdk.url || sdk.sdk_download_url);
+  const url = sdk?.url || sdk?.sdk_download_url;
+  if (url) {
+    window.open(url);
   }
 };
 </script>

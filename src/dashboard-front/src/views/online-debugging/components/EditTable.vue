@@ -322,7 +322,7 @@ const delRow = (index: number) => {
     return;
   }
   const row = tableData.value[index];
-  checkedList.value = checkedList.value.filter(item => item.id !== row.id);
+  checkedList.value = checkedList.value.filter((item: IRowType) => item.id !== row.id);
   tableData.value?.splice(index, 1);
 };
 
@@ -330,7 +330,7 @@ const validate = async () => {
   const list = tableData.value;
   let flag = true;
 
-  list?.forEach(async (item: IRowType) => {
+  list?.forEach((item: IRowType) => {
     if (item?.required) {
       if (!item.name) {
         flag = false;
@@ -362,7 +362,7 @@ const handleSelect = ({ row, checked }: ISelectPayload) => {
   }
   else {
     const { id } = row;
-    checkedList.value = checkedList.value?.filter(item => item.id !== id);
+    checkedList.value = checkedList.value?.filter((item: IRowType) => item.id !== id);
   }
 };
 
@@ -377,7 +377,7 @@ const handleSelectAll = ({ checked, data }: ISelectPayload) => {
 
 watch(
   () => list,
-  (v) => {
+  (v: IRowType[]) => {
     const list: IRowType[] = [];
     v?.forEach((item: any) => {
       list.push({
@@ -424,7 +424,7 @@ watch(
 
 watch(
   () => tableData.value,
-  () => {
+  (_v: IRowType[]) => {
     emit('change', checkedList.value);
   },
   {

@@ -130,7 +130,7 @@ const initMarkdownHtml = (box: string) => {
     });
     // 清理安装按钮事件
     markdownDom.querySelectorAll('.ag-markdown-view__install-btn').forEach((btn) => {
-      btn.onclick = null;
+      (btn as HTMLElement).onclick = null;
     });
     markdownDom.querySelectorAll('.pre-wrapper').forEach((wrapper) => {
       const pre = wrapper.querySelector('pre');

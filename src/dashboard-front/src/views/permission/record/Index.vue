@@ -220,6 +220,15 @@ import { useFeatureFlag, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
+
+// 扩展 IApprovalListItem，补充运行时动态添加的字段
+interface IApprovalListItemExt extends IApprovalListItem {
+  id: number
+  grant_dimension: string
+  isExpand?: boolean
+  selection?: any[]
+  isSelectAll?: boolean
+}
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
@@ -245,7 +254,7 @@ const historyExpandColumn = shallowRef([
     title: t('请求路径'),
     colKey: 'path',
     ellipsis: true,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: { row: any }) => {
       return <span>{row.path || '--'}</span>;
     },
   },
@@ -253,7 +262,7 @@ const historyExpandColumn = shallowRef([
     title: t('请求方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: { row: any }) => {
       return <span>{row.method || '--'}</span>;
     },
   },
@@ -261,7 +270,7 @@ const historyExpandColumn = shallowRef([
     title: t('审批状态'),
     colKey: 'status',
     ellipsis: true,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: { row: any }) => {
       if (['rejected'].includes(row['apply_status'])) {
         return (
           <div class="perm-record-dot">
@@ -291,7 +300,7 @@ const resourceInfoColumn = shallowRef([
     title: t('审批状态'),
     colKey: 'status',
     ellipsis: true,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: { row: any }) => {
       if (['rejected'].includes(row['apply_status'])) {
         return (
           <div>
@@ -323,8 +332,8 @@ const filterValue = ref({});
 const resourceList = ref([]);
 const expandableConfig = ref({
   expandColumn: false,
-  expandedRowKeys: [],
-  canExpand: (row) => {
+  expandedRowKeys: [] as any[],
+  canExpand: (row: any) => {
     return ['resource'].includes(row.grant_dimension);
   },
 });
@@ -382,35 +391,35 @@ const getTableColumns = computed(() => {
           value: id,
         })),
       },
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['resource'].includes(row.grant_dimension)) {
+      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
+        if (['resource'].includes(row!.grant_dimension!)) {
           return (
             <div class="flex items-center">
               <AgIcon
-                name={row.isExpand ? 'down-shape' : 'right-shape'}
+                name={row!.isExpand ? 'down-shape' : 'right-shape'}
                 size="10"
                 class="mr-4px"
               />
-              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
+              {`${row!.grant_dimension_display} (${row!.resource_ids?.length || '--'})`}
             </div>
           );
         }
-        return row.grant_dimension_display || '--';
+        return row!.grant_dimension_display || '--';
       },
     },
     {
       title: t('权限期限'),
       colKey: 'expire_days_display',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        return row.expire_days_display || '--';
+      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
+        return row!.expire_days_display || '--';
       },
     },
     {
       title: t('申请人'),
       colKey: 'applied_by',
       ellipsis: true,
-      cell: (h, { row }: { row: Partial<IApprovalListItem> }) =>
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
         !featureFlagStore.isEnableDisplayName
           ? <span>{row.applied_by}</span>
           : <span><bk-user-display-name user-id={row.applied_by} /></span>,
@@ -425,7 +434,7 @@ const getTableColumns = computed(() => {
       title: t('审批人'),
       colKey: 'handled_by',
       ellipsis: true,
-      cell: (h, { row }: { row: Partial<IApprovalListItem> }) =>
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
         !featureFlagStore.isEnableDisplayName
           ? <span>{row.handled_by}</span>
           : <span><bk-user-display-name user-id={row.handled_by} /></span>,
@@ -434,8 +443,8 @@ const getTableColumns = computed(() => {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['rejected'].includes(row?.status)) {
+      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
+        if (['rejected'].includes(row?.status!)) {
           return (
             <div class="perm-record-dot">
               <div class="ag-dot default m-r-5px" />
@@ -458,14 +467,14 @@ const getTableColumns = computed(() => {
       colKey: 'operate',
       fixed: 'right',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
         return (
           <div>
             <Button
               theme="primary"
               text
-              onClick={(e: Event) => {
-                handleShowRecord(e, row);
+              onClick={(e: MouseEvent) => {
+                handleShowRecord(e, row! as IApprovalListItemExt);
               }}
             >
               { t('详情') }
@@ -491,29 +500,29 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return results ?? [];
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: any) => {
   filterData.value = Object.assign(filterData.value, filterItem);
   filterValue.value = { ...filterItem };
 };
 
 const handleRowClick = ({ e, row }: {
   e: Event
-  row: IApprovalListItem
+  row: IApprovalListItemExt
 }) => {
   e.stopPropagation();
   if (row.grant_dimension.includes('resource')) {
     row.isExpand = !row.isExpand;
     expandableConfig.value.expandedRowKeys
-      = expandableConfig.value.expandedRowKeys.filter(item => item === row.id);
-    const curExpandRow = row.isExpand ? row : {};
+      = expandableConfig.value.expandedRowKeys.filter((item: any) => item === row.id);
+    const curExpandRow = row.isExpand ? row : {} as any;
     if (row.isExpand) {
-      expandableConfig.value.expandedRowKeys.push(row.id);
+      expandableConfig.value.expandedRowKeys.push(row.id as any);
     }
     else {
       expandableConfig.value.expandedRowKeys
-        = expandableConfig.value.expandedRowKeys.filter(item => item !== row.id);
+        = expandableConfig.value.expandedRowKeys.filter((item: any) => item !== row.id);
     }
-    tableData.value.forEach((item) => {
+    tableData.value.forEach((item: any) => {
       const isExpand = item.id === curExpandRow.id;
       item.isExpand = isExpand;
       if (!isExpand) {
@@ -535,7 +544,7 @@ const handlePickClear = () => {
   handleClear();
 };
 
-const handleSetRowClass = ({ row }) => {
+const handleSetRowClass = ({ row }: { row: any }) => {
   if (row.grant_dimension.includes('resource')) {
     return 'cursor-pointer';
   }
@@ -543,18 +552,18 @@ const handleSetRowClass = ({ row }) => {
 };
 
 // 展示详情
-const handleShowRecord = (e: MouseEvent, data: IApprovalListItem) => {
+const handleShowRecord = (e: MouseEvent, data: IApprovalListItemExt) => {
   e.stopPropagation();
-  const results: IApprovalListItem[] = [];
+  const results: any[] = [];
   detailSliderConf.title = `${t('申请应用：')}${data.bk_app_code}`;
   curRecord.value = Object.assign({}, {
     ...data,
     resourceList: [],
   });
-  curRecord.value.resource_ids.forEach((resourceId) => {
+  curRecord.value.resource_ids.forEach((resourceId: any) => {
     resourceList.value.forEach((item: { id: number }) => {
       if (item.id === resourceId) {
-        results.push(item);
+        results.push(item as any);
       }
     });
   });

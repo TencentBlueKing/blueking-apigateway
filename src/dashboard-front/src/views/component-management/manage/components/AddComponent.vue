@@ -290,14 +290,14 @@ interface IProps {
 }
 
 interface Emits {
-  (e: 'update:detailData', value: IDetailData)
-  (e: 'update:sliderParams', value: ISliderParams)
+  (e: 'update:detailData', value: IDetailData): void
+  (e: 'update:sliderParams', value: ISliderParams): void
   (e: 'sys-select',
     value: number,
     option: {
       id: number
       name: string
-    })
+    }): void
   (e: 'confirm'): void
 }
 
@@ -399,13 +399,13 @@ const rules = reactive({
 
 const sliderConfig = computed({
   get: () => sliderParams,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:sliderParams', form);
   },
 });
 const formData = computed({
   get: () => detailData,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:detailData', form);
   },
 });
@@ -426,9 +426,9 @@ const handleSysSelect = (
 const handleSave = async () => {
   await componentFormRef?.value?.validate();
   const configData = configRef.value?.getData() ?? {};
-  const initConfigFields = {};
+  const initConfigFields: Record<string, any> = {};
   // 默认组件配置转换成标准格式
-  initData?.config_fields?.forEach((item) => {
+  initData?.config_fields?.forEach((item: any) => {
     initConfigFields[item.variable] = item.default;
   });
   // 是否存在组件配置，存在则作对比是否存在数据更新
@@ -476,7 +476,7 @@ const handleSave = async () => {
   }
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(formData.value));
 };
 

@@ -43,3 +43,19 @@ declare global {
   var BK_SITE_PATH: string;
   var BK_STATIC_URL: string;
 }
+
+declare module 'vue' {
+  interface HTMLAttributes {
+    'v-bk-tooltips'?: any
+    'v-bk-overflow-tips'?: any
+    'v-bk-xss-html'?: any
+  }
+}
+
+declare module '@vue/runtime-dom' {
+  interface HTMLAttributes {
+    'v-bk-tooltips'?: any
+    'v-bk-overflow-tips'?: any
+    'v-bk-xss-html'?: any
+  }
+}

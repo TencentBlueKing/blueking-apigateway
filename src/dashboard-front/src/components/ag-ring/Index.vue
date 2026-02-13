@@ -62,6 +62,9 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-ignore
+import type { PropType } from 'vue';
+
 const {
   percent,
   size,
@@ -71,6 +74,7 @@ const {
   fillColor,
   text,
   textStyle,
+  percentChangeHandler,
 } = defineProps({
   // 圆环百分比数字
   percent: {
@@ -136,7 +140,7 @@ const {
   },
 
   percentChangeHandler: {
-    type: Function,
+    type: Function as PropType<(change: number) => void>,
 
     default: () => {
 

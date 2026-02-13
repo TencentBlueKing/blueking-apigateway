@@ -697,6 +697,7 @@ import {
   putGatewayBasics,
   toggleStatus,
 } from '@/services/source/gateway.ts';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import EditDesc from './components/EditDesc.vue';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
@@ -715,7 +716,7 @@ import { usePopInfoBox } from '@/hooks';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import EditAPIDoc from '@/views/basic-info/components/EditAPIDoc.vue';
 
-type BasicInfoType = Awaited<ReturnType<typeof getGatewayDetail>>;
+type IBasicInfoType = IExtractApiReturn<typeof getGatewayDetail>;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -755,7 +756,7 @@ const dropdownItemDisabled = (item: { value: string }) => {
 };
 
 // 当前网关基本信息
-const basicInfoData = ref<BasicInfoType>({
+const basicInfoData = ref<IBasicInfoType>({
   status: 1,
   name: '',
   description: '',
@@ -790,7 +791,7 @@ const delApigwDialog = ref({
 });
 const statusChanging = ref(false);
 
-const deprecatedFormRef = ref();
+const deprecatedFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>();
 const deprecatedDialog = ref({
   isShow: false,
   loading: false,
@@ -1077,7 +1078,7 @@ const handleInfoChange = async (payload: Record<string, string>) => {
   });
 };
 
-const handleMaintainerChange = async (payload: { maintainers?: string[] }) => {
+const handleMaintainerChange = async (payload: { maintainers: string[] }) => {
   await putGatewayBasics(apigwId.value, payload);
   basicInfoData.value = Object.assign(basicInfoData.value, payload);
   Message({
@@ -1237,6 +1238,7 @@ onUnmounted(() => {
         }
 
         .deactivate-btn {
+
           &:hover {
             color: #fff;
             background-color: #ff5656;
@@ -1457,30 +1459,33 @@ onUnmounted(() => {
 .icon-deprecated {
   width: 24px;
   height: 24px;
-  text-align: center;
   line-height: 24px;
   color: #4D4F56;
-  border-radius: 50%;
+  text-align: center;
   cursor: pointer;
+  border-radius: 50%;
+
   &:hover {
     background: #EAEBF0;
   }
 }
 
 .bk-dropdown-item.is-disabled {
-  cursor: not-allowed;
   color: #dcdee5 !important;
+  cursor: not-allowed;
 }
 
 .form-item-name {
+
   :deep(.bk-form-error) {
     position: relative;
   }
 }
 
 .warning-main {
-  margin: 24px 0px;
+  margin: 24px 0;
 }
+
 .warning-more .more-detail {
   color: #3A84FF;
 }

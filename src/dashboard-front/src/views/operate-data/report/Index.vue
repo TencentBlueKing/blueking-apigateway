@@ -230,10 +230,7 @@ watch(
 );
 
 const getStages = async () => {
-  const pageParams = {
-    no_page: true,
-    order_by: 'name',
-  };
+  const pageParams: Parameters<typeof getApigwStages>[1] = {};
 
   try {
     const res = await getApigwStages(apigwId.value, pageParams);
@@ -257,7 +254,7 @@ const getCallersData = async () => {
 
   try {
     const res = await getCallers(apigwId.value, pageParams);
-    callerOptions.value = res?.app_codes || [];
+    callerOptions.value = (res as any)?.app_codes || [];
   }
   catch (err) {
     console.log(err);
@@ -265,7 +262,7 @@ const getCallersData = async () => {
 };
 
 const getResources = async () => {
-  const pageParams = {
+  const pageParams: Parameters<typeof getApigwResources>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,

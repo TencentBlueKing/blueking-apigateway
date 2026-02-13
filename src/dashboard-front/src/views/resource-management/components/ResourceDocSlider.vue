@@ -199,7 +199,8 @@ import {
   getResourceDocs,
   saveResourceDocs,
   updateResourceDocs,
-} from '@/services/source/resource.ts';
+} from '@/services/source/resource';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import {
   InfoBox,
   Message,
@@ -254,7 +255,9 @@ const isEmpty = ref(false);
 const isUpdate = ref(false);
 const markdownDoc = ref('');
 const markdownHtml = ref('');
-const docData = ref<any[]>([]);
+type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
+
+const docData = ref<IDocItem[]>([]);
 const isEdited = ref(false); // 是否是编辑
 const language = ref<'zh' | 'en'>('zh');
 const isSaving = ref(false);
@@ -537,7 +540,7 @@ const handleDocDataWithLanguage = () => {
           btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
           btn.setAttribute('data-copy', code);
           parentDiv.appendChild(btn);
-          codeBox.appendChild(preEl.querySelector('code'));
+          codeBox.appendChild(preEl.querySelector('code')!);
           preEl.appendChild(codeBox);
           preEl.parentNode?.replaceChild(parentDiv, preEl);
           parentDiv.appendChild(preEl);

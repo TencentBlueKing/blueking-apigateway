@@ -191,8 +191,8 @@ interface IProps {
 }
 
 interface Emits {
-  (e: 'update:detailData', value: IDetailData)
-  (e: 'update:sliderParams', value: ISliderParams)
+  (e: 'update:detailData', value: IDetailData): void
+  (e: 'update:sliderParams', value: ISliderParams): void
   (e: 'createCategory'): void
   (e: 'done'): void
 }
@@ -235,13 +235,13 @@ const rules = ref({
 
 const sliderConfig = computed({
   get: () => sliderParams,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:sliderParams', form);
   },
 });
 const formData = computed({
   get: () => detailData,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:detailData', form);
   },
 });
@@ -276,7 +276,7 @@ const handleSave = async () => {
     });
     emits('done');
   }
-  catch (e) {
+  catch (e: any) {
     Message({
       theme: 'error',
       message: e?.message || t('系统错误，请稍后重试'),
@@ -287,7 +287,7 @@ const handleSave = async () => {
   }
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(formData.value));
 };
 

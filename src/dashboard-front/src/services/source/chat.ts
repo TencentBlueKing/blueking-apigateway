@@ -19,13 +19,23 @@ import http from '../http';
 import { useEnv } from '@/stores';
 
 // 拉群
-export const createChat = (data: any) => {
+export const createChat = (data: {
+  bk_app_code: string
+  name: string
+  owner: string
+  userlist: string[]
+}) => {
   const envStore = useEnv();
   return http.post(envStore.env.CREATE_CHAT_API, data);
 };
 
 // 发消息
-export const sendChat = (data: any) => {
+export const sendChat = (data: {
+  bk_app_code: string
+  chatid: string
+  msgtype: string
+  text: { content: string }
+}) => {
   const envStore = useEnv();
   return http.post(envStore.env.SEND_CHAT_API, data);
 };

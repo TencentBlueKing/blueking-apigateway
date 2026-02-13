@@ -192,7 +192,7 @@ const handleTabChange = (tabName: string) => {
 
 const handleShowGuide = (mode: string) => {
   guideType.value = mode;
-  const modeMap = {
+  const modeMap: Record<string, () => void> = {
     add: () => {
       return markdownText.value;
     },

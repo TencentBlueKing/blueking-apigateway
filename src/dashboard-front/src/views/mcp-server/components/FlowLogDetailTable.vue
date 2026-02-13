@@ -136,6 +136,7 @@ import { copy } from '@/utils';
 import { t } from '@/locales';
 // 组件
 import AgStatusDot from '@/components/ag-status-dot/Index.vue';
+import AgIcon from '@/components/ag-icon/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 import AgTraceChainSlider from '@/views/mcp-server/components/TraceChainSlider.vue';
 
@@ -186,7 +187,7 @@ const expandableConfig = ref({
 });
 // 缓存上一个展开行
 const lastExpandRow = ref<IFlowLogTable | null>(null);
-const callChainDetail = ref<IFlowLogTable>({});
+const callChainDetail = ref<IFlowLogTable>({} as IFlowLogTable);
 
 // 展开行显示的字段配置
 interface IFieldItem {
@@ -308,16 +309,15 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
       return (
         <div class="flex items-center">
           <AgIcon
-            name={row?.isExpand ? 'down-shape' : 'right-shape'}
-            class={`color-${row?.isExpand ? '#4d4f56' : '#979ba5'}`}
+            name={(row as any)?.isExpand ? 'down-shape' : 'right-shape'}
+            class={`mr-8px color-${(row as any)?.isExpand ? '#4d4f56' : '#979ba5'}`}
             size="14"
-            class="mr-8px"
           />
-          <span>{formatCellValue(row?.timestamp, 'timestamp')}</span>
+          <span>{formatCellValue(row?.timestamp as any, 'timestamp')}</span>
         </div>
       );
     },
@@ -331,7 +331,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: 'Tool/Prompt',
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
       return row?.tool_name || row?.prompt_name || '--';
     },
   },
@@ -354,8 +354,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态'),
     colKey: 'status',
     width: 130,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      const isSuccess = row?.status && row.status >= 200 && row.status < 300;
+  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
+      const isSuccess = row?.status && Number(row.status) >= 200 && Number(row.status) < 300;
       return (
         <AgStatusDot
           class="lh-20px"
@@ -369,7 +369,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('错误'),
     colKey: 'error',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
       if (!row?.error) return '--';
       return <span class="color-#ea3636">{row.error}</span>;
     },
@@ -379,7 +379,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'operate',
     fixed: 'right',
     width: 102,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
       return (
         <div class="flex">
           <bk-button
@@ -387,7 +387,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             theme="primary"
             onClick={(e: MouseEvent) => {
               e.stopPropagation();
-              handleShowCallChain(row);
+              handleShowCallChain(row!);
             }}
           >
             {t('调用链')}
@@ -420,7 +420,7 @@ const getPagination = () => {
  */
 const getTableData = async (params: IObservabilityBasicForm = {}, extraStr?: string) => {
   try {
-    const res = await fetchObservabilityLogList(apiGatewayId, params, extraStr);
+    const res = await fetchObservabilityLogList(apiGatewayId as number, params as any, extraStr);
     const { fields = [], count = 0 } = res ?? {};
     // 更新展开字段配置
     expandedFields.value = fields;
@@ -479,7 +479,7 @@ const handleShowTraceSlider = () => {
  * @param row 行数据
  */
 const handleShowCallChain = (row: IFlowLogTable) => {
-  callChainDetail.value = { ...row };
+  callChainDetail.value = { ...row } as IFlowLogTable;
   handleShowTraceSlider();
 };
 
@@ -542,23 +542,23 @@ const handleRowClick = async ({ e, row }: {
   row: IFlowLogTable
 }) => {
   e.stopPropagation();
-  const newIsExpand = !row.isExpand;
+  const newIsExpand = !(row as any).isExpand;
 
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
-    lastExpandRow.value.isExpand = false;
-    lastExpandRow.value.selection = [];
+    (lastExpandRow.value as any).isExpand = false;
+    (lastExpandRow.value as any).selection = [];
   }
 
   // 更新当前行状态
-  row.isExpand = newIsExpand;
+  (row as any).isExpand = newIsExpand;
   expandableConfig.value.expandedRowKeys = newIsExpand
-    ? [row.tempUniqueId as string]
+    ? [(row as any).tempUniqueId as string]
     : [];
   lastExpandRow.value = newIsExpand ? row : null;
 
   if (newIsExpand) {
-    row.selection = [];
+    (row as any).selection = [];
   }
 };
 
@@ -584,7 +584,7 @@ const getRowClass = ({ row }: { row: Record<string, any> }) => {
 
 watch(
   () => route.query,
-  (newQuery) => {
+  (newQuery: any) => {
     const { request_id, showTraceChain } = newQuery ?? {};
     // 路由中带request_id时自动填充调用链
     if (request_id) {

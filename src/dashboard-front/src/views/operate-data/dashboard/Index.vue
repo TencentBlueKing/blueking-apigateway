@@ -282,6 +282,7 @@ import {
   getApigwResources,
   getApigwStages,
 } from '@/services/source/dashboard';
+import type { IGatewaysMetricsQueryRangeListQuery } from '@/services/types/query/gateways.ts';
 import Top from './components/Top.vue';
 import LineChart from './components/LineChart.vue';
 import { getBackendServiceList } from '@/services/source/backend-services.ts';
@@ -349,11 +350,11 @@ const searchParams = ref<ISearchParamsType>({
   resource_id: '',
   time_start: dayjs(formatTime.value[0]).unix(),
   time_end: dayjs(formatTime.value[1]).unix(),
-  metrics: '',
+  metrics: '' as ISearchParamsType['metrics'],
   backend_name: '',
 });
 
-let timeId: NodeJS.Timeout | null = null;
+let timeId: ReturnType<typeof setInterval> | null = null;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -386,10 +387,7 @@ watch(searchParams, () => {
 }, { deep: true });
 
 const getStages = async () => {
-  const pageParams = {
-    no_page: true,
-    order_by: 'name',
-  };
+  const pageParams: Parameters<typeof getApigwStages>[1] = {};
   const res = await getApigwStages(apigwId.value, pageParams);
 
   stageList.value = res || [];
@@ -399,12 +397,12 @@ const getStages = async () => {
 };
 
 const getResources = async () => {
-  const pageParams = {
+  const pageParams: Parameters<typeof getApigwResources>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
     limit: 10000,
-    backend_id: backend_id.value,
+    backend_id: backend_id.value || undefined,
   };
   const response = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = response.results;
@@ -434,7 +432,7 @@ const getData = async (searchParams: ISearchParamsType, type: string) => {
       {
         ...searchParams,
         metrics: type,
-      },
+      } as Parameters<typeof getApigwMetrics>[1],
     );
   }
   finally {
@@ -460,7 +458,7 @@ const getInstantData = () => {
         {
           ...searchParams.value,
           metrics: type,
-        },
+        } as Parameters<typeof getApigwMetricsInstant>[1],
       );
     }
     finally {
@@ -512,7 +510,7 @@ const syncParamsToCharts = () => {
 };
 
 const handleRefreshChange = (interval: string) => {
-  clearInterval(timeId);
+  clearInterval(timeId!);
   timeId = null;
   setIntervalFn(interval);
 };
@@ -527,7 +525,7 @@ const handleClearParams = () => {
     resource_id: '',
     time_start: dayjs(formatTime.value[0]).unix(),
     time_end: dayjs(formatTime.value[1]).unix(),
-    metrics: '',
+    metrics: '' as ISearchParamsType['metrics'],
     backend_name: '',
   };
   backend_id.value = '';

@@ -16,7 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { Ref, ShallowRef } from 'vue';
 import type {
   FilterValue,
   SortInfo,
@@ -40,7 +39,7 @@ export function useTableSortChange() {
     orderBy: SortInfo
     filterData: Ref<Partial<FilterValue>>
     sortData: Ref<Partial<TableSort>>
-    allowSortField: ShallowRef<string[]>
+    allowSortField: Ref<string[]>
   }) {
     if (orderBy) {
       const { sortBy: colKey, descending } = orderBy;

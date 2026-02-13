@@ -162,7 +162,7 @@ const handleOptionChange = () => {
 
 watch(
   () => formData.value,
-  (newVal) => {
+  (newVal: any) => {
     clearValidate();
     if (newVal?.whitelist) selectedOptionIndex.value = 0;
     if (newVal?.blacklist) selectedOptionIndex.value = 1;

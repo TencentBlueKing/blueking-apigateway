@@ -79,15 +79,15 @@ const logPanels = ref([
 
 const tableData = computed(() => {
   if (['proxy_log'].includes(activeTab.value)) {
-    return traceChainDetail?.logList?.filter(item => ['http', 'mcp'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['http', 'mcp'].includes(item.layer));
   }
 
   if (['gateway_upstream'].includes(activeTab.value)) {
-    return traceChainDetail?.logList?.filter(item => ['gateway_upstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['gateway_upstream'].includes(item.layer));
   }
 
   if (['gateway_downstream'].includes(activeTab.value)) {
-    return traceChainDetail?.logList?.filter(item => ['gateway_downstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['gateway_downstream'].includes(item.layer));
   }
 
   return traceChainDetail?.logList ?? [];
@@ -99,7 +99,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.timestamp ? <span>{dayjs.unix(row?.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
     },
   },
@@ -107,7 +107,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('服务'),
     colKey: 'service',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.service || '--';
     },
   },
@@ -120,7 +120,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.mcp_method || row?.method;
     },
   },
@@ -129,7 +129,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'path',
     ellipsis: true,
     width: 260,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.http_path || row?.path || row?.operation;
     },
   },
@@ -137,7 +137,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态码'),
     colKey: 'status',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.status || '--';
     },
   },
@@ -145,7 +145,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('耗时'),
     colKey: 'latency',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.latency || row?.request_duration;
     },
   },

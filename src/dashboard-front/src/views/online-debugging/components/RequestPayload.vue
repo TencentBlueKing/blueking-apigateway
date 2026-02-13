@@ -107,7 +107,7 @@ const payloadHeadersRef = ref();
 
 watch(
   () => tab,
-  (value) => {
+  (value: string) => {
     active.value = value;
   },
 );

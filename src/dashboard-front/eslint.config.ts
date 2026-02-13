@@ -57,7 +57,7 @@ export default defineConfigWithVueTs(
           ignoreRegExpLiterals: true,
         }],
       '@stylistic/object-property-newline': ['error'],
-      '@stylistic/object-curly-newline': ['error', { multiline: true }],
+      '@stylistic/object-curly-newline': ['error', { consistent: true }],
       '@stylistic/curly-newline': ['error', 'always'],
       '@stylistic/array-bracket-newline': ['error', 'consistent'],
       '@stylistic/array-element-newline': ['error',

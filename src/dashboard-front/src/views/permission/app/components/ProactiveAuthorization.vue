@@ -185,9 +185,9 @@ interface IProps {
   resourceList?: IResource[]
 }
 
-interface Emits {
-  (e: 'update:sliderParams', value: ISliderParams)
-  (e: 'update:authData', value: IAuthData)
+interface IEmits {
+  (e: 'update:sliderParams', value: ISliderParams): void
+  (e: 'update:authData', value: IAuthData): void
   (e: 'confirm'): void
 }
 
@@ -205,7 +205,7 @@ const {
   },
   resourceList = [],
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+const emits = defineEmits<IEmits>();
 
 const route = useRoute();
 
@@ -275,14 +275,14 @@ const rules = reactive({
 
 const authSliderConfig = computed({
   get: () => sliderParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:sliderParams', params);
   },
 });
 
 const curAuthData = computed({
   get: () => authData,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:authData', params);
   },
 });
@@ -294,12 +294,12 @@ watch(authSliderConfig.value, ({ isShow }: { isShow: boolean }) => {
   }
 }, { immediate: true });
 
-watch(curAuthData.value, (authData) => {
+watch(curAuthData.value, (authData: IAuthData) => {
   if (['resource'].includes(authData.dimension)) {
     nextTick(() => {
       const transferSourceEl = document.querySelector('.proactive-auth-transfer .source-list');
-      transferIsAllEl.value = transferSourceEl.querySelector('.select-all');
-      transferInputEl.value = transferSourceEl.querySelector('input');
+      transferIsAllEl.value = transferSourceEl?.querySelector('.select-all') ?? null;
+      transferInputEl.value = transferSourceEl?.querySelector('input') ?? null;
       transferIsAllEl.value?.addEventListener('click', handleSetSearchAll, { capture: true });
       transferInputEl.value?.addEventListener('input', getTransferSearch, { capture: true });
     });
@@ -313,7 +313,7 @@ const formatData = () => {
     params.expire_days = null;
   }
   if (params.dimension.includes('api')) {
-    params.resource_ids = null;
+    params.resource_ids = null as any;
   }
   return params;
 };
@@ -325,7 +325,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
   });
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(curAuthData.value));
 };
 
@@ -346,7 +346,7 @@ const handleResourceChange = (
       resourceTransferList.value = cloneDeep(resourceTransferListBack.value);
     }
     if (searchTargetList.value.length) {
-      curAuthData.value.resource_ids = searchTargetList.value.map(item => item.id);
+      curAuthData.value.resource_ids = searchTargetList.value.map((item: any) => item.id);
     }
     else {
       curAuthData.value.resource_ids = targetValueList;
@@ -361,15 +361,15 @@ function handleSetSearchAll() {
   // 获取搜索列表的数据
   if (searchKeyword) {
     const transferEl = document.querySelector('.proactive-auth-transfer');
-    const sourceEl = transferEl.querySelector('.source-list > ul');
+    const sourceEl = transferEl?.querySelector('.source-list > ul');
     // 获取所有li下transfer-source-item元素
     const sourceItems = sourceEl?.querySelectorAll('.transfer-source-item');
     if (sourceItems) {
-      const itemTexts = Array.from(sourceItems).map((item) => {
-        return item.textContent.trim();
+      const itemTexts = Array.from(sourceItems).map((item: any) => {
+        return item.textContent!.trim();
       });
-      searchTargetList.value = resourceTransferListBack.value.filter(item =>
-        itemTexts.includes(item.name) || transferTargetList.value.map(target => target.id).includes(item.id),
+      searchTargetList.value = resourceTransferListBack.value.filter((item: any) =>
+        itemTexts.includes(item.name) || transferTargetList.value.map((target: any) => target.id).includes(item.id),
       );
     }
     // 重置已选资源
@@ -381,14 +381,14 @@ function handleSetSearchAll() {
 
 const handleResetTransferData = () => {
   if (!curAuthData.value.resource_ids.length) {
-    searchTargetList.value.map(item => item.id);
+    searchTargetList.value.map((item: any) => item.id);
   }
-  const hasSelected = resourceTransferListBack.value.filter(item =>
+  const hasSelected = resourceTransferListBack.value.filter((item: any) =>
     curAuthData.value.resource_ids.includes(item.id),
   );
-  resourceTransferList.value = resourceTransferListBack.value.filter(item =>
+  resourceTransferList.value = resourceTransferListBack.value.filter((item: any) =>
     item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1
-    && !hasSelected.map(target => target.id).includes(item.id),
+    && !hasSelected.map((target: any) => target.id).includes(item.id),
   );
   setTimeout(() => {
     dimensionRef.value.selectedList = hasSelected;
@@ -443,7 +443,7 @@ const handleSave = async () => {
   const fetchMethod = ['resource'].includes(params.dimension)
     ? authResourcePermission
     : authApiPermission;
-  await fetchMethod(route.params.id, params);
+  await fetchMethod(route.params.id as any, params as any);
   handleCancel();
   emits('confirm');
 };

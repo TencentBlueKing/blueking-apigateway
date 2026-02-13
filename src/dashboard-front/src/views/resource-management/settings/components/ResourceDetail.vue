@@ -880,7 +880,8 @@ import {
 } from '@/services/source/resource';
 import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backend-services.ts';
 import { getGatewayLabels } from '@/services/source/gateway';
-import { Message } from 'bkui-vue';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import { Message, Input as BkInput, PopConfirm as BkPopConfirm } from 'bkui-vue';
 import { copy } from '@/utils';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
@@ -919,7 +920,10 @@ const { controlStickyToggle, observerNodeScroll, destroyEvent } = useStickyBotto
   parentNodeClass: '.resource-container',
 });
 
-const labelsData = ref([]);
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number];
+
+const labelsData = ref<IGatewayLabelItem[]>([]);
 const isStickyFixed = ref(false);
 const nameEdit = ref(false);
 const descEdit = ref(false);
@@ -942,7 +946,7 @@ const isTimeEmpty = ref(false);
 const timeOutValue = ref('');
 
 // 校验列表
-const servicesCheckData = ref([]);
+const servicesCheckData = ref<IBackendPathCheckItem[]>([]);
 
 const formData = ref<any>({});
 
@@ -965,11 +969,11 @@ const getResourceDetails = async () => {
   formData.value = res;
 
   nextTick(() => {
-    formData.value.label_ids = res?.labels?.map((item: any) => item.id);
+    formData.value.label_ids = (res as any)?.labels?.map((item: any) => item.id);
 
-    formData.value.auth_config.app_verified_required_copy = res?.auth_config?.app_verified_required;
-    formData.value.auth_config.auth_verified_required_copy = res?.auth_config?.auth_verified_required;
-    formData.value.auth_config.resource_perm_required_copy = res?.auth_config?.resource_perm_required;
+    formData.value.auth_config.app_verified_required_copy = (res as any)?.auth_config?.app_verified_required;
+    formData.value.auth_config.auth_verified_required_copy = (res as any)?.auth_config?.auth_verified_required;
+    formData.value.auth_config.resource_perm_required_copy = (res as any)?.auth_config?.resource_perm_required;
 
     formData.value.path_copy = res?.path;
     formData.value.match_subpath_copy = res?.match_subpath;

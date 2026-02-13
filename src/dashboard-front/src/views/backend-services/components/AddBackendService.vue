@@ -421,13 +421,14 @@ import {
   isEqual,
 } from 'lodash-es';
 import {
-  Form, Input,
+  Form,
+  Input,
   Message,
 } from 'bkui-vue';
 import {
   AngleUpFill,
   Success,
-} from 'bkui-lib/icon';
+} from 'bkui-vue/lib/icon';
 import {
   useEnv,
   useFeatureFlag,
@@ -444,17 +445,29 @@ import { getStageList } from '@/services/source/stage';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+
+interface ILocalStageConfig {
+  id: number
+  description?: string | null
+  name: string
+  // stage_id: number
+  configs: Parameters<typeof createBackendService>[1]['configs'][number]
+}
 
 interface IProps {
   editId?: number
   disabled?: boolean
-  base: Record<string, any>
+  base: {
+    name: string
+    description: string
+  }
 }
 
-interface Emits { (e: 'done'): void }
+interface IEmits { (e: 'done'): void }
 
 const { editId = 0, base } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+const emits = defineEmits<IEmits>();
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -469,17 +482,17 @@ const baseInfo = ref({
   name: '',
   description: '',
 });
-const curServiceDetail = ref({
+const curServiceDetail = ref<IExtractApiReturn<typeof getBackendServiceDetail>>({
   id: 0,
   name: '',
   description: '',
   configs: [],
 });
 const initData = ref();
-const stageConfig = ref([]);
+const stageConfig = ref<ILocalStageConfig[]>([]);
 const activeIndex = ref<number[]>([]);
-const stageList = ref([]);
-const stageConfigRef = ref([]);
+const stageList = ref<IExtractApiReturn<typeof getStageList>>([]);
+const stageConfigRef = ref<any[]>([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
 const nameRef = ref<InstanceType<typeof Input>>();
@@ -490,7 +503,7 @@ const healthChecksRef = useTemplateRef('health-checks');
 
 let publishDialog = reactive({
   isShow: false,
-  stageNames: [],
+  stageNames: [] as string[],
 });
 const sliderConfig = reactive({
   isShow: false,
@@ -607,14 +620,14 @@ const apigwId = computed<number>(() => gatewayStore.apigwId);
 
 watch(
   () => base,
-  (val) => {
+  (val: IProps['base']) => {
     baseInfo.value = val;
   },
   { immediate: true },
 );
 
 // 获取所有stage服务配置的ref
-const getStageConfigRef = (el: HTMLElement, index: number) => {
+const getStageConfigRef = (el: any, index: number) => {
   if (el) stageConfigRef.value[index] = el;
 };
 
@@ -628,7 +641,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
 // 增加服务地址
 const handleAddServiceAddress = (name: string) => {
   const isAddItem = stageConfig.value;
-  isAddItem.forEach((item) => {
+  isAddItem.forEach((item: ILocalStageConfig) => {
     if (item.name === name) {
       item.configs.hosts.push({
         scheme: 'http',
@@ -642,7 +655,7 @@ const handleAddServiceAddress = (name: string) => {
 // 删除服务地址
 const handleDeleteServiceAddress = (name: string, index: number) => {
   const isDeleteItem = stageConfig.value;
-  isDeleteItem.forEach((item: IBackendServicesConfig) => {
+  isDeleteItem.forEach((item: ILocalStageConfig) => {
     if (item.name === name && item.configs.hosts.length !== 1) {
       item.configs.hosts.splice(index, 1);
     }
@@ -671,7 +684,7 @@ const handleConfirm = async () => {
     for (const item of stageConfigRef.value) {
       if (!item) break;
       const { hosts, timeout } = item.model.configs;
-      const isEmpty = hosts.some(config => !config.host || !hostReg.test(config.host)) || !String(timeout);
+      const isEmpty = hosts.some((config: { host: string }) => !config.host || !hostReg.test(config.host)) || !String(timeout);
       if (isEmpty) {
         emptyHostIndex = item.model.$index;
       }
@@ -684,7 +697,8 @@ const handleConfirm = async () => {
     }
     return;
   }
-  const finalConfigs = stageConfig.value.map((item, index) => {
+  const finalConfigs = stageConfig.value.map((item: ILocalStageConfig, index: number) => {
+    // @ts-expect-error stage.id 在编辑模式下存在
     const id = !editId ? item.id : item.configs.stage.id;
     const results = {
       timeout: item.configs.timeout,
@@ -716,7 +730,7 @@ const handleConfirm = async () => {
     const detailContent = {
       name: curServiceDetail.value.name,
       description: curServiceDetail.value.description,
-      configs: curServiceDetail.value.configs.map((item) => {
+      configs: curServiceDetail.value.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
         return {
           timeout: item.timeout,
           loadbalance: item.loadbalance,
@@ -733,7 +747,7 @@ const handleConfirm = async () => {
   }
   isSaveLoading.value = true;
   try {
-    let res = {};
+    let res: { updated_stages?: { name: string }[] } = {};
     res = editId
       ? await updateBackendService(apigwId.value, curServiceDetail.value.id, params)
       : await createBackendService(apigwId.value, params);
@@ -742,7 +756,7 @@ const handleConfirm = async () => {
       if (res?.updated_stages?.length) {
         publishDialog = Object.assign(publishDialog, {
           isShow: true,
-          stageNames: res?.updated_stages?.map(item => item.name),
+          stageNames: res.updated_stages.map(item => item.name),
         });
       }
       else {
@@ -772,9 +786,9 @@ const toStageReleaseRecord = () => {
 };
 
 const setInit = () => {
-  stageConfig.value = stageList.value.map((item: Record<string, string | number>) => {
+  stageConfig.value = stageList.value.map((item: IExtractApiReturn<typeof getStageList>[number]) => {
     const { name, id, description } = item;
-    const newItem = {
+    return {
       name,
       id,
       description,
@@ -791,7 +805,6 @@ const setInit = () => {
         stage_id: id,
       },
     };
-    return newItem;
   });
   const sliderParams = {
     curServiceDetail: curServiceDetail.value,
@@ -801,7 +814,7 @@ const setInit = () => {
   initData.value = cloneDeep(sliderParams);
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: (data: any) => void) => {
   const sliderParams = {
     curServiceDetail: curServiceDetail.value,
     stageConfig: stageConfig.value,
@@ -812,19 +825,23 @@ const handleCompare = (callback) => {
 
 const getStageListData = async () => {
   const res = await getStageList(apigwId.value);
-  activeIndex.value = res.map(item => item.id);
-  isPublish.value = res?.some(item => item.publish_id !== 0);
+  activeIndex.value = res.map((item: IExtractApiReturn<typeof getStageList>[number]) => item.id);
+  isPublish.value = res?.some((item: IExtractApiReturn<typeof getStageList>[number]) => item.publish_id !== 0);
   stageList.value = [...res];
 };
 
 const getInfo = async () => {
   const res = await getBackendServiceDetail(apigwId.value, editId);
   curServiceDetail.value = cloneDeep(res);
-  stageConfig.value = res.configs.map((item) => {
+  stageConfig.value = res.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
     return {
-      configs: item,
-      name: item?.stage?.name,
-      id: item?.stage?.id,
+      id: item.stage.id,
+      name: item.stage.name,
+      description: null,
+      configs: {
+        stage_id: item.stage.id,
+        ...item,
+      },
     };
   });
   const sliderParams = {
@@ -836,7 +853,7 @@ const getInfo = async () => {
 };
 
 const handleLoadBalanceChange = (value: string, stageId: number) => {
-  const stage = stageConfig.value.find(item => item.id === stageId);
+  const stage = stageConfig.value.find((item: ILocalStageConfig) => item.id === stageId);
   if (stage) {
     if (value === 'chash') {
       stage.configs.hash_on = 'vars';
@@ -850,7 +867,7 @@ const handleLoadBalanceChange = (value: string, stageId: number) => {
 };
 
 const handleHashOnChange = (value: string, stageId: number) => {
-  const stage = stageConfig.value.find(item => item.id === stageId);
+  const stage = stageConfig.value.find((item: ILocalStageConfig) => item.id === stageId);
   if (stage) {
     if (value === 'vars') {
       stage.configs.key = 'remote_addr';
@@ -862,7 +879,7 @@ const handleHashOnChange = (value: string, stageId: number) => {
 };
 
 const handleHashOnKeyChange = (config: any) => {
-  const stage = stageConfig.value.find(item => item.id === config.id);
+  const stage = stageConfig.value.find((item: ILocalStageConfig) => item.id === config.id);
   if (stage) {
     stage.configs.key = config.configs.key;
   }

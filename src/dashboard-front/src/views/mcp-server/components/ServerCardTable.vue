@@ -46,6 +46,7 @@ import { type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
+import AgIcon from '@/components/ag-icon/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number];
@@ -116,7 +117,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'name',
     width: 300,
     ellipsis: true,
-    cell: (_, { row }: { row: IMCPServer }) => {
+    cell: (_: any, { row }: { row: IMCPServer }) => {
       return (
         <div class="flex items-baseline">
           <div
@@ -130,7 +131,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             v-bk-tooltips={{
               content: row.name,
               placement: 'top',
-              disabled: !row.isOverflow,
+              disabled: !(row as any).isOverflow,
               extCls: 'max-w-480px',
             }}
             class={[
@@ -142,12 +143,12 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
               e?.stopPropagation();
               handleView(row.id);
             }}
-            onMouseenter={e =>
+            onMouseenter={(e: any) =>
               tableRef.value?.handleCellEnter({
                 e,
                 row,
               })}
-            onMouseLeave={e =>
+            onMouseLeave={(e: any) =>
               tableRef.value?.handleCellLeave({
                 e,
                 row,
@@ -155,7 +156,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
           >
             {row.name}
           </div>
-          { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
+          { isEnabledOAuth.value && (row as any)?.app_permission_risk?.has_risk
             && (
               <Tag
                 theme="danger"
@@ -170,8 +171,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
                     <div class="break-all">
                       { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
                         {
-                          count: row?.app_permission_risk?.risk_tools?.length,
-                          content: row?.app_permission_risk?.risk_tools?.join('、'),
+                          count: (row as any)?.app_permission_risk?.risk_tools?.length,
+                          content: (row as any)?.app_permission_risk?.risk_tools?.join('、'),
                         })}
                       <div class="h-24px" />
                       { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
@@ -199,7 +200,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'stage_id',
     ellipsis: true,
     width: 130,
-    cell: (_, { row }: { row: IMCPServer }) => {
+    cell: (_: any, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class={[
@@ -215,7 +216,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       type: 'single',
       showConfirmAndReset: true,
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: filterCondition.stages.map((item) => {
+      list: filterCondition.stages.map((item: any) => {
         return {
           label: item.name,
           value: item.id,
@@ -231,19 +232,19 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       type: 'multiple',
       showConfirmAndReset: true,
       resetValue: [],
-      list: filterCondition.categories.map((item) => {
+      list: filterCondition.categories.map((item: any) => {
         return {
           label: item.display_name,
           value: item.name,
         };
       }),
     },
-    cell: (_, { row }: { row: IMCPServer }) => (
-      row.categories?.length
+    cell: (_: any, { row }: { row: IMCPServer }) => (
+      (row as any).categories?.length
         ? (
           <div class="w-160px">
             <RenderTagOverflow
-              data={row.categories.map(cg => cg.display_name)}
+              data={(row as any).categories.map((cg: any) => cg.display_name)}
             />
           </div>
         )
@@ -262,7 +263,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'is_public',
     width: 110,
     ellipsis: true,
-    cell: (_, { row }: { row: IMCPServer }) => {
+    cell: (_: any, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class="border-transparent"
@@ -283,17 +284,17 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('OAuth2 公开客户端'),
     colKey: 'oauth2_public_client_enabled',
     ellipsis: true,
-    cell: (_, { row }: { row: IMCPServer }) => {
+    cell: (_: any, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class={
             [
               'border-transparent',
-              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': (row as any).oauth2_public_client_enabled },
             ]
           }
         >
-          {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
+          {t((row as any)?.oauth2_public_client_enabled ? '已开启' : '未开启')}
         </Tag>
       );
     },
@@ -310,7 +311,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'description',
     ellipsis: true,
     width: 200,
-    cell: (_, { row }: { row: IMCPServer }) => {
+    cell: (_: any, { row }: { row: IMCPServer }) => {
       return row?.description || '--';
     },
   },
@@ -319,7 +320,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'operate',
     fixed: 'right',
     width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
-    cell: (_, { row }: { row: IMCPServer }) => (
+    cell: (_: any, { row }: { row: IMCPServer }) => (
       <div class="flex">
         <Button
           text
@@ -395,7 +396,7 @@ const getTableData = async (params: Record<string, any> = {}): Promise<any[]> =>
   });
 
   const res = await getServers(apigwId.value, requestParams);
-  return res;
+  return res as any;
 };
 
 const handleView = (id: number) => {
@@ -429,7 +430,7 @@ const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
 
 const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
   if (sort) {
-    const { sortBy: colKey, descending } = sort;
+    const { sortBy: colKey, descending } = sort as any;
     filterData.value.order_by = descending ? `-${colKey}` : colKey;
   }
   else {

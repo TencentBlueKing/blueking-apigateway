@@ -214,15 +214,13 @@ import { cloneDeep } from 'lodash-es';
 import { usePopInfoBox } from '@/hooks';
 
 interface FormData {
-  stage_id: number | undefined
+  stage_id: number
   branch: string
   commit_id: string
   version: string
   comment: string
   version_type: string
 }
-
-type ProgrammableStageDetailType = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
 interface ICommitInfo {
   commit_id: string
@@ -232,7 +230,11 @@ interface ICommitInfo {
   type: string
 }
 
-interface IProps { currentStage: IStageListItem }
+type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
+
+interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
+
+interface IProps { currentStage: ILocalStageItem }
 
 const { currentStage } = defineProps<IProps>();
 
@@ -253,7 +255,7 @@ const logDetailsRef = ref();
 
 // 提交数据
 const formData = ref<FormData>({
-  stage_id: undefined,
+  stage_id: 0,
   branch: '',
   commit_id: '',
   version: '',
@@ -261,7 +263,7 @@ const formData = ref<FormData>({
   version_type: '',
 });
 const localStage = ref<any>({});
-const stageDetail = ref<ProgrammableStageDetailType>({
+const stageDetail = ref<IPaasInfo>({
   branch: '',
   commit_id: '',
   created_by: '',
@@ -327,7 +329,7 @@ const rules = {
 
 const apigwId = computed(() => +route.params.id);
 
-watch(isShow, async (val) => {
+watch(isShow, async (val: boolean) => {
   if (val) {
     try {
       isLoading.value = true;
@@ -371,7 +373,7 @@ const showPublishDia = () => {
     isShow: true,
     type: 'warning',
     title: t('确认发布 {version} 版本至 {stage} 环境？', {
-      version: formData.version,
+      version: formData.value.version,
       stage: currentStage?.name || '--',
     }),
     subTitle: t('发布后，将会覆盖原来的资源版本，请谨慎操作！'),
@@ -388,7 +390,7 @@ const showPublishDia = () => {
 const handlePublish = async () => {
   try {
     const params = {
-      stage_id: currentStage.id,
+      // stage_id: currentStage.id,
       ...formData.value,
       version: `${formData.value.version}+${currentStage.name}`,
     };
@@ -473,7 +475,7 @@ const handleCancel = () => {
 
 const resetSliderData = () => {
   formData.value = {
-    stage_id: undefined,
+    stage_id: 0,
     branch: '',
     commit_id: '',
     version: '',
@@ -492,7 +494,7 @@ const getVersion = async (): Promise<{ version: string }> => {
     apigwId.value,
     {
       stage_name: currentStage.name,
-      version_type: semVerType.value,
+      version_type: semVerType.value as 'patch' | 'minor' | 'major',
     },
   );
 };
@@ -636,6 +638,7 @@ defineExpose({ showReleaseSideslider });
 
 .required-tag {
   position: relative;
+
   &::before {
     position: absolute;
     top: 0;

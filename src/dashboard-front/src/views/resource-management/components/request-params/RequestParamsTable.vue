@@ -81,7 +81,7 @@
               v-if="readonly"
               class="readonly-value-wrapper"
             >
-              {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+            {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
             </div>
             <div
               v-else
@@ -102,7 +102,7 @@
               </BkSelect>
               <ParamsRowConfig
                 :row="row"
-                @change="(config) => handleConfigChange(row, config)"
+              @change="(config: any) => handleConfigChange(row, config)"
               />
             </div>
           </td>
@@ -284,7 +284,7 @@ const genBodyRow = (id?: string) => {
 };
 
 const handleTypeChange = (row: IBodyRow) => {
-  const _row = tableData.value!.find(data => data.id === row.id);
+  const _row = tableData.value!.find((data: any) => data.id === row.id);
   if (_row) {
     if (_row.type !== 'object' && _row.type !== 'array') {
       delete _row.body;
@@ -307,7 +307,7 @@ const isAddFieldVisible = (row: IBodyRow) => {
 };
 
 const addField = (row: IBodyRow) => {
-  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  const bodyRow = tableData.value!.find((data: any) => data.id === row.id);
   if (bodyRow) {
     if (bodyRow.body) {
       bodyRow.body.push(genBodyRow());
@@ -319,7 +319,7 @@ const addField = (row: IBodyRow) => {
 };
 
 const removeField = (row: IBodyRow) => {
-  const index = tableData.value!.findIndex(data => data.id === row.id);
+  const index = tableData.value!.findIndex((data: any) => data.id === row.id);
   if (index !== -1) {
     tableData.value!.splice(index, 1);
   }
@@ -327,7 +327,7 @@ const removeField = (row: IBodyRow) => {
 
 const handleConfigChange = (row: IBodyRow, config: IConfig) => {
   const { enums } = config;
-  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  const bodyRow = tableData.value!.find((data: any) => data.id === row.id);
   if (bodyRow) {
     if (enums?.enabled && enums.values?.length) {
       bodyRow.enum = enums.values;
@@ -340,7 +340,7 @@ const handleConfigChange = (row: IBodyRow, config: IConfig) => {
 
 const setInvalidRowId = () => {
   invalidRowIdMap.value = {};
-  tableData.value?.forEach((row) => {
+  tableData.value?.forEach((row: any) => {
     // 每行的 name 不能为空，但是数组类型下的可以
     if (!row.name && parent.type !== 'array') {
       invalidRowIdMap.value[row.id] = true;

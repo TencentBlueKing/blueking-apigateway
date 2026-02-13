@@ -411,7 +411,7 @@ const isNextBtnDisabled = computed(() => {
     return true;
   }
 
-  const currentResource = versionList.value.find(version => version.id === formData.resource_version_id);
+  const currentResource = versionList.value.find((version: any) => version.id === formData.resource_version_id);
   if (currentResource) {
     return currentResource.schema_version === '1.0';
   }
@@ -419,13 +419,13 @@ const isNextBtnDisabled = computed(() => {
 });
 
 const curVersionId = computed(() => {
-  const version = versionList.value?.filter(item => item.id === chooseAssets.value?.resource_version?.id)?.[0];
+  const version = versionList.value?.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)?.[0];
   return version?.id;
 });
 
 watch(
   isShow,
-  async (val) => {
+  async (val: any) => {
     if (val) {
       await getStageData();
       await getResourceVersions();
@@ -458,7 +458,7 @@ watch(
 
 watch(
   () => formData.stage_id,
-  (v) => {
+  (v: any) => {
     if (v && stageList.value?.length) {
       chooseAssets.value = stageList.value?.filter((item: any) => item.id === v)[0];
     }
@@ -467,7 +467,7 @@ watch(
 
 watch(
   () => formData.resource_version_id,
-  (v) => {
+  (v: any) => {
     const choVersion = versionList.value.filter((item: any) => item.id === v)[0];
     if (choVersion) {
       chooseVersionComment.value = choVersion.comment;
@@ -478,8 +478,8 @@ watch(
 watch(
   () => [formData.resource_version_id, formData.stage_id],
   () => {
-    const curVersion = versionList.value.filter(item => item.id === chooseAssets.value?.resource_version?.id)[0];
-    const choVersion = versionList.value.filter(item => item.id === formData.resource_version_id)[0];
+    const curVersion = versionList.value.filter((item: any) => item.id === chooseAssets.value?.resource_version?.id)[0];
+    const choVersion = versionList.value.filter((item: any) => item.id === formData.resource_version_id)[0];
     if (curVersion && choVersion) {
       const curDate = dayjs(curVersion.created_time);
       const chooseDate = dayjs(choVersion.created_time);
@@ -603,6 +603,7 @@ const getResourceVersions = async () => {
     offset: 0,
     limit: 1000,
   });
+  // @ts-ignore
   response.results.forEach((item: VersionType, index: number) => {
     item.isLatestVersion = index === 0;
   });

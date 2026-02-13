@@ -121,7 +121,7 @@ const handleChartResize = debounce(() => {
 }, 200);
 
 // echart监听区域拖拽
-const handleDataZoom = debounce((e: echarts.EChartEvent) => {
+const handleDataZoom = debounce((e: any) => {
   const { start, end } = e ?? {};
 
   // 无值直接返回
@@ -288,7 +288,7 @@ const renderChart = async (data: {
         },
         padding: [8, 8],
         extraCssText: 'box-shadow: 0 0 10px 0 #31323826;',
-        formatter: (params: echarts.DefaultLabelFormatterParams) => {
+        formatter: (params: any) => {
           try {
             const { name = '', value = 0, color } = params ?? {};
             const num = Number(value);
@@ -316,7 +316,7 @@ const renderChart = async (data: {
     };
 
     // 间隔配置
-    const timeDuration = timeline.at(-1)! - timeline[0]!;
+    const timeDuration = timeline[timeline.length - 1]! - timeline[0]!;
     const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
 
     const finalOption = merge({}, baseOption, intervalOption);
@@ -396,7 +396,7 @@ const initChart = async () => {
   }
 };
 
-const setChartData = (data) => {
+const setChartData = (data: any) => {
   renderChart(data);
 };
 

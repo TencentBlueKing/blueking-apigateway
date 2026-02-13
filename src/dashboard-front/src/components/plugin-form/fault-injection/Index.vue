@@ -191,7 +191,7 @@ const rules = {
 
 watch(
   () => [formData.value.abort.enabled, formData.value.delay.enabled],
-  ([v1, v2]) => {
+  ([v1, v2]: any[]) => {
     if (!v1 && !v2) {
       Message({
         theme: 'error',
@@ -201,7 +201,7 @@ watch(
   },
 );
 
-watch(() => data, (newVal) => {
+watch(() => data, (newVal: any) => {
   const data = cloneDeep(newVal);
   if (data?.abort?.http_status || data?.delay?.duration) {
     if (!data?.abort?.http_status) {

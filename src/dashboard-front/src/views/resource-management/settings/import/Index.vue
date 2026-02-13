@@ -182,7 +182,7 @@
                 <EditorMonaco
                   ref="resourceEditorRef"
                   v-model="editorText"
-                  @find-state-changed="(isVisible) => {
+                  @find-state-changed="(isVisible: any) => {
                     isFindPanelVisible = isVisible;
                   }"
                 />
@@ -866,7 +866,7 @@ const filterInputUpdateClone = ref('');
 
 // 展示在“新增的资源”一栏的资源
 const tableDataToAdd = computed(() => {
-  return tableData.value.filter((data) => {
+  return tableData.value.filter((data: any) => {
     return !data.id
       && !data._unchecked
       && (data.name.includes(filterInputAdd.value) || data.path.includes(filterInputAdd.value));
@@ -875,7 +875,7 @@ const tableDataToAdd = computed(() => {
 
 // 展示在“更新的资源”一栏的资源
 const tableDataToUpdate = computed(() => {
-  return tableData.value.filter((data) => {
+  return tableData.value.filter((data: any) => {
     return data.id
       && !data._unchecked
       && (data.name.includes(filterInputUpdate.value) || data.path.includes(filterInputUpdate.value));
@@ -884,7 +884,7 @@ const tableDataToUpdate = computed(() => {
 
 // 被取消导入的资源
 const tableDataUnchecked = computed(() => {
-  return tableData.value.filter(data => data._unchecked);
+  return tableData.value.filter((data: any) => data._unchecked);
 });
 
 // 可视的错误消息，实际要渲染到编辑器视图的数据
@@ -892,17 +892,17 @@ const visibleErrorReasons = computed(() => {
   if (activeCodeMsgType.value === 'All') return errorReasons.value;
 
   if (activeCodeMsgType.value === 'Error') {
-    return errorReasons.value.filter(r => r.level === 'Error');
+    return errorReasons.value.filter((r: any) => r.level === 'Error');
   }
 
   if (activeCodeMsgType.value === 'Warning') {
-    return errorReasons.value.filter(r => r.level === 'Warning');
+    return errorReasons.value.filter((r: any) => r.level === 'Warning');
   }
   return [];
 });
 
 const msgAsErrorNum = computed(() => {
-  return errorReasons.value.filter(r => r.level === 'Error').length;
+  return errorReasons.value.filter((r: any) => r.level === 'Error').length;
 });
 
 // const msgAsWarningNum = computed(() => {
@@ -918,7 +918,7 @@ watch(editorText, () => {
 });
 
 // 返回编辑器页时自动折叠错误消息
-watch(curView, async (newCurView, oldCurView) => {
+watch(curView, async (newCurView: any, oldCurView: any) => {
   if (newCurView === 'import' && oldCurView === 'resources') {
     await nextTick(() => {
       isErrorConsoleCollapsed.value = true;
@@ -1067,7 +1067,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     console.log(err);
     isCodeValid.value = false;
     isValidBannerVisible.value = false;
-    const error = err.error as CodeErrorResponse;
+    const error = (err as any).error as CodeErrorResponse;
     // 如果是内容错误
     if (error?.code === 'INVALID' && error?.message === 'validate fail') {
       const editorJsonObj = yaml.load(editorText.value) as object;
@@ -1081,14 +1081,14 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
           let paths = JSONPath.toPathArray(err.json_path)
             .slice(1);
           // 找到 jsonpath 指向的值
-          let pathValue = JSONPath(err.json_path, editorJsonObj, null, null)[0] ?? null;
+          let pathValue = JSONPath(err.json_path, editorJsonObj, undefined, undefined)[0] ?? null;
           // 当获取 json_path 指向的值失败时，检查是不是因为 json_path 中有大写的 http method
           if (pathValue === null) {
             const httpMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
             // 把 json_path 中的大写 method 规范化为小写的
             if (paths.some(item => httpMethods.includes(item))) {
               paths = paths.map(item => (httpMethods.includes(item) ? item.toLowerCase() : item));
-              pathValue = JSONPath(`$.${paths.join('.')}`, editorJsonObj, null, null)[0] ?? null;
+              pathValue = JSONPath(`$.${paths.join('.')}`, editorJsonObj, undefined, undefined)[0] ?? null;
             }
           }
           // 提取后端错误消息中第一个用引号包起来的字符串，它常常就是代码错误所在
@@ -1176,8 +1176,8 @@ const handleImportResource = async () => {
   try {
     isImportLoading.value = true;
     isImportResultVisible.value = true;
-    const import_resources = tableData.value.filter(e => e._unchecked === false)
-      .map((e) => {
+    const import_resources = tableData.value.filter((e: any) => e._unchecked === false)
+      .map((e: any) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _unchecked, _localId, backend, ...restOfResource } = e; // 去掉_unchecked 和 _localId 属性，不要发到后端
         return {
@@ -1224,7 +1224,7 @@ const handleEditSliderHidden = () => {
 
 // 确认修改配置后
 const handleEditSubmit = (newResource: ILocalImportedResource) => {
-  const pos = tableData.value.findIndex(data => data._localId === newResource._localId);
+  const pos = tableData.value.findIndex((data: any) => data._localId === newResource._localId);
   if (pos > -1) tableData.value[pos] = {
     ...tableData.value[pos],
     ...newResource,
@@ -1239,7 +1239,7 @@ const handleEditSubmit = (newResource: ILocalImportedResource) => {
 
 // 点击修改配置时，会唤出 SideSlider
 const handleEdit = (resourceRow: ILocalImportedResource) => {
-  const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
+  const _editingResource = tableData.value.find((data: any) => data._localId === resourceRow._localId);
   if (_editingResource) {
     editingResource.value = {
       ...editingResource.value,
@@ -1251,7 +1251,7 @@ const handleEdit = (resourceRow: ILocalImportedResource) => {
 
 // 点击查看文档时，会唤出 SideSlider
 const handleShowResourceDoc = (resourceRow: ILocalImportedResource) => {
-  const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
+  const _editingResource = tableData.value.find((data: any) => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = {
     ...editingResource.value,
     ..._editingResource,
@@ -1262,7 +1262,7 @@ const handleShowResourceDoc = (resourceRow: ILocalImportedResource) => {
 // 点击插件数时，会唤出 PluginsSlider
 const handleShowPluginsSlider = (resourceRow: ILocalImportedResource) => {
   if (!resourceRow.plugin_configs || resourceRow.plugin_configs?.length < 1) return;
-  const _editingResource = tableData.value.find(data => data._localId === resourceRow._localId);
+  const _editingResource = tableData.value.find((data: any) => data._localId === resourceRow._localId);
   if (_editingResource) editingResource.value = {
     ...editingResource.value,
     ..._editingResource,
@@ -1273,7 +1273,7 @@ const handleShowPluginsSlider = (resourceRow: ILocalImportedResource) => {
 // 触发编辑器高亮
 const updateEditorDecorations = () => {
   resourceEditorRef.value?.clearDecorations();
-  resourceEditorRef.value?.genLineDecorations(visibleErrorReasons.value.map(r => ({
+  resourceEditorRef.value?.genLineDecorations(visibleErrorReasons.value.map((r: any) => ({
     position: r.position,
     level: r.level,
   })));
@@ -1283,7 +1283,7 @@ const updateEditorDecorations = () => {
 // 触发编辑器添加下划波浪线
 const updateEditorMarkers = () => {
   resourceEditorRef.value?.clearMarkers();
-  resourceEditorRef.value?.genMarkers(errorReasons.value.map(r => ({
+  resourceEditorRef.value?.genMarkers(errorReasons.value.map((r: any) => ({
     position: r.position,
     message: r.message,
   })));
@@ -1374,7 +1374,7 @@ const removeStarting$ = (str: string): string => {
 const escapeAsteroidAndSpace = (str: string): string => {
   if (typeof str === 'string') {
     // 连续空格转成一个空格，用 \s* 匹配
-    return str.replaceAll('*', '\\*').replace(/\s+/g, '\\s*');
+    return str.split('*').join('\\*').replace(/\s+/g, '\\s*');
   }
   return str;
 };
@@ -1416,13 +1416,13 @@ const handleFontSizeClick = () => {
 
 // 切换资源是否导入
 const toggleRowUnchecked = (row: ILocalImportedResource) => {
-  const data = tableData.value.find(d => d._localId === row._localId);
+  const data = tableData.value.find((d: any) => d._localId === row._localId);
   if (data) data._unchecked = !data._unchecked;
 };
 
 // 还原所有不导入的资源
 const handleRecoverAllRes = () => {
-  tableData.value.forEach(d => d._unchecked = false);
+  tableData.value.forEach((d: any) => d._unchecked = false);
 };
 
 const tempAuthConfig = ref({
@@ -1434,8 +1434,8 @@ const tempAuthConfig = ref({
 // 批量修改认证方式确认后
 const handleConfirmAuthConfigPopConfirm = (action: ActionType) => {
   if (tempAuthConfig.value.app_verified_required === false) tempAuthConfig.value.resource_perm_required = false;
-  tableData.value.filter(item => !item._unchecked)
-    .forEach((data) => {
+  tableData.value.filter((item: any) => !item._unchecked)
+    .forEach((data: any) => {
       if ((action === 'add' && !data.id) || (action === 'update' && data.id)) {
         data.auth_config = { ...tempAuthConfig.value };
       }
@@ -1452,8 +1452,8 @@ const handleConfirmPublicConfigPopConfirm = (action: ActionType) => {
   const isPublic = tempPublicConfig.value.is_public;
   const allowApplyPermission = tempPublicConfig.value.allow_apply_permission && isPublic;
 
-  tableData.value.filter(item => !item._unchecked)
-    .forEach((item) => {
+  tableData.value.filter((item: any) => !item._unchecked)
+    .forEach((item: any) => {
       if ((action === 'add' && !item.id) || (action === 'update' && item.id)) {
         item.is_public = isPublic;
         item.allow_apply_permission = allowApplyPermission;

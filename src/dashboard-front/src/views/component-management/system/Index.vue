@@ -177,29 +177,29 @@ const tableColumns = ref([
     title: t('名称'),
     colKey: 'name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISystemItem> & { isOverflow?: boolean } }) => {
       return (
         <div class="flex-row">
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row?.name,
               placement: 'top',
-              disabled: !row.isOverflow,
+              disabled: !row?.isOverflow,
               extCls: 'max-w-480px',
             }}
             class="truncate mr-4px"
-            onMouseenter={e => tableRef.value?.handleCellEnter({
+            onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
               e,
               row,
             })}
-            onMouseLeave={e => tableRef.value?.handleCellLeave({
+            onMouseLeave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
               e,
               row,
             })}
           >
             {row?.name || '--' }
           </div>
-          { row.is_official && <span class="official">{ t('官方') }</span> }
+          { row?.is_official && <span class="official">{ t('官方') }</span> }
         </div>
       );
     },
@@ -208,7 +208,7 @@ const tableColumns = ref([
     title: t('描述'),
     colKey: 'description',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.description || '--' }
@@ -220,7 +220,7 @@ const tableColumns = ref([
     title: t('系统负责人'),
     colKey: 'maintainers',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.maintainers?.length ? row.maintainers.join('；') : '--' }
@@ -232,7 +232,7 @@ const tableColumns = ref([
     title: t('文档分类'),
     colKey: 'doc_category_id',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <span>
           {row?.doc_category_name || '--' }
@@ -245,25 +245,25 @@ const tableColumns = ref([
     colKey: 'operate',
     fixed: 'right',
     width: 150,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
       return (
         <div>
           <Button
             class="mr-10px"
             theme="primary"
             text
-            onClick={() => handleEditSys(row)}
+            onClick={() => handleEditSys(row as ISystemItem)}
           >
             { t('编辑') }
           </Button>
           <Button
             theme="primary"
             text
-            disabled={row.is_official}
-            onClick={() => handleDeleteSys(row)}
+            disabled={row?.is_official}
+            onClick={() => handleDeleteSys(row as ISystemItem)}
           >
             {
-              row.is_official
+              row?.is_official
                 ? (
                   <span v-bk-tooltips={{ content: t('官方系统，不可删除') }}>
                     { t('删除') }
@@ -284,7 +284,7 @@ const pagination = ref({
   count: 0,
   limitList: sortedUniq(sortBy([10, 20, 50, 100])),
 });
-const curSystem = ref({});
+const curSystem = ref<any>({});
 const deleteDialogConf = ref({
   visible: false,
   loading: false,
@@ -379,7 +379,7 @@ const handleDeleteSystem = async () => {
       theme: 'success',
       message: t('删除成功！'),
     });
-    getSystemList(true, pagination.value.offset);
+    getSystemList(true);
   }
   finally {
     deleteDialogConf.value.loading = false;
@@ -393,7 +393,7 @@ const handleSearch = (payload: string) => {
     offset: 0,
     limit: 10,
   });
-  displayData.value = allData.value.filter((item) => {
+  displayData.value = allData.value.filter((item: any) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg) || item.description.match(reg);
   });
@@ -437,11 +437,11 @@ const setDelay = (duration: number) => {
 }
 
 :deep(.official) {
-  margin-left: 2px;
   padding: 2px;
-  background: #dcffe2;
+  margin-left: 2px;
   font-size: 12px;
   color: #2dcb56;
+  background: #dcffe2;
 }
 
 code {
@@ -449,9 +449,9 @@ code {
   padding-top: 0.2em;
   padding-bottom: 0.2em;
   margin: 0;
-  color: #c7254e;
   font-size: 85%;
-  background-color: rgba(0, 0, 0, 0.04);
+  color: #c7254e;
+  background-color: rgb(0 0 0 / 4%);
   border-radius: 3px;
 }
 
@@ -459,9 +459,9 @@ code {
   position: relative;
 
   &::after {
-    content: '*';
     margin-left: 2px;
     color: #ea3636;
+    content: '*';
   }
 }
 </style>
@@ -472,9 +472,9 @@ code {
   padding-top: 0.2em;
   padding-bottom: 0.2em;
   margin: 0;
-  color: #c7254e;
   font-size: 85%;
-  background-color: rgba(0, 0, 0, 0.04);
+  color: #c7254e;
+  background-color: rgb(0 0 0 / 4%);
   border-radius: 3px;
 }
 

@@ -355,7 +355,7 @@ const getList = async () => {
     };
     // 处理每个分类下官方/精选筛选结果
     if (activeCategoryName.value && !activeStatusTab.value.includes('all')) {
-      const curCate = categoriesList.value.find(cat => cat.name === activeCategoryName.value);
+      const curCate = categoriesList.value.find((cat: IMCPMarketCategory) => cat.name === activeCategoryName.value);
       if (curCate) {
         curCate.mcp_server_count = count;
       }
@@ -385,8 +385,8 @@ const fetchCategoryList = async () => {
 
 const resetPagination = async () => {
   // 重置分页后，滚动距离重置
-  const mcpEl = document.querySelector('.McpMarket-navigation-content .container-content');
-  if (mcpEl?.scrollTop > 0) {
+  const mcpEl = document.querySelector('.McpMarket-navigation-content .container-content') as HTMLElement | null;
+  if (mcpEl && mcpEl.scrollTop > 0) {
     mcpEl.scrollTop = 0;
   }
   pagination.value = Object.assign(pagination.value, {
@@ -426,14 +426,14 @@ const handleSortChange = (sort: string) => {
   resetPagination();
 };
 
-const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceItem) => {
-  const cell = e.target.closest('.truncate');
+const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceItem & { isOverflow?: boolean }) => {
+  const cell = e.target.closest('.truncate') as HTMLElement | null;
   if (cell) {
     row.isOverflow = cell.scrollWidth > cell.offsetWidth;
   }
 };
 
-const handleMouseleave = (_: MouseEvent, row: IMarketplaceItem) => {
+const handleMouseleave = (_: MouseEvent, row: IMarketplaceItem & { isOverflow?: boolean }) => {
   row.isOverflow = false;
 };
 

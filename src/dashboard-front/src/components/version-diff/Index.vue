@@ -564,15 +564,15 @@ const diffTypeList = reactive([
 const backendsList = ref([]);
 
 const hasResult = computed(() => {
-  const addItem = diffData.add.some((item) => {
+  const addItem = diffData.add.some((item: any) => {
     return checkMatch(item, 'add');
   });
 
-  const deleteItem = diffData.delete.some((item) => {
+  const deleteItem = diffData.delete.some((item: any) => {
     return checkMatch(item, 'delete');
   });
 
-  const updateItem = diffData.update.some((item) => {
+  const updateItem = diffData.update.some((item: any) => {
     return (
       checkMatch(item.source, 'update') || checkMatch(item.target, 'update')
     );
@@ -584,7 +584,7 @@ const hasResult = computed(() => {
 const hasFilter = computed(() => searchKeyword.value || searchParams.diffType);
 
 const sourceVersion = computed(() => {
-  const match = localVersionList.value.find(item => item.id === localSourceId.value);
+  const match = localVersionList.value.find((item: any) => item.id === localSourceId.value);
   if (match) {
     return match;
   }
@@ -596,7 +596,7 @@ const sourceVersion = computed(() => {
 });
 
 const targetVersion = computed(() => {
-  const match = localVersionList.value.find(item => item.id === localTargetId.value);
+  const match = localVersionList.value.find((item: any) => item.id === localTargetId.value);
   if (match) {
     return match;
   }
@@ -608,7 +608,7 @@ const targetVersion = computed(() => {
 });
 
 const localSourceTriggerLabel = computed(() => {
-  const match = localVersionList.value.find(item => Number(item.id) === Number(localSourceId.value));
+  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localSourceId.value));
   if (match) {
     return match.resource_version_display;
   }
@@ -616,7 +616,7 @@ const localSourceTriggerLabel = computed(() => {
 });
 
 const localTargetTriggerLabel = computed(() => {
-  const match = localVersionList.value.find(item => Number(item.id) === Number(localTargetId.value));
+  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localTargetId.value));
   if (match) {
     return match.resource_version_display;
   }
@@ -625,7 +625,7 @@ const localTargetTriggerLabel = computed(() => {
 
 watch(
   () => [sourceId, targetId],
-  async (newArr) => {
+  async (newArr: any) => {
     const [sourceId, targetId] = newArr;
     localSourceId.value = sourceId;
     localTargetId.value = targetId || 'current';
@@ -637,6 +637,7 @@ watch(
 width.value = window.innerWidth <= 1280 ? 1000 : 1240;
 
 const handleToggle = (item: IDiffData['add'][number] | IDiffData['update'][number] | IDiffData['delete'][number]) => {
+  // @ts-ignore
   item.isExpanded = !item.isExpanded;
 };
 
@@ -754,10 +755,12 @@ const getDiffData = async () => {
 
   try {
     const res = await getVersionDiff(apigwId.value, {
+      // @ts-ignore
       source_resource_version_id: String(localSourceId.value).replace(
         'current',
         '',
       ),
+      // @ts-ignore
       target_resource_version_id: String(localTargetId.value).replace(
         'current',
         '',
@@ -815,7 +818,8 @@ const getApigwVersions = async () => {
       ...response.results.map(item => ({
         ...item,
         resource_version_display: item.comment ? `${item.version}(${item.comment})` : item.version,
-        stage_text: item.released_stages.map((item) => {
+        // @ts-ignore
+        stage_text: item.released_stages.map((item: any) => {
           return item.name;
         }),
       })),

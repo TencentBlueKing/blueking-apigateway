@@ -101,7 +101,7 @@ export default defineComponent({
   name: 'SpanBar',
   props: SpanBarProps,
 
-  setup(props) {
+  setup(props: any) {
     const label = ref(props.shortLabel);
 
     const setShortLabel = () => {
@@ -191,7 +191,7 @@ export default defineComponent({
         onMouseover={this.setLongLabel}
       >
         {/* 时间刻度 + 垂直时间线 */}
-        {this.timeTicks.map(tick => (
+        {this.timeTicks.map((tick: any) => (
           <div
             key={tick.time}
             class="time-tick"

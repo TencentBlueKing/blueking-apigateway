@@ -236,7 +236,7 @@
                     theme="primary"
                     class="ml-8px inactive-btn"
                     text
-                    @click="openTab(item.operation_status?.link)"
+                    @click="() => openTab(item.operation_status?.link)"
                   >
                     {{ item.operation_status?.source === 'apigateway' ? t('去停用') : t('去下架') }}
                   </bk-button>
@@ -383,7 +383,7 @@
         </div>
         <div class="steps">
           <div
-            v-for="item in envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'))"
+            v-for="item in filteredSteps"
             :key="item.name"
             class="step"
           >
@@ -451,7 +451,6 @@
 </template>
 
 <script setup lang="ts">
-// import { isAfter24h } from '@/utils';
 import {
   useEnv,
   useFeatureFlag,
@@ -464,11 +463,11 @@ import CreateGateway from '@/components/create-gateway/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
+import type { IExtractListApiResults } from '@/services/types/utils.ts';
 
-type GatewayType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
+type GatewayType = IExtractListApiResults<typeof getGatewayList>;
 
 type ConvertedGatewayType = GatewayType & {
-  // isAfter24h: boolean
   tagOrder: string
   labelTextData: {
     name: string
@@ -550,7 +549,7 @@ const contacts = [
   },
 ];
 
-const steps = [
+const steps: { name: string; describe: string; link?: string }[] = [
   {
     name: t('API 全生命周期管理：'),
     describe: t('涵盖 API 的配置、发布、测试、监控、下线等各个生命周期的管理，并且支持版本控制'),
@@ -581,6 +580,10 @@ const steps = [
     link: envStore.env.DOC_LINKS.GUIDE,
   },
 ];
+
+const filteredSteps = computed(() => {
+  return envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'));
+});
 
 // 环境标签相关的引用和状态（按网关 id 存储）
 const envContainerRefs = reactive<Record<number, HTMLElement | null>>({});
@@ -737,8 +740,8 @@ const isGuide = computed(() => {
   return false;
 });
 
-watch(() => dataList.value, (val) => {
-  gatewaysList.value = convertGatewaysList(val as GatewayType[]);
+watch(() => dataList.value, (val: GatewayType[]) => {
+  gatewaysList.value = convertGatewaysList(val as unknown as GatewayType[]);
   updateTableEmptyConfig();
 });
 
@@ -756,7 +759,6 @@ const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
 
   return arr.map((gateway) => {
     const item: any = { ...gateway };
-    // item.isAfter24h = isAfter24h(item.created_time);
     item.tagOrder = '3';
     item.stages?.sort((a: any, b: any) => (b.released - a.released));
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
@@ -814,7 +816,7 @@ const handleChange = (v: string) => {
       gatewaysList.value.sort((a, b) => new Date(b.updated_time) - new Date(a.updated_time));
       break;
     case 'name':
-      gatewaysList.value.sort((a, b) => a.name.charAt(0).localeCompare(b.name.charAt(0)));
+      gatewaysList.value.sort((a: ConvertedGatewayType, b: ConvertedGatewayType) => a.name.charAt(0).localeCompare(b.name.charAt(0)));
       break;
     default:
       break;
@@ -1137,75 +1139,88 @@ onBeforeUnmount(() => {
   line-height: 20px;
   flex-flow: column;
   align-items: center;
+
   &.empty {
-    background: #FFFFFF;
-    padding-top: 8px;
     height: 58px;
+    padding-top: 8px;
+    background: #FFF;
   }
 }
+
 .gateway-empty {
-  height: calc(100vh - 110px);
   display: flex;
+  height: calc(100vh - 110px);
   flex-direction: column;
   align-items: center;
+
   &::after {
-    content: " ";
     width: calc(100% - 48px);
     height: 1px;
     background: #DCDEE5;
+    content: " ";
   }
+
   .create-guide {
+    display: flex;
     padding: 82px 0;
     background: #F5F7FA;
-    display: flex;
     flex-direction: column;
     justify-content: center;
+
     .guide-title {
       font-size: 20px;
       color: #313238;
     }
+
     .guide-describe {
+      margin: 12px 0 20px;
       font-size: 14px;
       color: #4d4f56e6;
-      margin: 12px 0 20px;
     }
   }
+
   .work-progress {
-    background: #FFFFFF;
+    display: flex;
     width: 100%;
     padding-top: 86px;
+    background: #FFF;
     flex: 1;
-    display: flex;
     justify-content: center;
+
     .progress-img {
       width: 589px;
       margin-right: 52px;
     }
+
     .step {
-      display: flex;
-      align-items: center;
       position: relative;
-      margin-bottom: 12px;
+      display: flex;
       padding-left: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+
       &::before {
-        content: " ";
         position: absolute;
         top: 50%;
-        transform: translateY(-50%);
         left: 0;
         width: 4px;
         height: 4px;
-        border-radius: 2px;
         background: #4D4F56;
+        border-radius: 2px;
+        content: " ";
+        transform: translateY(-50%);
       }
+
       .name {
         font-size: 14px;
-        font-weight: Bold;
+        font-weight: bold;
         color: #313238;
       }
+
       .describe {
         font-size: 12px;
         color: #4D4F56;
+
         &.link {
           color: #3A84FF;
         }
@@ -1213,20 +1228,25 @@ onBeforeUnmount(() => {
     }
   }
 }
+
 .inactive {
   line-height: 80px;
+
   .inactive-btn {
     display: none;
   }
+
   &:hover {
+
     .inactive-btn {
       display: inline-block;
     }
   }
 }
+
 .env {
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 .flex {

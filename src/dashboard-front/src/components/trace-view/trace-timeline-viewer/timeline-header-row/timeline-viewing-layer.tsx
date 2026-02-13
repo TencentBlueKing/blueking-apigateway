@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// @ts-ignore
 import { type PropType, defineComponent, onBeforeUnmount, ref } from 'vue';
 
 import { useSpanBarCurrentInject, useViewRangeInject } from '../../hooks';

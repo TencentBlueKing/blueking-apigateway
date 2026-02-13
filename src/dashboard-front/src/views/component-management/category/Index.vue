@@ -100,6 +100,7 @@
 <script setup lang="tsx">
 import { delay } from 'lodash-es';
 import { Button, Form, Message } from 'bkui-vue';
+const BkButton = Button;
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
@@ -120,29 +121,29 @@ const tableColumns = ref([
   {
     title: t('名称'),
     colKey: 'name',
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ICategoryItem> & { isOverflow?: boolean } }) => {
       return (
         <div class="flex-row">
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row?.name,
               placement: 'top',
-              disabled: !row.isOverflow,
+              disabled: !row?.isOverflow,
               extCls: 'max-w-480px',
             }}
             class="truncate mr-4px"
-            onMouseenter={e => tableRef.value?.handleCellEnter({
+            onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
               e,
               row,
             })}
-            onMouseLeave={e => tableRef.value?.handleCellLeave({
+            onMouseLeave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
               e,
               row,
             })}
           >
             {row?.name || '--' }
           </div>
-          { row.is_official && <span class="official">{ t('官方') }</span> }
+          { row?.is_official && <span class="official">{ t('官方') }</span> }
         </div>
       );
     },
@@ -151,10 +152,10 @@ const tableColumns = ref([
     title: t('优先级'),
     colKey: 'priority',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ICategoryItem> }) => {
       return (
         <span>
-          { row.priority || '--'}
+          { row?.priority || '--'}
         </span>
       );
     },
@@ -174,25 +175,25 @@ const tableColumns = ref([
     colKey: 'operate',
     ellipsis: true,
     width: 150,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ICategoryItem> & { isOverflow?: boolean } }) => {
       return (
         <div>
           <Button
             class="mr-10px"
             theme="primary"
             text
-            onClick={() => handleEdit(row)}
+            onClick={() => handleEdit(row as ICategoryItem)}
           >
             { t('编辑') }
           </Button>
           <BkButton
             theme="primary"
             text
-            disabled={row.is_official || row.system_count > 0}
-            onClick={() => handleDelete(row)}
+            disabled={row?.is_official || (row?.system_count ?? 0) > 0}
+            onClick={() => handleDelete(row as ICategoryItem)}
           >
             {
-              row.is_official
+              row?.is_official
               && (
                 <span v-bk-tooltips={{ content: t('官方文档分类，不可删除') }}>
                   { t('删除') }
@@ -200,14 +201,14 @@ const tableColumns = ref([
               )
             }
             {
-              row.system_count > 0 && !row.is_official
+              (row?.system_count ?? 0) > 0 && !row?.is_official
               && (
                 <span v-bk-tooltips={{ content: t('存在关联系统，不可删除') }}>
                   { t('删除') }
                 </span>
               )
             }
-            { !row.is_official && row.system_count < 1 && t('删除') }
+            { !row?.is_official && (row?.system_count ?? 0) < 1 && t('删除') }
           </BkButton>
         </div>
       );
@@ -323,8 +324,8 @@ const getDocCategoryList = async (loading = false) => {
   try {
     const res = await getDocCategory();
     [allData.value, displayData.value] = [Object.freeze(res), Object.freeze(res)];
-    allData.value.forEach((item) => {
-      if (!classifyFilters.value.map(subItem => subItem.value).includes(item.doc_category_id)) {
+    allData.value.forEach((item: any) => {
+      if (!classifyFilters.value.map((subItem: any) => subItem.value).includes(item.doc_category_id)) {
         classifyFilters.value.push({
           text: item.doc_category_name,
           value: item.doc_category_id,
@@ -366,7 +367,7 @@ const handleDeleteDocCategory = async (id: number) => {
 
 const handleSearch = (payload: string) => {
   updateTableEmptyConfig();
-  displayData.value = allData.value.filter((item) => {
+  displayData.value = allData.value.filter((item: any) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg);
   });
@@ -383,7 +384,7 @@ const handleDelete = (data: ICategoryItem) => {
     confirmText: t('删除'),
     confirmButtonTheme: 'danger',
     onConfirm: () => {
-      handleDeleteDocCategory(data.id);
+  handleDeleteDocCategory(data.id!);
     },
   });
 };

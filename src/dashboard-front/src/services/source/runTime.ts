@@ -16,8 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  ISystemDateHistogramResponse,
+  ISystemDetailsGroupByResponse,
+  ISystemErrorsResponse,
+  ISystemEventsTimelineResponse,
+  ISystemSummaryResponse,
+  ISystemsSummaryResponse,
+} from '@/services/types/responses/esb.ts';
 
-const path = '/esb/status/systems/';
+const path = '/esb/status/systems';
 
 export interface ITimeChartParams {
   system: string
@@ -43,8 +51,8 @@ export interface ITimeChartResponse {
  *  查询 runner
  * @param timeRange 查询运行时间
  */
-export function getApigwRuntime({ timeRange }: any) {
-  return http.get(`${path}summary/?time_since=${timeRange}`);
+export function getApigwRuntime(query: { timeRange: string }) {
+  return http.get<ISystemsSummaryResponse[]>(`${path}/summary/?time_since=${query.timeRange}`);
 }
 
 /**
@@ -52,21 +60,21 @@ export function getApigwRuntime({ timeRange }: any) {
  * @param
  */
 export function getApigwTimeline() {
-  return http.get(`${path}events/timeline/`);
+  return http.get<ISystemEventsTimelineResponse[]>(`${path}/events/timeline/`);
 }
 
 export function getApigwSystemSummary({ system, start, end }: ITimeChartParams) {
-  return http.get(`${path}${system}/summary/?time_since=custom&mts_start=${start}&mts_end=${end}`);
+  return http.get<ISystemSummaryResponse>(`${path}/${system}/summary/?time_since=custom&mts_start=${start}&mts_end=${end}`);
 }
 
 export function getApigwChartDetail({ system, start, end }: ITimeChartParams) {
-  return http.get(`${path}${system}/date-histogram/?time_interval=1m&mts_start=${start}&mts_end=${end}`);
+  return http.get<ISystemDateHistogramResponse>(`${path}/${system}/date-histogram/?time_interval=1m&mts_start=${start}&mts_end=${end}`);
 }
 
 export function getApigwRuntimeRequest({ type, system, start, end }: ITimeChartParams) {
-  return http.get(`${path}${system}/details/group-by/?time_since=custom&mts_start=${start}&mts_end=${end}&group_by=${type}&order=availability_asc`);
+  return http.get<ISystemDetailsGroupByResponse[]>(`${path}/${system}/details/group-by/?time_since=custom&mts_start=${start}&mts_end=${end}&group_by=${type}&order=availability_asc`);
 }
 
 export function getApigwErrorRequest({ system, appCode, requestUrl, componentName, start, end }: ITimeChartParams) {
-  return http.get(`${path}${system}/errors/?url=${requestUrl}&app_code=${appCode}&component_name=${componentName}&mts_start=${start}&mts_end=${end}&size=200`);
+  return http.get<ISystemErrorsResponse[]>(`${path}/${system}/errors/?url=${requestUrl}&app_code=${appCode}&component_name=${componentName}&mts_start=${start}&mts_end=${end}&size=200`);
 }

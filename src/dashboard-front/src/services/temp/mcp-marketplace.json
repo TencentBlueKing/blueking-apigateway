@@ -1,0 +1,269 @@
+{
+  "/mcp-marketplace/categories/": {
+    "get": {
+      "operationId": "mcp-marketplace_categories_list",
+      "description": "获取 MCP 市场分类列表",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "keyword",
+          "in": "query",
+          "description": "MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "name": "categories",
+          "in": "query",
+          "description": "分类筛选，支持单个或多个分类名称，多个分类以逗号分隔",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "name": "order_by",
+          "in": "query",
+          "description": "排序方式",
+          "required": false,
+          "type": "string",
+          "enum": [
+            "updated_time",
+            "-updated_time",
+            "created_time",
+            "-created_time",
+            "name",
+            "-name"
+          ],
+          "default": "-updated_time"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/apigateway.apis.web.mcp_marketplace.serializers.MCPServerCategoryOutputSLZ"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "WebAPI.MCPServer"
+      ]
+    },
+    "parameters": []
+  },
+  "/mcp-marketplace/servers/": {
+    "get": {
+      "operationId": "mcp-marketplace_servers_list",
+      "description": "获取网关的 MCPServer 列表",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "keyword",
+          "in": "query",
+          "description": "MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "name": "categories",
+          "in": "query",
+          "description": "分类筛选，支持单个或多个分类名称，多个分类以逗号分隔",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "name": "order_by",
+          "in": "query",
+          "description": "排序方式",
+          "required": false,
+          "type": "string",
+          "enum": [
+            "updated_time",
+            "-updated_time",
+            "created_time",
+            "-created_time",
+            "name",
+            "-name"
+          ],
+          "default": "-updated_time"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/apigateway.apis.web.mcp_marketplace.serializers.MCPServerListOutputSLZ"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "WebAPI.MCPServer"
+      ]
+    },
+    "parameters": []
+  },
+  "/mcp-marketplace/servers/{mcp_server_id}/": {
+    "get": {
+      "operationId": "mcp-marketplace_servers_read",
+      "description": "获取 MCP 市场中某个 Server 的详情",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/apigateway.apis.web.mcp_marketplace.serializers.MCPServerRetrieveOutputSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "WebAPI.MCPServer"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "mcp_server_id",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/mcp-marketplace/servers/{mcp_server_id}/configs/": {
+    "get": {
+      "operationId": "mcp-marketplace_servers_configs_read",
+      "description": "获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/apigateway.apis.web.mcp_server.serializers.MCPServerConfigListOutputSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "WebAPI.MCPServer"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "mcp_server_id",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/mcp-marketplace/servers/{mcp_server_id}/tools/{tool_name}/doc/": {
+    "get": {
+      "operationId": "mcp-marketplace_servers_tools_doc_read",
+      "description": "获取 MCP 市场中某个 Server 的某个工具的文档",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/apigateway.apis.web.mcp_marketplace.serializers.MCPServerToolDocOutputSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "WebAPI.MCPServer"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "mcp_server_id",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "tool_name",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  }
+}

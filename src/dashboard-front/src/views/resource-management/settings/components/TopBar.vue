@@ -153,7 +153,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     align: 'center',
     fixed: 'left',
     width: 60,
-    checkProps: ({ row }) => ({ disabled: !hasDoc(row) }),
+    checkProps: ({ row }: { row: any }) => ({ disabled: !hasDoc(row) }),
   },
   {
     colKey: 'name',
@@ -162,27 +162,27 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'cn_doc',
     title: t('中文文档'),
-    cell: (h, { row }) => <div>{getHasDocText(row, 'zh')}</div>,
+    cell: (h: any, { row }: { row: any }) => <div>{getHasDocText(row, 'zh')}</div>,
   },
   {
     colKey: 'en_doc',
     title: t('英文文档'),
-    cell: (h, { row }) => <div>{getHasDocText(row, 'en')}</div>,
+    cell: (h: any, { row }: { row: any }) => <div>{getHasDocText(row, 'en')}</div>,
   },
 ]);
 
 const getTableData = async (params: Record<string, any> = {}) => getResourceList(toValue(gatewayId), params);
 
-const hasDoc = (resource: any) => resource.docs?.some(item => item.id);
+const hasDoc = (resource: any) => resource.docs?.some((item: any) => item.id);
 
 const getHasDocText = (resource: any, lang = 'zh') =>
-  resource.docs?.find(item => item.language === lang)?.id ? t('有') : t('无');
+  resource.docs?.find((item: any) => item.language === lang)?.id ? t('有') : t('无');
 
 const handleTranslateConfirmClick = async () => {
   const docIds: number[] = [];
-  selectedResources.value.forEach((resource) => {
-    const cnDocId = resource.docs?.find(doc => doc.language === 'zh')?.id;
-    const enDocId = resource.docs?.find(doc => doc.language === 'en')?.id;
+  selectedResources.value.forEach((resource: any) => {
+    const cnDocId = resource.docs?.find((doc: any) => doc.language === 'zh')?.id;
+    const enDocId = resource.docs?.find((doc: any) => doc.language === 'en')?.id;
     if (cnDocId) {
       docIds.push(cnDocId);
     }

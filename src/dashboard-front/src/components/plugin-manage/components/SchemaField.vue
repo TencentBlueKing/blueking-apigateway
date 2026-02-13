@@ -73,6 +73,7 @@ const {
 
 const emit = defineEmits<IEmits>();
 
+// @ts-ignore
 const comRef = ref<InstanceType<typeof component> | null>(null);
 
 const { t } = useI18n();
@@ -152,11 +153,11 @@ const handleInput = (val: string) => {
   emit('input', val);
 };
 
-const handleAddFormItem = (field) => {
+const handleAddFormItem = (field: any) => {
   emit('add', field);
 };
 
-const handleRemoveFormItem = (field) => {
+const handleRemoveFormItem = (field: any) => {
   emit('remove', field);
 };
 

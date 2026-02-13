@@ -130,6 +130,8 @@ import {
 } from '@/services/source/docs';
 import { getResourcesOnline } from '@/services/source/online-debugging';
 import Chat from '@/components/chat/Index.vue';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
 
 interface IProps {
   stageName?: string
@@ -148,6 +150,8 @@ const userStore = useUserInfo();
 const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 
+type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
+
 const active = ref('doc');
 const curComponent = ref({
   id: '',
@@ -157,7 +161,7 @@ const curComponent = ref({
   innerHtml: '',
   markdownHtml: '',
 });
-const curApigw = ref({
+const curApigw = ref<Partial<IGatewayDocsDetail>>({
   name: '',
   label: '',
   maintainers: [],
@@ -254,12 +258,12 @@ const initMarkdownHtml = (box: string) => {
     setTimeout(() => {
       const copyDoms = Array.from(document.getElementsByClassName('ag-copy-btn'));
 
-      const handleCopy = function (this) {
-        copy(this.dataset?.copy);
+      const handleCopy = function (this: HTMLElement) {
+        copy(this.dataset?.copy ?? '');
       };
 
       copyDoms.forEach((dom) => {
-        dom.onclick = handleCopy;
+        (dom as HTMLElement).onclick = handleCopy as any;
       });
     }, 1000);
   });
@@ -303,7 +307,7 @@ const getApigwResourceDoc = async () => {
 };
 
 const getApigwResourceSDK = async () => {
-  const query = {
+  const query: IDocsGatewaysSdksUsageExampleReadQuery = {
     language: 'python',
     stage_name: stageName,
     resource_name: resourceName,

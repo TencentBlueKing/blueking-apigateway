@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => chartData,
-  (data) => {
+  (data: any) => {
     if (!data?.series?.length) {
       isEmpty.value = true;
       updateTableEmptyConfig();
@@ -183,7 +183,7 @@ const chartResize = () => {
 };
 
 const getChartOption = () => {
-  const baseOption: echarts.EChartOption = {
+  const baseOption: Record<string, any> = {
     grid: { right: '8%' },
     xAxis: {
       type: 'time',
@@ -242,7 +242,7 @@ const getChartOption = () => {
     legend: { show: false },
   };
 
-  const chartOption: echarts.EChartOption = {
+  const chartOption: Record<string, any> = {
     xAxis: {},
     yAxis: {},
     series: [],
@@ -261,7 +261,7 @@ const getChartOption = () => {
   chartData?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
-    chartOption.series.push(merge({}, baseOption.series[0], {
+    chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
       name: (item.target?.split('=')[1])?.replace(/"/g, ''),
       data: datapoints.map((item) => {
         if (middleList.includes(instanceId)) {
@@ -323,7 +323,7 @@ const getChartOption = () => {
   // 设置图表tooltip内容
   if (instanceId === 'requests') {
     // 总请求数
-    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+    chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${t('总请求数')}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
@@ -332,7 +332,7 @@ const getChartOption = () => {
   }
   else if (maxList.includes(instanceId)) {
     // 资源 xx 响应耗时分布
-    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+    chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ms</span></p>
@@ -341,7 +341,7 @@ const getChartOption = () => {
   }
   else if (middleList.includes(instanceId)) {
     // ingress 带宽占用 && egress 带宽占用
-    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+    chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} KB</span></p>
@@ -350,7 +350,7 @@ const getChartOption = () => {
   }
   else {
     // 默认 tooltip 内容
-    chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+    chartOption.tooltip.formatter = (params: any) => {
       return `<div>
       <p>${dayjs(params.data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>
       <p><span class="tooltip-icon">${params.marker}${params.seriesName}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
@@ -437,7 +437,7 @@ const generateChartColor = (chartData: ISeriesItemType[]) => {
     }
   });
 
-  const finalColors = colors.reduce((a, b) => a.concat(b), []);
+  const finalColors = colors.reduce<string[]>((a, b) => a.concat(b), []);
   return finalColors;
 };
 
@@ -445,8 +445,8 @@ const generateChartLegend = () => {
   const option = myChart.value?.getOption();
   // 只有一个系列不需要图例
   if (option.series.length > 1) {
-    chartLegend.value[instanceId] = option?.series?.map((serie: echarts.EChartOption.Series, index: number) => ({
-      color: option.color[index],
+    chartLegend.value[instanceId] = option?.series?.map((serie: any, index: number) => ({
+      color: (option.color as string[])[index],
       name: serie.name,
       selected: 'all',
     }));

@@ -94,7 +94,7 @@ const configList = ref([]);
 const handleSelected = (value: string) => {
   configList.value?.forEach((item: {
     type?: string
-    show_if?: boolean
+    show_if?: string
     isShow?: boolean
   }) => {
     if (item?.type !== 'enum' && item?.show_if) {
@@ -105,8 +105,8 @@ const handleSelected = (value: string) => {
 };
 
 const getData = () => {
-  const data = {};
-  configList.value?.forEach((item) => {
+  const data: Record<string, any> = {};
+  configList.value?.forEach((item: any) => {
     data[item.variable] = item.default;
   });
   return data;
@@ -114,8 +114,8 @@ const getData = () => {
 
 const setComponentConfig = () => {
   if (document.querySelectorAll('.value .bk-form-control')) {
-    document.querySelectorAll('.value .bk-form-control')?.forEach((item: HTMLElement) => {
-      item.classList.add('inline-blocks');
+    document.querySelectorAll('.value .bk-form-control')?.forEach((item) => {
+      (item as HTMLElement).classList.add('inline-blocks');
     });
   }
 };
@@ -126,12 +126,12 @@ onMounted(() => {
 
 watch(
   () => list,
-  (value) => {
+  (value: any) => {
     if (value?.length > 0) {
       const temps = cloneDeep(value);
       temps?.forEach((item: Record<string, any>) => {
         if (item?.type === 'enum') {
-          const arrays = [];
+          const arrays: { id: string; name: string }[] = [];
           (item?.options || []).forEach((sub: string[]) => {
             arrays.push({
               id: sub[0],

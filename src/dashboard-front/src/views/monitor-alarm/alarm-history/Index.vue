@@ -176,6 +176,7 @@
 import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
+import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
 import AgTable from '@/components/ag-table/Index.vue';
 
@@ -241,7 +242,7 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStrategyOption.value,
     },
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       if (row.alarm_strategy_names?.length) {
         return (
           <div class="lh-1">
@@ -253,7 +254,7 @@ const tableColumns = computed(() => ([
               class="strategy-names"
             >
               {
-                row.alarm_strategy_names.map((strategy, index) => {
+                row.alarm_strategy_names!.map((strategy, index) => {
                   if (index < 4) {
                     return (
                       <span class="ag-label">
@@ -261,7 +262,7 @@ const tableColumns = computed(() => ([
                       </span>
                     );
                   }
-                  if (index === row.alarm_strategy_names.length - 1 && index > 3) {
+                  if (index === row.alarm_strategy_names!.length - 1 && index > 3) {
                     return <span class="ag-label">...</span>;
                   }
                 })
@@ -277,7 +278,7 @@ const tableColumns = computed(() => ([
     title: t('告警内容'),
     colKey: 'message',
     ellipsis: true,
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
           { row.message || '--' }
@@ -294,18 +295,18 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStatus,
     },
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
           <span class={['m-r-4px', 'ag-outline-dot', row.status]} />
           <span
             v-bk-tooltips={{
               content: row.comment || '--',
-              disabled: !['skipped'].includes(row.status),
+              disabled: !['skipped'].includes(row.status ?? ''),
             }}
             class="status-text"
           >
-            { getAlarmStatusText(row.status) }
+            { getAlarmStatusText(row.status ?? '') }
           </span>
         </span>
       );
@@ -326,7 +327,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return results ?? [];
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue | any) => {
   filterData.value = Object.assign(filterData.value, filterItem);
 };
 
@@ -349,7 +350,7 @@ const handlePickSuccess = () => {
 
 // 获取状态name
 const getAlarmStatusText = (status: string) => {
-  const curStatus = alarmStatus.find(item => item.value === status) ?? {};
+  const curStatus = alarmStatus.find((item: any) => item.value === status) ?? {} as any;
   return curStatus.label ?? '--';
 };
 

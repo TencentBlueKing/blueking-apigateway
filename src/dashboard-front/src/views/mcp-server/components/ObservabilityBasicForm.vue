@@ -191,7 +191,7 @@ const { apiGatewayId, mode } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
-const queryHistory = useStorage('observability-flow-log-query-history', []);
+const queryHistory = useStorage<string[]>('observability-flow-log-query-history', []);
 const accessLogStore = useAccessLog();
 
 const datePickerRef = ref<InstanceType<typeof DatePicker>>();
@@ -290,10 +290,10 @@ const handleSearchTimeRange = () => {
   if (shortcutSelectedIndex.value !== -1) {
     timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
   }
-  const formatTimeRange = formatDatetime(timeRange);
+  const formatTimeRange = formatDatetime(timeRange) as any;
   searchParams.value = Object.assign(searchParams.value, {
-    time_start: formatTimeRange?.at(0),
-    time_end: formatTimeRange?.at(1),
+    time_start: formatTimeRange?.[0],
+    time_end: formatTimeRange?.[1],
   });
 };
 
@@ -398,7 +398,7 @@ const handleClearFilter = () => {
 };
 
 // 请求数组件图表调用的同步更新数据
-const syncDateFromChart = (dateInfo) => {
+const syncDateFromChart = (dateInfo: any) => {
   if (dateInfo?.dateValue?.length) {
     shortcutSelectedIndex.value = -1;
     dateValue.value = dateInfo.dateValue;

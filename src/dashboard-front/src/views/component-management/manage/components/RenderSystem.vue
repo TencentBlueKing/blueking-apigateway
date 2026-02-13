@@ -198,7 +198,7 @@ const clearFilterKey = () => {
 
 watch(
   () => systemList.value,
-  (value) => {
+  (value: ISystemItem[]) => {
     curList.value = [...value];
   },
   { immediate: true },
@@ -206,7 +206,7 @@ watch(
 
 watch(
   () => searchValue.value,
-  (newVal, oldVal) => {
+  (newVal: string, oldVal: string) => {
     if (!newVal && !!oldVal && isFilter.value) {
       isFilter.value = false;
       curList.value = [...systemList.value];

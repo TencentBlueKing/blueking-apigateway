@@ -161,7 +161,7 @@ const getData = () => {
   };
 };
 
-const handleListChange = (list) => {
+const handleListChange = (list: any) => {
   const data = {
     source: type.value,
     list,
@@ -179,14 +179,14 @@ const handleTabChange = (key: string) => {
   else if (key === 'urlencoded') {
     list = urlencodedRef.value?.getTableData();
   }
-  list = list?.filter(item => item.name);
+  list = list?.filter((item: any) => item.name);
 
   handleListChange(list);
 };
 
 watch(
   () => fromDataPayload,
-  (value) => {
+  (value: any) => {
     fromDataList.value = value;
   },
   { deep: true },
@@ -194,7 +194,7 @@ watch(
 
 watch(
   () => rawPayload,
-  (value) => {
+  (value: any) => {
     editorText.value = JSON.stringify(value, null, 2);
     resourceEditorRef.value?.setValue(editorText.value);
   },

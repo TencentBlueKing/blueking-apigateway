@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// @ts-ignore
 import type { CSSProperties } from 'vue';
 import { useTrace } from '@/stores/useTrace';
 import type { ISpan, TNil } from '@/components/trace-view/typings';
@@ -83,7 +84,7 @@ export default defineComponent({
   props: TListViewProps,
   emits: ['itemClick', 'getCrossAppInfo', 'toggleCollapse'],
 
-  setup(props, { emit }) {
+  setup(props: any, { emit }: any) {
     const route = useRoute();
     const { traceTree: trace, spanGroupTree } = useTrace();
     const spanBarCurrentStore = useSpanBarCurrentInject();
@@ -453,7 +454,7 @@ export default defineComponent({
             showErrorIcon={showErrorIcon}
             span={span}
             onLoadCrossAppInfo={getCrossAppInfo}
-            onToggleCollapse={(groupID, status) => emit('toggleCollapse', groupID, status)}
+            onToggleCollapse={(groupID: any, status: any) => emit('toggleCollapse', groupID, status)}
           />
         </div>
       );
@@ -476,7 +477,7 @@ export default defineComponent({
           span_id.value = spanInfo.span_id;
           // 打开span详情抽屉
           if (spanInfo.type === 'spanDetail') {
-            const data = getRowStates.value.find(f => f.span?.id === spanInfo.span_id);
+            const data = getRowStates.value.find((f: any) => f.span?.id === spanInfo.span_id);
             if (data) {
               setTimeout(() => {
                 document.getElementById(spanInfo.span_id)?.scrollIntoView({ behavior: 'smooth' });

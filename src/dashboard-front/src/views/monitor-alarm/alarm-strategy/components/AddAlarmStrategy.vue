@@ -514,7 +514,7 @@ const noticeConfig = ref<{
 
 const sliderConfig = computed({
   get: () => sliderParams,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:sliderParams', form);
   },
 });
@@ -683,7 +683,7 @@ const handleSave = async () => {
 
   params.config.notice_config = cloneDeep(noticeConfig.value);
   if (params.config.notice_config?.notice_role.includes('custom')) {
-    params.config.notice_config.notice_role = params.config.notice_config.notice_role.filter(item => item !== 'custom');
+    params.config.notice_config.notice_role = params.config.notice_config.notice_role.filter((item: any) => item !== 'custom');
   }
   else {
     params.config.notice_config.notice_extra_receiver = [];
@@ -722,7 +722,7 @@ const handleEffectiveStageTypeChange = (type: string) => {
   }
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   const params = {
     form: formData.value,
     effectiveStage: effectiveStageType.value,

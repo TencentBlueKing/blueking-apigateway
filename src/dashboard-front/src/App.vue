@@ -88,13 +88,9 @@ import LanguageToggle from '@/components/language-toggle/Index.vue';
 import ProductInfo from '@/components/product-info/Index.vue';
 import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
-// @ts-expect-error missing module type
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
-// @ts-expect-error missing module type
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
-// @ts-expect-error missing module type
 import NoticeComponent from '@blueking/notice-component';
-
 import {
   useEnv,
   useFeatureFlag,
@@ -212,7 +208,7 @@ const fetchInitData = async () => {
 
 watch(
   () => route.path,
-  (newVal, oldVal) => {
+  (newVal: string, oldVal: string) => {
     if (newVal === oldVal) {
       return;
     }

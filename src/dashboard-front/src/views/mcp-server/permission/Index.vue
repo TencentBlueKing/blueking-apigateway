@@ -369,7 +369,7 @@ const getMcpList = async () => {
 getMcpList();
 
 const getApplicant = async () => {
-  const response = await getMcpPermissionsApplicant(gatewayStore.apigwId, filterData.value.mcp_server_id);
+  const response = await getMcpPermissionsApplicant(gatewayStore.apigwId, filterData.value.mcp_server_id, {} as any);
   applicantList.value = response?.applicants || [];
 };
 
@@ -481,7 +481,7 @@ const handleSubmitApprove = async () => {
     refreshTableData();
     applyActionDialogConf.isShow = false;
   }
-  catch (e: unknown) {
+  catch (e: any) {
     Message({
       message: e?.error?.message,
       theme: 'error',
@@ -494,7 +494,7 @@ const handleSubmitApprove = async () => {
 
 watch(
   () => tableData.value,
-  (list) => {
+  (list: any) => {
     if (filterData.value.state === 'unprocessed') {
       lastCount.value = list?.length || 0;
     }
@@ -505,7 +505,7 @@ watch(
 
 watch(
   () => route.query.serverId,
-  (val) => {
+  (val: any) => {
     if (val) {
       filterData.value.mcp_server_id = Number(val) || 0;
     }
@@ -515,7 +515,7 @@ watch(
 
 watch(
   () => filterData.value.mcp_server_id,
-  (val) => {
+  (val: any) => {
     if (val && !featureFlagStore.isTenantMode) {
       getApplicant();
     }

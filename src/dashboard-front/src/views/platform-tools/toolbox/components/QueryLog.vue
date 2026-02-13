@@ -136,7 +136,10 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getLogsInfo } from '@/services/source/access-log';
+import type { IExtractApiReturn } from '@/services/types/utils';
 import dayjs from 'dayjs';
+
+type ILogsInfoResult = IExtractApiReturn<typeof getLogsInfo>;
 
 const route = useRoute();
 const { t } = useI18n();
@@ -190,8 +193,8 @@ const getDetailData = async () => {
   isDataLoading.value = true;
 
   try {
-    const res = await getLogsInfo(requestId.value);
-    details.value.result = res.results[0] || {};
+    const res = await getLogsInfo(requestId.value) as any;
+    details.value.result = res.results?.[0] || {};
     details.value.fields = res.fields;
   }
   catch (error) {
@@ -219,19 +222,19 @@ const updateTableEmptyConfig = () => {
   tableEmptyConf.value.emptyType = '';
 };
 
-const formatValue = (value, field: string) => {
+const formatValue = (value: any, field: string) => {
   if (value && ['timestamp'].includes(field)) {
     return dayjs.unix(value).format('YYYY-MM-DD HH:mm:ss ZZ');
   }
   return value || '--';
 };
 
-const handleRowCopy = (field: string, row) => {
+const handleRowCopy = (field: string, row: any) => {
   const copyStr = `${field}: ${row[field]}`;
   copyToClipboard(copyStr);
 };
 
-const handleClickCopyLink = ({ request_id }) => {
+const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
   if (!request_id) {
     return;
   }

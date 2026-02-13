@@ -400,12 +400,12 @@ const isBound = computed(() => {
 });
 
 const typeId = computed(() => {
-  const plugin = pluginList.find(plugin => plugin.code === choosePlugin.value);
+  const plugin = pluginList.find((plugin: any) => plugin.code === choosePlugin.value);
   return plugin?.id ?? 0;
 });
 
 const infoNotes = computed(() => {
-  const plugin = pluginList.find(plugin => plugin.code === choosePlugin.value);
+  const plugin = pluginList.find((plugin: any) => plugin.code === choosePlugin.value);
   return plugin?.notes ?? '';
 });
 
@@ -418,7 +418,7 @@ const exampleHtml = computed(() => {
 
 watch(
   () => curPlugin,
-  (newVal) => {
+  (newVal: any) => {
     if (newVal) {
       curPluginInfo.value = newVal;
       choosePlugin.value = newVal.code;
@@ -572,7 +572,7 @@ const init = () => {
 init();
 
 // 设置编辑插件配置数据回显
-const setPluginInfo = (plugin) => {
+const setPluginInfo = (plugin: any) => {
   formData.value = cloneDeep(plugin?.config);
 };
 

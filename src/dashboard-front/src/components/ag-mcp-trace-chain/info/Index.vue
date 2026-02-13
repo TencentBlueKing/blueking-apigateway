@@ -114,7 +114,7 @@ const renderLatencyDistribution = () => {
   const latencyDistribution = traceChainDetail?.latency_distribution;
 
   if (latencyDistribution?.length) {
-    return latencyDistribution.map(item => `${item?.latency_ms}ms`)?.join(' - ');
+    return latencyDistribution.map((item: any) => `${item?.latency_ms}ms`)?.join(' - ');
   }
 
   return '0ms';

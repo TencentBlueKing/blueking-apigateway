@@ -312,49 +312,49 @@ const renderAuthConfigColLabel = () => {
     <div>
       <div class="auth-config-col-label">
         <span>{t('认证方式')}</span>
-        <BkPopConfirm
+        <bk-pop-confirm
           width="430"
           trigger="click"
           title={<span style="font-size: 16px;color: #313238;">{t('批量修改认证方式')}</span>}
           content={(
             <div class="multi-edit-popconfirm-wrap auth-config" style="margin-bottom: -12px;">
-              <BkForm model={tempAuthConfig.value} labelWidth="110" labelPosition="right">
-                <BkFormItem label={t('认证方式')} required={true} style="margin-bottom: 12px;">
-                  <BkCheckbox
+              <bk-form model={tempAuthConfig.value} labelWidth="110" labelPosition="right">
+                <bk-form-item label={t('认证方式')} required={true} style="margin-bottom: 12px;">
+                  <bk-checkbox
                     v-model={tempAuthConfig.value.app_verified_required}
                   >
                     <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸应用身份信息') }}>
                       {t('蓝鲸应用认证')}
                     </span>
-                  </BkCheckbox>
-                  <BkCheckbox class="ml-40px" v-model={tempAuthConfig.value.auth_verified_required}>
+                  </bk-checkbox>
+                  <bk-checkbox class="ml-40px" v-model={tempAuthConfig.value.auth_verified_required}>
                     <span class="bottom-line" v-bk-tooltips={{ content: t('请求方需提供蓝鲸用户身份信息') }}>
                       {t('用户认证')}
                     </span>
-                  </BkCheckbox>
-                </BkFormItem>
+                  </bk-checkbox>
+                </bk-form-item>
                 {tempAuthConfig.value.app_verified_required
                   ? (
-                    <BkFormItem
+                    <bk-form-item
                       label={t('检验应用权限')}
                       description={t('蓝鲸应用需申请资源访问权限')}
                       style="margin-bottom: 12px;"
                     >
-                      <BkSwitcher
+                      <bk-switcher
                         v-model={tempAuthConfig.value.resource_perm_required}
                         theme="primary"
                         size="small"
                       />
-                    </BkFormItem>
+                    </bk-form-item>
                   )
                   : ''}
-              </BkForm>
+              </bk-form>
             </div>
           )}
           onConfirm={() => handleConfirmAuthConfig()}
           onCancel={() => handleCancelAuthConfig()}
         >
-          <AgIcon
+          <ag-icon
             name="bulk-edit"
             class="edit-action ml-5px color-#3A84FF"
             v-bk-tooltips={{
@@ -365,7 +365,7 @@ const renderAuthConfigColLabel = () => {
               ),
             }}
           />
-        </BkPopConfirm>
+        </bk-pop-confirm>
       </div>
     </div>
   );
@@ -377,45 +377,45 @@ const renderIsPublicColLabel = () => {
     <div>
       <div class="public-config-col-label">
         <span>{t('是否公开')}</span>
-        <BkPopConfirm
+        <bk-pop-confirm
           width="360"
           trigger="click"
           title={<span class="text-16px color-#313238">{t('批量修改公开设置')}</span>}
           content={(
             <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
-              <BkForm model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
-                <BkFormItem
+              <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
+                <bk-form-item
                   label={t('是否公开')}
                   required={true}
                   description={t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')}
                   style="margin-bottom: 12px;"
                 >
-                  <BkSwitcher
+                  <bk-switcher
                     v-model={tempPublicConfig.value.is_public}
                     theme="primary"
                     size="small"
                   />
-                </BkFormItem>
+                </bk-form-item>
                 {tempPublicConfig.value.is_public
                   ? (
-                    <BkFormItem style="margin-bottom: 12px;">
-                      <BkCheckbox
+                    <bk-form-item style="margin-bottom: 12px;">
+                      <bk-checkbox
                         v-model={tempPublicConfig.value.allow_apply_permission}
                       >
                         <span class="bottom-line">
                           {t('允许申请权限')}
                         </span>
-                      </BkCheckbox>
-                    </BkFormItem>
+                      </bk-checkbox>
+                    </bk-form-item>
                   )
                   : ''}
-              </BkForm>
+              </bk-form>
             </div>
           )}
           onConfirm={() => handleConfirmPublicConfig()}
           onCancel={() => handleCancelPublicConfig()}
         >
-          <AgIcon
+          <ag-icon
             name="bulk-edit"
             class="edit-action ml-5px color-#3A84FF"
             v-bk-tooltips={{
@@ -426,7 +426,7 @@ const renderIsPublicColLabel = () => {
               ),
             }}
           />
-        </BkPopConfirm>
+        </bk-pop-confirm>
       </div>
     </div>
   );
@@ -438,42 +438,42 @@ const renderDocColLabel = () => {
     <div>
       <div class="public-config-col-label">
         <span>{t('资源文档')}</span>
-        <BkPopConfirm
+        <bk-pop-confirm
           width="360"
           trigger="click"
           title={<span class="text-16px color-#313238">{t('批量修改资源文档')}</span>}
           content={(
             <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
-              <BkForm model={localDocConfig.value} labelWidth="100" labelPosition="right">
-                <BkFormItem
+              <bk-form model={localDocConfig.value} labelWidth="100" labelPosition="right">
+                <bk-form-item
                   label={t('生成文档')}
                   style="margin-bottom: 12px;"
                 >
-                  <BkSwitcher
+                  <bk-switcher
                     v-model={localDocConfig.value.showDoc}
                     theme="primary"
                     size="small"
                   />
-                </BkFormItem>
+                </bk-form-item>
                 {localDocConfig.value.showDoc
                   ? (
-                    <BkFormItem
+                    <bk-form-item
                       label={t('文档语言')}
                       style="margin-bottom: 12px;"
                     >
-                      <BkRadioGroup v-model={localDocConfig.value.language} size="small">
-                        <BkRadio label="zh">{t('中文文档')}</BkRadio>
-                        <BkRadio label="en">{t('英文文档')}</BkRadio>
-                      </BkRadioGroup>
-                    </BkFormItem>
+                      <bk-radio-group v-model={localDocConfig.value.language} size="small">
+                        <bk-radio label="zh">{t('中文文档')}</bk-radio>
+                        <bk-radio label="en">{t('英文文档')}</bk-radio>
+                      </bk-radio-group>
+                    </bk-form-item>
                   )
                   : ''}
-              </BkForm>
+              </bk-form>
             </div>
           )}
           onConfirm={() => handleConfirmDocConfig()}
         >
-          <AgIcon
+          <ag-icon
             name="bulk-edit"
             class="edit-action ml-5px color-#3A84FF"
             v-bk-tooltips={{
@@ -484,7 +484,7 @@ const renderDocColLabel = () => {
               ),
             }}
           />
-        </BkPopConfirm>
+        </bk-pop-confirm>
       </div>
     </div>
   );

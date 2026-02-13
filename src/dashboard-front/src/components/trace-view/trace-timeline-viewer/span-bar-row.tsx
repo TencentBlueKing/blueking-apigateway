@@ -96,7 +96,7 @@ export default defineComponent({
   props: SpanBarRowProps,
   emits: ['toggleCollapse'],
 
-  setup(props, { emit }) {
+  setup(props: any, { emit }: any) {
     const traceStore = useTrace();
     const spanBarCurrentStore = useSpanBarCurrentInject();
     const childrenHiddenStore = useChildrenHiddenInject();
@@ -598,13 +598,13 @@ export default defineComponent({
                             ? (
                               <i
                                 class="icon-monitor icon-mc-fold-menu icon-collapsed"
-                                onClick={e => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
+                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
                               />
                             )
                             : (
                               <span
                                 class="collapsed-mark"
-                                onClick={e => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
+                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
                               >
                                 {groupInfo.members.length}
                               </span>

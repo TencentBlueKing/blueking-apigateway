@@ -330,17 +330,17 @@ const toolCollapseMargin = ref('');
 
 const filteredToolList = computed(() => {
   const regex = new RegExp(keyword.value, 'i');
-  return toolList.value.filter((tool) => {
+  return toolList.value.filter((tool: any) => {
     const searchName = tool.tool_name || tool.name;
     return regex.test(searchName) || regex.test(tool.description);
   });
 });
 // tool 分类列表
 const toolGroupList = computed(() => {
-  return filteredToolList.value?.reduce((groupList, tool) => {
+  return filteredToolList.value?.reduce((groupList: any, tool: any) => {
     if (tool.labels[0]) {
       const { id, name } = tool.labels[0];
-      const group = groupList.find(item => item.id === id);
+      const group = groupList.find((item: any) => item.id === id);
       if (group) {
         group.toolList.push(tool);
       }
@@ -353,7 +353,7 @@ const toolGroupList = computed(() => {
       }
     }
     else {
-      const group = groupList.find(item => item.id === 0);
+      const group = groupList.find((item: any) => item.id === 0);
       if (group) {
         group.toolList.push(tool);
       }
@@ -370,7 +370,7 @@ const toolGroupList = computed(() => {
   }, [] as {
     id: number
     name: string
-    toolList: typeof toolList.value
+    toolList: any[]
   }[]);
 });
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
@@ -396,7 +396,7 @@ watch(() => [server?.id, server?.name], () => {
 
 // 分类列表变化时更新 collapse 展开状态
 watch(toolGroupList, () => {
-  activeGroupPanelNames.value = toolGroupList.value.map(item => item.name);
+  activeGroupPanelNames.value = toolGroupList.value.map((item: any) => item.name);
 });
 
 watch(selectedToolMarkdownHtml, () => {
@@ -424,7 +424,7 @@ const fetchToolList = async () => {
       selectedToolName.value = route.query.tool_name as string;
     }
     if (selectedToolName.value) {
-      selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
+      selectedTool.value = toolList.value.find((tool: any) => tool.name === selectedToolName.value) ?? null;
     }
     else {
       selectedTool.value = toolList.value[0] ?? null;
@@ -445,7 +445,7 @@ const handleToolClick = async (resId: number, toolName: string) => {
   try {
     isLoading.value = true;
     selectedToolName.value = toolName;
-    selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
+    selectedTool.value = toolList.value.find((tool: any) => tool.name === selectedToolName.value) ?? null;
     if (selectedTool.value) {
       await getDoc();
     }
@@ -470,10 +470,10 @@ const getDoc = async () => {
 
     let res: any = {};
     if (page === 'market') {
-      res = await getMcpServerToolDoc(server.id, selectedTool.value.name);
+      res = await getMcpServerToolDoc(server.id, selectedTool.value!.name);
     }
     else {
-      res = await getServerToolDoc(gatewayId.value, server.id, selectedTool.value.name);
+      res = await getServerToolDoc(gatewayId.value, server.id, selectedTool.value!.name);
     }
 
     const { content, updated_time, schema } = res;
@@ -502,9 +502,9 @@ const initMarkdownHtml = (box: string) => {
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
       btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
-      btn.setAttribute('data-copy', code);
+      btn.setAttribute('data-copy', code!);
       parentDiv?.appendChild(btn);
-      codeBox?.appendChild(item?.querySelector('code'));
+      codeBox?.appendChild(item?.querySelector('code')!);
       item?.appendChild(codeBox);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
@@ -554,9 +554,9 @@ const handleToolCollapseChange = (isCollapse: boolean) => {
 };
 
 const handleToolMouseenter = (e: MouseEvent, row: IMCPServerTool) => {
-  const cell = (e.target as HTMLElement).closest('.truncate');
-  if (cell) {
-    row.isOverflow = cell.scrollWidth > cell.offsetWidth;
+    const cell = (e.target as HTMLElement).closest('.truncate');
+    if (cell) {
+      row.isOverflow = (cell as HTMLElement).scrollWidth > (cell as HTMLElement).offsetWidth;
   };
 };
 

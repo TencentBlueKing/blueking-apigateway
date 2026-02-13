@@ -124,7 +124,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import CodeBlock from './CodeBlock.vue';
 
 const { t } = useI18n();

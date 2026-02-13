@@ -1,0 +1,1053 @@
+{
+  "/esb/components/": {
+    "get": {
+      "operationId": "esb_components_list",
+      "description": "",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "required": [
+                      "count",
+                      "results"
+                    ],
+                    "type": "object",
+                    "properties": {
+                      "count": {
+                        "type": "integer"
+                      },
+                      "next": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "previous": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/ESBChannelSLZ"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "post": {
+      "operationId": "esb_components_create",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ESBChannelSLZ"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/ESBChannelSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/batch/": {
+    "delete": {
+      "operationId": "esb_components_batch_delete",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ESBChannelBatchSLZ"
+          }
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/gateway/": {
+    "get": {
+      "operationId": "esb_components_retrieve_esb_gateway",
+      "description": "获取 ESB 组件对应网关的信息",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/sync/check/": {
+    "post": {
+      "operationId": "esb_components_sync_sync_check",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "201": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/sync/need-new-release/": {
+    "get": {
+      "operationId": "esb_components_sync_need_new_release",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/sync/release/": {
+    "post": {
+      "operationId": "esb_components_sync_sync_and_release",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "201": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/sync/release/histories/": {
+    "get": {
+      "operationId": "esb_components_sync_release_histories_list",
+      "description": "",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "time_start",
+          "in": "query",
+          "required": false,
+          "type": "integer",
+          "x-nullable": true
+        },
+        {
+          "name": "time_end",
+          "in": "query",
+          "required": false,
+          "type": "integer",
+          "x-nullable": true
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/ComponentReleaseHistorySLZ"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/sync/release/histories/{id}/": {
+    "get": {
+      "operationId": "esb_components_sync_release_histories_read",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ComponentResourceBindingSLZ"
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "description": "A unique integer value identifying this 组件同步网关及发布历史.",
+        "required": true,
+        "type": "integer"
+      }
+    ]
+  },
+  "/esb/components/sync/release/histories/{id}/status/": {
+    "get": {
+      "operationId": "esb_components_sync_release_histories_status_read",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/ComponentReleaseHistoryStatusSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "description": "A unique integer value identifying this 组件同步网关及发布历史.",
+        "required": true,
+        "type": "integer"
+      }
+    ]
+  },
+  "/esb/components/sync/release/status/": {
+    "get": {
+      "operationId": "esb_components_sync_release_get_release_status",
+      "description": "获取组件的发布状态",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/components/{id}/": {
+    "get": {
+      "operationId": "esb_components_read",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/ESBChannelSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "put": {
+      "operationId": "esb_components_update",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/ESBChannelSLZ"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/ESBChannelSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "delete": {
+      "operationId": "esb_components_delete",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "204": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.Component"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "description": "A unique integer value identifying this esb channel.",
+        "required": true,
+        "type": "integer"
+      }
+    ]
+  },
+  "/esb/doc-categories/": {
+    "get": {
+      "operationId": "esb_doc-categories_list",
+      "description": "",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "required": [
+                      "count",
+                      "results"
+                    ],
+                    "type": "object",
+                    "properties": {
+                      "count": {
+                        "type": "integer"
+                      },
+                      "next": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "previous": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/DocCategorySLZ"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.DocCategory"
+      ]
+    },
+    "post": {
+      "operationId": "esb_doc-categories_create",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/DocCategorySLZ"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/DocCategorySLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.DocCategory"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/doc-categories/{id}/": {
+    "get": {
+      "operationId": "esb_doc-categories_read",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/DocCategorySLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.DocCategory"
+      ]
+    },
+    "put": {
+      "operationId": "esb_doc-categories_update",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/DocCategorySLZ"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/DocCategorySLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.DocCategory"
+      ]
+    },
+    "delete": {
+      "operationId": "esb_doc-categories_delete",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "204": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.DocCategory"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "description": "A unique integer value identifying this 文档分类.",
+        "required": true,
+        "type": "integer"
+      }
+    ]
+  },
+  "/esb/status/systems/events/timeline/": {
+    "get": {
+      "operationId": "esb_status_systems_events_timeline_list",
+      "description": "Get timeline data for all system events",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/status/systems/summary/": {
+    "get": {
+      "operationId": "esb_status_systems_summary_list",
+      "description": "Summary data for third-party system",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/status/systems/unstable/": {
+    "get": {
+      "operationId": "esb_status_systems_unstable_list",
+      "description": "Get recent unstable systems",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/status/systems/{system_name}/date-histogram/": {
+    "get": {
+      "operationId": "esb_status_systems_date-histogram_list",
+      "description": "date_histogram data for third-party system",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "system_name",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/esb/status/systems/{system_name}/details/group-by/": {
+    "get": {
+      "operationId": "esb_status_systems_details_group-by_list",
+      "description": "Perc95 resp time data for third-party system",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "system_name",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/esb/status/systems/{system_name}/errors/": {
+    "get": {
+      "operationId": "esb_status_systems_errors_list",
+      "description": "查询某个运营系统错误详情",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "system_name",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/esb/status/systems/{system_name}/summary/": {
+    "get": {
+      "operationId": "esb_status_systems_summary_list",
+      "description": "Summary data for third-party system",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "esb"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "system_name",
+        "in": "path",
+        "required": true,
+        "type": "string"
+      }
+    ]
+  },
+  "/esb/systems/": {
+    "get": {
+      "operationId": "esb_systems_list",
+      "description": "",
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "description": "Number of results to return per page.",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "description": "The initial index from which to return the results.",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "required": [
+                  "count",
+                  "results"
+                ],
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "results": {
+                    "required": [
+                      "count",
+                      "results"
+                    ],
+                    "type": "object",
+                    "properties": {
+                      "count": {
+                        "type": "integer"
+                      },
+                      "next": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "previous": {
+                        "type": "string",
+                        "format": "uri",
+                        "x-nullable": true
+                      },
+                      "results": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/definitions/SystemSLZ"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.System"
+      ]
+    },
+    "post": {
+      "operationId": "esb_systems_create",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/SystemSLZ"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/SystemSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.System"
+      ]
+    },
+    "parameters": []
+  },
+  "/esb/systems/{id}/": {
+    "get": {
+      "operationId": "esb_systems_read",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/SystemSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.System"
+      ]
+    },
+    "put": {
+      "operationId": "esb_systems_update",
+      "description": "",
+      "parameters": [
+        {
+          "name": "data",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/SystemSLZ"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/definitions/SystemSLZ"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.System"
+      ]
+    },
+    "delete": {
+      "operationId": "esb_systems_delete",
+      "description": "",
+      "parameters": [],
+      "responses": {
+        "204": {
+          "description": "",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "tags": [
+        "ESB.System"
+      ]
+    },
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "description": "A unique integer value identifying this component system.",
+        "required": true,
+        "type": "integer"
+      }
+    ]
+  }
+}

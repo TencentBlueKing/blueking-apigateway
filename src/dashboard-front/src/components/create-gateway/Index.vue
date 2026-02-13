@@ -617,7 +617,7 @@ const md = new MarkdownIt({
   },
 });
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: (data: any) => void) => {
   callback(cloneDeep(formData.value));
 };
 

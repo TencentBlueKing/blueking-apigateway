@@ -72,8 +72,8 @@ export const useTDesignSelection = () => {
       }
     }
     else {
-      selections.value = selections.value.filter(item => item[tableRowKey] !== rowKey);
-      selectionsRowKeys.value = selectionsRowKeys.value.filter(key => key !== rowKey);
+      selections.value = selections.value.filter((item: any) => item[tableRowKey] !== rowKey);
+      selectionsRowKeys.value = selectionsRowKeys.value.filter((key: any) => key !== rowKey);
     }
   };
 
@@ -90,7 +90,7 @@ export const useTDesignSelection = () => {
 
     // 生成当前页行Key集合（用于快速判断）
     const pageKeySet = new Set(
-      tables.map(item => item[tableRowKey]).filter(key => key != null) as (string | number)[],
+      tables.map((item: any) => item[tableRowKey]).filter((key: any) => key != null) as (string | number)[],
     );
 
     // 生成已选行Key集合
@@ -105,10 +105,10 @@ export const useTDesignSelection = () => {
 
     // 计算新的已选行数据：过滤掉当前页需取消的，保留其他页+当前页需选中的
     const newSelections = selections.value
-      .filter(item => !pageKeySet.has(item[tableRowKey] as string | number))
+      .filter((item: any) => !pageKeySet.has(item[tableRowKey] as string | number))
       .concat(isCheck ? tables : []);
     const uniqueSelections = Array.from(
-      new Map(newSelections.map(item => [item[tableRowKey], item]))?.values(),
+      new Map(newSelections.map((item: any) => [item[tableRowKey], item]))?.values(),
     );
 
     // 一次性更新响应式数据，减少视图更新次数

@@ -217,7 +217,7 @@ watch(
         }
         // labels 由纯数组组成的情况
         else {
-          label_ids = labelsData.value.filter(label => labels.includes(label.name)).map(label => label.id);
+          label_ids = labelsData.value.filter((label: { id: number; name: string }) => labels.includes(label.name)).map((label: { id: number; name: string }) => label.id);
         }
       }
       formData.value = {
@@ -236,7 +236,7 @@ watch(
 
 watch(
   () => [formData.value.is_public, formData.value.auth_config.resource_perm_required],
-  ([v1, v2]) => {
+  ([v1, v2]: [boolean, boolean]) => {
     if (!v1 || !v2) {
       formData.value.allow_apply_permission = false;
     }

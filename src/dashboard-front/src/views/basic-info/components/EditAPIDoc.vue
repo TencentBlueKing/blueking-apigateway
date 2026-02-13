@@ -220,7 +220,8 @@
 import { useFeatureFlag } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
-import { patchGateway } from '@/services/source/gateway';
+import { patchGateway, getGatewayDetail } from '@/services/source/gateway';
+import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 
@@ -235,18 +236,20 @@ interface IForm {
 
 interface IProps {
   modelValue?: boolean
-  data?: any
+  data?: IExtractApiReturn<typeof getGatewayDetail>
 }
 
 const {
   modelValue = false,
-  data = {},
+  data = undefined,
 } = defineProps<IProps>();
 
-const emit = defineEmits<{
+interface IEmits {
   'update:modelValue': [value: boolean]
   'done': [void]
-}>();
+}
+
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
@@ -263,7 +266,7 @@ const InitForm = (): IForm => {
 };
 
 const formRef = ref<InstanceType<typeof Form> & { clearValidate: () => void }>();
-const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector>>();
+const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector> & { isShowError: boolean; isEditable: boolean }>();
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
 
@@ -311,7 +314,7 @@ const handleCancel = () => {
 
 const handleCommit = async () => {
   try {
-    await formRef.value.validate();
+    await formRef.value?.validate();
 
     loading.value = true;
 
@@ -339,7 +342,7 @@ const handleCommit = async () => {
       };
     }
 
-    await patchGateway(data.id, payload);
+    await patchGateway(data!.id, payload);
 
     emit('done');
     handleUpdateIsShow(false);

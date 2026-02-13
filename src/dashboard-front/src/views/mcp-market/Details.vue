@@ -338,6 +338,10 @@ import {
   getMcpAIConfigList,
   getMcpServerDetails,
 } from '@/services/source/mcp-market';
+
+interface IMarketplaceDetailsWithOverflow extends IMarketplaceDetails {
+  isOverflow?: boolean
+}
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
@@ -370,7 +374,7 @@ const { divideRatio } = useMcpConfigDivideRatio([
 const active = ref('tools');
 const toolsCount = ref<number>(0);
 const promptCount = ref(0);
-const mcpDetails = ref<IMarketplaceDetails>();
+const mcpDetails = ref<IMarketplaceDetailsWithOverflow>();
 const defaultMarkdownStr = ref('');
 const markdownStr = ref('');
 const isExistCustomGuide = ref(false);
@@ -416,14 +420,14 @@ const handleShowGuide = () => {
   isShowGuideSlider.value = true;
 };
 
-const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceDetails) => {
-  const cell = e.target.closest('.truncate');
+const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceDetailsWithOverflow) => {
+  const cell = e.target.closest('.truncate') as HTMLElement | null;
   if (cell) {
     row.isOverflow = cell.scrollWidth > cell.offsetWidth;
   }
 };
 
-const handleMouseleave = (_: MouseEvent, row: IMarketplaceDetails) => {
+const handleMouseleave = (_: MouseEvent, row: IMarketplaceDetailsWithOverflow) => {
   row.isOverflow = false;
 };
 

@@ -107,8 +107,12 @@
 
 <script setup lang="ts">
 import { searchAPI } from '@/services/source/docs-esb';
+import type { IExtractApiReturn } from '@/services/types/utils';
+import type { IBoard } from '../types.d.ts';
 
-interface IProps { versionList?: any[] }
+type ISearchResult = IExtractApiReturn<typeof searchAPI>[number];
+
+interface IProps { versionList?: IBoard[] }
 
 const {
   versionList = [{
@@ -121,14 +125,14 @@ const {
 const { t } = useI18n();
 const router = useRouter();
 
-const curVersionList = ref([]);
-const resultList = ref([]);
+const curVersionList = ref<IBoard[]>([]);
+const resultList = ref<ISearchResult[]>([]);
 const keyword = ref<string>('');
 const contentMaxHeight = ref<number>(410);
 const selectIndex = ref<number>(0);
 const isLoading = ref<boolean>(false);
 const dropdown = ref();
-const searchListContainer = ref(null);
+const searchListContainer = ref<HTMLElement | null>(null);
 const curVersion = ref<any>({
   board: '',
   board_label: '',
@@ -144,7 +148,7 @@ watch(
   () => {
     if (versionList.length) {
       curVersion.value = versionList[0];
-      curVersionList.value = versionList;
+      curVersionList.value = versionList as IBoard[];
     }
   },
   { immediate: true },
@@ -203,15 +207,19 @@ const handleKeyup = (e: any) => {
     case 38:
       if (selectIndex.value === -1 || selectIndex.value === 0) {
         selectIndex.value = curLength - 1;
-        searchListContainer.value.scrollTop = searchListContainer.value.scrollHeight;
+        if (searchListContainer.value) {
+          searchListContainer.value.scrollTop = searchListContainer.value.scrollHeight;
+        }
       }
       else {
         selectIndex.value -= 1;
         nextTick(() => {
-          const curSelectNode = searchListContainer.value.querySelector('li.cur');
-          const { offsetTop } = curSelectNode;
-          if (offsetTop < searchListContainer.value.scrollTop) {
-            searchListContainer.value.scrollTop -= 41;
+          const curSelectNode = searchListContainer.value?.querySelector('li.cur');
+          if (curSelectNode) {
+            const { offsetTop } = curSelectNode as HTMLElement;
+            if (searchListContainer.value && offsetTop < searchListContainer.value.scrollTop) {
+              searchListContainer.value.scrollTop -= 41;
+            }
           }
         });
       }
@@ -221,18 +229,24 @@ const handleKeyup = (e: any) => {
       if (selectIndex.value < curLength - 1) {
         selectIndex.value += 1;
         nextTick(() => {
-          const curSelectNode = searchListContainer.value.querySelector('li.cur');
-          const { offsetTop } = curSelectNode;
-          // searchListContainer 上下各有 6px 的 padding
-          if (offsetTop > contentMaxHeight.value - 2 * 6) {
-            // 每一个 item 是 41px height
-            searchListContainer.value.scrollTop += 41;
+          const curSelectNode = searchListContainer.value?.querySelector('li.cur');
+          if (curSelectNode) {
+            const { offsetTop } = curSelectNode as HTMLElement;
+            // searchListContainer 上下各有 6px 的 padding
+            if (offsetTop > contentMaxHeight.value - 2 * 6) {
+              // 每一个 item 是 41px height
+              if (searchListContainer.value) {
+                searchListContainer.value.scrollTop += 41;
+              }
+            }
           }
         });
       }
       else {
         selectIndex.value = 0;
-        searchListContainer.value.scrollTop = 0;
+        if (searchListContainer.value) {
+          searchListContainer.value.scrollTop = 0;
+        }
       }
       break;
     case 13:

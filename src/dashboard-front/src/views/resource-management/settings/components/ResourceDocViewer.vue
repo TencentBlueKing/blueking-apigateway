@@ -226,6 +226,7 @@ import {
   saveResourceDocs,
   updateResourceDocs,
 } from '@/services/source/resource';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import {
   useFeatureFlag,
   useStage,
@@ -286,7 +287,9 @@ const isEmpty = ref(false);
 const isUpdate = ref(false);
 const markdownDoc = ref('');
 const markdownHtml = ref('');
-const docData = ref<any[]>([]);
+type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
+
+const docData = ref<IDocItem[]>([]);
 const isEdited = ref(false); // 是否是编辑
 const language = ref('zh');
 const isSaving = ref(false);
@@ -586,7 +589,7 @@ const controlToggle = () => {
   const el = document.querySelector(`.${docRootClass}-btn`);
   const bottomDistance = el?.getBoundingClientRect()?.bottom;
   // 是否吸附
-  if (bottomDistance > window?.innerHeight) {
+  if (bottomDistance !== undefined && bottomDistance > window?.innerHeight) {
     isAdsorb.value = true;
     el?.classList?.add('is-pinned');
   }

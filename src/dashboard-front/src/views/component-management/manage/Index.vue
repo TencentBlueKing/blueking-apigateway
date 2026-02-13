@@ -127,7 +127,8 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { Button, Message } from 'bkui-vue';
-import type { ISearchValue } from 'bkui-lib/search-select/utils';
+import type { ISearchValue } from 'bkui-vue/lib/search-select/utils.d';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
@@ -136,13 +137,13 @@ import {
   deleteComponentByBatch,
   getComponentsDetail,
   getEsbComponents,
-  getFeatures,
   getReleaseStatus,
 } from '@/services/source/component-management.ts';
 import { getSystems } from '@/services/source/system';
 import AddComponentSlider from './components/AddComponent.vue';
 import RenderSystem from './components/RenderSystem.vue';
 import AgTable from '@/components/ag-table/Index.vue';
+import { getFeatureFlags } from '@/services/source/basic.ts';
 
 type ISystemFilterMethod = {
   setSelected: (value: number) => void
@@ -214,7 +215,7 @@ const tableColumns = computed(() => {
       title: t('系统名称'),
       colKey: 'system_name',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
         return (
           <span>
             {row?.system_name || '--' }
@@ -225,22 +226,22 @@ const tableColumns = computed(() => {
     {
       title: t('组件名称'),
       colKey: 'name',
-      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IComponentItem> & { isOverflow?: boolean } }) => {
         return (
           <div class="flex items-center">
             <div
               v-bk-tooltips={{
                 placement: 'top',
                 content: row?.name,
-                disabled: !row.isOverflow,
+                disabled: !row?.isOverflow,
                 extCls: 'max-w-480px',
               }}
               class="truncate"
-              onMouseenter={e => tableRef.value?.handleCellEnter({
+              onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
                 e,
                 row,
               })}
-              onMouseLeave={e => tableRef.value?.handleCellLeave({
+              onMouseLeave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
                 e,
                 row,
               })}
@@ -248,14 +249,14 @@ const tableColumns = computed(() => {
               { row?.name || '--' }
             </div>
             {
-              syncEsbToApigwEnabled.value && row.is_created && (
+              syncEsbToApigwEnabled.value && row?.is_created && (
                 <div class={`ag-tag primary m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('新创建') }
                 </div>
               )
             }
             {
-              syncEsbToApigwEnabled.value && row.has_updated && (
+              syncEsbToApigwEnabled.value && row?.has_updated && (
                 <div class={`ag-tag success m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('有更新') }
                 </div>
@@ -270,9 +271,9 @@ const tableColumns = computed(() => {
       colKey: 'method',
       ellipsis: true,
       width: 90,
-      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
         return (
-          <span>{ row.method || '--' }</span>
+          <span>{ row?.method || '--' }</span>
         );
       },
     },
@@ -280,9 +281,9 @@ const tableColumns = computed(() => {
       title: t('请求路径'),
       colKey: 'path',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
         return (
-          <span>{ row.path || '--' }</span>
+          <span>{ row?.path || '--' }</span>
         );
       },
     },
@@ -297,25 +298,25 @@ const tableColumns = computed(() => {
       colKey: 'operate',
       fixed: 'right',
       width: 120,
-      cell: (h, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
         return (
           <div>
             <Button
               class="mr-10px"
               theme="primary"
               text
-              onClick={() => handleEdit(row)}
+              onClick={() => handleEdit(row as IComponentItem)}
             >
               { t('编辑') }
             </Button>
             <Button
               theme="primary"
               text
-              disabled={row.is_official}
-              onClick={() => handleDelete(row)}
+              disabled={row?.is_official}
+              onClick={() => handleDelete(row as { id: number })}
             >
               {
-                row.is_official
+                row?.is_official
                   ? (
                     <span v-bk-tooltips={t('官方组件，不可删除')}>
                       { t('删除') }
@@ -340,7 +341,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return res ?? {};
 };
 
-const disabledSelection = (row) => {
+const disabledSelection = (row: any) => {
   row.selectionTip = row.is_official ? t('官方组件，不可删除') : '';
   return row.is_official;
 };
@@ -363,6 +364,7 @@ const handleSysSelect = (
   if (tempList.length === 3) {
     [, , customStr] = tempList;
   }
+  // @ts-expect-error lowerName 是运行时动态添加的属性
   formData.value.component_codename = `generic.${option.lowerName}.${customStr}`;
   systemFilterRef.value?.setSelected(value);
 };
@@ -428,10 +430,11 @@ const handleEdit = async (payload: IComponentItem) => {
     const configData = Object.assign({}, {
       ...res,
       method: res.method || '*',
+      // @ts-expect-error config_fields 是运行时动态字段
       config_fields: res?.config_fields ?? [],
     });
     const keysToRemove = ['doc_link', 'system_name'];
-    formData.value = Object.entries(configData).reduce((acc, [key, value]) => {
+    formData.value = Object.entries(configData).reduce((acc: Record<string, any>, [key, value]) => {
       if (!keysToRemove.includes(key)) acc[key] = value;
       return acc;
     }, {});
@@ -473,7 +476,7 @@ const handleConfirmDelete = () => {
 };
 
 const handleBatchDelete = () => {
-  deleteDialogConf.ids = selections.value?.map(item => item.id);
+  deleteDialogConf.ids = selections.value?.map((item: any) => item.id);
   handleConfirmDelete();
 };
 
@@ -506,11 +509,11 @@ const getFeature = async () => {
     limit: 10000,
     offset: 0,
   };
-  const res = await getFeatures(params);
+  const res = await getFeatureFlags(params);
   syncEsbToApigwEnabled.value = res?.SYNC_ESB_TO_APIGW_ENABLED;
 };
 
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected }) => {
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected }: any) => {
   selections.value = selected;
 };
 
@@ -524,8 +527,8 @@ const handleClearSelection = () => {
 };
 
 const getSystemName = (id: number) => {
-  if (id && id !== '*') {
-    const curSystem = systemList.value?.find(item => item?.id === curSelectSystemId.value);
+  if (id && id !== ('*' as any)) {
+    const curSystem = systemList.value?.find((item: any) => item?.id === curSelectSystemId.value);
     searchParams.value.system_name = curSystem?.name;
   }
 };
@@ -546,7 +549,7 @@ watch(
       system_name: '',
     });
     searchValue.value.forEach((item: ISearchValue) => {
-      searchParams.value[item.id] = item.values[0].id;
+      searchParams.value[item.id] = item.values![0].id;
     });
     getSystemName(curSelectSystemId.value);
     getList();

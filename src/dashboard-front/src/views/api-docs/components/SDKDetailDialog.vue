@@ -29,7 +29,7 @@
       <div class="dialog-main">
         <SdkLanguageSelector
           v-model="language"
-          :sdk-languages="sdks.map(item => item.language)"
+          :sdk-languages="sdks.map((item: ISdk) => item.language).filter((l: any): l is string => !!l)"
           :lang-list="languages"
           :maintainers="maintainers"
         />
@@ -72,7 +72,7 @@ const { t } = useI18n();
 const language = ref('python');
 
 const curSdk = computed(() => {
-  return sdks.find(item => item.language === language.value) ?? null;
+  return sdks.find((item: ISdk) => item.language === language.value) ?? null;
 });
 
 const title = computed(() => {

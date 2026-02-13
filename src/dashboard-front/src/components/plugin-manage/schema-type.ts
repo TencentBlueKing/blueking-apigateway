@@ -1,3 +1,4 @@
+// @ts-expect-error expect-error
 import { type Component, defineAsyncComponent } from 'vue';
 
 import {

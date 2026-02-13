@@ -75,11 +75,11 @@ const keyword = ref('');
 
 const resourceFilterMethod = (searchValue: string, option: any) => {
   keyword.value = searchValue || '';
-  const resource = list.find(item => item.name === option.name);
+  const resource = list.find((item: any) => item.name === option.name);
   return resource?.name.includes(searchValue) || resource?.path.includes(searchValue);
 };
 
-const getHighlightContent = (item, field) => {
+const getHighlightContent = (item: any, field: string) => {
   const value = item[field] as string;
   if (keyword.value) {
     return value.replace(new RegExp(`(${keyword.value})`), '<em class="keyword">$1</em>');

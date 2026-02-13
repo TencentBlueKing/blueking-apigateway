@@ -268,7 +268,7 @@ const searchData = computed(() => [
     name: t('分类'),
     id: 'categories',
     placeholder: t('请选择分类'),
-    children: mcpFilterOptions.value.categories.map((cg) => {
+    children: mcpFilterOptions.value.categories.map((cg: any) => {
       return {
         name: cg.display_name,
         id: cg.name,
@@ -280,7 +280,7 @@ const searchData = computed(() => [
     name: t('标签'),
     id: 'label',
     placeholder: t('请选择标签'),
-    children: mcpFilterOptions.value.labels.map((label) => {
+    children: mcpFilterOptions.value.labels.map((label: any) => {
       return {
         name: label,
         id: label,
@@ -320,7 +320,7 @@ const isEnabledOAuth = computed(() =>
 );
 const isTableView = computed(() => activeViewTab.value.includes('table'));
 
-const renderRiskToolToolTip = (row: IMCPServer) => {
+const renderRiskToolToolTip = (row: IMCPServer & { app_permission_risk?: any }) => {
   return {
     content: () => (
       <div class="break-all">
@@ -339,7 +339,7 @@ const renderRiskToolToolTip = (row: IMCPServer) => {
 };
 
 const getSingleCardHeight = (): number => {
-  if (isTableView.value) return;
+  if (isTableView.value) return 0;
   const firstCard = mcpListRef.value?.querySelector('.ag-mcp-card-wrapper');
   const addCard = mcpListRef.value?.querySelector('.add-server-card');
 
@@ -360,7 +360,7 @@ const getCardsPerRow = (): number => {
 
 const calculateMaxVisibleCards = (): number => {
   // 表格视图无需计算
-  if (isTableView.value) return;
+  if (isTableView.value) return 0;
   // 通知栏高度40px
   const noticeH = isShowNoticeAlert.value ? 40 : 0;
   // 获取页面可用高度（排除顶部导航/内边距）, 48px=页面内边距(24+24)，152px=顶部预留高度
@@ -425,10 +425,10 @@ const fetchMcpServerFilterOptions = async () => {
   const res = await getMcpServerFilterOptions(gatewayId);
   if (res?.categories?.length) {
     // MCPServer筛选掉官方和精选分类
-    res.categories = res?.categories.filter(cg => !['Official', 'Featured'].includes(cg.name));
+  res.categories = res?.categories.filter((cg: any) => !['Official', 'Featured'].includes(cg.name));
   }
   if (res?.stages?.length) {
-    res.stages = res?.stages.map((stage) => {
+    res.stages = res?.stages.map((stage: any) => {
       return {
         ...stage,
         id: String(stage.id),
@@ -454,8 +454,8 @@ const handlePreviewTabChange = ({ id }: { id: string }) => {
     nextTick(() => {
       // 表格视图不需要页面滚动条
       const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
-      if (mcpEl) {
-        mcpEl.style.overflowY = id.includes('card') ? 'auto' : 'hidden';
+    if (mcpEl) {
+      (mcpEl as HTMLElement).style.overflowY = id.includes('card') ? 'auto' : 'hidden';
       }
       resetPagination();
     });
@@ -479,7 +479,7 @@ const handleEdit = (id: number) => {
 };
 
 const handleSuspend = async (id: number) => {
-  const server = mcpList.value.find(server => server.id === id);
+  const server = mcpList.value.find((server: any) => server.id === id);
   usePopInfoBox({
     isShow: true,
     type: 'warning',
@@ -508,7 +508,7 @@ const handleEnable = async (id: number) => {
 };
 
 const handleDelete = async (id: number) => {
-  const server = mcpList.value.find(server => server.id === id);
+  const server = mcpList.value.find((server: any) => server.id === id);
   if (server) {
     usePopInfoBox({
       isShow: true,
@@ -533,8 +533,8 @@ const handleDelete = async (id: number) => {
 const handleServerUpdated = () => {
   // 如果是新建编辑mcp重置滚动条到顶部
   const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
-  if (mcpEl?.scrollTop > 0) {
-    mcpEl.scrollTop = 0;
+  if (mcpEl && (mcpEl as HTMLElement).scrollTop > 0) {
+    (mcpEl as HTMLElement).scrollTop = 0;
   }
   resetPagination();
 };
@@ -590,11 +590,11 @@ const resetPagination = () => {
 
 const handleSearch = () => {
   const params = { order_by: filterData.value.order_by || '-updated_time' };
-  searchValue.value.forEach((option) => {
+  searchValue.value.forEach((option: any) => {
     if (option.values) {
-      params[option.id] = !['categories'].includes(option.id)
+      (params as Record<string, any>)[option.id] = !['categories'].includes(option.id)
         ? option.values?.[0]?.id
-        : option.values.map(item => item.id);
+        : option.values.map((item: any) => item.id);
     };
   });
   filterData.value = params;

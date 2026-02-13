@@ -63,6 +63,7 @@ export default function filterSpans(textFilter: string, spans: ISpan[] | TNil) {
   const isSpanAMatch = (span: ISpan) =>
     isTextInFilters(includeFilters, span.operation)
     || isTextInFilters(includeFilters, span.process.serviceName)
+    // @ts-ignore
     || isTextInKeyValues(span.tags)
     || (span?.logs && Array.isArray(span.logs) && span.logs.some(log => isTextInKeyValues(log.fields)))
     || isTextInKeyValues(span.process.tags)

@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => chartData,
-  (data) => {
+  (data: any) => {
     if (!data?.series[0]?.datapoints?.length) {
       isEmpty.value = true;
       updateTableEmptyConfig();
@@ -154,7 +154,7 @@ const chartResize = () => {
 };
 
 const getChartOption = () => {
-  const baseOption: echarts.EChartOption = {
+  const baseOption: Record<string, any> = {
     // 设置距离右侧的间距
     grid: { right: '8%' },
     xAxis: {
@@ -219,7 +219,7 @@ const getChartOption = () => {
     legend: { show: false },
   };
 
-  const chartOption: echarts.EChartOption = {
+  const chartOption: Record<string, any> = {
     xAxis: {},
     yAxis: {},
     series: [],
@@ -228,12 +228,12 @@ const getChartOption = () => {
     grid: {},
   };
 
-  let moreOption = { xAxis: { axisLabel: {} } };
+  let moreOption: Record<string, any> = { xAxis: { axisLabel: {} } };
 
   chartData?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
-    chartOption.series.push(merge({}, baseOption.series[0], {
+    chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
       name: (item.target?.split('=')[1])?.replace(/"/g, ''),
       data: datapoints.map(item => ([
         item[1],
@@ -253,7 +253,7 @@ const getChartOption = () => {
   chartOption.color = generateChartColor(chartData.series ?? []);
 
   // tooltip
-  chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+  chartOption.tooltip.formatter = (params: any) => {
     return `<div>
   <p>${dayjs(params.data[0]).format('YYYY-MM-DD')}</p>
   <p><span class="tooltip-icon">${params.marker}${t(title)}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
@@ -299,7 +299,7 @@ const generateChartColor = (chartData: ISeriesItemType[]) => {
     }
   });
 
-  const finalColors = colors.reduce((a, b) => a.concat(b), []);
+  const finalColors = colors.reduce<string[]>((a, b) => a.concat(b), []);
   return finalColors;
 };
 

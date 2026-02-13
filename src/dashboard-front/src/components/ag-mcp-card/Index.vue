@@ -265,7 +265,7 @@ const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server?.oauth2_public_client_enabled,
 );
-const categoriesFilter = computed(() => server?.categories?.filter(cg => !['Official', 'Featured'].includes(cg.name)));
+const categoriesFilter = computed(() => server?.categories?.filter((cg: any) => !['Official', 'Featured'].includes(cg.name)));
 
 const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
 const isOverflow = ref(false);

@@ -65,6 +65,8 @@ import {
   fetchApigwAccessLogDetail,
 } from '@/services/source/access-log';
 import { useGatewaysList } from '@/hooks';
+import type { IExtractListApiResults } from '@/services/types/utils.ts';
+import { getGatewayList } from '@/services/source/gateway';
 // import { useCommon } from '@/stores';
 
 const { t } = useI18n();
@@ -77,10 +79,12 @@ const route = useRoute();
 // 获取网关数据方法
 const { getGatewaysListData } = useGatewaysList({});
 
+type IGatewayListItem = IExtractListApiResults<typeof getGatewayList>;
+
 const isDataLoading = ref(false);
 const hasError = ref(false);
-const apigwDataList = ref([]);
-const details: any = ref({
+const apigwDataList = ref<IGatewayListItem[]>([]);
+const details = ref<{ fields: { label: string; field: string }[]; result: Record<string, any> }>({
   fields: [],
   result: {},
 });
@@ -90,7 +94,7 @@ const routeQuery = computed(() => route.query);
 const routeParams = computed(() => route.params);
 
 const currentApigwName = computed(() => {
-  const current = apigwDataList.value.find(item => String(item.id) === String(routeParams.value.id)) || {};
+  const current = apigwDataList.value.find((item: IGatewayListItem) => String(item.id) === String(routeParams.value.id)) || {} as IGatewayListItem;
   return current.name || '--';
 });
 
@@ -111,7 +115,7 @@ const getDetailData = async () => {
   };
   isDataLoading.value = true;
   try {
-    const res = await fetchApigwAccessLogDetail(+routeParams.value.id, String(routeParams.value.requestId), params);
+    const res = await fetchApigwAccessLogDetail(+routeParams.value.id, String(routeParams.value.requestId), params as unknown as Parameters<typeof fetchApigwAccessLogDetail>[2]);
     details.value.result = res.results[0] || {};
     details.value.fields = res.fields;
   }
@@ -164,8 +168,8 @@ onBeforeUnmount(() => {
 .detail-panel {
   margin-top: 24px;
   margin-bottom: 24px;
-  border: 1px solid #EBEDF1;
   background: #fff;
+  border: 1px solid #EBEDF1;
 
   .panel-bd {
     padding: 16px 0;
@@ -173,15 +177,15 @@ onBeforeUnmount(() => {
 
   .panel-hd {
     display: flex;
+    padding: 0 30px;
+    border-bottom: 1px solid #EBEDF1;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #EBEDF1;
-    padding: 0 30px;
 
     .title {
+      margin: 20px 0;
       font-size: 22px;
       color: #313238;
-      margin: 20px 0;
     }
 
     .time {
@@ -194,6 +198,7 @@ onBeforeUnmount(() => {
 .details {
   position: relative;
   padding: 16px 0;
+
   .item {
     display: flex;
     margin-bottom: 8px;
@@ -201,27 +206,28 @@ onBeforeUnmount(() => {
 
     .label {
       position: relative;
-      flex: none;
       width: 200px;
+      margin-right: 32px;
       font-weight: bold;
       color: #63656E;
-      margin-right: 32px;
       text-align: right;
-    }
-    .value {
       flex: none;
+    }
+
+    .value {
       width: 500px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #63656E;
       line-height: 20px;
+      color: #63656E;
+      word-break: break-word;
+      white-space: pre-wrap;
+      flex: none;
     }
   }
 
   .share-btn {
     position: absolute;
-    right: 0;
     top: 18px;
+    right: 0;
   }
 }
 </style>

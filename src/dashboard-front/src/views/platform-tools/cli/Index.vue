@@ -133,7 +133,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
 import FunctionOverview from './components/FunctionOverview.vue';
 import QuickStart from './components/QuickStart.vue';
 import AdvancedUsage from './components/AdvancedUsage.vue';

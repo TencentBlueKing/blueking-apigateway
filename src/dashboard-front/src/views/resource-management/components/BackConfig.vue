@@ -210,7 +210,7 @@
         >
           <BkTableColumn
             :label="t('环境名称')"
-            :rowspan="({ row }) => row.rowSpan"
+            :rowspan="({ row }: any) => row.rowSpan"
           >
             <template #default="{ data }">
               {{ data.stage?.name }}
@@ -404,7 +404,7 @@ const handleRefreshTime = () => {
 const handleShowPopover = () => {
   isShowPopConfirm.value = true;
   isTimeEmpty.value = false;
-  servicesConfigs.value.forEach((item) => {
+  servicesConfigs.value.forEach((item: any) => {
     item.isEditTime = false;
   });
 };
@@ -665,7 +665,7 @@ const init = async () => {
   servicesData.value = res.results;
   // 检查传进来的资源的 backend 有没有 id，没有的话用 name 匹配一下以正确获取服务数据
   if (!detail?.backend?.id) {
-    const backendId = servicesData.value.find(s => s.name === detail?.backend?.name)?.id;
+    const backendId = servicesData.value.find((s: any) => s.name === detail?.backend?.name)?.id;
     if (backendId) {
       backConfigData.value.id = backendId;
       await handleServiceChange(backendId);

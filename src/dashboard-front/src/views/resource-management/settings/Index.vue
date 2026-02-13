@@ -865,7 +865,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                     ? (
                       <div class="w-260px">
                         <RenderTagOverflow
-                          data={row.labels.map(label => label.name)}
+                          data={row.labels.map((label: any) => label.name)}
                         />
                       </div>
                     )
@@ -887,7 +887,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                   resource-id={resourceId.value}
                   width={selectCheckBoxParentRef?.offsetWidth}
                   force-focus
-                  onClose={newLabelData => handleCloseSelect(row, newLabelData)}
+                  onClose={(newLabelData: any) => handleCloseSelect(row, newLabelData)}
                   onUpdateSuccess={() => handleUpdateLabelSuccess()}
                   onLabelAddSuccess={() => getLabelsData()}
                 />
@@ -969,7 +969,7 @@ watch(
   (v: any) => {
     if (v.length && resourceId.value === 0) {
       resourceId.value = v[0].id;
-      curResource.value = tableData.value.find(resource => resource.id === resourceId.value);
+      curResource.value = tableData.value.find((resource: any) => resource.id === resourceId.value);
     }
     // 设置显示的tag值
     tableData.value.forEach((item: any) => {
@@ -1380,7 +1380,7 @@ const handleExportDownload = async () => {
   const params = exportParams;
   const fetchMethod = exportDialogConfig.exportFileDocType === 'resource' ? exportResources : exportDocs;
   try {
-    await fetchMethod(gatewayId, params);
+    await fetchMethod(gatewayId, params as any);
     Message({
       message: t('导出成功'),
       theme: 'success',
@@ -1601,7 +1601,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) =>
     if (checkValues.length) {
       if (colKey === 'method') {
         Object.assign(tableQueries.value, { method: checkValues.join(',') });
-        const methodSearchItem = searchValue.value.find(searchItem => searchItem.id === 'method');
+        const methodSearchItem = searchValue.value.find((searchItem: any) => searchItem.id === 'method');
         if (methodSearchItem) {
           methodSearchItem.values = checkValues.map((item: string) => ({
             id: item,
@@ -1628,7 +1628,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) =>
     }
     else {
       if (colKey === 'method') {
-        const methodSearchItemIndex = searchValue.value.findIndex(searchItem => searchItem.id === 'method');
+        const methodSearchItemIndex = searchValue.value.findIndex((searchItem: any) => searchItem.id === 'method');
         if (methodSearchItemIndex > -1) {
           searchValue.value.splice(methodSearchItemIndex, 1);
         }
@@ -1638,12 +1638,12 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) =>
   });
 };
 
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections, selectionsRowKeys }) => {
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections, selectionsRowKeys }: any) => {
   selectedRows.value = selections;
   selectedRowKeys.value = selectionsRowKeys;
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
+const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: any) => {
   if (!sort) {
     delete tableQueries.value.order_by;
     return;

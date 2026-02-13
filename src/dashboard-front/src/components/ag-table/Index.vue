@@ -118,7 +118,6 @@
 import { cloneDeep, memoize, sortBy, sortedUniq, throttle } from 'lodash-es';
 import {
   PrimaryTable,
-  type PrimaryTableInstance,
   type PrimaryTableProps,
   type TableRowData,
 } from '@blueking/tdesign-ui';
@@ -127,13 +126,15 @@ import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
-import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
+import type { BkUiSettings } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
 import router from '@/router';
 import TableEmpty from '@/components/table-empty/Index.vue';
+// @ts-ignore ShallowRef 类型兼容
+import type { ShallowRef } from 'vue';
 
 interface IProps {
   apiMethod?: (params?: Record<string, any>) => Promise<unknown>
@@ -193,22 +194,22 @@ const {
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  'row-mouseenter': {
+  'row-mouseenter': [payload: {
     e?: MouseEvent
     row?: TableRowData
-  }
-  'row-mouseleave': {
+  }]
+  'row-mouseleave': [payload: {
     e?: MouseEvent
     row?: TableRowData
-  }
-  'selection-change': {
-    selections: TableRowData
+  }]
+  'selection-change': [payload: {
+    selections: TableRowData[]
     selectionsRowKeys: string[] | number[]
-  }
-  'page-change': {
+  }]
+  'page-change': [payload: {
     current: number
     pageSize: number
-  }
+  }]
   'clear-selection': [void]
   'clear-filter': [void]
   'request-done': [void]
@@ -230,12 +231,12 @@ const {
   handleCustomSelectAllChange,
 } = useTDesignSelection();
 
-const TDesignTableRef = useTemplateRef<PrimaryTableInstance & ITableMethod>('primaryTableRef');
+const TDesignTableRef = useTemplateRef<InstanceType<typeof PrimaryTable> & ITableMethod>('primaryTableRef');
 
 let radioClickHandler: ((e: Event) => void) | null = null;
 const paramsData: Record<string, any> = ref({});
 
-const radioEl = ref<HTMLElement | null>(null);
+const radioEl = ref<HTMLElement | undefined | null>(null);
 
 // 设置列实例
 const settingColumnEl = ref<HTMLElement | null>(null);
@@ -271,8 +272,8 @@ const disabledSelected = computed(() => {
 });
 // 缓存filteredTableData
 const memoizedFilter = memoize(
-  (list: any[]) => list.filter(item => !disabledCheckSelection(item)),
-  list => JSON.stringify(list.map(item => item[tableRowKey])),
+  (list: any[]) => list.filter((item: any) => !disabledCheckSelection(item)),
+  (list: any[]) => JSON.stringify(list.map((item: any) => item[tableRowKey])),
 );
 
 // 过滤掉禁止勾选的数据
@@ -283,7 +284,7 @@ const setIndeterminate = computed(() => {
   const availableCount = filteredTableData.value.length;
   if (availableCount === 0) return false;
 
-  const selectedAvailableCount = filteredTableData.value.filter((item) => {
+  const selectedAvailableCount = filteredTableData.value.filter((item: any) => {
     return selectionsRowKeys.value.includes(item[tableRowKey]);
   }).length;
 
@@ -298,7 +299,7 @@ const selectionColumns = computed(() => [{
   fixed: 'left',
   width: 60,
   title: () => {
-    const isDisabled = disabledSelected.value || tableData.value.every(item => disabledCheckSelection?.(item));
+    const isDisabled = disabledSelected.value || tableData.value.every((item: any) => disabledCheckSelection?.(item));
     return (
       <Checkbox
         v-model={isAllSelection.value}
@@ -317,16 +318,16 @@ const selectionColumns = computed(() => [{
           });
 
           emit('selection-change', {
-            selectionsRowKeys: selections.value.map(item => item[tableRowKey]),
+            selectionsRowKeys: selections.value.map((item: any) => item[tableRowKey]),
             selections: selections.value,
           });
         }}
       />
     );
   },
-  cell: (h, { row }) => {
+  cell: (h: any, { row }: { row: any }) => {
     const isDisabled = disabledSelected.value || disabledCheckSelection?.(row);
-    const isChecked = selections.value.map(item => item[tableRowKey]).includes(row[tableRowKey]);
+    const isChecked = selections.value.map((item: any) => item[tableRowKey]).includes(row[tableRowKey]);
 
     return (
       <Checkbox
@@ -349,8 +350,8 @@ const selectionColumns = computed(() => [{
             row,
           });
           const selectionTable = filteredTableData.value;
-          const checkedIds = selectionsRowKeys.value.filter(id =>
-            selectionTable.some(item => item[tableRowKey] === id),
+          const checkedIds = selectionsRowKeys.value.filter((id: any) =>
+            selectionTable.some((item: any) => item[tableRowKey] === id),
           );
           isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
 
@@ -393,6 +394,7 @@ const localeConfig = computed(() => locale.value === 'zh-cn' ? cnConfig : enConf
 const { params, loading, error, refresh, run } = useRequest(apiMethod, {
   manual: true,
   // 是否立即执行请求
+  // @ts-ignore
   immediate,
   defaultParams: [offsetAndLimit.value],
   onSuccess: (response: {
@@ -430,24 +432,24 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
 watch(tableSetting, () => {
   if (!tableSetting.value && showSettings) {
     // 过滤掉需要隐藏的列
-    const visibleColumn = tableColumns.value?.filter(tc => !hiddenColumn.includes(tc.colKey));
+    const visibleColumn = tableColumns.value?.filter((tc: any) => !hiddenColumn.includes(tc.colKey));
     tableSetting.value = {
       size: 'medium',
       rowSize: 'medium',
-      checked: visibleColumn.map(col => col.colKey),
-      fields: visibleColumn.map((col) => {
+      checked: visibleColumn.map((col: any) => col.colKey),
+      fields: visibleColumn.map((col: any) => {
         return {
           label: col.displayTitle ?? col.title,
           field: col.colKey,
         };
       }),
       // 默认禁用第一项展示文本的表列，不允许取消全部表列
-      disabled: [tableColumns.value?.filter(col => !['row-select', 'serial-number'].includes(col.colKey))?.[0]?.colKey],
+      disabled: [tableColumns.value?.filter((col: any) => !['row-select', 'serial-number'].includes(col.colKey))?.[0]?.colKey],
     };
   }
 }, { immediate: true });
 
-watch(tableData, (newTableData) => {
+watch(tableData, (newTableData: any) => {
   setTimeout(() => {
     localTableData.value = cloneDeep(newTableData || []);
     if (localPage) {
@@ -456,8 +458,9 @@ watch(tableData, (newTableData) => {
   }, 0);
 
   // 缓存清空仍同步执行，避免数据不一致
-  const rowKeys = (newTableData || []).map(item => item?.[tableRowKey]);
+  const rowKeys = (newTableData || []).map((item: any) => item?.[tableRowKey]);
   if (rowKeys.length > 0) {
+    // @ts-ignore
     memoizedFilter?.cache?.clear();
   }
 }, {
@@ -502,8 +505,8 @@ const renderSelectionData = (selectList?: any[]) => {
   if (checkTableData?.length > 0 && tableData.value?.length > 0) {
     const selectionTable = filteredTableData.value;
     const checkedIds = selectionTable
-      .filter(item => checkTableData.includes(item[tableRowKey]))
-      .map(check => check[tableRowKey]);
+      .filter((item: any) => checkTableData.includes(item[tableRowKey]))
+      .map((check: any) => check[tableRowKey]);
     isAllSelection.value = checkedIds.length === selectionTable.length;
   }
   else {
@@ -601,7 +604,9 @@ const handlePageChange = ({ current, pageSize }: {
 };
 
 const handleSettingChange = (setting: BkUiSettings) => {
+  // @ts-ignore
   const isExistDiff = isDiffSize(setting);
+  // @ts-ignore
   changeTableSetting(setting);
   tableSetting.value = Object.assign(tableSetting.value, setting ?? {});
   delete tableSetting.value.value;
@@ -618,10 +623,13 @@ const handleRadioFilterClick = () => {
     radioEl.value = filterPopup?.querySelector('.t-radio-group');
     if (radioEl.value) {
       const confirmBtn = document.querySelector('.t-table__filter--bottom-buttons > .t-button--theme-primary');
+      // @ts-ignore
       radioClickHandler = (event: MouseEvent) => {
+        // @ts-ignore
         const radioLabel = event.target.closest('label.t-radio');
         const radioInput = radioLabel?.querySelector('input.t-radio__former');
         if (radioInput?.checked) {
+          // @ts-ignore
           confirmBtn.click();
         }
       };
@@ -633,6 +641,7 @@ const handleRadioFilterClick = () => {
 // 处理点击设置列触发设置弹框
 const handleSettingColumnClick = (e: MouseEvent) => {
   e?.stopPropagation();
+  // @ts-ignore
   const isIconClick = e.target?.closest('.t-icon-setting');
   if (!isIconClick && settingColumnEl.value) {
     settingColumnEl.value?.querySelector('.column-settings-icon')?.click();
@@ -723,6 +732,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  // @ts-ignore
   memoizedFilter?.cache?.clear();
   document.removeEventListener('click', handleRadioFilterClick);
   radioEl.value?.removeEventListener('click', radioClickHandler);

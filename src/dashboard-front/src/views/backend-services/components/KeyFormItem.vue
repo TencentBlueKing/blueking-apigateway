@@ -126,7 +126,7 @@ const hashOnKeyOptions = [
 const rules = [
   {
     validator: (value: string) => {
-      if (localStageConfig.value[configField].hash_on === 'vars') {
+      if (localStageConfig.value[configField]?.hash_on === 'vars') {
         if (value.startsWith('arg_')) {
           return /arg_[0-9a-zA-z_-]+/.test(value);
         }
@@ -153,7 +153,7 @@ watch(localStageConfig, () => {
 }, { deep: true });
 
 const handleHashOnKeyClick = (value: string) => {
-  if (localStageConfig.value) {
+  if (localStageConfig.value && localStageConfig.value[configField]) {
     localStageConfig.value[configField].key = value;
   }
 };

@@ -63,7 +63,7 @@ const tableColumns = ref([
     title: t('系统名称'),
     colKey: 'system_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           {row?.system_name || '--' }
@@ -75,7 +75,7 @@ const tableColumns = ref([
     title: t('组件名称'),
     colKey: 'component_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_name || '--' }
@@ -87,7 +87,7 @@ const tableColumns = ref([
     title: t('组件请求方法'),
     colKey: 'component_method',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_method || '--' }
@@ -99,7 +99,7 @@ const tableColumns = ref([
     title: t('组件请求路径'),
     colKey: 'component_path',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_path || '--' }
@@ -111,7 +111,7 @@ const tableColumns = ref([
     title: t('资源ID'),
     colKey: 'resource_id',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.resource_id || '--'}
@@ -123,7 +123,7 @@ const tableColumns = ref([
     title: t('组件ID'),
     colKey: 'component_id',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
           { row?.component_id || '--' }
@@ -135,10 +135,10 @@ const tableColumns = ref([
     title: t('权限级别'),
     colKey: 'component_permission_level',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { PERMISSION_LEVEL_MAP[row?.component_permission_level] ?? '--' }
+          { PERMISSION_LEVEL_MAP[row?.component_permission_level ?? ''] ?? '--' }
         </span>
       );
     },
@@ -157,7 +157,7 @@ const historyId = computed(() => route.query.id);
 const getComponents = async () => {
   isLoading.value = true;
   try {
-    const res = await getSyncVersion(historyId.value);
+    const res = await getSyncVersion(Number(historyId.value));
     [displayData.value, allData.value] = [Object.freeze(res), Object.freeze(res)];
     pagination.total = displayData.value?.length;
   }
@@ -180,7 +180,7 @@ const handleClearFilter = async () => {
 const handleSearch = () => {
   isLoading.value = true;
   tableEmptyType.value = pathUrl.value ? 'search-empty' : 'empty';
-  displayData.value = allData.value?.filter((item: IISyncApigwItem) => {
+  displayData.value = allData.value?.filter((item: ISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
   pagination.total = displayData.value?.length;

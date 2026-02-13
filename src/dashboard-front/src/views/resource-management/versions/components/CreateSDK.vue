@@ -198,7 +198,7 @@ const handleCreate = async () => {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    await createSDK(apigwId.value, formData);
+    await createSDK(apigwId.value, formData as any);
 
     Message({
       message: t('创建成功'),

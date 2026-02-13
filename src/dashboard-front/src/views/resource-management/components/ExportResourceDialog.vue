@@ -112,7 +112,7 @@ const slots = useSlots();
 
 const exportDialogConfig = computed<IExportDialog>({
   get: () => dialogConfig,
-  set: (val) => {
+  set: (val: IExportDialog) => {
     emit('update:dialogConfig', val);
   },
 });
@@ -121,7 +121,7 @@ const checkedList = computed(() => selections);
 
 const exportParams = computed({
   get: () => dialogParams,
-  set: (val) => {
+  set: (val: IExportParamsFields) => {
     emit('update:dialogParams', val);
   },
 });

@@ -232,7 +232,7 @@
 
 <script lang="tsx" setup>
 import { Input, TagInput } from 'bkui-vue';
-import { InfoLine } from 'bkui-lib/icon';
+import { InfoLine } from 'bkui-vue/lib/icon';
 import { escape } from 'lodash-es';
 import type { IMCPFormData, IMCPServerCategory } from '@/services/source/mcp-server';
 import type { IStageListItem } from '@/services/source/stage.ts';
@@ -275,7 +275,7 @@ const isOverflow = ref(false);
 const isCategoryFocus = ref(false);
 
 const isCategoryEmpty = computed(() => !formData.value.categories.length && isCategoryFocus.value);
-const stage = computed(() => stageList.find(st => st.id === formData.value.stage_id));
+const stage = computed(() => stageList.find((st: any) => st.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway!.name}-${stageName.value}-`);
 const previewUrl = computed(() => {
@@ -300,7 +300,7 @@ const handleStageSelectChange = (value: number) => {
   emit('stage-change', value);
 };
 
-const renderCategoryTpl = (node, highlightKeyword, h) => {
+const renderCategoryTpl = (node: any, highlightKeyword: any, h: any) => {
   // 先转义原始内容，再执行高亮（确保高亮后的 HTML 仅包含安全标签）
   const escapedName = escape(node.name);
   const escapedDisplayName = escape(node.display_name);
@@ -315,7 +315,7 @@ const renderCategoryTpl = (node, highlightKeyword, h) => {
   ]);
 };
 
-const renderCategoryTagTpl = (node, h) => {
+const renderCategoryTagTpl = (node: any, h: any) => {
   // 转义所有用户输入内容，避免恶意代码执行
   const escapedName = escape(node.name);
   const escapedDisplayName = escape(node.display_name);
@@ -332,7 +332,7 @@ const renderCategoryTagTpl = (node, h) => {
 const handleSearchCategory = (tagValue: string, tagKey: string, list: IMCPServerCategory[]) =>
   list.filter((cg: IMCPServerCategory) => {
     if (!tagValue) return list;
-    return cg.name?.toLowerCase().indexOf(tagValue) > -1 || cg[tagKey].indexOf(tagValue) > -1;
+    return cg.name?.toLowerCase().indexOf(tagValue) > -1 || (cg as Record<string, any>)[tagKey].indexOf(tagValue) > -1;
   });
 
 const handleCategoryFocus = () => {

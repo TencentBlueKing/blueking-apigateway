@@ -123,7 +123,7 @@ export default defineComponent({
   name: 'VirtualizedTraceView',
   props: VirtualizedTraceViewProps,
 
-  setup(props) {
+  setup(props: any) {
     const traceStore = useTrace();
 
     const virtualizedTraceViewElm = ref<HTMLElement>();
@@ -174,7 +174,7 @@ export default defineComponent({
       // 获取当前spanId, spanIndex
       const curSpanId = spanDetail.value?.span_id;
       const curSpanIndex = spans.value.findIndex(
-        span => span.span_id === curSpanId,
+        (span: any) => span.span_id === curSpanId,
       );
 
       if (curSpanIndex === -1) {
@@ -195,7 +195,7 @@ export default defineComponent({
         spanDetail.value = spans.value
           .slice(0, curSpanIndex)
           .reverse()
-          .find(({ depth }) => {
+          .find(({ depth }: any) => {
             if (!spanDetail.value) {
               return false;
             }

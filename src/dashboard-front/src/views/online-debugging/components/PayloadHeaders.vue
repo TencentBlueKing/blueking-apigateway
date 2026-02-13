@@ -260,8 +260,8 @@ const localHeadersNames = ref([]);
 
 watch(
   () => localHeaders.value,
-  (v) => {
-    localHeadersNames.value = v?.map(item => ({
+  (v: any) => {
+    localHeadersNames.value = v?.map((item: any) => ({
       name: item.name,
       value: item.id,
       isEdited: false,
@@ -336,15 +336,15 @@ const handleClosed = () => {
   }, 500);
 };
 
-const handlePresupposeChange = async (option, value: string, event: Event) => {
+const handlePresupposeChange = async (option: any, value: string, event: Event) => {
   stopEvent(event);
   if (!value) return;
   option.name = value;
   await updateOption(option);
 };
 
-const handleEditOptionItem = (option) => {
-  localHeadersNames.value.forEach((item) => {
+const handleEditOptionItem = (option: any) => {
+  localHeadersNames.value.forEach((item: any) => {
     item.isEdited = false;
   });
   option.isEdited = true;
@@ -354,11 +354,11 @@ const handleEditOptionItem = (option) => {
 };
 
 // 删除
-const handleDeleteOptionItemConfirm = async (option) => {
+const handleDeleteOptionItemConfirm = async (option: any) => {
   try {
     const { value } = option;
 
-    localHeaders.value = localHeaders.value.filter(item => item.id !== value);
+    localHeaders.value = localHeaders.value.filter((item: any) => item.id !== value);
     localStorage.setItem(
       'presupposeHeaders',
       JSON.stringify(localHeaders.value),
@@ -380,7 +380,7 @@ const handleDeleteOptionItemConfirm = async (option) => {
 
 const isUpdatingOption = ref(false);
 // 更新
-const updateOption = async (option) => {
+const updateOption = async (option: any) => {
   await new Promise(resolve => setTimeout(resolve, 100));
   if (isUpdatingOption.value) {
     return;
@@ -391,7 +391,7 @@ const updateOption = async (option) => {
     if (name.trim()) {
       isUpdatingOption.value = true;
 
-      const found = localHeaders.value.find(item => item.id === value);
+      const found = localHeaders.value.find((item: any) => item.id === value);
       if (found) {
         found.name = name;
       }
@@ -405,7 +405,7 @@ const updateOption = async (option) => {
         theme: 'success',
       });
 
-      localHeadersNames.value.forEach((item) => {
+      localHeadersNames.value.forEach((item: any) => {
         item.isEdited = false;
       });
     }
@@ -422,16 +422,16 @@ const updateOption = async (option) => {
 
 // select 失焦时，移除所有 input 的编辑态
 const handleBlur = () => {
-  localHeadersNames.value.forEach((item) => {
+  localHeadersNames.value.forEach((item: any) => {
     item.isEdited = false;
   });
 };
 
 const handleHeadersChange = () => {
-  const found = localHeaders.value.find(item => item.id === presuppose.value);
+  const found = localHeaders.value.find((item: any) => item.id === presuppose.value);
   if (found) {
-    const foundNames = found.list.map(item => item.name);
-    const list = propsHeaders.value?.filter(item => !foundNames?.includes(item.name));
+    const foundNames = found.list.map((item: any) => item.name);
+    const list = propsHeaders.value?.filter((item: any) => !foundNames?.includes(item.name));
     propsHeaders.value = [...list, ...found.list];
   }
 };
@@ -444,14 +444,14 @@ const getData = () => {
   return editTableRef.value?.getTableData();
 };
 
-const handleChange = (list) => {
+const handleChange = (list: any) => {
   newHeaders.value = list;
   emit('change', list);
 };
 
 watch(
   () => headersPayload,
-  (value) => {
+  (value: any) => {
     propsHeaders.value = value;
     presuppose.value = '';
   },

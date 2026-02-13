@@ -92,7 +92,9 @@ const {
   mode = 'edit',
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'on-change': [data: { [key: string]: string }] }>();
+interface IEmits { 'on-change': [data: { [key: string]: string }] }
+
+const emit = defineEmits<IEmits>();
 
 const textareaRef = ref();
 const isShowError = ref(false);

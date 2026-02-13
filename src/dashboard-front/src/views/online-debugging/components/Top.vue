@@ -38,7 +38,7 @@
   <!-- 调用历史 -->
   <RequestRecord
     ref="requestRecordRef"
-    @retry="(row) => emit('retry', row)"
+    @retry="(row: any) => emit('retry', row)"
   />
 </template>
 

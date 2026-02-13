@@ -104,7 +104,7 @@ const activeIndex = ref<number[]>([1]);
 
 watch(
   () => [queryPayload, pathPayload, priorityPath],
-  ([v1, v2, v3]) => {
+  ([v1, v2, v3]: [any[], any[], any[]]) => {
     queryList.value = v1;
     pathList.value = v3?.length ? v3 : v2;
   },
@@ -113,7 +113,7 @@ watch(
 
 watch(
   () => pathList.value,
-  (value) => {
+  (value: any) => {
     if (value?.length && value[0]?.name) {
       activeIndex.value = [1, 2];
     }

@@ -118,12 +118,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { AngleUpFill } from 'bkui-lib/icon';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
 import AgTable from '@/components/ag-table/Index.vue';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgIcon from '@/components/ag-icon/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
 type ISliderParams = {
@@ -140,9 +141,9 @@ interface IProps {
   sliderParams?: ISliderParams
 }
 
-interface Emits {
-  (e: 'update:expireDate', value: number)
-  (e: 'update:sliderParams', value: ISliderParams)
+interface IEmits {
+  (e: 'update:expireDate', value: number): void
+  (e: 'update:sliderParams', value: ISliderParams): void
   (e: 'confirm'): void
 }
 
@@ -161,7 +162,7 @@ const {
   apiList = [],
   resourceList = [],
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+const emits = defineEmits<IEmits>();
 
 const permissionStore = usePermission();
 
@@ -176,9 +177,9 @@ const tableColumns = shallowRef([
     title: t('资源名称'),
     colKey: 'resource_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: IPermission }) => {
+    cell: (h: any, { row }: { row?: IPermission }) => {
       return (
-        <span>{ row.resource_name || '--' }</span>
+        <span>{ row!.resource_name || '--' }</span>
       );
     },
   },
@@ -186,10 +187,10 @@ const tableColumns = shallowRef([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
-    cell: (h, { row }: { row?: IPermission }) => {
+    cell: (h: any, { row }: { row?: IPermission }) => {
       return (
         <div>
-          <span style={{ color: permissionStore.getDurationTextColor(row.expires) }}>
+          <span style={{ color: permissionStore.getDurationTextColor(row!.expires) }}>
             { permissionStore.getDurationText(row?.expires) }
           </span>
           <span class="m-l-4px m-r-4px">
@@ -197,7 +198,7 @@ const tableColumns = shallowRef([
           </span>
           <span>
             {
-              row.renewable
+            row!.renewable
                 ? (
                   <span class="ag-normal primary">
                     { permissionStore.getDurationAfterRenew(row?.expires, expireDays.value) }
@@ -219,7 +220,7 @@ const initData = reactive({ expireDays: 0 });
 
 const renewalSliderConfig = computed({
   get: () => sliderParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:sliderParams', params);
   },
 });
@@ -228,7 +229,7 @@ const resourceTableList = computed(() => resourceList);
 // 网关表格
 const apiTableList = computed(() => apiList);
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback({ expireDays: expireDays.value });
 };
 

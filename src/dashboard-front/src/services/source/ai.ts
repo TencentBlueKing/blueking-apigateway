@@ -16,6 +16,10 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IAICompletionInputSLZ,
+  IBatchTranslateInputSLZ,
+} from '@/services/types/body/post/gateways.ts';
 
 const path = '/gateways';
 
@@ -24,14 +28,13 @@ const path = '/gateways';
  * @param gatewayId 网关id
  * @param data 参数
  */
-export const getAICompletion = (gatewayId: number, data: any) => http.post(`${path}/${gatewayId}/ai/completion/`, data);
+export const getAICompletion = (gatewayId: number, data: IAICompletionInputSLZ) =>
+  http.post(`${path}/${gatewayId}/ai/completion/`, data);
 
 /**
  *  批量AI翻译资源文档
  * @param gatewayId 网关id
  * @param data 参数
  */
-export const batchResourceDocAITranslate = (gatewayId: number, data: {
-  doc_ids?: number[]
-  target_language?: string
-}) => http.post(`${path}/${gatewayId}/ai/batch-translate/`, data);
+export const batchResourceDocAITranslate = (gatewayId: number, data: IBatchTranslateInputSLZ) =>
+  http.post(`${path}/${gatewayId}/ai/batch-translate/`, data);

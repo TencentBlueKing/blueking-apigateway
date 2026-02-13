@@ -69,12 +69,12 @@ const localUsers = ref<{ key: string }[]>([]);
 const rules = {
   key: [
     {
-      validator: () => !!localUsers.value?.filter(item => !!item.key).length,
+      validator: () => !!localUsers.value?.filter((item: any) => !!item.key).length,
       message: t('需要至少填写一个用户'),
       trigger: 'blur',
     },
     {
-      validator: (val: string) => !val || localUsers.value.filter(item => item.key === val).length <= 1,
+      validator: (val: string) => !val || localUsers.value.filter((item: any) => item.key === val).length <= 1,
       message: t('用户已存在'),
       trigger: 'blur',
     },
@@ -97,8 +97,8 @@ const handleRemoveItem = (index: number) => {
 };
 
 const getValue = () =>
-  Promise.all(formRefs.value.map(formRef => formRef.validate()))
-    .then(() => localUsers.value?.filter(item => !!item.key) || []);
+  Promise.all(formRefs.value.map((formRef: any) => formRef.validate()))
+    .then(() => localUsers.value?.filter((item: any) => !!item.key) || []);
 
 defineExpose({ getValue });
 

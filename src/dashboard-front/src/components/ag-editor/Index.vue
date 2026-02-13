@@ -118,12 +118,12 @@ interface IProps {
 
 const { t } = useI18n();
 
-let editor = null; // 编辑器实例
+let editor: monaco.editor.IStandaloneCodeEditor | null = null; // 编辑器实例
 const monacoEditor = ref();
 // 编辑器装饰器（高亮效果等）
-let decorations = [];
+let decorations: monaco.editor.IEditorDecorationsCollection | null = null;
 // 编辑器下划波浪线
-let markers = [];
+let markers: monaco.editor.IMarkerData[] = [];
 // 可切换字号范围
 const fontSizeOptions = [14, 20, 24];
 // 可切换行高范围
@@ -148,7 +148,7 @@ const style = computed(() => ({
 }));
 
 // 设置值
-const setValue = (value) => {
+const setValue = (value: any) => {
   try {
     if (!editor) return null;
     return editor.setValue(value);
@@ -201,7 +201,7 @@ const initEditor = () => {
 
   editorMounted(); // 编辑器初始化后
   // 初始化编辑器装饰
-  decorations = editor.createDecorationsCollection([]);
+  decorations = editor!.createDecorationsCollection([]);
   // 定义一个资源导入导出页要用的主题
   monaco.editor.defineTheme('import-theme', {
     base: 'vs-dark',
@@ -211,8 +211,8 @@ const initEditor = () => {
   });
 
   // 全屏监听
-  const domNode = editor.getDomNode();
-  const container = (domNode.parentNode).parentNode;
+  const domNode = editor!.getDomNode();
+  const container = (domNode?.parentNode as HTMLElement)?.parentNode as HTMLElement;
   if (container) {
     container.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
@@ -223,30 +223,30 @@ const initEditor = () => {
 };
 
 const editorMounted = () => {
-  editor.onDidChangeModelContent((event) => {
+  editor!.onDidChangeModelContent((event: any) => {
     const yamlValue = getValue();
     emitChange(yamlValue, event);
   });
 
   // 监听搜索工具状态变化，把可视状态传递出去
-  editor.getContribution('editor.contrib.findController')
+  (editor!.getContribution('editor.contrib.findController') as any)
     ?.getState()
     ?.onFindReplaceStateChange(() => {
-      const isVisible = editor.getContribution('editor.contrib.findController')
+      const isVisible = (editor!.getContribution('editor.contrib.findController') as any)
         .getState().isRevealed;
       emit('findStateChanged', isVisible);
     });
 };
 
 // 修改editor的值
-const emitChange = (emitValue, event) => {
+const emitChange = (emitValue: any, event: any) => {
   emit('change', emitValue, event);
   emit('update:modelValue', emitValue, event);
 };
 
 // 更改光标位置
-const setCursorPos = ({ lineNumber = null, toBottom = false }) => {
-  const model = editor.getModel();
+const setCursorPos = ({ lineNumber = null as number | null, toBottom = false }) => {
+  const model = editor!.getModel();
 
   if (!model) return;
 
@@ -255,15 +255,16 @@ const setCursorPos = ({ lineNumber = null, toBottom = false }) => {
   // 如果直接跳转到底部, 获取最后一行的行号
   if (toBottom === true) _lineNumber = model.getLineCount();
 
+  // @ts-ignore
   const lastColumnNumber = model.getLineLastNonWhitespaceColumn(_lineNumber);
-  editor.focus();
-  editor.setPosition(new monaco.Position(_lineNumber, lastColumnNumber));
-  editor.revealLineInCenter(_lineNumber);
+  editor!.focus();
+  editor!.setPosition(new monaco.Position(_lineNumber!, lastColumnNumber));
+  editor!.revealLineInCenter(_lineNumber!);
 };
 
-const genLineDecorations = (decorationOptions) => {
-  const decoOptions = decorationOptions.filter(o => o.position)
-    .map(o => ({
+const genLineDecorations = (decorationOptions: any[]) => {
+  const decoOptions = decorationOptions.filter((o: any) => o.position)
+    .map((o: any) => ({
       range: {
         startLineNumber: o.position.lineNumber,
         endLineNumber: o.position.lineNumber,
@@ -278,35 +279,35 @@ const genLineDecorations = (decorationOptions) => {
           'apigateway-icon icon-ag-exclamation-circle-fill f14', // 当前行左侧装饰(glyph)用类名
       },
     }));
-  decorations = editor.createDecorationsCollection(decoOptions);
+  decorations = editor!.createDecorationsCollection(decoOptions);
 };
 
 const setDecorations = () => {
-  if (decorations.length > 0) {
-    decorations.set();
+  if (decorations) {
+    decorations.set([]);
   }
 };
 
 const clearDecorations = () => {
-  decorations.clear();
+  decorations?.clear();
 };
 
-const genMarkers = (errors) => {
+const genMarkers = (errors: any[]) => {
   // console.log(errors);
-  errors.forEach((error) => {
+  errors.forEach((error: any) => {
     markers.push({
       severity: monaco.MarkerSeverity.Error,
       message: error.message,
       startLineNumber: error.position.lineNumber,
       startColumn: error.position.column,
       endLineNumber: error.position.lineNumber,
-      endColumn: editor.getModel()?.getLineLastNonWhitespaceColumn(error.position.lineNumber),
+      endColumn: editor!.getModel()?.getLineLastNonWhitespaceColumn(error.position.lineNumber) ?? 1,
     });
   });
 };
 
 const setMarkers = () => {
-  monaco.editor.setModelMarkers(editor.getModel(), 'owner', markers);
+  monaco.editor.setModelMarkers(editor!.getModel()!, 'owner', markers);
 };
 
 const clearMarkers = () => {
@@ -314,19 +315,19 @@ const clearMarkers = () => {
   setMarkers();
 };
 
-const getModel = () => editor.getModel();
+const getModel = () => editor!.getModel();
 
 const showFindPanel = () => {
-  editor.trigger('', 'actions.find');
+  editor!.trigger('', 'actions.find', null);
 };
 
 const closeFindPanel = () => {
-  editor.trigger('', 'closeFindWidget');
+  editor!.trigger('', 'closeFindWidget', null);
 };
 
 const switchFontSize = () => {
   currentFontSizeIndex.value = (currentFontSizeIndex.value + 1) % fontSizeOptions.length;
-  editor.updateOptions({
+  editor!.updateOptions({
     fontSize: fontSizeOptions[currentFontSizeIndex.value],
     lineHeight: lineHeight[currentFontSizeIndex.value],
   });
@@ -334,20 +335,20 @@ const switchFontSize = () => {
 
 const handleFormat = () => {
   if (language === 'json') { // 格式化 JSON 文档
-    editor.trigger('a', 'editor.action.formatDocument');
+    editor!.trigger('a', 'editor.action.formatDocument', null);
   }
   // yaml 格式 需 npm i yamljs 拓展支持
 };
 
 const handleCopy = () => {
-  copy(editor.getValue());
+  copy(editor!.getValue());
 };
 
 // 全屏开关变量
 const isFullScreen = ref(false);
 const handleFullScreen = () => {
-  const domNode = editor.getDomNode();
-  const container = (domNode.parentNode).parentNode;
+  const domNode = editor!.getDomNode();
+  const container = (domNode?.parentNode as HTMLElement)?.parentNode as HTMLElement;
 
   if (isFullScreen.value) {
     document.exitFullscreen();
@@ -357,15 +358,15 @@ const handleFullScreen = () => {
     container?.requestFullscreen();
     isFullScreen.value = true;
   }
-  editor.layout();
+  editor!.layout();
 };
 
-const setTheme = (theme) => {
+const setTheme = (theme: any) => {
   monaco.editor.setTheme(theme);
 };
 
-const updateOptions = (options) => {
-  editor.updateOptions(options);
+const updateOptions = (options: any) => {
+  editor!.updateOptions(options);
 };
 
 defineExpose({

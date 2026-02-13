@@ -132,7 +132,6 @@
 <script lang="ts" setup>
 import moment from 'moment';
 import { getApigwRuntime, getApigwTimeline } from '@/services/source/runTime';
-import type { ReturnRecordType } from '@/types/common';
 import AgRing from '@/components/ag-ring/Index.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
@@ -266,7 +265,7 @@ const getTimeline = async () => {
 };
 
 const initTimeline = () => {
-  timeLines.value.forEach((item) => {
+  timeLines.value.forEach((item: any) => {
     const time = moment(item.data.mts).fromNow();
     const data = {
       tag: `${item.system_name} ${time}`,
@@ -275,7 +274,7 @@ const initTimeline = () => {
       type: '',
     };
     const { rate_availability, requests } = item.data;
-    const typeMap: ReturnRecordType<string, string> = {
+    const typeMap: Record<string, () => void> = {
       errors_occurred: () => {
         data.type = 'warning';
         data.content = t(`偶发 ${requests.error_count || 0} 次请求错误`, { errorCount: requests.error_count });

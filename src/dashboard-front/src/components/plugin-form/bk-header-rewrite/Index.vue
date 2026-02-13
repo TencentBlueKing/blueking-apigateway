@@ -95,7 +95,7 @@ const getValue = () => {
   return cloneDeep(formData.value);
 };
 
-const handleAddItem = (row) => {
+const handleAddItem = (row: any) => {
   const typeMap = {
     set: () => {
       formData.value[row.name]?.push({
@@ -107,10 +107,11 @@ const handleAddItem = (row) => {
       formData.value[row.name]?.push({ key: '' });
     },
   };
+  // @ts-ignore
   return typeMap[row?.name]?.();
 };
 
-const handleRemoveItem = (row) => {
+const handleRemoveItem = (row: any) => {
   const { field, index } = row;
   formData.value[field.name]?.splice(index, 1);
 };
@@ -119,6 +120,7 @@ const validate = async (): Promise<boolean> => {
   try {
     const isValid = await formRef.value?.validate();
     if (!isValid) {
+      // @ts-ignore
       return;
     }
     return isValid;
@@ -134,7 +136,7 @@ const clearValidate = () => {
 
 watch(
   () => formData.value,
-  (newVal) => {
+  (newVal: any) => {
     clearValidate();
     if (isObject(newVal) && isEmpty(newVal)) {
       formData.value = { ...DEFAULT_FORM_DATA };

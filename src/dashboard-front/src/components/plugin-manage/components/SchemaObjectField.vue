@@ -85,7 +85,7 @@ const renderAllKeys = computed(() => {
 });
 
 const renderRequired = computed(() => {
-  return renderAllKeys.value.some(key => schemaOption.value?.required?.includes(key));
+  return renderAllKeys.value.some((key: any) => schemaOption.value?.required?.includes(key));
 });
 
 const renderFormItem = computed(() => {
@@ -100,14 +100,14 @@ const renderFormItem = computed(() => {
   return [];
 });
 
-const renderFields = (row) => {
+const renderFields = (row: any) => {
   if (isObject(row?.items?.properties)) {
     return Object.values(row?.items?.properties);
   }
   return row?.properties;
 };
 
-const renderShowForm = (row) => {
+const renderShowForm = (row: any) => {
   return !selectedSchema || isEqual(schemaOption.value, row);
 };
 

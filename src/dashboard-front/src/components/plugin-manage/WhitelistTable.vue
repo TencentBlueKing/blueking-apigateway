@@ -423,7 +423,7 @@ const formattedData = computed(() => {
 
 watch(
   () => keyword.value,
-  (value) => {
+  (value: any) => {
     if (value === '') {
       getTableData();
     }
@@ -486,6 +486,7 @@ const removeResourceScroll = () => {
 const hideToolTips = throttle(() => {
   const tipsEl = document.querySelectorAll('.tippy-popper');
   if (tipsEl.length) {
+    // @ts-ignore
     tipsEl[0].parentNode.removeChild(tipsEl[tipsEl.length - 1]);
   }
 }, 60);
@@ -667,6 +668,7 @@ const handleBindResource = () => {
 // 接口数组转换
 const yamlConvertJson = (yamlStr: any) => {
   const yamlData = yaml2Json(yamlStr).data || { exempted_apps: [] };
+  // @ts-ignore
   const { exempted_apps: list } = yamlData;
   if (list.length) {
     dataList.value = list.map((item: any) => {

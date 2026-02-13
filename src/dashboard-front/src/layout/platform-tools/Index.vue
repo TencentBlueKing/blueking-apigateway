@@ -144,7 +144,7 @@ const routerViewWrapperClass = computed(() => {
 // 监听当前路由
 watch(
   () => route.meta,
-  (meta) => {
+  (meta: typeof route.meta) => {
     activeMenuKey.value = meta.matchRoute as string;
     headerTitle.value = meta.title as string;
   },

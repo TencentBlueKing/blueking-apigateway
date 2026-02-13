@@ -145,8 +145,8 @@ const handleStepToggle = (isVisible: boolean) => {
 const handleResetForm = () => {
   interval.value = 'off';
   searchParams.value.step = 'auto';
-  handleRefreshTimeChange();
-  handleStepChange();
+  handleRefreshTimeChange('off');
+  handleStepChange('auto');
 };
 
 defineExpose({ handleResetForm });

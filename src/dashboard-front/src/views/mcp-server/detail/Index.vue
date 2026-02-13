@@ -226,12 +226,12 @@
                 <ServerTools
                   v-if="item.name === 'tools'"
                   :server="server"
-                  @update-count="(count) => updateCount(count, item.name)"
+                  @update-count="(count: any) => updateCount(count, item.name)"
                 />
                 <ServerPrompts
                   v-if="item.name === 'prompts'"
                   :server="server"
-                  @update-count="(count) => updateCount(count, item.name)"
+                  @update-count="(count: any) => updateCount(count, item.name)"
                 />
                 <AuthApplications
                   v-if="item.name === 'auth'"
@@ -329,9 +329,9 @@ const isEnabledOAuth = computed(() =>
 );
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
-    panels.value = panels.value.filter(item => !['prompts'].includes(item.name));
+  panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
   }
-  return panels.value.filter(item => item.show);
+  return panels.value.filter((item: any) => item.show);
 });
 
 const fetchServer = async () => {
@@ -364,7 +364,7 @@ const handleUpdated = async () => {
 };
 
 const handleGuideChange = (tabName: string) => {
-  const tabMap = {
+  const tabMap: Record<string, () => Promise<void>> = {
     default: () => {
       return fetchGuide();
     },
@@ -372,7 +372,7 @@ const handleGuideChange = (tabName: string) => {
       return fetchCustomGuide();
     },
   };
-  return tabMap[tabName]?.();
+  return tabMap[tabName as keyof typeof tabMap]?.();
 };
 
 watch(() => route.params, async () => {
@@ -386,7 +386,7 @@ watch(() => route.params, async () => {
   deep: true,
 });
 
-watch(() => gatewayStore.currentGateway, (newGateway, oldGateway) => {
+watch(() => gatewayStore.currentGateway, (newGateway: any, oldGateway: any) => {
   // 切换了网关，需要返回列表页
   if (!oldGateway || (newGateway?.id === oldGateway.id)) {
     return;
@@ -462,13 +462,13 @@ const handleDelete = async () => {
  * @param panelName - 目标面板名称
  */
 const updateCount = (count?: number, panelName?: string) => {
-  const { tools_count, prompts } = server.value ?? {};
-  const panelCountMap = {
+  const { tools_count, prompts } = server.value ?? {} as any;
+  const panelCountMap: Record<string, () => number> = {
     tools: () => tools_count ?? 0,
-    prompts: () => prompts?.length ?? 0,
-    [panelName]: () => count ?? 0,
+    prompts: () => (prompts as any[])?.length ?? 0,
+    ...(panelName ? { [panelName]: () => count ?? 0 } : {}),
   };
-  panels.value.forEach((item) => {
+  panels.value.forEach((item: any) => {
     const getCount = panelCountMap[item.name];
     if (getCount) {
       item.count = getCount?.();

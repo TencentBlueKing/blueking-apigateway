@@ -206,6 +206,7 @@ import {
   useStage,
 } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway';
+import type { IExtractListApiResults } from '@/services/types/utils';
 import { getStageList } from '@/services/source/stage';
 import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
@@ -220,7 +221,7 @@ interface IMenu {
   hideInProgrammable?: boolean
 }
 
-type GatewayItemType = Awaited<ReturnType<typeof getGatewayList>>['results'][number];
+type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
 
 const { t, locale } = useI18n();
 const route = useRoute();
@@ -484,7 +485,7 @@ async function checkStageVersion() {
   }
 }
 // 根据网关不同状态展示文案最大宽度
-const getOptionTextWidth = (gateway) => {
+const getOptionTextWidth = (gateway: GatewayItemType) => {
   // 如果当前网关既是编辑网关且已停用
   if (gateway.kind === 1) {
     if (!gateway.status) {
@@ -508,7 +509,7 @@ const handleCollapse = (collapsed: boolean) => {
 const handleGoPage = (routeName: string) => {
   gatewayStore.setApigwId(gatewayId.value);
   // 如果是可编辑网关不存在资源配置，需要跳转到环境概览
-  const isEditGateway = gatewayList.value.find(item => item.id === gatewayId.value)?.kind === 1;
+  const isEditGateway = gatewayList.value.find((item: GatewayItemType) => item.id === gatewayId.value)?.kind === 1;
   router.push({
     name: ['ResourceSetting'].includes(routeName) && isEditGateway ? 'StageOverview' : routeName,
     params: { id: gatewayId.value },

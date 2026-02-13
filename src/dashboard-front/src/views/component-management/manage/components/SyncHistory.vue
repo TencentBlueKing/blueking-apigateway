@@ -73,7 +73,7 @@ const tableColumns = shallowRef([
   {
     title: 'ID',
     colKey: 'resource_version_title',
-    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       if (!row?.id) {
         return '--';
       }
@@ -82,7 +82,7 @@ const tableColumns = shallowRef([
           theme="primary"
           class="mr-10px"
           text
-          onClick={() => handleVersion(row.id)}
+          onClick={() => handleVersion(String(row.id))}
         >
           { row.id }
         </Button>
@@ -98,7 +98,7 @@ const tableColumns = shallowRef([
     title: t('同步版本号（版本标题）'),
     colKey: 'resource_version_name',
     ellipse: true,
-    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.resource_version_display || '--' }
@@ -110,7 +110,7 @@ const tableColumns = shallowRef([
     title: t('操作人'),
     colKey: 'component_name',
     ellipse: true,
-    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.created_by || '--' }
@@ -122,8 +122,8 @@ const tableColumns = shallowRef([
     title: t('操作结果'),
     colKey: 'status ',
     ellipse: true,
-    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
-      if (['releasing'].includes(row?.status)) {
+    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+      if (['releasing'].includes(row?.status!)) {
         return (
           <span>
             <Loading
@@ -139,7 +139,7 @@ const tableColumns = shallowRef([
       return (
         <span>
           <span class={`ag-dot ${row?.status} m-r-5px`} />
-          { OPERATE_STATUS_MAP[row?.status] }
+          { OPERATE_STATUS_MAP[row?.status ?? ''] }
         </span>
       );
     },
@@ -148,7 +148,7 @@ const tableColumns = shallowRef([
     title: t('操作日志'),
     field: 'message',
     ellipse: true,
-    cell: (h, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
           { row?.message || '--' }
