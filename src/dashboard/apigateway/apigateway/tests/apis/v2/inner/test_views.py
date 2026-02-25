@@ -837,8 +837,8 @@ class TestMCPServerListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == mcp_server1.id
 
-    def test_list_returns_oauth2_enabled_true(self, request_view, fake_gateway, mocker):
-        """测试 MCPServer 列表接口返回 oauth2_enabled=True"""
+    def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
@@ -852,7 +852,7 @@ class TestMCPServerListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            oauth2_enabled=True,
+            oauth2_public_client_enabled=True,
         )
 
         mocker.patch(
@@ -877,10 +877,10 @@ class TestMCPServerListApi:
             None,
         )
         assert mcp_data is not None
-        assert mcp_data["oauth2_enabled"] is True
+        assert mcp_data["oauth2_public_client_enabled"] is True
 
-    def test_list_returns_oauth2_enabled_false(self, request_view, fake_gateway, mocker):
-        """测试 MCPServer 列表接口返回 oauth2_enabled=False"""
+    def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
@@ -894,7 +894,7 @@ class TestMCPServerListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            oauth2_enabled=False,
+            oauth2_public_client_enabled=False,
         )
 
         mocker.patch(
@@ -919,4 +919,4 @@ class TestMCPServerListApi:
             None,
         )
         assert mcp_data is not None
-        assert mcp_data["oauth2_enabled"] is False
+        assert mcp_data["oauth2_public_client_enabled"] is False

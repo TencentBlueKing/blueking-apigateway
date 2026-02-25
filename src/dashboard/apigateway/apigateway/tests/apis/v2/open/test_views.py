@@ -325,10 +325,10 @@ class TestParseDatetimeStrToTimestampApi:
 
 
 class TestMCPServerListApiOAuth2:
-    """测试 MCPServer 列表接口返回 oauth2_enabled 字段"""
+    """测试 MCPServer 列表接口返回 oauth2_public_client_enabled 字段"""
 
-    def test_list_returns_oauth2_enabled(self, request_view, fake_gateway, settings):
-        """测试 MCPServer 列表接口正确返回 oauth2_enabled 字段"""
+    def test_list_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, settings):
+        """测试 MCPServer 列表接口正确返回 oauth2_public_client_enabled 字段"""
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         mcp_server = G(
             MCPServer,
@@ -336,7 +336,7 @@ class TestMCPServerListApiOAuth2:
             stage=stage,
             status=MCPServerStatusEnum.ACTIVE.value,
             is_public=True,
-            oauth2_enabled=True,
+            oauth2_public_client_enabled=True,
         )
 
         resp = request_view(
@@ -352,10 +352,10 @@ class TestMCPServerListApiOAuth2:
             None,
         )
         assert mcp_data is not None
-        assert mcp_data["oauth2_enabled"] is True
+        assert mcp_data["oauth2_public_client_enabled"] is True
 
     def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, settings):
-        """测试 MCPServer 列表接口返回 oauth2_enabled=False"""
+        """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
         mcp_server = G(
             MCPServer,
@@ -363,7 +363,7 @@ class TestMCPServerListApiOAuth2:
             stage=stage,
             status=MCPServerStatusEnum.ACTIVE.value,
             is_public=True,
-            oauth2_enabled=False,
+            oauth2_public_client_enabled=False,
         )
 
         resp = request_view(
@@ -379,7 +379,7 @@ class TestMCPServerListApiOAuth2:
             None,
         )
         assert mcp_data is not None
-        assert mcp_data["oauth2_enabled"] is False
+        assert mcp_data["oauth2_public_client_enabled"] is False
 
 
 class TestOAuthProtectedResourceApi:
@@ -498,10 +498,10 @@ class TestMCPServerRetrieveApi:
         assert "guideline" in result["data"]
         assert "tools" in result["data"]
         assert "maintainers" in result["data"]
-        assert "oauth2_enabled" in result["data"]
+        assert "oauth2_public_client_enabled" in result["data"]
 
-    def test_retrieve_returns_oauth2_enabled_true(self, request_view, fake_gateway, mocker):
-        """测试 MCPServer 详情接口返回 oauth2_enabled=True"""
+    def test_retrieve_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
@@ -515,7 +515,7 @@ class TestMCPServerRetrieveApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            oauth2_enabled=True,
+            oauth2_public_client_enabled=True,
         )
 
         mocker.patch(
@@ -545,10 +545,10 @@ class TestMCPServerRetrieveApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert result["data"]["oauth2_enabled"] is True
+        assert result["data"]["oauth2_public_client_enabled"] is True
 
-    def test_retrieve_returns_oauth2_enabled_false(self, request_view, fake_gateway, mocker):
-        """测试 MCPServer 详情接口返回 oauth2_enabled=False"""
+    def test_retrieve_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=False"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
         fake_gateway.save()
@@ -562,7 +562,7 @@ class TestMCPServerRetrieveApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            oauth2_enabled=False,
+            oauth2_public_client_enabled=False,
         )
 
         mocker.patch(
@@ -592,7 +592,7 @@ class TestMCPServerRetrieveApi:
 
         assert resp.status_code == 200
         result = resp.json()
-        assert result["data"]["oauth2_enabled"] is False
+        assert result["data"]["oauth2_public_client_enabled"] is False
 
     def test_retrieve_private_mcp_server_by_maintainer(self, request_view, fake_gateway, mocker):
         """测试网关维护者获取私有的 MCPServer 详情"""

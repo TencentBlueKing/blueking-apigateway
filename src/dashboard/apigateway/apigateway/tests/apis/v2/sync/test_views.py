@@ -201,7 +201,7 @@ class TestSyncApi:
 class TestSyncApiOAuth2:
     """测试 MCPServer 同步接口的 OAuth2 功能"""
 
-    def test_mcp_server_sync_create_with_oauth2_enabled(
+    def test_mcp_server_sync_create_with_oauth2_public_client_enabled(
         self,
         request_view,
         fake_gateway,
@@ -211,7 +211,7 @@ class TestSyncApiOAuth2:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试创建 MCPServer 时开启 OAuth2，自动为 bk_app_code=public 授权"""
+        """测试创建 MCPServer 时开启 OAuth2 公开客户端模式，自动对 bk_app_code=public 的应用进行授权"""
         ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -229,7 +229,7 @@ class TestSyncApiOAuth2:
                     "description": "oauth2 test server",
                     "status": 1,
                     "target_app_codes": ["app1"],
-                    "oauth2_enabled": True,
+                    "oauth2_public_client_enabled": True,
                 }
             ]
         }
@@ -245,9 +245,9 @@ class TestSyncApiOAuth2:
         mcp_server_id = result["data"][0]["id"]
         assert result["data"][0]["action"] == "created"
 
-        # 验证 oauth2_enabled 被正确设置
+        # 验证 oauth2_public_client_enabled 被正确设置
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
-        assert mcp_server.oauth2_enabled is True
+        assert mcp_server.oauth2_public_client_enabled is True
 
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
@@ -271,7 +271,7 @@ class TestSyncApiOAuth2:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试创建 MCPServer 时不开启 OAuth2，不会为 bk_app_code=public 授权"""
+        """测试创建 MCPServer 时不开启 OAuth2 公开客户端模式，不会对 bk_app_code=public 的应用进行授权"""
         ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -289,7 +289,7 @@ class TestSyncApiOAuth2:
                     "description": "no oauth2 test server",
                     "status": 1,
                     "target_app_codes": ["app1"],
-                    "oauth2_enabled": False,
+                    "oauth2_public_client_enabled": False,
                 }
             ]
         }
@@ -320,15 +320,15 @@ class TestSyncApiOAuth2:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试更新 MCPServer 时开启 OAuth2，自动为 bk_app_code=public 授权"""
+        """测试更新 MCPServer 时开启 OAuth2 公开客户端模式，自动对 bk_app_code=public 的应用进行授权"""
         ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
         fake_stage.save()
 
-        # 先创建一个不开启 OAuth2 的 MCPServer
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, oauth2_enabled=False)
+        # 先创建一个不开启 OAuth2 公开客户端模式的 MCPServer
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, oauth2_public_client_enabled=False)
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-update-oauth2"
         mcp_server.status = 0
         mcp_server.save()
@@ -348,7 +348,7 @@ class TestSyncApiOAuth2:
                     "is_public": True,
                     "description": "update enable oauth2",
                     "status": 1,
-                    "oauth2_enabled": True,
+                    "oauth2_public_client_enabled": True,
                 }
             ]
         }
@@ -364,9 +364,9 @@ class TestSyncApiOAuth2:
         assert result["data"][0]["action"] == "updated"
 
         mcp_server_id = result["data"][0]["id"]
-        # 验证 oauth2_enabled 已更新
+        # 验证 oauth2_public_client_enabled 已更新
         mcp_server.refresh_from_db()
-        assert mcp_server.oauth2_enabled is True
+        assert mcp_server.oauth2_public_client_enabled is True
 
         # 验证 bk_app_code=public 已被授权
         assert MCPServerAppPermission.objects.filter(
@@ -391,8 +391,8 @@ class TestSyncApiOAuth2:
         fake_gateway.save()
         fake_stage.save()
 
-        # 先创建一个开启 OAuth2 的 MCPServer，并手动添加 public 权限
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, oauth2_enabled=True)
+        # 先创建一个开启 OAuth2 公开客户端模式的 MCPServer，并手动添加 public 权限
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, oauth2_public_client_enabled=True)
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-disable-oauth2"
         mcp_server.status = 1
         mcp_server.save()
@@ -413,7 +413,7 @@ class TestSyncApiOAuth2:
                     "is_public": True,
                     "description": "update disable oauth2",
                     "status": 1,
-                    "oauth2_enabled": False,
+                    "oauth2_public_client_enabled": False,
                 }
             ]
         }
@@ -428,9 +428,9 @@ class TestSyncApiOAuth2:
         result = resp.json()
         assert result["data"][0]["action"] == "updated"
 
-        # 验证 oauth2_enabled 已更新
+        # 验证 oauth2_public_client_enabled 已更新
         mcp_server.refresh_from_db()
-        assert mcp_server.oauth2_enabled is False
+        assert mcp_server.oauth2_public_client_enabled is False
 
         # 验证 bk_app_code=public 的权限已被撤销
         assert not MCPServerAppPermission.objects.filter(

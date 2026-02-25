@@ -24,7 +24,7 @@
     "labels": ["AI", "工具"],
     "status": 1,
     "protocol_type": "sse",
-    "oauth2_enabled": false,
+    "oauth2_public_client_enabled": false,
     "url": "https://test.com/api/bk-apigateway/prod/api/v2/mcp-servers/test/sse",
     "guideline": "## 使用指南\n...",
     "tools": [
@@ -83,7 +83,7 @@
 | labels           | array    | mcp_server 标签                                              |
 | status           | int      | mcp_server 状态（0：已停用，1：启用中）                      |
 | protocol_type    | string   | MCP 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
-| oauth2_enabled   | boolean  | 是否开启 OAuth2 认证                                         |
+| oauth2_public_client_enabled   | boolean  | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权                                         |
 | url              | string   | mcp_server 访问地址                                          |
 | guideline        | string   | mcp_server 使用指南                                          |
 | tools            | array    | mcp_server 工具列表                                          |
