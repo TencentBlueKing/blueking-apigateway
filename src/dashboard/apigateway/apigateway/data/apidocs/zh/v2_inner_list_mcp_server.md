@@ -32,7 +32,7 @@
         "resource_names": ["resource1", "resource2"],
         "status": "active",
         "protocol_type": "sse",
-        "oauth2_enabled": false,
+        "oauth2_public_client_enabled": false,
         "stage": {
           "id": 1,
           "name": "prod"
@@ -85,7 +85,7 @@
 | resource_names | array  | MCPServer 资源名称列表      |
 | status       | string | MCPServer 状态          |
 | protocol_type | string | MCPServer 协议类型        |
-| oauth2_enabled | bool   | 是否开启 OAuth2 认证       |
+| oauth2_public_client_enabled | bool   | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权       |
 | stage        | object | MCPServer 环境信息        |
 | gateway      | object | MCPServer 网关信息        |
 | tools_count  | int    | MCPServer 工具数量        |

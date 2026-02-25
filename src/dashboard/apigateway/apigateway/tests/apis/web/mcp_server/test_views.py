@@ -937,9 +937,9 @@ class TestMCPServerConfigListApi:
         assert config_map["codebuddy"] == "CodeBuddy"
         assert config_map["claude"] == "Claude"
 
-    def test_retrieve_config_list_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试 OAuth2 开启时，配置中不包含认证请求头"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_retrieve_config_list_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试 OAuth2 公开客户端模式开启时，配置中不包含认证请求头"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -956,8 +956,8 @@ class TestMCPServerConfigListApi:
             assert "headers" not in config["content"]
 
     def test_retrieve_config_list_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试 OAuth2 关闭时，配置中包含认证请求头"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试 OAuth2 公开客户端模式关闭时，配置中包含认证请求头"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2579,14 +2579,14 @@ class TestMCPServerFilterOptionsApi:
         assert labels == sorted(labels)
 
 
-# ========== OAuth2 认证相关测试 ==========
+# ========== OAuth2 公开客户端模式相关测试 ==========
 
 
 class TestMCPServerOAuth2Enabled:
-    """测试 MCPServer OAuth2 认证相关功能"""
+    """测试 MCPServer OAuth2 公开客户端模式相关功能"""
 
-    def test_create_with_oauth2_enabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时开启 OAuth2 认证"""
+    def test_create_with_oauth2_public_client_enabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
+        """测试创建 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2604,7 +2604,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2618,13 +2618,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is True
+        assert mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在 sync_permissions 内部处理）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_with_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时不开启 OAuth2 认证"""
+        """测试创建 MCPServer 时不开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2642,7 +2642,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
 
         resp = request_view(
@@ -2656,13 +2656,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is False
+        assert mcp_server.oauth2_public_client_enabled is False
 
-        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        # sync_permissions 始终被调用（内部会根据 oauth2_public_client_enabled 处理 public 权限）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_default_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时默认 OAuth2 认证关闭"""
+        """测试创建 MCPServer 时默认 OAuth2 公开客户端模式关闭"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2680,7 +2680,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            # 不传 oauth2_enabled，默认应为 False
+            # 不传 oauth2_public_client_enabled，默认应为 False
         }
 
         resp = request_view(
@@ -2694,13 +2694,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is False
+        assert mcp_server.oauth2_public_client_enabled is False
 
-        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        # sync_permissions 始终被调用（内部会根据 oauth2_public_client_enabled 处理 public 权限）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_update_enable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试更新 MCPServer 时开启 OAuth2 认证"""
+        """测试更新 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2711,12 +2711,12 @@ class TestMCPServerOAuth2Enabled:
         )
 
         # 确保初始状态未开启
-        fake_mcp_server.oauth2_enabled = False
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         data = {
             "description": faker.pystr(),
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2730,13 +2730,13 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is True
+        assert fake_mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_disable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试更新 MCPServer 时关闭 OAuth2 认证"""
+        """测试更新 MCPServer 时关闭 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2746,13 +2746,13 @@ class TestMCPServerOAuth2Enabled:
             return_value=None,
         )
 
-        # 初始状态开启 OAuth2
-        fake_mcp_server.oauth2_enabled = True
+        # 初始状态开启 OAuth2 公开客户端模式
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         data = {
             "description": faker.pystr(),
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
 
         resp = request_view(
@@ -2766,13 +2766,15 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is False
+        assert fake_mcp_server.oauth2_public_client_enabled is False
 
         # 关闭 OAuth2 时 sync_permissions 也被调用（内部会撤销 public 权限）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
-    def test_update_full_with_oauth2_enabled(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试全量更新 MCPServer 时开启 OAuth2 认证"""
+    def test_update_full_with_oauth2_public_client_enabled(
+        self, mocker, request_view, fake_gateway, fake_mcp_server, faker
+    ):
+        """测试全量更新 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2787,7 +2789,7 @@ class TestMCPServerOAuth2Enabled:
             "is_public": True,
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2801,14 +2803,14 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is True
+        assert fake_mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
-    def test_list_returns_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试列表接口返回 oauth2_enabled 字段"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_list_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试列表接口返回 oauth2_public_client_enabled 字段"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2825,11 +2827,11 @@ class TestMCPServerOAuth2Enabled:
             None,
         )
         assert mcp_server_data is not None
-        assert mcp_server_data["oauth2_enabled"] is True
+        assert mcp_server_data["oauth2_public_client_enabled"] is True
 
     def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试列表接口返回 oauth2_enabled=False"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试列表接口返回 oauth2_public_client_enabled=False"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2846,11 +2848,11 @@ class TestMCPServerOAuth2Enabled:
             None,
         )
         assert mcp_server_data is not None
-        assert mcp_server_data["oauth2_enabled"] is False
+        assert mcp_server_data["oauth2_public_client_enabled"] is False
 
-    def test_retrieve_returns_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试详情接口返回 oauth2_enabled 字段"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_retrieve_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试详情接口返回 oauth2_public_client_enabled 字段"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2862,11 +2864,11 @@ class TestMCPServerOAuth2Enabled:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["oauth2_enabled"] is True
+        assert result["data"]["oauth2_public_client_enabled"] is True
 
     def test_retrieve_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试详情接口返回 oauth2_enabled=False"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试详情接口返回 oauth2_public_client_enabled=False"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2878,4 +2880,4 @@ class TestMCPServerOAuth2Enabled:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["oauth2_enabled"] is False
+        assert result["data"]["oauth2_public_client_enabled"] is False

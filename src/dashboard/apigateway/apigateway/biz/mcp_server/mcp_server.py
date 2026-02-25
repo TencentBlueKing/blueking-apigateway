@@ -183,9 +183,9 @@ class MCPServerHandler:
         """
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
 
-        # 同步 OAuth2 权限：根据 oauth2_enabled 开启/关闭 public app 权限
+        # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
         public_app_code = settings.MCP_SERVER_PUBLIC_APP_CODE
-        if mcp_server.oauth2_enabled:
+        if mcp_server.oauth2_public_client_enabled:
             MCPServerAppPermission.objects.save_permission(
                 mcp_server_id=mcp_server_id,
                 bk_app_code=public_app_code,
@@ -490,7 +490,7 @@ class MCPServerHandler:
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
-                "oauth2_enabled": instance.oauth2_enabled,
+                "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
             }
 
             # AIDev 需要额外的创建链接
