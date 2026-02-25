@@ -224,6 +224,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=list,
         help_text="MCPServer 分类 ID 列表",
     )
+    oauth2_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
@@ -240,6 +245,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "prompts",
             "protocol_type",
             "category_ids",
+            "oauth2_enabled",
         )
         lookup_field = "id"
         validators = [MCPServerValidator()]
@@ -341,6 +347,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCP 协议类型", choices=MCPServerProtocolTypeEnum.get_choices()
     )
 
+    oauth2_enabled = serializers.BooleanField(read_only=True, help_text="是否开启 OAuth2 认证")
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
     updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
@@ -426,6 +434,10 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="MCPServer 分类 ID 列表",
     )
+    oauth2_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权",
+    )
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
@@ -474,6 +486,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "prompts",
             "protocol_type",
             "category_ids",
+            "oauth2_enabled",
         )
         lookup_field = "id"
 
