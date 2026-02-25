@@ -31,6 +31,7 @@ from django.utils.translation import gettext as _
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
@@ -176,11 +177,38 @@ class MCPServerHandler:
     @staticmethod
     @transaction.atomic
     def sync_permissions(mcp_server_id: int) -> None:
-        """同步 MCPServer 的权限
+        """同步 MCPServer 的权限，包括 OAuth2 权限（bk_app_code=public）
         Args:
             mcp_server_id (int): mcp_server 的 id
         """
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
+
+        # 同步 OAuth2 权限：根据 oauth2_enabled 开启/关闭 public app 权限
+        public_app_code = settings.MCP_SERVER_PUBLIC_APP_CODE
+        if mcp_server.oauth2_enabled:
+            MCPServerAppPermission.objects.save_permission(
+                mcp_server_id=mcp_server_id,
+                bk_app_code=public_app_code,
+                grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+                expire_days=None,
+            )
+            logger.info(
+                "sync oauth2 permissions for mcp_server %d, granted bk_app_code=%s",
+                mcp_server_id,
+                public_app_code,
+            )
+        else:
+            deleted_count, _ = MCPServerAppPermission.objects.filter(
+                mcp_server_id=mcp_server_id,
+                bk_app_code=public_app_code,
+            ).delete()
+            if deleted_count:
+                logger.info(
+                    "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
+                    mcp_server_id,
+                    public_app_code,
+                    deleted_count,
+                )
 
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)
@@ -462,6 +490,7 @@ class MCPServerHandler:
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
+                "oauth2_enabled": instance.oauth2_enabled,
             }
 
             # AIDev 需要额外的创建链接
