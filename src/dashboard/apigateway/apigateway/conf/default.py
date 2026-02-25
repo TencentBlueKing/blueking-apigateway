@@ -564,6 +564,9 @@ BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
 # AIDEV 平台配置（配置了 AIDEV_AGENT_CREATE_URL 则启用 AIDev）
 AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
+# MCP Server OAuth2 认证开启后自动授权的 bk_app_code
+MCP_SERVER_PUBLIC_APP_CODE = env.str("MCP_SERVER_PUBLIC_APP_CODE", "public")
+
 # MCP Server 配置工具列表
 MCP_CONFIG_AGENT_CLIENTS = [
     {"name": "codebuddy", "display_name": "CodeBuddy"},
@@ -951,6 +954,8 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
     # 是否启用健康检查
     "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
+    # 是否开启 MCP Server oauth2 认证
+    "ENABLE_MCP_SERVER_OAUTH2": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2", False),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
