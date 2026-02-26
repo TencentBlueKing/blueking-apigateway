@@ -3,7 +3,8 @@
 获取网关下的所有资源列表，返回完整的资源信息（包括后端服务、标签、文档、认证配置等）。
 
 - 只返回公开的资源
-- 支持 `brief` 参数简要返回，仅包含 id 和 name，适用于 MCP Server 工具调用等需要减少上下文占用的场景
+- 支持 `fields` 参数指定需要返回的字段，逗号分隔
+- 不传 `fields` 时默认只返回 `id` 和 `name`，适用于 MCP Server 工具调用等需要减少上下文占用的场景
 
 ### 输入参数
 
@@ -18,12 +19,25 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
 | keyword  | string   | 否   | 搜索关键字，模糊匹配资源 name、description 或标签名称 |
-| brief    | boolean  | 否   | 是否简要返回，默认 false；为 true 时仅返回 id 和 name |
+| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,method`；不传默认返回 `id` 和 `name` |
 
 
 ### 响应示例
 
-#### 完整返回（brief=false，默认）
+#### 默认返回（不传 fields）
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "get_user_info"
+        }
+    ]
+}
+```
+
+#### 指定全部字段（fields=id,name,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config）
 
 ```json
 {
@@ -53,19 +67,6 @@
 }
 ```
 
-#### 简要返回（brief=true）
-
-```json
-{
-    "data": [
-        {
-            "id": 1,
-            "name": "get_user_info"
-        }
-    ]
-}
-```
-
 
 ### 响应参数说明
 
@@ -75,7 +76,7 @@
 
 #### data（不分页时为数组）
 
-##### 完整返回（brief=false，默认）
+##### 可选字段
 
 | 参数名称                  | 参数类型    | 描述                      |
 |-----------------------|---------|-------------------------|
@@ -89,13 +90,6 @@
 | is_public             | boolean | 是否公开                    |
 | labels                | array   | 标签列表，详见 labels[] 说明     |
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
-
-##### 简要返回（brief=true）
-
-| 参数名称                  | 参数类型    | 描述                      |
-|-----------------------|---------|-------------------------|
-| id                    | int     | 资源 ID                   |
-| name                  | string  | 资源名称                    |
 
 
 #### labels[]

@@ -840,12 +840,47 @@ class TestGatewayBatchQueryApi:
         assert resp.status_code == 200
         assert len(result["data"]) == 0
 
-    def test_batch_query_empty_names(self, request_view):
+    def test_batch_query_by_ids(self, request_view, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.is_public = True
+        fake_gateway.save()
+
         resp = request_view(
             method="POST",
             view_name="openapi.v2.open.gateway.batch_query",
             app=mock.MagicMock(app_code="test"),
-            data={"names": []},
+            data={"ids": [fake_gateway.id]},
+            content_type="application/json",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+        assert set(result["data"][0].keys()) == {"id", "name"}
+        assert result["data"][0]["name"] == fake_gateway.name
+
+    def test_batch_query_with_fields(self, request_view, fake_gateway):
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.is_public = True
+        fake_gateway.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.open.gateway.batch_query",
+            app=mock.MagicMock(app_code="test"),
+            data={"names": [fake_gateway.name], "fields": "name"},
+            content_type="application/json",
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+        assert set(result["data"][0].keys()) == {"name"}
+
+    def test_batch_query_no_ids_or_names(self, request_view):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.open.gateway.batch_query",
+            app=mock.MagicMock(app_code="test"),
+            data={},
             content_type="application/json",
         )
         assert resp.status_code == 400
@@ -992,8 +1027,8 @@ class TestGatewayResourceListApiKeyword:
         assert result["data"][0]["name"] == "get_order_info"
 
 
-class TestGatewayResourceListApiBrief:
-    def test_list_brief_returns_only_id_and_name(self, request_to_view, request_factory, fake_gateway):
+class TestGatewayResourceListApiFields:
+    def test_list_with_fields_returns_only_specified(self, request_to_view, request_factory, fake_gateway):
         G(
             Resource,
             gateway=fake_gateway,
@@ -1004,7 +1039,7 @@ class TestGatewayResourceListApiBrief:
             is_public=True,
         )
 
-        request = request_factory.get("", data={"brief": "true"})
+        request = request_factory.get("", data={"fields": "id,name"})
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
 
@@ -1019,7 +1054,33 @@ class TestGatewayResourceListApiBrief:
         assert len(result["data"]) == 1
         assert set(result["data"][0].keys()) == {"id", "name"}
 
-    def test_list_without_brief_returns_full_fields(self, request_to_view, request_factory, fake_gateway):
+    def test_list_with_fields_multiple(self, request_to_view, request_factory, fake_gateway):
+        G(
+            Resource,
+            gateway=fake_gateway,
+            name="get_user_info",
+            description="获取用户信息",
+            method="GET",
+            path="/api/v1/users/",
+            is_public=True,
+        )
+
+        request = request_factory.get("", data={"fields": "id,name,method"})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.list",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert len(result["data"]) == 1
+        assert set(result["data"][0].keys()) == {"id", "name", "method"}
+
+    def test_list_without_fields_returns_default_id_name(self, request_to_view, request_factory, fake_gateway):
         G(
             Resource,
             gateway=fake_gateway,
@@ -1043,8 +1104,7 @@ class TestGatewayResourceListApiBrief:
 
         assert response.status_code == 200
         assert len(result["data"]) == 1
-        assert "auth_config" in result["data"][0]
-        assert "labels" in result["data"][0]
+        assert set(result["data"][0].keys()) == {"id", "name"}
 
 
 class TestMCPServerListApiCategory:
@@ -1124,15 +1184,41 @@ class TestMCPServerBatchQueryApi:
         assert resp.status_code == 200
         result = resp.json()
         assert len(result["data"]) == 2
+        assert set(result["data"][0].keys()) == {"id", "name"}
 
-        mcp1_data = next(item for item in result["data"] if item["name"] == "test-mcp-1")
+    def test_batch_query_with_fields(self, request_view, fake_gateway):
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        category = G(MCPServerCategory, name="official", display_name="官方", is_active=True)
+
+        mcp1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="test-mcp-1",
+            title="测试 MCP 1",
+            description="描述1",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        mcp1.categories.add(category)
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.open.mcp_server.batch_query",
+            app=mock.MagicMock(app_code="test"),
+            data={"names": ["test-mcp-1"], "fields": "name,title,description,categories"},
+            content_type="application/json",
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert len(result["data"]) == 1
+
+        mcp1_data = result["data"][0]
         assert mcp1_data["title"] == "测试 MCP 1"
         assert mcp1_data["description"] == "描述1"
         assert len(mcp1_data["categories"]) == 1
         assert mcp1_data["categories"][0]["name"] == "official"
-
-        mcp2_data = next(item for item in result["data"] if item["name"] == "test-mcp-2")
-        assert mcp2_data["categories"] == []
 
     def test_batch_query_filters_inactive(self, request_view, fake_gateway):
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1156,12 +1242,12 @@ class TestMCPServerBatchQueryApi:
         result = resp.json()
         assert len(result["data"]) == 0
 
-    def test_batch_query_empty_names(self, request_view):
+    def test_batch_query_no_ids_or_names(self, request_view):
         resp = request_view(
             method="POST",
             view_name="openapi.v2.open.mcp_server.batch_query",
             app=mock.MagicMock(app_code="test"),
-            data={"names": []},
+            data={},
             content_type="application/json",
         )
         assert resp.status_code == 400

@@ -27,21 +27,31 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
-from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.v2.mcp_server import (
+    build_mcp_server_list_context,
+    build_mcp_server_list_queryset,
+    validate_and_enrich_mcp_server_for_retrieve,
+)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import MCPServerLeastPrivilegeEnum, MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+)
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.access_log.log import LogHandler
-from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
-from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway.type import GatewayTypeHandler
+from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceData
@@ -58,7 +68,6 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -67,7 +76,6 @@ from .serializers import (
     GatewayAppPermissionApplyOutputSLZ,
     GatewayBatchQueryInputSLZ,
     GatewayBatchQueryOutputSLZ,
-    GatewayResourceBriefListOutputSLZ,
     GatewayResourceDetailInputSLZ,
     GatewayResourceDetailOutputSLZ,
     GatewayResourceListInputSLZ,
@@ -84,6 +92,7 @@ from .serializers import (
     MCPServerAppPermissionRecordListInputSLZ,
     MCPServerBatchQueryInputSLZ,
     MCPServerBatchQueryOutputSLZ,
+    MCPServerCategoryListOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerPermissionListOutputSLZ,
@@ -259,63 +268,37 @@ class MCPServerListApi(generics.ListAPIView):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        # mcp server should be public and active
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
-        # gateway should be active
-        queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
-        # the stage should be active and online
-        queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
-
-        if slz.validated_data.get("keyword"):
-            queryset = queryset.filter(
-                Q(name__icontains=slz.validated_data["keyword"])
-                | Q(title__icontains=slz.validated_data["keyword"])
-                | Q(description__icontains=slz.validated_data["keyword"])
-            )
-
-        if slz.validated_data.get("category"):
-            queryset = queryset.filter(categories__name=slz.validated_data["category"], categories__is_active=True)
-
-        # optimize query by using select_related
-        queryset = queryset.select_related("gateway", "stage")
-
-        # note: the stage offline will update related mcp server status to inactive,
-        # the stage publish will update the mcp server resource_names,
-        # so we don't need to care about is the mcp server stage is correctly published here
-
-        page = self.paginate_queryset(queryset)
-
-        gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
-        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
-        gateways = {
-            gateway.id: {
-                "id": gateway.id,
-                "name": gateway.name,
-                "maintainers": gateway.maintainers,
-                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[gateway.id].gateway_type),
-            }
-            for gateway in Gateway.objects.filter(id__in=gateway_ids)
-        }
-
-        stage_ids = [mcp_server.stage.id for mcp_server in page]
-        stages = {
-            stage.id: {
-                "id": stage.id,
-                "name": stage.name,
-            }
-            for stage in Stage.objects.filter(id__in=stage_ids)
-        }
-
-        output_slz = MCPServerListOutputSLZ(
-            page,
-            many=True,
-            context={
-                "gateways": gateways,
-                "stages": stages,
-            },
+        queryset = build_mcp_server_list_queryset(
+            keyword=slz.validated_data.get("keyword"),
+            category=slz.validated_data.get("category"),
+            is_public=True,
         )
 
+        page = self.paginate_queryset(queryset)
+        context = build_mcp_server_list_context(page)
+
+        output_slz = MCPServerListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 分类列表",
+        responses={status.HTTP_200_OK: MCPServerCategoryListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class MCPServerCategoryListApi(generics.ListAPIView):
+    """获取所有已激活的 MCPServer 分类"""
+
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = MCPServerCategoryListOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        queryset = MCPServerCategory.objects.filter(is_active=True).order_by("name")
+        output_slz = self.get_serializer(queryset, many=True)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(
@@ -585,7 +568,7 @@ class GatewayResourceListApi(generics.ListAPIView):
         """
         获取网关下的所有资源列表
         - 只返回公开的资源
-        - 返回资源的完整信息（brief=false）或仅核心字段（brief=true）
+        - 支持 fields 参数指定返回字段，如 fields=id,name
         - 支持 keyword 模糊搜索 name、description 和标签名称
         """
         slz = GatewayResourceListInputSLZ(data=request.query_params)
@@ -604,10 +587,7 @@ class GatewayResourceListApi(generics.ListAPIView):
             ).distinct()
 
         resources = list(queryset)
-
-        if slz.validated_data.get("brief"):
-            output_slz = GatewayResourceBriefListOutputSLZ(resources, many=True)
-            return OKJsonResponse(data=output_slz.data)
+        fields_str = slz.validated_data.get("fields")
 
         resource_ids = [resource.id for resource in resources]
         output_slz = self.get_serializer(
@@ -618,7 +598,14 @@ class GatewayResourceListApi(generics.ListAPIView):
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )
-        return OKJsonResponse(data=output_slz.data)
+
+        data = output_slz.data
+        allowed_fields = {"id", "name"}
+        if fields_str:
+            allowed_fields = {f.strip() for f in fields_str.split(",") if f.strip()}
+        data = [{k: v for k, v in item.items() if k in allowed_fields} for item in data]
+
+        return OKJsonResponse(data=data)
 
 
 @method_decorator(
@@ -759,62 +746,13 @@ class MCPServerRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # 验证 MCPServer 状态
-        if instance.status != MCPServerStatusEnum.ACTIVE.value:
-            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未启用，无法访问。"))
-        if instance.gateway.status != GatewayStatusEnum.ACTIVE.value:
-            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关未启用，无法访问。"))
-        if instance.stage.status != StageStatusEnum.ACTIVE.value:
-            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 所属网关对应的环境未启用，无法访问。"))
-
-        # 验证用户访问权限：公开的可以直接访问，私有的需要用户是网关维护者
-        if not instance.is_public and request.user.username not in instance.gateway.maintainers:
-            raise error_codes.NOT_FOUND.format(_("当前 MCPServer 未公开，无法访问。"))
-
-        # 生成使用指南
-        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
-        guideline = render_to_string(
-            template_name,
-            context={
-                "name": instance.name,
-                "url": build_mcp_server_url(instance.name, instance.protocol_type),
-                "description": instance.description,
-                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
-                "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
-                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
-                "user_tenant_id": "",
-                "protocol_type": instance.protocol_type,
-            },
-        )
-        instance.guideline = guideline
-
-        # 获取工具列表和标签
-        tool_resources, labels = MCPServerHandler.get_tools_resources_and_labels(
-            gateway_id=instance.gateway.id,
-            stage_name=instance.stage.name,
-            resource_names=instance.resource_names,
-        )
-        instance.tools = tool_resources
-
-        # 设置维护者
-        instance.maintainers = instance.gateway.maintainers
-
-        # 获取 prompts_count 和 prompts 列表
-        prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
-        prompts = MCPServerHandler.get_prompts(instance.id)
-
-        # 获取用户自定义文档
-        user_custom_doc = MCPServerHandler.get_user_custom_doc(instance.id)
-
-        serializer = self.get_serializer(
+        context = validate_and_enrich_mcp_server_for_retrieve(
             instance,
-            context={
-                "labels": labels,
-                "prompts_count_map": prompts_count_map,
-                "prompts": prompts,
-                "user_custom_doc": user_custom_doc,
-            },
+            check_public=True,
+            username=request.user.username,
         )
+
+        serializer = self.get_serializer(instance, context=context)
         return OKJsonResponse(data=serializer.data)
 
 
@@ -934,15 +872,26 @@ class GatewayBatchQueryApi(generics.CreateAPIView):
         slz = GatewayBatchQueryInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        names = slz.validated_data["names"]
         queryset = Gateway.objects.filter(
-            name__in=names,
             status=GatewayStatusEnum.ACTIVE.value,
             is_public=True,
         )
 
+        if slz.validated_data.get("ids"):
+            queryset = queryset.filter(id__in=slz.validated_data["ids"])
+        if slz.validated_data.get("names"):
+            queryset = queryset.filter(name__in=slz.validated_data["names"])
+
         output_slz = GatewayBatchQueryOutputSLZ(queryset, many=True)
-        return OKJsonResponse(data=output_slz.data)
+        data = output_slz.data
+
+        allowed_fields = {"id", "name"}
+        fields_str = slz.validated_data.get("fields")
+        if fields_str:
+            allowed_fields = {f.strip() for f in fields_str.split(",") if f.strip()}
+        data = [{k: v for k, v in item.items() if k in allowed_fields} for item in data]
+
+        return OKJsonResponse(data=data)
 
 
 @method_decorator(
@@ -994,11 +943,16 @@ class MCPServerBatchQueryApi(generics.CreateAPIView):
         slz = MCPServerBatchQueryInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        names = slz.validated_data["names"]
         queryset = MCPServer.objects.filter(
-            name__in=names,
             status=MCPServerStatusEnum.ACTIVE.value,
-        ).prefetch_related("categories")
+        )
+
+        if slz.validated_data.get("ids"):
+            queryset = queryset.filter(id__in=slz.validated_data["ids"])
+        if slz.validated_data.get("names"):
+            queryset = queryset.filter(name__in=slz.validated_data["names"])
+
+        queryset = queryset.prefetch_related("categories")
 
         categories_map = {
             mcp_server.id: [
@@ -1013,7 +967,15 @@ class MCPServerBatchQueryApi(generics.CreateAPIView):
             many=True,
             context={"categories": categories_map},
         )
-        return OKJsonResponse(data=output_slz.data)
+        data = output_slz.data
+
+        allowed_fields = {"id", "name"}
+        fields_str = slz.validated_data.get("fields")
+        if fields_str:
+            allowed_fields = {f.strip() for f in fields_str.split(",") if f.strip()}
+        data = [{k: v for k, v in item.items() if k in allowed_fields} for item in data]
+
+        return OKJsonResponse(data=data)
 
 
 @method_decorator(

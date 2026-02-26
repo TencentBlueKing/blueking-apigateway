@@ -12,10 +12,10 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='mcpserver',
-            name='oauth2_enabled',
+            name='oauth2_public_client_enabled',
             field=models.BooleanField(
                 default=False,
-                help_text='是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权',
+                help_text='是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权',
             ),
         ),
     ]
