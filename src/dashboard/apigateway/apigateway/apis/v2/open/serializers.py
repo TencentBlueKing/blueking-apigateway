@@ -720,6 +720,7 @@ class MCPServerBatchQueryInputSLZ(serializers.Serializer):
 
 
 class MCPServerBatchQueryOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
     title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")

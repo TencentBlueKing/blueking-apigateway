@@ -618,11 +618,11 @@ class TestMCPServerListApi:
 
         # Mock GatewayAuthContext
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayAuthContext.get_gateway_id_to_auth_config",
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
             return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
         )
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayTypeHandler.is_official",
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
             return_value=True,
         )
 
@@ -673,11 +673,11 @@ class TestMCPServerListApi:
 
         # Mock GatewayAuthContext
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayAuthContext.get_gateway_id_to_auth_config",
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
             return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
         )
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayTypeHandler.is_official",
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
             return_value=True,
         )
 
@@ -816,11 +816,11 @@ class TestMCPServerListApi:
 
         # Mock GatewayAuthContext
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayAuthContext.get_gateway_id_to_auth_config",
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
             return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
         )
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayTypeHandler.is_official",
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
             return_value=True,
         )
 
@@ -856,11 +856,11 @@ class TestMCPServerListApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayAuthContext.get_gateway_id_to_auth_config",
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
             return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
         )
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayTypeHandler.is_official",
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
             return_value=True,
         )
 
@@ -898,11 +898,11 @@ class TestMCPServerListApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayAuthContext.get_gateway_id_to_auth_config",
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
             return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
         )
         mocker.patch(
-            "apigateway.apis.v2.inner.views.GatewayTypeHandler.is_official",
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
             return_value=True,
         )
 
