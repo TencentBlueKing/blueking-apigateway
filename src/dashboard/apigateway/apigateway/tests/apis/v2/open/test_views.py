@@ -465,19 +465,19 @@ class TestMCPServerRetrieveApi:
 
         # Mock MCPServerHandler 方法
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], ["label1"]),
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts_count_map",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_user_custom_doc",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -519,19 +519,19 @@ class TestMCPServerRetrieveApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts_count_map",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_user_custom_doc",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -566,19 +566,19 @@ class TestMCPServerRetrieveApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts_count_map",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_user_custom_doc",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -613,19 +613,19 @@ class TestMCPServerRetrieveApi:
 
         # Mock MCPServerHandler 方法
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts_count_map",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_prompts",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.open.views.MCPServerHandler.get_user_custom_doc",
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
