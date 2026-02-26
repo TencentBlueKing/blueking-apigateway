@@ -3019,7 +3019,9 @@ class TestMCPServerListAppPermissionRisk:
         assert mcp_server_data["app_permission_risk"]["has_risk"] is False
         assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
 
-    def test_list_no_risk_when_oauth2_enabled_but_no_release(self, request_view, fake_gateway, fake_stage):
+    def test_list_no_risk_when_oauth2_public_client_enabled_but_no_release(
+        self, request_view, fake_gateway, fake_stage
+    ):
         """oauth2_public_client_enabled=True 但尚未发布时无安全风险（无 Release 记录）"""
         mcp_server = G(
             MCPServer,
