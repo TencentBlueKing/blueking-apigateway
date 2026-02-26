@@ -361,6 +361,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     is_official = serializers.SerializerMethodField(help_text="是否为官方")
     is_featured = serializers.SerializerMethodField(help_text="是否为精选")
 
+    app_permission_risk = serializers.SerializerMethodField(help_text="应用态权限安全风险信息")
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
 
@@ -390,6 +392,11 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         """是否为精选，利用预加载的数据避免 N+1 查询"""
         categories = obj.categories.all()
         return any(cat.name == FEATURED_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
+
+    def get_app_permission_risk(self, obj) -> Dict[str, Any]:
+        app_permission_risks = self.context.get("app_permission_risks", {})
+        risk_tools = app_permission_risks.get(obj.id, [])
+        return {"has_risk": bool(risk_tools), "risk_tools": risk_tools}
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
