@@ -184,7 +184,7 @@ class MCPServerHandler:
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
 
         # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
-        public_app_code = settings.MCP_SERVER_PUBLIC_APP_CODE
+        public_app_code = settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE
         if mcp_server.oauth2_public_client_enabled:
             MCPServerAppPermission.objects.save_permission(
                 mcp_server_id=mcp_server_id,

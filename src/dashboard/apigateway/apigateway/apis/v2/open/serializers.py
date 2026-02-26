@@ -153,6 +153,14 @@ class MCPServerListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerListInputSLZ"
 
 
+class MCPServerCategoryListOutputSLZ(serializers.Serializer):
+    name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
+    display_name = serializers.CharField(read_only=True, help_text="分类显示名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerCategoryListOutputSLZ"
+
+
 class MCPServerBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
@@ -619,18 +627,33 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
 
 
 class GatewayBatchQueryInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="网关 ID 列表",
+    )
     names = serializers.ListField(
         child=serializers.CharField(),
-        allow_empty=False,
-        required=True,
+        required=False,
         help_text="网关名称列表",
+    )
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，如 fields=id,name,description；不传默认返回 id 和 name",
     )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryInputSLZ"
 
+    def validate(self, data):
+        if not data.get("ids") and not data.get("names"):
+            raise serializers.ValidationError("ids 和 names 至少提供一个")
+        return data
+
 
 class GatewayBatchQueryOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
 
@@ -642,20 +665,14 @@ class GatewayResourceListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字，模糊匹配资源 name、description 或标签名称"
     )
-    brief = serializers.BooleanField(required=False, default=False, help_text="是否简要返回，true 时仅返回 id 和 name")
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，例如 fields=id,name,method；不传默认返回 id 和 name",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceListInputSLZ"
-
-
-class GatewayResourceBriefListOutputSLZ(serializers.Serializer):
-    """网关资源列表简要输出，仅包含 id 和 name，用于减少上下文占用"""
-
-    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
-    name = serializers.CharField(read_only=True, help_text="资源名称")
-
-    class Meta:
-        ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceBriefListOutputSLZ"
 
 
 class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
@@ -677,15 +694,29 @@ class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
 
 
 class MCPServerBatchQueryInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="MCPServer ID 列表",
+    )
     names = serializers.ListField(
         child=serializers.CharField(),
-        allow_empty=False,
-        required=True,
+        required=False,
         help_text="MCPServer 名称列表",
+    )
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，如 fields=id,name,title；不传默认返回 id 和 name",
     )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerBatchQueryInputSLZ"
+
+    def validate(self, data):
+        if not data.get("ids") and not data.get("names"):
+            raise serializers.ValidationError("ids 和 names 至少提供一个")
+        return data
 
 
 class MCPServerBatchQueryOutputSLZ(serializers.Serializer):
