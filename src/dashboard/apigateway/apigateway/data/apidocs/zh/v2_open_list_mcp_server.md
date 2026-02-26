@@ -9,6 +9,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述                           |
 | -------- | -------- | ---- |------------------------------|
 | keyword  | string   | 否   | 筛选条件，支持模糊匹配 MCPServer 名称或描述  |
+| category | string   | 否   | 分类名称，精确过滤 MCPServer 所属分类      |
 | limit    | int      | 否   | 最大返回条目数量，默认为 10              |
 | offset   | int      | 否   | 相对于完整未分页数据的起始位置，默认为 0        |
 
@@ -30,7 +31,7 @@
         "resource_names": [],
         "status": 1,
         "protocol_type": "sse",
-        "oauth2_enabled": false,
+        "oauth2_public_client_enabled": false,
         "stage": {
           "id": 3,
           "name": "prod"
@@ -76,7 +77,7 @@
 | resource_names   | array   | mcp_server 资源名称                                        |
 | status           | int     | mcp_server 状态（0：已停用，1：启用中）                             |
 | protocol_type    | string  | MCP 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
-| oauth2_enabled   | boolean | 是否开启 OAuth2 认证                                         |
+| oauth2_public_client_enabled   | boolean | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权                                         |
 | tools_count      | int     | mcp_server 工具数量                                        |
 | url              | string  | mcp_server 访问地址                                        |
 | detail_url       | string  | mcp_server 网关站点详情地址                                    |

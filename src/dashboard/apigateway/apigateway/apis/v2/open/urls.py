@@ -35,6 +35,12 @@ urlpatterns = [
             [
                 # GET /api/v2/open/gateways/
                 path("", views.GatewayListApi.as_view(), name="openapi.v2.open.gateway.list"),
+                # POST /api/v2/open/gateways/batch-query/
+                path(
+                    "batch-query/",
+                    views.GatewayBatchQueryApi.as_view(),
+                    name="openapi.v2.open.gateway.batch_query",
+                ),
                 path(
                     "<slug:gateway_name>/",
                     include(
@@ -49,11 +55,19 @@ urlpatterns = [
                                 views.GatewayResourceListApi.as_view(),
                                 name="openapi.v2.open.gateway.resources.list",
                             ),
-                            # GET /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/
+                            # GET .../resources/{resource_name}/ — env-specific: requires stage_name query param,
+                            # returns full detail (doc/schema) from a specific released stage
                             path(
                                 "resources/<str:resource_name>/",
                                 views.GatewayResourceDetailApi.as_view(),
                                 name="openapi.v2.open.gateway.resources.detail",
+                            ),
+                            # GET .../resources/{resource_name}/info/ — NOT env-specific: returns basic info
+                            # (id, name, method, path) from resource definition, no stage required
+                            path(
+                                "resources/<str:resource_name>/info/",
+                                views.GatewayResourceRetrieveByNameApi.as_view(),
+                                name="openapi.v2.open.gateway.resources.info",
                             ),
                             # POST /api/v2/open/gateways/{gateway_name}/permissions/apply/
                             path(
@@ -76,6 +90,24 @@ urlpatterns = [
                     "",
                     views.MCPServerListApi.as_view(),
                     name="openapi.v2.open.mcp_server.list",
+                ),
+                # GET /api/v2/open/mcp-servers/categories/
+                path(
+                    "categories/",
+                    views.MCPServerCategoryListApi.as_view(),
+                    name="openapi.v2.open.mcp_server.categories.list",
+                ),
+                # POST /api/v2/open/mcp-servers/batch-query/
+                path(
+                    "batch-query/",
+                    views.MCPServerBatchQueryApi.as_view(),
+                    name="openapi.v2.open.mcp_server.batch_query",
+                ),
+                # GET /api/v2/open/mcp-servers/{mcp_server_id}/
+                path(
+                    "<int:mcp_server_id>/",
+                    views.MCPServerRetrieveApi.as_view(),
+                    name="openapi.v2.open.mcp_server.retrieve",
                 ),
                 # GET /api/v2/open/mcp-servers/{mcp_server_id}/permissions/
                 path(
