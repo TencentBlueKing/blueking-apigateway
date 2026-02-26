@@ -37,7 +37,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.core.models import Stage
+from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -937,9 +937,9 @@ class TestMCPServerConfigListApi:
         assert config_map["codebuddy"] == "CodeBuddy"
         assert config_map["claude"] == "Claude"
 
-    def test_retrieve_config_list_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试 OAuth2 开启时，配置中不包含认证请求头"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_retrieve_config_list_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试 OAuth2 公开客户端模式开启时，配置中不包含认证请求头"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -956,8 +956,8 @@ class TestMCPServerConfigListApi:
             assert "headers" not in config["content"]
 
     def test_retrieve_config_list_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试 OAuth2 关闭时，配置中包含认证请求头"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试 OAuth2 公开客户端模式关闭时，配置中包含认证请求头"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2579,14 +2579,14 @@ class TestMCPServerFilterOptionsApi:
         assert labels == sorted(labels)
 
 
-# ========== OAuth2 认证相关测试 ==========
+# ========== OAuth2 公开客户端模式相关测试 ==========
 
 
 class TestMCPServerOAuth2Enabled:
-    """测试 MCPServer OAuth2 认证相关功能"""
+    """测试 MCPServer OAuth2 公开客户端模式相关功能"""
 
-    def test_create_with_oauth2_enabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时开启 OAuth2 认证"""
+    def test_create_with_oauth2_public_client_enabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
+        """测试创建 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2604,7 +2604,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2618,13 +2618,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is True
+        assert mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在 sync_permissions 内部处理）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_with_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时不开启 OAuth2 认证"""
+        """测试创建 MCPServer 时不开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2642,7 +2642,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
 
         resp = request_view(
@@ -2656,13 +2656,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is False
+        assert mcp_server.oauth2_public_client_enabled is False
 
-        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        # sync_permissions 始终被调用（内部会根据 oauth2_public_client_enabled 处理 public 权限）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_create_default_oauth2_disabled(self, mocker, request_view, fake_gateway, fake_stage, faker):
-        """测试创建 MCPServer 时默认 OAuth2 认证关闭"""
+        """测试创建 MCPServer 时默认 OAuth2 公开客户端模式关闭"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2680,7 +2680,7 @@ class TestMCPServerOAuth2Enabled:
             "labels": ["test"],
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            # 不传 oauth2_enabled，默认应为 False
+            # 不传 oauth2_public_client_enabled，默认应为 False
         }
 
         resp = request_view(
@@ -2694,13 +2694,13 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 201
         mcp_server = MCPServer.objects.get(id=result["data"]["id"])
-        assert mcp_server.oauth2_enabled is False
+        assert mcp_server.oauth2_public_client_enabled is False
 
-        # sync_permissions 始终被调用（内部会根据 oauth2_enabled 处理 public 权限）
+        # sync_permissions 始终被调用（内部会根据 oauth2_public_client_enabled 处理 public 权限）
         mock_sync_permissions.assert_called_once_with(mcp_server.id)
 
     def test_update_enable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试更新 MCPServer 时开启 OAuth2 认证"""
+        """测试更新 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2711,12 +2711,12 @@ class TestMCPServerOAuth2Enabled:
         )
 
         # 确保初始状态未开启
-        fake_mcp_server.oauth2_enabled = False
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         data = {
             "description": faker.pystr(),
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2730,13 +2730,13 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is True
+        assert fake_mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
     def test_update_disable_oauth2(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试更新 MCPServer 时关闭 OAuth2 认证"""
+        """测试更新 MCPServer 时关闭 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2746,13 +2746,13 @@ class TestMCPServerOAuth2Enabled:
             return_value=None,
         )
 
-        # 初始状态开启 OAuth2
-        fake_mcp_server.oauth2_enabled = True
+        # 初始状态开启 OAuth2 公开客户端模式
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         data = {
             "description": faker.pystr(),
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
 
         resp = request_view(
@@ -2766,13 +2766,15 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is False
+        assert fake_mcp_server.oauth2_public_client_enabled is False
 
         # 关闭 OAuth2 时 sync_permissions 也被调用（内部会撤销 public 权限）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
-    def test_update_full_with_oauth2_enabled(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
-        """测试全量更新 MCPServer 时开启 OAuth2 认证"""
+    def test_update_full_with_oauth2_public_client_enabled(
+        self, mocker, request_view, fake_gateway, fake_mcp_server, faker
+    ):
+        """测试全量更新 MCPServer 时开启 OAuth2 公开客户端模式"""
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
             return_value={"resource1", "resource2"},
@@ -2787,7 +2789,7 @@ class TestMCPServerOAuth2Enabled:
             "is_public": True,
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
 
         resp = request_view(
@@ -2801,14 +2803,14 @@ class TestMCPServerOAuth2Enabled:
         assert resp.status_code == 204
 
         fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.oauth2_enabled is True
+        assert fake_mcp_server.oauth2_public_client_enabled is True
 
         # 验证 sync_permissions 被调用（oauth2 权限在内部统一处理）
         mock_sync_permissions.assert_called_once_with(fake_mcp_server.id)
 
-    def test_list_returns_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试列表接口返回 oauth2_enabled 字段"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_list_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试列表接口返回 oauth2_public_client_enabled 字段"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2825,11 +2827,11 @@ class TestMCPServerOAuth2Enabled:
             None,
         )
         assert mcp_server_data is not None
-        assert mcp_server_data["oauth2_enabled"] is True
+        assert mcp_server_data["oauth2_public_client_enabled"] is True
 
     def test_list_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试列表接口返回 oauth2_enabled=False"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试列表接口返回 oauth2_public_client_enabled=False"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2846,11 +2848,11 @@ class TestMCPServerOAuth2Enabled:
             None,
         )
         assert mcp_server_data is not None
-        assert mcp_server_data["oauth2_enabled"] is False
+        assert mcp_server_data["oauth2_public_client_enabled"] is False
 
-    def test_retrieve_returns_oauth2_enabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试详情接口返回 oauth2_enabled 字段"""
-        fake_mcp_server.oauth2_enabled = True
+    def test_retrieve_returns_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_mcp_server):
+        """测试详情接口返回 oauth2_public_client_enabled 字段"""
+        fake_mcp_server.oauth2_public_client_enabled = True
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2862,11 +2864,11 @@ class TestMCPServerOAuth2Enabled:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["oauth2_enabled"] is True
+        assert result["data"]["oauth2_public_client_enabled"] is True
 
     def test_retrieve_returns_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
-        """测试详情接口返回 oauth2_enabled=False"""
-        fake_mcp_server.oauth2_enabled = False
+        """测试详情接口返回 oauth2_public_client_enabled=False"""
+        fake_mcp_server.oauth2_public_client_enabled = False
         fake_mcp_server.save()
 
         resp = request_view(
@@ -2878,4 +2880,171 @@ class TestMCPServerOAuth2Enabled:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["oauth2_enabled"] is False
+        assert result["data"]["oauth2_public_client_enabled"] is False
+
+
+class TestMCPServerListAppPermissionRisk:
+    """测试 MCPServer 列表接口返回的应用态权限安全风险信息"""
+
+    def _make_resource_version_data(self, resources):
+        """构造 ResourceVersion.data 中的资源数据"""
+        data = []
+        for i, res in enumerate(resources):
+            data.append(
+                {
+                    "id": i + 1,
+                    "name": res["name"],
+                    "description": f"test resource {res['name']}",
+                    "method": "GET",
+                    "path": f"/test/{res['name']}/",
+                    "match_subpath": False,
+                    "is_public": True,
+                    "allow_apply_permission": True,
+                    "contexts": {
+                        "resource_auth": {
+                            "config": json.dumps(
+                                {
+                                    "app_verified_required": res.get("app_verified_required", True),
+                                    "resource_perm_required": res.get("resource_perm_required", True),
+                                }
+                            )
+                        }
+                    },
+                }
+            )
+        return data
+
+    def test_list_no_risk_when_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
+        """oauth2_public_client_enabled=False 时无安全风险"""
+        fake_mcp_server.oauth2_public_client_enabled = False
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
+
+    def test_list_has_risk_with_app_verified_tools(self, request_view, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=True 且部分工具需要应用认证时，返回存在风险的工具"""
+        rv = G(ResourceVersion, gateway=fake_gateway)
+        rv._data = json.dumps(
+            self._make_resource_version_data(
+                [
+                    {"name": "tool_a", "app_verified_required": True},
+                    {"name": "tool_b", "app_verified_required": False},
+                ]
+            )
+        )
+        rv.save()
+
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_a;tool_b",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is True
+        assert "tool_a" in mcp_server_data["app_permission_risk"]["risk_tools"]
+        assert "tool_b" not in mcp_server_data["app_permission_risk"]["risk_tools"]
+
+    def test_list_no_risk_when_all_tools_skip_app_auth(self, request_view, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=True 但所有工具都不需要应用认证时无安全风险"""
+        rv = G(ResourceVersion, gateway=fake_gateway)
+        rv._data = json.dumps(
+            self._make_resource_version_data(
+                [
+                    {"name": "tool_c", "app_verified_required": False},
+                    {"name": "tool_d", "app_verified_required": False},
+                ]
+            )
+        )
+        rv.save()
+
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_c;tool_d",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
+
+    def test_list_no_risk_when_oauth2_public_client_enabled_but_no_release(
+        self, request_view, fake_gateway, fake_stage
+    ):
+        """oauth2_public_client_enabled=True 但尚未发布时无安全风险（无 Release 记录）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_e",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []

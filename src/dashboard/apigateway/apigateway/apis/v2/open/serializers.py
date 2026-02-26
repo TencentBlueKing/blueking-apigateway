@@ -43,6 +43,9 @@ from apigateway.service.mcp.mcp_server import (
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    keyword = serializers.CharField(
+        required=False, allow_blank=True, help_text="搜索关键字，模糊匹配 name 或 description"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListInputSLZ"
@@ -142,9 +145,20 @@ class MCPServerListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
+    category = serializers.CharField(
+        allow_blank=True, required=False, help_text="分类名称，精确过滤 MCPServer 所属分类"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerListInputSLZ"
+
+
+class MCPServerCategoryListOutputSLZ(serializers.Serializer):
+    name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
+    display_name = serializers.CharField(read_only=True, help_text="分类显示名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerCategoryListOutputSLZ"
 
 
 class MCPServerBaseSLZ(serializers.Serializer):
@@ -197,7 +211,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         choices=MCPServerProtocolTypeEnum.get_choices(),
     )
 
-    oauth2_enabled = serializers.BooleanField(read_only=True, help_text="是否开启 OAuth2 认证")
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
@@ -428,6 +444,109 @@ class GatewayResourceDetailOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceDetailOutputSLZ"
 
 
+class MCPServerToolOutputSLZ(serializers.Serializer):
+    """MCPServer 工具输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = serializers.CharField(read_only=True, help_text="资源描述")
+    method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
+    path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
+
+    verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
+    verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
+    resource_perm_required = serializers.BooleanField(read_only=True, help_text="是否验证应用访问资源的权限")
+    allow_apply_permission = serializers.BooleanField(read_only=True, help_text="是否需要申请权限")
+    labels = serializers.SerializerMethodField(help_text="资源标签列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerToolOutputSLZ"
+
+    def get_labels(self, obj):
+        return self.context["labels"].get(obj.id, [])
+
+
+class MCPServerPromptOutputSLZ(serializers.Serializer):
+    """单个 Prompt 项的输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="Prompt ID（第三方平台的唯一标识）")
+    name = serializers.CharField(read_only=True, help_text="Prompt 名称")
+    code = serializers.CharField(read_only=True, help_text="Prompt 标识码")
+    content = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 内容")
+    updated_time = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 更新时间")
+    updated_by = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 更新人")
+    labels = serializers.ListField(
+        child=serializers.CharField(), read_only=True, default=list, help_text="Prompt 标签列表"
+    )
+    is_public = serializers.BooleanField(read_only=True, default=False, help_text="Prompt 是否公开")
+    space_code = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 所在空间标识")
+    space_name = serializers.CharField(read_only=True, allow_blank=True, default="", help_text="Prompt 所在空间名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerPromptOutputSLZ"
+
+
+class MCPServerRetrieveOutputSLZ(serializers.Serializer):
+    """MCPServer 详情输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
+    description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
+    is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
+    labels = serializers.SerializerMethodField(help_text="MCPServer 标签")
+    status = serializers.ChoiceField(
+        read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()
+    )
+    protocol_type = serializers.ChoiceField(
+        read_only=True,
+        help_text="MCPServer 协议类型",
+        choices=MCPServerProtocolTypeEnum.get_choices(),
+    )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
+    url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
+    guideline = serializers.CharField(read_only=True, help_text="MCPServer 使用指南")
+    tools = serializers.ListField(child=MCPServerToolOutputSLZ(), help_text="MCPServer 工具列表")
+    prompts = serializers.SerializerMethodField(help_text="MCPServer Prompts 列表")
+    prompts_count = serializers.SerializerMethodField(help_text="MCPServer Prompts 数量")
+    maintainers = serializers.ListField(child=serializers.CharField(), help_text="MCPServer 维护者")
+    user_custom_doc = serializers.SerializerMethodField(help_text="用户自定义文档")
+    updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerRetrieveOutputSLZ"
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
+
+    def get_labels(self, obj) -> list:
+        return self.context.get("labels", [])
+
+    def get_url(self, obj) -> str:
+        return build_mcp_server_url(obj.name, obj.protocol_type)
+
+    def get_user_custom_doc(self, obj) -> str:
+        return self.context.get("user_custom_doc", "")
+
+    def get_prompts_count(self, obj) -> int:
+        prompts_count_map = self.context.get("prompts_count_map", {})
+        return prompts_count_map.get(obj.id, 0)
+
+    def get_prompts(self, obj):
+        prompts = self.context.get("prompts", [])
+        # 私有的 prompt 将 content 设置为空
+        result = []
+        for p in prompts:
+            prompt_data = dict(p)
+            if not prompt_data.get("is_public", False):
+                prompt_data["content"] = ""
+            result.append(prompt_data)
+        return MCPServerPromptOutputSLZ(result, many=True).data
+
+
 class GetDatetimeInputSLZ(serializers.Serializer):
     tz_name = serializers.CharField(required=False, allow_blank=True, help_text="时区名，默认 Asia/Shanghai")
 
@@ -505,6 +624,116 @@ class LogSearchByRequestIdOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.LogSearchByRequestIdOutputSLZ"
+
+
+class GatewayBatchQueryInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="网关 ID 列表",
+    )
+    names = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="网关名称列表",
+    )
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，如 fields=id,name,description；不传默认返回 id 和 name",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryInputSLZ"
+
+    def validate(self, data):
+        if not data.get("ids") and not data.get("names"):
+            raise serializers.ValidationError("ids 和 names 至少提供一个")
+        return data
+
+
+class GatewayBatchQueryOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="网关 ID")
+    name = serializers.CharField(read_only=True, help_text="网关名称")
+    description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayBatchQueryOutputSLZ"
+
+
+class GatewayResourceListInputSLZ(serializers.Serializer):
+    keyword = serializers.CharField(
+        required=False, allow_blank=True, help_text="搜索关键字，模糊匹配资源 name、description 或标签名称"
+    )
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，例如 fields=id,name,method；不传默认返回 id 和 name",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceListInputSLZ"
+
+
+class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源 ID")
+    name = serializers.CharField(read_only=True, help_text="资源名称")
+    description = SerializerTranslatedField(
+        default_field="description_i18n", translated_fields={"en": "description_en"}
+    )
+    method = serializers.CharField(read_only=True, help_text="请求方法")
+    path = serializers.SerializerMethodField(help_text="资源路径")
+    match_subpath = serializers.BooleanField(read_only=True, help_text="是否匹配子路径")
+    is_public = serializers.BooleanField(read_only=True, help_text="是否公开")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayResourceRetrieveByNameOutputSLZ"
+
+    def get_path(self, obj):
+        return obj.path_display
+
+
+class MCPServerBatchQueryInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="MCPServer ID 列表",
+    )
+    names = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="MCPServer 名称列表",
+    )
+    fields = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="指定返回的字段列表，逗号分隔，如 fields=id,name,title；不传默认返回 id 和 name",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerBatchQueryInputSLZ"
+
+    def validate(self, data):
+        if not data.get("ids") and not data.get("names"):
+            raise serializers.ValidationError("ids 和 names 至少提供一个")
+        return data
+
+
+class MCPServerBatchQueryOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.SerializerMethodField(help_text="MCPServer 中文名/显示名称")
+    description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.MCPServerBatchQueryOutputSLZ"
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
+
+    def get_categories(self, obj) -> list:
+        return self.context.get("categories", {}).get(obj.id, [])
 
 
 class OAuthProtectedResourceInputSLZ(serializers.Serializer):

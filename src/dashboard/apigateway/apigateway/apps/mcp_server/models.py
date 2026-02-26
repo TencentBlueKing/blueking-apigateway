@@ -102,9 +102,9 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         help_text="MCP 协议类型",
     )
 
-    oauth2_enabled = models.BooleanField(
+    oauth2_public_client_enabled = models.BooleanField(
         default=False,
-        help_text=_("是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权"),
+        help_text=_("是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"),
     )
 
     # 分类关联（多对多关系）

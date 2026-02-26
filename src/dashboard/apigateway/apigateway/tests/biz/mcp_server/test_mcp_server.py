@@ -26,7 +26,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.core.models import Gateway, Release, Resource, Stage
+from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime
 
@@ -542,3 +542,145 @@ class TestMCPServerHandler:
         result = MCPServerHandler.get_prompts_count_map([mcp_server.id])
 
         assert result == {mcp_server.id: 0}
+
+    # ========== 应用态权限安全风险检测测试 ==========
+
+    @staticmethod
+    def _make_resource_version_with_data(gateway, resources):
+        """构造带有指定资源数据的 ResourceVersion"""
+        rv = G(ResourceVersion, gateway=gateway)
+        data = []
+        for i, res in enumerate(resources):
+            data.append(
+                {
+                    "id": i + 1,
+                    "name": res["name"],
+                    "description": f"test resource {res['name']}",
+                    "method": "GET",
+                    "path": f"/test/{res['name']}/",
+                    "match_subpath": False,
+                    "is_public": True,
+                    "allow_apply_permission": True,
+                    "contexts": {
+                        "resource_auth": {
+                            "config": json.dumps(
+                                {
+                                    "app_verified_required": res.get("app_verified_required", True),
+                                    "resource_perm_required": res.get("resource_perm_required", True),
+                                }
+                            )
+                        }
+                    },
+                }
+            )
+        rv._data = json.dumps(data)
+        rv.save()
+        return rv
+
+    def test_get_app_permission_risks_empty_when_oauth2_disabled(self, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=False 时返回空"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=False,
+            _resource_names="tool_a",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_server])
+
+        assert result == {}
+
+    def test_get_app_permission_risks_with_risky_tools(self, fake_gateway, fake_stage):
+        """oauth2 开启且工具需要应用认证时，返回风险工具"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "app_verified_required": True},
+                {"name": "tool_b", "app_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_a;tool_b",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_server])
+
+        assert mcp_server.id in result
+        assert "tool_a" in result[mcp_server.id]
+        assert "tool_b" not in result[mcp_server.id]
+
+    def test_get_app_permission_risks_no_risk_when_all_tools_skip_app_auth(self, fake_gateway, fake_stage):
+        """oauth2 开启但所有工具都不需要应用认证时无风险"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_c", "app_verified_required": False},
+                {"name": "tool_d", "app_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_c;tool_d",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_server])
+
+        assert result == {}
+
+    def test_get_app_permission_risks_no_risk_when_no_release(self, fake_gateway, fake_stage):
+        """oauth2 开启但未发布时无风险（无 Release 记录）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_e",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_server])
+
+        assert result == {}
+
+    def test_get_app_permission_risks_multiple_mcp_servers(self, fake_gateway, fake_stage):
+        """批量检测多个 MCPServer，混合 oauth2 开启/关闭"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_x", "app_verified_required": True},
+                {"name": "tool_y", "app_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_oauth2_on = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_x;tool_y",
+        )
+        mcp_oauth2_off = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=False,
+            _resource_names="tool_x",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_oauth2_on, mcp_oauth2_off])
+
+        assert mcp_oauth2_on.id in result
+        assert "tool_x" in result[mcp_oauth2_on.id]
+        assert mcp_oauth2_off.id not in result
