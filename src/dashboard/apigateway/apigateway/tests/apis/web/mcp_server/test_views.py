@@ -37,7 +37,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
-from apigateway.core.models import Stage
+from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -2881,3 +2881,168 @@ class TestMCPServerOAuth2Enabled:
 
         assert resp.status_code == 200
         assert result["data"]["oauth2_public_client_enabled"] is False
+
+
+class TestMCPServerListAppPermissionRisk:
+    """测试 MCPServer 列表接口返回的应用态权限安全风险信息"""
+
+    def _make_resource_version_data(self, resources):
+        """构造 ResourceVersion.data 中的资源数据"""
+        data = []
+        for i, res in enumerate(resources):
+            data.append(
+                {
+                    "id": i + 1,
+                    "name": res["name"],
+                    "description": f"test resource {res['name']}",
+                    "method": "GET",
+                    "path": f"/test/{res['name']}/",
+                    "match_subpath": False,
+                    "is_public": True,
+                    "allow_apply_permission": True,
+                    "contexts": {
+                        "resource_auth": {
+                            "config": json.dumps(
+                                {
+                                    "app_verified_required": res.get("app_verified_required", True),
+                                    "resource_perm_required": res.get("resource_perm_required", True),
+                                }
+                            )
+                        }
+                    },
+                }
+            )
+        return data
+
+    def test_list_no_risk_when_oauth2_disabled(self, request_view, fake_gateway, fake_mcp_server):
+        """oauth2_public_client_enabled=False 时无安全风险"""
+        fake_mcp_server.oauth2_public_client_enabled = False
+        fake_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
+
+    def test_list_has_risk_with_app_verified_tools(self, request_view, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=True 且部分工具需要应用认证时，返回存在风险的工具"""
+        rv = G(ResourceVersion, gateway=fake_gateway)
+        rv._data = json.dumps(
+            self._make_resource_version_data(
+                [
+                    {"name": "tool_a", "app_verified_required": True},
+                    {"name": "tool_b", "app_verified_required": False},
+                ]
+            )
+        )
+        rv.save()
+
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_a;tool_b",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is True
+        assert "tool_a" in mcp_server_data["app_permission_risk"]["risk_tools"]
+        assert "tool_b" not in mcp_server_data["app_permission_risk"]["risk_tools"]
+
+    def test_list_no_risk_when_all_tools_skip_app_auth(self, request_view, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=True 但所有工具都不需要应用认证时无安全风险"""
+        rv = G(ResourceVersion, gateway=fake_gateway)
+        rv._data = json.dumps(
+            self._make_resource_version_data(
+                [
+                    {"name": "tool_c", "app_verified_required": False},
+                    {"name": "tool_d", "app_verified_required": False},
+                ]
+            )
+        )
+        rv.save()
+
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_c;tool_d",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
+
+    def test_list_no_risk_when_oauth2_enabled_but_no_release(self, request_view, fake_gateway, fake_stage):
+        """oauth2_public_client_enabled=True 但尚未发布时无安全风险（无 Release 记录）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_e",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["app_permission_risk"]["has_risk"] is False
+        assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
