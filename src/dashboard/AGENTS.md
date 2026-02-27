@@ -16,8 +16,14 @@ BlueKing API Gateway Dashboard — the Django-based control plane for managing A
 # Bootstrap local dev env (installs uv, pre-commit, mypy types)
 make init
 
+# Activate the virtualenv (required before running make targets / dev tools)
+source .venv/bin/activate
+
 # Install dependencies
 uv sync
+
+# Regenerate uv.lock after changing pyproject.toml
+make uv.lock
 
 # Run all tests (uses SQLite, parallel via pytest-xdist)
 make test
