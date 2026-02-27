@@ -23,7 +23,6 @@ from typing import List
 from urllib.parse import quote
 
 import pymysql
-import urllib3
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.db.backends.mysql.features import DatabaseFeatures
@@ -41,10 +40,6 @@ pymysql.version_info = 1, 4, 6, "final", 0
 
 # 目前 Django 仅是对 5.7 做了软性的不兼容改动，在没有使用 8.0 特异的功能时，对 5.7 版本的使用无影响
 DatabaseFeatures.minimum_database_version = PatchFeatures.minimum_database_version
-
-# Patch the SSL module for compatibility with legacy CA credentials.
-# https://stackoverflow.com/questions/72479812/how-to-change-tweak-python-3-10-default-ssl-settings-for-requests-sslv3-alert
-urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL:@SECLEVEL=1"
 
 env = Env()
 
