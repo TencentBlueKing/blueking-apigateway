@@ -4511,7 +4511,6 @@ paths:
 
         - grant_dimension 为 gateway 时，授权整个网关的所有资源（包括后续新建资源），无需传 resource_names。
         - grant_dimension 为 resource 时，仅授权指定资源，需要通过 resource_names 指定资源列表。
-        - grant_dimension 传 api 与 gateway 等价，保留用于向后兼容。
       tags:
         - v2_sync
       parameters:
@@ -4542,11 +4541,10 @@ paths:
                   example: 360
                 grant_dimension:
                   type: string
-                  description: 授权维度。gateway - 按网关授权（包含所有资源）；resource - 按资源授权；api - 等价于 gateway，向后兼容
+                  description: 授权维度。gateway - 按网关授权（包含所有资源）；resource - 按资源授权
                   enum:
                     - gateway
                     - resource
-                    - api
                   example: gateway
                 resource_names:
                   type: array

@@ -20,7 +20,7 @@
 | --------------- | -------- | ---- |----------------------------------------------------------------------------------------|
 | target_app_code | string   | 是   | 待授权应用的 bk_app_code                                                                     |
 | expire_days     | int      | 否   | 过期时间，单位天；0或不提供时表示永久权限                                                                  |
-| grant_dimension | string   | 是   | 授权维度，可选值：gateway(按网关授权)、resource(按资源授权)；也兼容旧值 api（等价于 gateway） |
+| grant_dimension | string   | 是   | 授权维度，可选值：gateway(按网关授权)、resource(按资源授权)         |
 | resource_names  | array    | 否   | 资源名称列表，grant_dimension 为 resource 时必填                                                   |
 
 ### 请求参数示例
