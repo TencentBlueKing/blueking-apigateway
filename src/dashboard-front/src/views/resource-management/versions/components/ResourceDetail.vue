@@ -20,7 +20,7 @@
   <div class="release-sideslider">
     <BkSideslider
       v-model:is-show="renderIsShow"
-      :width="960"
+      :width="1200"
       :title="`${t('资源详情')}【${info.version || ''}】`"
       quick-close
       render-directive="if"
@@ -777,10 +777,10 @@ onMounted(() => {
 }
 </style>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .sideslider-rg-version-collapse .bk-collapse-source {
 
-  .bk-collapse-header {
+  :deep(.bk-collapse-header) {
     height: 36px;
     font-size: 12px;
     font-weight: 700;
@@ -789,11 +789,11 @@ onMounted(() => {
     background-color: #f0f1f5;
 
     .bk-collapse-icon {
-      top: 9px !important;
+      top: 8px !important;
     }
   }
 
-  .bk-collapse-content {
+  :deep(.bk-collapse-content) {
     padding: 12px 0 24px;
   }
 }
