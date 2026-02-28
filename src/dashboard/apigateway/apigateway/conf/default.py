@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     "apigateway.apps.docs",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
+    "apigateway.apps.data_plane",
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",

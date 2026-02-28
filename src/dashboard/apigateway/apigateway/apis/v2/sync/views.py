@@ -31,6 +31,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
@@ -115,11 +116,23 @@ class GatewaySyncApi(generics.CreateAPIView):
 
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+
+        # Convert data_plane_names to data_plane_ids if provided
+        data_plane_ids = None
+        data_plane_names = slz.validated_data.get("data_planes")
+        if data_plane_names:
+            data_plane_ids = []
+            for name in data_plane_names:
+                data_plane = DataPlane.objects.filter(name=name).first()
+                if data_plane:
+                    data_plane_ids.append(data_plane.id)
+
         saver = GatewaySaver(
             id=gateway and gateway.id,
             data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
             bk_app_code=request.app.app_code,
             username=username,
+            data_plane_ids=data_plane_ids,
         )
         gateway = saver.save()
 

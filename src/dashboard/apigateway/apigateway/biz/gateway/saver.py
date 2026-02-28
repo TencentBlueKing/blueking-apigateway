@@ -15,16 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Dict, List, Optional
 
 from django.conf import settings
 from pydantic import BaseModel, Field, field_validator
 
+from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway
 
 from .gateway import GatewayHandler
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayData(BaseModel):
@@ -50,6 +55,14 @@ class GatewayData(BaseModel):
 
 
 class GatewaySaver:
+    """
+    Gateway saver that handles creating/updating gateways and binding to data planes.
+
+    For new gateways:
+    - If data_plane_ids is provided, bind to those data planes
+    - Otherwise, bind to the 'default' data plane
+    """
+
     def __init__(
         self,
         id: Optional[int],
@@ -57,6 +70,7 @@ class GatewaySaver:
         bk_app_code: str = "",
         username: str = "",
         source: Optional[CallSourceTypeEnum] = None,
+        data_plane_ids: Optional[List[int]] = None,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
@@ -64,6 +78,7 @@ class GatewaySaver:
         self._gateway = self._get_gateway(id)
         self._gateway_data = data
         self._source = source
+        self._data_plane_ids = data_plane_ids
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -111,6 +126,68 @@ class GatewaySaver:
             allow_delete_sensitive_params=self._gateway_data.allow_delete_sensitive_params,
             source=self._source,
         )
+
+        # 3. bind to data plane(s)
+        self._bind_to_data_planes(gateway)
+
+    def _bind_to_data_planes(self, gateway: Gateway):
+        """Bind newly created gateway to data plane(s)"""
+        data_planes_to_bind: List[DataPlane] = []
+
+        # If data_plane_ids provided, bind to those data planes
+        if self._data_plane_ids:
+            found_ids = set()
+            for data_plane_id in self._data_plane_ids:
+                data_plane = DataPlane.objects.filter(id=data_plane_id).first()
+                if data_plane:
+                    data_planes_to_bind.append(data_plane)
+                    found_ids.add(data_plane_id)
+                else:
+                    logger.warning("Data plane with id=%s not found, skipping", data_plane_id)
+
+            # Log error if some data planes were not found
+            missing_ids = set(self._data_plane_ids) - found_ids
+            if missing_ids:
+                logger.error(
+                    "Gateway '%s': data_plane_ids %s were provided but not found; found: %s",
+                    gateway.name,
+                    list(missing_ids),
+                    list(found_ids),
+                )
+
+        # Fallback: use the 'default' data plane
+        if not data_planes_to_bind:
+            if self._data_plane_ids:
+                # Explicit data_plane_ids were provided but none found
+                logger.error(
+                    "Gateway '%s': all provided data_plane_ids %s not found; falling back to default data plane",
+                    gateway.name,
+                    self._data_plane_ids,
+                )
+
+            default_data_plane = DataPlane.objects.get_default()
+            if default_data_plane:
+                data_planes_to_bind.append(default_data_plane)
+            else:
+                logger.error(
+                    "No data planes to bind for gateway '%s' and no '%s' data plane found",
+                    gateway.name,
+                    DEFAULT_DATA_PLANE_NAME,
+                )
+                return
+
+        # Bind to all resolved data planes
+        for data_plane in data_planes_to_bind:
+            GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
+                gateway=gateway,
+                data_plane=data_plane,
+                created_by=self.username or "system",
+            )
+            logger.info(
+                "Bound gateway '%s' to data plane '%s'",
+                gateway.name,
+                data_plane.name,
+            )
 
     def _update_gateway(self):
         gateway = self._gateway

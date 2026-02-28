@@ -30,6 +30,10 @@ python manage.py loaddata -i apigateway/fixtures/*.yaml
 python manage.py sync_schema
 python manage.py sync_managers_to_user
 
+# data plane 相关
+python manage.py init_default_data_plane
+python manage.py bind_gateways_to_default_data_plane
+
 
 # only init esb when ENABLE_MULTI_TENANT_MODE != true/True
 if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
