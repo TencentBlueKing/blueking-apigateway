@@ -177,10 +177,17 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
 
+        # 获取应用态权限安全风险信息
+        app_permission_risks = MCPServerHandler.get_app_permission_risks(page)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
-            context={"stages": stages, "prompts_count_map": prompts_count_map},
+            context={
+                "stages": stages,
+                "prompts_count_map": prompts_count_map,
+                "app_permission_risks": app_permission_risks,
+            },
         )
 
         return self.get_paginated_response(slz.data)
@@ -202,7 +209,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
 
         slz.save()
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_enabled)
+        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
         MCPServerHandler.sync_permissions(slz.instance.id)
 
         # record audit log
@@ -270,7 +277,16 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         prompts = MCPServerHandler.get_prompts(instance.id)
 
-        serializer = self.get_serializer(instance, context={"stages": stages, "prompts": prompts})
+        app_permission_risks = MCPServerHandler.get_app_permission_risks([instance])
+
+        serializer = self.get_serializer(
+            instance,
+            context={
+                "stages": stages,
+                "prompts": prompts,
+                "app_permission_risks": app_permission_risks,
+            },
+        )
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -292,7 +308,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # sync permissions (includes oauth2 public app permission based on oauth2_enabled)
+        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
         MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(

@@ -224,10 +224,10 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=list,
         help_text="MCPServer 分类 ID 列表",
     )
-    oauth2_enabled = serializers.BooleanField(
+    oauth2_public_client_enabled = serializers.BooleanField(
         required=False,
         default=False,
-        help_text="是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权",
+        help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
 
     class Meta:
@@ -245,7 +245,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "prompts",
             "protocol_type",
             "category_ids",
-            "oauth2_enabled",
+            "oauth2_public_client_enabled",
         )
         lookup_field = "id"
         validators = [MCPServerValidator()]
@@ -347,7 +347,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCP 协议类型", choices=MCPServerProtocolTypeEnum.get_choices()
     )
 
-    oauth2_enabled = serializers.BooleanField(read_only=True, help_text="是否开启 OAuth2 认证")
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
@@ -358,6 +360,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
     is_official = serializers.SerializerMethodField(help_text="是否为官方")
     is_featured = serializers.SerializerMethodField(help_text="是否为精选")
+
+    app_permission_risk = serializers.SerializerMethodField(help_text="应用态权限安全风险信息")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
@@ -388,6 +392,11 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         """是否为精选，利用预加载的数据避免 N+1 查询"""
         categories = obj.categories.all()
         return any(cat.name == FEATURED_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
+
+    def get_app_permission_risk(self, obj) -> Dict[str, Any]:
+        app_permission_risks = self.context.get("app_permission_risks", {})
+        risk_tools = app_permission_risks.get(obj.id, [])
+        return {"has_risk": bool(risk_tools), "risk_tools": risk_tools}
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -434,9 +443,9 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="MCPServer 分类 ID 列表",
     )
-    oauth2_enabled = serializers.BooleanField(
+    oauth2_public_client_enabled = serializers.BooleanField(
         required=False,
-        help_text="是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权",
+        help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
 
     def validate_resource_names(self, resource_names):
@@ -486,7 +495,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "prompts",
             "protocol_type",
             "category_ids",
-            "oauth2_enabled",
+            "oauth2_public_client_enabled",
         )
         lookup_field = "id"
 
