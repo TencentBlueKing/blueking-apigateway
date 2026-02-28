@@ -4506,7 +4506,12 @@ paths:
   /api/v2/sync/gateways/{gateway_name}/permissions/grant/:
     post:
       operationId: v2_sync_grant_permission
-      description: 网关权限授权
+      description: |
+        网关权限授权，支持按网关维度或按资源维度为应用主动授权。
+
+        - grant_dimension 为 gateway 时，授权整个网关的所有资源（包括后续新建资源），无需传 resource_names。
+        - grant_dimension 为 resource 时，仅授权指定资源，需要通过 resource_names 指定资源列表。
+        - grant_dimension 传 api 与 gateway 等价，保留用于向后兼容。
       tags:
         - v2_sync
       parameters:
@@ -4529,7 +4534,7 @@ paths:
               properties:
                 target_app_code:
                   type: string
-                  description: 待授权应用
+                  description: 待授权应用的 bk_app_code
                   example: bk-sops
                 expire_days:
                   type: integer
@@ -4537,14 +4542,32 @@ paths:
                   example: 360
                 grant_dimension:
                   type: string
-                  description: 授权维度，可选值：api(按网关授权)
+                  description: 授权维度。gateway - 按网关授权（包含所有资源）；resource - 按资源授权；api - 等价于 gateway，向后兼容
                   enum:
+                    - gateway
+                    - resource
                     - api
-                  example: api
-            example:
-              target_app_code: bk-sops
-              expire_days: 360
-              grant_dimension: api
+                  example: gateway
+                resource_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 资源名称列表，grant_dimension 为 resource 时必填
+                  example: ["get_user", "create_user"]
+            examples:
+              gateway_grant:
+                summary: 按网关维度授权
+                value:
+                  target_app_code: bk-sops
+                  expire_days: 360
+                  grant_dimension: gateway
+              resource_grant:
+                summary: 按资源维度授权
+                value:
+                  target_app_code: bk-sops
+                  expire_days: 180
+                  grant_dimension: resource
+                  resource_names: ["get_user", "create_user"]
       responses:
         '201':
           description: 成功授权

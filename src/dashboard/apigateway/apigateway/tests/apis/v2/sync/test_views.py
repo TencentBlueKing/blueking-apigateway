@@ -22,6 +22,7 @@ from ddf import G
 from django.conf import settings
 
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
 
 
@@ -437,3 +438,73 @@ class TestSyncApiOAuth2:
             mcp_server=mcp_server,
             bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
+
+
+class TestGatewayAppPermissionGrantApi:
+    """测试 v2_sync_grant_permission 接口的 grant_dimension 规范化"""
+
+    @pytest.mark.parametrize(
+        "grant_dimension, expected_status",
+        [
+            ("gateway", 201),
+            ("api", 201),
+        ],
+    )
+    def test_grant_gateway_permission(
+        self, request_view, fake_gateway, disable_app_permission, grant_dimension, expected_status
+    ):
+        data = {
+            "target_app_code": "test-app",
+            "expire_days": 360,
+            "grant_dimension": grant_dimension,
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.grant",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            content_type="application/json",
+        )
+        assert resp.status_code == expected_status
+        assert AppGatewayPermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+        ).exists()
+
+    def test_grant_resource_permission(self, request_view, fake_gateway, fake_resource, disable_app_permission):
+        data = {
+            "target_app_code": "test-app",
+            "expire_days": 180,
+            "grant_dimension": "resource",
+            "resource_names": [fake_resource.name],
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.grant",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            content_type="application/json",
+        )
+        assert resp.status_code == 201
+        assert AppResourcePermission.objects.filter(
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            resource_id=fake_resource.id,
+        ).exists()
+
+    def test_grant_invalid_dimension(self, request_view, fake_gateway, disable_app_permission):
+        data = {
+            "target_app_code": "test-app",
+            "grant_dimension": "invalid",
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.permissions.grant",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            content_type="application/json",
+        )
+        assert resp.status_code == 400
