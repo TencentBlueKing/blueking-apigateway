@@ -148,3 +148,9 @@ workspace.code-workspace
 .codecc/
 build.yml
 .DS_Store
+
+# agent
+.cursor
+.claude
+.specify
+
