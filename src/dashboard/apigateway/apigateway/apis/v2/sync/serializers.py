@@ -723,18 +723,32 @@ class GatewayPermissionListOutputSLZ(serializers.Serializer):
 class GatewayAppPermissionGrantInputSLZ(serializers.Serializer):
     """
     网关关联应用，主动为应用授权访问网关API的权限
+
+    grant_dimension 推荐使用 gateway/resource，兼容旧值 api（等价于 gateway）
     """
+
+    GRANT_DIMENSION_CHOICES = [
+        (FormattedGrantDimensionEnum.GATEWAY.value, "网关"),
+        (FormattedGrantDimensionEnum.RESOURCE.value, "资源"),
+        (GrantDimensionEnum.API.value, "按网关(兼容旧值)"),
+    ]
 
     # 主动授权时，应用可能尚未创建，因此不校验 app_code 是否存在
     target_app_code = serializers.CharField(label="", max_length=32, required=True)
     expire_days = serializers.IntegerField(required=False)
-    grant_dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
+    grant_dimension = serializers.ChoiceField(choices=GRANT_DIMENSION_CHOICES)
     resource_names = serializers.ListField(
         child=serializers.CharField(required=True), allow_empty=True, required=False
     )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionGrantInputSLZ"
+
+    def validate_grant_dimension(self, value: str) -> str:
+        """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
+        if value == FormattedGrantDimensionEnum.GATEWAY.value:
+            return GrantDimensionEnum.API.value
+        return value
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
