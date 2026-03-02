@@ -63,3 +63,11 @@ func GetMCPServerByName(ctx context.Context, name string) (mcp *model.MCPServer,
 	}
 	return
 }
+
+// DeleteMCPServerCache will delete mcp server cache by name
+func DeleteMCPServerCache(ctx context.Context, name string) error {
+	key := MCPServerKey{
+		Name: name,
+	}
+	return mcpServerCache.Delete(ctx, key)
+}

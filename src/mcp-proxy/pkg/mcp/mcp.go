@@ -93,6 +93,7 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	activeMcpServer := make(map[string]struct{})
 	for _, server := range servers {
 		activeMcpServer[server.Name] = struct{}{}
+
 		// 查看每个mcp server当前生效的资源版本
 		release, err := biz.GetRelease(ctx, server.GatewayID, server.StageID)
 		if err != nil {
@@ -215,6 +216,10 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 	for _, server := range mcpProxy.GetActiveMCPServerNames() {
 		if _, ok := activeMcpServer[server]; !ok {
 			mcpProxy.DeleteMCPServer(server)
+			// 清除已删除 MCP Server 的缓存
+			if err := cacheimpls.DeleteMCPServerCache(ctx, server); err != nil {
+				logging.GetLogger().Warnf("delete mcp server[%s] cache error: %v", server, err)
+			}
 		}
 	}
 	mcpProxy.Run(ctx)

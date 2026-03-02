@@ -93,4 +93,57 @@ var _ = Describe("MCPServer", func() {
 			Expect(err.Error()).To(ContainSubstring("not model.mcp in cache"))
 		})
 	})
+
+	Describe("DeleteMCPServerCache", func() {
+		expiration := 5 * time.Minute
+
+		It("should delete cache successfully", func() {
+			expectedServer := &model.MCPServer{
+				ID:        1,
+				Name:      "test-server",
+				GatewayID: 123,
+				StageID:   456,
+				Status:    model.McpServerStatusActive,
+			}
+
+			callCount := 0
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				callCount++
+				return expectedServer, nil
+			}
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
+
+			// First call should cache the result
+			_, err := cacheimpls.GetMCPServerByName(context.Background(), "test-server")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(callCount).To(Equal(1))
+
+			// Second call should use cache
+			_, err = cacheimpls.GetMCPServerByName(context.Background(), "test-server")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(callCount).To(Equal(1)) // Still 1, using cache
+
+			// Delete cache
+			err = cacheimpls.DeleteMCPServerCache(context.Background(), "test-server")
+			Expect(err).NotTo(HaveOccurred())
+
+			// Third call should retrieve again after cache deleted
+			_, err = cacheimpls.GetMCPServerByName(context.Background(), "test-server")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(callCount).To(Equal(2)) // Now 2, cache was deleted
+		})
+
+		It("should not error when deleting non-existent cache", func() {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+				return nil, errors.New("record not found")
+			}
+			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
+			cacheimpls.SetMCPServerCache(mockCache)
+
+			// Delete non-existent cache should not error
+			err := cacheimpls.DeleteMCPServerCache(context.Background(), "non-existent")
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 })
