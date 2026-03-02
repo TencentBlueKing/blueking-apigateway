@@ -17,235 +17,338 @@
 */
 
 <template>
-  <div class="release-sideslider">
-    <BkSideslider
-      v-model:is-show="renderIsShow"
-      :width="1200"
-      :title="`${t('资源详情')}【${info.version || ''}】`"
-      quick-close
-      render-directive="if"
-      @hidden="handleHidden"
-    >
-      <template #default>
-        <BkLoading
-          :loading="isLoading"
-          color="#ffffff"
-          :opacity="1"
-        >
-          <div class="sideslider-content">
-            <div class="sideslider-lf">
-              <BkInput
-                v-model="keywords"
-                class="mb-12px"
-                type="search"
-                clearable
-              />
-              <div class="sideslider-lf-ul">
-                <template v-if="filteredResources.length">
-                  <div
-                    v-for="item in filteredResources"
-                    :key="item.name"
-                    class="sideslider-lf-li"
-                    :class="[
-                      currentSource.name === item.name ? 'active' : '',
-                    ]"
-                    :data-resource-id="item.id"
-                    @click="() => changeCurrentSource(item)"
-                  >
-                    <BkOverflowTitle type="tips">
-                      <span v-bk-xss-html="renderTitle(item.name)" />
-                    </BkOverflowTitle>
-                  </div>
-                </template>
-                <BkException
-                  v-else
-                  class="exception-wrap-item exception-part"
-                  :type="exceptionType"
-                  scene="part"
-                  :description="exceptionDesc"
+  <BkSideslider
+    v-model:is-show="renderIsShow"
+    :width="1200"
+    :title="`${t('资源详情')}【${info.version || ''}】`"
+    quick-close
+    render-directive="if"
+    @hidden="handleHidden"
+  >
+    <template #default>
+      <BkLoading
+        :loading="isLoading"
+        color="#ffffff"
+        :opacity="1"
+      >
+        <div class="sideslider-content">
+          <div class="sideslider-lf">
+            <BkInput
+              v-model="keywords"
+              class="mb-12px"
+              type="search"
+              clearable
+            />
+            <div class="sideslider-lf-ul">
+              <template v-if="filteredResources.length">
+                <div
+                  v-for="item in filteredResources"
+                  :key="item.name"
+                  class="sideslider-lf-li"
+                  :class="[
+                    currentSource.name === item.name ? 'active' : '',
+                  ]"
+                  :data-resource-id="item.id"
+                  @click="() => changeCurrentSource(item)"
                 >
-                  <div class="search-empty-tips">
-                    {{ t('可以尝试 调整关键词 或') }}
-                    <span
-                      class="clear-search"
-                      @click="handleClearSearch"
-                    >
-                      {{ t('清空搜索条件') }}
-                    </span>
-                  </div>
-                </BkException>
-              </div>
+                  <BkOverflowTitle type="tips">
+                    <span v-bk-xss-html="renderTitle(item.name)" />
+                  </BkOverflowTitle>
+                </div>
+              </template>
+              <BkException
+                v-else
+                class="exception-wrap-item exception-part"
+                :type="exceptionType"
+                scene="part"
+                :description="exceptionDesc"
+              >
+                <div class="search-empty-tips">
+                  {{ t('可以尝试 调整关键词 或') }}
+                  <span
+                    class="clear-search"
+                    @click="handleClearSearch"
+                  >
+                    {{ t('清空搜索条件') }}
+                  </span>
+                </div>
+              </BkException>
             </div>
-            <div
-              ref="resource-collapse-wrapper"
-              class="sideslider-rg"
-            >
-              <div class="sideslider-rg-version-collapse">
-                <BkCollapse
-                  v-model="activeIndex"
-                  header-icon="right-shape"
-                  class="bk-collapse-source"
+          </div>
+          <div
+            ref="resource-collapse-wrapper"
+            class="sideslider-rg"
+          >
+            <div class="sideslider-rg-version-collapse">
+              <BkCollapse
+                v-model="activeIndex"
+                header-icon="right-shape"
+                class="bk-collapse-source"
+              >
+                <BkCollapsePanel
+                  :name="1"
+                  class="mb-12px"
                 >
-                  <BkCollapsePanel
-                    :name="1"
-                    class="mb-12px"
+                  <span class="log-name">{{ t("版本日志") }}</span>
+                  <template #content>
+                    <div class="pl-32px">
+                      <p>{{ info.comment }}</p>
+                    </div>
+                  </template>
+                </BkCollapsePanel>
+                <BkCollapsePanel
+                  v-for="(resource, index) in displayedResources"
+                  :key="resource.name"
+                  :name="index + 2"
+                  :class="`source-${resource.name}`"
+                  class="mb-12px"
+                >
+                  <span
+                    :data-name="`resource-${resource.name}`"
+                    :data-id="resource.id"
                   >
-                    <span class="log-name">{{ t("版本日志") }}</span>
-                    <template #content>
-                      <div class="pl-32px">
-                        <p>{{ info.comment }}</p>
-                      </div>
-                    </template>
-                  </BkCollapsePanel>
-                  <BkCollapsePanel
-                    v-for="(resource, index) in displayedResources"
-                    :key="resource.name"
-                    :name="index + 2"
-                    :class="`source-${resource.name}`"
-                    class="mb-12px"
-                  >
-                    <span
-                      :data-name="`resource-${resource.name}`"
-                      :data-id="resource.id"
-                    >
-                      <BkTag :theme="getMethodsTheme(resource.method)">
-                        {{ resource.method }}
-                      </BkTag>
-                      <span class="log-name">{{ resource.name }}</span>
-                    </span>
-                    <template #content>
-                      <div class="sideslider-rg-content">
-                        <p class="title mt-15px">
-                          {{ t("基本信息") }}
-                        </p>
+                    <BkTag :theme="getMethodsTheme(resource.method)">
+                      {{ resource.method }}
+                    </BkTag>
+                    <span class="log-name">{{ resource.name }}</span>
+                  </span>
+                  <template #content>
+                    <div class="sideslider-rg-content">
+                      <p class="title mt-15px">
+                        {{ t("基本信息") }}
+                      </p>
+                      <BkContainer
+                        class="ag-kv-box"
+                        :col="14"
+                        :margin="6"
+                      >
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("资源名称") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              <BkTag theme="success">
+                                {{ resource.name }}
+                              </BkTag>
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("资源地址") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.path }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("描述") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.description }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("标签") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value tags">
+                              <template v-if="resource.gateway_label_ids?.length">
+                                <BkTag
+                                  v-for="tag in labels?.filter((label) => {
+                                    if (resource.gateway_label_ids?.includes(label.id))
+                                      return true;
+                                  })"
+                                  :key="tag.id"
+                                >
+                                  {{ tag.name }}
+                                </BkTag>
+                              </template>
+                              <template v-else>
+                                --
+                              </template>
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("认证方式") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{
+                                getResourceAuth(
+                                  resource.contexts?.resource_auth?.config
+                                )
+                              }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("校验应用权限") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{
+                                getPermRequired(
+                                  resource.contexts?.resource_auth?.config
+                                )
+                              }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("是否公开") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.is_public ? t("是") : t("否") }}
+                              {{
+                                resource.allow_apply_permission
+                                  ? `(${t("允许申请权限")})`
+                                  : `(${t("不允许申请权限")})`
+                              }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+                      </BkContainer>
+
+                      <p class="title mt-15px">
+                        {{ t("请求配置") }}
+                      </p>
+                      <BkContainer
+                        class="ag-kv-box"
+                        :col="14"
+                        :margin="6"
+                      >
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("请求方法") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              <BkTag :theme="getMethodsTheme(resource.method)">
+                                {{ resource.method }}
+                              </BkTag>
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("请求路径") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.path }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.enable_websocket ? t("是") : t("否") }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+                      </BkContainer>
+
+                      <p class="title mt-15px">
+                        {{ t("请求参数") }}
+                      </p>
+                      <div>
                         <BkContainer
-                          class="ag-kv-box"
+                          v-if="!Object.keys(resource.openapi_schema || {}).length
+                            || resource.openapi_schema.none_schema"
+                          class="ag-kv-box pb-24px"
                           :col="14"
                           :margin="6"
                         >
-                          <BkRow>
+                          <BkRow class="mb-0!">
                             <BkCol :span="4">
-                              <label class="ag-key">{{ t("资源名称") }}:</label>
+                              <label class="ag-key invisible">
+                                {{ t("请求方法") }}
+                              </label>
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                <BkTag theme="success">
-                                  {{ resource.name }}
-                                </BkTag>
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("资源地址") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.path }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("描述") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.description }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("标签") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value tags">
-                                <template v-if="resource.gateway_label_ids?.length">
-                                  <BkTag
-                                    v-for="tag in labels?.filter((label) => {
-                                      if (resource.gateway_label_ids?.includes(label.id))
-                                        return true;
-                                    })"
-                                    :key="tag.id"
-                                  >
-                                    {{ tag.name }}
-                                  </BkTag>
-                                </template>
-                                <template v-else>
-                                  --
-                                </template>
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("认证方式") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{
-                                  getResourceAuth(
-                                    resource.contexts?.resource_auth?.config
-                                  )
-                                }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("校验应用权限") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{
-                                  getPermRequired(
-                                    resource.contexts?.resource_auth?.config
-                                  )
-                                }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("是否公开") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.is_public ? t("是") : t("否") }}
-                                {{
-                                  resource.allow_apply_permission
-                                    ? `(${t("允许申请权限")})`
-                                    : `(${t("不允许申请权限")})`
-                                }}
+                                {{ t('该资源无请求参数') }}
                               </div>
                             </BkCol>
                           </BkRow>
                         </BkContainer>
+                        <RequestParams
+                          v-else
+                          :detail="resource"
+                          readonly
+                        />
+                      </div>
 
+                      <template v-if="info.schema_version === '2.0'">
                         <p class="title mt-15px">
-                          {{ t("请求配置") }}
+                          {{ t("后端配置") }}
                         </p>
                         <BkContainer
                           class="ag-kv-box"
                           :col="14"
                           :margin="6"
                         >
+                          <BkRow>
+                            <BkCol :span="4">
+                              <label class="ag-key">{{ t("后端服务") }}:</label>
+                            </BkCol>
+                            <BkCol :span="10">
+                              <div class="ag-value">
+                                {{
+                                  resource.proxy?.backend?.name
+                                }}
+                              </div>
+                            </BkCol>
+                          </BkRow>
+
                           <BkRow>
                             <BkCol :span="4">
                               <label class="ag-key">{{ t("请求方法") }}:</label>
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                <BkTag :theme="getMethodsTheme(resource.method)">
-                                  {{ resource.method }}
+                                <BkTag :theme="getMethodsTheme(resource.proxy?.config?.method)">
+                                  {{
+                                    resource.proxy?.config?.method
+                                  }}
                                 </BkTag>
+                              </div>
+                            </BkCol>
+                          </BkRow>
+
+                          <BkRow>
+                            <BkCol :span="4">
+                              <label class="ag-key">{{ t("自定义超时时间") }}:</label>
+                            </BkCol>
+                            <BkCol :span="10">
+                              <div class="ag-value">
+                                {{
+                                  resource.proxy?.config?.timeout
+                                }}
                               </div>
                             </BkCol>
                           </BkRow>
@@ -256,30 +359,25 @@
                             </BkCol>
                             <BkCol :span="10">
                               <div class="ag-value">
-                                {{ resource.path }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t("启用 WebSocket") }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.enable_websocket ? t("是") : t("否") }}
+                                {{
+                                  resource.proxy?.config?.path
+                                }}
                               </div>
                             </BkCol>
                           </BkRow>
                         </BkContainer>
 
                         <p class="title mt-15px">
-                          {{ t("请求参数") }}
+                          {{ t("响应参数") }}
                         </p>
                         <div>
+                          <ResponseParams
+                            v-if="Object.keys(resource.openapi_schema?.responses || {}).length"
+                            :detail="resource"
+                            readonly
+                          />
                           <BkContainer
-                            v-if="!Object.keys(resource.openapi_schema || {}).length
-                              || resource.openapi_schema.none_schema"
+                            v-else
                             class="ag-kv-box pb-24px"
                             :col="14"
                             :margin="6"
@@ -287,173 +385,73 @@
                             <BkRow class="mb-0!">
                               <BkCol :span="4">
                                 <label class="ag-key invisible">
-                                  {{ t("请求方法") }}
+                                  {{ t("响应参数") }}
                                 </label>
                               </BkCol>
                               <BkCol :span="10">
                                 <div class="ag-value">
-                                  {{ t('该资源无请求参数') }}
+                                  {{ t('该资源无响应参数') }}
                                 </div>
                               </BkCol>
                             </BkRow>
                           </BkContainer>
-                          <RequestParams
-                            v-else
-                            :detail="resource"
-                            readonly
-                          />
                         </div>
+                      </template>
 
-                        <template v-if="info.schema_version === '2.0'">
-                          <p class="title mt-15px">
-                            {{ t("后端配置") }}
-                          </p>
-                          <BkContainer
-                            class="ag-kv-box"
-                            :col="14"
-                            :margin="6"
-                          >
-                            <BkRow>
-                              <BkCol :span="4">
-                                <label class="ag-key">{{ t("后端服务") }}:</label>
-                              </BkCol>
-                              <BkCol :span="10">
-                                <div class="ag-value">
-                                  {{
-                                    resource.proxy?.backend?.name
-                                  }}
-                                </div>
-                              </BkCol>
-                            </BkRow>
+                      <p class="title mt-15px">
+                        {{ t("文档") }}
+                      </p>
+                      <BkContainer
+                        class="ag-kv-box"
+                        :col="14"
+                        :margin="6"
+                      >
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.doc_updated_time?.zh || '--' }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+                        <BkRow>
+                          <BkCol :span="4">
+                            <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
+                          </BkCol>
+                          <BkCol :span="10">
+                            <div class="ag-value">
+                              {{ resource.doc_updated_time?.en || '--' }}
+                            </div>
+                          </BkCol>
+                        </BkRow>
+                      </BkContainer>
 
-                            <BkRow>
-                              <BkCol :span="4">
-                                <label class="ag-key">{{ t("请求方法") }}:</label>
-                              </BkCol>
-                              <BkCol :span="10">
-                                <div class="ag-value">
-                                  <BkTag :theme="getMethodsTheme(resource.proxy?.config?.method)">
-                                    {{
-                                      resource.proxy?.config?.method
-                                    }}
-                                  </BkTag>
-                                </div>
-                              </BkCol>
-                            </BkRow>
-
-                            <BkRow>
-                              <BkCol :span="4">
-                                <label class="ag-key">{{ t("自定义超时时间") }}:</label>
-                              </BkCol>
-                              <BkCol :span="10">
-                                <div class="ag-value">
-                                  {{
-                                    resource.proxy?.config?.timeout
-                                  }}
-                                </div>
-                              </BkCol>
-                            </BkRow>
-
-                            <BkRow>
-                              <BkCol :span="4">
-                                <label class="ag-key">{{ t("请求路径") }}:</label>
-                              </BkCol>
-                              <BkCol :span="10">
-                                <div class="ag-value">
-                                  {{
-                                    resource.proxy?.config?.path
-                                  }}
-                                </div>
-                              </BkCol>
-                            </BkRow>
-                          </BkContainer>
-
-                          <p class="title mt-15px">
-                            {{ t("响应参数") }}
-                          </p>
-                          <div>
-                            <ResponseParams
-                              v-if="Object.keys(resource.openapi_schema?.responses || {}).length"
-                              :detail="resource"
-                              readonly
-                            />
-                            <BkContainer
-                              v-else
-                              class="ag-kv-box pb-24px"
-                              :col="14"
-                              :margin="6"
-                            >
-                              <BkRow class="mb-0!">
-                                <BkCol :span="4">
-                                  <label class="ag-key invisible">
-                                    {{ t("响应参数") }}
-                                  </label>
-                                </BkCol>
-                                <BkCol :span="10">
-                                  <div class="ag-value">
-                                    {{ t('该资源无响应参数') }}
-                                  </div>
-                                </BkCol>
-                              </BkRow>
-                            </BkContainer>
-                          </div>
-                        </template>
-
-                        <p class="title mt-15px">
-                          {{ t("文档") }}
-                        </p>
-                        <BkContainer
-                          class="ag-kv-box"
-                          :col="14"
-                          :margin="6"
+                      <template v-if="info.schema_version === '2.0'">
+                        <template
+                          v-for="plugin in resource.plugins"
+                          :key="plugin.id"
                         >
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t('中文文档更新时间') }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.doc_updated_time?.zh || '--' }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-                          <BkRow>
-                            <BkCol :span="4">
-                              <label class="ag-key">{{ t('英文文档更新时间') }}:</label>
-                            </BkCol>
-                            <BkCol :span="10">
-                              <div class="ag-value">
-                                {{ resource.doc_updated_time?.en || '--' }}
-                              </div>
-                            </BkCol>
-                          </BkRow>
-                        </BkContainer>
-
-                        <template v-if="info.schema_version === '2.0'">
-                          <template
-                            v-for="plugin in resource.plugins"
-                            :key="plugin.id"
-                          >
-                            <p class="title mt-15px">
-                              {{ t("插件") }}: {{ plugin.name }}
-                            </p>
-                            <ConfigDisplayTable
-                              :plugin="plugin"
-                              first-col-width="auto"
-                            />
-                          </template>
+                          <p class="title mt-15px">
+                            {{ t("插件") }}: {{ plugin.name }}
+                          </p>
+                          <ConfigDisplayTable
+                            :plugin="plugin"
+                            first-col-width="auto"
+                          />
                         </template>
-                      </div>
-                    </template>
-                  </BkCollapsePanel>
-                </BkCollapse>
-              </div>
+                      </template>
+                    </div>
+                  </template>
+                </BkCollapsePanel>
+              </BkCollapse>
             </div>
           </div>
-        </BkLoading>
-      </template>
-    </BkSideslider>
-  </div>
+        </div>
+      </BkLoading>
+    </template>
+  </BkSideslider>
 </template>
 
 <script lang="ts" setup>
@@ -495,7 +493,7 @@ const isLoading = ref(false);
 const resourceCollapseWrapper = useTemplateRef('resource-collapse-wrapper');
 
 // 资源分批加载配置
-const resourceTrunkConfig = {
+let resourceTrunkConfig = {
   // 每次渲染 50 条
   chunkSize: 50,
   index: 0,
@@ -557,10 +555,17 @@ const filteredResources = computed(() => {
 
 watch(
   () => isShow,
-  (v: boolean) => {
-    renderIsShow.value = v;
-    if (v) {
+  () => {
+    renderIsShow.value = isShow;
+    if (isShow) {
       getInfo();
+    }
+    // 关闭时重置翻页状态
+    else {
+      resourceTrunkConfig = {
+        chunkSize: 50,
+        index: 0,
+      };
     }
   },
 );
