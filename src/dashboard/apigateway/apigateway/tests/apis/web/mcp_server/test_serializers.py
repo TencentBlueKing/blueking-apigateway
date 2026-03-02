@@ -374,8 +374,8 @@ class TestMCPServerCreateInputSLZOAuth2:
     """测试 MCPServerCreateInputSLZ 序列化器的 OAuth2 相关功能"""
 
     @patch("apigateway.biz.validators.MCPServerHandler.get_valid_resource_names")
-    def test_create_with_oauth2_enabled(self, mock_get_valid, fake_gateway, fake_stage):
-        """测试创建时 oauth2_enabled=True"""
+    def test_create_with_oauth2_public_client_enabled(self, mock_get_valid, fake_gateway, fake_stage):
+        """测试创建时 oauth2_public_client_enabled=True"""
         mock_get_valid.return_value = {"resource1", "resource2"}
 
         data = {
@@ -385,7 +385,7 @@ class TestMCPServerCreateInputSLZOAuth2:
             "is_public": True,
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
         context = {
             "gateway": fake_gateway,
@@ -395,11 +395,11 @@ class TestMCPServerCreateInputSLZOAuth2:
 
         slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["oauth2_enabled"] is True
+        assert slz.validated_data["oauth2_public_client_enabled"] is True
 
     @patch("apigateway.biz.validators.MCPServerHandler.get_valid_resource_names")
     def test_create_with_oauth2_disabled(self, mock_get_valid, fake_gateway, fake_stage):
-        """测试创建时 oauth2_enabled=False"""
+        """测试创建时 oauth2_public_client_enabled=False"""
         mock_get_valid.return_value = {"resource1", "resource2"}
 
         data = {
@@ -409,7 +409,7 @@ class TestMCPServerCreateInputSLZOAuth2:
             "is_public": True,
             "resource_names": ["resource1", "resource2"],
             "tool_names": ["resource1", "resource2"],
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
         context = {
             "gateway": fake_gateway,
@@ -419,11 +419,11 @@ class TestMCPServerCreateInputSLZOAuth2:
 
         slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["oauth2_enabled"] is False
+        assert slz.validated_data["oauth2_public_client_enabled"] is False
 
     @patch("apigateway.biz.validators.MCPServerHandler.get_valid_resource_names")
     def test_create_default_oauth2_disabled(self, mock_get_valid, fake_gateway, fake_stage):
-        """测试创建时不传 oauth2_enabled，默认为 False"""
+        """测试创建时不传 oauth2_public_client_enabled，默认为 False"""
         mock_get_valid.return_value = {"resource1", "resource2"}
 
         data = {
@@ -442,18 +442,18 @@ class TestMCPServerCreateInputSLZOAuth2:
 
         slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["oauth2_enabled"] is False
+        assert slz.validated_data["oauth2_public_client_enabled"] is False
 
 
 class TestMCPServerUpdateInputSLZOAuth2:
     """测试 MCPServerUpdateInputSLZ 序列化器的 OAuth2 相关功能"""
 
-    def test_update_with_oauth2_enabled(self, fake_gateway, fake_stage):
-        """测试更新时设置 oauth2_enabled=True"""
+    def test_update_with_oauth2_public_client_enabled(self, fake_gateway, fake_stage):
+        """测试更新时设置 oauth2_public_client_enabled=True"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
         data = {
             "description": "Updated description",
-            "oauth2_enabled": True,
+            "oauth2_public_client_enabled": True,
         }
         slz = MCPServerUpdateInputSLZ(
             instance=mcp_server,
@@ -462,20 +462,20 @@ class TestMCPServerUpdateInputSLZOAuth2:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["oauth2_enabled"] is True
+        assert slz.validated_data["oauth2_public_client_enabled"] is True
 
     def test_update_with_oauth2_disabled(self, fake_gateway, fake_stage):
-        """测试更新时设置 oauth2_enabled=False"""
+        """测试更新时设置 oauth2_public_client_enabled=False"""
         mcp_server = G(
             MCPServer,
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
-            oauth2_enabled=True,
+            oauth2_public_client_enabled=True,
         )
         data = {
             "description": "Updated description",
-            "oauth2_enabled": False,
+            "oauth2_public_client_enabled": False,
         }
         slz = MCPServerUpdateInputSLZ(
             instance=mcp_server,
@@ -484,16 +484,16 @@ class TestMCPServerUpdateInputSLZOAuth2:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert slz.is_valid(), slz.errors
-        assert slz.validated_data["oauth2_enabled"] is False
+        assert slz.validated_data["oauth2_public_client_enabled"] is False
 
     def test_partial_update_without_oauth2(self, fake_gateway, fake_stage):
-        """测试部分更新时不传 oauth2_enabled，不影响已有值"""
+        """测试部分更新时不传 oauth2_public_client_enabled，不影响已有值"""
         mcp_server = G(
             MCPServer,
             gateway=fake_gateway,
             stage=fake_stage,
             status=MCPServerStatusEnum.ACTIVE.value,
-            oauth2_enabled=True,
+            oauth2_public_client_enabled=True,
         )
         data = {
             "description": "Updated description",
@@ -505,4 +505,4 @@ class TestMCPServerUpdateInputSLZOAuth2:
             context={"valid_resource_names": {"resource1", "resource2"}},
         )
         assert slz.is_valid(), slz.errors
-        assert "oauth2_enabled" not in slz.validated_data
+        assert "oauth2_public_client_enabled" not in slz.validated_data

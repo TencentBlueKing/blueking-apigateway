@@ -33,7 +33,7 @@ mcp_servers 参数说明
 | `status`   | integer          | 否  | 状态：1：启用，0：关闭(默认关闭)                                                     |
 | `protocol_type` | string       | 否  | MCP 协议类型：sse（默认）、streamable_http                                       |
 | `target_app_codes`   | array[string]          | 否  | 主动授权的应用列表                                                              |
-| `oauth2_enabled`     | bool                   | 否  | 是否开启 OAuth2 认证，开启后自动为 bk_app_code=public 授权，默认不开启                     |
+| `oauth2_public_client_enabled`     | bool                   | 否  | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权，默认不开启                     |
 
 
 ### 请求参数示例
@@ -59,7 +59,7 @@ mcp_servers 参数说明
         "app1",
         "app2"
       ],
-      "oauth2_enabled": false
+      "oauth2_public_client_enabled": false
     }
   ]
 }

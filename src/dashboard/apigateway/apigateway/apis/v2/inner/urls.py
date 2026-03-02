@@ -151,6 +151,19 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        "mcp-servers/",
+        include(
+            [
+                # GET /api/v2/inner/mcp-servers/
+                path(
+                    "",
+                    views.MCPServerListApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.list",
+                ),
+            ]
+        ),
+    ),
 ]
 
 # 非多租户模式才会有 esb 相关的接口

@@ -183,9 +183,9 @@ class MCPServerHandler:
         """
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
 
-        # 同步 OAuth2 权限：根据 oauth2_enabled 开启/关闭 public app 权限
-        public_app_code = settings.MCP_SERVER_PUBLIC_APP_CODE
-        if mcp_server.oauth2_enabled:
+        # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
+        public_app_code = settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE
+        if mcp_server.oauth2_public_client_enabled:
             MCPServerAppPermission.objects.save_permission(
                 mcp_server_id=mcp_server_id,
                 bk_app_code=public_app_code,
@@ -285,6 +285,55 @@ class MCPServerHandler:
             AppResourcePermission.objects.bulk_create(to_add)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
+
+    @staticmethod
+    def get_app_permission_risks(mcp_servers: list) -> Dict[int, List[str]]:
+        """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
+
+        当 oauth2_public_client_enabled=True 时，public 应用被自动授权；
+        如果工具对应的 API 要求应用认证(verified_app_required)，则存在权限失效的安全风险。
+
+        Args:
+            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+
+        Returns:
+            {mcp_server_id: [risk_tool_name, ...]} 映射，仅包含存在风险的 MCPServer
+        """
+        risk_mcp_servers = [m for m in mcp_servers if m.oauth2_public_client_enabled]
+        if not risk_mcp_servers:
+            return {}
+
+        gateway_stage_pairs = set()
+        mcp_server_gateway_stage: Dict[int, tuple] = {}
+        for mcp_server in risk_mcp_servers:
+            key = (mcp_server.gateway_id, mcp_server.stage_id)
+            gateway_stage_pairs.add(key)
+            mcp_server_gateway_stage[mcp_server.id] = key
+
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).select_related("resource_version")
+
+        release_resource_auth: Dict[tuple, Dict[str, bool]] = {}
+        for release in releases:
+            key = (release.gateway_id, release.stage_id)
+            resource_auth: Dict[str, bool] = {}
+            for resource in release.resource_version.data:
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                resource_auth[resource["name"]] = bool(auth_config.get("app_verified_required", True))
+            release_resource_auth[key] = resource_auth
+
+        risks: Dict[int, List[str]] = {}
+        for mcp_server in risk_mcp_servers:
+            gateway_stage_key = mcp_server_gateway_stage[mcp_server.id]
+            resource_auth = release_resource_auth.get(gateway_stage_key, {})
+            risk_tools = [tool_name for tool_name in mcp_server.resource_names if resource_auth.get(tool_name, False)]
+            if risk_tools:
+                risks[mcp_server.id] = risk_tools
+
+        return risks
 
     @staticmethod
     def disable_servers(gateway_id: int, stage_id: int = 0) -> None:
@@ -490,7 +539,7 @@ class MCPServerHandler:
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
-                "oauth2_enabled": instance.oauth2_enabled,
+                "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
             }
 
             # AIDev 需要额外的创建链接

@@ -30,6 +30,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apis.v2.mcp_server import build_mcp_server_list_context, build_mcp_server_list_queryset
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -754,6 +755,44 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
 
         slz = self.get_serializer(mcp_server_permission_record)
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取全量的 MCPServer 列表（应用态接口）",
+        query_serializer=serializers.MCPServerListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.MCPServerListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class MCPServerListApi(generics.ListAPIView):
+    """
+    获取全量 MCP Server 列表
+    - 应用态接口，返回所有的 MCP Server（包括公开和非公开）
+    - 只返回活跃状态：status=ACTIVE, gateway.status=ACTIVE, stage.status=ACTIVE
+    - 返回格式参考 v2_open_list_mcp_server，新增 prompt 相关数据
+    """
+
+    permission_classes = [OpenAPIV2Permission]
+
+    def list(self, request, *args, **kwargs):
+        slz = serializers.MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = build_mcp_server_list_queryset(
+            keyword=slz.validated_data.get("keyword"),
+            order_by=slz.validated_data.get("order_by", "-updated_time"),
+        )
+
+        page = self.paginate_queryset(queryset)
+        context = build_mcp_server_list_context(page)
+
+        mcp_server_ids = [mcp_server.id for mcp_server in page]
+        context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
+        output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context)
+        return self.get_paginated_response(output_slz.data)
 
 
 # ===================== 网关状态变更/删除 API =====================
