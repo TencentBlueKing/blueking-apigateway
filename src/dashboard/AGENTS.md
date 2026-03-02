@@ -10,57 +10,6 @@ BlueKing API Gateway Dashboard — the Django-based control plane for managing A
 - Dependency management: `uv` (lockfile: `uv.lock`, config: `pyproject.toml`)
 - The Django project root is `apigateway/` (contains `manage.py`); the Python package is `apigateway/apigateway/`
 
-## Common Commands
-
-```bash
-# Bootstrap local dev env (installs uv, pre-commit, mypy types)
-make init
-
-# Activate the virtualenv (required before running make targets / dev tools)
-source .venv/bin/activate
-
-# Install dependencies
-uv sync
-
-# Regenerate uv.lock after changing pyproject.toml
-make uv.lock
-
-# Run all tests (uses SQLite, parallel via pytest-xdist)
-make test
-
-# Run a single test file or test
-cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && \
-  pytest --ds apigateway.settings --reuse-db -n auto --dist loadscope \
-  apigateway/apigateway/tests/path/to/test_file.py::TestClass::test_method -v
-
-# Re-run only last-failed tests
-make test-lf
-
-# Debug with pdb (single-process, stops on first failure)
-make test-pdb
-
-# Run tests with coverage
-make test-cov
-
-# Lint (auto-fix + type check + import layer check)
-make lint
-
-# Lint (check only, no auto-fix — used in CI)
-make lint-check
-
-# Run Django dev server
-cd apigateway && python manage.py runserver
-```
-
-## Linting Stack
-
-All configured in `pyproject.toml`:
-- **ruff** — formatter + linter (line-length 119)
-- **mypy** — strict optional, excludes `editions/` and migrations
-- **import-linter** (via `lint-imports`) — enforces layered architecture contracts (run from `apigateway/` dir)
-
-`make lint` runs: ruff format → ruff check → mypy → lint-imports.
-
 ## Architecture (import-linter enforced layers)
 
 ```
@@ -92,6 +41,72 @@ Gateway → Stage → Resource → ResourceVersion → Release → ReleaseHistor
 ```
 
 Plugins bind at stage/resource scope via `PluginBinding`. Auth settings live in `Context` records. Backends (upstream configs) are per-gateway with stage-specific `BackendConfig`.
+
+
+## Command Execution Guide
+
+This section contains critical command execution instructions that apply across all development.
+
+
+### Python Command Execution Requirements
+
+CRITICAL: When running Python commands (pytest, mypy, pre-commit, etc.), you MUST use the virtual environment.
+
+```
+# Activate the virtualenv (required before running make targets / dev tools)
+source .venv/bin/activate
+```
+
+### Setup
+
+```
+# Bootstrap local dev env (installs uv, pre-commit, mypy types)
+make init
+
+# Install dependencies
+uv sync
+
+# Regenerate uv.lock after changing pyproject.toml
+make uv.lock
+```
+
+### Linting
+
+All configured in `pyproject.toml`:
+- **ruff** — formatter + linter (line-length 119)
+- **mypy** — strict optional, excludes `editions/` and migrations
+- **import-linter** (via `lint-imports`) — enforces layered architecture contracts (run from `apigateway/` dir)
+
+`make lint` runs: ruff format → ruff check → mypy → lint-imports.
+
+```
+# Lint (auto-fix + type check + import layer check)
+make lint
+
+# Lint (check only, no auto-fix — used in CI)
+make lint-check
+```
+
+### Testing
+
+```bash
+# Run all tests (uses SQLite, parallel via pytest-xdist)
+make test
+
+# Run a single test file or test
+cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && \
+  pytest --ds apigateway.settings --reuse-db -n auto --dist loadscope \
+  apigateway/apigateway/tests/path/to/test_file.py::TestClass::test_method -v
+
+# Re-run only last-failed tests
+make test-lf
+
+# Debug with pdb (single-process, stops on first failure)
+make test-pdb
+
+# Run tests with coverage
+make test-cov
+```
 
 ## Settings
 
