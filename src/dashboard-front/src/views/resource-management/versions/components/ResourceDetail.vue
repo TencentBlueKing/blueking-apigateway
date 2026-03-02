@@ -520,7 +520,7 @@ useScroll(resourceCollapseWrapper, {
         if (listItem) {
           listItem.scrollIntoView({
             behavior: 'smooth',
-            block: 'start',
+            block: 'nearest',
           });
         }
       }
