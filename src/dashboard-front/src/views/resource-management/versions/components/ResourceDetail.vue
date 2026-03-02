@@ -463,7 +463,7 @@ import { getMethodsTheme } from '@/utils';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
-import { useScroll } from '@vueuse/core';
+import { useInfiniteScroll, useScroll } from '@vueuse/core';
 
 interface IProps {
   id: number | undefined
@@ -481,6 +481,7 @@ const activeIndex = ref([1]);
 const info = ref<any>({});
 const currentSource = ref<any>({});
 const displayedResources = shallowRef<any[]>([]);
+const rawResources = shallowRef<any[]>([]);
 
 // 网关标签
 const labels = ref<any[]>([]);
@@ -498,7 +499,6 @@ const resourceTrunkConfig = {
   // 每次渲染 50 条
   chunkSize: 50,
   index: 0,
-  rawData: [],
 };
 
 useScroll(resourceCollapseWrapper, {
@@ -528,6 +528,17 @@ useScroll(resourceCollapseWrapper, {
   },
 });
 
+useInfiniteScroll(
+  resourceCollapseWrapper,
+  () => {
+    renderResourceChunk();
+  },
+  {
+    distance: 52,
+    canLoadMore: () => rawResources.value.length > displayedResources.value.length,
+  },
+);
+
 // 网关id
 const apigwId = computed(() => +route.params.id);
 
@@ -541,7 +552,7 @@ const filteredResources = computed(() => {
     exceptionType.value = 'search-empty';
     exceptionDesc.value = t('搜索结果为空');
   }
-  return displayedResources.value.filter((item: any) => item.name?.includes(keywords.value));
+  return rawResources.value.filter((item: any) => item.name?.includes(keywords.value));
 });
 
 watch(
@@ -555,13 +566,13 @@ watch(
 );
 
 const renderResourceChunk = () => {
-  const total = resourceTrunkConfig.rawData.length;
+  const total = rawResources.value.length;
   if (resourceTrunkConfig.index >= total) {
     return;
   }
 
   // 截取一小段
-  const chunk = resourceTrunkConfig.rawData.slice(
+  const chunk = rawResources.value.slice(
     resourceTrunkConfig.index,
     resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
   );
@@ -580,9 +591,6 @@ const renderResourceChunk = () => {
   displayedResources.value = [...displayedResources.value, ...chunk];
 
   resourceTrunkConfig.index += resourceTrunkConfig.chunkSize;
-
-  // 在下一帧继续执行
-  requestAnimationFrame(renderResourceChunk);
 };
 
 // 获取详情数据
@@ -592,12 +600,27 @@ const getInfo = async () => {
   isLoading.value = true;
   const { resources, ...rest } = await getVersionDetail(apigwId.value, id);
   info.value = rest;
-  resourceTrunkConfig.rawData = resources || [];
+  rawResources.value = resources || [];
   currentSource.value = resources[0] || {};
 
   activeIndex.value = [1];
   isLoading.value = false;
-  renderResourceChunk();
+  const chunk = rawResources.value.slice(
+    resourceTrunkConfig.index,
+    resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
+  );
+  chunk.forEach((item: any, index: number) => {
+    activeIndex.value.push(index + 2);
+
+    if (item?.proxy?.config) {
+      if (typeof item?.proxy?.config === 'string') {
+        item.proxy.config = JSON.parse(item?.proxy?.config);
+      }
+    }
+  });
+
+  displayedResources.value = chunk;
+  resourceTrunkConfig.index += resourceTrunkConfig.chunkSize;
 };
 
 const getResourceAuth = (authStr: string) => {
@@ -634,10 +657,18 @@ getLabels();
 const changeCurrentSource = (source: any) => {
   currentSource.value = source;
 
-  const el = document.querySelector(`.source-${source.name}`);
-  el?.scrollIntoView({
-    behavior: 'smooth', // 平滑滚动
-    block: 'start', // 元素顶部与视口顶部对齐
+  const renderedResource = displayedResources.value.find(item => item.id === source.id);
+  if (!renderedResource) {
+    const targetResource = rawResources.value.find(item => item.id === source.id);
+    displayedResources.value.push(targetResource);
+  }
+
+  nextTick(() => {
+    const el = document.querySelector(`.source-${source.name}`);
+    el?.scrollIntoView({
+      behavior: 'smooth', // 平滑滚动
+      block: 'start', // 元素顶部与视口顶部对齐
+    });
   });
 };
 
