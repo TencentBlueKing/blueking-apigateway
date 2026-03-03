@@ -52,6 +52,10 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
 
     # API URL template for this data plane
     bk_api_url_tmpl = models.CharField(max_length=512, blank=True, default="", help_text=_("API URL template"))
+    etcd_namespace_prefix = models.CharField(
+        max_length=128,
+        help_text=_("ETCD namespace prefix"),
+    )
 
     status = models.IntegerField(
         choices=DataPlaneStatusEnum.get_choices(),

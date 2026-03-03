@@ -42,8 +42,29 @@ logger = logging.getLogger(__name__)
 @shared_task(ignore_result=True)
 def distribute_global_resources():
     """发布全局资源"""
-    distributor = GlobalResourceDistributor()
-    distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
+    data_planes = DataPlane.objects.get_active_data_planes()
+    if not data_planes:
+        logger.warning("no active data planes found, skip distribute_global_resources")
+        return False
+
+    failed_data_plane_ids = []
+    for data_plane in data_planes:
+        distributor = GlobalResourceDistributor(data_plane=data_plane)
+        is_success, err_msg = distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
+        if not is_success:
+            failed_data_plane_ids.append(data_plane.id)
+            logger.error(
+                "distribute global resources failed for data_plane[id=%s,name=%s]: %s",
+                data_plane.id,
+                data_plane.name,
+                err_msg,
+            )
+
+    if failed_data_plane_ids:
+        logger.error("distribute_global_resources has failures, data_plane_ids=%s", failed_data_plane_ids)
+        return False
+
+    return True
 
 
 @shared_task(ignore_result=True)

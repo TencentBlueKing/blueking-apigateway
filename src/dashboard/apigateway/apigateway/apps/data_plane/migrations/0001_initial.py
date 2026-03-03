@@ -64,6 +64,13 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "etcd_namespace_prefix",
+                    models.CharField(
+                        help_text="ETCD namespace prefix",
+                        max_length=128,
+                    ),
+                ),
+                (
                     "status",
                     models.IntegerField(
                         choices=[(1, "active"), (0, "inactive")],

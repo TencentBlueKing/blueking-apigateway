@@ -112,7 +112,7 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
-    def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission):
+    def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane):
         resp = request_view(
             method="POST",
             view_name="openapi.gateway.sync",
@@ -137,7 +137,9 @@ class TestGatewaySyncApi:
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_delete_sensitive_params"] is False
 
-    def test_post_with_multi_tenant_mode(self, mocker, request_view, unique_gateway_name, disable_app_permission):
+    def test_post_with_multi_tenant_mode(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
         mocker.patch(
             "apigateway.apis.open.gateway.views.get_app_tenant_info",
             return_value=("global", "abc"),

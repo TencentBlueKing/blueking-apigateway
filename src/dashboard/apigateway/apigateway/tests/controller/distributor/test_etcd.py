@@ -104,6 +104,23 @@ class TestGatewayResourceDistributor:
         assert "test-gateway" in call_args["key_prefix"]
         assert "prod" in call_args["key_prefix"]
 
+    def test_get_registry_should_fail_when_prefix_is_empty(self, mocker):
+        mock_gateway = mocker.Mock()
+        mock_gateway.name = "test-gateway"
+        mock_stage = mocker.Mock()
+        mock_stage.name = "prod"
+        mock_release = mocker.Mock()
+        mock_release.gateway = mock_gateway
+        mock_release.stage = mock_stage
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.etcd_namespace_prefix = ""
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+
+        with pytest.raises(ValueError, match="etcd_namespace_prefix is empty"):
+            distributor._get_registry(mock_gateway, mock_stage)
+
     def test_distribute_success(self, mocker):
         """Test distribute method success case"""
         mock_release = mocker.Mock()
@@ -236,9 +253,13 @@ class TestGatewayResourceDistributor:
 class TestGlobalResourceDistributor:
     """Test GlobalResourceDistributor class"""
 
-    def test_global_distributor_is_base_distributor(self):
+    def test_global_distributor_is_base_distributor(self, mocker):
         """Test that GlobalResourceDistributor is a BaseDistributor"""
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
         assert isinstance(distributor, BaseDistributor)
 
     def test_get_registry(self, mocker):
@@ -250,8 +271,13 @@ class TestGlobalResourceDistributor:
 
         # Mock EtcdRegistry
         mock_etcd_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client", return_value=mocker.Mock())
 
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+
+        distributor = GlobalResourceDistributor(mock_data_plane)
         registry = distributor._get_registry()
 
         # Verify GlobalKeyPrefixHandler was called
@@ -259,7 +285,10 @@ class TestGlobalResourceDistributor:
         mock_handler_instance.get_release_key_prefix.assert_called_once()
 
         # Verify EtcdRegistry was called with correct key_prefix
-        mock_etcd_registry.assert_called_once_with(key_prefix="test/global/prefix/")
+        mock_etcd_registry.assert_called_once()
+        call_args = mock_etcd_registry.call_args[1]
+        assert call_args["key_prefix"] == "test/global/prefix/"
+        assert "etcd_client" in call_args
         assert registry == mock_etcd_registry.return_value
 
     def test_distribute_success(self, mocker):
@@ -280,7 +309,11 @@ class TestGlobalResourceDistributor:
         # Mock ReleaseProcedureLogger
         mock_logger = mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         # Verify success
@@ -313,7 +346,11 @@ class TestGlobalResourceDistributor:
         # Mock ReleaseProcedureLogger
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         # Verify failure
@@ -334,7 +371,11 @@ class TestGlobalResourceDistributor:
         # Mock ReleaseProcedureLogger
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         # Verify failure
@@ -357,7 +398,11 @@ class TestGlobalResourceDistributor:
         # Mock ReleaseProcedureLogger
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
         success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
         # Verify failure
@@ -365,9 +410,24 @@ class TestGlobalResourceDistributor:
         assert "distribute global resources to etcd failed" in message
         assert "Registry error" in message
 
-    def test_revoke_not_implemented(self):
+    def test_revoke_not_implemented(self, mocker):
         """Test that revoke method raises NotImplementedError"""
-        distributor = GlobalResourceDistributor()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
 
         with pytest.raises(NotImplementedError):
             distributor.revoke(release_task_id="test-task-id", publish_id=123)
+
+    def test_get_registry_should_fail_when_prefix_is_empty(self, mocker):
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
+        mock_data_plane.etcd_namespace_prefix = ""
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GlobalResourceDistributor(mock_data_plane)
+
+        with pytest.raises(ValueError, match="etcd_namespace_prefix is empty"):
+            distributor._get_registry()

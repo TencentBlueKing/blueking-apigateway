@@ -19,7 +19,6 @@ import pytest
 from ddf import G
 from pydantic import TypeAdapter
 
-from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
 from apigateway.core.constants import GatewayTypeEnum
@@ -90,7 +89,7 @@ class TestGatewayData:
 
 
 class TestGatewaySaver:
-    def test_save(self, unique_gateway_name):
+    def test_save(self, unique_gateway_name, default_data_plane):
         # create
         saver = GatewaySaver(
             None, GatewayData(name=unique_gateway_name, status=0, tenant_mode="single", tenant_id="default")
@@ -109,7 +108,7 @@ class TestGatewaySaver:
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
 
-    def test_create(self, settings, unique_gateway_name):
+    def test_create(self, settings, unique_gateway_name, default_data_plane):
         settings.DEFAULT_USER_AUTH_TYPE = "default"
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {unique_gateway_name: {"unfiltered_sensitive_keys": ["bar"]}}
 
@@ -224,11 +223,8 @@ class TestGatewaySaver:
         assert data_plane1.id in bound_plane_ids
         assert data_plane2.id in bound_plane_ids
 
-    def test_save_without_data_plane_ids_binds_to_default(self, unique_gateway_name):
+    def test_save_without_data_plane_ids_binds_to_default(self, unique_gateway_name, default_data_plane):
         """Test save without data_plane_ids binds to default data plane on new gateway"""
-        # Ensure default data plane exists
-        default_plane = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
-
         # Create gateway without data_plane_ids
         saver = GatewaySaver(
             None,
@@ -237,12 +233,10 @@ class TestGatewaySaver:
         gateway = saver.save()
 
         # Verify binding to default was created
-        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_plane).exists()
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
-    def test_save_with_empty_data_plane_ids_binds_to_default(self, unique_gateway_name):
+    def test_save_with_empty_data_plane_ids_binds_to_default(self, unique_gateway_name, default_data_plane):
         """Test save with empty data_plane_ids list binds to default data plane"""
-        # Ensure default data plane exists
-        default_plane = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
 
         # Create gateway with empty data_plane_ids
         saver = GatewaySaver(
@@ -253,12 +247,10 @@ class TestGatewaySaver:
         gateway = saver.save()
 
         # Verify binding to default was created (fallback behavior)
-        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_plane).exists()
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
-    def test_save_with_invalid_data_plane_id_binds_to_default(self, unique_gateway_name):
+    def test_save_with_invalid_data_plane_id_binds_to_default(self, unique_gateway_name, default_data_plane):
         """Test save with invalid data_plane_id falls back to default data plane"""
-        # Ensure default data plane exists
-        default_plane = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
         invalid_id = 99999
 
         # Create gateway with invalid data_plane_id
@@ -270,7 +262,7 @@ class TestGatewaySaver:
         gateway = saver.save()
 
         # Verify binding to default was created (fallback behavior)
-        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_plane).exists()
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
     def test_save_with_partial_invalid_data_plane_ids(self, unique_gateway_name):
         """Test save with mix of valid and invalid data_plane_ids binds only to valid ones"""

@@ -27,7 +27,7 @@ class TestGatewayKeyPrefixHandler:
     def test_constructor(self):
         """Test GatewayKeyPrefixHandler constructor with various parameters"""
         # Test default values
-        handler = GatewayKeyPrefixHandler()
+        handler = GatewayKeyPrefixHandler(prefix="")
         assert handler.api_version == "v2"
         assert handler.prefix is not None
         assert isinstance(handler.prefix, str)
@@ -65,11 +65,10 @@ class TestGlobalKeyPrefixHandler:
 
     def test_constructor(self):
         """Test GlobalKeyPrefixHandler constructor with various parameters"""
-        # Test default values
-        handler = GlobalKeyPrefixHandler()
+        # Test with required prefix
+        handler = GlobalKeyPrefixHandler(prefix="/bk-gateway")
         assert handler.api_version == "v2"
-        assert handler.prefix is not None
-        assert isinstance(handler.prefix, str)
+        assert handler.prefix == "/bk-gateway"
 
         # Test custom parameters
         handler = GlobalKeyPrefixHandler(prefix="/custom-prefix", api_version="v3")

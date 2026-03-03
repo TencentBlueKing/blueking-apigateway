@@ -46,6 +46,15 @@ class Command(BaseCommand):
             raise ValueError("ETCD_CONFIG is required but not configured in settings")
 
         bk_api_url_tmpl = getattr(settings, "BK_API_URL_TMPL", "")
+        etcd_namespace_prefix = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
+        if not etcd_namespace_prefix:
+            self.stderr.write(
+                self.style.ERROR(
+                    "BK_GATEWAY_ETCD_NAMESPACE_PREFIX is not configured in settings. "
+                    "Please configure BK_GATEWAY_ETCD_NAMESPACE_PREFIX before initializing the default data plane."
+                )
+            )
+            raise ValueError("BK_GATEWAY_ETCD_NAMESPACE_PREFIX is required but not configured in settings")
 
         # Try to get existing default data plane
         data_plane = DataPlane.objects.filter(name=DEFAULT_DATA_PLANE_NAME).first()
@@ -56,6 +65,7 @@ class Command(BaseCommand):
             data_plane.description = "The default data plane"
             data_plane.etcd_configs = etcd_config
             data_plane.bk_api_url_tmpl = bk_api_url_tmpl
+            data_plane.etcd_namespace_prefix = etcd_namespace_prefix
             data_plane.status = DataPlaneStatusEnum.ACTIVE.value
             data_plane.updated_by = "system"
             data_plane.save()
@@ -67,6 +77,7 @@ class Command(BaseCommand):
                 name=DEFAULT_DATA_PLANE_NAME,
                 description="The default data plane",
                 bk_api_url_tmpl=bk_api_url_tmpl,
+                etcd_namespace_prefix=etcd_namespace_prefix,
                 status=DataPlaneStatusEnum.ACTIVE.value,
                 is_recommend=True,
                 created_by="system",

@@ -31,6 +31,8 @@ from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
 
 from apigateway.apps.api_debug.models import APIDebugHistory
+from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.openapi.models import (
     OpenAPIFileResourceSchemaVersion,
     OpenAPIResourceSchema,
@@ -136,6 +138,11 @@ def fake_gateway(faker):
     GatewayAuthContext().save(gateway.pk, {})
 
     return gateway
+
+
+@pytest.fixture
+def default_data_plane():
+    return G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
 
 
 @pytest.fixture

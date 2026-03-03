@@ -46,9 +46,16 @@ class SyncFail(Exception):
 
 # global distributor is full sync
 class GlobalResourceDistributor(BaseDistributor):
+    def __init__(self, data_plane: DataPlane):
+        self.data_plane = data_plane
+        self._etcd_client: "etcd3.Etcd3Client" = new_etcd_client(data_plane.etcd_configs)
+
     def _get_registry(self) -> EtcdRegistry:
-        key_prefix = GlobalKeyPrefixHandler().get_release_key_prefix()
-        return EtcdRegistry(key_prefix=key_prefix)
+        if not self.data_plane.etcd_namespace_prefix:
+            raise ValueError(f"data_plane[{self.data_plane.id}] etcd_namespace_prefix is empty")
+
+        key_prefix = GlobalKeyPrefixHandler(prefix=self.data_plane.etcd_namespace_prefix).get_release_key_prefix()
+        return EtcdRegistry(key_prefix=key_prefix, etcd_client=self._etcd_client)
 
     def distribute(
         self,
@@ -112,7 +119,12 @@ class GatewayResourceDistributor(BaseDistributor):
         return self.release.stage
 
     def _get_registry(self, gateway: Gateway, stage: Stage) -> EtcdRegistry:
-        key_prefix = GatewayKeyPrefixHandler().get_release_key_prefix(gateway.name, stage.name)
+        if not self.data_plane.etcd_namespace_prefix:
+            raise ValueError(f"data_plane[{self.data_plane.id}] etcd_namespace_prefix is empty")
+
+        key_prefix = GatewayKeyPrefixHandler(prefix=self.data_plane.etcd_namespace_prefix).get_release_key_prefix(
+            gateway.name, stage.name
+        )
         return EtcdRegistry(key_prefix=key_prefix, etcd_client=self._etcd_client)
 
     def distribute(

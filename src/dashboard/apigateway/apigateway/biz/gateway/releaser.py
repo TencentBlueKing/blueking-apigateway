@@ -104,6 +104,11 @@ class GatewayReleaser:
         Release to all active data planes.
         Returns the first ReleaseHistory for backward compatibility.
         """
+        # Get active data planes - must have at least one
+        data_planes = self._get_active_data_planes()
+        if not data_planes:
+            raise ReleaseError("Gateway must be bound to at least one active data plane")
+
         self._pre_release()
 
         # 如果是编程网关，查询一下 deploy 部署历史
@@ -115,11 +120,6 @@ class GatewayReleaser:
             # 如果通过网关点击的部署按钮，则使用部署人作为发布人
             if deploy_history:
                 self.username = deploy_history.created_by
-
-        # Get active data planes - must have at least one
-        data_planes = self._get_active_data_planes()
-        if not data_planes:
-            raise ReleaseError("Gateway must be bound to at least one active data plane")
 
         # Create release instance once (independent of data plane)
         instance = Release.objects.get_or_create_release(

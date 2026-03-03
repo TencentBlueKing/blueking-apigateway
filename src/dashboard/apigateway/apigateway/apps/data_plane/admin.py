@@ -28,7 +28,7 @@ class DataPlaneAdminForm(forms.ModelForm):
 
     etcd_configs_json = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 10, "cols": 80}),
-        required=False,
+        required=True,
         help_text="ETCD configuration in JSON format. Example: "
         '{"host": "localhost", "port": 2379, "user": "", "password": ""}',
     )
@@ -39,6 +39,7 @@ class DataPlaneAdminForm(forms.ModelForm):
             "name",
             "description",
             "bk_api_url_tmpl",
+            "etcd_namespace_prefix",
             "status",
             "is_recommend",
             "created_by",
@@ -94,7 +95,7 @@ class DataPlaneAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {"fields": ("name", "description", "status", "is_recommend")}),
-        ("ETCD Configuration", {"fields": ("etcd_configs_json", "bk_api_url_tmpl")}),
+        ("ETCD Configuration", {"fields": ("etcd_configs_json", "bk_api_url_tmpl", "etcd_namespace_prefix")}),
         ("Audit", {"fields": ("created_by", "updated_by", "created_time", "updated_time")}),
     )
 

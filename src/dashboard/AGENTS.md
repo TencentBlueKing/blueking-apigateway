@@ -108,6 +108,24 @@ make test-pdb
 make test-cov
 ```
 
+#### Running tests from an agent (critical notes)
+
+Working directory: `src/dashboard/apigateway`
+
+```bash
+# Recommended command for agents — note the semicolons and python3
+cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard/apigateway && \
+  set -a && . apigateway/conf/unittest_env; set +a; \
+  python3 -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short \
+  apigateway/tests/path/to/test_file.py::TestClass::test_method 2>&1
+```
+
+Pitfalls to avoid:
+- **Use `python3`, not `python`** — `python` silently exits with code 1 and produces no output.
+- **Use `;` (not `&&`) after sourcing `unittest_env`** — the env file exits with a non-zero status, which breaks `&&` chains and prevents pytest from running.
+- **Always pass `--ds apigateway.settings`** — without it, Django settings are not configured and conftest imports fail with `ImproperlyConfigured`.
+- **Use `--nomigrations`** when there are conflicting migration leaf nodes in the branch — without it pytest fails at DB setup before any tests run.
+
 ## Settings
 
 Settings are loaded dynamically: `apigateway.conf.settings_{BKPAAS_ENVIRONMENT}` (defaults to `dev`). Base config is in `apigateway/conf/default.py`. Local dev config goes in `apigateway/apigateway/conf/.env` (copy from `.env.tpl`).

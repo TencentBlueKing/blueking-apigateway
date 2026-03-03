@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("data_plane", "0001_initial"),
-        ("core", "0046_gateway_deprecated_note_gateway_is_deprecated_and_more"),
+        ("core", "0048_alter_resource_description_max_length_to_2048"),
     ]
 
     operations = [
