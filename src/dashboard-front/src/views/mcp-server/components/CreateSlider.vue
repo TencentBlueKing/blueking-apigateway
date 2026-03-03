@@ -1435,8 +1435,7 @@ const isCurrentStageValid = computed(() =>
 const fetchStageList = async () => {
   const response = await getStageList(gatewayId.value);
   stageList.value = response || [];
-  // 如果新建的话默认填充第一项
-  if (!isEditMode.value) {
+  if (!formData.value.stage_id) {
     formData.value.stage_id = stageList.value.find(stage => stage.status === 1)?.id ?? 0;
   }
   if (formData.value.stage_id) {
