@@ -388,7 +388,7 @@ class TestResourceImportValidator:
             ),
             # 多个字段同时超长
             (
-                {"name": "a" * 300, "description": "a" * 600},
+                {"name": "a" * 300, "description": "a" * 2100},
                 2,
             ),
             # 边界情况：刚好在限制内
