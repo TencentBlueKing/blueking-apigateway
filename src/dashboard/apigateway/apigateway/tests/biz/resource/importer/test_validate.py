@@ -371,14 +371,14 @@ class TestResourceImportValidator:
                 {"name": "a" * 300},
                 1,
             ),
-            # description 超长 (限制 512)
+            # description 超长 (限制 2048)
             (
-                {"description": "a" * 600},
+                {"description": "a" * 2100},
                 1,
             ),
-            # description_en 超长 (限制 512)
+            # description_en 超长 (限制 2048)
             (
-                {"description_en": "a" * 600},
+                {"description_en": "a" * 2100},
                 1,
             ),
             # path 超长 (限制 2048)
@@ -388,17 +388,17 @@ class TestResourceImportValidator:
             ),
             # 多个字段同时超长
             (
-                {"name": "a" * 300, "description": "a" * 600},
+                {"name": "a" * 300, "description": "a" * 2100},
                 2,
             ),
             # 边界情况：刚好在限制内
             (
-                {"name": "a" * 256, "description": "a" * 512},
+                {"name": "a" * 256, "description": "a" * 2048},
                 0,
             ),
             # 边界情况：刚好超出限制
             (
-                {"name": "a" * 257, "description": "a" * 513},
+                {"name": "a" * 257, "description": "a" * 2049},
                 2,
             ),
             # 空值不校验
