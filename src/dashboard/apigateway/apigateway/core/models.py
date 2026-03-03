@@ -254,7 +254,7 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     """
 
     name = models.CharField(max_length=256, default="", blank=True, null=True)
-    description_i18n = I18nProperty(models.CharField(max_length=512, default=None, blank=True, null=True))
+    description_i18n = I18nProperty(models.CharField(max_length=2048, default=None, blank=True, null=True))
     description = description_i18n.default_field(default="")
     description_en = description_i18n.field("en")
 

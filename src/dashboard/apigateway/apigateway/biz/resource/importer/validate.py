@@ -225,8 +225,8 @@ class ResourceImportValidator:
         # 定义字段长度限制，与 Resource 模型保持一致
         field_limits = {
             "name": 256,
-            "description": 512,
-            "description_en": 512,
+            "description": 2048,
+            "description_en": 2048,
             "path": 2048,
         }
 
