@@ -117,6 +117,9 @@ class GatewaySyncApi(generics.CreateAPIView):
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
+        # TODO: if bp- and edition is te, should bind to another data plane
+        #       we need a dp route table to determine the data plane to bind to
+
         # Convert data_plane_names to data_plane_ids if provided
         data_plane_ids = None
         data_plane_names = slz.validated_data.get("data_planes")

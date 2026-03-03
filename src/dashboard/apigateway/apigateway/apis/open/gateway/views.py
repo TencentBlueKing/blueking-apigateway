@@ -223,6 +223,9 @@ class GatewaySyncApi(generics.CreateAPIView):
 
         # Convert data_plane_names to data_plane_ids if provided
         data_plane_ids = None
+
+        # TODO: if bp- and edition is te, should bind to another data plane
+        #       we need a dp route table to determine the data plane to bind to
         data_plane_names = data.get("data_planes")
         if data_plane_names:
             data_plane_ids = []

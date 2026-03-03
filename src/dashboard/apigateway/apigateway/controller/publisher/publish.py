@@ -53,6 +53,9 @@ def _trigger_rolling_update(
         # Get active data planes for this gateway - must have at least one
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(release.gateway_id)
 
+        # a gateway should have at least one active data plane. The creation ensure this.
+        # skip the gateway_id without active data planes
+        # log error instead of raise exception
         if not data_planes:
             logger.error(
                 "Gateway (id=%s) has no active data planes, cannot trigger rolling update",

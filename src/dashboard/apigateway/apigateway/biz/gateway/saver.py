@@ -170,11 +170,15 @@ class GatewaySaver:
                 data_planes_to_bind.append(default_data_plane)
             else:
                 logger.error(
-                    "No data planes to bind for gateway '%s' and no '%s' data plane found",
+                    "No data planes to bind for gateway '%s', fallback to bind '%s' data plane failed, not found",
                     gateway.name,
                     DEFAULT_DATA_PLANE_NAME,
                 )
-                return
+                raise ValueError(
+                    "No data planes to bind for gateway '%s', fallback to bind '%s' data plane failed, not found",
+                    gateway.name,
+                    DEFAULT_DATA_PLANE_NAME,
+                )
 
         # Bind to all resolved data planes
         for data_plane in data_planes_to_bind:
