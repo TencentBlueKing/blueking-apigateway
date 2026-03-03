@@ -27,64 +27,47 @@
       >
         {{ t("批量审批") }}
       </BkButton>
-      <BkForm class="flex header-filter">
-        <BkFormItem label-width="108">
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('授权维度') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkSelect
-                v-model="filterData.grant_dimension"
-                class="w-150px"
-              >
-                <BkOption
-                  v-for="option of AUTHORIZATION_DIMENSION"
-                  :id="option.id"
-                  :key="option.id"
-                  :name="option.name"
-                />
-              </BkSelect>
-            </div>
-          </div>
+      <BkForm
+        class="flex header-filter"
+        label-width="120"
+      >
+        <BkFormItem :label="t('蓝鲸应用ID')">
+          <BkInput
+            v-model="filterData.bk_app_code"
+            class="w-282px"
+            clearable
+            :placeholder="t('请输入应用ID')"
+          />
         </BkFormItem>
-        <BkFormItem label-width="119">
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('蓝鲸应用ID') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkInput
-                v-model="filterData.bk_app_code"
-                class="w-150px"
-                clearable
-                :placeholder="t('请输入应用ID')"
-              />
-            </div>
-          </div>
+        <BkFormItem
+          :label="t('授权维度')"
+        >
+          <BkSelect
+            v-model="filterData.grant_dimension"
+            class="w-282px"
+          >
+            <BkOption
+              v-for="option of AUTHORIZATION_DIMENSION"
+              :id="option.id"
+              :key="option.id"
+              :name="option.name"
+            />
+          </BkSelect>
         </BkFormItem>
         <BkFormItem
           v-if="!featureFlagStore.isTenantMode"
-          label-width="90"
+          :label="t('申请人')"
         >
-          <div class="flex">
-            <div class="form-item-label">
-              {{ t('申请人') }}
-            </div>
-            <div class="form-item-value flex-none">
-              <BkInput
-                v-model="filterData.applied_by"
-                class="w-150px"
-                clearable
-                :placeholder="t('请输入用户')"
-              />
-            </div>
-          </div>
+          <BkInput
+            v-model="filterData.applied_by"
+            class="w-282px"
+            clearable
+            :placeholder="t('请输入用户')"
+          />
         </BkFormItem>
         <BkFormItem
           v-else
           :label="t('申请人')"
-          label-width="90"
         >
           <BkUserSelector
             v-model="filterData.applied_by"
@@ -121,7 +104,6 @@
       >
         <template #expandedRow="{row}">
           <AgTable
-            :ref="(el: HTMLElement) => (childPermTableRef[row.id] = el)"
             v-model:table-data="row.resourceList"
             size="small"
             class="ag-expand-table"
@@ -223,7 +205,6 @@ const { t } = useI18n();
 
 const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
 const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
-const childPermTableRef = ref([]);
 const tableData = ref([]);
 const selections = ref([]);
 const selectedRowKeys = ref([]);
@@ -340,36 +321,28 @@ watch(
   { deep: true },
 );
 
+const setRowResources = () => {
+  tableData.value.forEach((row) => {
+    row.isSelectAll = true;
+    row.selection = [];
+    row.resourceList = sortByKey(resourceList.value.filter(resource => row.resource_ids.includes(resource.id)), 'path');
+  });
+};
+
 watch(
-  () => tableData,
-  (tables: IApprovalListItem[]) => {
-    tableData.value = initResourceList(tables.value);
+  resourceList,
+  () => {
+    setRowResources();
   },
-  { immediate: true },
+  {
+    deep: true,
+    immediate: true,
+  },
 );
 
 function getList() {
   permissionTableRef.value?.fetchData(filterData.value, { resetPage: true });
-};
-
-function initResourceList(resourceArr: IApprovalListItem[]) {
-  resourceArr.forEach((applyItem) => {
-    const results = [];
-    applyItem.resource_ids.forEach((resourceId: number) => {
-      resourceList.value.forEach((item) => {
-        if (item.id === resourceId) {
-          results.push(item);
-        }
-      });
-    });
-    applyItem = Object.assign(applyItem, {
-      isSelectAll: true,
-      selection: [],
-      resourceList: sortByKey(results, 'path'),
-    });
-  });
-  return resourceArr;
-};
+}
 
 function handleSearch() {
   getList();
@@ -404,7 +377,7 @@ const getTableColumns = computed(() => {
                 size="10"
                 class="mr-4px"
               />
-              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
+              {`${row.grant_dimension_display} (${row.resourceList?.length || '--'})`}
             </div>
           );
         }
@@ -432,9 +405,9 @@ const getTableColumns = computed(() => {
       title: t('申请人'),
       ellipsis: true,
       cell: (h, { row }: { row?: Partial<IApprovalListItem> }) =>
-        !featureFlagStore.isEnableDisplayName
-          ? <span>{row.applied_by}</span>
-          : <span><bk-user-display-name user-id={row.applied_by} /></span>,
+        featureFlagStore.isEnableDisplayName
+          ? <span><bk-user-display-name user-id={row.applied_by} /></span>
+          : <span>{row.applied_by}</span>,
     },
     {
       colKey: 'created_time',
@@ -547,14 +520,14 @@ const getResourceList = async () => {
   };
   const { results } = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = results || [];
-  tableData.value = initResourceList(tableData.value);
 };
 
 const handleRequestDone = () => {
   const pageConf = permissionTableRef.value?.getPagination();
   if (pageConf) {
-    permissionStore.setCount(pageConf.total);
+    permissionStore.setCount(pageConf.total || 0);
   }
+  getResourceList();
 };
 
 // 批量审批
@@ -731,13 +704,14 @@ const handleClearSelection = () => {
   tableRef.value.handleResetSelection();
   selections.value = [];
 };
-
-onMounted(() => {
-  getResourceList();
-});
 </script>
 
 <style lang="scss" scoped>
+.permission-apply-container {
+  .apply-content {
+    border: 1px solid #DCDEE5;
+  }
+}
 .apply-expand-alert {
   padding: 20px;
   line-height: 60px;
@@ -773,6 +747,7 @@ onMounted(() => {
 }
 
 :deep(.t-table__header) {
+
   .t-table__ellipsis {
     font-weight: 700 !important;
     color: #63656e !important;
@@ -780,6 +755,7 @@ onMounted(() => {
 }
 
 :deep(.t-table__expanded-row) {
+
   .t-table__row-full-element {
     padding: 0;
   }
@@ -793,6 +769,7 @@ onMounted(() => {
 }
 
 :deep(.perm-apply-dot) {
+
   .dot {
     display: inline-block;
     width: 8px;

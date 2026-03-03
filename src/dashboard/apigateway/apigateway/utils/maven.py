@@ -27,6 +27,8 @@ class RepositoryConfig:
     repository_id: str
     username: str
     password: str
+    ssl_insecure: bool = False
+    mirror_url: str = ""
 
     @classmethod
     def by_name(cls, name: str):
@@ -38,4 +40,6 @@ class RepositoryConfig:
             repository_id=maven_config.get("repository_id", ""),
             username=maven_config.get("username", ""),
             password=maven_config.get("password", ""),
+            ssl_insecure=maven_config.get("ssl_insecure", False),
+            mirror_url=maven_config.get("mirror_url", ""),
         )

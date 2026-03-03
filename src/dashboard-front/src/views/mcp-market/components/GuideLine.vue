@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -145,20 +145,24 @@ const md = new MarkdownIt({
   },
 });
 
+const isShowGuideSlider = ref(false);
 const markdownText = ref('');
 const markdownHtml = ref('');
 const guideType = ref('');
 const activeTab = ref('default');
-const isShowGuideSlider = ref(false);
 
 const serverId = computed(() => route.params.serverId);
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
-  if (page === 'market') {
+  if (!page) {
     return '100%';
   }
-  const offsetH = isShowNoticeAlert.value ? 400 : 360;
-  return `calc(100vh - ${offsetH}px)`;
+  // if (page === 'market') {
+  //   return '100%';
+  // }
+  // const offsetH = isShowNoticeAlert.value ? 416 : 376;
+  // return `calc(100vh - ${offsetH}px)`;
+  return isShowNoticeAlert.value ? 'calc(100% - 40px)' : '100%';
 });
 
 watch(
@@ -231,7 +235,6 @@ const handleGuideConfirm = () => {
 .guide-line-content {
   padding: 0 24px 40px 48px;
   background-color: #ffffff;
-  overflow-y: auto;
 
   .usage-guide-list {
     box-sizing: border-box;

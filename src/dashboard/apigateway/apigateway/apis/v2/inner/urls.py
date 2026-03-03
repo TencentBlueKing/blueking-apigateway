@@ -42,7 +42,16 @@ urlpatterns = [
                     include(
                         [
                             # GET /api/v2/inner/gateways/{gateway_name}/
-                            path("", views.GatewayRetrieveApi.as_view(), name="openapi.v2.inner.gateway.retrieve"),
+                            # DELETE /api/v2/inner/gateways/{gateway_name}/
+                            path(
+                                "", views.GatewayRetrieveDestroyApi.as_view(), name="openapi.v2.inner.gateway.retrieve"
+                            ),
+                            # PUT /api/v2/inner/gateways/{gateway_name}/status/
+                            path(
+                                "status/",
+                                views.GatewayUpdateStatusApi.as_view(),
+                                name="openapi.v2.inner.gateway.update_status",
+                            ),
                             path(
                                 "permissions/",
                                 include(
@@ -138,6 +147,19 @@ urlpatterns = [
                     "apply-records/<int:record_id>/",
                     views.MCPServerAppPermissionRecordRetrieveApi.as_view(),
                     name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+                ),
+            ]
+        ),
+    ),
+    path(
+        "mcp-servers/",
+        include(
+            [
+                # GET /api/v2/inner/mcp-servers/
+                path(
+                    "",
+                    views.MCPServerListApi.as_view(),
+                    name="openapi.v2.inner.mcp_server.list",
                 ),
             ]
         ),

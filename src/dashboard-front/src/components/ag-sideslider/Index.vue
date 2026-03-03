@@ -27,6 +27,7 @@
     :ext-cls="extCls"
     :direction="direction"
     :before-close="handleBeforeClose"
+    v-bind="$attrs"
     @closed="emit('closed')"
   >
     <template
@@ -139,8 +140,8 @@ const handleBeforeClose = async () => {
 }
 
 .drawer-footer {
-  height: 54px;
   display: flex;
+  height: 54px;
   align-items: center;
   flex-shrink: 0;
 }

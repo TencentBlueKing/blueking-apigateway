@@ -19,6 +19,7 @@
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -27,6 +28,8 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -37,6 +40,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermission,
     MCPServerAppPermissionApply,
+    MCPServerCategory,
     MCPServerExtend,
 )
 from apigateway.biz.audit import Auditor
@@ -61,8 +65,12 @@ from .serializers import (
     MCPServerAppPermissionCreateInputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
+    MCPServerCategoryOutputSLZ,
+    MCPServerConfigListOutputSLZ,
     MCPServerCreateInputSLZ,
+    MCPServerFilterOptionsOutputSLZ,
     MCPServerGuidelineOutputSLZ,
+    MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
     MCPServerRemotePromptsBatchInputSLZ,
     MCPServerRemotePromptsBatchOutputSLZ,
@@ -85,6 +93,7 @@ from .serializers import (
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取网关的 MCPServer 列表",
+        query_serializer=MCPServerListInputSLZ,
         responses={status.HTTP_200_OK: MCPServerListOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
@@ -100,7 +109,59 @@ from .serializers import (
 )
 class MCPServerListCreateApi(generics.ListCreateAPIView):
     def list(self, request, *args, **kwargs):
-        queryset = MCPServer.objects.filter(gateway=self.request.gateway).order_by("-status", "-updated_time")
+        slz = MCPServerListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = (
+            MCPServer.objects.filter(gateway=self.request.gateway)
+            .select_related("stage")
+            .prefetch_related("categories")
+        )
+
+        # 关键词搜索
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            queryset = queryset.filter(
+                Q(name__icontains=keyword)
+                | Q(title__icontains=keyword)
+                | Q(description__icontains=keyword)
+                | Q(_labels__icontains=keyword)
+            )
+
+        # 状态筛选
+        filter_status = slz.validated_data.get("status")
+        if filter_status is not None:
+            queryset = queryset.filter(status=filter_status)
+
+        # 环境筛选
+        stage_id = slz.validated_data.get("stage_id")
+        if stage_id is not None:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        # 标签筛选
+        label = slz.validated_data.get("label")
+        if label:
+            queryset = queryset.filter(_labels__icontains=label)
+
+        # 分类筛选（支持多个分类）
+        # 当选择的分类中包含 Official 或 Featured 时，使用 AND 逻辑，确保返回的结果同时满足所有选择的分类
+        # 当选择的分类中不包含这些特殊分类时，使用 OR 逻辑
+        categories = slz.validated_data.get("categories")
+        if categories:
+            special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
+            if special_categories & set(categories):
+                # 包含 Official 或 Featured 分类时，使用 AND 逻辑：必须同时属于所有选择的分类
+                for category in categories:
+                    queryset = queryset.filter(categories__name=category, categories__is_active=True)
+                queryset = queryset.distinct()
+            else:
+                # 不包含特殊分类时，使用 OR 逻辑：属于任意一个选择的分类即可
+                queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
+
+        # 排序（支持多字段排序，如 "-status,-updated_time"）
+        order_by = slz.validated_data.get("order_by", "-status,-updated_time")
+        order_fields = [field.strip() for field in order_by.split(",") if field.strip()]
+        queryset = queryset.order_by(*order_fields) if order_fields else queryset.order_by("-status", "-updated_time")
 
         page = self.paginate_queryset(queryset)
 
@@ -116,10 +177,17 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
 
+        # 获取应用态权限安全风险信息
+        app_permission_risks = MCPServerHandler.get_app_permission_risks(page)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
-            context={"stages": stages, "prompts_count_map": prompts_count_map},
+            context={
+                "stages": stages,
+                "prompts_count_map": prompts_count_map,
+                "app_permission_risks": app_permission_risks,
+            },
         )
 
         return self.get_paginated_response(slz.data)
@@ -140,6 +208,9 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
 
         slz.save()
+
+        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
+        MCPServerHandler.sync_permissions(slz.instance.id)
 
         # record audit log
         Auditor.record_mcp_server_op_success(
@@ -190,7 +261,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
-    queryset = MCPServer.objects.all()
+    queryset = MCPServer.objects.select_related("stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
@@ -206,7 +277,16 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         prompts = MCPServerHandler.get_prompts(instance.id)
 
-        serializer = self.get_serializer(instance, context={"stages": stages, "prompts": prompts})
+        app_permission_risks = MCPServerHandler.get_app_permission_risks([instance])
+
+        serializer = self.get_serializer(
+            instance,
+            context={
+                "stages": stages,
+                "prompts": prompts,
+                "app_permission_risks": app_permission_risks,
+            },
+        )
         return OKJsonResponse(data=serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -228,7 +308,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         slz.is_valid(raise_exception=True)
         slz.save(updated_by=request.user.username)
 
-        # sync the permissions, if any changes in the resource_names
+        # sync permissions (includes oauth2 public app permission based on oauth2_public_client_enabled)
         MCPServerHandler.sync_permissions(instance.id)
 
         Auditor.record_mcp_server_op_success(
@@ -403,6 +483,27 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         slz = self.get_serializer({"content": content})
 
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerConfigListApi(generics.RetrieveAPIView):
+    """获取 MCPServer 配置列表，支持多种 AI 工具的配置"""
+
+    queryset = MCPServer.objects.all()
+    serializer_class = MCPServerConfigListOutputSLZ
+    lookup_url_kwarg = "mcp_server_id"
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        configs = MCPServerHandler.build_agent_client_configs(instance)
+        return OKJsonResponse(data={"configs": configs})
 
 
 @method_decorator(
@@ -707,7 +808,7 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         slz = MCPServerAppPermissionApplyListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -723,8 +824,14 @@ class MCPServerAppPermissionApplyListApi(MCPServerAppPermissionApplyQuerySetMixi
         else:
             status_list = [MCPServerAppPermissionApplyStatusEnum.PENDING.value]
 
+        # 根据 mcp_server_id 查询参数过滤，不传则查询当前网关下所有
+        queryset = MCPServerAppPermissionApply.objects.filter(mcp_server__gateway=request.gateway)
+        mcp_server_id = data.get("mcp_server_id")
+        if mcp_server_id:
+            queryset = queryset.filter(mcp_server_id=mcp_server_id)
+
         queryset = MCPServerAppPermissionApply.objects.filter_app_permission_apply(
-            self.get_queryset(),
+            queryset,
             status_list,
             data.get("bk_app_code"),
             data.get("applied_by"),
@@ -840,3 +947,74 @@ class MCPServerRemotePromptsBatchApi(generics.CreateAPIView):
 
         output_slz = MCPServerRemotePromptsBatchOutputSLZ({"prompts": prompts})
         return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取可用的 MCPServer 分类列表（排除官方和精选）",
+        responses={status.HTTP_200_OK: MCPServerCategoryOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerCategoriesListApi(generics.ListAPIView):
+    """获取可用的 MCPServer 分类列表，排除官方和精选分类"""
+
+    def list(self, request, *args, **kwargs):
+        # 排除官方和精选分类，只返回用户可选择的分类
+        excluded_names = [
+            OFFICIAL_MCP_CATEGORY_NAME,
+            FEATURED_MCP_CATEGORY_NAME,
+        ]
+
+        queryset = (
+            MCPServerCategory.objects.filter(is_active=True)
+            .exclude(name__in=excluded_names)
+            .order_by("sort_order", "id")
+        )
+
+        slz = MCPServerCategoryOutputSLZ(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取 MCPServer 搜索过滤选项（环境、标签、分类），用于前端下拉列表",
+        responses={status.HTTP_200_OK: MCPServerFilterOptionsOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerFilterOptionsApi(generics.ListAPIView):
+    """获取 MCPServer 搜索过滤选项，用于前端下拉列表"""
+
+    serializer_class = MCPServerFilterOptionsOutputSLZ
+
+    def list(self, request, *args, **kwargs):
+        gateway = self.request.gateway
+
+        # 获取环境列表
+        stages = [
+            {"id": stage.id, "name": stage.name} for stage in Stage.objects.filter(gateway=gateway).order_by("id")
+        ]
+
+        # 获取所有标签（从该网关的 MCPServer 中提取所有唯一标签）
+        mcp_servers = MCPServer.objects.filter(gateway=gateway)
+        labels_set = set()
+        for mcp_server in mcp_servers:
+            if mcp_server.labels:
+                labels_set.update(mcp_server.labels)
+        labels = sorted(labels_set)
+
+        categories = [
+            {"id": cat.id, "name": cat.name, "display_name": cat.display_name}
+            for cat in MCPServerCategory.objects.filter(is_active=True).order_by("sort_order", "id")
+        ]
+
+        return OKJsonResponse(
+            data={
+                "stages": stages,
+                "labels": labels,
+                "categories": categories,
+            }
+        )

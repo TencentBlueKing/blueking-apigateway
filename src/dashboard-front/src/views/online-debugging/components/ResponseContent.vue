@@ -65,7 +65,7 @@
               @click="stopPropagation"
             >
               <div
-                v-if="userStore.isAIEnabled"
+                v-if="featureFlagStore.isAIEnabled"
                 class="response-status-item"
               >
                 <AiBluekingButton @click="handleAIClick" />
@@ -194,7 +194,7 @@
       </BkCollapsePanel>
     </BkCollapse>
     <AiChatSlider
-      v-if="userStore.isAIEnabled"
+      v-if="featureFlagStore.isAIEnabled"
       v-model="isAISliderShow"
       :message="aiRequestMessage"
       :title="t('状态分析')"
@@ -203,7 +203,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useUserInfo } from '@/stores';
+import { useFeatureFlag } from '@/stores';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
@@ -224,7 +224,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const userStore = useUserInfo();
+const featureFlagStore = useFeatureFlag();
 
 const activeIndex = ref<number[]>([]);
 const tabActive = ref<string>('body');

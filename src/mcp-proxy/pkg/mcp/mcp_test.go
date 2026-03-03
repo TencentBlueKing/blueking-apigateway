@@ -73,6 +73,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -98,6 +99,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -137,6 +139,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -167,7 +170,7 @@ var _ = Describe("MCP", func() {
 				newOpenapiSpec.Paths.Set("/users", newPathItem)
 
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"},
+					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"}, nil,
 				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(server.GetResourceVersionID()).To(Equal(2))
@@ -188,6 +191,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -211,6 +215,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -235,6 +240,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -252,6 +258,7 @@ var _ = Describe("MCP", func() {
 					2,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -277,6 +284,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -294,6 +302,7 @@ var _ = Describe("MCP", func() {
 					2,
 					openapiSpec,
 					[]string{},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -329,6 +338,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -367,6 +377,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers", "createUser"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -418,6 +429,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -454,7 +466,7 @@ var _ = Describe("MCP", func() {
 
 				// 使用相同的 resourceVersionID 更新（模拟 resource_names 变化但版本不变的场景）
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 1, openapiSpec, newResourceNames,
+					server, "test-server", 1, openapiSpec, newResourceNames, nil,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -493,6 +505,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers", "createUser"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -550,6 +563,7 @@ var _ = Describe("MCP", func() {
 					1,
 					openapiSpec,
 					[]string{"getUsers"},
+					nil,
 					constant.MCPServerProtocolTypeSSE,
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -578,6 +592,192 @@ var _ = Describe("MCP", func() {
 				}
 				// 有新工具 createUser
 				Expect(hasNewTools).To(BeTrue())
+			})
+		})
+
+		Describe("Tool Name Mapping", func() {
+			It("should use tool name mapping when adding server", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				// 使用工具名映射
+				toolNameMap := map[string]string{
+					"getUsers":   "list_users",
+					"createUser": "add_user",
+				}
+
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers", "createUser"},
+					toolNameMap,
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+
+				// 验证工具名使用了映射后的名称
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("list_users"))
+				Expect(tools).To(ContainElement("add_user"))
+				Expect(tools).NotTo(ContainElement("getUsers"))
+				Expect(tools).NotTo(ContainElement("createUser"))
+			})
+
+			It("should use original name when tool name mapping is nil", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					nil,
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+
+				// 验证工具名使用了原始名称
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("getUsers"))
+			})
+
+			It("should update server with tool name mapping", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				// 初始使用原始名称
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers"},
+					nil,
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+				Expect(server.GetTools()).To(ContainElement("getUsers"))
+
+				// 使用工具名映射进行更新
+				toolNameMap := map[string]string{
+					"getUsers":   "list_users",
+					"createUser": "add_user",
+				}
+
+				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
+					server, "test-server", 2, openapiSpec, []string{"getUsers", "createUser"}, toolNameMap,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				// 验证新工具名使用了映射后的名称
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("list_users"))
+				Expect(tools).To(ContainElement("add_user"))
+			})
+
+			It("should handle partial tool name mapping", func() {
+				openapiSpec := &openapi3.T{
+					OpenAPI: "3.0.0",
+					Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+					Servers: []*openapi3.Server{{URL: "https://api.example.com"}},
+					Paths:   &openapi3.Paths{},
+				}
+
+				pathItem := &openapi3.PathItem{
+					Get: &openapi3.Operation{
+						OperationID: "getUsers",
+						Summary:     "Get users",
+						Responses:   &openapi3.Responses{},
+					},
+					Post: &openapi3.Operation{
+						OperationID: "createUser",
+						Summary:     "Create user",
+						Responses:   &openapi3.Responses{},
+					},
+				}
+				openapiSpec.Paths.Set("/users", pathItem)
+
+				// 只映射部分工具名
+				toolNameMap := map[string]string{
+					"getUsers": "list_users",
+					// createUser 不在映射中，应该使用原始名称
+				}
+
+				err := mcpProxy.AddMCPServerFromOpenAPISpec(
+					"test-server",
+					1,
+					openapiSpec,
+					[]string{"getUsers", "createUser"},
+					toolNameMap,
+					constant.MCPServerProtocolTypeSSE,
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				server := mcpProxy.GetMCPServer("test-server")
+				Expect(server).NotTo(BeNil())
+
+				tools := server.GetTools()
+				Expect(tools).To(ContainElement("list_users"))
+				Expect(tools).To(ContainElement("createUser"))
 			})
 		})
 	})

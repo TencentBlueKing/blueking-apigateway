@@ -355,8 +355,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.McpServer.MessageUrlFormat).NotTo(BeEmpty())
 			Expect(cfg.McpServer.MessageApplicationUrlFormat).NotTo(BeEmpty())
 			Expect(cfg.McpServer.InnerJwtExpireTime).NotTo(BeZero())
-			Expect(cfg.PProf.Username).NotTo(BeEmpty())
-			Expect(cfg.PProf.Password).NotTo(BeEmpty())
 		})
 
 		It("should fail with invalid TLS config", func() {

@@ -23,6 +23,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -32,14 +34,112 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermissionApply,
+    MCPServerCategory,
 )
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
+from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 logger = logging.getLogger(__name__)
+
+
+class MCPServerCategoryOutputSLZ(serializers.Serializer):
+    """MCPServer 分类输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="分类 ID")
+    name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
+    display_name = serializers.SerializerMethodField(help_text="分类显示名称（根据语言环境返回）")
+    description = serializers.CharField(read_only=True, help_text="分类描述")
+    sort_order = serializers.IntegerField(read_only=True, help_text="排序顺序")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCategoryOutputSLZ"
+
+    def get_display_name(self, obj) -> str:
+        """根据当前语言环境返回分类名称：英文环境返回 name，中文环境返回 display_name"""
+        language_code = get_current_language_code()
+        # 英文环境返回 name，否则返回 display_name
+        if language_code == LanguageCodeEnum.EN.value:
+            return obj.name
+        return obj.display_name
+
+
+class MCPServerListInputSLZ(serializers.Serializer):
+    """MCPServer 列表查询输入序列化器"""
+
+    keyword = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
+    )
+    status = serializers.ChoiceField(
+        choices=MCPServerStatusEnum.get_choices(),
+        required=False,
+        help_text="MCPServer 状态筛选",
+    )
+    stage_id = serializers.IntegerField(
+        required=False,
+        help_text="环境 ID 筛选",
+    )
+    label = serializers.CharField(allow_blank=True, required=False, help_text="标签筛选")
+    categories = serializers.CharField(
+        allow_blank=True, required=False, help_text="分类筛选，支持单个或多个分类名称，多个分类以逗号分隔"
+    )
+    order_by = serializers.ChoiceField(
+        choices=[
+            ("updated_time", "按更新时间排序"),
+            ("-updated_time", "按更新时间倒序"),
+            ("created_time", "按创建时间排序"),
+            ("-created_time", "按创建时间倒序"),
+            ("name", "按名称字母顺序排序"),
+            ("-name", "按名称字母倒序排序"),
+            ("-status", "按状态排序（启用优先）"),
+        ],
+        default="-status,-updated_time",
+        required=False,
+        help_text="排序方式",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerListInputSLZ"
+
+    def validate_categories(self, value):
+        """解析分类参数，支持多个分类名称（逗号分隔）"""
+        if not value:
+            return []
+        # 解析逗号分隔的分类名称，去除空白
+        return [cat.strip() for cat in value.split(",") if cat.strip()]
+
+
+def validate_category_ids_common(category_ids: List[int]) -> List[int]:
+    """
+    通用的分类 ID 验证逻辑，检查分类是否存在且启用。
+
+    Args:
+        category_ids: 分类 ID 列表
+
+    Returns:
+        验证通过的分类 ID 列表
+
+    Raises:
+        serializers.ValidationError: 如果存在无效的分类 ID
+    """
+    if not category_ids:
+        return category_ids
+
+    # 检查分类是否存在且启用
+    valid_categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+    valid_category_ids = set(valid_categories.values_list("id", flat=True))
+
+    invalid_ids = set(category_ids) - valid_category_ids
+    if invalid_ids:
+        raise serializers.ValidationError(
+            _("分类 ID 列表中包含无效的分类：{}").format(", ".join(map(str, invalid_ids)))
+        )
+
+    return category_ids
 
 
 def _fill_prompts_content(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -118,6 +218,17 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=MCPServerProtocolTypeEnum.SSE.value,
         help_text="MCPServer 协议类型",
     )
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text="MCPServer 分类 ID 列表",
+    )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
@@ -133,6 +244,8 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "tool_names",
             "prompts",
             "protocol_type",
+            "category_ids",
+            "oauth2_public_client_enabled",
         )
         lookup_field = "id"
         validators = [MCPServerValidator()]
@@ -167,10 +280,15 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
 
         return tool_names
 
+    def validate_category_ids(self, category_ids):
+        """验证分类 ID 列表"""
+        return validate_category_ids_common(category_ids)
+
     def create(self, validated_data):
         prompts = validated_data.pop("prompts", [])
         resource_names = validated_data.pop("resource_names")
         tool_names = validated_data.pop("tool_names")
+        category_ids = validated_data.pop("category_ids", [])
 
         validated_data["gateway_id"] = self.context["gateway"].id
         validated_data["created_by"] = self.context["created_by"]
@@ -180,6 +298,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         instance = MCPServer(**validated_data)
         instance.update_resource_names(resource_names, tool_names)
         instance.save()
+
+        # 设置分类
+        if category_ids:
+            categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+            instance.categories.set(categories)
 
         # 保存 prompts
         if prompts:
@@ -224,9 +347,21 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="MCP 协议类型", choices=MCPServerProtocolTypeEnum.get_choices()
     )
 
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
     updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 创建时间")
+
+    # 分类信息
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方")
+    is_featured = serializers.SerializerMethodField(help_text="是否为精选")
+
+    app_permission_risk = serializers.SerializerMethodField(help_text="应用态权限安全风险信息")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBaseOutputSLZ"
@@ -236,6 +371,32 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name, obj.protocol_type)
+
+    def get_categories(self, obj):
+        """获取分类信息，利用预加载的数据避免 N+1 查询"""
+        # 使用预取的 categories 关系数据
+        categories = obj.categories.all()
+        # 在内存中过滤和排序
+        active_categories = sorted(
+            (cat for cat in categories if cat.is_active),
+            key=lambda cat: cat.sort_order,
+        )
+        return MCPServerCategoryOutputSLZ(active_categories, many=True).data
+
+    def get_is_official(self, obj) -> bool:
+        """是否为官方，利用预加载的数据避免 N+1 查询"""
+        categories = obj.categories.all()
+        return any(cat.name == OFFICIAL_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
+
+    def get_is_featured(self, obj) -> bool:
+        """是否为精选，利用预加载的数据避免 N+1 查询"""
+        categories = obj.categories.all()
+        return any(cat.name == FEATURED_MCP_CATEGORY_NAME and cat.is_active for cat in categories)
+
+    def get_app_permission_risk(self, obj) -> Dict[str, Any]:
+        app_permission_risks = self.context.get("app_permission_risks", {})
+        risk_tools = app_permission_risks.get(obj.id, [])
+        return {"has_risk": bool(risk_tools), "risk_tools": risk_tools}
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):
@@ -277,6 +438,15 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="MCP 协议类型",
     )
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="MCPServer 分类 ID 列表",
+    )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
+    )
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
@@ -308,6 +478,10 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
         return tool_names
 
+    def validate_category_ids(self, category_ids):
+        """验证分类 ID 列表"""
+        return validate_category_ids_common(category_ids)
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateInputSLZ"
         model = MCPServer
@@ -320,11 +494,14 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "tool_names",
             "prompts",
             "protocol_type",
+            "category_ids",
+            "oauth2_public_client_enabled",
         )
         lookup_field = "id"
 
     def update(self, instance, validated_data):
         prompts = validated_data.pop("prompts", None)
+        category_ids = validated_data.pop("category_ids", None)
 
         resource_names = validated_data.pop("resource_names", None)
         tool_names = validated_data.pop("tool_names", None)
@@ -345,6 +522,14 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
 
         # 一次性保存所有更改
         instance.save()
+
+        # 更新分类
+        if category_ids is not None:
+            if category_ids:
+                categories = MCPServerCategory.objects.filter(id__in=category_ids, is_active=True)
+                instance.categories.set(categories)
+            else:
+                instance.categories.clear()
 
         # 如果传入了 prompts，则更新
         if prompts is not None:
@@ -513,6 +698,7 @@ class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
 
 
 class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
+    mcp_server_id = serializers.IntegerField(required=False, help_text="MCPServer ID，不传则查询所有")
     bk_app_code = serializers.CharField(required=False, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, help_text="申请人")
     state = serializers.ChoiceField(
@@ -611,3 +797,53 @@ class MCPServerRemotePromptsBatchOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerRemotePromptsBatchOutputSLZ"
+
+
+class MCPServerFilterOptionsOutputSLZ(serializers.Serializer):
+    """MCPServer 搜索过滤选项输出序列化器，用于前端下拉列表"""
+
+    stages = serializers.ListField(
+        child=serializers.DictField(),
+        read_only=True,
+        help_text="可用的环境列表",
+    )
+    labels = serializers.ListField(
+        child=serializers.CharField(),
+        read_only=True,
+        help_text="所有可用的标签列表",
+    )
+    categories = serializers.ListField(
+        child=serializers.DictField(),
+        read_only=True,
+        help_text="可用的分类列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerFilterOptionsOutputSLZ"
+
+
+class MCPServerConfigItemOutputSLZ(serializers.Serializer):
+    """MCPServer 单个配置项输出序列化器"""
+
+    name = serializers.CharField(read_only=True, help_text="配置名称（如 cursor, codebuddy, claude, aidev）")
+    display_name = serializers.CharField(read_only=True, help_text="配置显示名称")
+    content = serializers.CharField(read_only=True, help_text="配置内容（markdown 格式）")
+    install_url = serializers.CharField(
+        read_only=True, allow_blank=True, required=False, help_text="一键配置 URL（如果支持）"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigItemOutputSLZ"
+
+
+class MCPServerConfigListOutputSLZ(serializers.Serializer):
+    """MCPServer 配置列表输出序列化器"""
+
+    configs = serializers.ListField(
+        child=MCPServerConfigItemOutputSLZ(),
+        read_only=True,
+        help_text="配置列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigListOutputSLZ"

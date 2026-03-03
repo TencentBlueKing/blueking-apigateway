@@ -31,29 +31,27 @@
     </div>
     <div
       v-if="!readonly && !disabled"
-      class="text-right mb-6px"
+      class="mb-16px"
     >
       <IconButton
-        text
         theme="primary"
-        icon="upload"
-        @click="handleImportSchema"
+        @click="handleEditJSON"
       >
         {{ t('通过 JSON 生成') }}
       </IconButton>
     </div>
-    <BkTable
+    <AgTable
       v-if="!disabled"
-      ref="tableRef"
-      :cell-class="getCellClass"
       :data="tableData"
-      :border="['outer', 'row']"
       class="request-params-table"
-      row-hover="auto"
-      @vue:mounted="handleTableMounted"
+      :immediate="false"
+      :show-pagination="false"
+      bordered
+      :expand-icon="false"
+      :expanded-row-keys="expandedRowKeys"
     >
-      <BkTableColumn
-        :label="t('参数名')"
+      <TableColumn
+        :title="t('参数名')"
         prop="name"
       >
         <template #default="{ row }">
@@ -88,11 +86,11 @@
             </template>
           </BkInput>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('位置')"
+      </TableColumn>
+      <TableColumn
+        :title="t('位置')"
         prop="in"
-        width="100"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -119,11 +117,11 @@
             />
           </BkSelect>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('类型')"
+      </TableColumn>
+      <TableColumn
+        :title="t('类型')"
         prop="type"
-        width="100"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -149,9 +147,9 @@
             />
           </BkSelect>
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('必填')"
+      </TableColumn>
+      <TableColumn
+        :title="t('必填')"
         prop="required"
         width="100"
       >
@@ -170,11 +168,10 @@
             theme="primary"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('默认值')"
-        :width="readonly ? 150 : 300"
-        prop="default"
+      </TableColumn>
+      <TableColumn
+        :title="t('默认值')"
+        :width="readonly ? 160 : 300"
       >
         <template #default="{ row }">
           <div
@@ -192,11 +189,10 @@
             class="edit-input"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
-        :label="t('备注')"
-        prop="description"
-        width="300"
+      </TableColumn>
+      <TableColumn
+        :title="t('备注')"
+        width="260"
       >
         <template #default="{ row }">
           <div
@@ -213,15 +209,15 @@
             class="edit-input"
           />
         </template>
-      </BkTableColumn>
-      <BkTableColumn
+      </TableColumn>
+      <TableColumn
         v-if="!readonly"
-        :label="t('操作')"
+        :title="t('操作')"
         fixed="right"
-        width="110"
+        width="140"
       >
         <template #default="{ row, index }">
-          <div>
+          <div class="pl-16px">
             <AgIcon
               v-if="isAddFieldVisible(row)"
               v-bk-tooltips="t('添加字段')"
@@ -237,8 +233,8 @@
             />
           </div>
         </template>
-      </BkTableColumn>
-      <template #expandRow="row">
+      </TableColumn>
+      <template #expandedRow="{row}">
         <div v-if="row?.in === 'body'">
           <RequestParamsTable
             ref="sub-table-ref"
@@ -247,7 +243,7 @@
           />
         </div>
       </template>
-    </BkTable>
+    </AgTable>
     <div
       v-if="!disabled && !readonly"
       class="add-param-btn-row"
@@ -262,6 +258,10 @@
       </BkButton>
     </div>
   </div>
+  <JsonEditorSlider
+    v-model="isEditorSliderVisible"
+    @confirm="handleEditorConfirm"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -272,8 +272,10 @@ import {
   type JSONSchema7,
   type JSONSchema7TypeName,
 } from 'json-schema';
-import { useFileSystemAccess } from '@vueuse/core';
 import toJsonSchema from 'to-json-schema';
+import JsonEditorSlider from '../JsonEditorSlider.vue';
+import AgTable from '@/components/ag-table/Index.vue';
+import { TableColumn } from '@blueking/tdesign-ui';
 
 interface ITableRow {
   id: string
@@ -327,17 +329,8 @@ const {
   readonly = false,
 } = defineProps<IProp>();
 
-const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
-  dataType: 'Text',
-  types: [{
-    description: 'text',
-    accept: { 'text/plain': ['.txt', '.json'] },
-  }],
-});
-
 const { t } = useI18n();
 
-const tableRef = ref();
 const subTableRef = useTemplateRef('sub-table-ref');
 
 const tableData = ref<ITableRow[]>([
@@ -351,8 +344,11 @@ const tableData = ref<ITableRow[]>([
     description: '',
   },
 ]);
+const expandedRowKeys = ref<string[]>([]);
 
 const invalidRowIdMap = ref<Record<string, boolean>>({});
+
+const isEditorSliderVisible = ref(false);
 
 const inList = [
   {
@@ -491,10 +487,8 @@ watch(() => detail, () => {
         Object.assign(row, { body: subBody });
       }
       tableData.value.push(row);
+      expandedRowKeys.value.push(row.id);
     }
-    nextTick(() => {
-      tableRef.value?.setAllRowExpand(true);
-    });
   }
 }, { immediate: true });
 
@@ -523,13 +517,6 @@ const genBodyRow = (id?: string) => {
   };
 };
 
-const getCellClass = (payload: { index: number }) => {
-  if (payload.index !== 6) {
-    return 'custom-table-cell';
-  }
-  return '';
-};
-
 const handleInChange = (row: ITableRow) => {
   const _row = tableData.value.find(data => data.id === row.id);
   if (_row) {
@@ -554,10 +541,8 @@ const handleInChange = (row: ITableRow) => {
       }
       delete _row.body;
     }
+    expandedRowKeys.value.push(_row.id);
   }
-  nextTick(() => {
-    tableRef.value?.setAllRowExpand(true);
-  });
 };
 
 const handleTypeChange = (row: ITableRow) => {
@@ -684,81 +669,47 @@ const isTypeDisabled = (paramIn: string, type: string) => {
   return type === 'object' || type === 'array';
 };
 
-const handleTableMounted = () => {
-  tableRef.value?.setAllRowExpand(true);
+const handleEditJSON = () => {
+  isEditorSliderVisible.value = true;
 };
 
-const handleImportSchema = async () => {
-  await open();
-  // 文件大小限制为 10KB
-  if (fileSize.value > 10 * 1024) {
-    Message({
-      theme: 'warning',
-      message: t('文件大小超过 10KB'),
-    });
-    return;
-  }
+const handleEditorConfirm = (jsonObject: Record<string, any>) => {
+  try {
+    const schema = toJsonSchema(jsonObject);
 
-  if (importedJsonText.value) {
-    let jsonObject: any = {};
-    try {
-      jsonObject = JSON.parse(importedJsonText.value);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('请选择合法的 JSON'),
-      });
-      return;
+    const row = {
+      id: uniqueId(),
+      name: t('根节点'),
+      in: 'body',
+      type: 'object' as JSONSchema7TypeName,
+      required: false,
+      description: '',
+    };
+
+    // 是否已存在 request body 表格行
+    const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
+    if (currentBodyRowIndex > -1) {
+      Object.assign(row, tableData.value[currentBodyRowIndex]);
     }
 
-    try {
-      const schema = toJsonSchema(jsonObject);
-
-      const row = {
-        id: uniqueId(),
-        name: t('根节点'),
-        in: 'body',
-        type: 'object' as JSONSchema7TypeName,
-        required: false,
-        description: '',
-      };
-
-      // 是否已存在 request body 表格行
-      const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
-      if (currentBodyRowIndex > -1) {
-        Object.assign(row, tableData.value[currentBodyRowIndex]);
-      }
-
-      const subBody = convertSchemaToBodyRow(schema);
-      if (subBody) {
-        Object.assign(row, { body: subBody });
-      }
-
-      // 替换行
-      if (currentBodyRowIndex > -1) {
-        tableData.value[currentBodyRowIndex] = row;
-      }
-      // 插入新行
-      else {
-        tableData.value.push(row);
-      }
-
-      nextTick(() => {
-        tableRef.value?.setAllRowExpand(true);
-      });
+    const subBody = convertSchemaToBodyRow(schema);
+    if (subBody) {
+      Object.assign(row, { body: subBody });
     }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('生成 JSON Schema 失败'),
-      });
+
+    // 替换行
+    if (currentBodyRowIndex > -1) {
+      tableData.value[currentBodyRowIndex] = row;
+    }
+    // 插入新行
+    else {
+      tableData.value.push(row);
     }
   }
-  else {
+  catch {
     Message({
-      theme: 'warning',
-      message: t('请选择合法的 JSON'),
+      theme: 'error',
+      message: t('生成 JSON Schema 失败'),
     });
   }
 };
@@ -775,10 +726,6 @@ const setInvalidRowId = () => {
 const clearInvalidState = (rowId: string) => {
   delete invalidRowIdMap.value[rowId];
 };
-
-onMounted(() => {
-  tableRef.value?.setAllRowExpand(true);
-});
 
 defineExpose({
   getValue: async () => {
@@ -809,6 +756,14 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+
+// 默认单元格高度和内边距
+
+:deep(.t-table.t-size-m td) {
+  height: 42px;
+  padding: 0;
+}
+
 .request-params-table-wrapper {
   padding-bottom: 22px;
 }
@@ -893,41 +848,6 @@ defineExpose({
     font-size: 12px;
     cursor: auto;
   }
-
-  .td-text {
-    padding: 0 16px;
-  }
-
-  // :deep(.bk-table-body-content) {
-
-  :deep(.bk-table-body) {
-
-    .custom-table-cell {
-
-      .cell {
-        padding: 0;
-
-        &:hover {
-          cursor: pointer;
-        }
-      }
-    }
-
-    // 展开行样式
-
-    .row_expend {
-
-      td {
-        border-right: none;
-      }
-
-      // 展开行没有内容时，不应渲染，避免出现多余的 1px 高的元素
-
-      &:not(:has(.request-param-body-table)) {
-        display: none !important;
-      }
-    }
-  }
 }
 
 // 输入框和 placeholder 样式
@@ -949,4 +869,17 @@ defineExpose({
   border-top: none;
   align-content: center;
 }
+
+:deep(.t-table) {
+
+  .t-table__content {
+    border-bottom: none;
+    border-radius: 0;
+
+    .t-table__body .t-table__expanded-row .t-table__expanded-row-inner .t-table__row-full-element {
+      padding: 0;
+    }
+  }
+}
+
 </style>

@@ -227,8 +227,6 @@
     :header-position="'left'"
     :title="applyActionDialogConf.title"
     :is-show="applyActionDialogConf.isShow"
-    :loading="applyActionDialogConf.isLoading"
-    @confirm="handleSubmitApprove"
     @closed="applyActionDialogConf.isShow = false"
   >
     <BkForm
@@ -252,6 +250,20 @@
         />
       </BkFormItem>
     </BkForm>
+    <template #footer>
+      <BkButton
+        theme="primary"
+        :disabled="applyActionDialogConf.isLoading"
+        :loading="applyActionDialogConf.isLoading"
+        class="mr-8px"
+        @click="handleSubmitApprove"
+      >
+        {{ t('确定') }}
+      </BkButton>
+      <BkButton @click="applyActionDialogConf.isShow = false">
+        {{ t('取消') }}
+      </BkButton>
+    </template>
   </BkDialog>
 </template>
 
@@ -277,7 +289,6 @@ const route = useRoute();
 
 const columnKey = ref(-1);
 const tableKey = ref(0);
-const defaultMcpId = ref(0);
 const filterData = ref({
   bk_app_code: '',
   applied_by: '',
@@ -325,6 +336,7 @@ const applyActionDialogConf = reactive({
 });
 const curAction = ref({
   id: 0,
+  mcp_server_id: 0,
   status: '',
   comment: '',
 });
@@ -347,13 +359,17 @@ const rules = reactive({
 });
 
 const getMcpList = async () => {
-  const res = await getServers(gatewayStore.currentGateway!.id!);
+  const page = {
+    offset: 0,
+    limit: 1000,
+  };
+  const res = await getServers(gatewayStore.apigwId, page);
   mcpList.value = res.results;
 };
 getMcpList();
 
 const getApplicant = async () => {
-  const response = await getMcpPermissionsApplicant(gatewayStore.currentGateway!.id!, filterData.value.mcp_server_id);
+  const response = await getMcpPermissionsApplicant(gatewayStore.apigwId, filterData.value.mcp_server_id);
   applicantList.value = response?.applicants || [];
 };
 
@@ -369,7 +385,7 @@ const handleTabChange = (name: string) => {
 const updateTableEmptyConfig = () => {
   tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
   const { bk_app_code, applied_by, mcp_server_id } = filterData.value;
-  if (bk_app_code || applied_by || mcp_server_id !== defaultMcpId.value) {
+  if (bk_app_code || applied_by || mcp_server_id) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
@@ -379,7 +395,7 @@ const updateTableEmptyConfig = () => {
 const resetSearch = () => {
   filterData.value.bk_app_code = '';
   filterData.value.applied_by = '';
-  filterData.value.mcp_server_id = defaultMcpId.value;
+  filterData.value.mcp_server_id = '';
   columnKey.value = +new Date();
 };
 
@@ -434,6 +450,7 @@ const handleFilterData = (payload: Record<string, string>, curData: Record<strin
 const handleApprove = (row: any, status: string) => {
   curAction.value = {
     id: row.id,
+    mcp_server_id: row.mcp_server.id,
     status,
     comment: status === 'approved' ? t('通过') : t('驳回'),
   };
@@ -452,8 +469,8 @@ const handleSubmitApprove = async () => {
 
     await approveForm.value?.validate();
     await updateMcpPermissions(
-      gatewayStore.currentGateway!.id!,
-      filterData.value.mcp_server_id,
+      gatewayStore.apigwId,
+      curAction.value.mcp_server_id,
       curAction.value.id,
       curAction.value,
     );
@@ -471,7 +488,7 @@ const handleSubmitApprove = async () => {
     });
   }
   finally {
-    applyActionDialogConf.isLoading = true;
+    applyActionDialogConf.isLoading = false;
   }
 };
 
@@ -491,7 +508,6 @@ watch(
   (val) => {
     if (val) {
       filterData.value.mcp_server_id = Number(val) || 0;
-      defaultMcpId.value = Number(val) || 0;
     }
   },
   { immediate: true },
@@ -503,6 +519,10 @@ watch(
     if (val && !featureFlagStore.isTenantMode) {
       getApplicant();
     }
+    if (!val) {
+      applicantList.value = [];
+    }
+    filterData.value.applied_by = '';
   },
   { immediate: true },
 );

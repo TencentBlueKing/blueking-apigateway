@@ -1,0 +1,462 @@
+{
+  "bk-cors": {
+    "id": 2,
+    "language": "en",
+    "notes": "The cors Plugins lets you enable CORS easily.",
+    "example": "Purpose: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "allow_methods",
+          "allow_headers",
+          "max_age"
+        ],
+        "properties": {
+          "allow_origins": {
+            "description": "Origins to allow CORS. Use the scheme://host:port format. For example, https://example.com:8081. If you have multiple origins, use a , to list them. If allow_credential is set to false, you can enable CORS for all origins by using *. If allow_credential is set to true, you can forcefully allow CORS on all origins by using ** but it will pose some security issues. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|null|http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+(,http(s)?://[-a-zA-Z0-9:\\[\\]\\.]+)*)$",
+            "default": ""
+          },
+          "allow_origins_by_regex": {
+            "description": "Origin that allows CORS using regular expressions. You can use regex to allow specific origins when no credentials, for example, '^https://.*\\.example\\.com:8081$', this regular expression allows https://a.example.com:8081, https://b.example.com:8081. allow_origins, allow_origins_by_regex can only be one valid at a time.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096,
+              "pattern": "^(\\^)?[-a-zA-Z0-9:/\\[\\]\\{\\}\\(\\)\\.\\*\\+\\?\\|\\\\]+(\\$)?$"
+            },
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:props": {
+              "labelWidth": 200
+            }
+          },
+          "allow_methods": {
+            "description": "Request methods to enable CORS on. For example GET, POST. Use , to add multiple methods. If allow_credential is set to false, you can enable CORS for all methods by using *. If allow_credential is set to true, you can forcefully allow CORS on all methods by using ** but it will pose some security issues.",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)(,(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE))*)$",
+            "maxLength": 100,
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "allow_headers": {
+            "description": "Headers in the request allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all request headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all request headers by using ** but it will pose some security issues.",
+            "type": "string",
+            "default": "**",
+            "pattern": "^(\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "ui:rules": [
+              "required"
+            ]
+          },
+          "expose_headers": {
+            "description": "Headers in the response allowed when accessing a cross-origin resource. Use , to add multiple headers. If allow_credential is set to false, you can enable CORS for all response headers by using *. If allow_credential is set to true, you can forcefully allow CORS on all response headers by using ** but it will pose some security issues.",
+            "type": "string",
+            "pattern": "^(|\\*|\\*\\*|[-a-zA-Z0-9]+(,[-a-zA-Z0-9]+)*)$",
+            "maxLength": 4096,
+            "default": ""
+          },
+          "max_age": {
+            "description": "Maximum time in seconds the result is cached. If the time is within this limit, the browser will check the cached result. Set to -1 to disable caching. Note that the maximum value is browser dependent.",
+            "type": "integer",
+            "default": 86400,
+            "ui:rules": [
+              "required"
+            ],
+            "ui:component": {
+              "name": "bfInput",
+              "min": -1,
+              "unit": "Seconds"
+            }
+          },
+          "allow_credential": {
+            "description": "When set to true, allows requests to include credentials like cookies. According to CORS specification, if you set this to true, you cannot use '*' to allow all for the other attributes.",
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 1,
+    "type_code": "bk-cors",
+    "type_name": "Cross-Origin Resource Sharing (CORS)"
+  },
+  "bk-ip-restriction": {
+    "id": 6,
+    "language": "en",
+    "notes": "This plugin allows you to restrict access to a Resource by either whitelisting or blacklisting IP addresses. Support CIDR. One piece of data per line, and supports blank lines and comment lines (beginning with #).",
+    "example": "Purpose: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface\n\nType: whitelist\nWhitelist: \n       # comment\n       192.168.1.1\n       192.168.1.2",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "required": [
+              "whitelist"
+            ],
+            "title": "White list",
+            "properties": {
+              "whitelist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "whitelist",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          },
+          {
+            "required": [
+              "blacklist"
+            ],
+            "title": "Black list",
+            "properties": {
+              "blacklist": {
+                "type": "string",
+                "maxLength": 51200,
+                "minLength": 7,
+                "title": "blacklist",
+                "ui:component": {
+                  "type": "textarea",
+                  "rows": 10
+                }
+              }
+            }
+          }
+        ],
+        "ui:oneOf": {
+          "title": "Type"
+        }
+      },
+      "layout": [],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 3,
+    "type_code": "bk-ip-restriction",
+    "type_name": "IP restriction"
+  },
+  "bk-rate-limit": {
+    "id": 8,
+    "language": "en",
+    "notes": "rate limit for requests of each application, including default application rate limit, which represents the default rate limit for a single application; special application rate limit, which sets a separate rate limit for a specified application. If both are configured on the stage and resource, both will take effect, and the configuration on the stage indicates the total access rate limit of all resources under the stage.",
+    "example": "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\n\nDefault frequency limit: Times: 100 Time range: seconds\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "title": "Rate Limit",
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "object",
+            "properties": {
+              "default": {
+                "type": "object",
+                "title": "Default App Rate Limit",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 10px 16px"
+                  }
+                },
+                "required": [
+                  "tokens",
+                  "period"
+                ],
+                "properties": {
+                  "tokens": {
+                    "type": "integer",
+                    "title": "Count",
+                    "default": 100,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "bfInput",
+                      "min": 1
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  },
+                  "period": {
+                    "type": "integer",
+                    "title": "Time Range",
+                    "default": 1,
+                    "ui:rules": [
+                      "required"
+                    ],
+                    "ui:component": {
+                      "name": "select",
+                      "datasource": [
+                        {
+                          "label": "Second",
+                          "value": 1
+                        },
+                        {
+                          "label": "Minute",
+                          "value": 60
+                        },
+                        {
+                          "label": "Hour",
+                          "value": 3600
+                        },
+                        {
+                          "label": "Day",
+                          "value": 86400
+                        }
+                      ],
+                      "clearable": false
+                    },
+                    "ui:props": {
+                      "labelWidth": 100
+                    }
+                  }
+                }
+              },
+              "specials": {
+                "type": "array",
+                "title": "Special Apps Rate Limit",
+                "ui:group": {
+                  "type": "card",
+                  "showTitle": true,
+                  "style": {
+                    "background": "#F5F7FA",
+                    "padding": "10px 20px 20px 16px"
+                  }
+                },
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "tokens",
+                    "period",
+                    "bk_app_code"
+                  ],
+                  "ui:group": {
+                    "style": {
+                      "background": "#FFF",
+                      "padding": "10px 10px 10px 10px"
+                    }
+                  },
+                  "properties": {
+                    "tokens": {
+                      "type": "integer",
+                      "title": "Count",
+                      "default": 200,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "bfInput",
+                        "min": 1
+                      },
+                      "ui:props": {
+                        "labelWidth": 90
+                      }
+                    },
+                    "period": {
+                      "type": "integer",
+                      "title": "Time Range",
+                      "default": 1,
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:component": {
+                        "name": "select",
+                        "datasource": [
+                          {
+                            "label": "Second",
+                            "value": 1
+                          },
+                          {
+                            "label": "Minute",
+                            "value": 60
+                          },
+                          {
+                            "label": "Hour",
+                            "value": 3600
+                          },
+                          {
+                            "label": "Day",
+                            "value": 86400
+                          }
+                        ],
+                        "clearable": false
+                      },
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    },
+                    "bk_app_code": {
+                      "type": "string",
+                      "title": "App Id",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+                      "ui:rules": [
+                        "required"
+                      ],
+                      "ui:props": {
+                        "labelWidth": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "layout": [
+        [
+          {
+            "prop": "rates",
+            "group": [
+              [
+                {
+                  "prop": "default",
+                  "container": {
+                    "grid-template-columns": "250px 200px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period"
+                    ]
+                  ]
+                }
+              ],
+              [
+                {
+                  "prop": "specials",
+                  "container": {
+                    "grid-template-columns": "250px 200px 250px"
+                  },
+                  "group": [
+                    [
+                      "tokens",
+                      "period",
+                      "bk_app_code"
+                    ]
+                  ]
+                }
+              ]
+            ]
+          }
+        ]
+      ],
+      "formData": {},
+      "rules": {}
+    },
+    "type_id": 4,
+    "type_code": "bk-rate-limit",
+    "type_name": "Rate Limit"
+  },
+  "bk-header-rewrite": {
+    "id": 4,
+    "language": "en",
+    "notes": "Allow you to easily add or remove request headers. If a value for a setting contains the $ symbol, it will be treated as a variable and its value will be replaced (with the variable’s value or empty if the variable does not exist). `$arg_foo` can fetch the value of `foo` from the query string, and `$http_bar` can fetch the value of `bar` from the header.",
+    "example": "Purpose: Set header 'X-Api-Version: 1' and delete header 'X-test'\n\nSettings: X-Api-Version: 1\nDelete: X-test",
+    "style": "dynamic",
+    "default_value": "",
+    "config": {
+      "schema": {
+        "properties": {
+          "set": {
+            "description": "set headers",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can set the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                },
+                "value": {
+                  "title": "value",
+                  "description": "You can set the value of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\s\\S]*$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "set",
+            "type": "array",
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "At least one operation is required when setting or removing request headers."
+              }
+            ]
+          },
+          "remove": {
+            "description": "remove headers",
+            "items": {
+              "properties": {
+                "key": {
+                  "title": "key",
+                  "description": "You can remove the key of the request header, but colons (:) cannot appear in the key of the request header.",
+                  "type": "string",
+                  "maxLength": 1024,
+                  "pattern": "^[\\w-]+$",
+                  "ui:rules": [
+                    "required"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "minItems": 0,
+            "title": "remove",
+            "type": "array",
+            "uniqueItems": true,
+            "ui:component": {
+              "name": "bfArray"
+            },
+            "ui:rules": [
+              {
+                "validator": "{{ $self.getValue('set').length || $self.getValue('remove').length }}",
+                "message": "At least one operation is required when setting or removing request headers."
+              }
+            ]
+          }
+        },
+        "type": "object"
+      }
+    },
+    "type_id": 2,
+    "type_code": "bk-header-rewrite",
+    "type_name": "Header transformation"
+  }
+}

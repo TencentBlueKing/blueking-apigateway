@@ -28,8 +28,44 @@ export interface IBackendServicesConfig {
       host: string
       weight: number
     }[]
-    stage_id: number
+    stage_id?: number
+    checks?: IHealthCheck
   }[]
+}
+
+export interface IHealthCheck {
+  active: {
+    type: 'http' | 'https' | 'tcp'
+    timeout: number
+    concurrency: number
+    http_path?: string
+    https_verify_certificate?: boolean
+    healthy: {
+      http_statuses?: number[]
+      successes: number
+      interval: number
+    }
+    unhealthy: {
+      http_statuses?: number[]
+      http_failures?: number
+      tcp_failures?: number
+      timeouts: number
+      interval: number
+    }
+  }
+  passive: {
+    type: 'http' | 'https' | 'tcp'
+    healthy: {
+      http_statuses?: number[]
+      successes: number
+    }
+    unhealthy: {
+      http_statuses?: number[]
+      http_failures?: number
+      tcp_failures?: number
+      timeouts: number
+    }
+  }
 }
 
 export function getBackendServiceList(apigwId: number, params?: {
@@ -50,7 +86,26 @@ export function getBackendServiceList(apigwId: number, params?: {
  * @param id 后端服务id
  */
 export function getBackendServiceDetail(apigwId: number, id: number) {
-  return http.get(`/gateways/${apigwId}/backends/${id}/`);
+  return http.get<{
+    configs: {
+      checks?: IHealthCheck
+      hosts: {
+        scheme: string
+        host: string
+        weight: number
+      }[]
+      loadbalance: string
+      stage: {
+        id: number
+        name: string
+      }
+      timeout: number
+      type: string
+    }[]
+    description: string
+    id: number
+    name: string
+  }>(`/gateways/${apigwId}/backends/${id}/`);
 }
 
 /**

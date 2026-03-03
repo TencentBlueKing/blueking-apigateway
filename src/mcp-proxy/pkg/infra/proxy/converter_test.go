@@ -34,7 +34,7 @@ var _ = Describe("Converter", func() {
 				Paths:   &openapi3.Paths{},
 			}
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(BeEmpty())
 		})
 
@@ -54,7 +54,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(BeEmpty())
 		})
 
@@ -76,7 +76,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Name).To(Equal("getUsers"))
 			Expect(result[0].Method).To(Equal("GET"))
@@ -104,7 +104,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Description).To(Equal("Get all users"))
 		})
@@ -135,7 +135,7 @@ var _ = Describe("Converter", func() {
 				"getUsers": {},
 			}
 
-			result := OpenapiToMcpToolConfig(spec, operationIDMap)
+			result := OpenapiToMcpToolConfig(spec, operationIDMap, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Name).To(Equal("getUsers"))
 		})
@@ -185,7 +185,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("query_param"))
 			Expect(result[0].ParamSchema.Required).To(ContainElement("query_param"))
@@ -223,7 +223,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users/{id}", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("path_param"))
 			Expect(result[0].ParamSchema.Required).To(ContainElement("path_param"))
@@ -261,7 +261,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("header_param"))
 			Expect(result[0].ParamSchema.Required).To(ContainElement("header_param"))
@@ -310,7 +310,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].Name).To(Equal("createUser"))
 			Expect(result[0].Method).To(Equal("POST"))
@@ -341,7 +341,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].OutputSchema).NotTo(BeNil())
 		})
@@ -378,7 +378,7 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(4))
 
 			names := make([]string, len(result))
@@ -413,7 +413,7 @@ var _ = Describe("Converter", func() {
 			spec.Paths.Set("/users", usersPath)
 			spec.Paths.Set("/orders", ordersPath)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(2))
 		})
 
@@ -466,12 +466,163 @@ var _ = Describe("Converter", func() {
 			}
 			spec.Paths.Set("/users/{userId}/orders", pathItem)
 
-			result := OpenapiToMcpToolConfig(spec, nil)
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("path_param"))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("query_param"))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("header_param"))
 			Expect(result[0].ParamSchema.Required).To(ContainElement("path_param"))
+		})
+
+		It("should use tool name from toolNameMap when provided", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get all users",
+					Responses:   &openapi3.Responses{},
+				},
+				Post: &openapi3.Operation{
+					OperationID: "createUser",
+					Summary:     "Create user",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			// 只映射 getUsers，createUser 保持原名
+			toolNameMap := map[string]string{
+				"getUsers": "list_users",
+			}
+
+			result := OpenapiToMcpToolConfig(spec, nil, toolNameMap)
+			Expect(result).To(HaveLen(2))
+
+			// 找到对应的工具并验证名称
+			var getUsersTool, createUserTool *ToolConfig
+			for _, tc := range result {
+				if tc.Method == "GET" {
+					getUsersTool = tc
+				} else if tc.Method == "POST" {
+					createUserTool = tc
+				}
+			}
+			Expect(getUsersTool).NotTo(BeNil())
+			Expect(getUsersTool.Name).To(Equal("list_users"))
+
+			Expect(createUserTool).NotTo(BeNil())
+			Expect(createUserTool.Name).To(Equal("createUser"))
+		})
+
+		It("should apply tool name mapping with filter", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+				Post: &openapi3.Operation{
+					OperationID: "createUser",
+					Summary:     "Create user",
+					Responses:   &openapi3.Responses{},
+				},
+				Delete: &openapi3.Operation{
+					OperationID: "deleteUser",
+					Summary:     "Delete user",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			// 只包含 getUsers 和 createUser
+			operationIDMap := map[string]struct{}{
+				"getUsers":   {},
+				"createUser": {},
+			}
+
+			// 映射工具名
+			toolNameMap := map[string]string{
+				"getUsers":   "fetch_users",
+				"createUser": "add_user",
+				"deleteUser": "remove_user", // 这个不会生效因为被过滤了
+			}
+
+			result := OpenapiToMcpToolConfig(spec, operationIDMap, toolNameMap)
+			Expect(result).To(HaveLen(2))
+
+			names := make([]string, len(result))
+			for i, tc := range result {
+				names[i] = tc.Name
+			}
+			Expect(names).To(ContainElements("fetch_users", "add_user"))
+			Expect(names).NotTo(ContainElement("remove_user"))
+		})
+
+		It("should handle empty tool name in mapping", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			// 空的工具名应该使用 operationID
+			toolNameMap := map[string]string{
+				"getUsers": "",
+			}
+
+			result := OpenapiToMcpToolConfig(spec, nil, toolNameMap)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Name).To(Equal("getUsers"))
+		})
+
+		It("should use operationID when not in toolNameMap", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			// toolNameMap 不包含 getUsers
+			toolNameMap := map[string]string{
+				"otherOperation": "other_tool",
+			}
+
+			result := OpenapiToMcpToolConfig(spec, nil, toolNameMap)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Name).To(Equal("getUsers"))
 		})
 	})
 

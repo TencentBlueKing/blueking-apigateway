@@ -61,9 +61,15 @@
       </template>
       <template v-if="['array'].includes(schema.type)">
         <AgIcon
+          v-bk-tooltips="t('克隆')"
+          name="copy"
+          class="operate-icon clone-icon"
+          @click.stop="handleClone(index)"
+        />
+        <AgIcon
+          v-bk-tooltips="t('删除')"
           name="delet"
-          class="flex color-#979ba5 cursor-pointer delete-icon"
-          :disabled="disabled"
+          class="operate-icon delete-icon"
           @click.stop="handleRemove(index)"
         />
       </template>
@@ -71,7 +77,7 @@
     <span
       v-if="!disabled && ['array'].includes(schema.type)"
       class="color-#3a84ff cursor-pointer text-14px"
-      @click.stop=" handleAdd"
+      @click.stop="handleAdd"
     >
       <i class="mr-5px apigateway-icon icon-ag-plus-circle-shape" />
       <span>{{ t('添加') }}</span>
@@ -80,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from 'lodash-es';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
 import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import InputComponent from '@/components/plugin-manage/components/InputComponent.vue';
@@ -254,6 +261,21 @@ const handleRemove = (index: number) => {
   modeField.value.rates.specials = [...newSpecials];
   emit('remove', index);
 };
+
+// 克隆次数和时间范围内容
+const handleClone = (index: number) => {
+  const originSpecials = modeField.value.rates.specials || [];
+  const cloneItem = cloneDeep(originSpecials[index]);
+  cloneItem.bk_app_code = '';
+  const newSpecials = [...originSpecials, cloneItem];
+  modeField.value = {
+    ...modeField.value,
+    rates: {
+      ...modeField.value.rates,
+      specials: newSpecials,
+    },
+  };
+};
 </script>
 
 <style langs="scss" scoped>
@@ -277,13 +299,23 @@ const handleRemove = (index: number) => {
   }
 }
 
-.delete-icon {
+.operate-icon {
   position: absolute;
   right: 8px;
-  top: 18px !important;
+  top: 18px;
+  color: #979ba5;
 
   &:hover {
     color: #3a84ff;
+    cursor: pointer;
+  }
+
+  &.clone-icon {
+    right: 36px;
+  }
+
+  &.delete-icon {
+    right: 8px;
   }
 }
 </style>

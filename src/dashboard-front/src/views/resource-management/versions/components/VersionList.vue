@@ -202,6 +202,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'version',
     title: t('版本号'),
+    width: 120,
+    ellipsis: true,
     cell: (h, { row }) => (
       <bk-button
         text
@@ -222,6 +224,8 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'created_time',
     title: t('生成时间'),
+    width: 180,
+    ellipsis: true,
   },
   {
     colKey: 'sdk',

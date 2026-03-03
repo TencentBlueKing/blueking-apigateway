@@ -215,6 +215,218 @@ var _ = Describe("SSE Protocol", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).NotTo(BeNil())
 		})
+
+		It("should get prompt via SSE protocol using MCP SDK", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 先获取 prompts 列表
+			listResult, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			if len(listResult.Prompts) > 0 {
+				// 获取第一个 prompt
+				result, err := session.GetPrompt(ctx, &mcp.GetPromptParams{
+					Name: listResult.Prompts[0].Name,
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+			}
+		})
+	})
+
+	Describe("SSE Authentication", func() {
+		It("should reject SSE connection with invalid JWT", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			// 带无效 JWT 的 HTTP 客户端
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: "invalid-token",
+					base:  http.DefaultTransport,
+				},
+			}
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, sseURL, nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Set("Accept", "text/event-stream")
+			req.Header.Set(constant.BkGatewayJWTHeaderKey, "invalid-token")
+
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusUnauthorized))
+		})
+	})
+
+	Describe("SSE Tools Error Handling", func() {
+		It("should return error for non-existent tool via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 调用不存在的工具
+			_, err = session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "non_existent_tool_xyz_123",
+				Arguments: map[string]any{},
+			})
+			// 不存在的工具应该返回错误
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Describe("SSE MCP Server Not Found", func() {
+		It("should reject connection for non-existent MCP server via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "non-existent-server-xyz")
+
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			// 连接应该失败
+			_, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Describe("SSE Tool Name Mapping", func() {
+		It("should list tools with renamed tool names via SSE protocol", func() {
+			// 使用带工具名映射的 MCP Server
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-renamed-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 列出工具
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Tools).NotTo(BeNil())
+
+			// 验证工具名使用了映射后的名称
+			// echo 应该映射为 echo_message, ping 保持原名
+			toolNames := make([]string, len(result.Tools))
+			for i, tool := range result.Tools {
+				toolNames[i] = tool.Name
+			}
+			Expect(toolNames).To(ContainElement("echo_message"))
+			Expect(toolNames).To(ContainElement("ping"))
+			Expect(toolNames).NotTo(ContainElement("echo"))
+		})
+
+		It("should call renamed tool via SSE protocol", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-renamed-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 使用映射后的工具名调用工具
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo_message",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"message": "Hello from renamed tool",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
 	})
 })
 

@@ -69,11 +69,7 @@ func Run(cfg *config.Config) {
 		logging.GetLogger().Fatalf("Server Shutdown: %s", err)
 	}
 	// catching ctx.Done(). timeout of 5 seconds.
-
-	// nolint:staticcheck
-	select {
-	case <-ctx.Done():
-		logging.GetLogger().Info("timeout of 5 seconds.")
-	}
+	<-ctx.Done()
+	logging.GetLogger().Info("timeout of 5 seconds.")
 	logging.GetLogger().Info("Server exiting")
 }

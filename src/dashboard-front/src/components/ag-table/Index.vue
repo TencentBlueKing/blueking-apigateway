@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -16,90 +16,93 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <PrimaryTable
-    ref="primaryTableRef"
-    v-model:selected-row-keys="selectedRowKeys"
-    class="primary-table-wrapper"
-    :class="[
-      {
-        'primary-table-no-data': !localTableData.length,
-        'primary-table-no-border': !bordered,
-        'primary-table-show-pagination': showPagination
-      }
-    ]"
-    :size="tableSetting?.rowSize ?? 'medium'"
-    :data="localTableData"
-    :columns="tableColumns"
-    :pagination="showPagination ? pagination : null"
-    :loading="loading"
-    :filter-row="null"
-    :hover="false"
-    :bordered="bordered"
-    :table-layout="tableLayout"
-    :row-key="tableRowKey"
-    :max-height="clientHeight"
-    :bk-ui-settings="tableSetting"
-    v-bind="$attrs"
-    @bk-ui-settings-change="handleSettingChange"
-    @row-mouseenter="handleRowEnter"
-    @row-mouseleave="handleRowLeave"
-    @page-change="handlePageChange"
-    @select-change="handleSelectionChange"
-  >
-    <template #firstFullRow>
-      <template v-if="isShowSelectionRow">
-        <slot
-          v-if="slots.firstFullRow"
-          name="firstFullRow"
-          v-bind="{
-            selections,
-            isAllSelection,
-            handleSelectionChange
-          }"
-        />
-        <div
-          v-if="!slots.firstFullRow"
-          class="table-first-full-row"
-        >
-          <span class="normal-text">
-            <span>{{ t('已选') }}</span>
-            <span class="count">{{ selections.length }}</span>
-            <span>{{ t('条') }}</span>
-            <span class="m-r4px">,</span>
-          </span>
-          <span
-            class="hight-light-text"
-            @click="handleResetSelection"
-          >
-            {{ t('清除选择') }}
-          </span>
-        </div>
-      </template>
-    </template>
-    <template
-      v-if="slots.expandedRow"
-      #expandedRow="slotProps"
+  <ConfigProvider :global-config="localeConfig">
+    <PrimaryTable
+      ref="primaryTableRef"
+      v-model:selected-row-keys="selectedRowKeys"
+      class="primary-table-wrapper"
+      :class="[
+        {
+          'primary-table-no-data': !localTableData.length,
+          'primary-table-no-border': !bordered,
+          'primary-table-show-pagination': showPagination
+        }
+      ]"
+      :size="tableSetting?.rowSize ?? 'medium'"
+      :data="localTableData"
+      :columns="tableColumns"
+      :pagination="showPagination ? pagination : null"
+      :loading="loading"
+      :filter-row="null"
+      :hover="false"
+      :bordered="bordered"
+      :table-layout="tableLayout"
+      :row-key="tableRowKey"
+      :max-height="clientHeight"
+      :bk-ui-settings="tableSetting"
+      v-bind="$attrs"
+      @bk-ui-settings-change="handleSettingChange"
+      @row-mouseenter="handleRowEnter"
+      @row-mouseleave="handleRowLeave"
+      @page-change="handlePageChange"
+      @select-change="handleSelectionChange"
     >
-      <slot
-        name="expandedRow"
-        v-bind="slotProps"
-      />
-    </template>
-    <template #loading>
-      <Loading :loading="loading" />
-    </template>
-    <template #empty>
-      <slot name="empty">
-        <TableEmpty
-          :error="error"
-          :empty-type="tableEmptyType"
-          :query-list-params="params"
-          @clear-filter="handlerClearFilter"
-          @refresh="handleRefresh"
+      <slot />
+      <template #firstFullRow>
+        <template v-if="isShowSelectionRow">
+          <slot
+            v-if="slots.firstFullRow"
+            name="firstFullRow"
+            v-bind="{
+              selections,
+              isAllSelection,
+              handleSelectionChange
+            }"
+          />
+          <div
+            v-if="!slots.firstFullRow"
+            class="table-first-full-row"
+          >
+            <span class="normal-text">
+              <span>{{ t('已选') }}</span>
+              <span class="count">{{ selections.length }}</span>
+              <span>{{ t('条') }}</span>
+              <span class="m-r4px">,</span>
+            </span>
+            <span
+              class="hight-light-text"
+              @click="handleResetSelection"
+            >
+              {{ t('清除选择') }}
+            </span>
+          </div>
+        </template>
+      </template>
+      <template
+        v-if="slots.expandedRow"
+        #expandedRow="slotProps"
+      >
+        <slot
+          name="expandedRow"
+          v-bind="slotProps"
         />
-      </slot>
-    </template>
-  </PrimaryTable>
+      </template>
+      <template #loading>
+        <Loading :loading="loading" />
+      </template>
+      <template #empty>
+        <slot name="empty">
+          <TableEmpty
+            :error="error"
+            :empty-type="tableEmptyType"
+            :query-list-params="params"
+            @clear-filter="handlerClearFilter"
+            @refresh="handleRefresh"
+          />
+        </slot>
+      </template>
+    </PrimaryTable>
+  </ConfigProvider>
 </template>
 
 <script setup lang="tsx">
@@ -109,11 +112,15 @@ import {
   type PrimaryTableProps,
   type TableRowData,
 } from '@blueking/tdesign-ui';
+import { ConfigProvider } from 'tdesign-vue-next';
+import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
+import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
 import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
 import type { ITableMethod } from '@/types/common';
+import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
 import router from '@/router';
@@ -134,6 +141,7 @@ interface IProps {
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
   maxLimitConfig?: Record<string, any> | null
+  hiddenColumn?: string[]
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -168,6 +176,8 @@ const {
   showPagination = true,
   // 展示外边框
   bordered = false,
+  // 默认不显示的表格列
+  hiddenColumn = [],
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -354,6 +364,8 @@ const offsetAndLimit = computed(() => {
   };
 });
 
+const localeConfig = computed(() => locale.value === 'zh-cn' ? cnConfig : enConfig);
+
 /**
  * 请求表格数据
  * @param {Object} params 请求数据
@@ -391,11 +403,13 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
 
 watch(tableSetting, () => {
   if (!tableSetting.value && showSettings) {
+    // 过滤掉需要隐藏的列
+    const visibleColumn = tableColumns.value?.filter(tc => !hiddenColumn.includes(tc.colKey));
     tableSetting.value = {
       size: 'medium',
       rowSize: 'medium',
-      checked: tableColumns.value?.map(col => col.colKey),
-      fields: tableColumns.value.map((col) => {
+      checked: visibleColumn.map(col => col.colKey),
+      fields: visibleColumn.map((col) => {
         return {
           label: col.displayTitle ?? col.title,
           field: col.colKey,
@@ -435,7 +449,7 @@ const fetchData = (
     pagination.value.current = 1;
   }
   run({
-    ...params,
+    ...filterSimpleEmpty(params),
     ...offsetAndLimit.value,
   });
 };
@@ -547,8 +561,8 @@ const handleRadioFilterClick = () => {
       const confirmBtn = document.querySelector('.t-table__filter--bottom-buttons > .t-button--theme-primary');
       radioClickHandler = (event: MouseEvent) => {
         const radioLabel = event.target.closest('label.t-radio');
-        const radioInput = radioLabel.querySelector('input.t-radio__former');
-        if (radioInput.checked) {
+        const radioInput = radioLabel?.querySelector('input.t-radio__former');
+        if (radioInput?.checked) {
           confirmBtn.click();
         }
       };

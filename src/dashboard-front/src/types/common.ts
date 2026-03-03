@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -137,3 +137,12 @@ export type IFormMethod = {
   validate: () => void
   clearValidate: () => void
 };
+
+// SearchSelect的data类型声明
+export interface ISearchSelectData {
+  name: string
+  id: string
+  placeholder: string
+  multiple?: boolean
+  children?: ISearchSelect[]
+}

@@ -144,10 +144,10 @@ class ActiveCheck(BaseApisixModel):
     timeout: Optional[int] = Field(default=None, description="timeout")
     concurrency: Optional[int] = Field(default=None, description="concurrency")
     http_path: Optional[str] = Field(default=None, description="http path")
-    host: Optional[str] = Field(default=None, description="host")
-    port: Optional[int] = Field(default=None, ge=1, le=65535, description="port")
     https_verify_certificate: Optional[bool] = Field(default=None, description="https verify certificate")
-    req_headers: Optional[List[str]] = Field(default=None, description="request headers")
+    # host: Optional[str] = Field(default=None, description="host")
+    # port: Optional[int] = Field(default=None, ge=1, le=65535, description="port")
+    # req_headers: Optional[List[str]] = Field(default=None, description="request headers")
     healthy: Optional[ActiveHealthy] = Field(default=None, description="healthy")
     unhealthy: Optional[ActiveUnhealthy] = Field(default=None, description="unhealthy")
     # FIXME: should be one of healthy or unhealthy

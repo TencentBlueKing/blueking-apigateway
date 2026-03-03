@@ -28,7 +28,7 @@
       @hidden="handleHidden"
     >
       <template #default>
-        <BkLoading :loading="isLoading">
+        <BkLoading :loading="isLoading || isTranslating">
           <main class="main-wrap">
             <div
               class="ag-markdown-view"
@@ -416,6 +416,7 @@ const handleTranslateClick = async () => {
       initData();
       emit('fetch');
       isTranslating.value = false;
+      handleSelectLanguage(targetLanguage);
     }
     else {
       InfoBox({
@@ -445,6 +446,7 @@ const handleTranslateClick = async () => {
           initData();
           emit('fetch');
           isTranslating.value = false;
+          handleSelectLanguage(targetLanguage);
         },
       });
     }

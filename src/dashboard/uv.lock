@@ -162,7 +162,7 @@ requires-dist = [
     { name = "bkapi-client-generator", specifier = "==0.1.30" },
     { name = "bkapi-component-open", specifier = ">=1.0.3,<2" },
     { name = "bkpaas-auth", specifier = "==3.1.3" },
-    { name = "blue-krill", specifier = "==2.1.5" },
+    { name = "blue-krill", specifier = "==2.2.0" },
     { name = "cachetools", specifier = "==6.1.0" },
     { name = "celery", specifier = "==5.5.3" },
     { name = "certifi", specifier = "==2025.7.14" },
@@ -180,7 +180,7 @@ requires-dist = [
     { name = "djangorestframework", specifier = "==3.16.0" },
     { name = "docutils", specifier = "==0.21.2" },
     { name = "drf-yasg", specifier = "==1.21.10" },
-    { name = "elasticsearch", specifier = "==7.7.1" },
+    { name = "elasticsearch", specifier = "==7.17.13" },
     { name = "elasticsearch-dsl", specifier = "==7.4.1" },
     { name = "etcd3", git = "https://github.com/kragniz/python-etcd3.git?rev=e58a899579ba416449c4e225b61f039457c8072a" },
     { name = "faker", specifier = "==30.8.1" },
@@ -258,7 +258,7 @@ dev = [
     { name = "types-pytz", specifier = "==2025.2.0.20250516" },
     { name = "types-pyyaml", specifier = "==6.0.12.20240311" },
     { name = "types-redis", specifier = "==4.6.0.20241004" },
-    { name = "types-requests", specifier = "==2.31.0.1" },
+    { name = "types-requests", specifier = "==2.32.4.20260107" },
     { name = "watchdog", specifier = "==6.0.0" },
 ]
 
@@ -438,7 +438,7 @@ wheels = [
 
 [[package]]
 name = "blue-krill"
-version = "2.1.5"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "bk-crypto-python-sdk" },
@@ -452,12 +452,11 @@ dependencies = [
     { name = "requests" },
     { name = "six" },
     { name = "toml" },
-    { name = "urllib3" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/c3/b3b40410e273dfa29fe6320dad3c7b150a5752ab383bc716828ccf3094d2/blue_krill-2.1.5.tar.gz", hash = "sha256:fc7e82a8b56d8739c70388a10acdde1ff76ed0d8ec2e7c3fb7d4cc87109dacdc", size = 64102, upload-time = "2025-12-19T09:11:37.594Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/63/23222db1a76b145c0b31f0adc4290978413886ba743bfbb6d83faebc08d7/blue_krill-2.2.0.tar.gz", hash = "sha256:7752a7bce0dd4ea02fdaf24a621772f09d8af92ccf4cefcf24107b6fa644c990", size = 64096, upload-time = "2026-02-27T02:59:35.45Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/73/01f3853e9ccffcb8a717b588293a47cb284a07fcb2b06e5667cb356015ed/blue_krill-2.1.5-py3-none-any.whl", hash = "sha256:ed626eb867f6069a702cee029a1e37ed3d41a1dd7a474509a997c25d53abd85a", size = 98547, upload-time = "2025-12-19T09:16:06.183Z" },
+    { url = "https://files.pythonhosted.org/packages/db/d2/a3e7e20d362144e685c53d696125ce8d007fc5c493d681160b93dcfc752e/blue_krill-2.2.0-py3-none-any.whl", hash = "sha256:4a21d2ad45a294602bcc021e070327dfc4e44154e5bea78760c151ee8f88a35a", size = 98534, upload-time = "2026-02-27T02:59:32.048Z" },
 ]
 
 [[package]]
@@ -926,15 +925,15 @@ wheels = [
 
 [[package]]
 name = "elasticsearch"
-version = "7.7.1"
+version = "7.17.13"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/a8/fcae36e10ff23208fd91cf55c525578d1d46381077281fb4142ebc777792/elasticsearch-7.7.1.tar.gz", hash = "sha256:9bfcb2bd137d6d7ca123e252b9d7261cfe4f7723f7b749a99c52b47766cf387c", size = 102965, upload-time = "2020-05-26T20:24:30.97Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/27/5b7e801213c16452d13eaddeae40810da5cd6152103f94e582e1d14d8c65/elasticsearch-7.17.13.tar.gz", hash = "sha256:ba1b87322045fc37831009c7c49ef0e2777165a2ad3390df4d9e2b7a09d90c86", size = 248490, upload-time = "2026-01-12T18:12:30.656Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/33/d0ed32e077f7dc860153fa866fc52ac312886c9890962ff29379aa753dd1/elasticsearch-7.7.1-py2.py3-none-any.whl", hash = "sha256:e9138aa9de7624a6c6fbf5d0300bb11617cfe0a056fc6731665748731961d693", size = 99278, upload-time = "2020-05-26T20:24:29.194Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/06/be118b997069ff6643b5dafb13e60442bf65ec6530f3ef714d6455b11ae5/elasticsearch-7.17.13-py2.py3-none-any.whl", hash = "sha256:dac73df9a9070b9c96be45d99f4316badc525f8b17f418e9c86da2bb5855c892", size = 386157, upload-time = "2026-01-12T18:12:25.496Z" },
 ]
 
 [[package]]
@@ -2953,14 +2952,14 @@ wheels = [
 
 [[package]]
 name = "types-requests"
-version = "2.31.0.1"
+version = "2.32.4.20260107"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
-    { name = "types-urllib3" },
+    { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/8e/2f846f4295021703d4f12aebf504dd5e47b7750d104ee0a8fd253f601d02/types-requests-2.31.0.1.tar.gz", hash = "sha256:3de667cffa123ce698591de0ad7db034a5317457a596eb0b4944e5a9d9e8d1ac", size = 15151, upload-time = "2023-05-29T06:19:48.499Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/f3/a0663907082280664d745929205a89d41dffb29e89a50f753af7d57d0a96/types_requests-2.32.4.20260107.tar.gz", hash = "sha256:018a11ac158f801bfa84857ddec1650750e393df8a004a8a9ae2a9bec6fcb24f", size = 23165, upload-time = "2026-01-07T03:20:54.091Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/09/d89e773735e444828f8d5a4b11f8a940e314ae05c6ccedfc94e44861e97e/types_requests-2.31.0.1-py3-none-any.whl", hash = "sha256:afb06ef8f25ba83d59a1d424bd7a5a939082f94b94e90ab5e6116bd2559deaa3", size = 14355, upload-time = "2023-05-29T06:19:46.044Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/12/709ea261f2bf91ef0a26a9eed20f2623227a8ed85610c1e54c5805692ecb/types_requests-2.32.4.20260107-py3-none-any.whl", hash = "sha256:b703fe72f8ce5b31ef031264fe9395cac8f46a04661a79f7ed31a80fb308730d", size = 20676, upload-time = "2026-01-07T03:20:52.929Z" },
 ]
 
 [[package]]
@@ -2970,15 +2969,6 @@ source = { registry = "https://pypi.org/simple/" }
 sdist = { url = "https://files.pythonhosted.org/packages/79/66/1b276526aad4696a9519919e637801f2c103419d2c248a6feb2729e034d1/types_setuptools-80.9.0.20250529.tar.gz", hash = "sha256:79e088ba0cba2186c8d6499cbd3e143abb142d28a44b042c28d3148b1e353c91", size = 41337, upload-time = "2025-05-29T03:07:34.487Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1b/d8/83790d67ec771bf029a45ff1bd1aedbb738d8aa58c09dd0cc3033eea0e69/types_setuptools-80.9.0.20250529-py3-none-any.whl", hash = "sha256:00dfcedd73e333a430e10db096e4d46af93faf9314f832f13b6bbe3d6757e95f", size = 63263, upload-time = "2025-05-29T03:07:33.064Z" },
-]
-
-[[package]]
-name = "types-urllib3"
-version = "1.26.25.14"
-source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/73/de/b9d7a68ad39092368fb21dd6194b362b98a1daeea5dcfef5e1adb5031c7e/types-urllib3-1.26.25.14.tar.gz", hash = "sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f", size = 11239, upload-time = "2023-07-20T15:19:31.307Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/7b/3fc711b2efea5e85a7a0bbfe269ea944aa767bbba5ec52f9ee45d362ccf3/types_urllib3-1.26.25.14-py3-none-any.whl", hash = "sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e", size = 15377, upload-time = "2023-07-20T15:19:30.379Z" },
 ]
 
 [[package]]
@@ -3022,11 +3012,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "1.26.20"
+version = "2.6.3"
 source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/e4/e8/6ff5e6bc22095cfc59b6ea711b687e2b7ed4bdb373f7eeec370a97d7392f/urllib3-1.26.20.tar.gz", hash = "sha256:40c2dc0c681e47eb8f90e7e27bf6ff7df2e677421fd46756da1161c39ca70d32", size = 307380, upload-time = "2024-08-29T15:43:11.37Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/33/cf/8435d5a7159e2a9c83a95896ed596f68cf798005fe107cc655b5c5c14704/urllib3-1.26.20-py2.py3-none-any.whl", hash = "sha256:0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e", size = 144225, upload-time = "2024-08-29T15:43:08.921Z" },
+    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
 ]
 
 [[package]]

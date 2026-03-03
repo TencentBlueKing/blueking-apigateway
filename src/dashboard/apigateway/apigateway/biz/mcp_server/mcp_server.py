@@ -15,18 +15,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import base64
 import datetime
 import json
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import quote
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyExpireDaysEnum,
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
@@ -50,6 +55,7 @@ from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
@@ -171,11 +177,38 @@ class MCPServerHandler:
     @staticmethod
     @transaction.atomic
     def sync_permissions(mcp_server_id: int) -> None:
-        """同步 MCPServer 的权限
+        """同步 MCPServer 的权限，包括 OAuth2 权限（bk_app_code=public）
         Args:
             mcp_server_id (int): mcp_server 的 id
         """
         mcp_server = MCPServer.objects.get(id=mcp_server_id)
+
+        # 同步 OAuth2 权限：根据 oauth2_public_client_enabled 开启/关闭 public app 权限
+        public_app_code = settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE
+        if mcp_server.oauth2_public_client_enabled:
+            MCPServerAppPermission.objects.save_permission(
+                mcp_server_id=mcp_server_id,
+                bk_app_code=public_app_code,
+                grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+                expire_days=None,
+            )
+            logger.info(
+                "sync oauth2 permissions for mcp_server %d, granted bk_app_code=%s",
+                mcp_server_id,
+                public_app_code,
+            )
+        else:
+            deleted_count, _ = MCPServerAppPermission.objects.filter(
+                mcp_server_id=mcp_server_id,
+                bk_app_code=public_app_code,
+            ).delete()
+            if deleted_count:
+                logger.info(
+                    "sync oauth2 permissions for mcp_server %d, revoked bk_app_code=%s, deleted %d",
+                    mcp_server_id,
+                    public_app_code,
+                    deleted_count,
+                )
 
         # 1. fetch the app codes in mcp_server_app_permission
         app_codes = MCPServerAppPermission.objects.filter(mcp_server=mcp_server).values_list("bk_app_code", flat=True)
@@ -252,6 +285,55 @@ class MCPServerHandler:
             AppResourcePermission.objects.bulk_create(to_add)
         if to_delete:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
+
+    @staticmethod
+    def get_app_permission_risks(mcp_servers: list) -> Dict[int, List[str]]:
+        """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
+
+        当 oauth2_public_client_enabled=True 时，public 应用被自动授权；
+        如果工具对应的 API 要求应用认证(verified_app_required)，则存在权限失效的安全风险。
+
+        Args:
+            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+
+        Returns:
+            {mcp_server_id: [risk_tool_name, ...]} 映射，仅包含存在风险的 MCPServer
+        """
+        risk_mcp_servers = [m for m in mcp_servers if m.oauth2_public_client_enabled]
+        if not risk_mcp_servers:
+            return {}
+
+        gateway_stage_pairs = set()
+        mcp_server_gateway_stage: Dict[int, tuple] = {}
+        for mcp_server in risk_mcp_servers:
+            key = (mcp_server.gateway_id, mcp_server.stage_id)
+            gateway_stage_pairs.add(key)
+            mcp_server_gateway_stage[mcp_server.id] = key
+
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).select_related("resource_version")
+
+        release_resource_auth: Dict[tuple, Dict[str, bool]] = {}
+        for release in releases:
+            key = (release.gateway_id, release.stage_id)
+            resource_auth: Dict[str, bool] = {}
+            for resource in release.resource_version.data:
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                resource_auth[resource["name"]] = bool(auth_config.get("app_verified_required", True))
+            release_resource_auth[key] = resource_auth
+
+        risks: Dict[int, List[str]] = {}
+        for mcp_server in risk_mcp_servers:
+            gateway_stage_key = mcp_server_gateway_stage[mcp_server.id]
+            resource_auth = release_resource_auth.get(gateway_stage_key, {})
+            risk_tools = [tool_name for tool_name in mcp_server.resource_names if resource_auth.get(tool_name, False)]
+            if risk_tools:
+                risks[mcp_server.id] = risk_tools
+
+        return risks
 
     @staticmethod
     def disable_servers(gateway_id: int, stage_id: int = 0) -> None:
@@ -402,6 +484,85 @@ class MCPServerHandler:
             return ""
 
         return extend.content
+
+    @staticmethod
+    def _build_cursor_install_url(name: str, mcp_url: str) -> str:
+        """
+        生成 Cursor 一键配置 URL
+
+        格式: cursor://anysphere.cursor-deeplink/mcp/install?name=<NAME>&config=<BASE64_CONFIG>
+        """
+        config = {
+            "url": mcp_url,
+            "headers": {
+                "X-Bkapi-Authorization": json.dumps(
+                    {
+                        "bk_app_code": "your_app_code",
+                        "bk_app_secret": "your_app_secret",
+                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                    }
+                )
+            },
+        }
+        config_json = json.dumps(config)
+        config_base64 = base64.b64encode(config_json.encode()).decode()
+        return f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(name)}&config={quote(config_base64)}"
+
+    @staticmethod
+    def build_agent_client_configs(instance: MCPServer) -> List[Dict[str, Any]]:
+        """
+        构建 MCPServer 的 Agent 客户端配置列表
+
+        Args:
+            instance: MCPServer 实例
+
+        Returns:
+            配置列表，每个配置包含 name, display_name, content, install_url
+        """
+        language_code = get_current_language_code()
+        mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
+        configs = []
+
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            template_name = f"mcp_server/{language_code}/config/{client['name']}.md"
+
+            # 根据 protocol_type 和客户端类型确定 transport_type
+            if instance.protocol_type == "streamable_http":
+                transport_type = "streamable-http" if client["name"] == "codebuddy" else "http"
+            else:
+                transport_type = "sse"
+
+            # 构建模板上下文
+            context = {
+                "name": instance.name,
+                "url": mcp_url,
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "transport_type": transport_type,
+                "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
+            }
+
+            # AIDev 需要额外的创建链接
+            if client["name"] == "aidev":
+                context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
+
+            content = render_to_string(template_name, context=context)
+
+            # 生成一键配置 URL（目前只有 Cursor 支持）
+            install_url = ""
+            if client["name"] == "cursor":
+                install_url = MCPServerHandler._build_cursor_install_url(instance.name, mcp_url)
+
+            configs.append(
+                {
+                    "name": client["name"],
+                    "display_name": client["display_name"],
+                    "content": content,
+                    "install_url": install_url,
+                }
+            )
+
+        return configs
 
 
 class MCPServerPermissionHandler:

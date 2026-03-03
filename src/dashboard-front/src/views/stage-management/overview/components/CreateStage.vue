@@ -308,6 +308,13 @@
                               {{ t('最大 300 秒') }}
                             </p>
                           </BkFormItem>
+
+                          <HealthChecks
+                            v-if="featureFlagStore.flags.ENABLE_HEALTH_CHECK"
+                            :ref="(el) => setHealthChecksRef(el, backend)"
+                            :disabled="backend.config.hosts.length < 2"
+                            :checks="backend.config.checks"
+                          />
                         </BkForm>
                       </template>
                     </BkCollapse>
@@ -370,16 +377,38 @@
                 :class="{ highlighted: backend.name === selectedBackendName }"
                 :col="14"
               >
-                <BkRow>
-                  <BkCol :span="2">
-                    <label class="ag-key">{{ t("负载均衡类型") }}:</label>
-                  </BkCol>
-                  <BkCol :span="8">
-                    <div class="ag-value">
-                      {{ getLoadBalanceText(backend.config.loadbalance) }}
-                    </div>
-                  </BkCol>
-                </BkRow>
+                <template v-if="backend.config.hosts?.length > 1">
+                  <BkRow>
+                    <BkCol :span="2">
+                      <label class="ag-key">{{ t("负载均衡类型") }}:</label>
+                    </BkCol>
+                    <BkCol :span="8">
+                      <div class="ag-value">
+                        {{ getLoadBalanceText(backend.config.loadbalance) }}
+                      </div>
+                    </BkCol>
+                  </BkRow>
+                  <BkRow>
+                    <BkCol :span="2">
+                      <label class="ag-key">{{ t('哈希位置') }}:</label>
+                    </BkCol>
+                    <BkCol :span="8">
+                      <div class="ag-value">
+                        {{ backend.config.hash_on || '--' }}
+                      </div>
+                    </BkCol>
+                  </BkRow>
+                  <BkRow>
+                    <BkCol :span="2">
+                      <label class="ag-key">Key:</label>
+                    </BkCol>
+                    <BkCol :span="8">
+                      <div class="ag-value">
+                        {{ backend.config.key || '--' }}
+                      </div>
+                    </BkCol>
+                  </BkRow>
+                </template>
                 <template
                   v-for="host in backend.config.hosts"
                   :key="host.host"
@@ -415,6 +444,277 @@
                     </div>
                   </BkCol>
                 </BkRow>
+
+                <template v-if="Object.keys(backend.config.checks || {}).length">
+                  <template v-if="backend.config.checks.active">
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ `${t('健康检查')} - ${t('主动检查')}` }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('类型') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.type }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow v-if="backend.config.checks.active.type === 'https'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('是否检查证书') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.https_verify_certificate ? t('是') : t('否') }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('超时时间(s)') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.timeout }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('并行数量') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.concurrency }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow v-if="backend.config.checks.active.type !== 'tcp'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('健康检查.请求路径') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.http_path }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ t('健康状态') }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('间隔时间(s)') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.healthy.interval }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow v-if="backend.config.checks.active.type !== 'tcp'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('状态码') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.healthy.http_statuses }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('成功次数') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.healthy.successes }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ t('不健康状态') }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('间隔时间(s)') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.unhealthy.interval }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow v-if="backend.config.checks.active.type !== 'tcp'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('状态码') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.unhealthy.http_statuses }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('失败次数') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{
+                            backend.config.checks.active.type === 'tcp'
+                              ? backend.config.checks.active.unhealthy.tcp_failures
+                              : backend.config.checks.active.unhealthy.http_failures
+                          }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('超时时间(s)') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.active.unhealthy.timeouts }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                  </template>
+                  <template v-if="backend.config.checks.passive">
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ `${t('健康检查')} - ${t('被动检查')}` }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('类型') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.passive.type }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ t('健康状态') }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow v-if="backend.config.checks.passive.type !== 'tcp'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('状态码') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.passive.healthy.http_statuses }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('成功次数') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.passive.healthy.successes }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow>
+                      <BkCol :span="2" />
+                      <BkCol
+                        :span="12"
+                        :offset="2"
+                      >
+                        <div class="ag-value font-bold">
+                          {{ t('不健康状态') }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+
+                    <BkRow v-if="backend.config.checks.passive.type !== 'tcp'">
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('状态码') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.passive.unhealthy.http_statuses }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('失败次数') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{
+                            backend.config.checks.passive.type === 'tcp'
+                              ? backend.config.checks.passive.unhealthy.tcp_failures
+                              : backend.config.checks.passive.unhealthy.http_failures
+                          }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                    <BkRow>
+                      <BkCol :span="2">
+                        <label class="ag-key">{{ t('超时时间(s)') }}:</label>
+                      </BkCol>
+                      <BkCol :span="12">
+                        <div class="ag-value">
+                          {{ backend.config.checks.passive.unhealthy.timeouts }}
+                        </div>
+                      </BkCol>
+                    </BkRow>
+                  </template>
+                </template>
               </BkContainer>
             </template>
           </div>
@@ -474,9 +774,11 @@ import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import {
   useEnv,
+  useFeatureFlag,
   useGateway,
 } from '@/stores';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
+import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
 
 interface IProps { stageId?: number }
 
@@ -491,6 +793,7 @@ const { t, locale } = useI18n();
 const route = useRoute();
 const envStore = useEnv();
 const gatewayStore = useGateway();
+const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
 const isAdsorb = ref(false);
@@ -631,12 +934,14 @@ const rules = {
     {
       validator: (val: number) => !(val < 0 || val > 300),
       message: t('超时时间不能小于1且不能大于300'),
-      trigger: 'blur',
+      trigger: 'change',
     },
   ],
 };
 
 const backendConfigFormRefs: InstanceType<typeof Form>[] = [];
+
+const healthCheckRefMap: Record<number, InstanceType<typeof HealthChecks>> = {};
 
 // 网关id
 const gatewayId = computed(() => Number(route.params.id));
@@ -695,6 +1000,12 @@ const defaultConfig = () => {
 const setBackendConfigRef = (el: InstanceType<typeof Form>) => {
   if (el !== null) {
     backendConfigFormRefs.push(el);
+  }
+};
+
+const setHealthChecksRef = (el: InstanceType<typeof HealthChecks>, backend: { id: number }) => {
+  if (el && backend.id) {
+    healthCheckRefMap[backend.id] = el;
   }
 };
 
@@ -846,6 +1157,17 @@ const handleConfirm = async () => {
 // 新建环境
 const handleConfirmCreate = async () => {
   const params = cloneDeep(curStageData.value);
+  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
+    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
+      const backend = params.backends.find(backend => backend.id === Number(backendId));
+      if (backend) {
+        const checks = healthCheckRef.getValue();
+        if (checks) {
+          Object.assign(backend.config, { checks });
+        }
+      }
+    });
+  }
   // 删除冗余参数
   params.backends.forEach((v: any) => {
     delete v.name;
@@ -865,6 +1187,17 @@ const handleConfirmCreate = async () => {
 // 编辑环境
 const handleConfirmEdit = async () => {
   const params = cloneDeep(curStageData.value);
+  if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && Object.keys(healthCheckRefMap).length) {
+    Object.entries(healthCheckRefMap).forEach(([backendId, healthCheckRef]) => {
+      const backend = params.backends.find(backend => backend.id === Number(backendId));
+      if (backend) {
+        const checks = healthCheckRef.getValue();
+        if (checks) {
+          Object.assign(backend.config, { checks });
+        }
+      }
+    });
+  }
   // 删除冗余参数
   params.backends.forEach((v: any) => {
     delete v.name;

@@ -29,6 +29,9 @@ from apigateway.utils.maven import RepositoryConfig
 
 logger = logging.getLogger(__name__)
 
+# Maven Central 官方仓库地址，作为镜像源的默认值
+MAVEN_CENTRAL_URL = "https://repo.maven.apache.org/maven2"
+
 
 @dataclass
 class MavenSourceDistributor(Distributor):
@@ -66,6 +69,9 @@ class MavenSourceDistributor(Distributor):
         env = os.environ.copy()
         env["HOME"] = source_dir
 
+        # 镜像源 URL，如果未配置则使用 Maven Central 官方地址
+        mirror_url = self.repository_config.mirror_url or MAVEN_CENTRAL_URL
+
         command = [
             "mvn",
             "-s",
@@ -81,7 +87,17 @@ class MavenSourceDistributor(Distributor):
             "-Durl=" + self.repository_config.repository_url,
             "-Dusername=" + self.repository_config.username,
             "-Dpassword=" + self.repository_config.password,
+            "-DmirrorUrl=" + mirror_url,
         ]
+
+        # 如果配置了跳过 SSL 证书校验（用于内网 HTTPS 部署的 bkrepo）
+        if self.repository_config.ssl_insecure:
+            command.extend(
+                [
+                    "-Dmaven.wagon.http.ssl.insecure=true",
+                    "-Dmaven.wagon.http.ssl.allowall=true",
+                ]
+            )
 
         try:
             completed_process = subprocess.run(

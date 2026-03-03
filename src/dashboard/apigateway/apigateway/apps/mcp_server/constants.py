@@ -75,3 +75,10 @@ class MCPServerProtocolTypeEnum(StructuredEnum):
 
     SSE = EnumField("sse", label=_("SSE"))
     STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
+
+
+# MCPServer 分类名称常量 - 用于判断特殊分类
+OFFICIAL_MCP_CATEGORY_NAME = "Official"
+FEATURED_MCP_CATEGORY_NAME = "Featured"
+# 默认分类名称 - 未设置分类时使用
+UNCATEGORIZED_MCP_CATEGORY_NAME = "Uncategorized"

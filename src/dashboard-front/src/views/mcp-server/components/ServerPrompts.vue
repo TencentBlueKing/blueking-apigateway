@@ -166,7 +166,7 @@ const setPageMaxH = computed(() => {
   if (page === 'market') {
     return '100%';
   }
-  const offsetH = isShowNoticeAlert.value ? 434 : 394;
+  const offsetH = isShowNoticeAlert.value ? 440 : 400;
   return `calc(100vh - ${offsetH}px)`;
 });
 const promptList = computed<IMCPServerPrompt[]>(() => {

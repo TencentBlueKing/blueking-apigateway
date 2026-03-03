@@ -23,7 +23,6 @@ from typing import List
 from urllib.parse import quote
 
 import pymysql
-import urllib3
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.db.backends.mysql.features import DatabaseFeatures
@@ -41,10 +40,6 @@ pymysql.version_info = 1, 4, 6, "final", 0
 
 # 目前 Django 仅是对 5.7 做了软性的不兼容改动，在没有使用 8.0 特异的功能时，对 5.7 版本的使用无影响
 DatabaseFeatures.minimum_database_version = PatchFeatures.minimum_database_version
-
-# Patch the SSL module for compatibility with legacy CA credentials.
-# https://stackoverflow.com/questions/72479812/how-to-change-tweak-python-3-10-default-ssl-settings-for-requests-sslv3-alert
-urllib3.util.ssl_.DEFAULT_CIPHERS = "ALL:@SECLEVEL=1"
 
 env = Env()
 
@@ -532,6 +527,8 @@ BK_PAAS3_API_TIMEOUT = env.int("BK_PAAS3_API_TIMEOUT", 30)
 BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
 BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
+# BKAuth 站点地址 用于 OAuth2 跳转
+BK_AUTH_SERVER_URL = env.str("BK_AUTH_SERVER_URL", "")
 BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
     env.str("DASHBOARD_FE_URL", "").rstrip("/") + "/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
 )
@@ -559,6 +556,25 @@ BKAIDEV_URL_PREFIX = (
 BKAIDEV_API_TIMEOUT = env.int("BKAIDEV_API_TIMEOUT", 30)
 # 是否启用 Mock 模式（第三方 API 未就绪时使用）
 BKAIDEV_USE_MOCK = env.bool("BKAIDEV_USE_MOCK", False)
+
+# AIDEV 平台配置（配置了 AIDEV_AGENT_CREATE_URL 则启用 AIDev）
+AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
+
+# MCP Server OAuth2 公开客户端模式开启后自动授权的 bk_app_code
+MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public")
+
+# MCP Server 配置工具列表
+MCP_CONFIG_AGENT_CLIENTS = [
+    {"name": "codebuddy", "display_name": "CodeBuddy"},
+    {"name": "cursor", "display_name": "Cursor"},
+    {"name": "claude", "display_name": "Claude"},
+    {"name": "vscode", "display_name": "VSCode"},
+]
+
+# 如果配置了 AIDEV_AGENT_CREATE_URL，则添加 AIDev 到配置列表
+if AIDEV_AGENT_CREATE_URL:
+    MCP_CONFIG_AGENT_CLIENTS.append({"name": "aidev", "display_name": "AIDev"})
+
 
 # ==============================================================================
 # 网关全局配置
@@ -716,6 +732,10 @@ MAVEN_MIRRORS_CONFIG = {
         "repository_id": env.str("DEFAULT_MAVEN_REPOSITORY_ID", "bkpaas-maven"),
         "username": env.str("DEFAULT_MAVEN_USERNAME", "bk_apigateway"),
         "password": env.str("DEFAULT_MAVEN_PASSWORD", "bk_apigateway"),
+        # 是否跳过 SSL 证书校验，用于内网 HTTPS 部署的 bkrepo
+        "ssl_insecure": env.bool("DEFAULT_MAVEN_SSL_INSECURE", False),
+        # Maven 镜像源 URL，用于国内网络环境加速依赖下载，如阿里云镜像 https://maven.aliyun.com/repository/public
+        "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", ""),
     }
 }
 
@@ -918,7 +938,7 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_BK_NOTICE": ENABLE_BK_NOTICE,
     # 是否开启多租户模式
     "ENABLE_MULTI_TENANT_MODE": ENABLE_MULTI_TENANT_MODE,
-    # 是否开启网关AI相关功能
+    # 是否开启网关 AI 相关功能
     "ENABLE_AI_COMPLETION": AI_OPEN_API_BASE_URL != "",
     # 前端是否渲染 display_name
     "ENABLE_DISPLAY_NAME_RENDER": (
@@ -928,6 +948,10 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_GATEWAY_OPERATION_STATUS": env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATION_STATUS", False),
     # 是否启用 MCP Prompt 功能
     "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
+    # 是否启用健康检查
+    "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
+    # 是否开启 MCP Server OAuth2 公开客户端模式
+    "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并

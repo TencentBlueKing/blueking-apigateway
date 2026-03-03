@@ -16,21 +16,93 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from rest_framework import serializers
 
-from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    FEATURED_MCP_CATEGORY_NAME,
+    OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerProtocolTypeEnum,
+    MCPServerStatusEnum,
+)
+from apigateway.common.constants import LanguageCodeEnum
+from apigateway.common.django.translation import get_current_language_code
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
+
+
+class MCPServerCategoryOutputSLZ(serializers.Serializer):
+    """MCPServer 分类输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True, help_text="分类 ID")
+    name = serializers.CharField(read_only=True, help_text="分类名称（英文标识）")
+    display_name = serializers.SerializerMethodField(help_text="分类显示名称（根据语言环境返回）")
+    description = serializers.CharField(read_only=True, help_text="分类描述")
+    sort_order = serializers.IntegerField(read_only=True, help_text="排序顺序")
+    mcp_server_count = serializers.SerializerMethodField(help_text="该分类下的 MCPServer 数量")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerCategoryOutputSLZ"
+
+    def get_display_name(self, obj) -> str:
+        """根据当前语言环境返回分类名称：英文环境返回 name，中文环境返回 display_name"""
+        language_code = get_current_language_code()
+        # 英文环境返回 name，否则返回 display_name
+        if language_code == LanguageCodeEnum.EN.value:
+            return obj.name
+        return obj.display_name
+
+    def get_mcp_server_count(self, obj) -> int:
+        """获取该分类下的 MCPServer 数量"""
+        # 从 context 中获取统计数据，如果没有则返回 0
+        category_stats = self.context.get("category_stats", {})
+        return category_stats.get(obj.id, 0)
 
 
 class MCPServerListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述"
     )
+    categories = serializers.CharField(
+        allow_blank=True, required=False, help_text="分类筛选，支持单个或多个分类名称，多个分类以逗号分隔"
+    )
+    order_by = serializers.ChoiceField(
+        choices=[
+            ("updated_time", "按更新时间排序"),
+            ("-updated_time", "按更新时间倒序"),
+            ("created_time", "按创建时间排序"),
+            ("-created_time", "按创建时间倒序"),
+            ("name", "按名称字母顺序排序"),
+            ("-name", "按名称字母倒序排序"),
+        ],
+        default="-updated_time",
+        required=False,
+        help_text="排序方式",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerListInputSLZ"
+
+    def validate_categories(self, value):
+        """解析分类参数，支持多个分类名称（逗号分隔）"""
+        if not value:
+            return []
+        # 解析逗号分隔的分类名称，去除空白
+        return [cat.strip() for cat in value.split(",") if cat.strip()]
+
+
+def _get_active_categories_from_prefetch(obj) -> List:
+    """
+    从预加载的数据中获取激活的分类列表，避免 N+1 查询。
+
+    如果已经通过 prefetch_related 预加载了 categories，则在内存中过滤和排序；
+    否则回退到数据库查询。
+    """
+    # 使用预取的 categories 关系数据，在内存中过滤和排序
+    return sorted(
+        (cat for cat in obj.categories.all() if cat.is_active),
+        key=lambda cat: cat.sort_order,
+    )
 
 
 class MCPServerBaseOutputSLZ(serializers.Serializer):
@@ -66,6 +138,12 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
 
     updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
+    created_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 创建时间")
+
+    # 分类信息
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方")
+    is_featured = serializers.SerializerMethodField(help_text="是否为精选")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBaseOutputSLZ"
@@ -82,6 +160,21 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     def get_prompts_count(self, obj) -> int:
         prompts_count_map = self.context.get("prompts_count_map", {})
         return prompts_count_map.get(obj.id, 0)
+
+    def get_categories(self, obj):
+        """获取分类信息，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return MCPServerCategoryOutputSLZ(active_categories, many=True).data
+
+    def get_is_official(self, obj) -> bool:
+        """是否为官方，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return any(cat.name == OFFICIAL_MCP_CATEGORY_NAME for cat in active_categories)
+
+    def get_is_featured(self, obj) -> bool:
+        """是否为精选，利用预加载的数据避免 N+1 查询"""
+        active_categories = _get_active_categories_from_prefetch(obj)
+        return any(cat.name == FEATURED_MCP_CATEGORY_NAME for cat in active_categories)
 
 
 class MCPServerListOutputSLZ(MCPServerBaseOutputSLZ):

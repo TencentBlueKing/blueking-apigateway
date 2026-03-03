@@ -144,7 +144,9 @@ class OpenAPIImportManager:
         解析 openapi
         """
 
-        parse_result = ResolvingParser(spec_string=str(self.data), backend="openapi-spec-validator", strict=False)
+        parse_result = ResolvingParser(
+            spec_string=json.dumps(self.data), backend="openapi-spec-validator", strict=False
+        )
 
         # 获取对应的parser
         parser = self._get_parser(parse_result)

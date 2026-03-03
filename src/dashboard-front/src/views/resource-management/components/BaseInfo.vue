@@ -53,6 +53,7 @@
       class="label-label"
     >
       <SelectCheckBox
+        v-if="isLabelsEditable"
         v-model="formData.label_ids"
         :labels-data="labelsData"
         :width="700"
@@ -60,6 +61,20 @@
         @update-success="init"
         @label-add-success="handleLabelAddSuccess"
       />
+      <div v-else>
+        <div
+          v-if="detail?.labels?.length"
+          class="mt-8px flex gap-4px"
+        >
+          <BkTag
+            v-for="(label, index) in detail.labels"
+            :key="index"
+          >
+            {{ label }}
+          </BkTag>
+        </div>
+        <span v-else>--</span>
+      </div>
     </BkFormItem>
     <BkFormItem :label="t('认证方式')">
       <BkCheckbox
@@ -130,11 +145,14 @@ import { useGateway } from '@/stores';
 interface IProps {
   detail?: any
   isClone?: boolean
+  // 是否允许编辑标签，用于控制是否只展示静态标签
+  isLabelsEditable?: boolean
 }
 
 const {
   detail = {},
   isClone = false,
+  isLabelsEditable = true,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
@@ -155,7 +173,10 @@ const formData = ref({
   allow_apply_permission: true,
 });
 
-const labelsData = ref<any[]>([]);
+const labelsData = ref<{
+  id: number
+  name: string
+}[]>([]);
 
 const rules = {
   name: [
@@ -185,10 +206,20 @@ watch(
   (val: any) => {
     if (Object.keys(val).length) {
       const { name, description, auth_config, is_public, allow_apply_permission, labels } = val;
-      const label_ids = labels.map((e: {
-        id: number
-        name: string
-      }) => e.id);
+      let label_ids: number[] = [];
+      if (labels?.length) {
+        // labels 由 id 和 name 组成的情况
+        if (labels[0].id && labels[0].name) {
+          label_ids = labels.map((label: {
+            id: number
+            name: string
+          }) => label.id);
+        }
+        // labels 由纯数组组成的情况
+        else {
+          label_ids = labelsData.value.filter(label => labels.includes(label.name)).map(label => label.id);
+        }
+      }
       formData.value = {
         name: isClone ? `${name}_clone` : name,
         description,

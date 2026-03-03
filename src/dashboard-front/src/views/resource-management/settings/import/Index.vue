@@ -178,7 +178,7 @@
                 :class="{ 'show-valid-msg': isValidBannerVisible }"
               >
                 <!--  编辑器本体  -->
-                <editor-monaco
+                <EditorMonaco
                   ref="resourceEditorRef"
                   v-model="editorText"
                   @find-state-changed="(isVisible) => {
@@ -733,7 +733,7 @@ import { InfoBox, Message, ResizeLayout } from 'bkui-vue';
 // const router = useRouter();
 
 // import useTsxRouter from './hooks/useTsxRouter';
-import editorMonaco from '@/components/ag-editor/Index.vue';
+import EditorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { getStrFromFile } from '@/utils';
 import { checkResourceImport, importResource } from '@/services/source/resource';
@@ -793,7 +793,7 @@ const envStore = useEnv();
 const gatewayStore = useGateway();
 
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
-const resourceEditorRef = ref<InstanceType<typeof editorMonaco>>(); // 实例化
+const resourceEditorRef = ref<InstanceType<typeof EditorMonaco>>(); // 实例化
 const docConfig = ref<IDocConfig>({
   showDoc: true,
   language: 'zh',

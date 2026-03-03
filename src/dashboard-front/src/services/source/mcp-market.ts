@@ -24,6 +24,8 @@ export interface IMarketplace {
   limit: number
   offset: number
   keyword?: string
+  order_by?: string
+  categories?: string
 }
 
 export interface IStageReleaseCheckMcp {
@@ -84,6 +86,23 @@ export interface IMarketplaceDetails extends IMarketplaceItem {
   guideline: string
   tools: ITool[]
   maintainers: string[]
+}
+
+export interface IMCPMarketCategory {
+  name: string
+  display_name: string
+  description: string
+  id: number
+  sort_order: number
+  mcp_server_count: number
+}
+
+// MCP配置
+export interface IMarketplaceConfig {
+  name: string
+  display_name: string
+  content: string
+  install_url: string
 }
 
 /**
@@ -158,7 +177,7 @@ export const deleteMcpPermissions = (apigwId: number, mcp_server_id: number, id:
  * @param data
  */
 export const getMcpAppPermissionApply = (apigwId: number, data: IMcpAppPermissionApply) =>
-  http.get(`${path}/${apigwId}/mcp-servers/${data?.mcp_server_id}/permissions/app-permission-apply/`, data);
+  http.get(`${path}/${apigwId}/mcp-servers/-/app-permission-apply/`, data);
 
 /**
  *  授权审批申请人列表
@@ -177,3 +196,15 @@ export const getMcpPermissionsApplicant = (apigwId: number, mcp_server_id: numbe
  */
 export const updateMcpPermissions = (apigwId: number, mcp_server_id: number, id: number, data: any) =>
   http.patch(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/${id}/status/`, data);
+
+/**
+ *  获取 MCP 市场分类列表
+ */
+export const getMcpMarketplaceCategories = (data: IMarketplace) => http.get('/mcp-marketplace/categories/', data);
+
+/**
+ *获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）
+ * @param apigwId 网关id
+ */
+export const getMcpAIConfigList = (mcp_server_id: number): Promise<{ configs: IMarketplaceConfig[] }> =>
+  http.get(`/mcp-marketplace/servers/${mcp_server_id}/configs/`);

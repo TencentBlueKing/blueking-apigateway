@@ -32,6 +32,9 @@
 
 <script setup lang="ts">
 import { isInteger } from 'lodash-es';
+import { Form } from 'bkui-vue';
+import { locale, t } from '@/locales';
+import type { IFormMethod } from '@/types/common';
 
 interface IFormModel {
   uri: string
@@ -42,20 +45,25 @@ interface IProps { data: IFormModel }
 
 const { data } = defineProps<IProps>();
 
-const { t } = useI18n();
-
-const formRef = ref();
+const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 
 const form = ref<IFormModel>({
   uri: '',
   ret_code: 302,
 });
 
+const uriRuleMessage = computed(() => {
+  const regexTip = '(\\$[0-9a-zA-Z_]+)\\|\\${([0-9a-zA-Z_]+)}\\|\\$([0-9a-zA-Z_]+)\\|(\\$|[^$\\\\]+)';
+  return locale.value === 'zh-cn'
+    ? `需要符合规则 ${regexTip}`
+    : `Must matches regular expression ${regexTip}`;
+});
+
 const rules = {
   uri: [
     {
       validator: (value: string) => /(\\\$[0-9a-zA-Z_]+)|\$\{([0-9a-zA-Z_]+)\}|\$([0-9a-zA-Z_]+)|(\$|[^$\\]+)/.test(value),
-      message: t('需要符合规则 (\\\\\\$[0-9a-zA-Z_]+)\\|\\$\\{([0-9a-zA-Z_]+)\\}\\|\\$([0-9a-zA-Z_]+)\\|(\\$|[^$\\\\]+)'),
+      message: uriRuleMessage.value,
       trigger: 'change',
     },
   ],

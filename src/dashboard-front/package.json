@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node replace-index-html.js index.dev.html && vite",
+    "dev:tenant": "node replace-index-html.js index.dev.html && vite --mode tenant",
     "build": "node replace-index-html.js index.prod.html && run-p type-check \"build-only {@}\" --",
     "preview": "node replace-index-html.js index.dev.html && vite preview",
     "build-only": "node replace-index-html.js index.prod.html && vite build",
@@ -16,7 +17,6 @@
   "dependencies": {
     "@blueking/bk-user-display-name": "1.0.3-beta.7",
     "@blueking/bk-user-selector": "^0.0.35",
-    "@blueking/bkui-form": "1.0.0-beta.6",
     "@blueking/date-picker": "2.0.0-beta.48",
     "@blueking/login-modal": "^1.0.6",
     "@blueking/notice-component": "^2.0.5",
@@ -31,7 +31,7 @@
     "@vueuse/integrations": "^13.6.0",
     "@vueuse/router": "^13.6.0",
     "axios": "^1.11.0",
-    "bkui-vue": "2.0.2-beta.63",
+    "bkui-vue": "2.0.2-beta.93",
     "change-case": "^5.4.4",
     "dayjs": "^1.11.13",
     "echarts": "^5.6.0",
@@ -49,6 +49,7 @@
     "pinia": "^3.0.3",
     "qs": "^6.14.0",
     "semver": "^7.7.2",
+    "tdesign-vue-next": "^1.18.0",
     "to-json-schema": "^0.2.5",
     "vue": "^3.5.18",
     "vue-i18n": "^11.1.11",

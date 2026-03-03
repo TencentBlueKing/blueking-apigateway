@@ -45,13 +45,6 @@ export const getPluginTags = (apigwId: number) => http.get<{ tags: string[] }>(`
 export const getPluginBindingsList = (apigwId: number, code: string) => http.get(`${path}/${apigwId}/plugins/${code}/bindings/`);
 
 /**
- * 获取插件类型对应的动态表单
- * @param apigwId 网关id
- * @param code 插件code
- */
-export const getPluginForm = (apigwId: number, code: string) => http.get(`${path}/${apigwId}/plugins/${code}/form/`);
-
-/**
  * 获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)
  * @param apigwId 网关id
  * @param scopeType 类型
@@ -68,7 +61,7 @@ export const getScopeBindingPluginList = (apigwId: number, scopeType: string, sc
  * @param code 插件code
  * @param data 插件的参数
  */
-export const creatPlugin = (apigwId: number, scopeType: string, scopeId: number, code: string, data: any) =>
+export const createPlugin = (apigwId: number, scopeType: string, scopeId: number, code: string, data: any) =>
   http.post(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/`, data);
 
 /**

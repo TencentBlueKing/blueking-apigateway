@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -20,6 +20,7 @@ import http from '../http';
 
 const path = '/gateways';
 
+// MCPServer列表
 export interface IMCPServer {
   id: number
   name: string
@@ -38,6 +39,7 @@ export interface IMCPServer {
   prompts?: IMCPServerPrompt[]
 }
 
+// MCPServer工具
 export interface IMCPServerTool {
   id: number
   name: string
@@ -54,6 +56,7 @@ export interface IMCPServerTool {
   }[]
 }
 
+// MCPServerPrompt
 export interface IMCPServerPrompt {
   id: string
   name: string
@@ -65,6 +68,37 @@ export interface IMCPServerPrompt {
   updated_time: string
   is_public: boolean
   labels: string[]
+}
+
+// MCP列表搜索框
+export interface IMCPServerFilterOptions {
+  labels?: string[]
+  stages?: {
+    id: number
+    name: string
+  }[]
+  categories?: {
+    id: number
+    name: string
+    display_name: string
+  }[]
+}
+
+// MCP分类
+export interface IMCPServerCategory {
+  name: string
+  display_name: string
+  description: string
+  id: number
+  sort_order: number
+}
+
+// MCP配置
+export interface IMCPAIConfig {
+  name: string
+  display_name: string
+  content: string
+  install_url: string
 }
 
 // 列表
@@ -167,3 +201,27 @@ export const getServerPrompts = (apigwId: number): Promise<IMCPServerPrompt> =>
  */
 export const getServerPromptsDetail = (apigwId: number, data: { ids: number[] }): Promise<IMCPServerPrompt> =>
   http.post(`${path}/${apigwId}/mcp-servers/-/remote-prompts/batch/`, data);
+
+/**
+ * 获取 MCPServer 搜索过滤选项（环境、标签、分类）
+ * @param apigwId 网关id
+ */
+export const getMcpServerFilterOptions = (apigwId: number): Promise<{ data: IMCPServerFilterOptions }> =>
+  http.get(`${path}/${apigwId}/mcp-servers/-/filter-options/`);
+
+/**
+ * 获取可用的 MCPServer 分类列表（排除官方和精选）
+ * @param apigwId 网关id
+ */
+export const getMcpCategoryList = (apigwId: number): Promise<{
+  results: IMCPServerCategory[]
+  count: number
+}> =>
+  http.get(`${path}/${apigwId}/mcp-servers/-/categories/`);
+
+/**
+ * 获取 MCPServer 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）
+ * @param apigwId 网关id
+ */
+export const getMcpAIConfigList = (apigwId: number, mcp_server_id: number): Promise<{ configs: IMCPAIConfig[] }> =>
+  http.get(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/configs/`);

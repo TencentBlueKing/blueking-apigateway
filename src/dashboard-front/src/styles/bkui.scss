@@ -66,10 +66,12 @@
 }
 
 .t-checkbox {
+
   &.t-checkbox__input {
     border: 1px solid #dcdee5;
   }
 
+  &.t-is-indeterminate,
   &.t-is-checked:not(.t-is-disabled) {
     .t-checkbox__input {
       border-color: #3a84ff !important;
@@ -98,6 +100,14 @@
   &:hover,
   &.t-is-focus {
     color: #3a84ff !important;
+  }
+}
+
+.t-table__filter--bottom-buttons {
+
+  .t-button--theme-primary {
+    border-color: #3a84ff !important;
+    background-color: #3a84ff !important;
   }
 }
 

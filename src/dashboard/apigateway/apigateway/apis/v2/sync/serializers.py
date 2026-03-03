@@ -194,6 +194,129 @@ class HostSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.sync.serializers.HostSLZ"
 
 
+# Health Check Serializers
+class BaseHealthySLZ(serializers.Serializer):
+    """Base serializer for healthy configurations"""
+
+    http_statuses = serializers.ListField(
+        child=serializers.IntegerField(min_value=100, max_value=599),
+        required=False,
+        allow_null=True,
+        help_text="HTTP状态码列表",
+    )
+    successes = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="成功次数"
+    )
+
+
+class PassiveHealthySLZ(BaseHealthySLZ):
+    """Passive health check healthy configuration"""
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.PassiveHealthySLZ"
+
+
+class ActiveHealthySLZ(BaseHealthySLZ):
+    """Active health check healthy configuration"""
+
+    interval = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="检查间隔(秒)")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ActiveHealthySLZ"
+
+
+class BaseUnhealthySLZ(serializers.Serializer):
+    """Base serializer for unhealthy configurations"""
+
+    http_statuses = serializers.ListField(
+        child=serializers.IntegerField(min_value=100, max_value=599),
+        required=False,
+        allow_null=True,
+        help_text="HTTP状态码列表",
+    )
+    http_failures = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="HTTP失败次数"
+    )
+    tcp_failures = serializers.IntegerField(
+        min_value=1, max_value=254, required=False, allow_null=True, help_text="TCP失败次数"
+    )
+    timeouts = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时次数")
+
+
+class PassiveUnhealthySLZ(BaseUnhealthySLZ):
+    """Passive health check unhealthy configuration"""
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.PassiveUnhealthySLZ"
+
+
+class ActiveUnhealthySLZ(BaseUnhealthySLZ):
+    """Active health check unhealthy configuration"""
+
+    interval = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="检查间隔(秒)")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ActiveUnhealthySLZ"
+
+
+class ActiveCheckSLZ(serializers.Serializer):
+    """Active health check configuration"""
+
+    type = serializers.ChoiceField(
+        choices=[("http", "HTTP"), ("https", "HTTPS"), ("tcp", "TCP")], default="http", help_text="检查类型"
+    )
+    timeout = serializers.IntegerField(min_value=1, required=False, allow_null=True, help_text="超时时间(秒)")
+    concurrency = serializers.IntegerField(
+        min_value=1, max_value=100, required=False, allow_null=True, help_text="并发数"
+    )
+    http_path = serializers.CharField(required=False, allow_null=True, help_text="HTTP检查路径")
+    https_verify_certificate = serializers.BooleanField(required=False, allow_null=True, help_text="HTTPS证书验证")
+    # NOTE: 暂时不支持，后续再支持
+    # host = serializers.CharField(required=False, allow_null=True, help_text="主机名")
+    # port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True, help_text="端口")
+    # req_headers = serializers.ListField(
+    #     child=serializers.CharField(), required=False, allow_null=True, help_text="请求头"
+    # )
+    healthy = ActiveHealthySLZ(required=False, allow_null=True, help_text="健康配置")
+    unhealthy = ActiveUnhealthySLZ(required=False, allow_null=True, help_text="不健康配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ActiveCheckSLZ"
+
+
+class PassiveCheckSLZ(serializers.Serializer):
+    """Passive health check configuration"""
+
+    type = serializers.ChoiceField(
+        choices=[("http", "HTTP"), ("https", "HTTPS"), ("tcp", "TCP")], default="http", help_text="检查类型"
+    )
+    healthy = PassiveHealthySLZ(required=False, allow_null=True, help_text="健康配置")
+    unhealthy = PassiveUnhealthySLZ(required=False, allow_null=True, help_text="不健康配置")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.PassiveCheckSLZ"
+
+
+class CheckSLZ(serializers.Serializer):
+    """Health check configuration (active and/or passive)"""
+
+    active = ActiveCheckSLZ(required=False, allow_null=True, help_text="主动健康检查")
+    passive = PassiveCheckSLZ(required=False, allow_null=True, help_text="被动健康检查")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.CheckSLZ"
+
+    def validate(self, attrs):
+        """Ensure at least one of active or passive is provided"""
+        active = attrs.get("active")
+        passive = attrs.get("passive")
+
+        if not active and not passive:
+            raise serializers.ValidationError("至少需要配置主动健康检查或被动健康检查中的一项")
+
+        return attrs
+
+
 class UpstreamsSLZ(serializers.Serializer):
     loadbalance = serializers.ChoiceField(choices=LoadBalanceTypeEnum.get_choices())
     hash_on = serializers.ChoiceField(choices=HashOnTypeEnum.get_choices(), required=False)
@@ -232,6 +355,7 @@ class UpstreamsSLZ(serializers.Serializer):
 
 class BackendConfigSLZ(UpstreamsSLZ):
     timeout = serializers.IntegerField(max_value=MAX_BACKEND_TIMEOUT_IN_SECOND, min_value=1)
+    checks = CheckSLZ(required=False, allow_null=True, help_text="健康检查配置")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.BackendConfigSLZ"
@@ -389,6 +513,10 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if loadbalance == LoadBalanceTypeEnum.CHASH.value:
             config["hash_on"] = backend["config"]["hash_on"]
             config["key"] = backend["config"]["key"]
+
+        # Add health check configuration if present
+        if "checks" in backend["config"] and backend["config"]["checks"]:
+            config["checks"] = backend["config"]["checks"]
 
         return config
 
@@ -604,18 +732,32 @@ class GatewayPermissionListOutputSLZ(serializers.Serializer):
 class GatewayAppPermissionGrantInputSLZ(serializers.Serializer):
     """
     网关关联应用，主动为应用授权访问网关API的权限
+
+    grant_dimension 推荐使用 gateway/resource，兼容旧值 api（等价于 gateway）
     """
+
+    GRANT_DIMENSION_CHOICES = [
+        (FormattedGrantDimensionEnum.GATEWAY.value, "网关"),
+        (FormattedGrantDimensionEnum.RESOURCE.value, "资源"),
+        (GrantDimensionEnum.API.value, "按网关(兼容旧值)"),
+    ]
 
     # 主动授权时，应用可能尚未创建，因此不校验 app_code 是否存在
     target_app_code = serializers.CharField(label="", max_length=32, required=True)
     expire_days = serializers.IntegerField(required=False)
-    grant_dimension = serializers.ChoiceField(choices=GrantDimensionEnum.get_choices())
+    grant_dimension = serializers.ChoiceField(choices=GRANT_DIMENSION_CHOICES)
     resource_names = serializers.ListField(
         child=serializers.CharField(required=True), allow_empty=True, required=False
     )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewayAppPermissionGrantInputSLZ"
+
+    def validate_grant_dimension(self, value: str) -> str:
+        """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
+        if value == FormattedGrantDimensionEnum.GATEWAY.value:
+            return GrantDimensionEnum.API.value
+        return value
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -712,6 +854,11 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     target_app_codes = serializers.ListSerializer(
         help_text="主动授权的app_code", child=serializers.CharField(), allow_empty=True, default=list, required=False
     )
+    oauth2_public_client_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
+    )
 
     class Meta:
         model = MCPServer
@@ -727,6 +874,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "status",
             "protocol_type",
             "target_app_codes",
+            "oauth2_public_client_enabled",
         )
         lookup_field = "id"
         non_model_fields = ["target_app_codes"]
@@ -763,6 +911,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
+
         return instance
 
     def update(self, instance, validated_data):
@@ -780,6 +929,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
+
         return instance
 
 

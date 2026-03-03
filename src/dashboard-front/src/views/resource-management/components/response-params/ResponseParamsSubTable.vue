@@ -25,8 +25,23 @@
     >
       <tbody class="table-body">
         <tr class="table-body-row">
-          <td class="table-body-row-cell arrow-col">
-            <AgIcon name="right-shape" />
+          <td
+            class="table-body-row-cell indicator"
+            :style="iconCellStyle"
+          >
+            <AgIcon
+              color="#979BA5"
+              size="10"
+              name="circle-shape"
+            />
+            <div
+              v-show="!!row.properties?.length"
+              class="level-line"
+              :style="{
+                'left': `${level * 16 + 4}px`,
+                'height': `${countRowChildren(row) * 42}px`
+              }"
+            />
           </td>
           <!-- 字段名 -->
           <td
@@ -124,14 +139,12 @@
       </tbody>
       <tfoot v-if="row?.properties?.length">
         <tr>
-          <td
-            :colspan="readonly ? 4 : 5"
-            class="pl-16px"
-          >
+          <td :colspan="readonly ? 4 : 5">
             <ResponseParamsSubTable
               ref="recursive-sub-table-ref"
               v-model="row.properties"
               :readonly="readonly"
+              :level="level + 1"
             />
           </td>
         </tr>
@@ -144,7 +157,10 @@
 import { uniqueId } from 'lodash-es';
 import { type JSONSchema7TypeName } from 'json-schema';
 
-interface IProps { readonly?: boolean }
+interface IProps {
+  readonly?: boolean
+  level?: number
+}
 
 interface ITableRow {
   id: string
@@ -156,7 +172,10 @@ interface ITableRow {
 
 const tableData = defineModel<ITableRow[]>();
 
-const { readonly = false } = defineProps<IProps>();
+const {
+  readonly = false,
+  level = 1,
+} = defineProps<IProps>();
 
 const { t } = useI18n();
 
@@ -187,6 +206,22 @@ const typeList = ref([
 ]);
 
 const invalidRowIdMap = ref<Record<string, boolean>>({});
+
+const iconCellStyle = computed(() => ({
+  paddingLeft: `${level * 16}px`,
+  width: `${level * 16 + 32}px`,
+}));
+
+const countRowChildren = (row: ITableRow) => {
+  if (!row.properties?.length) {
+    return 0;
+  }
+  let count = row.properties.length;
+  row.properties.forEach((child) => {
+    count += countRowChildren(child);
+  });
+  return count;
+};
 
 const genRow = () => {
   return {
@@ -274,6 +309,17 @@ defineExpose({
 
 <style lang="scss" scoped>
 
+table {
+
+  td {
+    padding: 0;
+
+    &:not(:last-child) {
+      border-right: 1px solid #dcdee5;
+    }
+  }
+}
+
 .response-params-sub-table {
   width: 100%;
   border-collapse: collapse;
@@ -288,15 +334,23 @@ defineExpose({
     }
 
     .table-body-row {
+      border-bottom: 1px solid #dcdee5;
 
       .table-body-row-cell {
         height: 42px;
         font-size: 12px;
 
-        &.arrow-col {
-          width: 32px;
-          text-align: center;
-          border-right: none;
+        &.indicator {
+          position: relative;
+          border-right: none !important;
+
+          .level-line {
+            position: absolute;
+            top: 32px;
+            z-index: 999;
+            width: 1px;
+            background-color: #DCDEE5;
+          }
         }
 
         &.name-col {

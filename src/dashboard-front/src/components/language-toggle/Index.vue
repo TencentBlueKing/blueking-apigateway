@@ -59,12 +59,16 @@
 
 <script setup lang="ts">
 import Cookie from 'js-cookie';
-import { useEnv } from '@/stores';
+import {
+  useEnv,
+  useUserInfo,
+} from '@/stores';
 import { saveUserLanguage } from '@/services/source/basic.ts';
 
 const { locale } = useI18n();
 const router = useRouter();
 const envStore = useEnv();
+const userInfoStore = useUserInfo();
 
 const toggleLanguage = async (lang: string) => {
   try {
@@ -74,7 +78,7 @@ const toggleLanguage = async (lang: string) => {
       .replace('{api_name}', 'bk-user-web')
       .replace('{stage_name}', 'prod')
       .replace('{resource_path}', 'api/v3/open-web/tenant/current-user/language/');
-    await saveUserLanguage(url, { language: lang });
+    await saveUserLanguage(url, { language: lang }, userInfoStore.info.tenant_id);
   }
   finally {
     router.go(0);

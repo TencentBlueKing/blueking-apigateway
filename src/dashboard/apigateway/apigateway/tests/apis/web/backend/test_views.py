@@ -154,3 +154,188 @@ class TestBackendApi:
             gateway=fake_gateway,
         )
         assert response.status_code == 204
+
+
+class TestBackendHealthCheckApi:
+    """Test backend CRUD operations with health check configuration"""
+
+    def test_create_with_active_health_check(self, request_view, fake_stage):
+        """Test creating a backend with active health check"""
+        fake_gateway = fake_stage.gateway
+        data = {
+            "name": "backend-health-chk",
+            "description": "test health check",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                    "checks": {
+                        "active": {
+                            "type": "http",
+                            "http_path": "/health",
+                            "timeout": 5,
+                            "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
+                            "unhealthy": {"interval": 5, "http_failures": 3, "http_statuses": [500, 502]},
+                        }
+                    },
+                }
+            ],
+        }
+
+        response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        assert response.status_code == 201
+
+        # Verify backend was created with health check config
+        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-health-chk").first()
+        assert backend is not None
+
+    def test_retrieve_with_health_check(self, request_view, fake_stage):
+        """Test retrieving a backend with health check returns checks field"""
+        fake_gateway = fake_stage.gateway
+
+        # Create backend with health check
+        data = {
+            "name": "backend-retrieve",
+            "description": "test",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                    "checks": {
+                        "passive": {
+                            "type": "http",
+                            "healthy": {"successes": 2, "http_statuses": [200]},
+                            "unhealthy": {"http_failures": 3, "http_statuses": [500, 502]},
+                        }
+                    },
+                }
+            ],
+        }
+
+        create_response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        assert create_response.status_code == 201
+
+        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-retrieve").first()
+        assert backend is not None
+
+        # Retrieve the backend
+        response = request_view(
+            "GET",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+        )
+        assert response.status_code == 200
+
+        # Verify response contains checks field
+        response_data = response.json()
+        assert response_data["data"]["id"] == backend.id
+        assert len(response_data["data"]["configs"]) == 1
+
+        config = response_data["data"]["configs"][0]
+        assert "checks" in config
+        assert "passive" in config["checks"]
+        assert config["checks"]["passive"]["type"] == "http"
+        assert config["checks"]["passive"]["healthy"]["successes"] == 2
+        assert config["checks"]["passive"]["unhealthy"]["http_failures"] == 3
+
+    def test_update_health_check(self, request_view, fake_stage):
+        """Test updating a backend's health check configuration"""
+        fake_gateway = fake_stage.gateway
+
+        # Create backend without health check
+        data = {
+            "name": "backend-update-check",
+            "description": "test",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                }
+            ],
+        }
+
+        create_response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        assert create_response.status_code == 201
+
+        backend = Backend.objects.filter(gateway=fake_gateway, name="backend-update-check").first()
+        assert backend is not None
+
+        # Update backend to add health check
+        update_data = {
+            "name": "backend-update-check",
+            "description": "test with health check",
+            "type": "http",
+            "configs": [
+                {
+                    "stage_id": fake_stage.id,
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
+                    "checks": {
+                        "active": {
+                            "type": "http",
+                            "http_path": "/healthz",
+                            "timeout": 3,
+                            "healthy": {"interval": 5, "successes": 1},
+                        }
+                    },
+                }
+            ],
+        }
+
+        update_response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+            data=update_data,
+        )
+        assert update_response.status_code == 200
+
+        # Retrieve and verify health check was added
+        retrieve_response = request_view(
+            "GET",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": backend.id},
+            gateway=fake_gateway,
+        )
+        assert retrieve_response.status_code == 200
+
+        response_data = retrieve_response.json()
+        config = response_data["data"]["configs"][0]
+        assert "checks" in config
+        assert "active" in config["checks"]
+        assert config["checks"]["active"]["http_path"] == "/healthz"
+        assert config["checks"]["active"]["timeout"] == 3

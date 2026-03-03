@@ -70,13 +70,11 @@
           <div class="response-table-wrapper">
             <div
               v-if="!readonly"
-              class="text-right mb-6px"
+              class="mb-16px"
             >
               <IconButton
-                text
                 theme="primary"
-                icon="upload"
-                @click="handleImportSchema"
+                @click="handleEditJSON"
               >
                 {{ t('通过 JSON 生成') }}
               </IconButton>
@@ -115,8 +113,10 @@
                     <AgIcon
                       v-if="row.type === 'object'"
                       :class="{ expanded: row.properties?.length }"
-                      class="expand-icon"
-                      name="right-shape"
+                      color="#979BA5"
+                      size="10"
+                      name="circle-shape"
+                      class="ml-12px"
                     />
                   </td>
                   <!-- 字段名 -->
@@ -201,7 +201,7 @@
                 <tr>
                   <td
                     :colspan="readonly ? 4 : 5"
-                    class="pl-16px"
+                    class="p-0!"
                   >
                     <ResponseParamsSubTable
                       ref="sub-table-refs"
@@ -217,6 +217,10 @@
       </BkCollapsePanel>
     </BkCollapse>
   </div>
+  <JsonEditorSlider
+    v-model="isEditorSliderVisible"
+    @confirm="handleEditorConfirm"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -228,8 +232,8 @@ import {
 import { Message } from 'bkui-vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ResponseParamsSubTable from './ResponseParamsSubTable.vue';
-import { useFileSystemAccess } from '@vueuse/core';
 import toJsonSchema from 'to-json-schema';
+import JsonEditorSlider from '../JsonEditorSlider.vue';
 
 interface ITableRow {
   id: string
@@ -263,20 +267,13 @@ const emit = defineEmits<{
   'change-code': [code: string]
 }>();
 
-const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
-  dataType: 'Text',
-  types: [{
-    description: 'text',
-    accept: { 'text/plain': ['.txt', '.json'] },
-  }],
-});
-
 const { t } = useI18n();
 
 const tableData = ref<ITableRow[]>([]);
 const activeIndex = ref<string[]>(['currentCollapse']);
 const localCode = ref('');
 const isEditingCode = ref(false);
+const isEditorSliderVisible = ref(false);
 
 const tableRef = ref();
 const subTableRefs = useTemplateRef('sub-table-refs');
@@ -363,7 +360,7 @@ const initTableData = (schema?: Record<string, any>) => {
   };
   // 响应没有响应体的情况（不会有 content 字段）
   if (body.content?.['application/json']?.schema) {
-    const { type } = body.content['application/json'].schema;
+    const { type } = schema || body.content['application/json'].schema;
     if (type === 'object') {
       const rowProperties = convertSchemaToBodyRow(schema || body?.content?.['application/json']?.schema);
       if (rowProperties) {
@@ -519,44 +516,19 @@ const handleDelete = () => {
   emit('delete');
 };
 
-const handleImportSchema = async () => {
-  await open();
-  // 文件大小限制为 10KB
-  if (fileSize.value > 10 * 1024) {
-    Message({
-      theme: 'warning',
-      message: t('文件大小超过 10KB'),
-    });
-    return;
-  }
+const handleEditJSON = () => {
+  isEditorSliderVisible.value = true;
+};
 
-  if (importedJsonText.value) {
-    let jsonObject: any = {};
-    try {
-      jsonObject = JSON.parse(importedJsonText.value);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('请选择合法的 JSON'),
-      });
-      return;
-    }
-    try {
-      const schema = toJsonSchema(jsonObject);
-      initTableData(schema);
-    }
-    catch {
-      Message({
-        theme: 'error',
-        message: t('生成 JSON Schema 失败'),
-      });
-    }
+const handleEditorConfirm = (jsonObject: Record<string, any>) => {
+  try {
+    const schema = toJsonSchema(jsonObject);
+    initTableData(schema);
   }
-  else {
+  catch {
     Message({
       theme: 'error',
-      message: t('请选择合法的 JSON'),
+      message: t('生成 JSON Schema 失败'),
     });
   }
 };
@@ -586,6 +558,24 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+
+table {
+
+  thead {
+
+    th {
+      border-right: 1px solid #dcdee5;
+    }
+  }
+
+  td {
+    padding: 0;
+
+    &:not(:last-child) {
+      border-right: 1px solid #dcdee5;
+    }
+  }
+}
 
 .response-params-table-wrapper {
 
@@ -652,6 +642,7 @@ defineExpose({
   width: 100%;
   border: 1px solid #dcdee5;
   border-collapse: collapse;
+  border-bottom: none;
   border-spacing: 0;
 
   .table-head-row-cell,
@@ -661,10 +652,7 @@ defineExpose({
 
     &.arrow-col {
       width: 32px;
-
-      .expand-icon.expanded {
-        transform: rotate(90deg);
-      }
+      border-right: none;
     }
 
     &.type-col {
@@ -705,8 +693,10 @@ defineExpose({
     }
 
     .table-body-row {
+      border-bottom: 1px solid #dcdee5;
 
       .table-body-row-cell {
+        height: 42px;
 
         &.arrow-col {
           text-align: center;

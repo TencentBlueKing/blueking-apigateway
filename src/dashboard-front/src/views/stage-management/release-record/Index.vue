@@ -88,6 +88,7 @@ import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import { t } from '@/locales';
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import CopyButton from '@/components/copy-button/Index.vue';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
 
@@ -151,6 +152,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('已发布的环境'),
         colKey: 'stage.name',
+        ellipsis: true,
       },
       {
         colKey: 'type',
@@ -165,10 +167,17 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: 'commit_id',
         colKey: 'commit_id',
+        cell: (h, { row }) => (
+          <div v-bk-tooltips={row?.commit_id}>
+            { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
+            <CopyButton class="ml-4px" source={row?.commit_id} />
+          </div>
+        ),
       },
       {
         title: t('版本号'),
         colKey: 'version',
+        width: 200,
       },
       {
         colKey: 'deployStatus',
@@ -193,6 +202,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         colKey: 'operator',
         title: t('操作人'),
+        width: 100,
         cell: (h, { row }: any) => (
           <div>
             {
@@ -231,15 +241,18 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('已发布的环境'),
         colKey: 'stage.name',
+        ellipsis: true,
       },
       {
         colKey: 'type',
         title: t('类型'),
+        width: 100,
         cell: (h, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
       },
       {
         colKey: 'version',
         title: t('版本号'),
+        width: 200,
         cell: (h, { row }: any) => (
           <bk-button
             text
@@ -273,6 +286,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         colKey: 'operator',
         title: t('操作人'),
+        width: 100,
         cell: (h, { row }: any) => (
           <div>
             {
@@ -300,6 +314,7 @@ const columns = computed<PrimaryTableProps['columns']>(() =>
       {
         title: t('耗时'),
         colKey: 'duration',
+        width: 100,
       },
       {
         colKey: 'actions',
