@@ -20,11 +20,13 @@ import json
 
 import pytest
 from ddf import G
+from openapi_spec_validator.versions import get_spec_version
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.importer.parser import BaseExporter
-from apigateway.core.models import Gateway
+from apigateway.core.constants import DEFAULT_BACKEND_NAME
+from apigateway.core.models import Backend, Gateway
 from apigateway.utils.yaml import yaml_loads
 
 
@@ -747,6 +749,161 @@ class TestOpenAPIManger:
             importer = OpenAPIImportManager.load_from_content(G(Gateway), content)
             resources = importer.get_resource_list(raw=True)
             assert resources == expected
+
+
+class TestOpenAPIImportManagerParse:
+    """Regression tests for OpenAPIImportManager.parse() — ensures dict data
+    is serialized as valid JSON (not Python repr) before passing to ResolvingParser."""
+
+    def _make_gateway_with_backend(self):
+        gateway = G(Gateway)
+        G(Backend, gateway=gateway, name=DEFAULT_BACKEND_NAME)
+        return gateway
+
+    def _make_manager(self, data):
+        gateway = self._make_gateway_with_backend()
+        manager = OpenAPIImportManager(gateway=gateway, data=data)
+        manager.version = get_spec_version(data)
+        return manager
+
+    def test_parse_swagger2_dict(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "description": "test",
+                        "tags": ["test"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {
+                                "type": "HTTP",
+                                "path": "/test/",
+                                "method": "get",
+                                "timeout": 30,
+                            },
+                        },
+                    }
+                }
+            },
+        }
+        manager = self._make_manager(data)
+        manager.parse()
+
+        resources = manager.get_resource_list(raw=True)
+        assert len(resources) == 1
+        assert resources[0]["name"] == "get_test"
+        assert resources[0]["method"] == "GET"
+        assert resources[0]["path"] == "/test/"
+
+    def test_parse_openapi3_dict(self):
+        data = {
+            "openapi": "3.0.1",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "post": {
+                        "operationId": "post_test",
+                        "description": "test post",
+                        "tags": ["demo"],
+                        "responses": {"200": {"description": "success"}},
+                        "x-bk-apigateway-resource": {
+                            "isPublic": False,
+                            "backend": {
+                                "type": "HTTP",
+                                "path": "/backend/test/",
+                                "method": "post",
+                                "timeout": 10,
+                            },
+                        },
+                    }
+                }
+            },
+        }
+        manager = self._make_manager(data)
+        manager.parse()
+
+        resources = manager.get_resource_list(raw=True)
+        assert len(resources) == 1
+        assert resources[0]["name"] == "post_test"
+        assert resources[0]["is_public"] is False
+
+    def test_parse_from_yaml_content(self):
+        yaml_content = """\
+swagger: "2.0"
+basePath: /
+info:
+  version: "0.1"
+  title: Test
+schemes:
+  - http
+paths:
+  /yaml-test/:
+    get:
+      operationId: yaml_test_get
+      description: yaml originated
+      tags:
+        - yaml
+      x-bk-apigateway-resource:
+        isPublic: true
+        backend:
+          type: HTTP
+          path: /yaml-test/
+          method: get
+          timeout: 30
+"""
+        gateway = self._make_gateway_with_backend()
+        manager = OpenAPIImportManager.load_from_content(gateway=gateway, content=yaml_content)
+        manager.version = get_spec_version(manager.data)
+        manager.parse()
+
+        resources = manager.get_resource_list(raw=True)
+        assert len(resources) == 1
+        assert resources[0]["name"] == "yaml_test_get"
+
+    def test_parse_dict_with_boolean_and_none_values(self):
+        """Python True/False/None would break str() but work with json.dumps()."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/bool-test/": {
+                    "get": {
+                        "operationId": "bool_test",
+                        "description": "test booleans",
+                        "tags": [],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": False,
+                            "allowApplyPermission": True,
+                            "backend": {
+                                "type": "HTTP",
+                                "path": "/bool-test/",
+                                "method": "get",
+                                "timeout": 0,
+                            },
+                            "authConfig": {
+                                "userVerifiedRequired": False,
+                                "appVerifiedRequired": False,
+                            },
+                        },
+                    }
+                }
+            },
+        }
+        manager = self._make_manager(data)
+        manager.parse()
+
+        resources = manager.get_resource_list(raw=True)
+        assert len(resources) == 1
+        assert resources[0]["name"] == "bool_test"
+        assert resources[0]["is_public"] is False
+        assert resources[0]["auth_config"]["auth_verified_required"] is False
 
 
 class TestOpenAPIExporter:
