@@ -145,6 +145,32 @@
                   {{ t(server?.status === 1 ? "已启用" : "已停用") }}
                 </div>
               </template>
+              <template
+                v-if="server?.oauth2_public_client_enabled"
+                #externalTag
+              >
+                <div
+                  v-bk-tooltips="t('OAuth2 公开客户端已开启')"
+                  class="external-oauth-tag bg-#e1ecff ml-8px"
+                >
+                  <AgIcon
+                    name="deqiu"
+                    size="14"
+                    color="#3a84ff"
+                  />
+                </div>
+                <div
+                  v-if="server?.app_permission_risk?.has_risk"
+                  v-bk-tooltips="renderRiskToolToolTip(server)"
+                  class="external-oauth-tag bg-#ffebeb ml-8px"
+                >
+                  <AgIcon
+                    name="zhiming"
+                    size="14"
+                    color="#e71818"
+                  />
+                </div>
+              </template>
             </AgMcpCard>
             <div
               class="flex items-center justify-center add-server-card"
@@ -172,7 +198,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { debounce } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { Plus } from 'bkui-vue/lib/icon';
@@ -298,6 +324,24 @@ const mcpViewList = shallowRef([
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isTableView = computed(() => activeViewTab.value.includes('table'));
+
+const renderRiskToolToolTip = (row: IMCPServer) => {
+  return {
+    content: () => (
+      <div class="break-all">
+        { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
+          {
+            count: row?.app_permission_risk?.risk_tools?.length,
+            content: row?.app_permission_risk?.risk_tools?.join('、'),
+          })}
+        <div class="h-24px" />
+        { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+      </div>
+    ),
+    extCls: 'max-w-300px',
+    allowHtml: true,
+  };
+};
 
 const getSingleCardHeight = (): number => {
   if (isTableView.value) return;
@@ -630,10 +674,21 @@ onUnmounted(() => {
     }
 
     :deep(.ag-mcp-card-wrapper) {
+
       .mcp-footer-content {
         left: 24px;
         right: 24px;
       }
+    }
+
+    .external-oauth-tag {
+      min-width: 18px;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 2px;
     }
   }
 }

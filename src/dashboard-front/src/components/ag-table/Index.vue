@@ -336,7 +336,6 @@ const selectionColumns = computed(() => [{
             }
             return item;
           });
-
           emit('selection-change', {
             selectionsRowKeys: checkedIds,
             selections: selections.value,
@@ -424,10 +423,7 @@ watch(tableSetting, () => {
 watch(tableData, () => {
   localTableData.value = cloneDeep(tableData.value || []);
   if (localPage) {
-    pagination.value = Object.assign(pagination.value, {
-      current: 1,
-      total: localTableData.value.length,
-    });
+    pagination.value = Object.assign(pagination.value, { total: localTableData.value.length });
   }
 }, {
   immediate: true,
@@ -439,6 +435,12 @@ watch([selections, selectedRowKeys], () => {
     selectionsRowKeys: selectionsRowKeys.value,
     selections: selections.value,
   });
+  if (localPage) {
+    const { current, pageSize, total } = pagination.value;
+    if (current > Math.ceil(total / pageSize) && total > 0) {
+      pagination.value.current = Math.ceil(total / pageSize);
+    }
+  }
 }, { deep: true });
 
 const fetchData = (
@@ -538,6 +540,10 @@ const handlePageChange = ({ current, pageSize }: {
       ...paramsData.value,
       ...offsetAndLimit.value,
     });
+  }
+  // 本地分页切换后，重新渲染当前页的勾选状态
+  if (localPage) {
+    getSelectionData();
   }
 };
 

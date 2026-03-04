@@ -132,6 +132,35 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
           >
             {row.name}
           </div>
+          { row?.app_permission_risk?.has_risk
+            && (
+              <Tag
+                theme="danger"
+                class="ml-4px cursor-pointer"
+                v-slots={{
+                  icon: () => (
+                    <AgIcon name="zhiming" />
+                  ),
+                }}
+                v-bk-tooltips={{
+                  content: () => (
+                    <div class="break-all">
+                      { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
+                        {
+                          count: row?.app_permission_risk?.risk_tools?.length,
+                          content: row?.app_permission_risk?.risk_tools?.join('、'),
+                        })}
+                      <div class="h-24px" />
+                      { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+                    </div>
+                  ),
+                  extCls: 'max-w-300px',
+                  allowHtml: true,
+                }}
+              >
+                { t('应用态风险') }
+              </Tag>
+            )}
         </div>
       );
     },
@@ -186,7 +215,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
         };
       }),
     },
-    cell: (_, { row }) => (
+    cell: (_, { row }: { row: IMCPServer }) => (
       row.categories?.length
         ? (
           <div class="w-160px">
@@ -209,8 +238,27 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('Prompt数量'),
     colKey: 'prompts_count',
     align: 'right',
-    width: 150,
     ellipsis: true,
+  },
+  {
+    title: t('OAuth2 公开客户端'),
+    colKey: 'oauth2_public_client_enabled',
+    ellipsis: true,
+    cell: (_, { row }: { row: IMCPServer }) => {
+      return (
+        <Tag
+          class={
+            [
+              'border-transparent',
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
+              { 'bg-#f5f7fa color-#c4c6cc! hover:bg-#f5f7fa!': !row.status },
+            ]
+          }
+        >
+          {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
+        </Tag>
+      );
+    },
   },
   {
     title: t('发布时间'),
@@ -232,8 +280,9 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
+    ellipsis: true,
     width: 80,
-    cell: (_, { row }) => (
+    cell: (_, { row }: { row: IMCPServer }) => (
       <div class="flex">
         <Button
           text
@@ -332,7 +381,7 @@ const handleDeleteClick = (row: IMCPServer) => {
 
 const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
   if (!row.status) {
-    return 'color-#c4c6cc';
+    return 'color-#c4c6cc no-perm-row';
   }
   return '';
 };
@@ -366,7 +415,14 @@ defineExpose({ getList });
 </script>
 
 <style lang="scss" scoped>
-.mcp-server-table-wrapper {
+:deep(.no-perm-row) {
+  .bk-tag {
+    background-color: #f5f7fa;
+    color: #c4c6cc;
 
+    &:hover {
+      border-color: transparent;
+    }
+  }
 }
 </style>

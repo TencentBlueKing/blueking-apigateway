@@ -21,7 +21,13 @@
     v-model:is-show="isShow"
     :title="sliderTitle"
     :width="1280"
-    class="create-slider"
+    class="create-mcp-slider"
+    :class="[
+      {
+        'enabled-oauth2-public-client': isExistOAuthData,
+        'app-auth-mcp-slider': isEnabledOAuth && appAuthStatusList.length > 0
+      }
+    ]"
     quick-close
     :before-close="handleBeforeClose"
     @hidden="handleCancel"
@@ -41,510 +47,352 @@
             :model="formData"
             form-type="vertical"
           >
-            <BkFormItem
-              :label="t('环境')"
-              property="stage_id"
-              :rules="[
-                {
-                  required: true,
-                  message: t('环境不能为空'),
-                  trigger: 'blur',
-                },
-              ]"
-              required
-            >
-              <BkSelect
-                v-model="formData.stage_id"
-                :clearable="false"
-                :disabled="isEditMode || noValidStage"
-                @change="handleStageSelectChange"
-              >
-                <BkOption
-                  v-for="_stage in stageList"
-                  :id="_stage.id"
-                  :key="_stage.id"
-                  :disabled="!_stage.resource_version?.version"
-                  :name="_stage.name"
-                />
-              </BkSelect>
-            </BkFormItem>
-            <BkFormItem
-              :label="t('服务名称')"
-              property="name"
-              :rules="[
-                {
-                  required: true,
-                  message: t('服务名称不能为空'),
-                  trigger: 'change',
-                },
-                {
-                  validator: (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/?.test(value),
-                  message: t('服务名称只能包含小写字母、数字和短横线'),
-                  trigger: 'change',
-                }
-              ]"
-              class="custom-form-item-required"
-            >
-              <BkInput
-                ref="nameRef"
-                v-model="formData.name"
-                :placeholder="t('请输入小写字母、数字、连字符(-)')"
-                :disabled="isEditMode || noValidStage"
-                :prefix="(isEditMode || noValidStage) ? undefined : serverNamePrefix"
+            <!-- 基础表单组件 -->
+            <div class="bg-white p-16px pb-24px mb-24px server-basic-form">
+              <ServerBasicForm
+                ref="serverBasicFormRef"
+                v-model:form-data="formData"
+                :stage-list="stageList"
+                :no-valid-stage="noValidStage"
+                :is-edit-mode="isEditMode"
+                :categories-list="categoriesList"
+                @stage-change="handleStageSelectChange"
               />
-              <div class="name-help-text">
-                <div class="lh-22px text-body">
-                  {{ t('唯一标识，以网关名称和环境名称为前缀，创建后不可更改') }}
-                </div>
-              </div>
-            </BkFormItem>
-            <BkFormItem
-              :label="t('服务展示名')"
-              property="title"
-              :rules="[
-                {
-                  validator: (value: string) => value?.trim()?.length >= 3,
-                  message: t('服务展示名不能小于3个字符'),
-                  trigger: 'change',
-                },
-              ]"
-              class="custom-form-item-required"
-            >
-              <BkInput
-                ref="titleRef"
-                v-model="formData.title"
-                :placeholder="t('请输入3-32个字符的服务展示名称')"
-                :maxlength="32"
-                clearable
+            </div>
+            <div class="bg-white p-16px mb-24px">
+              <OAuthSwitcher
+                v-model:form-data="formData"
+                @oauth-change="handleOAuthChange"
               />
-            </BkFormItem>
-            <BkFormItem
-              :label="t('描述')"
-              property="description"
-              :rules="[
-                {
-                  validator: (value: string) => value?.trim()?.length >= 10,
-                  message: t('描述不能小于10个字符'),
-                  trigger: 'change',
-                },
-              ]"
-              class="custom-form-item-required"
-            >
-              <BkInput
-                ref="descriptionRef"
-                v-model="formData.description"
-                type="textarea"
-                :minlength="10"
-                :maxlength="2048"
-                :rows="4"
-                :disabled="noValidStage"
-                :placeholder="t('请输入10-2048个字符的描述')"
-                clearable
-                show-word-limit
-                resize
-              />
-            </BkFormItem>
-            <BkFormItem
-              :label="t('标签')"
-              property="labels"
-            >
-              <BkTagInput
-                v-model="formData.labels"
-                :disabled="noValidStage"
-                allow-create
-                collapse-tags
-                has-delete-icon
-              />
-            </BkFormItem>
-            <BkFormItem
-              :label="t('分类')"
-              property="categories"
-              class="custom-form-item-required"
-            >
-              <BkTagInput
-                ref="categoriesRef"
-                v-model="formData.categories"
-                trigger="focus"
-                display-key="display_name"
-                search-key="display_name"
-                save-key="name"
-                has-delete-icon
-                :placeholder="t('通过 display_name 或 name 搜索分类')"
-                :max-data="1"
-                :disabled="noValidStage"
-                :list="categoriesList"
-                :tag-tpl="renderCategoryTagTpl"
-                :tpl="renderCategoryTpl"
-                :filter-callback="handleSearchCategory"
-                @focus="handleCategoryFocus"
-              />
-              <div
-                v-if="isCategoryEmpty"
-                class="color-#ea3636 text-12px pt-4px lh-16px"
-              >
-                {{ t('分类不能为空') }}
-              </div>
-            </BkFormItem>
-            <BkFormItem
-              class="form-protocol-type"
-              property="protocol_type"
-              required
-            >
-              <template #label>
-                <span class="connect-method">
-                  {{ t('连接方式') }}
-                </span>
-                <span class="color-#979ba5 text-12px ml-16px">
-                  <InfoLine class="v-mid" />
-                  {{ t('切换连接方式后，客户端需要基于新协议重新建立连接') }}
-                </span>
-              </template>
-              <BkRadioGroup v-model="formData.protocol_type">
-                <BkRadio
-                  v-for="item of MCP_PROTOCOL_TYPE"
-                  :key="item.value"
-                  :label="item.value"
+              <!-- 资源选择表格 -->
+              <BkFormItem :class="`resource-table-form-item ${activeTab}`">
+                <template #label>
+                  <div class="resource-form-item-label">
+                    <div
+                      v-for="item of resourceTabList"
+                      :key="item.value"
+                      class="label-text"
+                      :class="{ 'is-active': activeTab === item.value }"
+                      @click="handleMcpTypeChange(item.value)"
+                    >
+                      <span>{{ item.label }}</span>
+                      <span
+                        v-if="item.required"
+                        class="required-mark"
+                      >
+                        *
+                      </span>
+                    </div>
+                  </div>
+                </template>
+                <div
+                  v-if="['tool'].includes(activeTab)"
+                  class="flex items-center justify-between h-40px px-24px"
                 >
-                  {{ item.label }}
-                </BkRadio>
-                <div class="text-14px color-#979ba5 lh-32px ml-8px">
-                  ({{ t('不推荐，建议使用Streamable HTTP') }})
-                </div>
-              </BkRadioGroup>
-              <div class="flex items-center bg-#f5f7fa h-32px text-12px pl-8px url">
-                <div class="min-w-55px color-#4d4f56">
-                  {{ t('访问地址') }}:
+                  <div class="resource-tips">
+                    {{ t('请从已经发布到该环境的资源列表选取资源作为 MCP Server 的工具') }}
+                  </div>
+                  <BkButton
+                    :disabled="noValidStage || !isCurrentStageValid"
+                    text
+                    theme="primary"
+                    class="text-14px!"
+                    @click="handleRefreshClick"
+                  >
+                    <AgIcon
+                      class="mr-4px"
+                      name="refresh-line"
+                    />
+                    {{ t('刷新') }}
+                  </BkButton>
                 </div>
                 <div
-                  v-bk-tooltips="{
-                    placement:'top',
-                    content: previewUrl,
-                    disabled: !isOverflow,
-                    extCls: 'max-w-1180px',
-                  }"
-                  class="truncate color-#313238"
-                  @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
-                  @mouseleave="handleMouseleave"
+                  ref="resourceRef"
+                  class="resource-selector-wrapper"
+                  :class="[{
+                    'set-border': ['tool'].includes(activeTab)
+                  }]"
                 >
-                  {{ previewUrl }}
-                </div>
-                <div class="ml-8px pr-8px cursor-pointer hover:text-#3a84ff">
-                  <AgIcon
-                    name="copy-info"
-                    @click.stop="handleCopyClick"
-                  />
-                </div>
-              </div>
-            </BkFormItem>
-            <BkFormItem
-              :label="t('是否公开')"
-              property="is_public"
-              required
-            >
-              <BkSwitcher
-                v-model="formData.is_public"
-                :disabled="noValidStage"
-                theme="primary"
-                class="mr-4px"
-              />
-              <span class="text-12px color-#979ba5">{{
-                t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
-              }}</span>
-            </BkFormItem>
-            <!-- 资源选择表格 -->
-            <BkFormItem :class="`resource-table-form-item ${activeTab}`">
-              <template #label>
-                <div class="resource-form-item-label">
-                  <div
-                    v-for="item of resourceTabList"
-                    :key="item.value"
-                    class="label-text"
-                    :class="{ 'is-active': activeTab === item.value }"
-                    @click="handleMcpTypeChange(item.value)"
-                  >
-                    <span>{{ item.label }}</span>
-                    <span
-                      v-if="item.required"
-                      class="required-mark"
+                  <div class="selector-main">
+                    <BkResizeLayout
+                      ref="resizeLayoutRef"
+                      :max="resizeLayoutConfig.max"
+                      :min="resizeLayoutConfig.min"
+                      :initial-divide="`${resizeLayoutConfig.max}px`"
+                      :border="false"
+                      @resizing="handleResizeLayout"
                     >
-                      *
-                    </span>
-                  </div>
-                </div>
-              </template>
-              <div
-                v-if="['tool'].includes(activeTab)"
-                class="flex items-center justify-between pl-24px pr-16px mt-16px mb-16px"
-              >
-                <div class="resource-tips">
-                  {{ t('请从已经发布到该环境的资源列表选取资源作为 MCP Server 的工具') }}
-                </div>
-                <BkButton
-                  :disabled="noValidStage || !isCurrentStageValid"
-                  text
-                  theme="primary"
-                  class="text-14px!"
-                  @click="handleRefreshClick"
-                >
-                  <AgIcon
-                    class="mr-4px"
-                    name="refresh-line"
-                  />
-                  {{ t('刷新') }}
-                </BkButton>
-              </div>
-              <div
-                ref="resourceRef"
-                class="resource-selector-wrapper"
-                :class="[{
-                  'set-border': ['tool'].includes(activeTab)
-                }]"
-              >
-                <div class="selector-main">
-                  <BkResizeLayout
-                    ref="resizeLayoutRef"
-                    :max="resizeLayoutConfig.max"
-                    :min="resizeLayoutConfig.min"
-                    :initial-divide="`${resizeLayoutConfig.max}px`"
-                    :border="false"
-                    @resizing="handleResizeLayout"
-                  >
-                    <template #aside>
-                      <div
-                        v-if="['tool'].includes(activeTab)"
-                        class="p-16px min-w-280px"
-                      >
-                        <div class="selector-title">
-                          {{ t('资源列表') }}
-                        </div>
-                        <div class="mb-16px">
-                          <BkInput
-                            v-model="filterKeyword"
-                            :disabled="noValidStage"
-                            type="search"
-                          />
-                        </div>
-                        <BkLoading :loading="searchLoading">
-                          <AgTable
-                            ref="toolTableRef"
-                            v-model:table-data="filteredToolList"
-                            resizable
-                            show-selection
-                            local-page
-                            :show-settings="false"
-                            :show-first-full-row="toolSelections.length > 0"
-                            :disabled-check-selection="toolDisabledSelection"
-                            :columns="toolTableColumns"
-                            :table-empty-type="toolTableEmptyType"
-                            :filter-value="toolFilterData"
-                            :row-class-name="handleSetToolRowClass"
-                            @filter-change="handleToolFilterChange"
-                            @clear-filter="handleToolClearFilter"
-                            @clear-selection="handleToolClearSelection"
-                            @selection-change="handleToolSelectionChange"
-                          />
-                        </BkLoading>
-                      </div>
-                      <template v-if="['prompt'].includes(activeTab)">
-                        <BkResizeLayout
-                          initial-divide="366px"
-                          class="h-full!"
-                          :border="false"
+                      <template #aside>
+                        <div
+                          v-if="['tool'].includes(activeTab)"
+                          class="bg-white h-full px-24px pt-16px min-w-280px"
                         >
-                          <template #aside>
-                            <div class="p-16px">
-                              <BkSearchSelect
-                                v-model="filterPromptValues"
-                                :data="filterPromptConditions"
-                                :placeholder="t('搜索中英文名、标签、内容、修改人')"
-                                :value-split-code="'+'"
-                                class="mb-16px"
-                                clearable
-                                unique-select
-                                value-behavior="need-key"
-                              />
-                              <BkLoading
-                                :loading="searchLoading"
-                                :z-index="99"
-                              >
-                                <AgTable
-                                  ref="promptTableRef"
-                                  v-model:table-data="filteredPromptList"
-                                  resizable
-                                  local-page
-                                  show-selection
-                                  :show-settings="false"
-                                  :show-first-full-row="promptSelections.length > 0"
-                                  :row-class-name="handleSetPromptRowClass"
-                                  :columns="promptTableColumns"
-                                  :table-empty-type="promptTableEmptyType"
-                                  @clear-filter="handlePromptClearFilter"
-                                  @clear-selection="handlePromptClearSelection"
-                                  @selection-change="handlePromptSelectionChange"
-                                  @row-click="handlePromptRowClick"
+                          <div class="lh-22px color-#4d4f56 text-14px font-700 pb-16px">
+                            {{ t('资源列表') }}
+                          </div>
+                          <div class="mb-16px">
+                            <BkInput
+                              v-model="filterKeyword"
+                              :disabled="noValidStage"
+                              type="search"
+                            />
+                          </div>
+                          <BkLoading :loading="searchLoading">
+                            <AgTable
+                              ref="toolTableRef"
+                              v-model:table-data="filteredToolList"
+                              resizable
+                              show-selection
+                              local-page
+                              :show-settings="false"
+                              :show-first-full-row="toolSelections.length > 0"
+                              :disabled-check-selection="toolDisabledSelection"
+                              :columns="toolTableColumns"
+                              :table-empty-type="toolTableEmptyType"
+                              :filter-value="toolFilterData"
+                              :row-class-name="handleSetToolRowClass"
+                              @filter-change="handleToolFilterChange"
+                              @clear-filter="handleToolClearFilter"
+                              @clear-selection="handleToolClearSelection"
+                              @selection-change="handleToolSelectionChange"
+                            />
+                          </BkLoading>
+                        </div>
+                        <template v-if="['prompt'].includes(activeTab)">
+                          <BkResizeLayout
+                            initial-divide="366px"
+                            class="bg-white h-full!"
+                            :border="false"
+                          >
+                            <template #aside>
+                              <div class="p-16px">
+                                <BkSearchSelect
+                                  v-model="filterPromptValues"
+                                  :data="filterPromptConditions"
+                                  :placeholder="t('搜索中英文名、标签、内容、修改人')"
+                                  :value-split-code="'+'"
+                                  class="mb-16px"
+                                  clearable
+                                  unique-select
+                                  value-behavior="need-key"
                                 />
-                              </BkLoading>
-                            </div>
-                          </template>
-                          <template #main>
-                            <BkLoading :loading="promptDetailLoading">
-                              <div class="mt-16px pl-24px pr-24px">
-                                <div
-                                  v-if="Object.keys(curPromptData)?.length"
-                                  class="p-16px pb-8px prompt-row-detail"
+                                <BkLoading
+                                  :loading="searchLoading"
+                                  :z-index="99"
                                 >
-                                  <div class="flex items-center gap-4px">
-                                    <div class="max-w-85% min-w-0 flex text-14px font-700 color-#4d4f56">
-                                      <div
-                                        v-bk-tooltips="{
-                                          placement:'top',
-                                          content: `${curPromptData.name} (${curPromptData?.code})`,
-                                          disabled: !isOverflow,
-                                          extCls: 'max-w-880px',
-                                        }"
-                                        class="w-full truncate"
-                                        @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
-                                        @mouseleave="handleMouseleave"
-                                      >
-                                        {{ curPromptData?.name ?? '--' }}
-                                        <span
-                                          class="ml-8px"
+                                  <AgTable
+                                    ref="promptTableRef"
+                                    v-model:table-data="filteredPromptList"
+                                    resizable
+                                    local-page
+                                    show-selection
+                                    :show-settings="false"
+                                    :show-first-full-row="promptSelections.length > 0"
+                                    :row-class-name="handleSetPromptRowClass"
+                                    :columns="promptTableColumns"
+                                    :table-empty-type="promptTableEmptyType"
+                                    @clear-filter="handlePromptClearFilter"
+                                    @clear-selection="handlePromptClearSelection"
+                                    @selection-change="handlePromptSelectionChange"
+                                    @row-click="handlePromptRowClick"
+                                  />
+                                </BkLoading>
+                              </div>
+                            </template>
+                            <template #main>
+                              <BkLoading :loading="promptDetailLoading">
+                                <div class="mt-16px px-24px">
+                                  <div
+                                    v-if="Object.keys(curPromptData)?.length"
+                                    class="p-16px pb-8px prompt-row-detail"
+                                  >
+                                    <div class="flex items-center gap-4px">
+                                      <div class="max-w-85% min-w-0 flex text-14px font-700 color-#4d4f56">
+                                        <div
+                                          v-bk-tooltips="{
+                                            placement:'top',
+                                            content: `${curPromptData.name} (${curPromptData?.code})`,
+                                            disabled: !isOverflow,
+                                            extCls: 'max-w-794px',
+                                          }"
+                                          class="w-full truncate"
+                                          @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                                          @mouseleave="handleMouseleave"
                                         >
-                                          ({{ curPromptData?.code ?? '--' }})
-                                        </span>
+                                          {{ curPromptData?.name ?? '--' }}
+                                          <span
+                                            class="ml-8px"
+                                          >
+                                            ({{ curPromptData?.code ?? '--' }})
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div class="flex items-center">
+                                        <BkTag
+                                          :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                                        >
+                                          {{ curPromptData?.is_public ? t('公开') : t('私有') }}
+                                        </BkTag>
+                                        <BkTag
+                                          v-if="curPromptData?.is_no_perm"
+                                          class="ml-4px"
+                                        >
+                                          {{ t('无权限') }}
+                                        </BkTag>
                                       </div>
                                     </div>
-                                    <div class="flex items-center">
-                                      <BkTag
-                                        :theme="curPromptData?.is_public ? 'success' : 'warning'"
+                                    <template v-if="!curPromptData.is_no_perm">
+                                      <div class="mt-12px lh-22px text-14px">
+                                        <code
+                                          v-if="curPromptData?.content?.length"
+                                          class="color-#4d4f56 break-all whitespace-pre-line font-unset"
+                                        >
+                                          {{ escapedCodeContent }}
+                                        </code>
+                                      </div>
+                                      <div
+                                        v-if="curPromptData?.labels?.length"
+                                        class="mt-12px"
                                       >
-                                        {{ curPromptData?.is_public ? t('公开') : t('私有') }}
-                                      </BkTag>
+                                        <BkTag
+                                          v-for="label of curPromptData?.labels"
+                                          :key="label"
+                                          class="mr-4px mb-8px"
+                                        >
+                                          {{ label }}
+                                        </BkTag>
+                                      </div>
+                                    </template>
+                                  </div>
+                                </div>
+                              </BkLoading>
+                            </template>
+                          </BkResizeLayout>
+                        </template>
+                      </template>
+                      <template #main>
+                        <div
+                          :style="{ width: `${resizePreviewWidth}px`}"
+                          class="px-24px py-16px result-preview"
+                        >
+                          <div class="flex-1">
+                            <div class="header-title-wrapper">
+                              <div class="font-bold color-#4d4f56 text-14px lh-22px">
+                                {{ t('结果预览') }}
+                              </div>
+                              <BkButton
+                                text
+                                theme="primary"
+                                :disabled="renderPreviewByTab.length < 1"
+                                @click="handleClearSelections(activeTab)"
+                              >
+                                {{ t('清空') }}
+                              </BkButton>
+                            </div>
+                            <div
+                              v-if="renderPreviewByTab.length"
+                              class="sticky top-0 result-preview-list"
+                            >
+                              <div
+                                v-for="(checks, index) in renderPreviewByTab"
+                                :key="index"
+                                class="list-main"
+                              >
+                                <div class="flex items-center justify-between list-item">
+                                  <div class="w-92% flex items-center">
+                                    <div
+                                      v-bk-tooltips="{
+                                        placement:'top',
+                                        content: checks.tool_name || checks.name,
+                                        disabled: !isOverflow,
+                                        extCls: 'max-w-290px',
+                                      }"
+                                      class="min-w-20px color-#3a84ff text-12px truncate name"
+                                      @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
+                                      @mouseleave="handleMouseleave"
+                                    >
+                                      {{ checks.tool_name || checks.name }}
+                                    </div>
+                                    <BkTag
+                                      v-if="!['tool'].includes(checks.mode_type)"
+                                      :theme="checks?.is_public ? 'success' : 'warning'"
+                                      class="ml-4px"
+                                    >
+                                      {{ t(checks?.is_public ? '公开' : '私有') }}
+                                    </BkTag>
+                                    <template v-if="isEnabledOAuthTag(checks)">
                                       <BkTag
-                                        v-if="curPromptData?.is_no_perm"
+                                        v-if="renderOAuthConfig(checks)?.auth_verified_required"
+                                        theme="info"
                                         class="ml-4px"
                                       >
-                                        {{ t('无权限') }}
+                                        {{ t('用户态') }}
                                       </BkTag>
-                                    </div>
+                                      <template v-if="renderOAuthConfig(checks)?.app_verified_required">
+                                        <BkTag
+                                          theme="warning"
+                                          class="ml-4px"
+                                        >
+                                          {{ t('应用态') }}
+                                        </BkTag>
+                                        <BkTag
+                                          theme="danger"
+                                          class="ml-4px"
+                                        >
+                                          <template #icon>
+                                            <AgIcon name="zhiming" />
+                                          </template>
+                                          {{ t('风险') }}
+                                        </BkTag>
+                                      </template>
+                                    </template>
                                   </div>
-                                  <template v-if="!curPromptData.is_no_perm">
-                                    <div class="mt-12px lh-22px text-14px">
-                                      <code
-                                        v-if="curPromptData?.content?.length"
-                                        class="color-#4d4f56 break-all whitespace-pre-line font-unset"
-                                      >
-                                        {{ escapedCodeContent }}
-                                      </code>
-                                    </div>
-                                    <div
-                                      v-if="curPromptData?.labels?.length"
-                                      class="mt-12px"
-                                    >
-                                      <BkTag
-                                        v-for="label of curPromptData?.labels"
-                                        :key="label"
-                                        class="mr-4px mb-8px"
-                                      >
-                                        {{ label }}
-                                      </BkTag>
-                                    </div>
-                                  </template>
+                                  <AgIcon
+                                    class="delete-icon"
+                                    name="icon-close"
+                                    size="20"
+                                    @click="() => handleRemoveResource(checks)"
+                                  />
                                 </div>
                               </div>
-                            </BkLoading>
-                          </template>
-                        </BkResizeLayout>
-                      </template>
-                    </template>
-                    <template #main>
-                      <div
-                        :style="{ width: `${resizePreviewWidth}px`}"
-                        class="result-preview"
-                      >
-                        <div class="flex-1">
-                          <div class="header-title-wrapper">
-                            <div class="font-bold color-#4d4f56 text-14px lh-22px">
-                              {{ t('结果预览') }}
                             </div>
-                            <BkButton
-                              text
-                              theme="primary"
-                              :disabled="renderPreviewByTab.length < 1"
-                              @click="handleClearSelections(activeTab)"
-                            >
-                              {{ t('清空') }}
-                            </BkButton>
+                            <TableEmpty
+                              v-else
+                              class="h-[calc(100%-50px)]"
+                            />
                           </div>
-                          <div
-                            v-if="renderPreviewByTab.length"
-                            class="sticky top-0 result-preview-list"
-                          >
-                            <div
-                              v-for="(checks, index) in renderPreviewByTab"
-                              :key="index"
-                              class="list-main"
-                            >
-                              <div class="list-item">
-                                <div class="w-90% flex items-center">
-                                  <div
-                                    v-bk-tooltips="{
-                                      placement:'top',
-                                      content: checks.tool_name || checks.name,
-                                      disabled: !isOverflow,
-                                      extCls: 'max-w-290px',
-                                    }"
-                                    class="color-#3a84ff text-12px truncate name"
-                                    @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
-                                    @mouseleave="handleMouseleave"
-                                  >
-                                    {{ checks.tool_name || checks.name }}
-                                  </div>
-                                  <BkTag
-                                    v-if="!['tool'].includes(checks.mode_type)"
-                                    :theme="checks?.is_public ? 'success' : 'warning'"
-                                    class="ml-4px"
-                                  >
-                                    {{ checks?.is_public ? t('公开') : t('私有') }}
-                                  </BkTag>
-                                </div>
-                                <AgIcon
-                                  class="delete-icon"
-                                  name="icon-close"
-                                  size="24"
-                                  @click="() => handleRemoveResource(checks)"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <TableEmpty
-                            v-else
-                            class="h-[calc(100%-50px)]"
-                          />
                         </div>
-                      </div>
-                    </template>
-                  </BkResizeLayout>
+                      </template>
+                    </BkResizeLayout>
+                  </div>
                 </div>
-              </div>
-            </BkFormItem>
+              </BkFormItem>
+            </div>
           </BkForm>
         </div>
       </div>
     </template>
     <template #footer>
-      <div class="ml-16px">
+      <div
+        ref="footerRef"
+        class="w-full bg-white px-24px z-999 create-mcp-footer-wrapper"
+      >
+        <OAuthAlert
+          v-if="isExistOAuthData"
+          class="py-8px"
+          :app-auth-status-list="appAuthStatusList"
+        />
         <BkButton
           :disabled="noValidStage"
-          class="w-100px!"
+          class="min-w-88px"
           theme="primary"
           :loading="submitLoading"
           @click="handleSubmit"
         >
-          {{ t('确定') }}
+          {{ t( appAuthStatusList.length > 0 ? '已知晓风险并提交' : '确定') }}
         </BkButton>
         <BkButton
-          class="w-100px! ml-4px"
+          class="ml-8px"
           @click="handleCancel"
         >
           {{ t('取消') }}
@@ -556,23 +404,21 @@
 
 <script lang="tsx" setup>
 import { cloneDeep, escape, uniq } from 'lodash-es';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import { type ISearchItem } from 'bkui-lib/search-select/utils';
-import { InfoLine } from 'bkui-lib/icon';
-import { getStageList } from '@/services/source/stage';
-import { getVersionDetail } from '@/services/source/resource';
-import type { IFormMethod, ITableMethod } from '@/types/common';
-import { refDebounced } from '@vueuse/core';
 import {
   Divider,
   Form,
-  Input,
   Message,
   PopConfirm,
   ResizeLayout,
-  TagInput,
 } from 'bkui-vue';
+import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { ISearchItem } from 'bkui-lib/search-select/utils';
+import type { IFormMethod, ITableMethod } from '@/types/common';
+import { getStageList } from '@/services/source/stage';
+import { getVersionDetail } from '@/services/source/resource';
+import { refDebounced } from '@vueuse/core';
 import {
+  type IMCPFormData,
   type IMCPServerCategory,
   type IMCPServerPrompt,
   type IMCPServerTool,
@@ -584,27 +430,19 @@ import {
   patchServer,
 } from '@/services/source/mcp-server';
 import { usePopInfoBox, useSidebar } from '@/hooks';
-import { HTTP_METHODS, MCP_PROTOCOL_TYPE } from '@/constants';
-import { copy } from '@/utils';
+import { HTTP_METHODS } from '@/constants';
 import {
-  useEnv,
   useFeatureFlag,
   useGateway,
 } from '@/stores';
 import i18n from '@/locales';
+import ServerBasicForm from '@/views/mcp-server/components/ServerBasicForm.vue';
+import OAuthSwitcher from '@/views/mcp-server/components/OAuthSwitcher.vue';
+import OAuthAlert from '@/views/mcp-server/components/OAuthAlert.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { serverId?: number }
-
-interface FormData {
-  name: string
-  title: string
-  description: string
-  stage_id: number | undefined
-  is_public: boolean
-  labels: string[]
-}
 
 const { serverId = 0 } = defineProps<IProps>();
 
@@ -612,7 +450,6 @@ const emit = defineEmits<{ updated: [] }>();
 
 const router = useRouter();
 const gatewayStore = useGateway();
-const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
@@ -620,10 +457,7 @@ const { t } = i18n.global;
 
 let loadingTimer: NodeJS.Timeout | null = null;
 
-const nameRef = ref<InstanceType<typeof Input>>(null);
-const titleRef = ref<InstanceType<typeof Input>>(null);
-const descriptionRef = ref<InstanceType<typeof Input>>(null);
-const categoriesRef = ref<InstanceType<typeof TagInput>>(null);
+const footerRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
@@ -631,28 +465,28 @@ const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
-const defaultFormData = ref<FormData>({
+const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
+const defaultFormData = ref<IMCPFormData>({
   name: '',
   description: '',
   protocol_type: 'streamable_http',
   stage_id: 0,
   is_public: true,
+  oauth2_public_client_enabled: false,
   labels: [],
   categories: [],
 });
-const formData = ref<FormData>(cloneDeep(defaultFormData.value));
+const formData = ref<IMCPFormData>(cloneDeep(defaultFormData.value));
 const toolNameRowData = ref({});
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
 const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
-const isCategoryFocus = ref(false);
-const url = ref('');
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
 const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
-const resizePreviewWidth = ref(297);
+const resizePreviewWidth = ref(360);
 const stageList = ref([]);
 const resourceList = ref([]);
 const promptTableData = ref([]);
@@ -666,7 +500,6 @@ const promptLabels = ref([]);
 const filterPromptValues = ref([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
 
-const apigwId = computed(() => gatewayStore.currentGateway?.id);
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
@@ -681,8 +514,6 @@ const customMethodsList = computed(() => {
     ...methods,
   ];
 });
-const isCategoryEmpty = computed(() => !formData.value.categories.length && isCategoryFocus.value);
-
 const resourceTabList = shallowRef<{
   label: string
   value: string
@@ -703,6 +534,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('资源名称'),
     colKey: 'name',
+    ellipsis: true,
     cell: (_, { row }: { row: IMCPServerTool }) => {
       if (!row?.name) {
         return '--';
@@ -991,16 +823,16 @@ const methodTagThemeMap = {
 };
 
 let resizeLayoutConfig = {
-  min: 888,
-  max: 1040,
+  min: 794,
+  max: 800,
 };
 
-const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
+const gatewayId = computed(() => gatewayStore.currentGateway?.id);
 const isEditMode = computed(() => !!serverId);
-const gatewayId = computed(() => gatewayStore?.currentGateway?.id);
+const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
 const stage = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
-const serverNamePrefix = computed(() => `${gatewayStore.currentGateway!.name}-${stageName.value}-`);
+const serverNamePrefix = computed(() => `${gatewayStore.currentGateway?.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
   return isEditMode.value
     ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
@@ -1110,18 +942,35 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
     placeholder: t('请输入修改人'),
   },
 ]);
-const previewUrl = computed(() => {
-  const prefix = envStore.env.BK_API_RESOURCE_URL_TMPL
-    .replace('{api_name}', 'bk-apigateway')
-    .replace('{stage_name}', 'prod')
-    .replace('{resource_path}', 'api/v2/mcp-servers');
-  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type)
-    ? 'mcp'
-    : formData.value.protocol_type}/`;
-});
 const escapedCodeContent = computed(() => {
   return escape(curPromptData.value?.content ?? '');
 });
+const noValidStage = computed(() => stageList.value.every(stage => stage.status === 0));
+const isCurrentStageValid = computed(() =>
+  stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
+// 处理工具oauth态
+const isEnabledOAuth = computed(() => formData.value.oauth2_public_client_enabled);
+// 选中的应用态工具数据
+const appAuthStatusList = computed(() => {
+  if (!isEnabledOAuth.value) return [];
+  return toolSelections.value.filter(item => renderOAuthConfig(item)?.app_verified_required);
+});
+// 选中工具项是否存在应用态或用户态数据
+const isExistOAuthData = computed(() => isEnabledOAuth.value && toolSelections.value.some(auth =>
+  renderOAuthConfig(auth)?.auth_verified_required || renderOAuthConfig(auth)?.app_verified_required),
+);
+
+// 开启OAuth2 公开客户端模式才展示工具应用态或用户态
+const isEnabledOAuthTag = payload => ['tool'].includes(payload.mode_type) && isEnabledOAuth.value;
+
+const renderOAuthConfig = (payload) => {
+  const resourceAuthConfig = payload?.contexts?.resource_auth?.config;
+  if (resourceAuthConfig) {
+    return JSON.parse(resourceAuthConfig);
+  }
+
+  return {};
+};
 
 /**
  * 获取公共异步数据（提取重复逻辑，降低耦合）
@@ -1185,7 +1034,7 @@ const getDiffFormData = () => {
 
 const resetResizeLayout = () => {
   nextTick(() => {
-    const modalContentEl = document.querySelector('.create-slider .bk-modal-content');
+    const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
     if (modalContentEl) {
       modalContentEl.scrollTop = 0;
     }
@@ -1195,9 +1044,9 @@ const resetResizeLayout = () => {
     const asideLayout = resizeLayoutRef.value.asideRef;
     if (asideLayout) {
       Object.assign(asideLayout.style, {
-        width: '888px',
-        maxWidth: '1040px',
-        minWidth: '888px',
+        width: '794px',
+        maxWidth: '800px',
+        minWidth: '794px',
       });
     }
   });
@@ -1218,16 +1067,6 @@ const toolDisabledSelection = (row) => {
   return !row.has_openapi_schema && !isSelected;
 };
 
-const handleSearchCategory = (tagValue: string, tagKey: string, list: IMCPServerCategory[]) =>
-  list.filter((cg: IMCPServerCategory) => {
-    if (!tagValue) return list;
-    return cg.name?.toLowerCase().indexOf(tagValue) > -1 || cg[tagKey].indexOf(tagValue) > -1;
-  });
-
-const handleCategoryFocus = () => {
-  isCategoryFocus.value = true;
-};
-
 const handleMouseenter = (e: MouseEvent) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
@@ -1237,35 +1076,6 @@ const handleMouseenter = (e: MouseEvent) => {
 
 const handleMouseleave = () => {
   isOverflow.value = false;
-};
-
-const renderCategoryTpl = (node, highlightKeyword, h) => {
-  // 先转义原始内容，再执行高亮（确保高亮后的 HTML 仅包含安全标签）
-  const escapedName = escape(node.name);
-  const escapedDisplayName = escape(node.display_name);
-  const highlightedName = highlightKeyword(escapedName);
-  const innerHTML = `${highlightedName} (${escapedDisplayName})`;
-
-  return h('div', { class: 'bk-selector-node' }, [
-    h('span', {
-      class: 'text',
-      innerHTML,
-    }),
-  ]);
-};
-
-const renderCategoryTagTpl = (node, h) => {
-  // 转义所有用户输入内容，避免恶意代码执行
-  const escapedName = escape(node.name);
-  const escapedDisplayName = escape(node.display_name);
-  const innerHTML = `<span>${escapedName}</span> (${escapedDisplayName})`;
-
-  return h('div', { class: 'tag' }, [
-    h('span', {
-      class: 'text',
-      innerHTML,
-    }),
-  ]);
 };
 
 const clearValidate = () => {
@@ -1287,7 +1097,7 @@ const handleSetPromptRowClass = ({ row }: { row: IMCPServerPrompt }) => {
 };
 
 const handleResizeLayout = (resizeWidth: number) => {
-  resizePreviewWidth.value = 1182 - resizeWidth;
+  resizePreviewWidth.value = 1168 - resizeWidth;
 };
 
 /**
@@ -1335,41 +1145,26 @@ const isExistPrivatePrompt = (): Promise<boolean> => {
 };
 
 const handleSubmit = async () => {
-  const {
-    name,
-    title,
-    description,
-    categories,
-  } = formData.value;
+  // 基础表单验证
+  const basicFormValidate = serverBasicFormRef.value?.validateForm();
+  const isBasicValidate = typeof basicFormValidate === 'boolean' && basicFormValidate;
   try {
     await formRef.value?.validate();
   }
   catch {
-    // 自动focus到必填项
-    if (!name) {
-      nameRef.value?.focus();
-      handleScrollView(nameRef.value?.$el);
+    if (!isBasicValidate) {
+      basicFormValidate?.focus?.();
+      handleScrollView(basicFormValidate?.$el);
       return;
     }
-    if (title?.trim().length < 3) {
-      titleRef.value?.focus();
-      handleScrollView(titleRef.value?.$el);
-      return;
-    }
-    if (description.length < 10) {
-      descriptionRef.value?.focus();
-      handleScrollView(descriptionRef.value?.$el);
-      return;
-    }
+  }
+
+  if (!isBasicValidate) {
+    handleScrollView(basicFormValidate?.$el);
+    return;
   }
 
   let isValidate = toolSelections.value.length > 0;
-  isCategoryFocus.value = !categories?.length;
-
-  if (isCategoryEmpty.value) {
-    handleScrollView(categoriesRef.value?.$el);
-    return;
-  }
 
   if (!isValidate) {
     handleScrollView(resourceRef.value);
@@ -1389,18 +1184,28 @@ const handleSubmit = async () => {
       resource_names: toolSelections.value.map(item => item.name),
       tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
-      category_ids: categoriesList.value.filter(cg => categories.includes(cg.name)).map(cname => cname.id),
+      category_ids: categoriesList.value.filter(cg =>
+        formData.value.categories.includes(cg.name))
+        .map(cname => cname.id),
     };
     if (isEditMode.value) {
-      const { description, is_public, protocol_type, labels, title } = formData.value as FormData;
+      const {
+        title,
+        description,
+        is_public,
+        oauth2_public_client_enabled,
+        protocol_type,
+        labels,
+      } = formData.value;
       params = Object.assign(params, {
         description,
         is_public,
+        oauth2_public_client_enabled,
         protocol_type,
         labels,
         title,
       });
-      await patchServer(apigwId.value, serverId, params);
+      await patchServer(gatewayId.value, serverId, params);
       Message({
         theme: 'success',
         message: t('编辑成功'),
@@ -1412,7 +1217,7 @@ const handleSubmit = async () => {
         ...formData.value,
         name: `${serverNamePrefix.value}${formData.value.name}`,
       };
-      await createServer(apigwId.value, params);
+      await createServer(gatewayId.value, params);
       Message({
         theme: 'success',
         message: t('创建成功'),
@@ -1426,11 +1231,6 @@ const handleSubmit = async () => {
     submitLoading.value = false;
   }
 };
-
-const noValidStage = computed(() => stageList.value.every(stage => stage.status === 0));
-
-const isCurrentStageValid = computed(() =>
-  stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
 
 const fetchStageList = async () => {
   const response = await getStageList(gatewayId.value);
@@ -1452,6 +1252,7 @@ const fetchServer = async () => {
       description = '',
       protocol_type = 'streamable_http',
       labels = [],
+      oauth2_public_client_enabled = false,
       is_public = true,
       stage = { id: 0 },
       resource_names = [],
@@ -1466,11 +1267,11 @@ const fetchServer = async () => {
       description,
       labels,
       is_public,
+      oauth2_public_client_enabled,
       stage_id: stage.id || 0,
       protocol_type,
       categories: categories.map(item => item.name),
     };
-    url.value = response?.url ?? '';
     // 仅当资源名称数组有有效数据时执行逻辑
     if (resource_names?.length) {
       await fetchStageList();
@@ -1491,7 +1292,7 @@ const fetchServer = async () => {
         resourceNameToIndexMap.has(item.name),
       );
 
-      toolSelections.value = resourceToolData.map(({ name, id }) => {
+      toolSelections.value = resourceToolData.map(({ name, id, contexts }) => {
         const correctIndex = resourceNameToIndexMap.get(name);
         const toolName = hasToolNames && correctIndex !== undefined
           ? tool_names[correctIndex] || ''
@@ -1502,6 +1303,7 @@ const fetchServer = async () => {
           id,
           mode_type: 'tool',
           tool_name: toolName,
+          contexts,
         };
       });
 
@@ -1565,7 +1367,7 @@ const fetchStageResources = async () => {
 };
 
 const fetchPromptResources = async () => {
-  const res = await getServerPrompts(apigwId.value);
+  const res = await getServerPrompts(gatewayId.value);
   promptTableData.value = res?.prompts ?? [];
 
   if (promptTableData.value.length) {
@@ -1584,7 +1386,7 @@ const fetchPromptResources = async () => {
 const fetchPromptResourcesDetail = async () => {
   promptDetailLoading.value = true;
   try {
-    const res = await getServerPromptsDetail(apigwId.value, { ids: [curPromptData.value.id] });
+    const res = await getServerPromptsDetail(gatewayId.value, { ids: [curPromptData.value.id] });
     curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
   }
   catch {
@@ -1597,7 +1399,7 @@ const fetchPromptResourcesDetail = async () => {
 
 // 获取MCP分类
 const fetchCategoryList = async () => {
-  const res = await getMcpCategoryList(apigwId.value);
+  const res = await getMcpCategoryList(gatewayId.value);
   categoriesList.value = (res ?? []).map((cg) => {
     return {
       ...cg,
@@ -1622,6 +1424,15 @@ const handlePromptRowClick = ({
   }
   curPromptData.value = row;
   fetchPromptResourcesDetail();
+};
+
+const getSliderContentHeight = () => {
+  // 动态获取footer高度，计算内容区域最大高度
+  setTimeout(() => {
+    const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
+    const footerH = footerRef.value?.offsetHeight;
+    modalContentEl.style.maxHeight = !isEnabledOAuth.value ? modalContentEl.style.height : `calc(100% - ${footerH + 54}px)`;
+  });
 };
 
 const handleRemoveResource = ({
@@ -1654,6 +1465,7 @@ const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ select
     mode_type: 'tool',
   }));
   allSelections.value = [...promptItems, ...toolItems];
+  getSliderContentHeight();
 };
 
 const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
@@ -1832,8 +1644,9 @@ const handleMcpTypeChange = (tab: string) => {
   return tabMap[tab]?.();
 };
 
-const handleCopyClick = () => {
-  copy(previewUrl.value);
+// 切换oauth是否开启同步更新节点宽度
+const handleOAuthChange = () => {
+  getSliderContentHeight();
 };
 
 const resetSliderData = () => {
@@ -1844,13 +1657,13 @@ const resetSliderData = () => {
   promptSelections.value = [];
   allSelections.value = [];
   noPermPrompt.value = [];
-  url.value = '';
+  appAuthStatusList.value = [];
   filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
   resizeLayoutConfig = {
-    min: 880,
-    max: 1040,
+    min: 794,
+    max: 800,
   };
   toolFilterData.value = {};
 };
@@ -1862,15 +1675,8 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
   });
 };
 
-const handleCategoriesBlur = () => {
-  isCategoryFocus.value = false;
-  setTimeout(() => {
-    categoriesRef.value?.handleBlur();
-  }, 200);
-};
-
 const handleBeforeClose = () => {
-  handleCategoriesBlur();
+  serverBasicFormRef.value?.handleCategoriesBlur();
   const results = isSidebarClosed(JSON.stringify(getDiffFormData()));
   return results;
 };
@@ -1880,7 +1686,7 @@ const handleCancel = () => {
   handleClearSelections();
   clearValidate();
   resetSliderData();
-  handleCategoriesBlur();
+  serverBasicFormRef.value?.handleCategoriesBlur();
   isShow.value = false;
 };
 
@@ -1895,12 +1701,14 @@ defineExpose({
 
 <style lang="scss">
 .prompt-info-box {
+
   .set-bg-color {
     background-color: transparent;
   }
 }
 
 .tool-name-popover {
+
   .is-error {
     margin-bottom: 36px;
   }
@@ -1908,9 +1716,10 @@ defineExpose({
 </style>
 
 <style lang="scss" scoped>
-.create-slider {
+.create-mcp-slider {
 
   :deep(.bk-modal-content) {
+    background-color: #f5f7fa;
     overflow-y: auto;
     overflow-x: hidden !important;
   }
@@ -1921,14 +1730,6 @@ defineExpose({
     .main {
       padding: 28px 40px 0;
       color: #4d4f56;
-
-      .name-help-text {
-
-        .text-body {
-          font-size: 12px;
-          color: #979ba5;
-        }
-      }
     }
 
     :deep(.tool-name) {
@@ -1959,19 +1760,18 @@ defineExpose({
       }
     }
   }
-}
 
-// 这里直接在formItem写校验规则会触发空校验，所以自定义样式
-:deep(.custom-form-item-required) {
-  position: relative;
+  &.enabled-oauth2-public-client,
+  &.app-auth-mcp-slider {
 
-  .bk-form-label::after {
-    position: absolute;
-    top: 0;
-    width: 14px;
-    color: #ea3636;
-    text-align: center;
-    content: "*";
+    .slider-content {
+      margin-bottom: 24px;
+    }
+
+    :deep(.bk-sideslider-footer) {
+      padding: 0;
+      height: auto !important;
+    }
   }
 }
 
@@ -2020,16 +1820,10 @@ defineExpose({
 
   .resource-selector-wrapper {
     display: flex;
+    background-color: #f5f7fa;
 
     .selector-main {
       flex-shrink: 0;
-
-      .selector-title {
-        margin-bottom: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #4d4f56;
-      }
 
       .prompt-row-detail {
         color: #4d4f56;
@@ -2042,14 +1836,12 @@ defineExpose({
       display: flex;
       flex-direction: column;
       height: 100%;
-      padding: 16px;
-      background-color: #f5f7fa;
 
       .header-title-wrapper {
         display: flex;
+        justify-content: space-between;
         margin-bottom: 16px;
         font-size: 14px;
-        justify-content: space-between;
 
         .name {
           font-weight: 700;
@@ -2066,21 +1858,20 @@ defineExpose({
           flex: 1;
 
           .list-item {
-            display: flex;
             height: 32px;
             padding: 6px 10px;
+            padding-right: 0;
             margin-bottom: 4px;
             background-color: #ffffff;
             border-radius: 2px;
-            justify-content: space-between;
-            align-items: center;
 
             .delete-icon {
+              flex-shrink: 0;
               color: #c4c6cc;
-              cursor: pointer;
 
               &:hover {
                 color: #3a84ff;
+                cursor: pointer;
               }
             }
           }
@@ -2096,28 +1887,6 @@ defineExpose({
   &.prompt {
     :deep(.bk-form-label) {
       margin-bottom: 0;
-    }
-  }
-}
-
-:deep(.form-protocol-type) {
-  .bk-form-label {
-
-    &::after {
-      display: none;
-    }
-
-    .connect-method {
-      position: relative;
-
-      &::after {
-        position: absolute;
-        top: 0;
-        width: 14px;
-        color: #ea3636;
-        text-align: center;
-        content: "*";
-      }
     }
   }
 }

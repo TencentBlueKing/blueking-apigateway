@@ -644,3 +644,15 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-anzhuang:before {
 	content: "\e1f5";
 }
+.icon-ag-deqiu:before {
+	content: "\e1f6";
+}
+.icon-ag-jiediyuan:before {
+	content: "\e1f7";
+}
+.icon-ag-zhiming:before {
+	content: "\e1f8";
+}
+.icon-ag-oauth2:before {
+	content: "\e1f9";
+}
