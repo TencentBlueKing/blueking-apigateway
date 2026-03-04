@@ -26,6 +26,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 
+from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
@@ -288,8 +289,26 @@ class GatewayHandler:
         return ""
 
     @staticmethod
-    def get_api_domain(gateway: Gateway) -> str:
-        return settings.BK_API_URL_TMPL.format(api_name=gateway.name)
+    def get_bk_api_url_tmpl(gateway_id: int) -> str:
+        """Get the bk_api_url_tmpl for a gateway from its bound data plane, with fallback to settings.
+        If gateway bound to multiple data_planes, only use the first data_plane's bk_api_url_tmpl
+        """
+        binding = (
+            GatewayDataPlaneBinding.objects.filter(gateway_id=gateway_id)
+            .select_related("data_plane")
+            .order_by("data_plane_id")
+            .first()
+        )
+        if binding and binding.data_plane.bk_api_url_tmpl:
+            return binding.data_plane.bk_api_url_tmpl
+
+        logger.warning("Gateway %s bound to no multiple data_planes, use the settings.BK_API_URL_TMPL", gateway_id)
+
+        return settings.BK_API_URL_TMPL
+
+    @staticmethod
+    def get_gateway_domain(gateway: Gateway) -> str:
+        return GatewayHandler.get_bk_api_url_tmpl(gateway.id).format(api_name=gateway.name)
 
     @staticmethod
     def get_resource_count(gateway_ids: List[int]) -> Dict[int, int]:

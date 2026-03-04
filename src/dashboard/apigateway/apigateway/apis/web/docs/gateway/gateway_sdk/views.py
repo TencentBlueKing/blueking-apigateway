@@ -24,6 +24,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.models import SDKDocContext
@@ -110,6 +111,7 @@ class SDKUsageExampleApi(generics.RetrieveAPIView):
                 path_params=example.get("path_params", {}),
                 query_params=example.get("query_params", {}),
                 headers=example.get("headers", {}),
+                bk_api_url_tmpl=GatewayHandler.get_bk_api_url_tmpl(request.gateway.id),
             ).as_dict(),
         )
 

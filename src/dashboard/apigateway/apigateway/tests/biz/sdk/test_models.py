@@ -26,6 +26,7 @@ class TestSDKDocContext:
             gateway_name="foo-bar",
             stage_name="prod",
             resource_name="get_color",
+            bk_api_url_tmpl="http://{api_name}.example.com",
             sdk_created_time=now,
         )
         result = context.as_dict()

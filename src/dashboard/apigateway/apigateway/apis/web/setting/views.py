@@ -24,6 +24,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.feature.models import UserFeatureFlag
 from apigateway.conf.utils import get_doc_links
 from apigateway.utils.responses import OKJsonResponse
@@ -60,6 +61,10 @@ class EnvVarListApi(generics.ListAPIView):
         lang = "EN" if translation.get_language() == "en" else "ZH"
         doc_links = get_doc_links(settings.BK_APIGATEWAY_VERSION, settings.BK_DOCS_URL_PREFIX, lang)
         env_vars["DOC_LINKS"] = doc_links
+
+        env_vars["BK_DATA_PLANE_API_URL_TMPL_MAP"] = {
+            dp.name: dp.bk_api_url_tmpl for dp in DataPlane.objects.get_active_data_planes() if dp.bk_api_url_tmpl
+        }
 
         return OKJsonResponse(data=env_vars)
 

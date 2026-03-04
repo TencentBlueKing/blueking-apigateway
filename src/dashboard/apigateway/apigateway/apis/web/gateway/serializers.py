@@ -309,7 +309,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
         }
 
     def get_api_domain(self, obj):
-        return GatewayHandler.get_api_domain(obj)
+        return GatewayHandler.get_gateway_domain(obj)
 
     def get_docs_url(self, obj):
         return GatewayHandler.get_docs_url(obj)
