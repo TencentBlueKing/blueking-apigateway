@@ -206,7 +206,7 @@ class ResourceImportValidator:
                     _(
                         "当前配置数据中，资源 method={method}, path={path}，前端配置中的 match_subpath 与后端配置中的 match_subpath 值必需相同。"
                     ).format(method=resource_data.method, path=resource_data.path),
-                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.match_subpath",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource.matchSubpath",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
@@ -256,7 +256,7 @@ class ResourceImportValidator:
                         length=len(resource_data.description),
                         max_length=field_limits["description"],
                     ),
-                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.summary",
+                    f"$.paths.{resource_data.path}.{resource_data.method.lower()}.description",
                     absolute_path=[],
                 )
                 self.schema_validate_result.append(validate_err)
