@@ -67,7 +67,7 @@ class UserAuthConfig(BaseModel):
         return copy.deepcopy(settings.API_USER_AUTH_CONFIGS[self.user_auth_type])
 
 
-class APIAuthConfig(BaseModel):
+class GatewayAuthConfig(BaseModel):
     """
     网关认证配置
     """

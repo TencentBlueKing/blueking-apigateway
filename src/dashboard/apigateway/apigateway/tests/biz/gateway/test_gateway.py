@@ -274,7 +274,7 @@ class TestGatewayHandler:
 
     def test_save_related_data(self, mocker, fake_gateway):
         mocker.patch(
-            "apigateway.biz.gateway.gateway.APIAuthConfig.config",
+            "apigateway.biz.gateway.gateway.GatewayAuthConfig.config",
             new_callable=mocker.PropertyMock(
                 return_value={
                     "user_auth_type": "default",

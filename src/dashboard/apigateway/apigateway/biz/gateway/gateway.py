@@ -36,13 +36,13 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
-from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     GatewayOperationSourceEnum,
     GatewayOperationStatusEnum,
     GatewayTypeEnum,
 )
+from apigateway.core.gateway_auth import GatewayAuthConfig
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
@@ -175,7 +175,7 @@ class GatewayHandler:
         current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-        gateway_auth_config = APIAuthConfig.model_validate(deep_update(current_config, new_config))
+        gateway_auth_config = GatewayAuthConfig.model_validate(deep_update(current_config, new_config))
 
         return GatewayAuthContext().save(gateway_id, gateway_auth_config.config)
 
