@@ -906,6 +906,10 @@ GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED"
 
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 
+# BK plugins gateway data plane routing
+BK_PLUGINS_DATA_PLANE_NAME = env.str("BK_PLUGINS_DATA_PLANE_NAME", default="bk-plugins")
+BK_PLUGINS_DATA_PLANE_GRAY_STAGE = env.str("BK_PLUGINS_DATA_PLANE_GRAY_STAGE", default="not_start")
+
 # ==============================================================================
 # Feature Flag
 # ==============================================================================

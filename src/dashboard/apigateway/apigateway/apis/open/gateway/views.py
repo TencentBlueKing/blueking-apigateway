@@ -36,8 +36,8 @@ from apigateway.apis.open.permissions import (
     OpenAPIPermission,
 )
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.data_plane.models import DataPlane
 from apigateway.biz.audit import Auditor
+from apigateway.biz.data_plane import get_sync_data_plane_ids
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
@@ -221,18 +221,10 @@ class GatewaySyncApi(generics.CreateAPIView):
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
-        # Convert data_plane_names to data_plane_ids if provided
-        data_plane_ids = None
-
-        # TODO: if bp- and edition is te, should bind to another data plane
-        #       we need a dp route table to determine the data plane to bind to
-        data_plane_names = data.get("data_planes")
-        if data_plane_names:
-            data_plane_ids = []
-            for name in data_plane_names:
-                data_plane = DataPlane.objects.filter(name=name).first()
-                if data_plane:
-                    data_plane_ids.append(data_plane.id)
+        data_plane_ids = get_sync_data_plane_ids(
+            gateway_name=gateway_name,
+            data_plane_names=data.get("data_planes"),
+        )
 
         saver = GatewaySaver(
             id=gateway and gateway.id,

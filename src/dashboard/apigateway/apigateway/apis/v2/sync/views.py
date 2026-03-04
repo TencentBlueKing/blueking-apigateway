@@ -31,7 +31,6 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
@@ -42,6 +41,7 @@ from apigateway.apps.permission.models import (
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
+from apigateway.biz.data_plane import get_sync_data_plane_ids
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -117,18 +117,10 @@ class GatewaySyncApi(generics.CreateAPIView):
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
-        # TODO: if bp- and edition is te, should bind to another data plane
-        #       we need a dp route table to determine the data plane to bind to
-
-        # Convert data_plane_names to data_plane_ids if provided
-        data_plane_ids = None
-        data_plane_names = slz.validated_data.get("data_planes")
-        if data_plane_names:
-            data_plane_ids = []
-            for name in data_plane_names:
-                data_plane = DataPlane.objects.filter(name=name).first()
-                if data_plane:
-                    data_plane_ids.append(data_plane.id)
+        data_plane_ids = get_sync_data_plane_ids(
+            gateway_name=gateway_name,
+            data_plane_names=slz.validated_data.get("data_planes"),
+        )
 
         saver = GatewaySaver(
             id=gateway and gateway.id,
