@@ -46,6 +46,7 @@ export interface IMCPServerTool {
   description: string
   method: string
   path: string
+  isOverflow?: boolean
   verified_user_required: boolean
   verified_app_required: string[]
   resource_perm_required: string[]
@@ -67,6 +68,8 @@ export interface IMCPServerPrompt {
   updated_by: string
   updated_time: string
   is_public: boolean
+  is_no_perm?: boolean
+  isOverflow?: boolean
   labels: string[]
 }
 
@@ -99,6 +102,19 @@ export interface IMCPAIConfig {
   display_name: string
   content: string
   install_url: string
+}
+
+//  McpServer创建/编辑基础表单信息
+export interface IMCPFormData {
+  name: string
+  title: string
+  description: string
+  stage_id: number | null
+  is_public: boolean
+  oauth2_public_client_enabled: boolean
+  labels: string[]
+  categories: string[]
+  protocol_type: string
 }
 
 // 列表

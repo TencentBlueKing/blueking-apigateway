@@ -34,7 +34,7 @@
               {{ server?.title }}
             </template>
           </AgDescription>
-          <slot name="officialTag" />
+          <slot name="externalTag" />
         </div>
       </div>
       <div
