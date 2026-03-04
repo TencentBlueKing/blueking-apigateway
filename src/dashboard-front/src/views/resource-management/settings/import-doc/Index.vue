@@ -144,6 +144,7 @@
           class="upload-cls"
           name="file"
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
+          :size="5"
           @done="handleUploadDone"
           @progress="handleUploadSuccess"
         >
