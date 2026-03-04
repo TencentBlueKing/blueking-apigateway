@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 <template>
   <div class="custom-plugin-form-wrapper">
     <template
@@ -45,6 +46,7 @@
               class="flex items-center mb-8px custom-plugin-form-item"
             >
               <BkFormItem
+                :ref="el => el && (arrayFormItemRefs[`${field.name}-${index}-${displayKey}`] = el)"
                 :property="`${field.name}[${index}].${displayKey}`"
                 :rules="renderFormatArrayFormItem(field, item, displayKey)"
               >
@@ -52,10 +54,13 @@
                   v-model="item[displayKey]"
                   :placeholder="renderPropertyName(field, displayKey)"
                   :maxlength="renderPropertyMaxLen(field, displayKey)"
+                  @input="() => validateFormItem(field, index, displayKey)"
+                  @change="() => validateFormItem(field, index, displayKey)"
                 />
               </BkFormItem>
               <BkFormItem
                 v-if="isMultipleRow(item)"
+                :ref="el => el && (arrayFormItemRefs[`${field.name}-${index}-${displayValue}`] = el)"
                 :property="`${field.name}[${index}].${displayValue}`"
                 :rules="renderFormatArrayFormItem(field, item, displayValue)"
               >
@@ -63,6 +68,8 @@
                   v-model="item[displayValue]"
                   :placeholder="renderPropertyName(field, displayValue)"
                   :maxlength="renderPropertyMaxLen(field, displayValue)"
+                  @input="() => validateFormItem(field, index, displayValue)"
+                  @change="() => validateFormItem(field, index, displayValue)"
                 />
               </BkFormItem>
               <i
@@ -139,6 +146,8 @@ const {
 const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
+
+const arrayFormItemRefs: Ref<Record<string, any>> = ref({});
 
 const renderFormItem = computed(() => {
   const isObjectProperties = isObject(schema?.properties);
@@ -243,7 +252,7 @@ const renderFormatArrayFormItem = (
     },
     {
       message,
-      trigger: 'change',
+      trigger: 'blur',
       validator: () => {
         if (![displayKey].includes(name)) return true;
         const value = child[displayKey] ?? '';
@@ -267,6 +276,20 @@ const renderFormatArrayFormItem = (
     },
   ];
   return results;
+};
+
+// 触发当前表单项校验
+const validateFormItem = (field: ISchema, index: number, name: string) => {
+  const refKey = `${field.name}-${index}-${name}`;
+  const formItem = arrayFormItemRefs.value[refKey];
+  formItem?.validate?.();
+};
+
+// 清除当前表单项校验
+const clearValidateFormItem = (field: ISchema, index: number, name: string) => {
+  const refKey = `${field.name}-${index}-${name}`;
+  const formItem = arrayFormItemRefs.value[refKey];
+  formItem?.clearValidate?.();
 };
 
 // 获取当前层级的字段配置
@@ -298,9 +321,22 @@ const handleRemoveItem = (field: ICustomFormData, index: number) => {
   if (!['array'].includes(field.type)) {
     return;
   }
+  clearValidateFormItem(field, index, displayKey);
+  clearValidateFormItem(field, index, displayValue);
   emit('remove', {
     field,
     index,
+  });
+  // 延迟遍历剩余项，重新执行校验
+  setTimeout(() => {
+    const schemaData = getPropSchema(formData.value?.[field.name]);
+    schemaData.forEach((_, idx) => {
+      validateFormItem(field, idx, displayKey);
+      // 如果是键值对（有value字段），同时校验value
+      if (isMultipleRow(_)) {
+        validateFormItem(field, idx, displayValue);
+      }
+    });
   });
 };
 
