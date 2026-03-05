@@ -653,6 +653,35 @@ class TestMCPServerHandler:
 
         assert result == {}
 
+    def test_get_app_permission_risks_returns_tool_name_instead_of_resource_name(self, fake_gateway, fake_stage):
+        """当资源配置了自定义 tool_name 时，返回 tool_name 而非 resource_name"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "get_user_info", "app_verified_required": True},
+                {"name": "list_orders", "app_verified_required": True},
+                {"name": "health_check", "app_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="get_user_info@query_user;list_orders@order_list;health_check@ping",
+        )
+
+        result = MCPServerHandler.get_app_permission_risks([mcp_server])
+
+        assert mcp_server.id in result
+        assert "query_user" in result[mcp_server.id]
+        assert "order_list" in result[mcp_server.id]
+        assert "get_user_info" not in result[mcp_server.id]
+        assert "list_orders" not in result[mcp_server.id]
+        assert "ping" not in result[mcp_server.id]
+
     def test_get_app_permission_risks_multiple_mcp_servers(self, fake_gateway, fake_stage):
         """批量检测多个 MCPServer，混合 oauth2 开启/关闭"""
         rv = self._make_resource_version_with_data(
