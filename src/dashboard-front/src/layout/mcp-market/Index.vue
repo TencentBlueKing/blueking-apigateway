@@ -145,7 +145,7 @@
               >
                 <template
                   v-if="server?.is_official"
-                  #officialTag
+                  #externalTag
                 >
                   <BkTag
                     theme="success"
