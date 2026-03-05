@@ -278,6 +278,23 @@ class TestBaseParser:
         assert result == expected
 
     @pytest.mark.parametrize(
+        "summary, description, expected",
+        [
+            (None, None, ""),
+            ("summary text", None, "summary text"),
+            (None, "description text", "description text"),
+            ("summary text", "description text", "description text"),
+            ("", "", ""),
+            ("summary text", "", "summary text"),
+            ("", "description text", "description text"),
+        ],
+    )
+    def test_adapt_description(self, summary, description, expected):
+        parser = BaseParser(_openapi_data={})
+        result = parser._adapt_description(summary, description)
+        assert result == expected
+
+    @pytest.mark.parametrize(
         "auth_config, expected",
         [
             (

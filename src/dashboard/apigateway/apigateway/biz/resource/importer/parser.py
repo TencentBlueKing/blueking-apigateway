@@ -296,16 +296,11 @@ class BaseParser:
         }
 
     def _adapt_description(self, summary: Optional[str], description: Optional[str]):
-        """与根据 openapi 协议生成资源文档保持一致"""
-        parts = []
-
-        if summary:
-            parts.append(summary)
-
+        """优先取 description，没有则取 summary"""
         if description:
-            parts.append(description)
+            return description
 
-        return "\n\n".join(parts)
+        return summary or ""
 
     def _adapt_auth_config(self, auth_config: dict):
         config = {

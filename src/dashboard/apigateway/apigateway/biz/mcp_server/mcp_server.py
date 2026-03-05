@@ -329,7 +329,12 @@ class MCPServerHandler:
         for mcp_server in risk_mcp_servers:
             gateway_stage_key = mcp_server_gateway_stage[mcp_server.id]
             resource_auth = release_resource_auth.get(gateway_stage_key, {})
-            risk_tools = [tool_name for tool_name in mcp_server.resource_names if resource_auth.get(tool_name, False)]
+            tool_name_map = mcp_server.gen_tool_name_map()
+            risk_tools = [
+                tool_name_map.get(resource_name, resource_name)
+                for resource_name in mcp_server.resource_names
+                if resource_auth.get(resource_name, False)
+            ]
             if risk_tools:
                 risks[mcp_server.id] = risk_tools
 
