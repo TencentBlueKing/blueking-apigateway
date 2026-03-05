@@ -281,9 +281,16 @@ const previewUrl = computed(() => {
     .replace('{api_name}', 'bk-apigateway')
     .replace('{stage_name}', 'prod')
     .replace('{resource_path}', 'api/v2/mcp-servers');
-  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${!['sse'].includes(formData.value.protocol_type)
-    ? 'mcp'
-    : formData.value.protocol_type}/`;
+
+  const protocolType = formData.value.protocol_type;
+  const protocolUrl = ['sse'].includes(protocolType) ? `${protocolType}/` : 'mcp/';
+
+  if (isEditMode) {
+    const cleanedUrl = formData.value.url.replace(/\/(mcp|sse)\/$/, '');
+    return `${cleanedUrl}/${protocolUrl}`;
+  }
+
+  return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${protocolUrl}`;
 });
 
 const handleStageSelectChange = (value: number) => {
