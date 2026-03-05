@@ -407,6 +407,7 @@ import { cloneDeep, escape, uniq } from 'lodash-es';
 import {
   Divider,
   Form,
+  Input,
   Message,
   PopConfirm,
   ResizeLayout,
@@ -468,6 +469,7 @@ const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
+  url: '',
   description: '',
   protocol_type: 'streamable_http',
   stage_id: 0,
@@ -835,7 +837,7 @@ const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway?.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
   return isEditMode.value
-    ? t('编辑 {n}', { n: `${serverNamePrefix.value}${formData.value.name}` })
+    ? t('编辑 {n}', { n: formData.value.name })
     : t('创建 MCP Server');
 });
 const toolTableEmptyType = computed(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
@@ -1250,6 +1252,7 @@ const fetchServer = async () => {
       name = '',
       title = '',
       description = '',
+      url = '',
       protocol_type = 'streamable_http',
       labels = [],
       oauth2_public_client_enabled = false,
@@ -1264,6 +1267,7 @@ const fetchServer = async () => {
       ...formData.value,
       name,
       title,
+      url,
       description,
       labels,
       is_public,
@@ -1431,7 +1435,9 @@ const getSliderContentHeight = () => {
   setTimeout(() => {
     const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
     const footerH = footerRef.value?.offsetHeight;
-    modalContentEl.style.maxHeight = !isEnabledOAuth.value ? modalContentEl.style.height : `calc(100% - ${footerH + 54}px)`;
+    if (modalContentEl) {
+      modalContentEl.style.maxHeight = !isEnabledOAuth.value ? modalContentEl.style.height : `calc(100% - ${footerH + 54}px)`;
+    }
   });
 };
 
