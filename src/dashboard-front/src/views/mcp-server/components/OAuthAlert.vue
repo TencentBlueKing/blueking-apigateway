@@ -100,14 +100,15 @@ const renderToolData = computed(() => {
   const results = appAuthStatusList.map((item) => {
     if (item.contexts?.resource_auth?.config?.length) {
       const authConfig = JSON.parse(item.contexts?.resource_auth?.config);
+      const displayName = item.tool_name || item.name;
       if (authConfig?.auth_verified_required && !authConfig?.app_verified_required) {
-        return { name: `${item.name} (${t('仅用户态')})` };
+        return { name: `${displayName} (${t('仅用户态')})` };
       }
       if (!authConfig?.auth_verified_required && authConfig?.app_verified_required) {
-        return { name: `${item.name} (${t('仅应用态')})` };
+        return { name: `${displayName} (${t('仅应用态')})` };
       }
       if (authConfig?.auth_verified_required && authConfig?.app_verified_required) {
-        return { name: `${item.name} (${t('应用态 + 用户态')})` };
+        return { name: `${displayName} (${t('应用态 + 用户态')})` };
       }
     }
     return item;
