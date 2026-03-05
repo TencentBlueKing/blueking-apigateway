@@ -22,6 +22,7 @@ from typing import List, Optional
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apps.data_plane.constants import BkPluginsDataPlaneGrayStageEnum
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
 
@@ -37,6 +38,8 @@ def _get_default_data_plane_id() -> int:
 
 
 def _resolve_data_plane_ids_by_names(data_plane_names: List[str]) -> List[int]:
+    # it not care about if the data plane is active or inactive, only bound
+    # only release to the data plane when the data plane is active
     data_planes = DataPlane.objects.filter(name__in=data_plane_names)
     name_to_id = {item.name: item.id for item in data_planes}
 
@@ -56,10 +59,10 @@ def _get_te_bp_sync_data_plane_ids(default_data_plane_id: int) -> List[int]:
     if not bp_data_plane_id:
         return [default_data_plane_id]
 
-    gray_stage = getattr(settings, "BK_PLUGINS_DATA_PLANE_GRAY_STAGE", "not_start")
-    if gray_stage == "start":
+    gray_stage = getattr(settings, "BK_PLUGINS_DATA_PLANE_GRAY_STAGE", BkPluginsDataPlaneGrayStageEnum.NOT_START.value)
+    if gray_stage == BkPluginsDataPlaneGrayStageEnum.START.value:
         return list({default_data_plane_id, bp_data_plane_id})
-    if gray_stage == "done":
+    if gray_stage == BkPluginsDataPlaneGrayStageEnum.DONE.value:
         return [bp_data_plane_id]
 
     # TODO: after remove the BK_PLUGINS_DATA_PLANE_GRAY_STAGE, change this to bp_data_plane_id

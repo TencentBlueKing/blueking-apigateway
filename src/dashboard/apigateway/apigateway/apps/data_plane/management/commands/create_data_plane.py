@@ -23,7 +23,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane
 
-REQUIRED_ETCD_CONFIG_KEYS = ["host", "port", "user", "password", "ca_cret", "cert_cert", "cert_key"]
+REQUIRED_ETCD_CONFIG_KEYS = ["host", "port", "user", "password", "ca_cert", "cert_cert", "cert_key"]
 
 
 def _normalize_prefix(prefix: str) -> str:

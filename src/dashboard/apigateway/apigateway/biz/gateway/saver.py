@@ -136,49 +136,23 @@ class GatewaySaver:
 
         # If data_plane_ids provided, bind to those data planes
         if self._data_plane_ids:
-            found_ids = set()
-            for data_plane_id in self._data_plane_ids:
-                data_plane = DataPlane.objects.filter(id=data_plane_id).first()
-                if data_plane:
-                    data_planes_to_bind.append(data_plane)
-                    found_ids.add(data_plane_id)
-                else:
-                    logger.warning("Data plane with id=%s not found, skipping", data_plane_id)
-
-            # Log error if some data planes were not found
+            data_plane_id_to_obj = {item.id: item for item in DataPlane.objects.filter(id__in=self._data_plane_ids)}
+            found_ids = set(data_plane_id_to_obj.keys())
             missing_ids = set(self._data_plane_ids) - found_ids
             if missing_ids:
-                logger.error(
-                    "Gateway '%s': data_plane_ids %s were provided but not found; found: %s",
-                    gateway.name,
-                    list(missing_ids),
-                    list(found_ids),
-                )
+                missing_ids_list = sorted(missing_ids)
+                logger.error("Gateway '%s': invalid data_plane_ids=%s", gateway.name, missing_ids_list)
+                raise ValueError(f"invalid data_plane_ids: {missing_ids_list}")
 
-        # Fallback: use the 'default' data plane
-        if not data_planes_to_bind:
-            if self._data_plane_ids:
-                # Explicit data_plane_ids were provided but none found
-                logger.error(
-                    "Gateway '%s': all provided data_plane_ids %s not found; falling back to default data plane",
-                    gateway.name,
-                    self._data_plane_ids,
-                )
-
+            data_planes_to_bind.extend(data_plane_id_to_obj[data_plane_id] for data_plane_id in self._data_plane_ids)
+        else:
             default_data_plane = DataPlane.objects.get_default()
             if default_data_plane:
                 data_planes_to_bind.append(default_data_plane)
             else:
-                logger.error(
-                    "No data planes to bind for gateway '%s', fallback to bind '%s' data plane failed, not found",
-                    gateway.name,
-                    DEFAULT_DATA_PLANE_NAME,
-                )
-                raise ValueError(
-                    "No data planes to bind for gateway '%s', fallback to bind '%s' data plane failed, not found",
-                    gateway.name,
-                    DEFAULT_DATA_PLANE_NAME,
-                )
+                error_message = f"No data planes to bind for gateway '{gateway.name}', fallback to bind '{DEFAULT_DATA_PLANE_NAME}' data plane failed, not found"
+                logger.error(error_message)
+                raise ValueError(error_message)
 
         # Bind to all resolved data planes
         for data_plane in data_planes_to_bind:

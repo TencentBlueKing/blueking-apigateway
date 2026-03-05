@@ -49,10 +49,12 @@ class DataPlaneAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            # Load existing etcd_configs as JSON string for display
-            etcd_configs = self.instance.etcd_configs
-            if etcd_configs:
-                self.fields["etcd_configs_json"].initial = json.dumps(etcd_configs, indent=2)
+            try:
+                etcd_configs = self.instance.etcd_configs
+                if etcd_configs:
+                    self.fields["etcd_configs_json"].initial = json.dumps(etcd_configs, indent=2)
+            except (ValueError, Exception):
+                self.fields["etcd_configs_json"].initial = ""
 
     def clean_etcd_configs_json(self):
         """Validate and parse the JSON input"""
@@ -101,7 +103,7 @@ class DataPlaneAdmin(admin.ModelAdmin):
 
     def has_etcd_configs(self, obj):
         """Display whether the data plane has ETCD configs configured"""
-        return bool(obj.etcd_configs)
+        return bool(obj._encrypted_etcd_configs)
 
     has_etcd_configs.boolean = True  # type: ignore[attr-defined]
     has_etcd_configs.short_description = "Has ETCD Config"  # type: ignore[attr-defined]

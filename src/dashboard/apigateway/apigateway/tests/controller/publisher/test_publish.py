@@ -99,7 +99,7 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is None
+        assert result is True
         mock_save_history.assert_called_once()
         mock_check.assert_called_once()
         mock_reporter.report_config_validate_success.assert_called_once()
@@ -132,7 +132,7 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is None
+        assert result is True
         mock_check.assert_called_once()
         mock_reporter.report_config_validate_success.assert_called_once()
         mock_reporter.report_create_publish_task_doing.assert_called_once()
@@ -166,7 +166,7 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is None
+        assert result is False
         mock_reporter.report_config_validate_failure.assert_called_once()
         mock_rolling_update.assert_not_called()
 
@@ -200,7 +200,7 @@ class TestTriggerRollingUpdate:
             is_sync=True,
         )
 
-        assert result is None
+        assert result is True
         mock_rolling_update.assert_called_once_with(
             gateway_id=1,
             publish_id=123,
@@ -238,7 +238,7 @@ class TestTriggerRollingUpdate:
             is_sync=False,
         )
 
-        assert result is None
+        assert result is True
         mock_delay_on_commit.assert_called_once()
 
 
@@ -317,7 +317,7 @@ class TestTriggerRevokeDisable:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is None
+        assert result is True
         mock_save_history.assert_called_once()
         mock_offline.assert_called_once()
         mock_check.assert_called_once()
@@ -357,7 +357,7 @@ class TestTriggerRevokeDisable:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is None
+        assert result is False
         mock_reporter.report_config_validate_failure.assert_called_once()
         mock_revoke_release.assert_not_called()
 
@@ -395,7 +395,7 @@ class TestTriggerRevokeDisable:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is None
+        assert result is True
         mock_revoke_release.assert_called_once_with(
             release_id=1,
             publish_id=123,
@@ -436,7 +436,7 @@ class TestTriggerRevokeDisable:
             user_credentials=mock_user_credentials,
         )
 
-        assert result is None
+        assert result is True
         mock_delay_on_commit.assert_called_once()
 
 
@@ -486,7 +486,7 @@ class TestTriggerRevokeDeleting:
 
         result = _trigger_revoke_deleting([mock_release], is_sync=True)
 
-        assert result is None
+        assert result is True
         mock_revoke_release.assert_called_once_with(
             release_id=1,
             publish_id=-2,  # DELETE_PUBLISH_ID
@@ -503,7 +503,7 @@ class TestTriggerRevokeDeleting:
 
         result = _trigger_revoke_deleting([mock_release], is_sync=False)
 
-        assert result is None
+        assert result is True
         mock_delay_on_commit.assert_called_once()
 
     @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_data_planes")
@@ -523,7 +523,7 @@ class TestTriggerRevokeDeleting:
 
         result = _trigger_revoke_deleting([release1, release2], is_sync=True)
 
-        assert result is None
+        assert result is True
         assert mock_revoke_release.call_count == 2  # Called for both releases
 
 
@@ -589,7 +589,7 @@ class TestTriggerGatewayPublish:
     ):
         """Test rolling update trigger"""
         mock_filter.return_value.prefetch_related.return_value.all.return_value = [mock_release]
-        mock_trigger_rolling_update.return_value = None
+        mock_trigger_rolling_update.return_value = True
 
         result = trigger_gateway_publish(
             PublishSourceEnum.GATEWAY_ENABLE,
@@ -611,7 +611,7 @@ class TestTriggerGatewayPublish:
     ):
         """Test revoke disable trigger"""
         mock_filter.return_value.prefetch_related.return_value.all.return_value = [mock_release]
-        mock_trigger_revoke_disable.return_value = None
+        mock_trigger_revoke_disable.return_value = True
 
         result = trigger_gateway_publish(
             PublishSourceEnum.GATEWAY_DISABLE,
@@ -633,7 +633,7 @@ class TestTriggerGatewayPublish:
     ):
         """Test revoke deleting trigger"""
         mock_filter.return_value.prefetch_related.return_value.all.return_value = [mock_release]
-        mock_trigger_revoke_deleting.return_value = None
+        mock_trigger_revoke_deleting.return_value = True
 
         result = trigger_gateway_publish(
             PublishSourceEnum.STAGE_DELETE,

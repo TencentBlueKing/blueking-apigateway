@@ -290,6 +290,9 @@ ignore_imports = [
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.biz.gateway",
     "apigateway.apps.gateway.management.commands.revoke_gateways -> apigateway.controller.publisher.publish",
     "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.controller.publisher.publish",
+    "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.publisher.publish",
+    "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
+    "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.constants",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
@@ -353,6 +356,8 @@ ignore_imports = [
     "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.controller.publisher.publish",
     "apigateway.apps.gateway.management.commands.revoke_stage -> apigateway.core.constants",
     "apigateway.apps.gateway.management.commands.export_inactive_gateways_by_stage -> apigateway.core.constants",
+    "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.publisher.*",
+    "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",

@@ -79,16 +79,18 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
     def etcd_configs(self) -> Dict[str, Any]:
         """Get decrypted ETCD configuration"""
         if not self._encrypted_etcd_configs:
-            logger.error("No etcd_configs for data_plane %s", self.name)
-            raise ValueError("No etcd_configs for data_plane %s", self.name)
+            error_message = f"No etcd_configs for data_plane {self.name}"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         try:
             crypto = BkCrypto()
             decrypted = crypto.decrypt(self._encrypted_etcd_configs)
             return json.loads(decrypted)
         except Exception:
-            logger.exception("Failed to decrypt etcd_configs for data_plane %s", self.name)
-            raise ValueError("Failed to decrypt etcd_configs for data_plane %s", self.name)
+            error_message = f"Failed to decrypt etcd_configs for data_plane {self.name}"
+            logger.exception(error_message)
+            raise ValueError(error_message)
 
     @etcd_configs.setter
     def etcd_configs(self, value: Dict[str, Any]):

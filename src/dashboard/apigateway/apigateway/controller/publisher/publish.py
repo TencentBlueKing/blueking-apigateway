@@ -55,7 +55,7 @@ def _trigger_rolling_update(
     target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发网关滚动更新，支持多数据面"""
-
+    has_failure = False
     for release in release_list:
         # Get active data planes for this gateway - must have at least one
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(release.gateway_id)
@@ -69,6 +69,7 @@ def _trigger_rolling_update(
                 "Gateway (id=%s) has no active data planes, cannot trigger rolling update",
                 release.gateway_id,
             )
+            has_failure = True
             continue
 
         for data_plane in data_planes:
@@ -87,6 +88,7 @@ def _trigger_rolling_update(
             if not ok:
                 logger.warning(msg)
                 PublishEventReporter.report_config_validate_failure(release_history, msg)
+                has_failure = True
                 continue
 
             PublishEventReporter.report_config_validate_success(release_history)
@@ -94,12 +96,14 @@ def _trigger_rolling_update(
 
             # 开始发布
             if is_sync:
-                rolling_update_release(
+                is_success = rolling_update_release(
                     gateway_id=release.gateway.pk,
                     publish_id=publish_id,
                     release_id=release.pk,
                     data_plane_id=data_plane.id,
                 )
+                if not is_success:
+                    has_failure = True
                 continue
 
             delay_on_commit(
@@ -109,6 +113,7 @@ def _trigger_rolling_update(
                 release_id=release.pk,
                 data_plane_id=data_plane.id,
             )
+    return not has_failure
 
 
 def _trigger_revoke_disable(
@@ -120,7 +125,7 @@ def _trigger_revoke_disable(
     target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发停用/下架发布，支持多数据面"""
-
+    has_failure = False
     for release in release_list:
         # Get active data planes for this gateway - must have at least one
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(release.gateway_id)
@@ -131,6 +136,7 @@ def _trigger_revoke_disable(
                 "Gateway (id=%s) has no active data planes, cannot trigger revoke disable",
                 release.gateway_id,
             )
+            has_failure = True
             continue
 
         for data_plane in data_planes:
@@ -146,6 +152,7 @@ def _trigger_revoke_disable(
             if not ok:
                 logger.warning(msg)
                 PublishEventReporter.report_config_validate_failure(release_history, msg)
+                has_failure = True
                 continue
 
             PublishEventReporter.report_config_validate_success(release_history)
@@ -153,7 +160,11 @@ def _trigger_revoke_disable(
 
             # 开始发布
             if is_sync:
-                revoke_release(release_id=release.id, publish_id=release_history.id, data_plane_id=data_plane.id)
+                is_success = revoke_release(
+                    release_id=release.id, publish_id=release_history.id, data_plane_id=data_plane.id
+                )
+                if not is_success:
+                    has_failure = True
                 continue
             delay_on_commit(
                 revoke_release,
@@ -161,6 +172,7 @@ def _trigger_revoke_disable(
                 publish_id=release_history.id,
                 data_plane_id=data_plane.id,
             )
+    return not has_failure
 
 
 def _trigger_revoke_deleting(
@@ -169,6 +181,7 @@ def _trigger_revoke_deleting(
     target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发删除发布，支持多数据面"""
+    has_failure = False
     for release in release_list:
         # Get all data planes for this gateway (including inactive ones for cleanup)
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_data_planes(release.gateway_id)
@@ -179,13 +192,18 @@ def _trigger_revoke_deleting(
                 "Gateway (id=%s) has no data planes, cannot trigger revoke delete",
                 release.gateway_id,
             )
+            has_failure = True
             continue
 
         for data_plane in data_planes:
             # FIXME: no release_history to report event?
             # 开始发布
             if is_sync:
-                revoke_release(release_id=release.id, publish_id=DELETE_PUBLISH_ID, data_plane_id=data_plane.id)
+                is_success = revoke_release(
+                    release_id=release.id, publish_id=DELETE_PUBLISH_ID, data_plane_id=data_plane.id
+                )
+                if not is_success:
+                    has_failure = True
                 continue
             delay_on_commit(
                 revoke_release,
@@ -193,6 +211,7 @@ def _trigger_revoke_deleting(
                 publish_id=DELETE_PUBLISH_ID,
                 data_plane_id=data_plane.id,
             )
+    return not has_failure
 
 
 def trigger_gateway_publish(
@@ -231,18 +250,17 @@ def trigger_gateway_publish(
 
     # rolling update release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
-        _trigger_rolling_update(
+        return _trigger_rolling_update(
             source,
             author,
             release_list,
             is_sync=is_sync,
             target_data_plane_ids=target_data_plane_id_set,
         )
-        return True
 
     # revoke disable release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DISABLE_RELEASE:
-        _trigger_revoke_disable(
+        return _trigger_revoke_disable(
             source,
             author,
             release_list,
@@ -250,12 +268,10 @@ def trigger_gateway_publish(
             user_credentials=user_credentials,
             target_data_plane_ids=target_data_plane_id_set,
         )
-        return True
 
     # revoke delete release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
-        _trigger_revoke_deleting(release_list, is_sync=is_sync, target_data_plane_ids=target_data_plane_id_set)
-        return True
+        return _trigger_revoke_deleting(release_list, is_sync=is_sync, target_data_plane_ids=target_data_plane_id_set)
 
     # do nothing
     return None

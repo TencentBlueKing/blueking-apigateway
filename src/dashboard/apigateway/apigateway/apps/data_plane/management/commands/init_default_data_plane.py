@@ -18,7 +18,7 @@
 import logging
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane
@@ -43,10 +43,10 @@ class Command(BaseCommand):
                     "Please configure ETCD_CONFIG before initializing the default data plane."
                 )
             )
-            raise ValueError("ETCD_CONFIG is required but not configured in settings")
+            raise CommandError("ETCD_CONFIG is required but not configured in settings")
 
         bk_api_url_tmpl = getattr(settings, "BK_API_URL_TMPL", "")
-        etcd_namespace_prefix = settings.BK_GATEWAY_ETCD_NAMESPACE_PREFIX
+        etcd_namespace_prefix = getattr(settings, "BK_GATEWAY_ETCD_NAMESPACE_PREFIX", "")
         if not etcd_namespace_prefix:
             self.stderr.write(
                 self.style.ERROR(
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                     "Please configure BK_GATEWAY_ETCD_NAMESPACE_PREFIX before initializing the default data plane."
                 )
             )
-            raise ValueError("BK_GATEWAY_ETCD_NAMESPACE_PREFIX is required but not configured in settings")
+            raise CommandError("BK_GATEWAY_ETCD_NAMESPACE_PREFIX is required but not configured in settings")
 
         # Try to get existing default data plane
         data_plane = DataPlane.objects.filter(name=DEFAULT_DATA_PLANE_NAME).first()

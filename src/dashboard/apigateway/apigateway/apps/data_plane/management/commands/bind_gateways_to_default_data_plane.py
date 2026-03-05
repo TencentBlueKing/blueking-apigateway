@@ -29,16 +29,18 @@ class Command(BaseCommand):
 
     help = "Bind all gateways that are not bound to any data plane to the default data plane"
 
+    def add_arguments(self, parser):
+        parser.add_argument("--dry-run", action="store_true", help="Preview changes without executing")
+
     def handle(self, *args, **options):
+        dry_run = options["dry_run"]
         self.stdout.write("Binding gateways to default data plane...")
 
-        # Get default data plane
         default_data_plane = DataPlane.objects.get_default()
         if not default_data_plane:
             self.stdout.write(self.style.WARNING("Default data plane not found. Run init_default_data_plane first."))
             return
 
-        # Get all gateways without data plane binding
         unbound_gateways = GatewayDataPlaneBinding.objects.get_gateways_without_binding()
 
         if not unbound_gateways:
@@ -47,9 +49,15 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Found {len(unbound_gateways)} gateways without data plane binding.")
 
-        # Bind each gateway to the default data plane
         bound_count = 0
         for gateway in unbound_gateways:
+            if dry_run:
+                bound_count += 1
+                self.stdout.write(
+                    f"  [DRY RUN] would bind gateway '{gateway.name}' (id={gateway.id}) to default data plane"
+                )
+                continue
+
             try:
                 GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
                     gateway=gateway,
@@ -68,4 +76,5 @@ class Command(BaseCommand):
                     self.style.ERROR(f"  Failed to bind gateway '{gateway.name}' (id={gateway.id}): {e}")
                 )
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully bound {bound_count} gateways to the default data plane."))
+        prefix = "[DRY RUN] Would have bound" if dry_run else "Successfully bound"
+        self.stdout.write(self.style.SUCCESS(f"{prefix} {bound_count} gateways to the default data plane."))

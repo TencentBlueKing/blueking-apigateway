@@ -26,5 +26,13 @@ class DataPlaneStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "inactive")
 
 
+class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):
+    """Gray stage for BK plugins data plane migration"""
+
+    NOT_START = EnumField("not_start", "not_start")
+    START = EnumField("start", "start")
+    DONE = EnumField("done", "done")
+
+
 # Default data plane name
 DEFAULT_DATA_PLANE_NAME = "default"

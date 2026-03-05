@@ -249,38 +249,30 @@ class TestGatewaySaver:
         # Verify binding to default was created (fallback behavior)
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
-    def test_save_with_invalid_data_plane_id_binds_to_default(self, unique_gateway_name, default_data_plane):
-        """Test save with invalid data_plane_id falls back to default data plane"""
+    def test_save_with_invalid_data_plane_id_raises_error(self, unique_gateway_name):
+        """Test save with invalid data_plane_id raises error"""
         invalid_id = 99999
 
-        # Create gateway with invalid data_plane_id
         saver = GatewaySaver(
             None,
             GatewayData(name=unique_gateway_name, status=0, tenant_mode="single", tenant_id="default"),
             data_plane_ids=[invalid_id],
         )
-        gateway = saver.save()
+        with pytest.raises(ValueError, match="invalid data_plane_ids"):
+            saver.save()
 
-        # Verify binding to default was created (fallback behavior)
-        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
-
-    def test_save_with_partial_invalid_data_plane_ids(self, unique_gateway_name):
-        """Test save with mix of valid and invalid data_plane_ids binds only to valid ones"""
+    def test_save_with_partial_invalid_data_plane_ids_raises_error(self, unique_gateway_name):
+        """Test save with mix of valid and invalid data_plane_ids raises error"""
         data_plane = G(DataPlane, name="plane-1")
         invalid_id = 99999
 
-        # Create gateway with one valid and one invalid data_plane_id
         saver = GatewaySaver(
             None,
             GatewayData(name=unique_gateway_name, status=0, tenant_mode="single", tenant_id="default"),
             data_plane_ids=[data_plane.id, invalid_id],
         )
-        gateway = saver.save()
-
-        # Verify only valid binding was created
-        bindings = GatewayDataPlaneBinding.objects.filter(gateway=gateway)
-        assert bindings.count() == 1
-        assert bindings.first().data_plane_id == data_plane.id
+        with pytest.raises(ValueError, match="invalid data_plane_ids"):
+            saver.save()
 
     def test_update_gateway_preserves_data_plane_bindings(self, fake_gateway):
         """Test updating gateway does not modify existing data plane bindings"""

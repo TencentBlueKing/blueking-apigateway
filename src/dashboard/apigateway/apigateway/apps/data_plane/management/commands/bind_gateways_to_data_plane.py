@@ -1,5 +1,21 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 import logging
-from importlib import import_module
 
 from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
@@ -11,6 +27,8 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
     parse_names_from_file,
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.controller.publisher.publish import trigger_gateway_publish
+from apigateway.core.constants import PublishSourceEnum
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +59,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("--log-file", type=str, required=True, help="Audit log file path")
         parser.add_argument("--operator", type=str, default="system", help="Operator username")
+        parser.add_argument("--dry-run", action="store_true", help="Preview changes without executing")
 
     def handle(self, *args, **options):
         gateway_names = parse_gateway_names(options["gateway_names"], options["gateway_names_file"])
@@ -48,12 +67,9 @@ class Command(BaseCommand):
         skip_gateway_names.update(parse_names_from_file(options["skip_gateway_names_file"], "skip gateway names file"))
         data_plane_name = options["data_plane_name"].strip()
         operator = options["operator"]
+        dry_run = options["dry_run"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
         gateway_model = apps.get_model("core", "Gateway")
-        constants_module = import_module("apigateway.core.constants")
-        publish_module = import_module("apigateway.controller.publisher.publish")
-        publish_source_enum = constants_module.PublishSourceEnum
-        trigger_gateway_publish = publish_module.trigger_gateway_publish
 
         if not data_plane_name:
             raise CommandError("data_plane_name should not be empty")
@@ -111,19 +127,31 @@ class Command(BaseCommand):
                     )
                     continue
 
+                if dry_run:
+                    success_count += 1
+                    self.stdout.write(f"[DRY RUN] would bind gateway={gateway.name} to data_plane={data_plane.name}")
+                    continue
+
                 GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
                     gateway=gateway,
                     data_plane=data_plane,
                     created_by=operator,
                 )
 
-                trigger_gateway_publish(
-                    publish_source_enum.CLI_SYNC,
+                publish_success = trigger_gateway_publish(
+                    PublishSourceEnum.CLI_SYNC,
                     author=operator,
                     gateway_id=gateway.id,
                     is_sync=True,
                     target_data_plane_ids=[data_plane.id],
                 )
+                if not publish_success:
+                    # rollback binding so operator can retry bind after fixing publish errors
+                    GatewayDataPlaneBinding.objects.unbind_gateway_from_data_plane(
+                        gateway_id=gateway.id,
+                        data_plane_id=data_plane.id,
+                    )
+                    raise RuntimeError("bind created but publish failed, binding rolled back")
 
                 success_count += 1
                 audit_writer.write(

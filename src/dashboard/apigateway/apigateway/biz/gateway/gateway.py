@@ -302,7 +302,10 @@ class GatewayHandler:
         if binding and binding.data_plane.bk_api_url_tmpl:
             return binding.data_plane.bk_api_url_tmpl
 
-        logger.warning("Gateway %s bound to no multiple data_planes, use the settings.BK_API_URL_TMPL", gateway_id)
+        logger.warning(
+            "Gateway %s has no data plane with bk_api_url_tmpl configured, falling back to settings.BK_API_URL_TMPL",
+            gateway_id,
+        )
 
         return settings.BK_API_URL_TMPL
 
