@@ -21,7 +21,6 @@ from typing import Dict, List, Optional
 from django.conf import settings
 from pydantic import BaseModel, Field, field_validator
 
-from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import GatewayTypeEnum
@@ -147,12 +146,7 @@ class GatewaySaver:
             data_planes_to_bind.extend(data_plane_id_to_obj[data_plane_id] for data_plane_id in self._data_plane_ids)
         else:
             default_data_plane = DataPlane.objects.get_default()
-            if default_data_plane:
-                data_planes_to_bind.append(default_data_plane)
-            else:
-                error_message = f"No data planes to bind for gateway '{gateway.name}', fallback to bind '{DEFAULT_DATA_PLANE_NAME}' data plane failed, not found"
-                logger.error(error_message)
-                raise ValueError(error_message)
+            data_planes_to_bind.append(default_data_plane)
 
         # Bind to all resolved data planes
         for data_plane in data_planes_to_bind:

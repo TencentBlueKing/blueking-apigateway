@@ -18,6 +18,7 @@
 import pytest
 from ddf import G
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
@@ -196,12 +197,25 @@ class TestGatewayDataPlaneBindingModel:
 
         assert not GatewayDataPlaneBinding.objects.filter(id=binding.id).exists()
 
-    def test_cascade_delete_on_data_plane_deletion(self):
-        """Test bindings are deleted when data plane is deleted"""
+    def test_protect_delete_on_data_plane_deletion(self):
+        """Test deleting a data plane with bindings is blocked"""
         gateway = G(Gateway, name="test-gateway")
         data_plane = G(DataPlane, name="test-plane")
-        binding = G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
+
+        with pytest.raises(ProtectedError):
+            data_plane.delete()
+
+    def test_delete_on_data_plane_after_unbind(self):
+        """Test data plane can be deleted after all bindings are removed"""
+        gateway = G(Gateway, name="test-gateway")
+        data_plane = G(DataPlane, name="test-plane")
+        G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
+
+        GatewayDataPlaneBinding.objects.unbind_gateway_from_data_plane(
+            gateway_id=gateway.id,
+            data_plane_id=data_plane.id,
+        )
 
         data_plane.delete()
-
-        assert not GatewayDataPlaneBinding.objects.filter(id=binding.id).exists()
+        assert not DataPlane.objects.filter(id=data_plane.id).exists()

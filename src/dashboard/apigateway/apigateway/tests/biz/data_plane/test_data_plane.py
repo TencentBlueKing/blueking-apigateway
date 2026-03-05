@@ -58,7 +58,7 @@ class TestGetDefaultDataPlaneId:
         assert _get_default_data_plane_id() == dp.id
 
     def test_not_found_raises(self):
-        with pytest.raises(ValueError, match="Default data plane not found"):
+        with pytest.raises(DataPlane.DoesNotExist):
             _get_default_data_plane_id()
 
 

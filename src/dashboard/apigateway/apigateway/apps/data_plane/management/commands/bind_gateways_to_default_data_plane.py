@@ -37,9 +37,6 @@ class Command(BaseCommand):
         self.stdout.write("Binding gateways to default data plane...")
 
         default_data_plane = DataPlane.objects.get_default()
-        if not default_data_plane:
-            self.stdout.write(self.style.WARNING("Default data plane not found. Run init_default_data_plane first."))
-            return
 
         unbound_gateways = GatewayDataPlaneBinding.objects.get_gateways_without_binding()
 

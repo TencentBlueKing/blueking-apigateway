@@ -28,9 +28,9 @@ if TYPE_CHECKING:
 
 
 class DataPlaneManager(models.Manager):
-    def get_default(self) -> Optional["DataPlane"]:
+    def get_default(self) -> "DataPlane":
         """Get the default data plane"""
-        return self.filter(name=DEFAULT_DATA_PLANE_NAME).first()
+        return self.get(name=DEFAULT_DATA_PLANE_NAME)
 
     def get_recommended(self) -> Optional["DataPlane"]:
         """Get the recommended data plane for new gateways"""

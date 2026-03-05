@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import logging
 from typing import List, Optional
 
 from django.conf import settings
@@ -26,15 +25,9 @@ from apigateway.apps.data_plane.constants import BkPluginsDataPlaneGrayStageEnum
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
 
-logger = logging.getLogger(__name__)
-
 
 def _get_default_data_plane_id() -> int:
-    default_data_plane = DataPlane.objects.get_default()
-    if not default_data_plane:
-        logger.error("Default data plane not found")
-        raise ValueError("Default data plane not found")
-    return default_data_plane.id
+    return DataPlane.objects.get_default().id
 
 
 def _resolve_data_plane_ids_by_names(data_plane_names: List[str]) -> List[int]:
@@ -52,6 +45,11 @@ def _resolve_data_plane_ids_by_names(data_plane_names: List[str]) -> List[int]:
 
 
 def _get_te_bp_sync_data_plane_ids(default_data_plane_id: int) -> List[int]:
+    """if bk-plugins data plane gray:
+    - not start: return default data plane id
+    - start: return default data plane id and bk-plugins data plane id (binding 2 data planes)
+    - done: return bk-plugins data plane id (binding 1 new data plane)
+    """
     bp_data_plane_name = settings.BK_PLUGINS_DATA_PLANE_NAME
     bp_data_plane = DataPlane.objects.filter(name=bp_data_plane_name).first()
     bp_data_plane_id = bp_data_plane and bp_data_plane.id

@@ -26,7 +26,7 @@ from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModel
 from apigateway.core.models import Gateway
 from apigateway.utils.crypto import BkCrypto
 
-from .constants import DataPlaneStatusEnum
+from .constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
 from .managers import DataPlaneManager, GatewayDataPlaneBindingManager
 
 logger = logging.getLogger(__name__)
@@ -111,6 +111,10 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
         """Check if data plane is active"""
         return self.status == DataPlaneStatusEnum.ACTIVE.value
 
+    def is_default(self) -> bool:
+        """Check if data plane is the default one"""
+        return self.name == DEFAULT_DATA_PLANE_NAME
+
 
 class GatewayDataPlaneBinding(TimestampedModelMixin, OperatorModelMixin):
     """
@@ -124,9 +128,12 @@ class GatewayDataPlaneBinding(TimestampedModelMixin, OperatorModelMixin):
         related_name="data_plane_bindings",
         help_text=_("The gateway"),
     )
+    # PROTECT: when data plane is deleted, the gateway data plane binding will be protected
+    # if you want to delete a data_plane, you need to unbind the gateway from the data_plane first
+    # in case of wrong operation, lost all the relationship between the gateway and the data_plane
     data_plane = models.ForeignKey(
         DataPlane,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="gateway_bindings",
         help_text=_("The data plane"),
     )

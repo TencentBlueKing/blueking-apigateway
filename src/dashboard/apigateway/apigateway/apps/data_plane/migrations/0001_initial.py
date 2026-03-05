@@ -112,7 +112,7 @@ class Migration(migrations.Migration):
                     "data_plane",
                     models.ForeignKey(
                         help_text="The data plane",
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.PROTECT,
                         related_name="gateway_bindings",
                         to="data_plane.dataplane",
                     ),

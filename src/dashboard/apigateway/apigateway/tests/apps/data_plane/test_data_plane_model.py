@@ -75,16 +75,25 @@ class TestDataPlaneIsActive:
         assert data_plane.is_active is False
 
 
+class TestDataPlaneIsDefault:
+    def test_default(self):
+        data_plane = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
+        assert data_plane.is_default() is True
+
+    def test_non_default(self):
+        data_plane = G(DataPlane, name="non-default")
+        assert data_plane.is_default() is False
+
+
 class TestDataPlaneManager:
     def test_get_default_exists(self):
         dp = G(DataPlane, name=DEFAULT_DATA_PLANE_NAME)
         result = DataPlane.objects.get_default()
-        assert result is not None
         assert result.id == dp.id
 
     def test_get_default_not_exists(self):
-        result = DataPlane.objects.get_default()
-        assert result is None
+        with pytest.raises(DataPlane.DoesNotExist):
+            DataPlane.objects.get_default()
 
     def test_get_recommended_with_recommended_plane(self):
         G(DataPlane, name="recommended", is_recommend=True, status=DataPlaneStatusEnum.ACTIVE.value)
