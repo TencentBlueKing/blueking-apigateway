@@ -486,15 +486,17 @@ class MCPServerHandler:
         return extend.content
 
     @staticmethod
-    def _build_cursor_install_url(name: str, mcp_url: str) -> str:
+    def _build_cursor_install_url(name: str, mcp_url: str, oauth2_public_client_enabled: bool = False) -> str:
         """
         生成 Cursor 一键配置 URL
 
         格式: cursor://anysphere.cursor-deeplink/mcp/install?name=<NAME>&config=<BASE64_CONFIG>
         """
-        config = {
+        config: Dict[str, Any] = {
             "url": mcp_url,
-            "headers": {
+        }
+        if not oauth2_public_client_enabled:
+            config["headers"] = {
                 "X-Bkapi-Authorization": json.dumps(
                     {
                         "bk_app_code": "your_app_code",
@@ -502,8 +504,7 @@ class MCPServerHandler:
                         settings.BK_LOGIN_TICKET_KEY: "your_ticket",
                     }
                 )
-            },
-        }
+            }
         config_json = json.dumps(config)
         config_base64 = base64.b64encode(config_json.encode()).decode()
         return f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(name)}&config={quote(config_base64)}"
@@ -551,7 +552,9 @@ class MCPServerHandler:
             # 生成一键配置 URL（目前只有 Cursor 支持）
             install_url = ""
             if client["name"] == "cursor":
-                install_url = MCPServerHandler._build_cursor_install_url(instance.name, mcp_url)
+                install_url = MCPServerHandler._build_cursor_install_url(
+                    instance.name, mcp_url, instance.oauth2_public_client_enabled
+                )
 
             configs.append(
                 {
