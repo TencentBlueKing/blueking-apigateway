@@ -25,7 +25,9 @@ def setup_crypto(settings):
 
 
 class TestCreateDataPlaneCommand:
-    def test_create_success(self):
+    @patch("apigateway.apps.data_plane.management.commands.create_data_plane.GlobalResourceDistributor")
+    def test_create_success_triggers_global_sync(self, mock_distributor_cls):
+        mock_distributor_cls.return_value.distribute.return_value = (True, "")
         cmd = CreateCommand()
         etcd_config = {
             "host": "127.0.0.1",
@@ -50,6 +52,38 @@ class TestCreateDataPlaneCommand:
         data_plane = DataPlane.objects.get(name="plane-a")
         assert data_plane.etcd_namespace_prefix == "/foo/bar"
         assert data_plane.etcd_configs == etcd_config
+        mock_distributor_cls.assert_called_once_with(data_plane=data_plane)
+        mock_distributor_cls.return_value.distribute.assert_called_once()
+
+    @patch("apigateway.apps.data_plane.management.commands.create_data_plane.GlobalResourceDistributor")
+    @patch("apigateway.apps.data_plane.management.commands.create_data_plane.logger")
+    def test_create_success(self, mock_logger, mock_distributor_cls):
+        mock_distributor_cls.return_value.distribute.return_value = (False, "sync failed")
+        cmd = CreateCommand()
+        etcd_config = {
+            "host": "127.0.0.1",
+            "port": 2379,
+            "user": "root",
+            "password": "secret",
+            "ca_cert": "/tmp/ca",
+            "cert_cert": "/tmp/cert",
+            "cert_key": "/tmp/key",
+        }
+
+        cmd.handle(
+            name="plane-a",
+            description="desc",
+            bk_api_url_tmpl="https://{api_name}.example.com",
+            status=DataPlaneStatusEnum.ACTIVE.value,
+            etcd_config=json.dumps(etcd_config),
+            etcd_namespace_prefix="foo/bar",
+            created_by="tester",
+        )
+
+        data_plane = DataPlane.objects.get(name="plane-a")
+        assert data_plane.etcd_namespace_prefix == "/foo/bar"
+        assert data_plane.etcd_configs == etcd_config
+        mock_logger.error.assert_called_once()
 
     def test_create_with_invalid_etcd_config_keys_raises(self):
         cmd = CreateCommand()

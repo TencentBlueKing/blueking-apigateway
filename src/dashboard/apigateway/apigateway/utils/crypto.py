@@ -26,6 +26,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.utils.encoding import force_bytes
 
+from .cipher import AESGCMCipher
+
 
 class RSAKeyValidationError(Exception):
     """RSA 密钥校验失败"""
@@ -98,3 +100,26 @@ class BkCrypto:
 
     def decrypt(self, encrypted_text) -> str:
         return self._encrypt_handler.decrypt(encrypted_text)
+
+
+class CustomCrypto:
+    def __init__(self):
+        self._jwt_cipher = AESGCMCipher(
+            force_bytes(settings.JWT_CRYPTO_KEY),
+            force_bytes(settings.CRYPTO_NONCE),
+        )
+
+    def encrypt(self, plaintext) -> str:
+        return self._jwt_cipher.encrypt_to_hex(plaintext)
+
+    def decrypt(self, encrypted_text) -> str:
+        return self._jwt_cipher.decrypt_from_hex(encrypted_text)
+
+
+def get_crypto():
+    if settings.BK_CRYPTO_TYPE == settings.CRYPTO_TYPE_APIGW_CUSTOM:
+        return CustomCrypto()
+    if settings.BK_CRYPTO_TYPE in ("SHANGMI", "CLASSIC"):
+        return BkCrypto()
+
+    raise ValueError(f"Unknown encrypt cipher type: {settings.BK_CRYPTO_TYPE}")

@@ -16,14 +16,19 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import logging
+import uuid
 from typing import Dict, List
 
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane
+from apigateway.controller.constants import GLOBAL_PUBLISH_ID
+from apigateway.controller.distributor.etcd import GlobalResourceDistributor
 
 REQUIRED_ETCD_CONFIG_KEYS = ["host", "port", "user", "password", "ca_cert", "cert_cert", "cert_key"]
+logger = logging.getLogger(__name__)
 
 
 def _normalize_prefix(prefix: str) -> str:
@@ -164,6 +169,16 @@ class Command(BaseCommand):
         )
         data_plane.etcd_configs = etcd_config
         data_plane.save()
+
+        distributor = GlobalResourceDistributor(data_plane=data_plane)
+        is_success, err_msg = distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
+        if not is_success:
+            logger.error(
+                "distribute global resources failed for data_plane[id=%s,name=%s]: %s",
+                data_plane.id,
+                data_plane.name,
+                err_msg,
+            )
 
         self.stdout.write(
             self.style.SUCCESS(

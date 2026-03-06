@@ -24,7 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.models import Gateway
-from apigateway.utils.crypto import BkCrypto
+from apigateway.utils.crypto import get_crypto
 
 from .constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
 from .managers import DataPlaneManager, GatewayDataPlaneBindingManager
@@ -84,7 +84,7 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
             raise ValueError(error_message)
 
         try:
-            crypto = BkCrypto()
+            crypto = get_crypto()
             decrypted = crypto.decrypt(self._encrypted_etcd_configs)
             return json.loads(decrypted)
         except Exception:
@@ -99,7 +99,7 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
             self._encrypted_etcd_configs = ""
             return
         try:
-            crypto = BkCrypto()
+            crypto = get_crypto()
             json_str = json.dumps(value, separators=(",", ":"))
             self._encrypted_etcd_configs = crypto.encrypt(json_str)
         except Exception:

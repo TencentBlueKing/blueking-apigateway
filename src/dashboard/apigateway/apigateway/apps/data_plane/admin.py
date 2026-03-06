@@ -30,7 +30,7 @@ class DataPlaneAdminForm(forms.ModelForm):
         widget=forms.Textarea(attrs={"rows": 10, "cols": 80}),
         required=True,
         help_text="ETCD configuration in JSON format. Example: "
-        '{"host": "localhost", "port": 2379, "user": "", "password": ""}',
+        '{"host": "localhost", "port": 2379, "user": "", "password": "", "ca_cert": "", "cert_cert": "", "cert_key": ""}',
     )
 
     class Meta:
