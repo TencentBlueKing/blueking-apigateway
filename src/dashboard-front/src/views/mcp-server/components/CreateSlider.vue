@@ -272,7 +272,7 @@
                       </template>
                       <template #main>
                         <div
-                          :style="{ width: `${resizePreviewWidth}px`}"
+                          :style="{ width: resizePreviewWidth }"
                           class="px-24px py-16px result-preview"
                         >
                           <div class="flex-1">
@@ -487,7 +487,7 @@ const isOverflow = ref(false);
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
 const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
-const resizePreviewWidth = ref(360);
+const resizePreviewWidth = ref('100%');
 const stageList = ref([]);
 const resourceList = ref([]);
 const promptTableData = ref([]);
@@ -1098,7 +1098,7 @@ const handleSetPromptRowClass = ({ row }: { row: IMCPServerPrompt }) => {
 };
 
 const handleResizeLayout = (resizeWidth: number) => {
-  resizePreviewWidth.value = 1168 - resizeWidth;
+  resizePreviewWidth.value = `${1168 - resizeWidth}px`;
 };
 
 /**
@@ -1824,7 +1824,6 @@ defineExpose({
   }
 
   .resource-selector-wrapper {
-    display: flex;
     background-color: #f5f7fa;
 
     .selector-main {
