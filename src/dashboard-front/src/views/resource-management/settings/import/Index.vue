@@ -1319,7 +1319,7 @@ const getRegexFromObj = ({ objKey, objValue }: {
 
 // 递归地把变量转换成可以生成正则表达式的字符串
 const getRegexString = (value: any): string => {
-  let expStr = '[-"\\s\\n\\r]*?';
+  let expStr = '[-|"\\s\\n\\r]*?';
 
   if (isObject(value)) {
     if (Array.isArray(value)) {
@@ -1332,7 +1332,7 @@ const getRegexString = (value: any): string => {
             expStr += getRegexString(el);
           }
           else {
-            expStr += `['"\\s\\n\\r]*?${escapeAsteroid(el)}['"\\s\\n\\r]*?`;
+            expStr += `['"\\s\\n\\r]*?${escapeAsteroidAndSpace(el)}['"\\s\\n\\r]*?`;
           }
         });
       }
@@ -1349,14 +1349,14 @@ const getRegexString = (value: any): string => {
               expStr += getRegexString(val);
             }
             else {
-              expStr += `['"\\s\\n\\r]*?${val === null ? '' : escapeAsteroid(val)}['"\\s\\n\\r]*?`;
+              expStr += `['"\\s\\n\\r]*?${val === null ? '' : escapeAsteroidAndSpace(val)}['"\\s\\n\\r]*?`;
             }
           });
       }
     }
   }
   else {
-    expStr += `${value === null ? '' : escapeAsteroid(value)}['"\\s\\n\\r]*?`;
+    expStr += `${value === null ? '' : escapeAsteroidAndSpace(value)}['"\\s\\n\\r]*?`;
   }
 
   return expStr;
@@ -1369,10 +1369,11 @@ const removeStarting$ = (str: string): string => {
   return str;
 };
 
-// 转义*号符
-const escapeAsteroid = (str: string): string => {
+// 转义*号符和空格
+const escapeAsteroidAndSpace = (str: string): string => {
   if (typeof str === 'string') {
-    return str.replaceAll('*', '\\*');
+    // 连续空格转成一个空格，用 \s* 匹配
+    return str.replaceAll('*', '\\*').replace(/\s+/g, '\\s*');
   }
   return str;
 };
