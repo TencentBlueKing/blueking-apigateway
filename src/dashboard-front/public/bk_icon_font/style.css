@@ -629,3 +629,30 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-wenjian:before {
 	content: "\e1eb";
 }
+.icon-ag-tishici:before {
+	content: "\e1f1";
+}
+.icon-ag-manual-shoudongchuli:before {
+	content: "\e1f0";
+}
+.icon-ag-paixu:before {
+	content: "\e1f2";
+}
+.icon-ag-quanbu:before {
+	content: "\e1f3";
+}
+.icon-ag-anzhuang:before {
+	content: "\e1f5";
+}
+.icon-ag-deqiu:before {
+	content: "\e1f6";
+}
+.icon-ag-jiediyuan:before {
+	content: "\e1f7";
+}
+.icon-ag-zhiming:before {
+	content: "\e1f8";
+}
+.icon-ag-oauth2:before {
+	content: "\e1f9";
+}
