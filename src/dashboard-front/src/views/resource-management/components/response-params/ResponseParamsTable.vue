@@ -206,6 +206,7 @@
                     <ResponseParamsSubTable
                       ref="sub-table-refs"
                       v-model="row.properties"
+                      :parent="row"
                       :readonly="readonly"
                     />
                   </td>
