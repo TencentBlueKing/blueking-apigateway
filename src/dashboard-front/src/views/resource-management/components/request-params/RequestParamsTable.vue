@@ -179,6 +179,7 @@
               v-model="row.body"
               :readonly="readonly"
               :level="level + 1"
+              :parent="row"
             />
           </td>
         </tr>
@@ -190,20 +191,6 @@
 <script lang="ts" setup>
 import { uniqueId } from 'lodash-es';
 
-interface IProps {
-  readonly?: boolean
-  level?: number
-}
-
-const tableData = defineModel<IBodyRow[]>();
-
-const {
-  readonly = false,
-  level = 0,
-} = defineProps<IProps>();
-
-const { t } = useI18n();
-
 interface IBodyRow {
   id: string
   name: string
@@ -214,6 +201,22 @@ interface IBodyRow {
   isEdit: boolean
   body?: IBodyRow[]
 }
+
+interface IProps {
+  readonly?: boolean
+  level?: number
+  parent: Partial<IBodyRow>
+}
+
+const tableData = defineModel<IBodyRow[]>();
+
+const {
+  readonly = false,
+  level = 0,
+  parent,
+} = defineProps<IProps>();
+
+const { t } = useI18n();
 
 const recursiveSubTableRef = useTemplateRef('recursive-sub-table-refs');
 
@@ -314,7 +317,8 @@ const removeField = (row: IBodyRow) => {
 const setInvalidRowId = () => {
   invalidRowIdMap.value = {};
   tableData.value?.forEach((row) => {
-    if (!row.name) {
+    // 每行的 name 不能为空，但是数组类型下的可以
+    if (!row.name && parent.type !== 'array') {
       invalidRowIdMap.value[row.id] = true;
     }
   });
