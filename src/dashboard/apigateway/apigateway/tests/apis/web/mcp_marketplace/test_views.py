@@ -116,6 +116,27 @@ class TestMCPMarketplaceServerListApi:
         assert "categories" in mcp_server_data
         assert "is_official" in mcp_server_data
         assert "is_featured" in mcp_server_data
+        assert "oauth2_public_client_enabled" in mcp_server_data
+        assert mcp_server_data["oauth2_public_client_enabled"] is False
+
+    def test_list_with_oauth2_public_client_enabled(self, request_view, fake_public_mcp_server):
+        """测试列表接口返回 oauth2_public_client_enabled 字段"""
+        fake_public_mcp_server.oauth2_public_client_enabled = True
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.list",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = next(
+            (item for item in result["data"]["results"] if item["id"] == fake_public_mcp_server.id),
+            None,
+        )
+        assert mcp_server_data is not None
+        assert mcp_server_data["oauth2_public_client_enabled"] is True
 
     def test_list_with_categories(self, request_view, fake_public_mcp_server, fake_categories):
         """测试列表接口返回分类信息"""
@@ -443,6 +464,34 @@ class TestMCPMarketplaceServerRetrieveApi:
         assert result["data"]["categories"][0]["name"] == OFFICIAL_MCP_CATEGORY_NAME
         assert result["data"]["is_official"] is True
         assert result["data"]["is_featured"] is False
+
+        # 验证 oauth2_public_client_enabled 字段
+        assert "oauth2_public_client_enabled" in result["data"]
+        assert result["data"]["oauth2_public_client_enabled"] is False
+
+    def test_retrieve_with_oauth2_public_client_enabled(self, mocker, request_view, fake_public_mcp_server):
+        """测试详情接口返回 oauth2_public_client_enabled 字段"""
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            return_value="# Guideline Content",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([], {}),
+        )
+
+        fake_public_mcp_server.oauth2_public_client_enabled = True
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.server.retrieve",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["oauth2_public_client_enabled"] is True
 
     def test_retrieve_with_prompts(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回 prompts 列表（私有 prompt 的 content 为空）"""
