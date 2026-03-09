@@ -34,7 +34,7 @@ export function useBkUserDisplayName() {
     apiBaseUrl?: string
   }) => {
     return BkUserDisplayName.configure({
-      tenantId: info?.tenantId || userStore.info.tenant_id || '',
+      tenantId: info?.tenantId || userStore.info.tenant_id || 'default',
       apiBaseUrl: info?.apiBaseUrl || envStore.tenantUserDisplayAPI,
     });
   };

@@ -144,7 +144,7 @@ export function getTenantUsers(
   return http.get(
     `${envStore.env.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
     params,
-    { headers: { 'X-Bk-Tenant-Id': tenant_id || '' } },
+    { headers: { 'X-Bk-Tenant-Id': tenant_id || 'default' } },
   );
 }
 
