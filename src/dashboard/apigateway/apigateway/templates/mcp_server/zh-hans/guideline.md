@@ -14,6 +14,8 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{bk_login_ti
 X-Bkapi-Authorization: {"access_token": "z"}
 ```
 
+> **注意**：如果该 MCP Server 开启了**公共客户端模式**（OAuth2 Public Client），客户端配置中无需填写 `X-Bkapi-Authorization` 请求头，系统将通过 OAuth2 流程自动完成认证。但 `X-Bkapi-Authorization` 请求头仍然有效，如果同时配置了该请求头，系统同样会正常处理认证。
+
 ## 其他
 
 ### MCP proxy 超时配置

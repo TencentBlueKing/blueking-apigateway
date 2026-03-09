@@ -14,6 +14,8 @@ or:
 X-Bkapi-Authorization: {"access_token": "z"}
 ```
 
+> **Note**: If the MCP Server has **Public Client Mode** (OAuth2 Public Client) enabled, the `X-Bkapi-Authorization` header is not required in the client configuration — authentication will be handled automatically via the OAuth2 flow. However, the `X-Bkapi-Authorization` header is still supported; if provided, the system will process the authentication as usual.
+
 ## Others
 
 ### MCP Proxy Timeout Configuration
