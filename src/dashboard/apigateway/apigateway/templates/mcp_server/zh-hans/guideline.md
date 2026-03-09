@@ -1,5 +1,7 @@
 ## 认证
 
+> **注意**：如果该 MCP Server 开启了**公共客户端模式**（OAuth2 Public Client），客户端配置中无需填写 `X-Bkapi-Authorization` 请求头，系统将通过 OAuth2 流程自动完成认证。但 `X-Bkapi-Authorization` 请求头仍然有效，如果同时配置了该请求头，系统同样会正常处理认证。
+
 目前 MCP proxy 接入了蓝鲸 API 网关，目前需要进行 `用户认证` 和 `应用认证` 双重认证，在配置 MCP Server 的过程中，还需要额外配置认证请求头，值为 JSON 格式字符串。
 
 ```shell
@@ -13,8 +15,6 @@ X-Bkapi-Authorization: {"bk_app_code": "x", "bk_app_secret": "y", "{{bk_login_ti
 ```shell
 X-Bkapi-Authorization: {"access_token": "z"}
 ```
-
-> **注意**：如果该 MCP Server 开启了**公共客户端模式**（OAuth2 Public Client），客户端配置中无需填写 `X-Bkapi-Authorization` 请求头，系统将通过 OAuth2 流程自动完成认证。但 `X-Bkapi-Authorization` 请求头仍然有效，如果同时配置了该请求头，系统同样会正常处理认证。
 
 ## 其他
 
