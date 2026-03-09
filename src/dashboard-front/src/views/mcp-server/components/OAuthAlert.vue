@@ -52,7 +52,7 @@
           <div class="lh-20px mb-6px">
             {{ t('当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。') }}
           </div>
-          <div class="lh-20px mb-6px">
+          <div class="lh-20px mb-6px flex items-baseline">
             <span class="oauth-alter-circle" />
             <span>{{ t('开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。') }}</span>
           </div>
