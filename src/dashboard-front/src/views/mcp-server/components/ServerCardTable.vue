@@ -39,6 +39,7 @@
 
 <script lang="tsx" setup>
 import { Button, Tag } from 'bkui-vue';
+import { locale, t } from '@/locales';
 import type { ITableMethod } from '@/types/common';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-server';
@@ -84,7 +85,6 @@ const {
 
 const emit = defineEmits<IEmits>();
 
-const { t } = useI18n();
 const { handleTableFilterChange } = useTableFilterChange();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
@@ -280,8 +280,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
-    ellipsis: true,
-    width: 80,
+    width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
     cell: (_, { row }: { row: IMCPServer }) => (
       <div class="flex">
         <Button
