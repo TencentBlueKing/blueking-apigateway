@@ -26,7 +26,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 
-from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
@@ -224,6 +224,24 @@ class GatewayHandler:
         # 6. update gateway app binding
         if app_codes_to_binding is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
+
+    @staticmethod
+    def bind_to_data_planes(gateway: Gateway, data_plane_ids: List[int], username: str = ""):
+        """Bind a gateway to the given data planes."""
+        data_planes = DataPlane.objects.filter(id__in=data_plane_ids)
+        data_plane_map = {dp.id: dp for dp in data_planes}
+
+        for dp_id in data_plane_ids:
+            data_plane = data_plane_map.get(dp_id)
+            if not data_plane:
+                logger.warning("data plane id=%s not found when binding gateway '%s'", dp_id, gateway.name)
+                continue
+            GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
+                gateway=gateway,
+                data_plane=data_plane,
+                created_by=username or "system",
+            )
+            logger.info("Bound gateway '%s' to data plane '%s'", gateway.name, data_plane.name)
 
     @staticmethod
     def delete_gateway(gateway_id: int):
