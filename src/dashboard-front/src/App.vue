@@ -71,7 +71,7 @@
             <div class="header-aside-wrap">
               <LanguageToggle />
               <ProductInfo />
-              <UserInfo />
+              <UserInfo v-if="isBkUserNameConfigured" />
             </div>
           </div>
         </template>
@@ -144,6 +144,8 @@ const userLoaded = ref(false);
 const showNoticeAlert = ref(false);
 const enableShowNotice = ref(false);
 const curLeavePageData = ref({});
+// 是否配置了bk用户名配置，配置了才能渲染 bk-user-name 组件
+const isBkUserNameConfigured = ref(false);
 
 const bkuiLocale = computed(() => {
   if (locale.value === 'zh-cn') {
@@ -258,17 +260,18 @@ async function getUserInfo() {
     const userData = await userInfoStore.fetchUserInfo();
     const envData = await envStore.fetchEnv();
     const tenantId = userData?.tenant_id ?? '';
-    const apiBaseUrl = envData?.env?.BK_USER_WEB_API_URL ?? '';
+    const apiBaseUrl = envData?.BK_USER_WEB_API_URL ?? '';
 
     configureDisplayName({
       tenantId,
       apiBaseUrl,
     });
+    isBkUserNameConfigured.value = true;
   }
   catch (error) {
     console.error('getUserInfo 执行失败：', error);
   }
-};
+}
 
 const goPage = (routeName: string): void => {
   const id = ['Home', 'ApiDocs'].includes(routeName) ? '' : apigwId.value;
