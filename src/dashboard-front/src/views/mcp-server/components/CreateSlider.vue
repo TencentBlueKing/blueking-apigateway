@@ -651,7 +651,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                         model={toolNameRowData.value}
                         rules={toolNameRules}
                       >
-                        <BkFormItem
+                        <Form.FormItem
                           label={t('工具名称')}
                           required={true}
                           property="tool_name"
@@ -677,7 +677,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                             }}
                             autofocus={true}
                           />
-                        </BkFormItem>
+                        </Form.FormItem>
                       </Form>
                     </div>
                   </div>
