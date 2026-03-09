@@ -145,6 +145,7 @@
               v-model="row.properties"
               :readonly="readonly"
               :level="level + 1"
+              :parent="row"
             />
           </td>
         </tr>
@@ -157,11 +158,6 @@
 import { uniqueId } from 'lodash-es';
 import { type JSONSchema7TypeName } from 'json-schema';
 
-interface IProps {
-  readonly?: boolean
-  level?: number
-}
-
 interface ITableRow {
   id: string
   name: string
@@ -170,11 +166,18 @@ interface ITableRow {
   properties?: ITableRow[]
 }
 
+interface IProps {
+  readonly?: boolean
+  level?: number
+  parent: Partial<ITableRow>
+}
+
 const tableData = defineModel<ITableRow[]>();
 
 const {
   readonly = false,
   level = 1,
+  parent,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
@@ -276,7 +279,8 @@ const handleTypeChange = (row: ITableRow) => {
 const setInvalidRowId = () => {
   invalidRowIdMap.value = {};
   tableData.value?.forEach((row) => {
-    if (!row.name) {
+    // 每行的 name 不能为空，但是数组类型下的可以
+    if (!row.name && parent.type !== 'array') {
       invalidRowIdMap.value[row.id] = true;
     }
   });
