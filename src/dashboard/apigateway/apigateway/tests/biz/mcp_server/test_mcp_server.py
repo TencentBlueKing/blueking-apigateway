@@ -21,7 +21,11 @@ from unittest.mock import patch
 import pytest
 from ddf import G
 
-from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum, MCPServerStatusEnum
+from apigateway.apps.mcp_server.constants import (
+    MCPServerExtendTypeEnum,
+    MCPServerLeastPrivilegeEnum,
+    MCPServerStatusEnum,
+)
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerExtend
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
@@ -547,7 +551,15 @@ class TestMCPServerHandler:
 
     @staticmethod
     def _make_resource_version_with_data(gateway, resources):
-        """构造带有指定资源数据的 ResourceVersion"""
+        """构造带有指定资源数据的 ResourceVersion
+
+        resources 中每个元素支持的 key：
+            - name: 资源名称（必需）
+            - app_verified_required: 是否需要应用认证（默认 True）
+            - resource_perm_required: 是否需要资源权限（默认 True）
+            - auth_verified_required: 是否需要用户认证（默认 False）
+            - skip_auth_verification: 是否跳过认证（默认 False）
+        """
         rv = G(ResourceVersion, gateway=gateway)
         data = []
         for i, res in enumerate(resources):
@@ -561,12 +573,15 @@ class TestMCPServerHandler:
                     "match_subpath": False,
                     "is_public": True,
                     "allow_apply_permission": True,
+                    "api_labels": [],
                     "contexts": {
                         "resource_auth": {
                             "config": json.dumps(
                                 {
                                     "app_verified_required": res.get("app_verified_required", True),
                                     "resource_perm_required": res.get("resource_perm_required", True),
+                                    "auth_verified_required": res.get("auth_verified_required", False),
+                                    "skip_auth_verification": res.get("skip_auth_verification", False),
                                 }
                             )
                         }
@@ -713,3 +728,182 @@ class TestMCPServerHandler:
         assert mcp_oauth2_on.id in result
         assert "tool_x" in result[mcp_oauth2_on.id]
         assert mcp_oauth2_off.id not in result
+
+    # ========== Release 查询提取 & 共享测试 ==========
+
+    def test_get_releases_for_mcp_servers(self, fake_gateway, fake_stage):
+        """_get_releases_for_mcp_servers 应按 (gateway_id, stage_id) 返回 Release"""
+        rv = self._make_resource_version_with_data(fake_gateway, [{"name": "tool_a"}])
+        release = G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        result = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
+
+        assert (fake_gateway.id, fake_stage.id) in result
+        assert result[(fake_gateway.id, fake_stage.id)].id == release.id
+
+    def test_get_releases_for_mcp_servers_empty(self):
+        """空列表应返回空字典"""
+        result = MCPServerHandler._get_releases_for_mcp_servers([])
+        assert result == {}
+
+    def test_get_releases_for_mcp_servers_no_release(self, fake_gateway, fake_stage):
+        """无 Release 记录时返回空字典"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        result = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
+
+        assert result == {}
+
+    def test_get_app_permission_risks_with_shared_releases(self, fake_gateway, fake_stage):
+        """传入预查询的 releases 参数，应复用而非重新查询"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [{"name": "tool_a", "app_verified_required": True}],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_a",
+        )
+
+        releases = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
+        result = MCPServerHandler.get_app_permission_risks([mcp_server], releases=releases)
+
+        assert mcp_server.id in result
+        assert "tool_a" in result[mcp_server.id]
+
+    # ========== 最低权限级别计算测试 ==========
+
+    def test_get_least_privileges_all_application(self, fake_gateway, fake_stage):
+        """所有工具都不需要用户认证时，应返回 APPLICATION"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a;tool_b")
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        key = (fake_gateway.id, fake_stage.id)
+        assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
+
+    def test_get_least_privileges_has_user_required(self, fake_gateway, fake_stage):
+        """存在需要用户认证的工具时，应返回 APPLICATION_AND_USER"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a;tool_b")
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        key = (fake_gateway.id, fake_stage.id)
+        assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+
+    def test_get_least_privileges_skip_auth_verification(self, fake_gateway, fake_stage):
+        """skip_auth_verification=True 时即使 auth_verified_required=True 也视为不需要用户认证"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": True, "skip_auth_verification": True},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        key = (fake_gateway.id, fake_stage.id)
+        assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
+
+    def test_get_least_privileges_empty(self):
+        """空列表应返回空字典"""
+        result = MCPServerHandler.get_least_privileges([])
+        assert result == {}
+
+    def test_get_least_privileges_no_release(self, fake_gateway, fake_stage):
+        """无 Release 记录时返回空字典"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        assert result == {}
+
+    def test_get_least_privileges_only_checks_relevant_tools(self, fake_gateway, fake_stage):
+        """仅检查 MCP Server 关联的工具，不受其他资源影响"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        key = (fake_gateway.id, fake_stage.id)
+        assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION.value
+
+    def test_get_least_privileges_with_shared_releases(self, fake_gateway, fake_stage):
+        """传入预查询的 releases 参数，应复用而非重新查询"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [{"name": "tool_a", "auth_verified_required": True}],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        releases = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
+        result = MCPServerHandler.get_least_privileges([mcp_server], releases=releases)
+
+        key = (fake_gateway.id, fake_stage.id)
+        assert result[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+
+    def test_shared_releases_between_risks_and_privileges(self, fake_gateway, fake_stage):
+        """验证同一份 releases 可同时传给 get_app_permission_risks 和 get_least_privileges"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [
+                {"name": "tool_a", "app_verified_required": True, "auth_verified_required": True},
+                {"name": "tool_b", "app_verified_required": False, "auth_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            oauth2_public_client_enabled=True,
+            _resource_names="tool_a;tool_b",
+        )
+
+        releases = MCPServerHandler._get_releases_for_mcp_servers([mcp_server])
+        risks = MCPServerHandler.get_app_permission_risks([mcp_server], releases=releases)
+        privileges = MCPServerHandler.get_least_privileges([mcp_server], releases=releases)
+
+        assert mcp_server.id in risks
+        assert "tool_a" in risks[mcp_server.id]
+        key = (fake_gateway.id, fake_stage.id)
+        assert privileges[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
