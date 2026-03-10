@@ -53,7 +53,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -177,8 +176,14 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
 
+        # 预查询 Release 记录，供后续方法共享避免重复查询
+        releases = MCPServerHandler._get_releases_for_mcp_servers(page)
+
         # 获取应用态权限安全风险信息
-        app_permission_risks = MCPServerHandler.get_app_permission_risks(page)
+        app_permission_risks = MCPServerHandler.get_app_permission_risks(page, releases=releases)
+
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        least_privileges = MCPServerHandler.get_least_privileges(page, releases=releases)
 
         slz = MCPServerListOutputSLZ(
             page,
@@ -187,6 +192,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
                 "stages": stages,
                 "prompts_count_map": prompts_count_map,
                 "app_permission_risks": app_permission_risks,
+                "least_privileges": least_privileges,
             },
         )
 
@@ -277,7 +283,9 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 
         prompts = MCPServerHandler.get_prompts(instance.id)
 
-        app_permission_risks = MCPServerHandler.get_app_permission_risks([instance])
+        releases = MCPServerHandler._get_releases_for_mcp_servers([instance])
+        app_permission_risks = MCPServerHandler.get_app_permission_risks([instance], releases=releases)
+        least_privileges = MCPServerHandler.get_least_privileges([instance], releases=releases)
 
         serializer = self.get_serializer(
             instance,
@@ -285,6 +293,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
                 "stages": stages,
                 "prompts": prompts,
                 "app_permission_risks": app_permission_risks,
+                "least_privileges": least_privileges,
             },
         )
         return OKJsonResponse(data=serializer.data)
@@ -464,13 +473,17 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
+        least_privileges = MCPServerHandler.get_least_privileges([instance])
+        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+        mcp_url = MCPServerHandler.get_mcp_server_url(instance, least_privilege)
+
         user_tenant_id = get_user_tenant_id(request)
         template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
         content = render_to_string(
             template_name,
             context={
                 "name": instance.name,
-                "url": build_mcp_server_url(instance.name, instance.protocol_type),
+                "url": mcp_url,
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
@@ -502,7 +515,11 @@ class MCPServerConfigListApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        configs = MCPServerHandler.build_agent_client_configs(instance)
+
+        least_privileges = MCPServerHandler.get_least_privileges([instance])
+        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+
+        configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege)
         return OKJsonResponse(data={"configs": configs})
 
 

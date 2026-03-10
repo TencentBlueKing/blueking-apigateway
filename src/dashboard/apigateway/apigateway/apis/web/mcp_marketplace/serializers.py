@@ -23,12 +23,13 @@ from rest_framework import serializers
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerLeastPrivilegeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
 
 
 class MCPServerCategoryOutputSLZ(serializers.Serializer):
@@ -157,6 +158,10 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
+        least_privileges = self.context.get("least_privileges", {})
+        least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+        if not obj.oauth2_public_client_enabled and least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value:
+            return build_mcp_server_application_url(obj.name, obj.protocol_type)
         return build_mcp_server_url(obj.name, obj.protocol_type)
 
     def get_prompts_count(self, obj) -> int:
