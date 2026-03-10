@@ -24,20 +24,20 @@
         :class="{ 'no-release': server.status === 0 }"
         class="server-name"
       >
-        <div
-          v-if="server.status === 1"
-          class="status-tag"
-        >
-          <BkTag theme="success">
-            {{ t('启用中') }}
-          </BkTag>
-        </div>
-        <div
-          v-else
-          class="status-tag"
-        >
-          <BkTag theme="warning">
-            {{ t('未启用') }}
+        <div class="flex status-tag">
+          <div
+            v-if="server?.oauth2_public_client_enabled"
+            v-bk-tooltips="t('OAuth2 公开客户端已开启')"
+            class="external-oauth-tag bg-#3a84ff"
+          >
+            <AgIcon
+              name="deqiu"
+              size="14"
+              color="white"
+            />
+          </div>
+          <BkTag :theme="server.status === 1 ? 'success' : 'warning'">
+            {{ t( server.status === 1 ? '启用中' : '未启用') }}
           </BkTag>
         </div>
         <div class="mt-8px flex items-center flex-col">
@@ -504,6 +504,15 @@ const updateCount = (count?: number, panelName?: string) => {
         }
       }
     }
+  }
+
+  .external-oauth-tag {
+    min-width: 22px;
+    min-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 }
 
