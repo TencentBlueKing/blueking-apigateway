@@ -141,13 +141,12 @@
                 :key="server.id"
                 :server="server"
                 :show-actions="false"
+                :oauth2-tooltip="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
                 @click="() => handleCardClick(server.id)"
               >
-                <template
-                  v-if="server?.is_official"
-                  #externalTag
-                >
+                <template #externalTag>
                   <BkTag
+                    v-if="server?.is_official"
                     theme="success"
                     class="ml-8px"
                   >
