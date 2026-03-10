@@ -1,5 +1,7 @@
 ## Authentication
 
+> **Note**: If the MCP Server has **Public Client Mode** (OAuth2 Public Client) enabled, the `X-Bkapi-Authorization` header is not required in the client configuration — authentication will be handled automatically via the OAuth2 flow. However, the `X-Bkapi-Authorization` header is still supported; if provided, the system will process the authentication as usual.
+
 The MCP proxy currently integrates with BlueKing API Gateway, requiring both `user authentication` and `app authentication`. When configuring MCP Server, additional authentication headers must be configured as JSON-formatted strings.
 
 ```shell
