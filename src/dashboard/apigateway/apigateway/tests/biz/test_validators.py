@@ -28,6 +28,8 @@ from apigateway.biz.validators import (
     BKAppCodeListValidator,
     BKAppCodeValidator,
     MaxCountPerGatewayValidator,
+    ProgrammableGatewayStageNameValidator,
+    ProgrammableGatewayVersionValidator,
     PublishValidator,
     ReleaseValidationError,
     ResourceIDValidator,
@@ -38,7 +40,7 @@ from apigateway.biz.validators import (
 )
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import BackendTypeEnum, GatewayStatusEnum
+from apigateway.core.constants import BackendTypeEnum, GatewayKindEnum, GatewayStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_request
 
@@ -982,3 +984,107 @@ class TestUpstreamValidator:
             # 应该通过验证
             result = validator(attrs, serializer)
             assert result is None
+
+
+class TestProgrammableGatewayVersionValidator:
+    class VersionSLZ(serializers.Serializer):
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+        version = serializers.CharField()
+
+        class Meta:
+            validators = [ProgrammableGatewayVersionValidator()]
+
+    @pytest.mark.parametrize(
+        "version, will_error",
+        [
+            ("1.0.0+prod", False),
+            ("1.5.0+stage", False),
+            ("0.0.1+prod", False),
+            ("10.20.30+stage", False),
+            ("1.0.0", True),
+            ("1.0.0+dev", True),
+            ("1.0.0+test", True),
+            ("1.0.0+staging", True),
+            ("1.0.0+production", True),
+            ("1.0.0-beta+prod", True),
+            ("abc+prod", True),
+            ("1.0+prod", True),
+        ],
+    )
+    def test_validate_programmable_gateway(self, fake_gateway, version, will_error):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+        fake_gateway.save()
+
+        slz = self.VersionSLZ(data={"version": version}, context={"gateway": fake_gateway})
+        slz.is_valid()
+        if will_error:
+            assert slz.errors
+        else:
+            assert not slz.errors
+
+    @pytest.mark.parametrize(
+        "version",
+        [
+            "1.0.0",
+            "1.0.0+prod",
+            "1.0.0+dev",
+            "2.0.0-beta",
+        ],
+    )
+    def test_skip_for_normal_gateway(self, fake_gateway, version):
+        fake_gateway.kind = GatewayKindEnum.NORMAL.value
+        fake_gateway.save()
+
+        slz = self.VersionSLZ(data={"version": version}, context={"gateway": fake_gateway})
+        slz.is_valid()
+        assert not slz.errors
+
+
+class TestProgrammableGatewayStageNameValidator:
+    class StageSLZ(serializers.Serializer):
+        gateway = serializers.HiddenField(default=CurrentGatewayDefault())
+        name = serializers.CharField()
+
+        class Meta:
+            validators = [ProgrammableGatewayStageNameValidator()]
+
+    @pytest.mark.parametrize(
+        "name, will_error",
+        [
+            ("stage", False),
+            ("prod", False),
+            ("dev", True),
+            ("test", True),
+            ("staging", True),
+            ("production", True),
+            ("stag", True),
+        ],
+    )
+    def test_validate_programmable_gateway(self, fake_gateway, name, will_error):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+        fake_gateway.save()
+
+        slz = self.StageSLZ(data={"name": name}, context={"gateway": fake_gateway})
+        slz.is_valid()
+        if will_error:
+            assert slz.errors
+        else:
+            assert not slz.errors
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "stage",
+            "prod",
+            "dev",
+            "test",
+            "any-name",
+        ],
+    )
+    def test_skip_for_normal_gateway(self, fake_gateway, name):
+        fake_gateway.kind = GatewayKindEnum.NORMAL.value
+        fake_gateway.save()
+
+        slz = self.StageSLZ(data={"name": name}, context={"gateway": fake_gateway})
+        slz.is_valid()
+        assert not slz.errors

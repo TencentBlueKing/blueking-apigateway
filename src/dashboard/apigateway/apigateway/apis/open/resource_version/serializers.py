@@ -23,7 +23,7 @@ from rest_framework import serializers
 
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler
-from apigateway.biz.validators import ResourceVersionValidator
+from apigateway.biz.validators import ProgrammableGatewayVersionValidator, ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.models import ResourceVersion
 
@@ -61,7 +61,10 @@ class ResourceVersionCreateV1InputSLZ(serializers.Serializer):
     comment = serializers.CharField(allow_blank=True, allow_null=True, max_length=512, required=False)
 
     class Meta:
-        validators = [ResourceVersionValidator()]
+        validators = [
+            ResourceVersionValidator(),
+            ProgrammableGatewayVersionValidator(),
+        ]
 
 
 class ResourceVersionQueryV1InputSLZ(serializers.Serializer):

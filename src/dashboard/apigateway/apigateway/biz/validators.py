@@ -41,7 +41,12 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
-from .constants import APP_CODE_PATTERN, STAGE_VAR_FOR_PATH_PATTERN
+from .constants import (
+    APP_CODE_PATTERN,
+    PROGRAMMABLE_GATEWAY_ALLOWED_STAGE_NAMES,
+    PROGRAMMABLE_GATEWAY_VERSION_PATTERN,
+    STAGE_VAR_FOR_PATH_PATTERN,
+)
 from .mcp_server import MCPServerHandler
 from .released_resource import ReleasedResourceHandler
 from .resource import ResourceOpenAPISchemaHandler
@@ -338,6 +343,45 @@ class ResourceVersionValidator:
         # ResourceVersion 中数据量较大，因此，不使用 UniqueTogetherValidator
         if ResourceVersion.objects.filter(gateway=gateway, version=version).exists():
             raise serializers.ValidationError(_("版本 {version} 已存在。").format(version=version))
+
+
+class ProgrammableGatewayVersionValidator(GetGatewayFromContextMixin):
+    """可编程网关版本格式校验：版本号必须符合 X.Y.Z+stage 或 X.Y.Z+prod"""
+
+    requires_context = True
+
+    def __call__(self, attrs, serializer):
+        gateway = self._get_gateway(serializer)
+        if not gateway.is_programmable:
+            return
+
+        version = attrs.get("version")
+        if not version:
+            return
+
+        if not PROGRAMMABLE_GATEWAY_VERSION_PATTERN.match(version):
+            raise serializers.ValidationError(
+                _("可编程网关版本格式必须为 X.Y.Z+stage 或 X.Y.Z+prod，例如：1.5.0+prod，当前版本：{version}").format(
+                    version=version
+                )
+            )
+
+
+class ProgrammableGatewayStageNameValidator(GetGatewayFromContextMixin):
+    """可编程网关环境名称校验：环境名称只能为 stage 或 prod"""
+
+    requires_context = True
+
+    def __call__(self, attrs, serializer):
+        gateway = self._get_gateway(serializer)
+        if not gateway.is_programmable:
+            return
+
+        name = attrs.get("name", "")
+        if name and name not in PROGRAMMABLE_GATEWAY_ALLOWED_STAGE_NAMES:
+            raise serializers.ValidationError(
+                _("可编程网关环境名称只能为 stage 或 prod，当前名称：{name}").format(name=name)
+            )
 
 
 class SchemeHostInputValidator:
