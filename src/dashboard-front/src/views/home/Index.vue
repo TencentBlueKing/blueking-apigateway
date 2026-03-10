@@ -128,7 +128,7 @@
                 <div
                   :class="item.status ? '' : 'deact'"
                   class="name-logo"
-                  @click="() => handleGoPage('StageManagement', item)"
+                  @click.stop="() => handleGoPage('StageManagement', item)"
                 >
                   <span
                     v-if="item.kind === 1"
@@ -145,7 +145,7 @@
                 <span
                   :class="item.status ? '' : 'deact-name'"
                   class="name"
-                  @click="() => handleGoPage('StageManagement', item)"
+                  @click.stop="() => handleGoPage('StageManagement', item)"
                 >
                   {{ item.name }}
                 </span>
@@ -268,7 +268,7 @@
                   <BkButton
                     text
                     theme="primary"
-                    @click="() => handleGoPage('StageOverview', item)"
+                    @click.stop="() => handleGoPage('StageOverview', item)"
                   >
                     {{ t('环境概览') }}
                   </BkButton>
@@ -277,7 +277,7 @@
                     theme="primary"
                     class="ml-20px"
                     :disabled="item?.kind === 1"
-                    @click="() => handleGoPage('ResourceSetting', item)"
+                    @click.stop="() => handleGoPage('ResourceSetting', item)"
                   >
                     {{ t('资源配置') }}
                   </BkButton>
@@ -285,7 +285,7 @@
                     text
                     theme="primary"
                     class="ml-20px"
-                    @click="() => handleGoPage('AccessLog', item)"
+                    @click.stop="() => handleGoPage('AccessLog', item)"
                   >
                     {{ t('流水日志') }}
                   </BkButton>
@@ -294,7 +294,7 @@
                   v-else
                   text
                   theme="danger"
-                  @click="() => handleGoPage('BasicInfo', item)"
+                  @click.stop="() => handleGoPage('BasicInfo', item)"
                 >
                   {{ t('删除网关') }}
                 </BkButton>

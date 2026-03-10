@@ -70,6 +70,17 @@
               <BkTag theme="info">
                 {{ mcpDetails?.stage?.name }}
               </BkTag>
+              <div
+                v-if="mcpDetails?.oauth2_public_client_enabled"
+                v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
+                class="external-oauth-tag bg-#e1ecff ml-8px"
+              >
+                <AgIcon
+                  name="deqiu"
+                  size="14"
+                  color="#3a84ff"
+                />
+              </div>
             </div>
           </div>
 
@@ -567,6 +578,16 @@ watch(
         }
       }
     }
+  }
+
+  .external-oauth-tag {
+    min-width: 18px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 2px;
   }
 }
 
