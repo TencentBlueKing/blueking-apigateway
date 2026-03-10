@@ -78,7 +78,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
     if release_history:
         release_history.stage = release.stage
         # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
-        wait_another_release_done(release_history)
+        wait_another_release_done(release_history, data_plane_id)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
     logger.info("rolling_update_release[gateway_id=%d, data_plane_id=%s] begin", gateway_id, data_plane_id)
@@ -128,6 +128,10 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
         release.updated_by = release_history.created_by if release_history else "admin"
         release.save()
 
+        # FIXME: in the future
+        # if CLI_SYNC, would not change the stage status; and gateway status inactive would not come here
+        # has a pre check _pre_publish_check_is_gateway_ready_for_releasing
+        # only gateway enable would come here
         # 如果是网关启用，需要更新环境状态
         if release_history and release_history.source == PublishSourceEnum.GATEWAY_ENABLE.value:
             stage = release.stage
@@ -141,8 +145,10 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
 
 
 @shared_task(ignore_result=True)
-def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
-    """删除环境的已发布的资源"""
+def revoke_release(release_id: int, publish_id: int, data_plane_id: int, update_stage_status: bool = True):
+    """删除环境的已发布的资源
+    while we are doing the revoke, we know we will update the stage status at that time!
+    """
     release = Release.objects.get(id=release_id)
 
     # Get data_plane - required
@@ -162,7 +168,7 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
     # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
-    wait_another_release_done(release_history)
+    wait_another_release_done(release_history, data_plane_id)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
 
@@ -188,21 +194,27 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     else:
         PublishEventReporter.report_distribute_config_success(release_history)
         procedure_logger.info("revoke succeeded")
+
+        # NOTE: if multiple data planes are bound to the same gateway-stage, we should not mark the stage as inactive!
         # 修改对应环境状态
-        stage = release.stage
-        stage.status = StageStatusEnum.INACTIVE.value
-        stage.save()
+        if update_stage_status:
+            stage = release.stage
+            stage.status = StageStatusEnum.INACTIVE.value
+            stage.save()
 
     return is_success
 
 
-def wait_another_release_done(release_history: ReleaseHistory):
+def wait_another_release_done(release_history: ReleaseHistory, data_plane_id: int):
     """这里主要是为了避免并发发布过程中，如果同时发布导致 operator 事件收敛导致事件丢失，需要等待上一个最近的发布任务执行完成"""
 
     # 获取最近的一个发布历史
     other_latest_release = (
         ReleaseHistory.objects.filter(
-            gateway_id=release_history.gateway_id, stage_id=release_history.stage_id, id__lt=release_history.id
+            gateway_id=release_history.gateway_id,
+            stage_id=release_history.stage_id,
+            id__lt=release_history.id,
+            data_plane_id=data_plane_id,
         )
         .order_by("-created_time")
         .first()

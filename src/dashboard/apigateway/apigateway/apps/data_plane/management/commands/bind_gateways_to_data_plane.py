@@ -28,7 +28,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class Command(BaseCommand):
         parser.add_argument("--operator", type=str, default="system", help="Operator username")
         parser.add_argument("--dry-run", action="store_true", help="Preview changes without executing")
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901, PLR0912, PLR0915
         gateway_names = parse_gateway_names(options["gateway_names"], options["gateway_names_file"])
         skip_gateway_names = set(parse_comma_separated_names(options["skip_gateway_names"]))
         skip_gateway_names.update(parse_names_from_file(options["skip_gateway_names_file"], "skip gateway names file"))
@@ -70,6 +70,7 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
         gateway_model = apps.get_model("core", "Gateway")
+        stage_model = apps.get_model("core", "Stage")
 
         if not data_plane_name:
             raise CommandError("data_plane_name should not be empty")
@@ -80,6 +81,20 @@ class Command(BaseCommand):
 
         gateways = gateway_model.objects.filter(name__in=gateway_names)
         gateway_by_name = {gateway.name: gateway for gateway in gateways}
+
+        # maybe some gateway from args not in the database, so we need to print them out
+        not_found_gateway_names = set(gateway_names) - set(gateway_by_name.keys())
+        if not_found_gateway_names:
+            self.stdout.write(
+                self.style.WARNING(f"some gateway names not found in the database: {not_found_gateway_names}")
+            )
+            audit_writer.write(
+                action="bind_gateway_to_data_plane",
+                result="failed",
+                gateway_name=str(not_found_gateway_names),
+                data_plane_name=data_plane.name,
+                reason="some_gateway_names_not_found_in_database",
+            )
 
         success_count = 0
         skipped_count = 0
@@ -138,20 +153,73 @@ class Command(BaseCommand):
                     created_by=operator,
                 )
 
-                publish_success = trigger_gateway_publish(
-                    PublishSourceEnum.CLI_SYNC,
-                    author=operator,
-                    gateway_id=gateway.id,
-                    is_sync=True,
-                    target_data_plane_ids=[data_plane.id],
-                )
-                if not publish_success:
+                # only trigger if gateway is active and stage is active and release is not None
+                if not gateway.is_active:
+                    audit_writer.write(
+                        action="bind_gateway_to_data_plane",
+                        result="skipped",
+                        gateway_name=gateway.name,
+                        gateway_id=gateway.id,
+                        data_plane_name=data_plane.name,
+                        data_plane_id=data_plane.id,
+                        reason="gateway_is_not_active",
+                    )
+                    success_count += 1
+                    self.stdout.write(f"gateway={gateway.name} is not active, skipped publish")
+                    continue
+
+                stages = stage_model.objects.filter(gateway=gateway, status=StageStatusEnum.ACTIVE.value).all()
+                if not stages:
+                    audit_writer.write(
+                        action="bind_gateway_to_data_plane",
+                        result="skipped",
+                        gateway_name=gateway.name,
+                        gateway_id=gateway.id,
+                        data_plane_name=data_plane.name,
+                        data_plane_id=data_plane.id,
+                        reason="no_active_stage",
+                    )
+                    success_count += 1
+                    self.stdout.write(f"gateway={gateway.name} has no active stage, skipped publish")
+                    continue
+
+                # NOTE: each gateway-stage has only one release, so we can trigger one by one, to make sure all success
+                publish_to_all_stages_success = True
+                for stage in stages:
+                    # and here the data_plane_id is the only one
+                    ok = trigger_gateway_publish(
+                        PublishSourceEnum.CLI_SYNC,
+                        author=operator,
+                        gateway_id=gateway.id,
+                        stage_id=stage.id,
+                        is_sync=True,
+                        target_data_plane_ids=[data_plane.id],
+                    )
+                    if not ok:
+                        self.stdout.write(
+                            f"failed to publish to gateway={gateway.name} stage={stage.name}, mark as failed and skipped publish"
+                        )
+                        publish_to_all_stages_success = False
+                        break
+
+                if not publish_to_all_stages_success:
                     # rollback binding so operator can retry bind after fixing publish errors
                     GatewayDataPlaneBinding.objects.unbind_gateway_from_data_plane(
                         gateway_id=gateway.id,
                         data_plane_id=data_plane.id,
                     )
-                    raise RuntimeError("bind created but publish failed, binding rolled back")
+                    failed_count += 1
+                    # raise RuntimeError("bind created but publish failed, binding rolled back")
+                    audit_writer.write(
+                        action="bind_gateway_to_data_plane",
+                        result="failed",
+                        gateway_name=gateway.name,
+                        gateway_id=gateway.id,
+                        data_plane_name=data_plane.name,
+                        data_plane_id=data_plane.id,
+                        reason="publish_to_all_stages_failed",
+                    )
+                    continue
 
                 success_count += 1
                 audit_writer.write(

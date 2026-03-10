@@ -139,12 +139,16 @@ def _trigger_revoke_disable(
             has_failure = True
             continue
 
+        is_programmable_offline_called = False
         for data_plane in data_planes:
             # 创建发布历史
             release_history = _pre_publish_save_release_history(release, source, author, data_plane=data_plane)
 
-            # 如果是编程网关需要特殊处理
-            _pre_publish_programmable_gateway_offline(source, author, release, release_history, user_credentials)
+            # make sure programmable gateway offline is called only once
+            if not is_programmable_offline_called:
+                # 如果是编程网关需要特殊处理
+                _pre_publish_programmable_gateway_offline(source, author, release, release_history, user_credentials)
+                is_programmable_offline_called = True
 
             # 发布 check
             ok, msg = _pre_publish_check_is_gateway_ready_for_releasing(release, source)

@@ -67,16 +67,6 @@ class Command(BaseCommand):
             help="Allow unbinding the last data plane binding of a gateway",
         )
 
-    def _revoke_gateway_releases(
-        self, gateway: Any, data_plane_id: int, release_model: Any, revoke_release: Any, delete_publish_id: int
-    ) -> bool:
-        releases = release_model.objects.filter(gateway_id=gateway.id).all()
-        for release in releases:
-            ok = revoke_release(release_id=release.id, publish_id=delete_publish_id, data_plane_id=data_plane_id)
-            if not ok:
-                return False
-        return True
-
     def _handle_skip(self, audit_writer: AuditWriter, gateway_name: str, data_plane: DataPlane, operator: str):
         audit_writer.write(
             action="unbind_gateway_from_data_plane",
@@ -144,13 +134,20 @@ class Command(BaseCommand):
             self.stdout.write(f"[DRY RUN] would unbind gateway={gateway.name} from data_plane={data_plane.name}")
             return "success"
 
-        revoked = self._revoke_gateway_releases(
-            gateway,
-            data_plane.id,
-            release_model=release_model,
-            revoke_release=revoke_release,
-            delete_publish_id=DELETE_PUBLISH_ID,
-        )
+        # would try to revoke release at that data_plane, maybe a release list
+        releases = release_model.objects.filter(gateway_id=gateway.id).all()
+        revoked = True
+        for release in releases:
+            ok = revoke_release(
+                release_id=release.id,
+                publish_id=DELETE_PUBLISH_ID,
+                data_plane_id=data_plane.id,
+                update_stage_status=False,
+            )
+            if not ok:
+                revoked = False
+                continue
+
         if not revoked:
             audit_writer.write(
                 action="unbind_gateway_from_data_plane",
