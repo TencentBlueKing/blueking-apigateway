@@ -34,6 +34,17 @@
               {{ server?.title }}
             </template>
           </AgDescription>
+          <div
+            v-if="server?.oauth2_public_client_enabled"
+            v-bk-tooltips="oauth2Tooltip"
+            class="external-oauth-tag bg-#e1ecff ml-8px"
+          >
+            <AgIcon
+              name="deqiu"
+              size="14"
+              color="#3a84ff"
+            />
+          </div>
           <slot name="externalTag" />
         </div>
       </div>
@@ -220,6 +231,7 @@ import AgDescription from '@/components/ag-description/Index.vue';
 interface IProps {
   server?: IMCPServer
   showActions?: boolean
+  oauth2Tooltip?: string
 }
 
 interface IEmits {
@@ -229,7 +241,11 @@ interface IEmits {
   delete: [id: number]
 }
 
-const { server = {}, showActions = true } = defineProps<IProps>();
+const {
+  server = {},
+  showActions = true,
+  oauth2Tooltip = '',
+} = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
@@ -363,6 +379,16 @@ onUnmounted(() => {
     &.featured {
       min-width: 44px;
     }
+  }
+
+  :deep(.external-oauth-tag) {
+    min-width: 18px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 2px;
   }
 
   &:hover {

@@ -126,6 +126,7 @@
               v-for="server in mcpList"
               :key="server.id"
               :server="server"
+              :oauth2-tooltip="t('OAuth2 公开客户端已开启')"
               @delete="handleDelete"
               @edit="handleEdit"
               @enable="handleEnable"
@@ -149,16 +150,6 @@
                 v-if="server?.oauth2_public_client_enabled"
                 #externalTag
               >
-                <div
-                  v-bk-tooltips="t('OAuth2 公开客户端已开启')"
-                  class="external-oauth-tag bg-#e1ecff ml-8px"
-                >
-                  <AgIcon
-                    name="deqiu"
-                    size="14"
-                    color="#3a84ff"
-                  />
-                </div>
                 <div
                   v-if="server?.app_permission_risk?.has_risk"
                   v-bk-tooltips="renderRiskToolToolTip(server)"
@@ -679,16 +670,6 @@ onUnmounted(() => {
         left: 24px;
         right: 24px;
       }
-    }
-
-    .external-oauth-tag {
-      min-width: 18px;
-      min-height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      border-radius: 2px;
     }
   }
 }
