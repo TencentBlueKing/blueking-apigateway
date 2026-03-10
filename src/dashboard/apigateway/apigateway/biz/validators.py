@@ -346,7 +346,7 @@ class ResourceVersionValidator:
 
 
 class ProgrammableGatewayVersionValidator(GetGatewayFromContextMixin):
-    """可编程网关版本格式校验：版本号必须符合 X.Y.Z+stage 或 X.Y.Z+prod"""
+    """可编程网关版本格式校验：版本号必须符合 X.Y.Z+stag 或 X.Y.Z+prod"""
 
     requires_context = True
 
@@ -361,7 +361,7 @@ class ProgrammableGatewayVersionValidator(GetGatewayFromContextMixin):
 
         if not PROGRAMMABLE_GATEWAY_VERSION_PATTERN.match(version):
             raise serializers.ValidationError(
-                _("可编程网关版本格式必须为 X.Y.Z+stage 或 X.Y.Z+prod，例如：1.5.0+prod，当前版本：{version}").format(
+                _("可编程网关版本格式必须为 X.Y.Z+stag 或 X.Y.Z+prod，例如：1.8.5+stag，当前版本：{version}").format(
                     version=version
                 )
             )
