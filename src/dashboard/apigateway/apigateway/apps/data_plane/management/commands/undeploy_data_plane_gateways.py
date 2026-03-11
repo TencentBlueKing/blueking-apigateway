@@ -17,8 +17,7 @@
 #
 import logging
 
-from django.apps import apps
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
     AuditWriter,
@@ -28,6 +27,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.tasks.syncing import revoke_release
+from apigateway.core.models import Gateway, Release
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Undeploy (revoke) gateways from a specific data plane without changing stage status or bindings"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--data-plane-name", type=str, required=True, help="Target data plane name")
 
         group = parser.add_mutually_exclusive_group(required=True)
@@ -63,26 +63,28 @@ class Command(BaseCommand):
         parser.add_argument("--operator", type=str, default="system", help="Operator username")
         parser.add_argument("--dry-run", action="store_true", help="Preview changes without executing")
 
-    def _get_bound_gateways(self, data_plane):
+    def _get_bound_gateways(self, data_plane: DataPlane) -> dict[str, Gateway]:
         bindings = GatewayDataPlaneBinding.objects.filter(data_plane=data_plane).select_related("gateway")
         return {b.gateway.name: b.gateway for b in bindings}
 
-    def _undeploy_one_gateway(self, gateway, data_plane, release_model, dry_run, audit_writer, operator):
+    def _undeploy_one_gateway(
+        self,
+        gateway: Gateway,
+        data_plane: DataPlane,
+        dry_run: bool,
+        audit_writer: AuditWriter,
+        audit_log_common_args: dict,
+    ) -> str:
         if dry_run:
             self.stdout.write(f"[DRY RUN] would undeploy gateway={gateway.name} from data_plane={data_plane.name}")
             return "success"
 
-        releases = release_model.objects.filter(gateway_id=gateway.id).all()
+        releases = Release.objects.filter(gateway_id=gateway.id).all()
         if not releases:
             audit_writer.write(
-                action="undeploy_data_plane_gateway",
                 result="success",
-                gateway_name=gateway.name,
-                gateway_id=gateway.id,
-                data_plane_name=data_plane.name,
-                data_plane_id=data_plane.id,
                 reason="no_releases",
-                operator=operator,
+                **audit_log_common_args,
             )
             self.stdout.write(f"gateway={gateway.name} has no releases, nothing to revoke")
             return "success"
@@ -105,36 +107,24 @@ class Command(BaseCommand):
 
         if not all_revoked:
             audit_writer.write(
-                action="undeploy_data_plane_gateway",
                 result="failed",
-                gateway_name=gateway.name,
-                gateway_id=gateway.id,
-                data_plane_name=data_plane.name,
-                data_plane_id=data_plane.id,
                 reason="revoke_failed",
-                operator=operator,
+                **audit_log_common_args,
             )
             return "failed"
 
         audit_writer.write(
-            action="undeploy_data_plane_gateway",
             result="success",
-            gateway_name=gateway.name,
-            gateway_id=gateway.id,
-            data_plane_name=data_plane.name,
-            data_plane_id=data_plane.id,
-            operator=operator,
+            **audit_log_common_args,
         )
         return "success"
 
-    def handle(self, *args, **options):  # noqa: C901, PLR0912, PLR0915
+    def handle(self, *args, **options) -> None:  # noqa: C901, PLR0912, PLR0915
         data_plane_name = options["data_plane_name"].strip()
         undeploy_all = options["undeploy_all"]
         gateway_names_raw = options["gateway_names"]
-        operator = options["operator"]
         dry_run = options["dry_run"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
-        release_model = apps.get_model("core", "Release")
 
         skip_gateway_names = set(parse_comma_separated_names(options["skip_gateway_names"]))
         skip_gateway_names.update(parse_names_from_file(options["skip_gateway_names_file"], "skip gateway names file"))
@@ -155,6 +145,13 @@ class Command(BaseCommand):
             if not gateway_names:
                 raise CommandError("no valid gateway names provided via --gateway-names")
 
+            # maybe some gateway from args not in the database, so we need to print them out
+            not_found_gateway_names = set(gateway_names) - set(bound_gateway_by_name.keys())
+            if not_found_gateway_names:
+                failed_message = f"some gateway names provided via --gateway-names not bound to the data_plane={data_plane_name} in the database: {not_found_gateway_names}"
+                self.stdout.write(self.style.WARNING(failed_message))
+                raise CommandError(failed_message)
+
         if not gateway_names:
             raise CommandError(f"no gateways bound to data plane: {data_plane_name}")
 
@@ -168,28 +165,22 @@ class Command(BaseCommand):
         failed_count = 0
 
         for gateway_name in gateway_names:
+            gateway = bound_gateway_by_name[gateway_name]
+
+            audit_log_common_args = {
+                "action": "undeploy_data_plane_gateway",
+                "gateway_id": gateway.id,
+                "gateway_name": gateway.name,
+                "data_plane_id": data_plane.id,
+                "data_plane_name": data_plane.name,
+            }
+
             if gateway_name in skip_gateway_names:
                 skipped_count += 1
                 audit_writer.write(
-                    action="undeploy_data_plane_gateway",
                     result="skipped",
-                    gateway_name=gateway_name,
-                    data_plane_name=data_plane.name,
                     reason="skipped_by_argument",
-                    operator=operator,
-                )
-                continue
-
-            gateway = bound_gateway_by_name.get(gateway_name)
-            if not gateway:
-                failed_count += 1
-                audit_writer.write(
-                    action="undeploy_data_plane_gateway",
-                    result="failed",
-                    gateway_name=gateway_name,
-                    data_plane_name=data_plane.name,
-                    reason="gateway_not_bound_to_data_plane",
-                    operator=operator,
+                    **audit_log_common_args,
                 )
                 continue
 
@@ -197,10 +188,9 @@ class Command(BaseCommand):
                 result = self._undeploy_one_gateway(
                     gateway,
                     data_plane=data_plane,
-                    release_model=release_model,
                     dry_run=dry_run,
                     audit_writer=audit_writer,
-                    operator=operator,
+                    audit_log_common_args=audit_log_common_args,
                 )
                 if result == "success":
                     success_count += 1
@@ -216,13 +206,9 @@ class Command(BaseCommand):
                     data_plane_name,
                 )
                 audit_writer.write(
-                    action="undeploy_data_plane_gateway",
                     result="failed",
-                    gateway_name=gateway_name,
-                    data_plane_name=data_plane.name,
-                    data_plane_id=data_plane.id,
                     reason=str(err),
-                    operator=operator,
+                    **audit_log_common_args,
                 )
 
         self.stdout.write(

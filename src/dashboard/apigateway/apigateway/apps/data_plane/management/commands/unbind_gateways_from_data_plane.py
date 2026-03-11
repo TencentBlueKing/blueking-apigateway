@@ -16,9 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
     AuditWriter,
@@ -37,7 +36,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Unbind gateways from one data plane after synchronous revoke"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--gateway-names", type=str, default="", help="Gateway names, comma separated")
         parser.add_argument(
             "--gateway-names-file",
@@ -67,36 +66,14 @@ class Command(BaseCommand):
             help="Allow unbinding the last data plane binding of a gateway",
         )
 
-    def _handle_skip(self, audit_writer: AuditWriter, gateway_name: str, data_plane: DataPlane, operator: str):
-        audit_writer.write(
-            action="unbind_gateway_from_data_plane",
-            result="skipped",
-            gateway_name=gateway_name,
-            data_plane_name=data_plane.name,
-            reason="skipped_by_argument",
-            operator=operator,
-        )
-
-    def _handle_gateway_not_found(
-        self, audit_writer: AuditWriter, gateway_name: str, data_plane: DataPlane, operator: str
-    ):
-        audit_writer.write(
-            action="unbind_gateway_from_data_plane",
-            result="failed",
-            gateway_name=gateway_name,
-            data_plane_name=data_plane.name,
-            reason="gateway_not_found",
-            operator=operator,
-        )
-
     def _unbind_one_gateway(
         self,
-        gateway: Any,
+        gateway: Gateway,
         data_plane: DataPlane,
-        operator: str,
         dry_run: bool,
         force_unbind_last: bool,
         audit_writer: AuditWriter,
+        audit_log_common_args: dict,
     ) -> str:
         binding = GatewayDataPlaneBinding.objects.filter(
             gateway_id=gateway.id,
@@ -104,28 +81,18 @@ class Command(BaseCommand):
         ).first()
         if not binding:
             audit_writer.write(
-                action="unbind_gateway_from_data_plane",
                 result="skipped",
-                gateway_name=gateway.name,
-                gateway_id=gateway.id,
-                data_plane_name=data_plane.name,
-                data_plane_id=data_plane.id,
                 reason="binding_not_found",
-                operator=operator,
+                **audit_log_common_args,
             )
             return "skipped"
 
         bound_data_planes = GatewayDataPlaneBinding.objects.get_gateway_data_planes(gateway.id)
         if len(bound_data_planes) <= 1 and not force_unbind_last:
             audit_writer.write(
-                action="unbind_gateway_from_data_plane",
                 result="failed",
-                gateway_name=gateway.name,
-                gateway_id=gateway.id,
-                data_plane_name=data_plane.name,
-                data_plane_id=data_plane.id,
                 reason="last_binding_guard_blocked",
-                operator=operator,
+                **audit_log_common_args,
             )
             return "failed"
 
@@ -145,18 +112,14 @@ class Command(BaseCommand):
             )
             if not ok:
                 revoked = False
+                # we want to revoke as more as possible
                 continue
 
         if not revoked:
             audit_writer.write(
-                action="unbind_gateway_from_data_plane",
                 result="failed",
-                gateway_name=gateway.name,
-                gateway_id=gateway.id,
-                data_plane_name=data_plane.name,
-                data_plane_id=data_plane.id,
                 reason="revoke_failed",
-                operator=operator,
+                **audit_log_common_args,
             )
             return "failed"
 
@@ -165,22 +128,16 @@ class Command(BaseCommand):
             data_plane_id=data_plane.id,
         )
         audit_writer.write(
-            action="unbind_gateway_from_data_plane",
             result="success",
-            gateway_name=gateway.name,
-            gateway_id=gateway.id,
-            data_plane_name=data_plane.name,
-            data_plane_id=data_plane.id,
-            operator=operator,
+            **audit_log_common_args,
         )
         return "success"
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options) -> None:
         gateway_names = parse_gateway_names(options["gateway_names"], options["gateway_names_file"])
         skip_gateway_names = set(parse_comma_separated_names(options["skip_gateway_names"]))
         skip_gateway_names.update(parse_names_from_file(options["skip_gateway_names_file"], "skip gateway names file"))
         data_plane_name = options["data_plane_name"].strip()
-        operator = options["operator"]
         dry_run = options["dry_run"]
         force_unbind_last = options["force_unbind_last"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
@@ -195,30 +152,46 @@ class Command(BaseCommand):
         gateways = Gateway.objects.filter(name__in=gateway_names)
         gateway_by_name = {gateway.name: gateway for gateway in gateways}
 
+        # maybe some gateway from args not in the database, so we need to print them out
+        not_found_gateway_names = set(gateway_names) - set(gateway_by_name.keys())
+        if not_found_gateway_names:
+            failed_message = f"some gateway names not found in the database: {not_found_gateway_names}"
+            self.stdout.write(self.style.WARNING(failed_message))
+            raise CommandError(failed_message)
+
         success_count = 0
         skipped_count = 0
         failed_count = 0
 
         for gateway_name in gateway_names:
+            # we already checked the gateway exists in the database, so we can safely get it
+            gateway = gateway_by_name[gateway_name]
+
+            audit_log_common_args = {
+                "action": "unbind_gateway_from_data_plane",
+                "gateway_id": gateway.id,
+                "gateway_name": gateway.name,
+                "data_plane_id": data_plane.id,
+                "data_plane_name": data_plane.name,
+            }
+
             if gateway_name in skip_gateway_names:
                 skipped_count += 1
-                self._handle_skip(audit_writer, gateway_name, data_plane, operator)
-                continue
-
-            gateway = gateway_by_name.get(gateway_name)
-            if not gateway:
-                failed_count += 1
-                self._handle_gateway_not_found(audit_writer, gateway_name, data_plane, operator)
+                audit_writer.write(
+                    result="skipped",
+                    reason="skipped_by_argument",
+                    **audit_log_common_args,
+                )
                 continue
 
             try:
                 result = self._unbind_one_gateway(
                     gateway,
                     data_plane=data_plane,
-                    operator=operator,
                     dry_run=dry_run,
                     force_unbind_last=force_unbind_last,
                     audit_writer=audit_writer,
+                    audit_log_common_args=audit_log_common_args,
                 )
                 if result == "success":
                     success_count += 1
@@ -234,13 +207,9 @@ class Command(BaseCommand):
                     data_plane_name,
                 )
                 audit_writer.write(
-                    action="unbind_gateway_from_data_plane",
                     result="failed",
-                    gateway_name=gateway_name,
-                    data_plane_name=data_plane.name,
-                    data_plane_id=data_plane.id,
                     reason=str(err),
-                    operator=operator,
+                    **audit_log_common_args,
                 )
 
         self.stdout.write(
