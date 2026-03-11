@@ -18,7 +18,6 @@
 import logging
 from typing import Any
 
-from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
@@ -30,6 +29,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.tasks.syncing import revoke_release
+from apigateway.core.models import Gateway, Release
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,6 @@ class Command(BaseCommand):
         operator: str,
         dry_run: bool,
         force_unbind_last: bool,
-        release_model: Any,
         audit_writer: AuditWriter,
     ) -> str:
         binding = GatewayDataPlaneBinding.objects.filter(
@@ -135,7 +134,7 @@ class Command(BaseCommand):
             return "success"
 
         # would try to revoke release at that data_plane, maybe a release list
-        releases = release_model.objects.filter(gateway_id=gateway.id).all()
+        releases = Release.objects.filter(gateway_id=gateway.id).all()
         revoked = True
         for release in releases:
             ok = revoke_release(
@@ -185,8 +184,6 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         force_unbind_last = options["force_unbind_last"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
-        gateway_model = apps.get_model("core", "Gateway")
-        release_model = apps.get_model("core", "Release")
 
         if not data_plane_name:
             raise CommandError("data_plane_name should not be empty")
@@ -195,7 +192,7 @@ class Command(BaseCommand):
         if not data_plane:
             raise CommandError(f"data plane not found: {data_plane_name}")
 
-        gateways = gateway_model.objects.filter(name__in=gateway_names)
+        gateways = Gateway.objects.filter(name__in=gateway_names)
         gateway_by_name = {gateway.name: gateway for gateway in gateways}
 
         success_count = 0
@@ -221,7 +218,6 @@ class Command(BaseCommand):
                     operator=operator,
                     dry_run=dry_run,
                     force_unbind_last=force_unbind_last,
-                    release_model=release_model,
                     audit_writer=audit_writer,
                 )
                 if result == "success":

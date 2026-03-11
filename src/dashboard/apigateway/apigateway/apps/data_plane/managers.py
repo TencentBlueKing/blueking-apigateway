@@ -79,7 +79,7 @@ class GatewayDataPlaneBindingManager(models.Manager):
         """Unbind a gateway from a data plane"""
         return self.filter(gateway_id=gateway_id, data_plane_id=data_plane_id).delete()[0]
 
-    def get_gateways_without_binding(self) -> List[Gateway]:
+    def list_gateways_without_binding(self) -> List[Gateway]:
         """Get all gateways that are not bound to any data plane"""
         bound_gateway_ids = self.values_list("gateway_id", flat=True).distinct()
         return list(Gateway.objects.exclude(id__in=bound_gateway_ids))

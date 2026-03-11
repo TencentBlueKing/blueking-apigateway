@@ -17,7 +17,6 @@
 #
 import logging
 
-from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
@@ -29,6 +28,7 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Stage
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,6 @@ class Command(BaseCommand):
         operator = options["operator"]
         dry_run = options["dry_run"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
-        gateway_model = apps.get_model("core", "Gateway")
-        stage_model = apps.get_model("core", "Stage")
 
         if not data_plane_name:
             raise CommandError("data_plane_name should not be empty")
@@ -79,7 +77,7 @@ class Command(BaseCommand):
         if not data_plane:
             raise CommandError(f"data plane not found: {data_plane_name}")
 
-        gateways = gateway_model.objects.filter(name__in=gateway_names)
+        gateways = Gateway.objects.filter(name__in=gateway_names)
         gateway_by_name = {gateway.name: gateway for gateway in gateways}
 
         # maybe some gateway from args not in the database, so we need to print them out
@@ -168,7 +166,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"gateway={gateway.name} is not active, skipped publish")
                     continue
 
-                stages = stage_model.objects.filter(gateway=gateway, status=StageStatusEnum.ACTIVE.value).all()
+                stages = Stage.objects.filter(gateway=gateway, status=StageStatusEnum.ACTIVE.value).all()
                 if not stages:
                     audit_writer.write(
                         action="bind_gateway_to_data_plane",

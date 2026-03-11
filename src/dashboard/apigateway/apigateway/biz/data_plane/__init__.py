@@ -16,4 +16,4 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .data_plane import get_sync_data_plane_ids  # noqa
+from .data_plane import DataPlaneHandler  # noqa

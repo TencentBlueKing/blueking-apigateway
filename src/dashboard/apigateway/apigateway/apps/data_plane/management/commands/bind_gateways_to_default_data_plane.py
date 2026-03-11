@@ -38,7 +38,7 @@ class Command(BaseCommand):
 
         default_data_plane = DataPlane.objects.get_default()
 
-        unbound_gateways = GatewayDataPlaneBinding.objects.get_gateways_without_binding()
+        unbound_gateways = GatewayDataPlaneBinding.objects.list_gateways_without_binding()
 
         if not unbound_gateways:
             self.stdout.write(self.style.SUCCESS("All gateways are already bound to a data plane."))

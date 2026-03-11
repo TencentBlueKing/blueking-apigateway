@@ -27,7 +27,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.data_plane import get_sync_data_plane_ids
+from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.release import ReleaseHandler
@@ -230,7 +230,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
 
         # 3. bind to data plane(s)
         # from web page, we don't need to specify the data plane ids, so use the default data plane(the default data_plane_id maybe changed in the future)
-        data_plane_ids = get_sync_data_plane_ids(gateway_name=slz.instance.name)
+        data_plane_ids = DataPlaneHandler.get_sync_data_plane_ids(gateway_name=slz.instance.name)
         GatewayHandler.bind_to_data_planes(
             gateway=slz.instance,
             data_plane_ids=data_plane_ids,

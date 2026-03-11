@@ -17,6 +17,7 @@
 #
 import logging
 
+from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 
 from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_utils import (
@@ -25,15 +26,14 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
     parse_names_from_file,
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Stage
+from apigateway.controller.constants import DELETE_PUBLISH_ID
+from apigateway.controller.tasks.syncing import revoke_release
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Deploy (publish) gateways bound to a specific data plane"
+    help = "Undeploy (revoke) gateways from a specific data plane without changing stage status or bindings"
 
     def add_arguments(self, parser):
         parser.add_argument("--data-plane-name", type=str, required=True, help="Target data plane name")
@@ -42,10 +42,10 @@ class Command(BaseCommand):
         group.add_argument(
             "--all",
             action="store_true",
-            dest="deploy_all",
-            help="Deploy all gateways bound to the data plane",
+            dest="undeploy_all",
+            help="Undeploy all gateways bound to the data plane",
         )
-        group.add_argument("--gateway-names", type=str, default="", help="Gateway names to deploy, comma separated")
+        group.add_argument("--gateway-names", type=str, default="", help="Gateway names to undeploy, comma separated")
 
         parser.add_argument(
             "--skip-gateway-names",
@@ -67,13 +67,74 @@ class Command(BaseCommand):
         bindings = GatewayDataPlaneBinding.objects.filter(data_plane=data_plane).select_related("gateway")
         return {b.gateway.name: b.gateway for b in bindings}
 
+    def _undeploy_one_gateway(self, gateway, data_plane, release_model, dry_run, audit_writer, operator):
+        if dry_run:
+            self.stdout.write(f"[DRY RUN] would undeploy gateway={gateway.name} from data_plane={data_plane.name}")
+            return "success"
+
+        releases = release_model.objects.filter(gateway_id=gateway.id).all()
+        if not releases:
+            audit_writer.write(
+                action="undeploy_data_plane_gateway",
+                result="success",
+                gateway_name=gateway.name,
+                gateway_id=gateway.id,
+                data_plane_name=data_plane.name,
+                data_plane_id=data_plane.id,
+                reason="no_releases",
+                operator=operator,
+            )
+            self.stdout.write(f"gateway={gateway.name} has no releases, nothing to revoke")
+            return "success"
+
+        all_revoked = True
+        for release in releases:
+            ok = revoke_release(
+                release_id=release.id,
+                publish_id=DELETE_PUBLISH_ID,
+                data_plane_id=data_plane.id,
+                update_stage_status=False,
+            )
+            if not ok:
+                all_revoked = False
+                self.stdout.write(
+                    f"failed to revoke release={release.id} for gateway={gateway.name}, "
+                    f"mark as failed and skip remaining"
+                )
+                break
+
+        if not all_revoked:
+            audit_writer.write(
+                action="undeploy_data_plane_gateway",
+                result="failed",
+                gateway_name=gateway.name,
+                gateway_id=gateway.id,
+                data_plane_name=data_plane.name,
+                data_plane_id=data_plane.id,
+                reason="revoke_failed",
+                operator=operator,
+            )
+            return "failed"
+
+        audit_writer.write(
+            action="undeploy_data_plane_gateway",
+            result="success",
+            gateway_name=gateway.name,
+            gateway_id=gateway.id,
+            data_plane_name=data_plane.name,
+            data_plane_id=data_plane.id,
+            operator=operator,
+        )
+        return "success"
+
     def handle(self, *args, **options):  # noqa: C901, PLR0912, PLR0915
         data_plane_name = options["data_plane_name"].strip()
-        deploy_all = options["deploy_all"]
+        undeploy_all = options["undeploy_all"]
         gateway_names_raw = options["gateway_names"]
         operator = options["operator"]
         dry_run = options["dry_run"]
         audit_writer = AuditWriter(self.stdout, options["log_file"])
+        release_model = apps.get_model("core", "Release")
 
         skip_gateway_names = set(parse_comma_separated_names(options["skip_gateway_names"]))
         skip_gateway_names.update(parse_names_from_file(options["skip_gateway_names_file"], "skip gateway names file"))
@@ -87,7 +148,7 @@ class Command(BaseCommand):
 
         bound_gateway_by_name = self._get_bound_gateways(data_plane)
 
-        if deploy_all:
+        if undeploy_all:
             gateway_names = list(bound_gateway_by_name.keys())
         else:
             gateway_names = parse_comma_separated_names(gateway_names_raw)
@@ -98,7 +159,7 @@ class Command(BaseCommand):
             raise CommandError(f"no gateways bound to data plane: {data_plane_name}")
 
         self.stdout.write(
-            f"deploying {len(gateway_names)} gateway(s) to data_plane={data_plane_name} "
+            f"undeploying {len(gateway_names)} gateway(s) from data_plane={data_plane_name} "
             f"(skip={len(skip_gateway_names)}, dry_run={dry_run})"
         )
 
@@ -110,11 +171,12 @@ class Command(BaseCommand):
             if gateway_name in skip_gateway_names:
                 skipped_count += 1
                 audit_writer.write(
-                    action="deploy_data_plane_gateway",
+                    action="undeploy_data_plane_gateway",
                     result="skipped",
                     gateway_name=gateway_name,
                     data_plane_name=data_plane.name,
                     reason="skipped_by_argument",
+                    operator=operator,
                 )
                 continue
 
@@ -122,107 +184,49 @@ class Command(BaseCommand):
             if not gateway:
                 failed_count += 1
                 audit_writer.write(
-                    action="deploy_data_plane_gateway",
+                    action="undeploy_data_plane_gateway",
                     result="failed",
                     gateway_name=gateway_name,
                     data_plane_name=data_plane.name,
                     reason="gateway_not_bound_to_data_plane",
+                    operator=operator,
                 )
                 continue
 
             try:
-                if dry_run:
-                    success_count += 1
-                    self.stdout.write(f"[DRY RUN] would deploy gateway={gateway.name} to data_plane={data_plane.name}")
-                    continue
-
-                if not gateway.is_active:
-                    audit_writer.write(
-                        action="deploy_data_plane_gateway",
-                        result="skipped",
-                        gateway_name=gateway.name,
-                        gateway_id=gateway.id,
-                        data_plane_name=data_plane.name,
-                        data_plane_id=data_plane.id,
-                    )
-                    skipped_count += 1
-                    continue
-
-                stages = Stage.objects.filter(gateway=gateway, status=StageStatusEnum.ACTIVE.value).all()
-                if not stages:
-                    audit_writer.write(
-                        action="bind_gateway_to_data_plane",
-                        result="skipped",
-                        gateway_name=gateway.name,
-                        gateway_id=gateway.id,
-                        data_plane_name=data_plane.name,
-                        data_plane_id=data_plane.id,
-                        reason="no_active_stage",
-                    )
-                    success_count += 1
-                    self.stdout.write(f"gateway={gateway.name} has no active stage, skipped publish")
-                    continue
-
-                publish_to_all_stages_success = True
-                for stage in stages:
-                    # trigger_gateway_publish handles inactive gateway/stage gracefully:
-                    # - inactive gateways or stages are skipped with a warning
-                    # - gateways with no releases are treated as success (nothing to publish)
-                    ok = trigger_gateway_publish(
-                        PublishSourceEnum.CLI_SYNC,
-                        author=operator,
-                        gateway_id=gateway.id,
-                        stage_id=stage.id,
-                        is_sync=True,
-                        target_data_plane_ids=[data_plane.id],
-                    )
-                    if not ok:
-                        self.stdout.write(
-                            f"failed to publish to gateway={gateway.name} stage={stage.name}, mark as failed and skipped publish"
-                        )
-                        publish_to_all_stages_success = False
-                        break
-
-                if not publish_to_all_stages_success:
-                    failed_count += 1
-                    audit_writer.write(
-                        action="deploy_data_plane_gateway",
-                        result="failed",
-                        gateway_name=gateway.name,
-                        gateway_id=gateway.id,
-                        data_plane_name=data_plane.name,
-                        data_plane_id=data_plane.id,
-                        reason="publish_to_all_stages_failed",
-                    )
-                    continue
-
-                success_count += 1
-                audit_writer.write(
-                    action="deploy_data_plane_gateway",
-                    result="success",
-                    gateway_name=gateway.name,
-                    gateway_id=gateway.id,
-                    data_plane_name=data_plane.name,
-                    data_plane_id=data_plane.id,
+                result = self._undeploy_one_gateway(
+                    gateway,
+                    data_plane=data_plane,
+                    release_model=release_model,
+                    dry_run=dry_run,
+                    audit_writer=audit_writer,
+                    operator=operator,
                 )
+                if result == "success":
+                    success_count += 1
+                elif result == "skipped":
+                    skipped_count += 1
+                else:
+                    failed_count += 1
             except Exception as err:  # pylint: disable=broad-except
                 failed_count += 1
                 logger.exception(
-                    "failed to deploy gateway to data plane: gateway=%s, data_plane=%s",
+                    "failed to undeploy gateway from data plane: gateway=%s, data_plane=%s",
                     gateway_name,
                     data_plane_name,
                 )
                 audit_writer.write(
-                    action="deploy_data_plane_gateway",
+                    action="undeploy_data_plane_gateway",
                     result="failed",
                     gateway_name=gateway_name,
                     data_plane_name=data_plane.name,
                     data_plane_id=data_plane.id,
                     reason=str(err),
+                    operator=operator,
                 )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"deploy finished: success={success_count}, skipped={skipped_count}, failed={failed_count}"
+                f"undeploy finished: success={success_count}, skipped={skipped_count}, failed={failed_count}"
             )
         )

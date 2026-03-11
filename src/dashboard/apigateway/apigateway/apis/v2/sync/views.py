@@ -41,7 +41,7 @@ from apigateway.apps.permission.models import (
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
-from apigateway.biz.data_plane import get_sync_data_plane_ids
+from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
@@ -117,7 +117,7 @@ class GatewaySyncApi(generics.CreateAPIView):
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
-        data_plane_ids = get_sync_data_plane_ids(
+        data_plane_ids = DataPlaneHandler.get_sync_data_plane_ids(
             gateway_name=gateway_name,
             data_plane_names=slz.validated_data.get("data_planes"),
         )

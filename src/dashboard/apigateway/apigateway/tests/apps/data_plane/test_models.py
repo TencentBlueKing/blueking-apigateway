@@ -141,22 +141,22 @@ class TestGatewayDataPlaneBindingManager:
 
         assert deleted_count == 0
 
-    def test_get_gateways_without_binding_returns_unbound_gateways(self):
-        """Test get_gateways_without_binding returns only unbound gateways"""
+    def test_list_gateways_without_binding_returns_unbound_gateways(self):
+        """Test list_gateways_without_binding returns only unbound gateways"""
         # Bind gateway1 and gateway2
         G(GatewayDataPlaneBinding, gateway=self.gateway1, data_plane=self.data_plane_active1)
         G(GatewayDataPlaneBinding, gateway=self.gateway2, data_plane=self.data_plane_active1)
         # gateway3 is not bound
 
-        unbound_gateways = GatewayDataPlaneBinding.objects.get_gateways_without_binding()
+        unbound_gateways = GatewayDataPlaneBinding.objects.list_gateways_without_binding()
 
         assert self.gateway3 in unbound_gateways
         assert self.gateway1 not in unbound_gateways
         assert self.gateway2 not in unbound_gateways
 
-    def test_get_gateways_without_binding_returns_all_when_none_bound(self):
-        """Test get_gateways_without_binding returns all gateways when none are bound"""
-        unbound_gateways = GatewayDataPlaneBinding.objects.get_gateways_without_binding()
+    def test_list_gateways_without_binding_returns_all_when_none_bound(self):
+        """Test list_gateways_without_binding returns all gateways when none are bound"""
+        unbound_gateways = GatewayDataPlaneBinding.objects.list_gateways_without_binding()
 
         assert len(unbound_gateways) >= 3
         assert self.gateway1 in unbound_gateways
