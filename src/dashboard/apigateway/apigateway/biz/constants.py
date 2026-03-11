@@ -30,5 +30,9 @@ SEMVER_PATTERN = re.compile(
 
 MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
 
+PROGRAMMABLE_GATEWAY_ALLOWED_STAGE_NAMES = frozenset({"stage", "prod"})
+
+PROGRAMMABLE_GATEWAY_VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\+(stag|prod)$")
+
 # stage var
 STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")

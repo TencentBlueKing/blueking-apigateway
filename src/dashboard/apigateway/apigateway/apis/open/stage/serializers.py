@@ -31,6 +31,7 @@ from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
+    ProgrammableGatewayStageNameValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
     UpstreamValidator,
@@ -343,6 +344,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 message=gettext_lazy("每个网关最多创建 {max_count} 个环境。"),
             ),
             StageVarsValidator(),
+            ProgrammableGatewayStageNameValidator(),
         ]
 
     def validate(self, data):
