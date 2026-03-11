@@ -248,8 +248,8 @@
                                     :disabled="disabled"
                                   >
                                     <BkOption
-                                      v-for="(item, index) in schemeList"
-                                      :key="index"
+                                      v-for="(item, idx) in schemeList"
+                                      :key="idx"
                                       :value="item.value"
                                       :label="item.value"
                                     />
