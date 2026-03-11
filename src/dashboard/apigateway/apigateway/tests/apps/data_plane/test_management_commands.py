@@ -10,7 +10,8 @@ from apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane 
 from apigateway.apps.data_plane.management.commands.create_data_plane import Command as CreateCommand
 from apigateway.apps.data_plane.management.commands.unbind_gateways_from_data_plane import Command as UnbindCommand
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.core.models import Gateway
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Stage
 
 pytestmark = pytest.mark.django_db
 
@@ -126,7 +127,8 @@ class TestBindGatewaysToDataPlaneCommand:
     def test_bind_publish_failed_should_rollback_binding(self, mock_trigger_gateway_publish, tmp_path):
         mock_trigger_gateway_publish.return_value = False
         data_plane = G(DataPlane, name="plane-a")
-        gateway = G(Gateway, name="gw-a")
+        gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
+        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
 
         cmd = BindCommand()
         cmd.handle(
