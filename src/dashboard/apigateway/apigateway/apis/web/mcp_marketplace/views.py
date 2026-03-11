@@ -41,7 +41,6 @@ from apigateway.common.tenant.validators import check_user_can_access_gateway
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Stage
 from apigateway.service.contexts import GatewayAuthContext
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -140,6 +139,9 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         prompts_count_map = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
 
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        least_privileges = MCPServerHandler.get_least_privileges(page)
+
         slz = MCPServerListOutputSLZ(
             page,
             many=True,
@@ -147,6 +149,7 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
                 "gateways": gateways,
                 "stages": stages,
                 "prompts_count_map": prompts_count_map,
+                "least_privileges": least_privileges,
             },
         )
 
@@ -180,12 +183,16 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
         user_tenant_id = get_user_tenant_id(request)
         check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
 
+        least_privileges = MCPServerHandler.get_least_privileges([instance])
+        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+        mcp_url = MCPServerHandler.get_mcp_server_url(instance, least_privilege)
+
         template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
         guideline = render_to_string(
             template_name,
             context={
                 "name": instance.name,
-                "url": build_mcp_server_url(instance.name, instance.protocol_type),
+                "url": mcp_url,
                 "description": instance.description,
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
@@ -239,6 +246,7 @@ class MCPMarketplaceServerRetrieveApi(generics.RetrieveAPIView):
                 "prompts_count_map": prompts_count_map,
                 "prompts": prompts,
                 "user_custom_doc": user_custom_doc,
+                "least_privileges": least_privileges,
             },
         )
         # 返回工具列表页面需要的信息
@@ -315,7 +323,10 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
         user_tenant_id = get_user_tenant_id(request)
         check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
 
-        configs = MCPServerHandler.build_agent_client_configs(instance)
+        least_privileges = MCPServerHandler.get_least_privileges([instance])
+        least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+
+        configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege)
         return OKJsonResponse(data={"configs": configs})
 
 

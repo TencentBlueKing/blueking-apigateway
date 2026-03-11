@@ -42,7 +42,6 @@ from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPS
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
 logger = logging.getLogger(__name__)
 
@@ -370,7 +369,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["stages"][obj.stage.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name, obj.protocol_type)
+        least_privileges = self.context.get("least_privileges", {})
+        least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+        return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
     def get_categories(self, obj):
         """获取分类信息，利用预加载的数据避免 N+1 查询"""
