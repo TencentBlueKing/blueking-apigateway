@@ -28,7 +28,7 @@
           <div
             v-if="server?.oauth2_public_client_enabled"
             v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-            class="external-oauth-tag bg-#3a84ff"
+            class="external-oauth-tag bg-#3a84ff cursor-pointer"
           >
             <AgIcon
               name="deqiu"
