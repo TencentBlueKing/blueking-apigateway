@@ -160,10 +160,12 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue
 			}
-			// 添加日志中间件
+			// Add logging, metric, and session metric middlewares
 			mcpServer := mcpProxy.GetMCPServer(server.Name)
 			if mcpServer != nil {
 				AddLoggingMiddleware(mcpServer.GetServer(), server.Name)
+				AddMetricMiddleware(mcpServer.GetServer(), server.Name)
+				AddSessionMetricMiddleware(mcpServer.GetServer(), server.Name)
 			}
 			// 加载并注册 Prompts
 			prompts := loadMCPServerPrompts(ctx, server.ID)

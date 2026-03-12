@@ -53,6 +53,15 @@ func APILogger() gin.HandlerFunc {
 			util.SetMCPServerID(c, mcp.ID)
 			util.SetMCPServerName(c, mcpName)
 			util.SetGatewayID(c, mcp.GatewayID)
+
+			// set gateway_name to context for MCP-level metrics
+			gateway, gatewayErr := cacheimpls.GetGatewayByID(c.Request.Context(), mcp.GatewayID)
+			if gatewayErr == nil && gateway != nil {
+				util.SetGatewayName(c, gateway.Name)
+			} else {
+				logging.GetLogger().Warnf("get gateway[id:%d] name failed: %v, using fallback", mcp.GatewayID, gatewayErr)
+				util.SetGatewayName(c, "unknown")
+			}
 		}
 
 		c.Next()

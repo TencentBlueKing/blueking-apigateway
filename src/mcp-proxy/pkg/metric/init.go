@@ -48,6 +48,59 @@ var (
 	},
 		[]string{"method", "path", "status", "mcp_server_name"},
 	)
+
+	// --- MCP 协议级指标 ---
+
+	// MCPRequestTotal MCP 方法调用计数
+	MCPRequestTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        "apigateway_mcp_proxy_mcp_requests_total",
+			Help:        "Total number of MCP method calls, partitioned by gateway, server, method and status.",
+			ConstLabels: prometheus.Labels{"service": serviceName},
+		},
+		[]string{"gateway_name", "mcp_server_name", "method", "status"},
+	)
+
+	// MCPRequestDuration MCP 方法调用耗时分布
+	MCPRequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:        "apigateway_mcp_proxy_mcp_request_duration_milliseconds",
+			Help:        "Duration of MCP method calls in milliseconds.",
+			ConstLabels: prometheus.Labels{"service": serviceName},
+			Buckets:     []float64{50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000, 60000},
+		},
+		[]string{"gateway_name", "mcp_server_name", "method"},
+	)
+
+	// MCPToolCallTotal MCP tools/call 调用计数（按工具名细分）
+	MCPToolCallTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        "apigateway_mcp_proxy_mcp_tool_calls_total",
+			Help:        "Total number of MCP tools/call invocations, partitioned by gateway, server, tool and status.",
+			ConstLabels: prometheus.Labels{"service": serviceName},
+		},
+		[]string{"gateway_name", "mcp_server_name", "tool_name", "status"},
+	)
+
+	// MCPSessionTotal 当前活跃 MCP 会话数（Gauge）
+	MCPSessionTotal = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:        "apigateway_mcp_proxy_mcp_sessions_active",
+			Help:        "Number of currently active MCP sessions.",
+			ConstLabels: prometheus.Labels{"service": serviceName},
+		},
+		[]string{"gateway_name", "mcp_server_name"},
+	)
+
+	// MCPErrorTotal MCP 错误计数（按错误码分类）
+	MCPErrorTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:        "apigateway_mcp_proxy_mcp_errors_total",
+			Help:        "Total number of MCP errors, partitioned by gateway, server, method and error code.",
+			ConstLabels: prometheus.Labels{"service": serviceName},
+		},
+		[]string{"gateway_name", "mcp_server_name", "method", "error_code"},
+	)
 )
 
 // InitMetrics will register the metrics
@@ -55,4 +108,11 @@ func InitMetrics() {
 	// Register the summary and the histogram with Prometheus's default registry.
 	prometheus.MustRegister(RequestCount)
 	prometheus.MustRegister(RequestDuration)
+
+	// MCP protocol-level metrics
+	prometheus.MustRegister(MCPRequestTotal)
+	prometheus.MustRegister(MCPRequestDuration)
+	prometheus.MustRegister(MCPToolCallTotal)
+	prometheus.MustRegister(MCPSessionTotal)
+	prometheus.MustRegister(MCPErrorTotal)
 }

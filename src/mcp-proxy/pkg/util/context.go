@@ -144,6 +144,39 @@ func GetGatewayID(c *gin.Context) int {
 	return mcpServerID.(int)
 }
 
+// SetGatewayName sets the gateway name to both gin context and request context.
+func SetGatewayName(c *gin.Context, gatewayName string) {
+	c.Set(string(constant.GatewayName), gatewayName)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.GatewayName, gatewayName))
+	}
+}
+
+// GetGatewayName retrieves the gateway name from gin context.
+func GetGatewayName(c *gin.Context) string {
+	gatewayName, ok := c.Get(string(constant.GatewayName))
+	if !ok {
+		return ""
+	}
+	return gatewayName.(string)
+}
+
+// GetGatewayNameFromContext retrieves the gateway name from context.
+func GetGatewayNameFromContext(ctx context.Context) string {
+	if gatewayName, ok := ctx.Value(constant.GatewayName).(string); ok {
+		return gatewayName
+	}
+	return ""
+}
+
+// GetMCPServerNameFromContext gets MCP server name from context
+func GetMCPServerNameFromContext(ctx context.Context) string {
+	if mcpServerName, ok := ctx.Value(constant.MCPServerName).(string); ok {
+		return mcpServerName
+	}
+	return ""
+}
+
 // GetGatewayIDFromContext ...
 func GetGatewayIDFromContext(ctx context.Context) int {
 	gatewayID, ok := ctx.Value(constant.GatewayID).(int)

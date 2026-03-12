@@ -16,41 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package metric_test
+package mcp
 
-import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+import sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"mcp_proxy/pkg/metric"
-)
+// ExtractToolNameForTest exposes extractToolName for testing.
+func ExtractToolNameForTest(req sdkmcp.Request) string {
+	return extractToolName(req)
+}
 
-var _ = Describe("Metric", func() {
-	Describe("InitMetrics", func() {
-		It("should initialize metrics without panic", func() {
-			metric.InitMetrics()
-		})
-	})
-
-	Describe("MCP Protocol Metrics", func() {
-		It("MCPRequestTotal should be valid", func() {
-			Expect(metric.MCPRequestTotal).NotTo(BeNil())
-		})
-
-		It("MCPRequestDuration should be valid", func() {
-			Expect(metric.MCPRequestDuration).NotTo(BeNil())
-		})
-
-		It("MCPToolCallTotal should be valid", func() {
-			Expect(metric.MCPToolCallTotal).NotTo(BeNil())
-		})
-
-		It("MCPSessionTotal should be valid", func() {
-			Expect(metric.MCPSessionTotal).NotTo(BeNil())
-		})
-
-		It("MCPErrorTotal should be valid", func() {
-			Expect(metric.MCPErrorTotal).NotTo(BeNil())
-		})
-	})
-})
+// NormalizeErrorCodeForTest exposes normalizeErrorCode for testing.
+func NormalizeErrorCodeForTest(code int64) string {
+	return normalizeErrorCode(code)
+}
