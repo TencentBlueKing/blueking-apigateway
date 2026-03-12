@@ -2265,7 +2265,8 @@
     "bk-cors": "Purpose: allows https://a.example.com:8081, https://b.example.com:8081 this two site launch cross-domain request \\n\\n allow_origins: \\nallow_origins_by_regex: ^https://.*\\\\.example\\\\.com:8081$\\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\\nallow_headers: **\\nexpose_headers: \\nmax_age: 86400\\nallow_credential: false",
     "bk-ip-restriction": "Purpose: Only IP 192.168.1.1 and 192.168.1.1 are allowed to request the current interface \\n\\n Type: whitelist \\n Whitelist: \\n       # comment \\n       192.168.1.1\\n       192.168.1.2",
     "bk-header-rewrite": "Purpose: Set header 'X-Api-Version: 1' and delete header 'X-test'\\n\\nSettings: X-Api-Version: 1\\nDelete: X-test",
-    "bk-rate-limit": "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\\n\\nDefault frequency limit: Times: 100 Time range: seconds\\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo"
+    "bk-rate-limit": "Purpose: By default, each application is performed 100 times/second, and demo is performed 200 times/second\\n\\nDefault frequency limit: Times: 100 Time range: seconds\\nSpecial application frequency limit: Times: 200  Time range: seconds Blue  Whale application ID: demo",
+    "bk-traffic-label": "# single match \n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"uri\", \"==\", \"/headers\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# single match with multiple conditions \n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             \"OR\",\n             [\"arg_version\", \"==\", \"v1\"],\n             [\"arg_env\", \"==\", \"dev\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# 一个match多个action，有权重的\n# ❶ 30% of the requests should have the `X-Server-Id: 100` request header.\n# ❷ 20% of the requests should have the `X-API-Version: v2` request header.\n# ❸ 50% of the requests should not have any action performed on them.\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"uri\", \"==\", \"/headers\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'},\n               \"weight\": 3\n             {'}'},\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-API-Version\": \"v2\"\n               {'}'},\n               \"weight\": 2\n             {'}'},\n             {'{'}\n               \"weight\": 5\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# 多个match   => 顺序执行\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"arg_version\", \"==\", \"v1\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'},\n         {'{'}\n           \"match\": [\n             [\"arg_version\", \"==\", \"v2\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 200\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}"
   },
   "风险": "Risk",
   "用户态": "User context",
@@ -2287,5 +2288,27 @@
   "开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。": "After enabling OAuth2 public client mode, these tools will be called using the public app identity. All users authorized via OAuth2 can call them, and the original app-level permission isolation will no longer be effective.",
   "开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。": "Once enabled, users can use these tools via browser OAuth2 authorization without manually configuring API credentials. Tokens will be issued as the public app identity.",
   "当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。": "All currently selected tools use user-level authentication. Enabling OAuth2 public client mode will not introduce additional security risks. Each user must still be authenticated via OAuth2 before calling.",
-  "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用": "OAuth2 public client mode is enabled, Users can use it via browser authorization."
+  "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用": "OAuth2 public client mode is enabled, Users can use it via browser authorization.",
+  "bk-traffic-label": {
+    "染色条件": "Conditions",
+    "条件关系": "Condition relation",
+    "满足全部条件": "Satisfy all",
+    "满足任意条件": "Satisfy any",
+    "参数位置": "Arg On",
+    "参数名": "Arg Name",
+    "关系": "Relation",
+    "参数值": "Value",
+    "请求匹配 Header": "Set Header",
+    "match 不能为空": "Match is required",
+    "每条 match 的每一项都需要填写": "Must fill each match",
+    "actions 不能为空": "Actions is required",
+    "weight 总和不等于 100": "weight sum must be 100",
+    "=（等于）": "=",
+    "≠（不等于）": "≠",
+    ">（大于）": ">",
+    "≧（大于等于）": "≧",
+    "<（小于）": "<",
+    "≦（小于等于）": "≦",
+    "~~（正则）": "~~(RegExp)"
+  }
 }
