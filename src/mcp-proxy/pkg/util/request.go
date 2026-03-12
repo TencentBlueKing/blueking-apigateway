@@ -26,6 +26,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"mcp_proxy/pkg/constant"
 )
 
 // RequestIDKey ...
@@ -72,6 +74,32 @@ func SetRequestID(c *gin.Context, requestID string) {
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
 			context.WithValue(c.Request.Context(), RequestIDKey, requestID))
+	}
+}
+
+// XRequestIDKey is the context key for the full-chain X-Request-ID
+const XRequestIDKey = "x_request_id"
+
+// GetXRequestID return the x_request_id from gin context
+func GetXRequestID(c *gin.Context) string {
+	return c.GetString(XRequestIDKey)
+}
+
+// GetXRequestIDFromContext retrieves the X-Request-ID from the context
+func GetXRequestIDFromContext(ctx context.Context) string {
+	if xRequestID, ok := ctx.Value(constant.XRequestID).(string); ok {
+		return xRequestID
+	}
+	return ""
+}
+
+// SetXRequestID set the x_request_id to context
+// nolint:staticcheck
+func SetXRequestID(c *gin.Context, xRequestID string) {
+	c.Set(XRequestIDKey, xRequestID)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), constant.XRequestID, xRequestID))
 	}
 }
 

@@ -73,6 +73,7 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 			gatewayID := util.GetGatewayIDFromContext(ctx)
 			mcpServerID := util.GetMCPServerIDFromContext(ctx)
 			requestID := util.GetRequestIDFromContext(ctx)
+			xRequestID := util.GetXRequestIDFromContext(ctx)
 			appCode := util.GetAppCodeFromContext(ctx)
 			username := util.GetUsernameFromContext(ctx)
 
@@ -92,6 +93,7 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 				zap.String("latency", duration.String()),
 				zap.String("response", response),
 				zap.String("request_id", requestID),
+				zap.String("x_request_id", xRequestID),
 				zap.String("app_code", appCode),
 				zap.String("username", username),
 			}

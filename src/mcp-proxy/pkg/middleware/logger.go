@@ -71,6 +71,7 @@ func APILogger() gin.HandlerFunc {
 			zap.Int("status", status),
 			zap.String("latency", duration.String()),
 			zap.String("request_id", c.GetString(util.RequestIDKey)),
+			zap.String("x_request_id", c.GetString(util.XRequestIDKey)),
 			zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 			zap.String("client_ip", c.ClientIP()),
 			zap.String("app_code", util.GetAppCode(c)),

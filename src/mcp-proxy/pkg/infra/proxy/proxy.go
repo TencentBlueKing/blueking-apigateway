@@ -365,12 +365,13 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 
 // loggingTransport 是一个带日志的 HTTP Transport
 type loggingTransport struct {
-	base      http.RoundTripper
-	logger    *zap.SugaredLogger
-	appCode   string
-	username  string
-	requestID string
-	toolName  string
+	base       http.RoundTripper
+	logger     *zap.SugaredLogger
+	appCode    string
+	username   string
+	requestID  string
+	xRequestID string
+	toolName   string
 }
 
 // RoundTrip 实现 http.RoundTripper 接口
@@ -382,6 +383,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"app_code", t.appCode,
 		"username", t.username,
 		"request_id", t.requestID,
+		"x_request_id", t.xRequestID,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.String(),
@@ -398,6 +400,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			"app_code", t.appCode,
 			"username", t.username,
 			"request_id", t.requestID,
+			"x_request_id", t.xRequestID,
 			"tool", t.toolName,
 			"method", req.Method,
 			"url", req.URL.String(),
@@ -412,6 +415,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"app_code", t.appCode,
 		"username", t.username,
 		"request_id", t.requestID,
+		"x_request_id", t.xRequestID,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.String(),
@@ -427,6 +431,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
+		xRequestID := util.GetXRequestIDFromContext(ctx)
 		appCode := util.GetAppCodeFromContext(ctx)
 		username := util.GetUsernameFromContext(ctx)
 
@@ -460,12 +465,13 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		logTransport := &loggingTransport{
-			base:      baseTransport,
-			logger:    logging.GetLogger(),
-			appCode:   appCode,
-			username:  username,
-			requestID: requestID,
-			toolName:  toolApiConfig.String(),
+			base:       baseTransport,
+			logger:     logging.GetLogger(),
+			appCode:    appCode,
+			username:   username,
+			requestID:  requestID,
+			xRequestID: xRequestID,
+			toolName:   toolApiConfig.String(),
 		}
 		client := &http.Client{Transport: logTransport}
 		defer client.CloseIdleConnections()
@@ -488,8 +494,13 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			}
 			// 设置request id
 			if requestID != "" {
-				headerInfo[constant.RequestIDHeaderKey] = requestID
-				_ = req.SetHeaderParam(constant.RequestIDHeaderKey, requestID)
+				headerInfo[constant.BkGatewayRequestIDKey] = requestID
+				_ = req.SetHeaderParam(constant.BkGatewayRequestIDKey, requestID)
+			}
+			// 透传全链路 X-Request-Id
+			if xRequestID != "" {
+				headerInfo[constant.RequestIDHeaderKey] = xRequestID
+				_ = req.SetHeaderParam(constant.RequestIDHeaderKey, xRequestID)
 			}
 
 			// 设置header

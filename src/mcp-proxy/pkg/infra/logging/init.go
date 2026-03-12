@@ -76,7 +76,10 @@ func GetLogger() *zap.SugaredLogger {
 func GetLoggerWithContext(ctx context.Context) *zap.SugaredLogger {
 	ctxLogger := defaultLogger
 	if requestID, ok := ctx.Value(util.RequestIDKey).(string); ok {
-		ctxLogger = defaultLogger.With(zap.String("request_id", requestID))
+		ctxLogger = ctxLogger.With(zap.String("request_id", requestID))
+	}
+	if xRequestID, ok := ctx.Value(constant.XRequestID).(string); ok && xRequestID != "" {
+		ctxLogger = ctxLogger.With(zap.String("x_request_id", xRequestID))
 	}
 	return ctxLogger
 }
@@ -91,6 +94,9 @@ func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	ctxLogger := auditLogger
 	if requestID, ok := ctx.Value(util.RequestIDKey).(string); ok {
 		ctxLogger = ctxLogger.With(zap.String("request_id", requestID))
+	}
+	if xRequestID, ok := ctx.Value(constant.XRequestID).(string); ok && xRequestID != "" {
+		ctxLogger = ctxLogger.With(zap.String("x_request_id", xRequestID))
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
 		ctxLogger = ctxLogger.With(zap.String("bk_app_code", appCode))

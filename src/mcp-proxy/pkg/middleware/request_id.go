@@ -28,11 +28,16 @@ import (
 // RequestID add the request_id for each api request
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Extract X-Bkapi-Request-ID as the per-segment request_id
 		requestID := c.GetHeader(constant.BkGatewayRequestIDKey)
 		if requestID == "" {
 			requestID = util.GenUUID4()
 		}
 		util.SetRequestID(c, requestID)
+
+		// Extract X-Request-ID as the full-chain x_request_id
+		xRequestID := c.GetHeader(constant.RequestIDHeaderKey)
+		util.SetXRequestID(c, xRequestID)
 
 		c.Next()
 	}
