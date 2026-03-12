@@ -239,6 +239,7 @@
           <RequestParamsTable
             ref="sub-table-ref"
             v-model="row.body"
+            :parent="row"
             :readonly="readonly"
           />
         </div>
@@ -449,6 +450,21 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       body.push(row);
     }
   }
+  // 处理根节点为数组的情况
+  else if (schema.type === 'array' && Object.keys(schema.items || {}).length) {
+    const row: IBodyRow = {
+      id: uniqueId(),
+      name: '',
+      type: schema.items!.type ? convertPropertyType(schema.items!.type) : 'string',
+      required: false,
+      default: '',
+      description: schema.description ?? '',
+    };
+    if (row.type === 'object') {
+      row.body = convertSchemaToBodyRow(schema.items!);
+    }
+    body.push(row);
+  }
   else {
     return null;
   }
@@ -474,15 +490,16 @@ watch(() => detail, () => {
     }
     if (resourceSchema.requestBody) {
       const body = resourceSchema.requestBody;
+      const rootRowSchema = body?.content?.['application/json']?.schema;
       const row = {
         id: uniqueId(),
         name: t('根节点'),
         in: 'body',
-        type: 'object' as JSONSchema7TypeName,
+        type: (rootRowSchema.type || 'object') as JSONSchema7TypeName,
         required: body.required ?? false,
         description: body.description ?? '',
       };
-      const subBody = convertSchemaToBodyRow(body?.content?.['application/json']?.schema);
+      const subBody = convertSchemaToBodyRow(rootRowSchema);
       if (subBody) {
         Object.assign(row, { body: subBody });
       }
