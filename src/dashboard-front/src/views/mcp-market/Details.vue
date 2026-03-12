@@ -73,7 +73,7 @@
               <div
                 v-if="mcpDetails?.oauth2_public_client_enabled"
                 v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-                class="external-oauth-tag bg-#e1ecff ml-8px"
+                class="external-oauth-tag bg-#e1ecff ml-8px cursor-pointer"
               >
                 <AgIcon
                   name="deqiu"

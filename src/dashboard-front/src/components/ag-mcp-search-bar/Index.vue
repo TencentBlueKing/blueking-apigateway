@@ -28,7 +28,7 @@
       <BkSearchSelect
         v-if="!slots?.customSearch"
         v-model="searchValue"
-        class="bg-#fff"
+        class="bg-white"
         :data="searchData"
         :placeholder="placeholder"
         :value-split-code="'+'"
@@ -93,7 +93,7 @@ interface IProps {
 interface IEmits { 'sort-change': [sort: string] }
 
 const searchValue = defineModel('searchValue', {
-  required: true,
+  required: false,
   type: Array,
 });
 
