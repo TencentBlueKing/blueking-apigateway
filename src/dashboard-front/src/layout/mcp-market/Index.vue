@@ -218,7 +218,6 @@ const filterData = ref({
 });
 const mcpMarketList = ref<IMarketplaceItem[]>([]);
 const categoriesList = ref<IMCPMarketCategory[]>([]);
-
 const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
   current: 1,
   limit: 0,

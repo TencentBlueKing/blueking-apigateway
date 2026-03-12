@@ -831,7 +831,7 @@ let resizeLayoutConfig = {
 const gatewayId = computed(() => gatewayStore.currentGateway?.id);
 const isEditMode = computed(() => !!serverId);
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
-const stage = computed(() => stageList.value.find(stage => stage.id === formData.value.stage_id));
+const stage = computed(() => stageList.value.find(sg => sg.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway?.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
@@ -1275,9 +1275,9 @@ const fetchServer = async () => {
       protocol_type,
       categories: categories.map(item => item.name),
     };
-    // 仅当资源名称数组有有效数据时执行逻辑
+    // 会存在MCP工具资源被移除业务场景，所以优先获取环境列表
+    await fetchStageList();
     if (resource_names?.length) {
-      await fetchStageList();
       const resourceNameToIndexMap = new Map();
       resource_names.forEach((name, index) => {
         resourceNameToIndexMap.set(name, index);
@@ -1349,7 +1349,7 @@ const fetchServer = async () => {
 const fetchStageResources = async () => {
   try {
     searchLoading.value = true;
-    if (stage.value && stage.value.resource_version?.id) {
+    if (stage.value?.resource_version?.id) {
       const response = await getVersionDetail(
         gatewayId.value,
         stage.value.resource_version.id,
@@ -1662,7 +1662,6 @@ const resetSliderData = () => {
   promptSelections.value = [];
   allSelections.value = [];
   noPermPrompt.value = [];
-  appAuthStatusList.value = [];
   filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
