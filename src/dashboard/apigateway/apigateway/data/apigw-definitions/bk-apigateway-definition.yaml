@@ -83,6 +83,16 @@ grant_permissions:
       - get_apigw_public_key
       - v2_open_get_gateway_public_key_legacy
       - v2_open_get_gateway_public_key
+  # bk_auth
+  - bk_app_code: bk_auth
+    grant_dimension: "resource"
+    resource_names:
+      - v2_open_batch_query_mcp_servers
+      - v2_open_batch_query_gateways
+      - v2_open_retrieve_gateway_resource_info
+      - v2_open_list_gateways
+      - v2_open_list_gateway_resources
+      - v2_open_list_mcp_server
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
