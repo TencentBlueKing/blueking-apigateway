@@ -16,16 +16,24 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package mcp
+package trace
 
-import sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+import (
+	tc "go.opentelemetry.io/otel/trace"
 
-// ExtractToolNameForTest exposes extractToolName for testing.
-func ExtractToolNameForTest(req sdkmcp.Request) string {
-	return extractToolName(req)
-}
+	"mcp_proxy/pkg/config"
+)
 
-// MatchErrorCodeNameForTest exposes matchErrorCodeName for testing.
-func MatchErrorCodeNameForTest(code int64) string {
-	return matchErrorCodeName(code)
+// SetGlobalTracerForTest sets the global tracer for testing purposes.
+// It returns a cleanup function that restores the original tracer.
+// NOTE: This function is intended for use in tests only.
+func SetGlobalTracerForTest(tracer tc.Tracer, cfg config.Tracing) func() {
+	original := globalTracer
+	globalTracer = &Trace{
+		Tracer: tracer,
+		config: cfg,
+	}
+	return func() {
+		globalTracer = original
+	}
 }

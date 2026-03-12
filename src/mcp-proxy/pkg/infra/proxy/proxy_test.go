@@ -27,6 +27,14 @@ import (
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.uber.org/zap"
+
+	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/trace"
 )
 
 var _ = Describe("MCPProxy", func() {
@@ -366,6 +374,274 @@ var _ = Describe("MCPProxy", func() {
 			result, err := handler(ctx, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Messages).To(HaveLen(1))
+		})
+	})
+
+	Describe("loggingTransport", func() {
+		var (
+			originalConfig     *config.Config
+			originalPropagator propagation.TextMapPropagator
+		)
+
+		BeforeEach(func() {
+			originalConfig = config.G
+			originalPropagator = otel.GetTextMapPropagator()
+		})
+
+		AfterEach(func() {
+			config.G = originalConfig
+			otel.SetTextMapPropagator(originalPropagator)
+		})
+
+		It("should inject traceparent header when tracing is enabled", func() {
+			// Set up an in-memory span exporter and trace provider
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(
+				sdktrace.WithSyncer(exporter),
+			)
+			defer func() { _ = tp.Shutdown(context.Background()) }()
+
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+				propagation.TraceContext{},
+				propagation.Baggage{},
+			))
+
+			// Set the global tracer used by trace.StartTrace
+			cleanup := trace.SetGlobalTracerForTest(
+				tp.Tracer("test-service"),
+				config.Tracing{Enable: true},
+			)
+			defer cleanup()
+
+			// Enable MCP tracing via config
+			config.G = &config.Config{
+				Tracing: config.Tracing{
+					Enable:      true,
+					ServiceName: "test-service",
+					Instrument:  config.Instrument{McpAPI: true},
+				},
+			}
+
+			// Create a test backend that captures the incoming request headers
+			var capturedHeaders http.Header
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedHeaders = r.Header.Clone()
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer backend.Close()
+
+			logger := zap.NewNop().Sugar()
+			transport := &loggingTransport{
+				base:     backend.Client().Transport,
+				logger:   logger,
+				toolName: "test-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodGet, backend.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			_ = resp.Body.Close()
+
+			// Verify traceparent header was injected
+			traceparent := capturedHeaders.Get("Traceparent")
+			Expect(traceparent).NotTo(BeEmpty(), "traceparent header should be injected")
+			// W3C traceparent format: version-trace_id-span_id-flags (e.g. "00-xxx-yyy-01")
+			Expect(traceparent).To(MatchRegexp(`^00-[a-f0-9]{32}-[a-f0-9]{16}-[a-f0-9]{2}$`))
+		})
+
+		It("should NOT inject traceparent header when tracing is disabled", func() {
+			// Tracing disabled: config.G is nil or McpAPI is false
+			config.G = nil
+
+			var capturedHeaders http.Header
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedHeaders = r.Header.Clone()
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer backend.Close()
+
+			logger := zap.NewNop().Sugar()
+			transport := &loggingTransport{
+				base:     backend.Client().Transport,
+				logger:   logger,
+				toolName: "test-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodGet, backend.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			_ = resp.Body.Close()
+
+			// Verify traceparent header was NOT injected
+			traceparent := capturedHeaders.Get("Traceparent")
+			Expect(traceparent).To(BeEmpty(), "traceparent header should NOT be injected when tracing is disabled")
+		})
+
+		It("should NOT inject traceparent when McpAPI is false but tracing is enabled", func() {
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(
+				sdktrace.WithSyncer(exporter),
+			)
+			defer func() { _ = tp.Shutdown(context.Background()) }()
+
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+				propagation.TraceContext{},
+			))
+
+			// Tracing enabled but McpAPI disabled
+			config.G = &config.Config{
+				Tracing: config.Tracing{
+					Enable:      true,
+					ServiceName: "test-service",
+					Instrument:  config.Instrument{McpAPI: false},
+				},
+			}
+
+			var capturedHeaders http.Header
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				capturedHeaders = r.Header.Clone()
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer backend.Close()
+
+			logger := zap.NewNop().Sugar()
+			transport := &loggingTransport{
+				base:     backend.Client().Transport,
+				logger:   logger,
+				toolName: "test-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodGet, backend.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			_ = resp.Body.Close()
+
+			traceparent := capturedHeaders.Get("Traceparent")
+			Expect(traceparent).To(BeEmpty(), "traceparent should NOT be injected when McpAPI is disabled")
+		})
+
+		It("should set span attributes correctly when tracing is enabled", func() {
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(
+				sdktrace.WithSyncer(exporter),
+			)
+			defer func() { _ = tp.Shutdown(context.Background()) }()
+
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.TraceContext{})
+
+			cleanup := trace.SetGlobalTracerForTest(
+				tp.Tracer("test-service"),
+				config.Tracing{Enable: true},
+			)
+			defer cleanup()
+
+			config.G = &config.Config{
+				Tracing: config.Tracing{
+					Enable:      true,
+					ServiceName: "test-service",
+					Instrument:  config.Instrument{McpAPI: true},
+				},
+			}
+
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer backend.Close()
+
+			logger := zap.NewNop().Sugar()
+			transport := &loggingTransport{
+				base:     backend.Client().Transport,
+				logger:   logger,
+				toolName: "my-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodPost, backend.URL+"/test/path", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			_ = resp.Body.Close()
+
+			// Verify span was created with expected attributes
+			spans := exporter.GetSpans()
+			Expect(spans).To(HaveLen(1))
+			span := spans[0]
+			Expect(span.Name).To(Equal("mcp.upstream_http"))
+
+			attrMap := make(map[string]interface{})
+			for _, attr := range span.Attributes {
+				attrMap[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrMap).To(HaveKey("http.method"))
+			Expect(attrMap).To(HaveKey("mcp.tool_name"))
+			Expect(attrMap["mcp.tool_name"]).To(Equal("my-tool"))
+		})
+
+		It("should record error span attributes on HTTP failure", func() {
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(
+				sdktrace.WithSyncer(exporter),
+			)
+			defer func() { _ = tp.Shutdown(context.Background()) }()
+
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.TraceContext{})
+
+			cleanup := trace.SetGlobalTracerForTest(
+				tp.Tracer("test-service"),
+				config.Tracing{Enable: true},
+			)
+			defer cleanup()
+
+			config.G = &config.Config{
+				Tracing: config.Tracing{
+					Enable:      true,
+					ServiceName: "test-service",
+					Instrument:  config.Instrument{McpAPI: true},
+				},
+			}
+
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			}))
+			defer backend.Close()
+
+			logger := zap.NewNop().Sugar()
+			transport := &loggingTransport{
+				base:     backend.Client().Transport,
+				logger:   logger,
+				toolName: "fail-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodGet, backend.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			_ = resp.Body.Close()
+
+			spans := exporter.GetSpans()
+			Expect(spans).To(HaveLen(1))
+
+			attrMap := make(map[string]interface{})
+			for _, attr := range spans[0].Attributes {
+				attrMap[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			// http.status_code should be set
+			Expect(attrMap).To(HaveKey("http.status_code"))
+			Expect(attrMap["http.status_code"]).To(Equal(int64(500)))
 		})
 	})
 })

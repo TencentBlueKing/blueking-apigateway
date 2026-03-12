@@ -20,7 +20,9 @@ package mcp_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -94,13 +96,67 @@ var _ = Describe("Middleware", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).NotTo(BeNil())
 		})
+
+		It("should enrich client_id from session's InitializeParams.ClientInfo", func() {
+			// Create an MCP server with a tool and our LoggingMiddleware
+			server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test-server", Version: "1.0.0"}, nil)
+
+			// Add a simple echo tool using the ToolHandler API
+			server.AddTool(&sdkmcp.Tool{
+				Name:        "echo",
+				Description: "Echo tool",
+				InputSchema: json.RawMessage(`{"type":"object"}`),
+			}, func(ctx context.Context, req *sdkmcp.CallToolRequest) (*sdkmcp.CallToolResult, error) {
+				return &sdkmcp.CallToolResult{
+					Content: []sdkmcp.Content{&sdkmcp.TextContent{Text: "hello"}},
+				}, nil
+			})
+
+			// Add LoggingMiddleware — it should pick up clientInfo.Name as client_id
+			server.AddReceivingMiddleware(mcppkg.LoggingMiddleware(serverName))
+
+			// Create in-memory transport pair
+			serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()
+
+			testCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			// Server connect (must be before client)
+			serverSession, err := server.Connect(testCtx, serverTransport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer serverSession.Close()
+
+			// Client connect with specific ClientInfo
+			client := sdkmcp.NewClient(&sdkmcp.Implementation{
+				Name:    "cursor",
+				Version: "2.0.0",
+			}, nil)
+
+			clientSession, err := client.Connect(testCtx, clientTransport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer clientSession.Close()
+
+			// After initialize, the ServerSession should have InitializeParams.ClientInfo.Name == "cursor"
+			initParams := serverSession.InitializeParams()
+			Expect(initParams).NotTo(BeNil())
+			Expect(initParams.ClientInfo).NotTo(BeNil())
+			Expect(initParams.ClientInfo.Name).To(Equal("cursor"))
+
+			// Call the echo tool — this will trigger LoggingMiddleware which should use "cursor" as client_id
+			result, err := clientSession.CallTool(testCtx, &sdkmcp.CallToolParams{
+				Name: "echo",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
 	})
 
 	Describe("MetricMiddleware", func() {
 		It("should record MCPRequestTotal on successful call", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "ok")
+			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "0", "0")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return successResult, nil
@@ -109,14 +165,14 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "initialize", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "ok")
+			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "0", "0")
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
 		It("should record MCPRequestTotal with error status on failure", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "error")
+			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "unknown", "1")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return nil, errors.New("test error")
@@ -124,7 +180,7 @@ var _ = Describe("Middleware", func() {
 
 			_, _ = handler(ctx, "tools/call", nil)
 
-			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "error")
+			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "unknown", "1")
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
@@ -309,18 +365,18 @@ var _ = Describe("Middleware", func() {
 		})
 	})
 
-	Describe("normalizeErrorCode", func() {
+	Describe("matchErrorCodeName", func() {
 		It("should return human-readable name for standard JSON-RPC codes", func() {
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32700)).To(Equal("parse_error"))
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32600)).To(Equal("invalid_request"))
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32601)).To(Equal("method_not_found"))
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32602)).To(Equal("invalid_params"))
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32603)).To(Equal("internal_error"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32700)).To(Equal("parse_error"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32600)).To(Equal("invalid_request"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32601)).To(Equal("method_not_found"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32602)).To(Equal("invalid_params"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32603)).To(Equal("internal_error"))
 		})
 
 		It("should return string representation for unknown codes", func() {
-			Expect(mcppkg.NormalizeErrorCodeForTest(-32000)).To(Equal("-32000"))
-			Expect(mcppkg.NormalizeErrorCodeForTest(42)).To(Equal("42"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(-32000)).To(Equal("-32000"))
+			Expect(mcppkg.MatchErrorCodeNameForTest(42)).To(Equal("42"))
 		})
 	})
 })

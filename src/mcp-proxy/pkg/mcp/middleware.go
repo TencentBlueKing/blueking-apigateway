@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/stringx"
@@ -50,8 +51,8 @@ var knownJSONRPCErrorCodes = map[int64]string{
 	-32603: "internal_error",
 }
 
-// normalizeErrorCode converts a JSON-RPC error code to a bounded label value.
-func normalizeErrorCode(code int64) string {
+// matchErrorCodeName converts a JSON-RPC error code to a bounded label value.
+func matchErrorCodeName(code int64) string {
 	if name, ok := knownJSONRPCErrorCodes[code]; ok {
 		return name
 	}
@@ -73,18 +74,22 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 			hasError := err != nil
 
-			// Serialize request params
+			// Serialize request params and calculate body sizes
 			var params string
+			var requestBodySize int64
 			if req != nil {
 				if paramsBytes, marshalErr := json.Marshal(req.GetParams()); marshalErr == nil {
+					requestBodySize = int64(len(paramsBytes))
 					params = stringx.Truncate(string(paramsBytes), 2048)
 				}
 			}
 
 			// Serialize response result
 			var response string
+			var responseBodySize int64
 			if result != nil {
 				if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
+					responseBodySize = int64(len(resultBytes))
 					if hasError {
 						response = string(resultBytes)
 					} else {
@@ -95,36 +100,63 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 			// Retrieve extra info from context
 			gatewayID := util.GetGatewayIDFromContext(ctx)
+			gatewayName := util.GetGatewayNameFromContext(ctx)
 			mcpServerID := util.GetMCPServerIDFromContext(ctx)
 			requestID := util.GetRequestIDFromContext(ctx)
 			xRequestID := util.GetXRequestIDFromContext(ctx)
 			appCode := util.GetAppCodeFromContext(ctx)
 			username := util.GetUsernameFromContext(ctx)
+			clientIP := util.GetClientIPFromContext(ctx)
+			clientID := util.GetClientIDFromContext(ctx)
 
-			// Get session ID
+			// Get session ID and client_id from session's InitializeParams
 			var sessionID string
 			if req != nil {
 				if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
 					sessionID = ss.ID()
+					// Enrich client_id with clientInfo from initialize handshake
+					if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
+						clientID = initParams.ClientInfo.Name
+					}
 				}
+			}
+
+			// Extract tool_name for tools/call
+			var toolName string
+			if method == "tools/call" {
+				toolName = extractToolName(req)
 			}
 
 			// trace_id 来自 HTTP 层（otelgin middleware）注入的 span，与 TracingMiddleware 属于同一条 trace
 			traceID := trace.GetTraceIDFromContext(ctx)
 
 			fields := []zap.Field{
+				// 链路标识
+				zap.String("request_id", requestID),
+				zap.String("x_request_id", xRequestID),
+				zap.String("session_id", sessionID),
+				// 网关信息
 				zap.Int("gateway_id", gatewayID),
+				zap.String("gateway_name", gatewayName),
+				// MCP 请求信息
 				zap.String("mcp_server_name", serverName),
 				zap.Int("mcp_server_id", mcpServerID),
 				zap.String("mcp_method", method),
-				zap.String("session_id", sessionID),
-				zap.String("params", params),
-				zap.String("latency", duration.String()),
-				zap.String("response", response),
-				zap.String("request_id", requestID),
-				zap.String("x_request_id", xRequestID),
+				// 调用方信息
 				zap.String("app_code", appCode),
-				zap.String("username", username),
+				zap.String("bk_username", username),
+				zap.String("client_ip", clientIP),
+				zap.String("client_id", clientID),
+				// Tool 特有字段
+				zap.String("tool_name", toolName),
+				// 请求/响应内容
+				zap.String("params", params),
+				zap.String("response", response),
+				// 体积信息
+				zap.Int64("request_body_size", requestBodySize),
+				zap.Int64("response_body_size", responseBodySize),
+				// 性能
+				zap.String("latency", duration.String()),
 			}
 
 			// 仅在 trace_id 非空时附加，避免日志中出现空 trace_id 字段
@@ -168,12 +200,18 @@ func MetricMiddleware(serverName string) mcp.Middleware {
 			hasError := err != nil
 			gatewayName := util.GetGatewayNameFromContext(ctx)
 
-			// 1. MCPRequestTotal: method call count
-			status := "ok"
+			// 1. MCPRequestTotal: method call count with error_code and error (0/1)
+			errorLabel := "0"
+			errorCode := "0"
 			if hasError {
-				status = "error"
+				errorLabel = "1"
+				errorCode = "unknown"
+				var jsonrpcErr *jsonrpc.Error
+				if errors.As(err, &jsonrpcErr) {
+					errorCode = matchErrorCodeName(jsonrpcErr.Code)
+				}
 			}
-			metric.MCPRequestTotal.WithLabelValues(gatewayName, serverName, method, status).Inc()
+			metric.MCPRequestTotal.WithLabelValues(gatewayName, serverName, method, errorCode, errorLabel).Inc()
 
 			// 2. MCPRequestDuration: method call latency (preserve sub-millisecond precision)
 			metric.MCPRequestDuration.WithLabelValues(gatewayName, serverName, method).Observe(
@@ -183,7 +221,7 @@ func MetricMiddleware(serverName string) mcp.Middleware {
 			// 3. MCPToolCallTotal: per-tool breakdown for tools/call
 			if method == "tools/call" {
 				toolName := extractToolName(req)
-				metric.MCPToolCallTotal.WithLabelValues(gatewayName, serverName, toolName, status).Inc()
+				metric.MCPToolCallTotal.WithLabelValues(gatewayName, serverName, toolName, errorCode, errorLabel).Inc()
 			}
 
 			// 4. MCPSessionTotal: increment on successful initialize
@@ -191,13 +229,8 @@ func MetricMiddleware(serverName string) mcp.Middleware {
 				metric.MCPSessionTotal.WithLabelValues(gatewayName, serverName).Inc()
 			}
 
-			// 5. MCPErrorTotal: error count by error code
+			// 5. MCPErrorTotal: error count by error code (reuse errorCode from step 1)
 			if hasError {
-				errorCode := "unknown"
-				var jsonrpcErr *jsonrpc.Error
-				if errors.As(err, &jsonrpcErr) {
-					errorCode = normalizeErrorCode(jsonrpcErr.Code)
-				}
 				metric.MCPErrorTotal.WithLabelValues(gatewayName, serverName, method, errorCode).Inc()
 			}
 
@@ -257,7 +290,8 @@ func AddSessionMetricMiddleware(server *mcp.Server, serverName string) {
 func TracingMiddleware(serverName string) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-			spanName := fmt.Sprintf("mcp.%s", method)
+			// Replace "/" with "." in method names to avoid issues with some trace backends
+			spanName := fmt.Sprintf("mcp.%s", strings.ReplaceAll(method, "/", "."))
 			ctx, span := trace.StartTrace(ctx, spanName)
 			if span != nil {
 				defer span.End()

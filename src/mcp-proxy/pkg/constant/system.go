@@ -55,9 +55,12 @@ const (
 	MCPServerName       CtxKey = "mcp_server_name"
 	GatewayID           CtxKey = "gateway_id"
 	GatewayName         CtxKey = "gateway_name"
+	RequestID           CtxKey = "request_id"
 	XRequestID          CtxKey = "x_request_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
+	ClientIP            CtxKey = "client_ip"
+	ClientID            CtxKey = "client_id"
 )
 
 // BkVirtualAppCodeFormat ...

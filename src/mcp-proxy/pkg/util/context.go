@@ -200,6 +200,39 @@ func SetBkApiTimeout(c *gin.Context, timeout int) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiTimeout, timeout))
 }
 
+// SetClientIP stores the client IP into both gin context and request context.
+func SetClientIP(c *gin.Context) {
+	clientIP := c.ClientIP()
+	c.Set(string(constant.ClientIP), clientIP)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.ClientIP, clientIP))
+	}
+}
+
+// GetClientIPFromContext gets client IP from context.
+func GetClientIPFromContext(ctx context.Context) string {
+	if clientIP, ok := ctx.Value(constant.ClientIP).(string); ok {
+		return clientIP
+	}
+	return ""
+}
+
+// SetClientID stores the client ID into both gin context and request context.
+func SetClientID(c *gin.Context, clientID string) {
+	c.Set(string(constant.ClientID), clientID)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.ClientID, clientID))
+	}
+}
+
+// GetClientIDFromContext gets client ID from context.
+func GetClientIDFromContext(ctx context.Context) string {
+	if clientID, ok := ctx.Value(constant.ClientID).(string); ok {
+		return clientID
+	}
+	return ""
+}
+
 // GetBkApiTimeout returns the timeout duration for the BK API call
 func GetBkApiTimeout(ctx context.Context) time.Duration {
 	// Get the timeout value from the context

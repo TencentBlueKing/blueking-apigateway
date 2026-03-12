@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
@@ -85,6 +86,12 @@ func InitTrace(config config.Tracing) error {
 		tp := trace.NewTracerProvider(traceOptions...)
 		// set  global provider
 		otel.SetTracerProvider(tp)
+		// Set global propagator so trace context (traceparent/tracestate) is injected
+		// into outgoing HTTP requests and extracted from incoming ones.
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		))
 		globalTracer = &Trace{
 			Tracer: tp.Tracer(config.ServiceName),
 			config: config,

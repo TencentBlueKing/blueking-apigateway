@@ -57,14 +57,14 @@ func GetRequestID(c *gin.Context) string {
 
 // GetRequestIDFromContext retrieves the request ID from the context.
 func GetRequestIDFromContext(ctx context.Context) string {
-	// Get the value associated with the RequestIDKey key from the context
-	requestID, ok := ctx.Value(RequestIDKey).(string)
-	// If the value is not a string, return an empty string
-	if !ok {
-		return ""
+	if requestID, ok := ctx.Value(constant.RequestID).(string); ok {
+		return requestID
 	}
-	// Otherwise, return the requestID
-	return requestID
+	// Fallback: also check bare string key for backward compatibility with gin.Context.Set
+	if requestID, ok := ctx.Value(RequestIDKey).(string); ok {
+		return requestID
+	}
+	return ""
 }
 
 // SetRequestID set the request id to context
@@ -73,7 +73,7 @@ func SetRequestID(c *gin.Context, requestID string) {
 	c.Set(RequestIDKey, requestID)
 	if c.Request != nil {
 		c.Request = c.Request.WithContext(
-			context.WithValue(c.Request.Context(), RequestIDKey, requestID))
+			context.WithValue(c.Request.Context(), constant.RequestID, requestID))
 	}
 }
 

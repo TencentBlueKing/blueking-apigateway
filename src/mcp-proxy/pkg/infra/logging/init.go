@@ -81,6 +81,9 @@ func GetLoggerWithContext(ctx context.Context) *zap.SugaredLogger {
 	if xRequestID, ok := ctx.Value(constant.XRequestID).(string); ok && xRequestID != "" {
 		ctxLogger = ctxLogger.With(zap.String("x_request_id", xRequestID))
 	}
+	if username, ok := ctx.Value(constant.BkUsername).(string); ok && username != "" {
+		ctxLogger = ctxLogger.With(zap.String("bk_username", username))
+	}
 	return ctxLogger
 }
 
@@ -100,6 +103,9 @@ func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
 		ctxLogger = ctxLogger.With(zap.String("bk_app_code", appCode))
+	}
+	if username, ok := ctx.Value(constant.BkUsername).(string); ok && username != "" {
+		ctxLogger = ctxLogger.With(zap.String("bk_username", username))
 	}
 	if mcpServerID, ok := ctx.Value(constant.MCPServerID).(int); ok {
 		ctxLogger = ctxLogger.With(zap.Int("mcp_server_id", mcpServerID))

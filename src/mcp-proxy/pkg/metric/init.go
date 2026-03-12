@@ -55,10 +55,10 @@ var (
 	MCPRequestTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "apigateway_mcp_proxy_mcp_requests_total",
-			Help:        "Total number of MCP method calls, partitioned by gateway, server, method and status.",
+			Help:        "Total number of MCP method calls, partitioned by gateway, server, method, error_code and error.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
-		[]string{"gateway_name", "mcp_server_name", "method", "status"},
+		[]string{"gateway_name", "mcp_server_name", "method", "error_code", "error"},
 	)
 
 	// MCPRequestDuration MCP 方法调用耗时分布
@@ -76,10 +76,10 @@ var (
 	MCPToolCallTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "apigateway_mcp_proxy_mcp_tool_calls_total",
-			Help:        "Total number of MCP tools/call invocations, partitioned by gateway, server, tool and status.",
+			Help:        "Total number of MCP tools/call invocations, partitioned by gateway, server, tool and error.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
-		[]string{"gateway_name", "mcp_server_name", "tool_name", "status"},
+		[]string{"gateway_name", "mcp_server_name", "tool_name", "error_code", "error"},
 	)
 
 	// MCPSessionTotal 当前活跃 MCP 会话数（Gauge）
@@ -93,6 +93,8 @@ var (
 	)
 
 	// MCPErrorTotal MCP 错误计数（按错误码分类）
+	// NOTE: 与 MCPRequestTotal{error="1"} 有信息重叠，保留此指标是为了方便在不同 dashboard 中
+	// 直接查询错误分布，无需通过 MCPRequestTotal 的 error label 二次过滤。
 	MCPErrorTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "apigateway_mcp_proxy_mcp_errors_total",

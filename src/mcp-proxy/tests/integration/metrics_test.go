@@ -47,16 +47,35 @@ func fetchMetrics(baseURL string) (string, error) {
 	return string(body), nil
 }
 
-// containsMetricLine checks whether the metrics output contains a line matching the given prefix
+// containsMetricLine checks whether the metrics output contains a line matching the given metric name and labels.
+// It uses exact label key=value matching within the label section of the Prometheus exposition line.
 func containsMetricLine(metricsOutput, metricName string, labels map[string]string) bool {
+	prefix := metricName + "{"
 	for _, line := range strings.Split(metricsOutput, "\n") {
-		if !strings.HasPrefix(line, metricName+"{") {
+		if !strings.HasPrefix(line, prefix) {
 			continue
 		}
+		// Extract the label section between "{" and "}"
+		labelStart := strings.Index(line, "{")
+		labelEnd := strings.Index(line, "}")
+		if labelStart < 0 || labelEnd < 0 || labelEnd <= labelStart {
+			continue
+		}
+		labelSection := line[labelStart+1 : labelEnd]
+
 		match := true
 		for k, v := range labels {
 			expected := fmt.Sprintf(`%s="%s"`, k, v)
-			if !strings.Contains(line, expected) {
+			// Check that the expected label appears as a complete key="value" pair,
+			// bounded by start-of-labels, comma, or end-of-labels
+			found := false
+			for _, part := range strings.Split(labelSection, ",") {
+				if strings.TrimSpace(part) == expected {
+					found = true
+					break
+				}
+			}
+			if !found {
 				match = false
 				break
 			}
@@ -166,13 +185,13 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"mcp_server_name": "test-http-server",
 				"method":          "initialize",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for initialize")
 
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for tools/call")
 		})
 
@@ -223,7 +242,7 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
 				"mcp_server_name": "test-http-server",
 				"tool_name":       "echo",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_tool_calls_total for echo tool")
 		})
 
@@ -262,8 +281,8 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
-				"status":          "error",
-			})).To(BeTrue(), "should have mcp_requests_total with error status for failed tools/call")
+				"error":           "1",
+			})).To(BeTrue(), "should have mcp_requests_total with error for failed tools/call")
 		})
 	})
 
@@ -288,19 +307,19 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"mcp_server_name": "test-sse-server",
 				"method":          "initialize",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for SSE initialize")
 
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"mcp_server_name": "test-sse-server",
 				"method":          "tools/call",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for SSE tools/call")
 
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
 				"mcp_server_name": "test-sse-server",
 				"tool_name":       "echo",
-				"status":          "ok",
+				"error":           "0",
 			})).To(BeTrue(), "should have mcp_tool_calls_total for SSE echo tool")
 
 			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_sessions_active", map[string]string{

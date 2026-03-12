@@ -35,8 +35,10 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cast"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -47,6 +49,29 @@ import (
 	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/util"
 )
+
+// sensitiveHeaderKeys lists header keys whose values must be masked in logs.
+var sensitiveHeaderKeys = map[string]struct{}{
+	constant.BkApiAuthorizationHeaderKey: {},
+	constant.BkGatewayJWTHeaderKey:       {},
+}
+
+// maskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.
+func maskSensitiveHeaders(headerInfo map[string]string) map[string]string {
+	masked := make(map[string]string, len(headerInfo))
+	for k, v := range headerInfo {
+		if _, ok := sensitiveHeaderKeys[k]; ok {
+			if len(v) > 6 {
+				masked[k] = v[:3] + "***" + v[len(v)-3:]
+			} else {
+				masked[k] = "***"
+			}
+		} else {
+			masked[k] = v
+		}
+	}
+	return masked
+}
 
 // MCPProxy ...
 type MCPProxy struct {
@@ -394,22 +419,25 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		defer span.End()
 		span.SetAttributes(
 			semconv.HTTPMethodKey.String(req.Method),
-			semconv.HTTPURLKey.String(req.URL.String()),
+			semconv.HTTPURLKey.String(req.URL.Path),
 			semconv.HTTPHostKey.String(req.Host),
 			attribute.String("mcp.tool_name", t.toolName),
 		)
+		// Inject trace context (W3C traceparent/tracestate) into outgoing HTTP headers
+		// so downstream services can continue the trace.
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 		req = req.WithContext(ctx)
 	}
 
 	// 记录请求日志
 	t.logger.Infow("outgoing request",
 		"app_code", t.appCode,
-		"username", t.username,
+		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
 		"tool", t.toolName,
 		"method", req.Method,
-		"url", req.URL.String(),
+		"url", req.URL.Path,
 		"host", req.Host,
 	)
 
@@ -425,12 +453,12 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		}
 		t.logger.Errorw("outgoing request failed",
 			"app_code", t.appCode,
-			"username", t.username,
+			"bk_username", t.username,
 			"request_id", t.requestID,
 			"x_request_id", t.xRequestID,
 			"tool", t.toolName,
 			"method", req.Method,
-			"url", req.URL.String(),
+			"url", req.URL.Path,
 			"duration", duration,
 			"error", err,
 		)
@@ -447,12 +475,12 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	// 记录响应日志
 	t.logger.Infow("outgoing response",
 		"app_code", t.appCode,
-		"username", t.username,
+		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
 		"tool", t.toolName,
 		"method", req.Method,
-		"url", req.URL.String(),
+		"url", req.URL.Path,
 		"status_code", resp.StatusCode,
 		"duration", duration,
 	)
@@ -531,12 +559,14 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		xRequestID := util.GetXRequestIDFromContext(ctx)
 		appCode := util.GetAppCodeFromContext(ctx)
 		username := util.GetUsernameFromContext(ctx)
+		clientIP := util.GetClientIPFromContext(ctx)
 
-		// 在所有日志中添加 app_code 和 username
+		// 在所有日志中添加 app_code, username 和 client_ip
 		auditLog = auditLog.With(
 			zap.String("tool", toolApiConfig.String()),
 			zap.String("app_code", appCode),
-			zap.String("username", username),
+			zap.String("bk_username", username),
+			zap.String("client_ip", clientIP),
 		)
 		// 仅在 trace_id 非空时附加，避免日志中出现空 trace_id 字段
 		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
@@ -562,6 +592,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		// 创建带日志的 Transport
+		// TODO: 1) 将 http.Transport 提升到 MCPProxy/MCPServer 级别复用，避免每次 tool call 创建新连接池
+		// TODO: 2) InsecureSkipVerify 应通过配置项控制，而非硬编码为 true
 		baseTransport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
@@ -606,9 +638,9 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 
 			// 设置header
 			headers := util.GetBkApiAllowedHeaders(ctx)
-			for key, vlue := range headers {
-				_ = req.SetHeaderParam(key, vlue)
-				headerInfo[key] = vlue
+			for key, value := range headers {
+				_ = req.SetHeaderParam(key, value)
+				headerInfo[key] = value
 			}
 			// 如果没有单独设置 Content-Type，则默认设置为 application/json
 			if _, ok := headers["Content-Type"]; !ok {
@@ -636,6 +668,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 					responseResult := map[string]any{
 						"status_code": response.Code(),
 						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
+						"trace_id":    trace.GetTraceIDFromContext(ctx),
 					}
 					var res map[string]any
 					if e := consumer.Consume(response.Body(), &res); e == nil {
@@ -649,18 +682,27 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				},
 			),
 		}
+		auditLog.Info("call tool request params",
+			zap.Any("header", maskSensitiveHeaders(headerInfo)),
+			zap.Any("query", handlerRequest.QueryParam),
+			zap.Any("path", handlerRequest.PathParam),
+			zap.Any("body", handlerRequest.BodyParam),
+		)
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
-			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
+			auditLog.Error("call tool err", zap.Any("header", maskSensitiveHeaders(headerInfo)), zap.Error(err))
 			if span != nil {
 				span.SetStatus(codes.Error, msg)
 				span.RecordError(err)
 			}
 			// Append trace_id to the error message for traceability
-			if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
-				msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+			// Skip if err is APIError, since responseResult already contains trace_id
+			if _, ok := err.(*runtime.APIError); !ok {
+				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+				}
 			}
 			// nolint:nilerr
 			return &mcp.CallToolResult{
@@ -673,7 +715,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			}, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
-			zap.Any("response", submit), zap.Any("header", headerInfo))
+			zap.Any("response", submit), zap.Any("header", maskSensitiveHeaders(headerInfo)))
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{
 				&mcp.TextContent{
