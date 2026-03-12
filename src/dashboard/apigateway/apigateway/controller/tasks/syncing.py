@@ -41,7 +41,9 @@ logger = logging.getLogger(__name__)
 
 @shared_task(ignore_result=True)
 def distribute_global_resources():
-    """发布全局资源"""
+    """发布全局资源
+    Exact Name: distribute_global_resources_to_data_planes
+    """
     data_planes = DataPlane.objects.get_active_data_planes()
     if not data_planes:
         logger.warning("no active data planes found, skip distribute_global_resources")
@@ -69,7 +71,13 @@ def distribute_global_resources():
 
 @shared_task(ignore_result=True)
 def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, data_plane_id: int):
-    """滚动同步微网关配置，不会生成新的版本"""
+    """滚动同步微网关配置，不会生成新的版本
+    Exact Name: rolling_update_release_from_data_plane
+    # Refactor:
+    # 1. the source is not passed in
+    # 2. create another release history here? why?
+    # 3. is_cli_sync and if release_history is None, two vars for same logic
+    """
     release = Release.objects.get(id=release_id)
 
     is_cli_sync = publish_id == NO_NEED_REPORT_EVENT_PUBLISH_ID
@@ -133,6 +141,7 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
         # has a pre check _pre_publish_check_is_gateway_ready_for_releasing
         # only gateway enable would come here
         # 如果是网关启用，需要更新环境状态
+        # NOTE: 网关启用，只要有一套 dp 发布成功，stage status 就是成功 => 目前是可接受到，只有灰度期间会存在一个网关绑定两个数据面
         if release_history and release_history.source == PublishSourceEnum.GATEWAY_ENABLE.value:
             stage = release.stage
             stage.status = StageStatusEnum.ACTIVE.value
@@ -145,9 +154,13 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, da
 
 
 @shared_task(ignore_result=True)
-def revoke_release(release_id: int, publish_id: int, data_plane_id: int, update_stage_status: bool = True):
+def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
     """删除环境的已发布的资源
+    Exact Name: revoke_release_from_data_plane
+
     while we are doing the revoke, we know we will update the stage status at that time!
+    refactor:
+    1. why the publish_id is DELETE_PUBLISH_ID, make two separate route
     """
     release = Release.objects.get(id=release_id)
 
@@ -195,12 +208,12 @@ def revoke_release(release_id: int, publish_id: int, data_plane_id: int, update_
         PublishEventReporter.report_distribute_config_success(release_history)
         procedure_logger.info("revoke succeeded")
 
-        # NOTE: if multiple data planes are bound to the same gateway-stage, we should not mark the stage as inactive!
+        # NOTE: 如果一个网关绑定多个数据面，这里下架的时候，for loop 下架每个数据面，但是一个成功就会将环境置为 inactive
+        # 目前是可以接受到的，只有灰度期间会存在一个网关绑定两个数据面
         # 修改对应环境状态
-        if update_stage_status:
-            stage = release.stage
-            stage.status = StageStatusEnum.INACTIVE.value
-            stage.save()
+        stage = release.stage
+        stage.status = StageStatusEnum.INACTIVE.value
+        stage.save()
 
     return is_success
 

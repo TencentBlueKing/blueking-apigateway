@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Unbind gateways from one data plane after synchronous revoke"
+    help = "Unbind gateways from one data plane after synchronous revoke. 仅供灰度使用，不应该作为日常运维使用"
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--gateway-names", type=str, default="", help="Gateway names, comma separated")
@@ -104,11 +104,11 @@ class Command(BaseCommand):
         releases = Release.objects.filter(gateway_id=gateway.id).all()
         revoked = True
         for release in releases:
+            # NOTE: publish_id is DELETE_PUBLISH_ID, would not change the stage status
             ok = revoke_release(
                 release_id=release.id,
                 publish_id=DELETE_PUBLISH_ID,
                 data_plane_id=data_plane.id,
-                update_stage_status=False,
             )
             if not ok:
                 revoked = False

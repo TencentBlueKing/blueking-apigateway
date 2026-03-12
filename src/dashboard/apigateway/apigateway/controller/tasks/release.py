@@ -191,6 +191,12 @@ def update_release_data_after_success(
         )
         return
 
+    # at this point, the release is published to one data_plane successfully
+    # its'ok to update the release and stage status here
+    # - release risk: the resource_version is not the newest if two data_plane with different resource_version?
+    # - stage risk: no risk
+
+    # NOTE: here would update the release object each data_plane release
     # update release
     release.resource_version = resource_version
     release.comment = comment

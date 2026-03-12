@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Undeploy (revoke) gateways from a specific data plane without changing stage status or bindings"
+    help = "Undeploy (revoke) gateways from a specific data plane without changing stage status or bindings. 仅供灰度使用，不应该作为日常运维使用"
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--data-plane-name", type=str, required=True, help="Target data plane name")
@@ -91,11 +91,11 @@ class Command(BaseCommand):
 
         all_revoked = True
         for release in releases:
+            # NOTE: publish_id is DELETE_PUBLISH_ID, would not change the stage status
             ok = revoke_release(
                 release_id=release.id,
                 publish_id=DELETE_PUBLISH_ID,
                 data_plane_id=data_plane.id,
-                update_stage_status=False,
             )
             if not ok:
                 all_revoked = False

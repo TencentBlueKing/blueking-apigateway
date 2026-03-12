@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List, Optional, Set
+from typing import List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
@@ -41,25 +41,17 @@ from .hooks import (
 logger = logging.getLogger(__name__)
 
 
-def _filter_data_planes(data_planes, target_data_plane_ids: Optional[Set[int]] = None):
-    if not target_data_plane_ids:
-        return data_planes
-    return [data_plane for data_plane in data_planes if data_plane.id in target_data_plane_ids]
-
-
 def _trigger_rolling_update(
     source: PublishSourceEnum,
     author: str,
     release_list: List[Release],
     is_sync: Optional[bool] = False,
-    target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发网关滚动更新，支持多数据面"""
     has_failure = False
     for release in release_list:
         # Get active data planes for this gateway - must have at least one
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(release.gateway_id)
-        data_planes = _filter_data_planes(data_planes, target_data_plane_ids)
 
         # a gateway should have at least one active data plane. The creation ensure this.
         # skip the gateway_id without active data planes
@@ -74,6 +66,7 @@ def _trigger_rolling_update(
 
         for data_plane in data_planes:
             if source is PublishSourceEnum.CLI_SYNC:
+                # NOTE: this release history is not been saved to db
                 release_history = ReleaseHistory()
                 release_history.source = PublishSourceEnum.CLI_SYNC.value
                 release_history.data_plane = data_plane
@@ -122,14 +115,12 @@ def _trigger_revoke_disable(
     release_list: List[Release],
     is_sync: Optional[bool] = False,
     user_credentials: Optional[UserCredentials] = None,
-    target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发停用/下架发布，支持多数据面"""
     has_failure = False
     for release in release_list:
         # Get active data planes for this gateway - must have at least one
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(release.gateway_id)
-        data_planes = _filter_data_planes(data_planes, target_data_plane_ids)
 
         if not data_planes:
             logger.error(
@@ -182,14 +173,12 @@ def _trigger_revoke_disable(
 def _trigger_revoke_deleting(
     release_list: List[Release],
     is_sync: Optional[bool] = False,
-    target_data_plane_ids: Optional[Set[int]] = None,
 ):
     """触发删除发布，支持多数据面"""
     has_failure = False
     for release in release_list:
         # Get all data planes for this gateway (including inactive ones for cleanup)
         data_planes = GatewayDataPlaneBinding.objects.get_gateway_data_planes(release.gateway_id)
-        data_planes = _filter_data_planes(data_planes, target_data_plane_ids)
 
         if not data_planes:
             logger.error(
@@ -225,7 +214,6 @@ def trigger_gateway_publish(
     stage_id: Optional[int] = None,
     is_sync: Optional[bool] = False,
     user_credentials: Optional[UserCredentials] = None,
-    target_data_plane_ids: Optional[List[int]] = None,
 ):
     """触发网关发布
     source: 发布来源
@@ -235,6 +223,8 @@ def trigger_gateway_publish(
     is_sync: 同步异步
     user_credentials: 用户凭证
     target_data_plane_ids: 指定发布的数据面 ID 列表，不传则按默认规则发布到全部绑定数据面
+
+    effect for all data_planes bound to the gateway
     """
     trigger_publish_type = PublishSourceTriggerPublishTypeMapping[source]
     if not trigger_publish_type:
@@ -250,8 +240,6 @@ def trigger_gateway_publish(
     if not release_list:
         return True
 
-    target_data_plane_id_set = set(target_data_plane_ids or [])
-
     # rolling update release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_ROLLING_UPDATE_RELEASE:
         return _trigger_rolling_update(
@@ -259,7 +247,6 @@ def trigger_gateway_publish(
             author,
             release_list,
             is_sync=is_sync,
-            target_data_plane_ids=target_data_plane_id_set,
         )
 
     # revoke disable release
@@ -270,12 +257,11 @@ def trigger_gateway_publish(
             release_list,
             is_sync=is_sync,
             user_credentials=user_credentials,
-            target_data_plane_ids=target_data_plane_id_set,
         )
 
     # revoke delete release
     if trigger_publish_type == TriggerPublishTypeEnum.TRIGGER_REVOKE_DELETE_RELEASE:
-        return _trigger_revoke_deleting(release_list, is_sync=is_sync, target_data_plane_ids=target_data_plane_id_set)
+        return _trigger_revoke_deleting(release_list, is_sync=is_sync)
 
     # do nothing
     return None

@@ -12,8 +12,8 @@ from apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways i
 from apigateway.apps.data_plane.management.commands.unbind_gateways_from_data_plane import Command as UnbindCommand
 from apigateway.apps.data_plane.management.commands.undeploy_data_plane_gateways import Command as UndeployCommand
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.controller.constants import DELETE_PUBLISH_ID
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
 
 pytestmark = pytest.mark.django_db
@@ -106,9 +106,9 @@ class TestCreateDataPlaneCommand:
 
 
 class TestBindGatewaysToDataPlaneCommand:
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_success(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_success(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
 
@@ -126,12 +126,13 @@ class TestBindGatewaysToDataPlaneCommand:
 
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_publish_failed_should_rollback_binding(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = False
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_publish_failed_should_rollback_binding(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = False
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage)
 
         cmd = BindCommand()
         cmd.handle(
@@ -147,8 +148,8 @@ class TestBindGatewaysToDataPlaneCommand:
 
         assert not GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_already_bound_skipped(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_already_bound_skipped(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
@@ -165,11 +166,11 @@ class TestBindGatewaysToDataPlaneCommand:
             dry_run=False,
         )
 
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).count() == 1
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_dry_run_no_binding_created(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_dry_run_no_binding_created(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
 
@@ -186,7 +187,7 @@ class TestBindGatewaysToDataPlaneCommand:
         )
 
         assert not GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
     def test_bind_data_plane_not_found_raises(self, tmp_path):
         gateway = G(Gateway, name="gw-a")
@@ -220,8 +221,8 @@ class TestBindGatewaysToDataPlaneCommand:
                 dry_run=False,
             )
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_skip_gateway_names(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_skip_gateway_names(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
 
@@ -238,10 +239,10 @@ class TestBindGatewaysToDataPlaneCommand:
         )
 
         assert not GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_inactive_gateway_no_publish(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_inactive_gateway_no_publish(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.INACTIVE.value)
 
@@ -258,10 +259,10 @@ class TestBindGatewaysToDataPlaneCommand:
         )
 
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_active_gateway_no_active_stages_no_publish(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_active_gateway_no_active_stages_no_publish(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.INACTIVE.value)
@@ -279,12 +280,12 @@ class TestBindGatewaysToDataPlaneCommand:
         )
 
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_multiple_gateways_mixed_results(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_multiple_gateways_mixed_results(self, mock_rolling_update_release, tmp_path):
         """One gateway succeeds, another is skipped (already bound)."""
-        mock_trigger_gateway_publish.return_value = True
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gw_a = G(Gateway, name="gw-a")
         gw_b = G(Gateway, name="gw-b")
@@ -305,12 +306,13 @@ class TestBindGatewaysToDataPlaneCommand:
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gw_a.id, data_plane_id=data_plane.id).exists()
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gw_b.id, data_plane_id=data_plane.id).exists()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_exception_during_bind_counted_as_failed(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.side_effect = Exception("unexpected error")
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_exception_during_bind_counted_as_failed(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.side_effect = Exception("unexpected error")
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage)
 
         cmd = BindCommand()
         cmd.handle(
@@ -327,9 +329,9 @@ class TestBindGatewaysToDataPlaneCommand:
         log_content = (tmp_path / "bind.log").read_text()
         assert '"result": "failed"' in log_content
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_with_gateway_names_file(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_with_gateway_names_file(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
 
@@ -366,13 +368,15 @@ class TestBindGatewaysToDataPlaneCommand:
                 dry_run=False,
             )
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_active_gateway_multiple_stages_publish_all(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_active_gateway_multiple_stages_publish_all(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         stage1 = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
         stage2 = G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage1)
+        G(Release, gateway=gateway, stage=stage2)
 
         cmd = BindCommand()
         cmd.handle(
@@ -386,17 +390,19 @@ class TestBindGatewaysToDataPlaneCommand:
             dry_run=False,
         )
 
-        assert mock_trigger_gateway_publish.call_count == 2
+        assert mock_rolling_update_release.call_count == 2
         assert GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_second_stage_publish_fails_rollback(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_second_stage_publish_fails_rollback(self, mock_rolling_update_release, tmp_path):
         """First stage publishes ok, second fails -> binding should be rolled back."""
-        mock_trigger_gateway_publish.side_effect = [True, False]
+        mock_rolling_update_release.side_effect = [True, False]
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        stage1 = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage2 = G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage1)
+        G(Release, gateway=gateway, stage=stage2)
 
         cmd = BindCommand()
         cmd.handle(
@@ -412,8 +418,8 @@ class TestBindGatewaysToDataPlaneCommand:
 
         assert not GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
 
-    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.trigger_gateway_publish")
-    def test_bind_skip_gateway_names_file(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane.rolling_update_release")
+    def test_bind_skip_gateway_names_file(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a")
 
@@ -433,7 +439,7 @@ class TestBindGatewaysToDataPlaneCommand:
         )
 
         assert not GatewayDataPlaneBinding.objects.filter(gateway_id=gateway.id, data_plane_id=data_plane.id).exists()
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
 
 class TestUnbindGatewaysFromDataPlaneCommand:
@@ -713,12 +719,13 @@ class TestUnbindGatewaysFromDataPlaneCommand:
 
 
 class TestDeployDataPlaneGatewaysCommand:
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_all_success(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_all_success(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        release = G(Release, gateway=gateway, stage=stage)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
 
         cmd = DeployCommand()
@@ -733,13 +740,11 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        mock_trigger_gateway_publish.assert_called_once_with(
-            PublishSourceEnum.CLI_SYNC,
-            author="tester",
+        mock_rolling_update_release.assert_called_once_with(
             gateway_id=gateway.id,
-            stage_id=Stage.objects.get(gateway=gateway).id,
-            is_sync=True,
-            target_data_plane_ids=[data_plane.id],
+            publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID,
+            release_id=release.id,
+            data_plane_id=data_plane.id,
         )
 
     def test_deploy_with_unbound_gateway_name_raises(self, tmp_path):
@@ -760,8 +765,8 @@ class TestDeployDataPlaneGatewaysCommand:
                 dry_run=False,
             )
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_dry_run_no_publish(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_dry_run_no_publish(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
@@ -779,10 +784,10 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=True,
         )
 
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_inactive_gateway_skipped(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_inactive_gateway_skipped(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.INACTIVE.value)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
@@ -799,12 +804,12 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
         log_content = (tmp_path / "deploy.log").read_text()
         assert '"result": "skipped"' in log_content
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_no_active_stages_skipped(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_no_active_stages_skipped(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.INACTIVE.value)
@@ -822,16 +827,17 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
         log_content = (tmp_path / "deploy.log").read_text()
         assert '"result": "skipped"' in log_content
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_publish_fails(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = False
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_publish_fails(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = False
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
 
         cmd = DeployCommand()
@@ -849,14 +855,16 @@ class TestDeployDataPlaneGatewaysCommand:
         log_content = (tmp_path / "deploy.log").read_text()
         assert '"result": "failed"' in log_content
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_specific_gateways_success(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_specific_gateways_success(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gw_a = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         gw_b = G(Gateway, name="gw-b", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gw_a, name="prod", status=StageStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gw_b, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage_a = G(Stage, gateway=gw_a, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage_b = G(Stage, gateway=gw_b, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gw_a, stage=stage_a)
+        G(Release, gateway=gw_b, stage=stage_b)
         G(GatewayDataPlaneBinding, gateway=gw_a, data_plane=data_plane)
         G(GatewayDataPlaneBinding, gateway=gw_b, data_plane=data_plane)
 
@@ -872,12 +880,12 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        assert mock_trigger_gateway_publish.call_count == 1
-        call_kwargs = mock_trigger_gateway_publish.call_args
+        assert mock_rolling_update_release.call_count == 1
+        call_kwargs = mock_rolling_update_release.call_args
         assert call_kwargs[1]["gateway_id"] == gw_a.id
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_skip_gateway_names(self, mock_trigger_gateway_publish, tmp_path):
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_skip_gateway_names(self, mock_rolling_update_release, tmp_path):
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
         G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
@@ -895,7 +903,7 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        mock_trigger_gateway_publish.assert_not_called()
+        mock_rolling_update_release.assert_not_called()
         log_content = (tmp_path / "deploy.log").read_text()
         assert '"reason": "skipped_by_argument"' in log_content
 
@@ -929,12 +937,13 @@ class TestDeployDataPlaneGatewaysCommand:
                 dry_run=False,
             )
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_exception_counted_as_failed(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.side_effect = Exception("unexpected error")
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_exception_counted_as_failed(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.side_effect = Exception("unexpected error")
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
 
         cmd = DeployCommand()
@@ -984,13 +993,15 @@ class TestDeployDataPlaneGatewaysCommand:
                 dry_run=False,
             )
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_multiple_stages_all_published(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.return_value = True
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_multiple_stages_all_published(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.return_value = True
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        stage1 = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage2 = G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage1)
+        G(Release, gateway=gateway, stage=stage2)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
 
         cmd = DeployCommand()
@@ -1005,15 +1016,17 @@ class TestDeployDataPlaneGatewaysCommand:
             dry_run=False,
         )
 
-        assert mock_trigger_gateway_publish.call_count == 2
+        assert mock_rolling_update_release.call_count == 2
 
-    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.trigger_gateway_publish")
-    def test_deploy_second_stage_fails_marks_failed(self, mock_trigger_gateway_publish, tmp_path):
-        mock_trigger_gateway_publish.side_effect = [True, False]
+    @patch("apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways.rolling_update_release")
+    def test_deploy_second_stage_fails_marks_failed(self, mock_rolling_update_release, tmp_path):
+        mock_rolling_update_release.side_effect = [True, False]
         data_plane = G(DataPlane, name="plane-a")
         gateway = G(Gateway, name="gw-a", status=GatewayStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
-        G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        stage1 = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage2 = G(Stage, gateway=gateway, name="stag", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=gateway, stage=stage1)
+        G(Release, gateway=gateway, stage=stage2)
         G(GatewayDataPlaneBinding, gateway=gateway, data_plane=data_plane)
 
         cmd = DeployCommand()
@@ -1057,7 +1070,6 @@ class TestUndeployDataPlaneGatewaysCommand:
             release_id=release.id,
             publish_id=DELETE_PUBLISH_ID,
             data_plane_id=data_plane.id,
-            update_stage_status=False,
         )
 
     def test_undeploy_with_unbound_gateway_name_raises(self, tmp_path):

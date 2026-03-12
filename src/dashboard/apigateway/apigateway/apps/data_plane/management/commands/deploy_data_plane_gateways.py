@@ -25,15 +25,16 @@ from apigateway.apps.data_plane.management.commands.gateway_data_plane_command_u
     parse_names_from_file,
 )
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Stage
+from apigateway.controller.constants import NO_NEED_REPORT_EVENT_PUBLISH_ID
+from apigateway.controller.tasks.syncing import rolling_update_release
+from apigateway.core.constants import StageStatusEnum
+from apigateway.core.models import Gateway, Release, Stage
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Deploy (publish) gateways bound to a specific data plane"
+    help = "Deploy (publish) gateways bound to a specific data plane. 仅供灰度使用，不应该作为日常运维使用"
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--data-plane-name", type=str, required=True, help="Target data plane name")
@@ -99,16 +100,19 @@ class Command(BaseCommand):
 
         publish_to_all_stages_success = True
         for stage in stages:
-            # trigger_gateway_publish handles inactive gateway/stage gracefully:
-            # - inactive gateways or stages are skipped with a warning
-            # - gateways with no releases are treated as success (nothing to publish)
-            ok = trigger_gateway_publish(
-                PublishSourceEnum.CLI_SYNC,
-                author=operator,
+            release = Release.objects.filter(gateway_id=gateway.id, stage_id=stage.id).first()
+            if not release:
+                self.stdout.write(f"gateway={gateway.name} stage={stage.name} has no release, skipped publish")
+                # NOTE: should not mark as failed, it ok for some stage has no release
+                continue
+
+            # NOTE: publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID, would not change the stage status
+            # only update release.updated_time and release.updated_by
+            ok = rolling_update_release(
                 gateway_id=gateway.id,
-                stage_id=stage.id,
-                is_sync=True,
-                target_data_plane_ids=[data_plane.id],
+                publish_id=NO_NEED_REPORT_EVENT_PUBLISH_ID,
+                release_id=release.id,
+                data_plane_id=data_plane.id,
             )
             if not ok:
                 self.stdout.write(
