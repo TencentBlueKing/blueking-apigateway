@@ -245,6 +245,63 @@ var _ = Describe("Middleware", func() {
 		})
 	})
 
+	Describe("TracingMiddleware", func() {
+		It("should not panic and return result when tracing is not initialized", func() {
+			middleware := mcppkg.TracingMiddleware(serverName)
+
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+
+			result, err := handler(ctx, "tools/list", nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(successResult))
+		})
+
+		It("should propagate errors from next handler", func() {
+			middleware := mcppkg.TracingMiddleware(serverName)
+			expectedErr := errors.New("handler error")
+
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return nil, expectedErr
+			})
+
+			result, err := handler(ctx, "tools/call", nil)
+			Expect(err).To(MatchError(expectedErr))
+			Expect(result).To(BeNil())
+		})
+
+		It("should propagate jsonrpc errors from next handler", func() {
+			middleware := mcppkg.TracingMiddleware(serverName)
+			expectedErr := &jsonrpc.Error{
+				Code:    jsonrpc.CodeMethodNotFound,
+				Message: "method not found",
+			}
+
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return nil, expectedErr
+			})
+
+			result, err := handler(ctx, "tools/call", nil)
+			Expect(err).To(MatchError(expectedErr))
+			Expect(result).To(BeNil())
+		})
+
+		It("should pass correct method to next handler", func() {
+			middleware := mcppkg.TracingMiddleware(serverName)
+			var receivedMethod string
+
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				receivedMethod = method
+				return successResult, nil
+			})
+
+			_, err := handler(ctx, "initialize", nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(receivedMethod).To(Equal("initialize"))
+		})
+	})
+
 	Describe("extractToolName", func() {
 		It("should return empty string for nil request", func() {
 			name := mcppkg.ExtractToolNameForTest(nil)

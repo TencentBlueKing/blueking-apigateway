@@ -35,10 +35,16 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cast"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/logging"
+	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/util"
 )
 
@@ -378,6 +384,23 @@ type loggingTransport struct {
 func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 
+	// Start a trace span for the outgoing HTTP request (only when MCP tracing is enabled)
+	ctx := req.Context()
+	var span oteltrace.Span
+	if config.G != nil && config.G.Tracing.McpAPIEnabled() {
+		ctx, span = trace.StartTrace(ctx, "mcp.upstream_http")
+	}
+	if span != nil {
+		defer span.End()
+		span.SetAttributes(
+			semconv.HTTPMethodKey.String(req.Method),
+			semconv.HTTPURLKey.String(req.URL.String()),
+			semconv.HTTPHostKey.String(req.Host),
+			attribute.String("mcp.tool_name", t.toolName),
+		)
+		req = req.WithContext(ctx)
+	}
+
 	// 记录请求日志
 	t.logger.Infow("outgoing request",
 		"app_code", t.appCode,
@@ -396,6 +419,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	duration := time.Since(start)
 
 	if err != nil {
+		if span != nil {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+		}
 		t.logger.Errorw("outgoing request failed",
 			"app_code", t.appCode,
 			"username", t.username,
@@ -408,6 +435,13 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			"error", err,
 		)
 		return nil, err
+	}
+
+	if span != nil {
+		span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
+		if resp.StatusCode >= 400 {
+			span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", resp.StatusCode))
+		}
 	}
 
 	// 记录响应日志
@@ -426,9 +460,72 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, nil
 }
 
+// setHandlerRequestParams sets header, query, path and body parameters from HandlerRequest onto the ClientRequest.
+func setHandlerRequestParams(
+	req runtime.ClientRequest,
+	handlerRequest *HandlerRequest,
+	headerInfo map[string]string,
+	auditLog *zap.Logger,
+) error {
+	if handlerRequest.HeaderParam != nil {
+		for k, v := range handlerRequest.HeaderParam {
+			val := fmt.Sprintf("%v", v)
+			if err := req.SetHeaderParam(k, val); err != nil {
+				auditLog.Error("set header param err", zap.String(k, val), zap.Error(err))
+				return err
+			}
+			headerInfo[k] = val
+		}
+	}
+	if handlerRequest.QueryParam != nil {
+		for k, v := range handlerRequest.QueryParam {
+			val := fmt.Sprintf("%v", v)
+			if err := req.SetQueryParam(k, val); err != nil {
+				auditLog.Error("set query param err", zap.String(k, val), zap.Error(err))
+				return err
+			}
+		}
+	}
+	if handlerRequest.PathParam != nil {
+		for k, v := range handlerRequest.PathParam {
+			val := fmt.Sprintf("%v", v)
+			if err := req.SetPathParam(k, val); err != nil {
+				auditLog.Error("set path param err", zap.String(k, val), zap.Error(err))
+				return err
+			}
+		}
+	}
+	if handlerRequest.BodyParam != nil {
+		if err := req.SetBodyParam(handlerRequest.BodyParam); err != nil {
+			auditLog.Error("set body param err", zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
+			return err
+		}
+	}
+	return nil
+}
+
 func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		// Start a trace span for the actual upstream tool invocation (only when MCP tracing is enabled).
+		// NOTE: This is intentionally separate from TracingMiddleware's "mcp.tools/call" span:
+		//   - TracingMiddleware spans cover the MCP protocol layer (request/response lifecycle).
+		//   - This span covers the actual upstream HTTP call to the backend API, providing
+		//     tool-specific attributes (method, url, host) for fine-grained observability.
+		var span oteltrace.Span
+		if config.G != nil && config.G.Tracing.McpAPIEnabled() {
+			ctx, span = trace.StartTrace(ctx, fmt.Sprintf("mcp.tool.%s", toolApiConfig.Name))
+		}
+		if span != nil {
+			defer span.End()
+			span.SetAttributes(
+				attribute.String("mcp.tool_name", toolApiConfig.Name),
+				attribute.String("mcp.tool_method", toolApiConfig.Method),
+				attribute.String("mcp.tool_url", toolApiConfig.Url),
+				attribute.String("mcp.tool_host", toolApiConfig.Host),
+			)
+		}
+
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
 		requestID := util.GetRequestIDFromContext(ctx)
 		xRequestID := util.GetXRequestIDFromContext(ctx)
@@ -441,24 +538,28 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			zap.String("app_code", appCode),
 			zap.String("username", username),
 		)
+		// 仅在 trace_id 非空时附加，避免日志中出现空 trace_id 字段
+		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+			auditLog = auditLog.With(zap.String("trace_id", traceID))
+		}
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
 			auditLog.Error("sign inner jwt err", zap.Error(err))
-			return nil, fmt.Errorf("sign inner jwt failed: %w", err)
+			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
 		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
 			auditLog.Error("marshal arguments err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
-			return nil, err
+			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		err = json.Unmarshal(argsBytes, &handlerRequest)
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
 				string(argsBytes)), zap.Error(err))
-			return nil, err
+			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		// 创建带日志的 Transport
 		baseTransport := &http.Transport{
@@ -515,45 +616,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				_ = req.SetHeaderParam("Content-Type", "application/json")
 			}
 
-			if handlerRequest.HeaderParam != nil {
-				for k, v := range handlerRequest.HeaderParam {
-					err = req.SetHeaderParam(k, fmt.Sprintf("%v", v))
-					if err != nil {
-						auditLog.Error("set header param err", zap.String(k,
-							fmt.Sprintf("%v", v)), zap.Error(err))
-						return err
-					}
-					headerInfo[k] = fmt.Sprintf("%v", v)
-				}
-			}
-			if handlerRequest.QueryParam != nil {
-				for k, v := range handlerRequest.QueryParam {
-					err = req.SetQueryParam(k, fmt.Sprintf("%v", v)) // 使用 SetQueryParam 方法设置查询参数
-					if err != nil {
-						auditLog.Error("set query param err", zap.String(k, fmt.Sprintf("%v", v)),
-							zap.Error(err))
-						return err
-					}
-				}
-			}
-
-			if handlerRequest.PathParam != nil {
-				for k, v := range handlerRequest.PathParam {
-					err = req.SetPathParam(k, fmt.Sprintf("%v", v))
-					if err != nil {
-						auditLog.Error("set path param err",
-							zap.String(k, fmt.Sprintf("%v", v)), zap.Error(err))
-						return err
-					}
-				}
-			}
-			if handlerRequest.BodyParam != nil {
-				err = req.SetBodyParam(handlerRequest.BodyParam)
-				if err != nil {
-					auditLog.Error("set body param err",
-						zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
-					return err
-				}
+			if err = setHandlerRequestParams(req, &handlerRequest, headerInfo, auditLog); err != nil {
+				return err
 			}
 			return nil
 		})
@@ -563,6 +627,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			PathPattern: toolApiConfig.Url,
 			Params:      requestParam,
 			Client:      client,
+			Context:     ctx,
 			Reader: runtime.ClientResponseReaderFunc(
 				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 					if response.Body() != nil {
@@ -589,6 +654,14 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		if err != nil {
 			msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
 			auditLog.Error("call tool err", zap.Any("header", headerInfo), zap.Error(err))
+			if span != nil {
+				span.SetStatus(codes.Error, msg)
+				span.RecordError(err)
+			}
+			// Append trace_id to the error message for traceability
+			if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+				msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+			}
 			// nolint:nilerr
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{

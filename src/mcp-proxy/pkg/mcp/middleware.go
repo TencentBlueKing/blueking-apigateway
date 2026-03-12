@@ -29,10 +29,13 @@ import (
 	"github.com/TencentBlueKing/gopkg/stringx"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
+	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/metric"
 	"mcp_proxy/pkg/util"
 )
@@ -106,6 +109,9 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 				}
 			}
 
+			// trace_id 来自 HTTP 层（otelgin middleware）注入的 span，与 TracingMiddleware 属于同一条 trace
+			traceID := trace.GetTraceIDFromContext(ctx)
+
 			fields := []zap.Field{
 				zap.Int("gateway_id", gatewayID),
 				zap.String("mcp_server_name", serverName),
@@ -119,6 +125,11 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 				zap.String("x_request_id", xRequestID),
 				zap.String("app_code", appCode),
 				zap.String("username", username),
+			}
+
+			// 仅在 trace_id 非空时附加，避免日志中出现空 trace_id 字段
+			if traceID != "" {
+				fields = append(fields, zap.String("trace_id", traceID))
 			}
 
 			if hasError {
@@ -239,4 +250,68 @@ func SessionMetricMiddleware(serverName string) mcp.Middleware {
 // AddSessionMetricMiddleware adds session metric middleware to the MCP server.
 func AddSessionMetricMiddleware(server *mcp.Server, serverName string) {
 	server.AddReceivingMiddleware(SessionMetricMiddleware(serverName))
+}
+
+// TracingMiddleware returns a middleware that creates OpenTelemetry spans for MCP method calls.
+// Each span carries the MCP method, server name, gateway info, session ID, and error details.
+func TracingMiddleware(serverName string) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			spanName := fmt.Sprintf("mcp.%s", method)
+			ctx, span := trace.StartTrace(ctx, spanName)
+			if span != nil {
+				defer span.End()
+
+				// Set common attributes
+				span.SetAttributes(
+					attribute.String("mcp.server_name", serverName),
+					attribute.String("mcp.method", method),
+				)
+
+				// Add context attributes
+				if gatewayName := util.GetGatewayNameFromContext(ctx); gatewayName != "" {
+					span.SetAttributes(attribute.String("mcp.gateway_name", gatewayName))
+				}
+				if requestID := util.GetRequestIDFromContext(ctx); requestID != "" {
+					span.SetAttributes(attribute.String("mcp.request_id", requestID))
+				}
+				if xRequestID := util.GetXRequestIDFromContext(ctx); xRequestID != "" {
+					span.SetAttributes(attribute.String("mcp.x_request_id", xRequestID))
+				}
+
+				// Add session ID
+				if req != nil {
+					if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+						span.SetAttributes(attribute.String("mcp.session_id", ss.ID()))
+					}
+				}
+
+				// For tools/call, add tool name
+				if method == "tools/call" {
+					toolName := extractToolName(req)
+					if toolName != "" {
+						span.SetAttributes(attribute.String("mcp.tool_name", toolName))
+					}
+				}
+			}
+
+			result, err := next(ctx, method, req)
+
+			if span != nil && err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				span.RecordError(err)
+				var jsonrpcErr *jsonrpc.Error
+				if errors.As(err, &jsonrpcErr) {
+					span.SetAttributes(attribute.Int64("mcp.error_code", jsonrpcErr.Code))
+				}
+			}
+
+			return result, err
+		}
+	}
+}
+
+// AddTracingMiddleware adds tracing middleware to the MCP server.
+func AddTracingMiddleware(server *mcp.Server, serverName string) {
+	server.AddReceivingMiddleware(TracingMiddleware(serverName))
 }

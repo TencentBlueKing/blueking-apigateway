@@ -166,6 +166,10 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				AddLoggingMiddleware(mcpServer.GetServer(), server.Name)
 				AddMetricMiddleware(mcpServer.GetServer(), server.Name)
 				AddSessionMetricMiddleware(mcpServer.GetServer(), server.Name)
+				// Add tracing middleware if MCP tracing is enabled
+				if config.G.Tracing.McpAPIEnabled() {
+					AddTracingMiddleware(mcpServer.GetServer(), server.Name)
+				}
 			}
 			// 加载并注册 Prompts
 			prompts := loadMCPServerPrompts(ctx, server.ID)

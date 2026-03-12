@@ -123,6 +123,35 @@ func StartTrace(ctx context.Context, name string) (context.Context, tc.Span) {
 	}
 }
 
+// GetTraceIDFromContext extracts the trace ID from the context.
+// Returns an empty string if tracing is not enabled or no span exists in the context.
+func GetTraceIDFromContext(ctx context.Context) string {
+	span := tc.SpanFromContext(ctx)
+	if span == nil {
+		return ""
+	}
+	sc := span.SpanContext()
+	if !sc.TraceID().IsValid() {
+		return ""
+	}
+	return sc.TraceID().String()
+}
+
+// WrapErrorWithTraceID wraps an error with trace_id if available in the context.
+// NOTE: The returned error preserves the original error chain via %w, so callers
+// can still use errors.Is / errors.As on the result. The appended "(trace_id=...)"
+// text appears only in the error message string.
+func WrapErrorWithTraceID(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+	traceID := GetTraceIDFromContext(ctx)
+	if traceID == "" {
+		return err
+	}
+	return fmt.Errorf("%w (trace_id=%s)", err, traceID)
+}
+
 // getTraceSampler get the sampler strategy
 func getTraceSampler(samplerStrategy string, ratio float64) trace.TracerProviderOption {
 	switch samplerStrategy {
