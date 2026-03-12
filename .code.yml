@@ -1,0 +1,9 @@
+source:
+  test_source:
+    # the busted and nginx tests
+    filepath_regex: [".*/src/dashboard/apigateway/apigateway/tests/.*", ".*/src/core-api/docs/.*", ".*/src/mcp-proxy/tests/.*"]
+  auto_generate_source:
+    filepath_regex: [".*/src/mcp-proxy/pkg/repo/.*"]
+  third_party_source:
+    # this is the submodule of official apache/apisix repo
+    filepath_regex: [".*/src/esb/.*"]
