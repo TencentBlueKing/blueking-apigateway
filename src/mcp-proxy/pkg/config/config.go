@@ -150,6 +150,7 @@ type Tracing struct {
 type Instrument struct {
 	GinAPI bool
 	DbAPI  bool
+	McpAPI bool
 }
 
 // McpServer ...
@@ -261,6 +262,11 @@ func (t Tracing) GinAPIEnabled() bool {
 // DBAPIEnabled get db api trace switch
 func (t Tracing) DBAPIEnabled() bool {
 	return t.Enable && t.Instrument.DbAPI
+}
+
+// McpAPIEnabled get mcp api trace switch
+func (t Tracing) McpAPIEnabled() bool {
+	return t.Enable && t.Instrument.McpAPI
 }
 
 // ValidateTLS 验证TLS配置

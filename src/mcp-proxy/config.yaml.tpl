@@ -70,6 +70,7 @@ tracing:
   instrument:
     ginAPI: true
     dbAPI: true
+    mcpAPI: true
 
 ## config for pprof
 pprof:
