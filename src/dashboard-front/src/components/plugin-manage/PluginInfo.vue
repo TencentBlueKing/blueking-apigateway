@@ -173,6 +173,7 @@
             'fault-injection',
             'request-validation',
             'api-breaker',
+            'bk-traffic-label',
           ].includes(choosePlugin)"
         >
           <Component
@@ -290,6 +291,7 @@ import {
 import schemaPluginFormCnJson from '@/json/schemaPluginFormCn.json';
 import schemaPluginFormEnJson from '@/json/schemaPluginFormEn.json';
 import ProxyCacheForm from '@/components/plugin-form/proxy-cache/Index.vue';
+import BkTrafficLabel from '@/components/plugin-form/bk-traffic-label/Index.vue';
 import BkUserRestriction from '@/components/plugin-form/bk-user-restriction/Index.vue';
 import BkRequestBodyLimit from '@/components/plugin-form/bk-request-body-limit/Index.vue';
 import BkAccessTokenSource from '@/components/plugin-form/bk-access-token-source/Index.vue';
@@ -382,6 +384,7 @@ const pluginFormCompMap = {
   'api-breaker': ApiBreaker,
   'bk-rate-limit': BkRateLimit,
   'bk-cors': BkCors,
+  'bk-traffic-label': BkTrafficLabel,
 };
 
 const dynamicFormPlugin = ['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'];
@@ -480,6 +483,7 @@ const handleAdd = async () => {
       'fault-injection',
       'request-validation',
       'api-breaker',
+      'bk-traffic-label',
       ...dynamicFormPlugin,
     ].includes(choosePlugin.value)) {
       if (isDynamicFormPlugin.value) {

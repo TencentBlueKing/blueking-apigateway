@@ -98,6 +98,7 @@ export const PLUGIN_ICONS = [
   'response-rewrite', // 响应重写插件
   'serverless', // 无服务器插件
   'user-restriction', // 用户限制插件
+  'bk-traffic-label', // 流量染色插件
 ];
 
 // 插件图表列表 - 小号图表
@@ -107,7 +108,6 @@ export const PLUGIN_ICONS_MIN = [
   'bk-opentelemetry',
   'bk-query-string-rewrite',
   'proxy-cache',
-  'traffic-label',
   'bk-request-body-limit',
   'bk-user-restriction',
   'bk-username-required',
