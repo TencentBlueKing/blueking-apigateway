@@ -21,6 +21,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
@@ -35,6 +36,75 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    @pytest.mark.parametrize(
+        "gray_stage, expected_count",
+        [
+            ("start", 2),
+            ("done", 1),
+            ("not_start", 1),
+        ],
+    )
+    def test_gateway_sync_with_empty_data_planes_use_sync_rule_for_te_bp_gateway(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        disable_app_permission,
+        default_data_plane,
+        gray_stage,
+        expected_count,
+    ):
+        settings.EDITION = "te"
+        settings.BK_PLUGINS_DATA_PLANE_NAME = "bp"
+        settings.BK_PLUGINS_DATA_PLANE_GRAY_STAGE = gray_stage
+        bp_data_plane = G(DataPlane, name="bp")
+        mock_saver_cls = mocker.patch("apigateway.apis.v2.sync.views.GatewaySaver")
+        mock_saver_cls.return_value.save.return_value = fake_gateway
+
+        gateway_name = "bp-sync-gateway"
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data={
+                "description": "desc",
+                "is_public": True,
+                "allow_delete_sensitive_params": False,
+            },
+            app=mocker.MagicMock(app_code="foo"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result.get("error") is None
+        data_plane_ids = mock_saver_cls.call_args.kwargs["data_plane_ids"]
+        assert len(data_plane_ids) == expected_count
+        if gray_stage == "done":
+            assert set(data_plane_ids) == {bp_data_plane.id}
+        elif gray_stage == "start":
+            assert set(data_plane_ids) == {default_data_plane.id, bp_data_plane.id}
+        else:
+            assert set(data_plane_ids) == {default_data_plane.id}
+
+    def test_gateway_sync_with_nonexistent_data_planes_returns_error(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={
+                "description": "desc",
+                "is_public": True,
+                "data_planes": ["not-exists", "default"],
+            },
+            app=mocker.MagicMock(app_code="foo"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 400
+        assert "not-exists" in str(result["error"])
+
     def test_mcp_server_sync_without_release(
         self, request_view, fake_gateway, fake_stage, fake_resource, disable_app_permission
     ):

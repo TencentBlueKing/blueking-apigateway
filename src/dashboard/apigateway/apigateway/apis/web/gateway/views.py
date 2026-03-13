@@ -27,6 +27,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
+from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.release import ReleaseHandler
@@ -227,7 +228,16 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             related_app_code=related_app_code,
         )
 
-        # 3. record audit log
+        # 3. bind to data plane(s)
+        # from web page, we don't need to specify the data plane ids, so use the default data plane(the default data_plane_id maybe changed in the future)
+        data_plane_ids = DataPlaneHandler.get_sync_data_plane_ids(gateway_name=slz.instance.name)
+        GatewayHandler.bind_to_data_planes(
+            gateway=slz.instance,
+            data_plane_ids=data_plane_ids,
+            username=request.user.username,
+        )
+
+        # 4. record audit log
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.CREATE,
             username=request.user.username,
@@ -485,7 +495,7 @@ class GatewayDevGuidelineRetrieveApi(generics.RetrieveAPIView):
                     template_name,
                     context={
                         "edition": settings.EDITION,
-                        "bk_api_url_tmple": settings.BK_API_URL_TMPL,
+                        "bk_api_url_tmpl": GatewayHandler.get_bk_api_url_tmpl(instance.id),
                         "language": language,
                         "repo_url": repo_url,
                         "dev_guideline_url": dev_guideline_url,

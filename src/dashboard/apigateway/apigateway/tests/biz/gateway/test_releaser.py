@@ -21,6 +21,7 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import (
     GatewayReleaser,
     ReleaseError,
@@ -80,6 +81,10 @@ class TestGatewayReleaserBase:
             )
 
     def test_release(self, mocker, fake_gateway, celery_mock_task):
+        # Setup data plane binding for the gateway
+        data_plane = G(DataPlane, name="default")
+        G(GatewayDataPlaneBinding, gateway=fake_gateway, data_plane=data_plane)
+
         release_data = get_release_data(fake_gateway)
         releaser = GatewayReleaser.from_data(
             fake_gateway,
@@ -140,10 +145,14 @@ class TestGatewayReleaser:
         )
         releaser = GatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
-        releaser._do_release(fake_release, fake_release_history)
+        # Create data plane for the test
+        data_plane = G(DataPlane, name="default")
+
+        releaser._do_release(fake_release, fake_release_history, data_plane)
 
         mock_release_gateway_by_registry.si.assert_called_once_with(
             publish_id=fake_release_history.id,
+            data_plane_id=data_plane.id,
         )
 
         assert ReleaseHistory.objects.filter(

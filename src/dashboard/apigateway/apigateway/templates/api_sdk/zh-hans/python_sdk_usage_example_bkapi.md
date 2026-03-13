@@ -18,7 +18,7 @@ from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_reque
 
 client = get_client_by_request(
     request,
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}",
+    endpoint="{{ bk_api_url_tmpl }}",
     stage="prod",  # 请设置为实际的环境名称，不填则默认为 prod
 )
 
@@ -45,7 +45,7 @@ from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_usern
 
 client = get_client_by_username(
     username="admin",  # 用户名
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}",
+    endpoint="{{ bk_api_url_tmpl }}",
     stage="prod",  # 请设置为实际的环境名称，不填则默认为 prod
 )
 
@@ -66,7 +66,7 @@ from bkapi.{{gateway_name_with_underscore}}.client import Client
 
 # 创建网关客户端
 client = Client(
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}",
+    endpoint="{{ bk_api_url_tmpl }}",
     stage="prod",  # 请设置为实际的环境名称，不填则默认为 prod
 )
 

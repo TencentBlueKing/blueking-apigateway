@@ -353,7 +353,8 @@ class ReleaseHistoryManager(models.Manager):
         if order_by:
             queryset = queryset.order_by(order_by)
 
-        return queryset.distinct()
+        # Select related data_plane for ReleaseHistory to avoid N+1 queries
+        return queryset.select_related("data_plane").distinct()
 
 
 class PublishEventManager(models.Manager):

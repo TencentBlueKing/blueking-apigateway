@@ -18,6 +18,7 @@
 
 from typing import Optional, Tuple
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import paas_app_module_offline
@@ -72,7 +73,12 @@ def _pre_publish_check_is_gateway_ready_for_releasing(release: Release, source: 
     return True, ""
 
 
-def _pre_publish_save_release_history(release: Release, source: PublishSourceEnum, author: str) -> ReleaseHistory:
+def _pre_publish_save_release_history(
+    release: Release,
+    source: PublishSourceEnum,
+    author: str,
+    data_plane: DataPlane,
+) -> ReleaseHistory:
     """保存发布历史"""
     return ReleaseHistory.objects.create(
         gateway=release.gateway,
@@ -80,6 +86,7 @@ def _pre_publish_save_release_history(release: Release, source: PublishSourceEnu
         source=source.value,
         resource_version=release.resource_version,
         created_by=author,
+        data_plane=data_plane,
     )
 
 

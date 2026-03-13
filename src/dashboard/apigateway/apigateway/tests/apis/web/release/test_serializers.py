@@ -188,6 +188,7 @@ class TestReleaseHistoryOutputSLZ:
             "status": f"{event_1.status}",
             "source": release_history.source,
             "duration": (event_1.created_time - release_history.created_time).total_seconds(),
+            "data_plane": None,
         }
 
 
@@ -216,6 +217,7 @@ class TestPublishEventQueryOutputSLZ:
                 "source": fake_release_history.source,
                 "status": PublishEventStatusEnum.FAILURE.value,
                 "duration": 0,
+                "data_plane": None,
                 "events": [
                     {
                         "id": fake_publish_event.id,

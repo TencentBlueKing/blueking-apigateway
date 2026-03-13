@@ -35,13 +35,13 @@ class SDKDocContext:
     gateway_name: str
     stage_name: str
     resource_name: str
+    bk_api_url_tmpl: str
     sdk_created_time: datetime = field(default_factory=timezone_now)
     gateway_name_with_underscore: str = ""
     body_example: dict = field(default_factory=dict)
     path_params: dict = field(default_factory=dict)
     query_params: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
-    django_settings: Any = settings
 
     def as_dict(self):
         return {
@@ -50,7 +50,7 @@ class SDKDocContext:
             "stage_name": self.stage_name,
             "resource_name": self.resource_name,
             "sdk_created_time": self.sdk_created_time,
-            "django_settings": self.django_settings,
+            "bk_api_url_tmpl": self.bk_api_url_tmpl,
             "body_example": self.body_example,
             "path_params": self.path_params,
             "query_params": self.query_params,
@@ -63,6 +63,7 @@ class DummySDKDocContext(SDKDocContext):
     gateway_name: str = "example"
     stage_name: str = "prod"
     resource_name: str = "get_example_status"
+    bk_api_url_tmpl: str = field(default_factory=lambda: settings.BK_API_URL_TMPL)
 
 
 @dataclass
