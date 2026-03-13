@@ -15,16 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import Dict, List, Optional
 
 from django.conf import settings
 from pydantic import BaseModel, Field, field_validator
 
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway
 
 from .gateway import GatewayHandler
+
+logger = logging.getLogger(__name__)
 
 
 class GatewayData(BaseModel):
@@ -50,6 +54,14 @@ class GatewayData(BaseModel):
 
 
 class GatewaySaver:
+    """
+    Gateway saver that handles creating/updating gateways and binding to data planes.
+
+    For new gateways:
+    - If data_plane_ids is provided, bind to those data planes
+    - Otherwise, bind to the 'default' data plane
+    """
+
     def __init__(
         self,
         id: Optional[int],
@@ -57,6 +69,7 @@ class GatewaySaver:
         bk_app_code: str = "",
         username: str = "",
         source: Optional[CallSourceTypeEnum] = None,
+        data_plane_ids: Optional[List[int]] = None,
     ):
         self.bk_app_code = bk_app_code
         self.username = username
@@ -64,6 +77,7 @@ class GatewaySaver:
         self._gateway = self._get_gateway(id)
         self._gateway_data = data
         self._source = source
+        self._data_plane_ids = data_plane_ids
 
     def _get_gateway(self, gateway_id: Optional[int]) -> Optional[Gateway]:
         if gateway_id:
@@ -111,6 +125,41 @@ class GatewaySaver:
             allow_delete_sensitive_params=self._gateway_data.allow_delete_sensitive_params,
             source=self._source,
         )
+
+        # 3. bind to data plane(s)
+        self._bind_to_data_planes(gateway)
+
+    def _bind_to_data_planes(self, gateway: Gateway):
+        """Bind newly created gateway to data plane(s)"""
+        data_planes_to_bind: List[DataPlane] = []
+
+        # If data_plane_ids provided, bind to those data planes
+        if self._data_plane_ids:
+            data_plane_id_to_obj = {item.id: item for item in DataPlane.objects.filter(id__in=self._data_plane_ids)}
+            found_ids = set(data_plane_id_to_obj.keys())
+            missing_ids = set(self._data_plane_ids) - found_ids
+            if missing_ids:
+                missing_ids_list = sorted(missing_ids)
+                logger.error("Gateway '%s': invalid data_plane_ids=%s", gateway.name, missing_ids_list)
+                raise ValueError(f"invalid data_plane_ids: {missing_ids_list}")
+
+            data_planes_to_bind.extend(data_plane_id_to_obj[data_plane_id] for data_plane_id in self._data_plane_ids)
+        else:
+            default_data_plane = DataPlane.objects.get_default()
+            data_planes_to_bind.append(default_data_plane)
+
+        # Bind to all resolved data planes
+        for data_plane in data_planes_to_bind:
+            GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
+                gateway=gateway,
+                data_plane=data_plane,
+                created_by=self.username or "system",
+            )
+            logger.info(
+                "Bound gateway '%s' to data plane '%s'",
+                gateway.name,
+                data_plane.name,
+            )
 
     def _update_gateway(self):
         gateway = self._gateway

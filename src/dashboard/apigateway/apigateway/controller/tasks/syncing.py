@@ -22,6 +22,7 @@ from datetime import datetime
 
 from celery import shared_task
 
+from apigateway.apps.data_plane.models import DataPlane
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
@@ -40,32 +41,76 @@ logger = logging.getLogger(__name__)
 
 @shared_task(ignore_result=True)
 def distribute_global_resources():
-    """发布全局资源"""
-    distributor = GlobalResourceDistributor()
-    distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
+    """发布全局资源
+    Exact Name: distribute_global_resources_to_data_planes
+    """
+    data_planes = DataPlane.objects.get_active_data_planes()
+    if not data_planes:
+        logger.warning("no active data planes found, skip distribute_global_resources")
+        return False
+
+    failed_data_plane_ids = []
+    for data_plane in data_planes:
+        distributor = GlobalResourceDistributor(data_plane=data_plane)
+        is_success, err_msg = distributor.distribute(release_task_id=str(uuid.uuid4()), publish_id=GLOBAL_PUBLISH_ID)
+        if not is_success:
+            failed_data_plane_ids.append(data_plane.id)
+            logger.error(
+                "distribute global resources failed for data_plane[id=%s,name=%s]: %s",
+                data_plane.id,
+                data_plane.name,
+                err_msg,
+            )
+
+    if failed_data_plane_ids:
+        logger.error("distribute_global_resources has failures, data_plane_ids=%s", failed_data_plane_ids)
+        return False
+
+    return True
 
 
 @shared_task(ignore_result=True)
-def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
-    """滚动同步微网关配置，不会生成新的版本"""
+def rolling_update_release(gateway_id: int, publish_id: int, release_id: int, data_plane_id: int):
+    """滚动同步微网关配置，不会生成新的版本
+    Exact Name: rolling_update_release_from_data_plane
+    # Refactor:
+    # 1. the source is not passed in
+    # 2. create another release history here? why?
+    # 3. is_cli_sync and if release_history is None, two vars for same logic
+    """
     release = Release.objects.get(id=release_id)
 
-    is_cli_sync = publish_id is NO_NEED_REPORT_EVENT_PUBLISH_ID
+    is_cli_sync = publish_id == NO_NEED_REPORT_EVENT_PUBLISH_ID
     release_history = None if is_cli_sync else ReleaseHistory.objects.get(id=publish_id)
     # 事件上报要以 release 维度的 stage 来上报
     if release_history:
         release_history.stage = release.stage
         # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
-        wait_another_release_done(release_history)
+        wait_another_release_done(release_history, data_plane_id)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
-    logger.info("rolling_update_release[gateway_id=%d] begin", gateway_id)
+    logger.info("rolling_update_release[gateway_id=%d, data_plane_id=%s] begin", gateway_id, data_plane_id)
 
-    distributor = GatewayResourceDistributor(release)
+    # Get data_plane - required
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        err_msg = f"data plane not found: id={data_plane_id}"
+        logger.exception(
+            "rolling_update_release failed: %s [gateway_id=%d, data_plane_id=%s]",
+            err_msg,
+            gateway_id,
+            data_plane_id,
+        )
+        if not is_cli_sync:
+            PublishEventReporter.report_distribute_config_failure(release_history, err_msg)
+        return False
+
+    distributor = GatewayResourceDistributor(release, data_plane=data_plane)
 
     release_task_id = str(uuid.uuid4())
     procedure_logger = ReleaseProcedureLogger(
-        "rolling_update_release",
+        f"rolling_update_release (data_plane={data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,
@@ -91,7 +136,12 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
         release.updated_by = release_history.created_by if release_history else "admin"
         release.save()
 
+        # FIXME: in the future
+        # if CLI_SYNC, would not change the stage status; and gateway status inactive would not come here
+        # has a pre check _pre_publish_check_is_gateway_ready_for_releasing
+        # only gateway enable would come here
         # 如果是网关启用，需要更新环境状态
+        # NOTE: 网关启用，只要有一套 dp 发布成功，stage status 就是成功 => 目前是可接受到，只有灰度期间会存在一个网关绑定两个数据面
         if release_history and release_history.source == PublishSourceEnum.GATEWAY_ENABLE.value:
             stage = release.stage
             stage.status = StageStatusEnum.ACTIVE.value
@@ -104,12 +154,24 @@ def rolling_update_release(gateway_id: int, publish_id: int, release_id: int):
 
 
 @shared_task(ignore_result=True)
-def revoke_release(release_id: int, publish_id: int):
-    """删除环境的已发布的资源"""
+def revoke_release(release_id: int, publish_id: int, data_plane_id: int):
+    """删除环境的已发布的资源
+    Exact Name: revoke_release_from_data_plane
 
+    while we are doing the revoke, we know we will update the stage status at that time!
+    refactor:
+    1. why the publish_id is DELETE_PUBLISH_ID, make two separate route
+    """
     release = Release.objects.get(id=release_id)
 
-    distributor = GatewayResourceDistributor(release)
+    # Get data_plane - required
+    try:
+        data_plane = DataPlane.objects.get(id=data_plane_id)
+    except DataPlane.DoesNotExist:
+        logger.exception("DataPlane(id=%s) not found, revoke_release aborted", data_plane_id)
+        return False
+
+    distributor = GatewayResourceDistributor(release, data_plane=data_plane)
     if publish_id == DELETE_PUBLISH_ID:
         is_success, err_msg = distributor.revoke(str(uuid.uuid4()), publish_id=publish_id)
         if not is_success:
@@ -119,12 +181,12 @@ def revoke_release(release_id: int, publish_id: int):
     release_history = ReleaseHistory.objects.get(id=publish_id)
 
     # 如果有正在发布则等待其发布完成，避免事件收敛导致发布事件丢失导致失败
-    wait_another_release_done(release_history)
+    wait_another_release_done(release_history, data_plane_id)
 
     PublishEventReporter.report_create_publish_task_success(release_history)
 
     procedure_logger = ReleaseProcedureLogger(
-        "revoke_release",
+        f"revoke_release from data_plane({data_plane.name})",
         logger=logger,
         gateway=release.gateway,
         stage=release.stage,
@@ -145,6 +207,9 @@ def revoke_release(release_id: int, publish_id: int):
     else:
         PublishEventReporter.report_distribute_config_success(release_history)
         procedure_logger.info("revoke succeeded")
+
+        # NOTE: 如果一个网关绑定多个数据面，这里下架的时候，for loop 下架每个数据面，但是一个成功就会将环境置为 inactive
+        # 目前是可以接受到的，只有灰度期间会存在一个网关绑定两个数据面
         # 修改对应环境状态
         stage = release.stage
         stage.status = StageStatusEnum.INACTIVE.value
@@ -153,13 +218,16 @@ def revoke_release(release_id: int, publish_id: int):
     return is_success
 
 
-def wait_another_release_done(release_history: ReleaseHistory):
+def wait_another_release_done(release_history: ReleaseHistory, data_plane_id: int):
     """这里主要是为了避免并发发布过程中，如果同时发布导致 operator 事件收敛导致事件丢失，需要等待上一个最近的发布任务执行完成"""
 
     # 获取最近的一个发布历史
     other_latest_release = (
         ReleaseHistory.objects.filter(
-            gateway_id=release_history.gateway_id, stage_id=release_history.stage_id, id__lt=release_history.id
+            gateway_id=release_history.gateway_id,
+            stage_id=release_history.stage_id,
+            id__lt=release_history.id,
+            data_plane_id=data_plane_id,
         )
         .order_by("-created_time")
         .first()

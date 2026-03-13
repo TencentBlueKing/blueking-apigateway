@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
+from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
@@ -37,7 +38,7 @@ class TestGatewayListCreateApi:
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
 
-    def test_create(self, request_view, faker, unique_gateway_name):
+    def test_create(self, request_view, faker, unique_gateway_name, default_data_plane):
         data = {
             "name": unique_gateway_name,
             "description": faker.pystr(),
@@ -68,6 +69,8 @@ class TestGatewayListCreateApi:
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_auth_from_params"] is False
         assert auth_config["allow_delete_sensitive_params"] is False
+
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
     @pytest.mark.parametrize(
         "data, expected_status_code, expected_error",
@@ -119,6 +122,7 @@ class TestGatewayListCreateApi:
         request_view,
         faker,
         unique_gateway_name,
+        default_data_plane,
         data,
         expected_status_code,
         expected_error,
@@ -144,6 +148,8 @@ class TestGatewayListCreateApi:
                 auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
                 assert auth_config["allow_auth_from_params"] is False
                 assert auth_config["allow_delete_sensitive_params"] is False
+
+                assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
 
 class TestGatewayRetrieveUpdateDestroyApi:

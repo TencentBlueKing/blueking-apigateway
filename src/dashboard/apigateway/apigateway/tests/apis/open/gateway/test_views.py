@@ -22,6 +22,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.open.gateway import views
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.models import Gateway, GatewayRelatedApp, Release
 from apigateway.service.gateway_jwt import GatewayJWTHandler
@@ -112,7 +113,7 @@ class TestGatewayPublicKeyRetrieveApi:
 
 
 class TestGatewaySyncApi:
-    def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission):
+    def test_post(self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane):
         resp = request_view(
             method="POST",
             view_name="openapi.gateway.sync",
@@ -137,7 +138,9 @@ class TestGatewaySyncApi:
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["allow_delete_sensitive_params"] is False
 
-    def test_post_with_multi_tenant_mode(self, mocker, request_view, unique_gateway_name, disable_app_permission):
+    def test_post_with_multi_tenant_mode(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
         mocker.patch(
             "apigateway.apis.open.gateway.views.get_app_tenant_info",
             return_value=("global", "abc"),
@@ -162,6 +165,79 @@ class TestGatewaySyncApi:
         assert result["data"]["id"] == gateway.id
         assert gateway.tenant_mode == "global"
         assert gateway.tenant_id == "abc"
+
+    @pytest.mark.parametrize(
+        "gray_stage, expected_count",
+        [
+            ("start", 2),
+            ("done", 1),
+            ("not_start", 1),
+        ],
+    )
+    def test_post_with_empty_data_planes_use_sync_rule_for_te_bp_gateway(
+        self,
+        mocker,
+        settings,
+        request_view,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        gray_stage,
+        expected_count,
+    ):
+        settings.EDITION = "te"
+        settings.BK_PLUGINS_DATA_PLANE_NAME = "bp"
+        settings.BK_PLUGINS_DATA_PLANE_GRAY_STAGE = gray_stage
+        bp_data_plane = G(DataPlane, name="bp")
+
+        gateway_name = f"bp-{unique_gateway_name}"
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": gateway_name},
+            data={
+                "description": "desc",
+                "is_public": True,
+                "allow_delete_sensitive_params": False,
+            },
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        result = resp.json()
+        gateway = Gateway.objects.get(name=gateway_name)
+        binding_ids = set(
+            GatewayDataPlaneBinding.objects.filter(gateway=gateway).values_list("data_plane_id", flat=True)
+        )
+
+        assert resp.status_code == 200
+        assert result["code"] == 0
+        assert len(binding_ids) == expected_count
+        if gray_stage == "done":
+            assert binding_ids == {bp_data_plane.id}
+        elif gray_stage == "start":
+            assert binding_ids == {default_data_plane.id, bp_data_plane.id}
+        else:
+            assert binding_ids == {default_data_plane.id}
+
+    def test_post_with_nonexistent_data_planes_returns_error(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        resp = request_view(
+            method="POST",
+            view_name="openapi.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={
+                "description": "desc",
+                "is_public": True,
+                "data_planes": ["not-exists", "default"],
+            },
+            app=mocker.MagicMock(app_code="foo"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 400
+        assert result["code"] != 0
+        assert "not-exists" in str(result["message"])
 
 
 class TestGatewayUpdateStatusApi:

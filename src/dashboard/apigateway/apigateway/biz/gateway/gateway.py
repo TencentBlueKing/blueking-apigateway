@@ -26,6 +26,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
@@ -35,13 +36,13 @@ from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
-from apigateway.core.api_auth import APIAuthConfig
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     GatewayOperationSourceEnum,
     GatewayOperationStatusEnum,
     GatewayTypeEnum,
 )
+from apigateway.core.gateway_auth import GatewayAuthConfig
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
@@ -174,7 +175,7 @@ class GatewayHandler:
         current_config = GatewayHandler.get_gateway_auth_config(gateway_id)
 
         # 因用户配置为 dict，参数 user_conf 仅传递了部分用户配置，因此需合并当前配置与传入配置
-        gateway_auth_config = APIAuthConfig.model_validate(deep_update(current_config, new_config))
+        gateway_auth_config = GatewayAuthConfig.model_validate(deep_update(current_config, new_config))
 
         return GatewayAuthContext().save(gateway_id, gateway_auth_config.config)
 
@@ -223,6 +224,24 @@ class GatewayHandler:
         # 6. update gateway app binding
         if app_codes_to_binding is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
+
+    @staticmethod
+    def bind_to_data_planes(gateway: Gateway, data_plane_ids: List[int], username: str = ""):
+        """Bind a gateway to the given data planes."""
+        data_planes = DataPlane.objects.filter(id__in=data_plane_ids)
+        data_plane_map = {dp.id: dp for dp in data_planes}
+
+        for dp_id in data_plane_ids:
+            data_plane = data_plane_map.get(dp_id)
+            if not data_plane:
+                logger.warning("data plane id=%s not found when binding gateway '%s'", dp_id, gateway.name)
+                continue
+            GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
+                gateway=gateway,
+                data_plane=data_plane,
+                created_by=username or "system",
+            )
+            logger.info("Bound gateway '%s' to data plane '%s'", gateway.name, data_plane.name)
 
     @staticmethod
     def delete_gateway(gateway_id: int):
@@ -288,8 +307,29 @@ class GatewayHandler:
         return ""
 
     @staticmethod
-    def get_api_domain(gateway: Gateway) -> str:
-        return settings.BK_API_URL_TMPL.format(api_name=gateway.name)
+    def get_bk_api_url_tmpl(gateway_id: int) -> str:
+        """Get the bk_api_url_tmpl for a gateway from its bound data plane, with fallback to settings.
+        If gateway bound to multiple data_planes, only use the first data_plane's bk_api_url_tmpl
+        """
+        binding = (
+            GatewayDataPlaneBinding.objects.filter(gateway_id=gateway_id)
+            .select_related("data_plane")
+            .order_by("data_plane_id")
+            .first()
+        )
+        if binding and binding.data_plane.bk_api_url_tmpl:
+            return binding.data_plane.bk_api_url_tmpl
+
+        logger.warning(
+            "Gateway %s has no data plane with bk_api_url_tmpl configured, falling back to settings.BK_API_URL_TMPL",
+            gateway_id,
+        )
+
+        return settings.BK_API_URL_TMPL
+
+    @staticmethod
+    def get_gateway_domain(gateway: Gateway) -> str:
+        return GatewayHandler.get_bk_api_url_tmpl(gateway.id).format(api_name=gateway.name)
 
     @staticmethod
     def get_resource_count(gateway_ids: List[int]) -> Dict[int, int]:

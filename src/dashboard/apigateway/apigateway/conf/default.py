@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     "apigateway.apps.docs",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
+    "apigateway.apps.data_plane",
     "apigw_manager.apigw",
     "apigateway.controller",
     "apigateway.healthz",
@@ -513,7 +514,8 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
-BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
+# TODO: remove in the future, and remove in the helm-chart and te repo
+# BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
 API_DOCS_URL_TMPL = env.str("API_DOCS_URL_TMPL", "")
 RESOURCE_DOC_URL_TMPL = env.str("RESOURCE_DOC_URL_TMPL", "")
@@ -521,9 +523,11 @@ COMPONENT_DOC_URL_TMPL = env.str("COMPONENT_DOC_URL_TMPL", "")
 
 BK_COMPONENT_API_URL = env.str("BK_COMPONENT_API_URL", "")
 BK_COMPONENT_API_INNER_URL = env.str("BK_COMPONENT_API_INNER_URL", "") or BK_COMPONENT_API_URL
-BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
+# TODO: remove in the future, and remove in the helm-chart and te repo
+# BK_PAAS3_API_URL = BK_API_INNER_URL_TMPL.format(api_name="bkpaas3")
 BK_PAAS3_API_TIMEOUT = env.int("BK_PAAS3_API_TIMEOUT", 30)
-BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
+# TODO: remove in the future, and remove in the helm-chart and te repo
+# BK_APIGATEWAY_API_URL = env.str("BK_APIGATEWAY_API_URL", "")
 
 BK_AUTH_API_URL = env.str("BK_AUTH_API_URL", "")
 # BKAuth 站点地址 用于 OAuth2 跳转
@@ -905,6 +909,10 @@ GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED"
 
 BK_GATEWAY_ETCD_NAMESPACE_PREFIX = env.str("BK_GATEWAY_ETCD_NAMESPACE_PREFIX", default="/bk-gateway-apigw")
 
+# BK plugins gateway data plane routing
+BK_PLUGINS_DATA_PLANE_NAME = env.str("BK_PLUGINS_DATA_PLANE_NAME", default="bk-plugins")
+BK_PLUGINS_DATA_PLANE_GRAY_STAGE = env.str("BK_PLUGINS_DATA_PLANE_GRAY_STAGE", default="not_start")
+
 # ==============================================================================
 # Feature Flag
 # ==============================================================================
@@ -919,6 +927,7 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_RUN_DATA_METRICS": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True),
     # 是否展示”组件管理“菜单项，企业版展示，上云版不展示
     "MENU_ITEM_ESB_API": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API", True),
+    # TODO: remove in the future, and remove in the helm-chart and te repo
     # 是否展示”组件 API 文档“菜单项
     "MENU_ITEM_ESB_API_DOC": env.bool("FEATURE_FLAG_MENU_ITEM_ESB_API_DOC", True),
     # 是否将 ESB 数据同步到网关。需要考虑这个是否还需要
@@ -957,7 +966,7 @@ DEFAULT_FEATURE_FLAG = {
 DEFAULT_USER_FEATURE_FLAG = {}
 
 # 网关功能开关
-GLOBAL_GATEWAY_FEATURE_FLAG = {}
+# GLOBAL_GATEWAY_FEATURE_FLAG = {}
 
 # ==============================================================================
 # 提供给前端的环境变量值
@@ -1030,8 +1039,8 @@ MAX_BACKEND_TIMEOUT_IN_SECOND = env.int("MAX_BACKEND_TIMEOUT_IN_SECOND", 600)
 MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION = env.int("MAX_PYTHON_SDK_COUNT_PER_RESOURCE_VERSION", 99)
 
 # DB 操作大小配置
-RELEASED_RESOURCE_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_CREATE_BATCH_SIZE", 50)
-RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE", 50)
+# RELEASED_RESOURCE_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_CREATE_BATCH_SIZE", 50)
+# RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE = env.int("RELEASED_RESOURCE_DOC_CREATE_BATCH_SIZE", 50)
 
 # ==============================================================================
 # ESB 配置

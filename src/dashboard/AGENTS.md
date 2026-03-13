@@ -108,6 +108,25 @@ make test-pdb
 make test-cov
 ```
 
+#### Running tests from an agent (critical notes)
+
+Working directory: `src/dashboard`
+
+```bash
+# Recommended command for agents — note the semicolons and python3
+cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard && source .venv/bin/activate 2>&1; \
+  cd apigateway && set -a; . apigateway/conf/unittest_env; set +a; \
+  python3 -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short \
+  apigateway/tests/path/to/test_file.py::TestClass::test_method 2>&1
+```
+
+Pitfalls to avoid:
+- **Always activate the virtualenv first** — agent shell sessions start fresh without the venv. Use `source .venv/bin/activate 2>&1;` from `src/dashboard`. Without it, `python3` resolves to the system Python which lacks project dependencies (e.g. `celery`).
+- **Use `python3`, not `python`** — `python` silently exits with code 1 and produces no output.
+- **Use `;` (not `&&`) after `source .venv/bin/activate` and `. apigateway/conf/unittest_env`** — both exit with a non-zero status despite working correctly, which breaks `&&` chains and prevents subsequent commands from running.
+- **Always pass `--ds apigateway.settings`** — without it, Django settings are not configured and conftest imports fail with `ImproperlyConfigured`.
+- **Use `--nomigrations`** when there are conflicting migration leaf nodes in the branch — without it pytest fails at DB setup before any tests run.
+
 ## Settings
 
 Settings are loaded dynamically: `apigateway.conf.settings_{BKPAAS_ENVIRONMENT}` (defaults to `dev`). Base config is in `apigateway/conf/default.py`. Local dev config goes in `apigateway/apigateway/conf/.env` (copy from `.env.tpl`).

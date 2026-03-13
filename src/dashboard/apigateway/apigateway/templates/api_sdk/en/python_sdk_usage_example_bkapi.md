@@ -19,7 +19,7 @@ from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_reque
 # Automatically get BlueKing app info from django settings (app_code=settings.BK_APP_CODE, app_secret=settings.BK_APP_SECRET)
 client = get_client_by_request(
     request, # automatically include user information if request contains user login state
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}", # If settings is configured with BK_API_URL_TMPL, it will be applied automatically, otherwise replace it with the actual gateway access address
+    endpoint="{{ bk_api_url_tmpl }}", # If settings is configured with BK_API_URL_TMPL, it will be applied automatically, otherwise replace it with the actual gateway access address
     stage="prod", # Please set this to the actual stage name, otherwise it defaults to prod
 )
 
@@ -41,7 +41,7 @@ from bkapi.{{gateway_name_with_underscore}}.shortcuts import get_client_by_usern
 # Automatically get BlueKing app info from django settings (app_code=settings.BK_APP_CODE, app_secret=settings.BK_APP_SECRET)
 client = get_client_by_username(
     username="admin", # username
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}", # If settings is configured with BK_API_URL_TMPL, it will be applied automatically, otherwise replace it with the actual gateway access address
+    endpoint="{{ bk_api_url_tmpl }}", # If settings is configured with BK_API_URL_TMPL, it will be applied automatically, otherwise replace it with the actual gateway access address
     stage="prod", # Please set this to the actual stage name, otherwise it defaults to prod
 )
 
@@ -56,7 +56,7 @@ from bkapi.{{gateway_name_with_underscore}}.client import Client
 
 # Create gateway client
 client = Client(
-    endpoint="{{ django_settings.BK_API_URL_TMPL }}",
+    endpoint="{{ bk_api_url_tmpl }}",
     stage="prod",  # Please set to the actual stage name, otherwise it defaults to prod
 )
 

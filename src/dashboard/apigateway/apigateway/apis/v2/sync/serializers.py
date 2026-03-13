@@ -123,6 +123,14 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    # Data plane names to bind to when creating a new gateway
+    # If empty, will use 'default' data plane
+    data_planes = serializers.ListField(
+        child=serializers.CharField(max_length=32),
+        required=False,
+        allow_empty=True,
+        help_text="Data plane names to bind the gateway to (defaults to 'default')",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncInputSLZ"
@@ -138,6 +146,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "api_type",
             "user_config",
             "allow_delete_sensitive_params",
+            "data_planes",
         ]
         extra_kwargs = {
             "description_en": {

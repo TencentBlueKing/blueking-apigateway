@@ -19,6 +19,8 @@ import pytest
 from django.core.exceptions import ObjectDoesNotExist
 from django_dynamic_fixture import G
 
+from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
@@ -274,7 +276,7 @@ class TestGatewayHandler:
 
     def test_save_related_data(self, mocker, fake_gateway):
         mocker.patch(
-            "apigateway.biz.gateway.gateway.APIAuthConfig.config",
+            "apigateway.biz.gateway.gateway.GatewayAuthConfig.config",
             new_callable=mocker.PropertyMock(
                 return_value={
                     "user_auth_type": "default",
@@ -409,3 +411,39 @@ class TestGatewayHandler:
 
         result = GatewayHandler.get_max_resource_count(gateway_name)
         assert result == expected
+
+    def test_bind_to_data_planes(self):
+        gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+        dp1 = G(DataPlane, name="dp-1", status=DataPlaneStatusEnum.ACTIVE.value)
+        dp2 = G(DataPlane, name="dp-2", status=DataPlaneStatusEnum.ACTIVE.value)
+
+        GatewayHandler.bind_to_data_planes(
+            gateway=gateway,
+            data_plane_ids=[dp1.id, dp2.id],
+            username="admin",
+        )
+
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=dp1).exists()
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=dp2).exists()
+
+    def test_bind_to_data_planes_skips_missing(self):
+        gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+        dp = G(DataPlane, name="dp-exists", status=DataPlaneStatusEnum.ACTIVE.value)
+
+        GatewayHandler.bind_to_data_planes(
+            gateway=gateway,
+            data_plane_ids=[dp.id, 99999],
+            username="admin",
+        )
+
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=dp).exists()
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway).count() == 1
+
+    def test_bind_to_data_planes_idempotent(self):
+        gateway = G(Gateway, tenant_mode="single", tenant_id="default")
+        dp = G(DataPlane, name="dp-idem", status=DataPlaneStatusEnum.ACTIVE.value)
+
+        GatewayHandler.bind_to_data_planes(gateway=gateway, data_plane_ids=[dp.id], username="admin")
+        GatewayHandler.bind_to_data_planes(gateway=gateway, data_plane_ids=[dp.id], username="admin")
+
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=dp).count() == 1

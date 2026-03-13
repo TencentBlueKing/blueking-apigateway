@@ -20,7 +20,7 @@ from unittest import mock
 
 import pytest
 
-from apigateway.core.api_auth import APIAuthConfig, UserAuthConfig
+from apigateway.core.gateway_auth import GatewayAuthConfig, UserAuthConfig
 
 
 class TestUserAuthConfig:
@@ -137,7 +137,7 @@ class TestUserAuthConfig:
         }
 
 
-class TestAPIAuthConfig:
+class TestGatewayAuthConfig:
     @pytest.mark.parametrize(
         "data, mock_user_config, expected",
         [
@@ -215,8 +215,8 @@ class TestAPIAuthConfig:
     )
     def test_config(self, mocker, data, mock_user_config, expected):
         mocker.patch(
-            "apigateway.core.api_auth.UserAuthConfig.config",
+            "apigateway.core.gateway_auth.UserAuthConfig.config",
             new_callable=mock.PropertyMock(return_value=mock_user_config),
         )
-        result = APIAuthConfig.model_validate(data).config
+        result = GatewayAuthConfig.model_validate(data).config
         assert result == expected

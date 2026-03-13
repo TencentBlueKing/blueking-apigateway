@@ -65,8 +65,6 @@ class HealthzView(View):
             "SECRET_KEY",
             "BK_APP_CODE",
             "BK_APP_SECRET",
-            "BK_PAAS3_API_URL",
-            "BK_COMPONENT_API_URL",
         ]
         empty_keys = [key for key in not_allow_empty_keys if not getattr(settings, key, None)]
         if empty_keys:

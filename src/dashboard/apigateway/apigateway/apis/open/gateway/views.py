@@ -37,6 +37,7 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
+from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import (
@@ -219,12 +220,19 @@ class GatewaySyncApi(generics.CreateAPIView):
 
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+
+        data_plane_ids = DataPlaneHandler.get_sync_data_plane_ids(
+            gateway_name=gateway_name,
+            data_plane_names=data.get("data_planes"),
+        )
+
         saver = GatewaySaver(
             id=gateway and gateway.id,
             data=TypeAdapter(GatewayData).validate_python(data),
             bk_app_code=request.app.app_code,
             username=username,
             source=CallSourceTypeEnum.OpenAPI,
+            data_plane_ids=data_plane_ids,
         )
         gateway = saver.save()
 

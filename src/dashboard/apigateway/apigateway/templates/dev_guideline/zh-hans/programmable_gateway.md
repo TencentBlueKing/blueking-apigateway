@@ -29,7 +29,7 @@ git clone {{repo_url}}
 export DEBUG=True
 export IS_LOCAL=True
 export BK_APIGW_NAME={{project_name}}
-export BK_API_URL_TMPL={{bk_api_url_tmple}}
+export BK_API_URL_TMPL={{bk_api_url_tmpl}}
 export BKPAAS_APP_ID={{project_name}}
 export BKPAAS_APP_SECRET=358622d8-d3e7-4522-8f16-b5530776bbb8 ## 注意替换成真实的 BKPAAS_APP_SECRET
 export BKPAAS_DEFAULT_PREALLOCATED_URLS='{"dev": "http://0.0.0.0:8080/"}'
@@ -86,7 +86,7 @@ git clone {{repo_url}}
 export DEBUG=True
 export IS_LOCAL=True
 export BK_APIGW_NAME={{project_name}}
-export BK_API_URL_TMPL={{bk_api_url_tmple}}
+export BK_API_URL_TMPL={{bk_api_url_tmpl}}
 export BKPAAS_APP_ID={{project_name}}
 export BKPAAS_APP_SECRET=358622d8-d3e7-4522-8f16-b5530776bbb8 ## 注意替换成真实的 BKPAAS_APP_SECRET
 export BKPAAS_DEFAULT_PREALLOCATED_URLS='{"dev": "http://0.0.0.0:8080/"}'
