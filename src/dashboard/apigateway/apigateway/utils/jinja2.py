@@ -17,8 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from jinja2 import Template
+from jinja2.sandbox import SandboxedEnvironment
+
+_sandbox_env = SandboxedEnvironment()
 
 
 def render_to_string(source: str, *args, **kwargs) -> str:
-    return Template(source).render(*args, **kwargs)
+    template = _sandbox_env.from_string(source)
+    return template.render(*args, **kwargs)
