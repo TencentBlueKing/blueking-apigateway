@@ -115,8 +115,8 @@ class ReleasedResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
 class ReleaseHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
-    list_display = ["gateway", "stage", "resource_version", "created_by", "created_time"]
-    list_filter = ["gateway", "created_time"]
+    list_display = ["id", "gateway", "data_plane", "stage", "resource_version", "created_by", "created_time"]
+    list_filter = ["gateway", "data_plane", "created_time"]
     search_fields = ["gateway__id", "gateway__name"]
     raw_id_fields = ["resource_version"]
 
