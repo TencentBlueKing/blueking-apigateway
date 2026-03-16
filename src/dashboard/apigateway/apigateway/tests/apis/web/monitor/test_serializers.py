@@ -93,6 +93,52 @@ class TestNoticeConfigSLZ(TestCase):
                 self.assertEqual(slz.validated_data, test)
 
 
+class TestFilterConfigSLZ(TestCase):
+    def test_to_internal_value(self):
+        data = [
+            {
+                "type": "black_list",
+                "match": "contains",
+                "items": ["error_keyword"],
+            },
+            {
+                "type": "white_list",
+                "match": "regex_match",
+                "items": ["error_\\d+"],
+            },
+            {
+                "type": "white_list",
+                "match": "contains",
+                "items": [],
+            },
+            {
+                "type": "invalid_type",
+                "match": "contains",
+                "items": [],
+                "will_error": True,
+            },
+            {
+                "type": "black_list",
+                "match": "invalid_match",
+                "items": [],
+                "will_error": True,
+            },
+            {
+                "type": "white_list",
+                "match": "regex_match",
+                "items": ["[invalid"],
+                "will_error": True,
+            },
+        ]
+        for test in data:
+            slz = serializers.FilterConfigSLZ(data=test)
+            slz.is_valid()
+            if test.pop("will_error", False):
+                self.assertTrue(slz.errors)
+            else:
+                self.assertEqual(slz.validated_data, test)
+
+
 class TestAlarmStrategyInputSLZ(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -147,10 +193,67 @@ class TestAlarmStrategyInputSLZ(TestCase):
                                 "notice_role": ["maintainer"],
                                 "notice_extra_receiver": ["admin"],
                             },
+                            "filter_config": None,
                         }
                     ),
                 },
-            }
+            },
+            {
+                "id": 2,
+                "name": "test_with_filter",
+                "alarm_type": "resource_backend",
+                "alarm_subtype": "status_code_5xx",
+                "gateway_label_ids": [label_1.id, label_2.id],
+                "config": {
+                    "detect_config": {
+                        "duration": 60,
+                        "method": "gte",
+                        "count": 10,
+                    },
+                    "converge_config": {
+                        "duration": 60,
+                    },
+                    "notice_config": {
+                        "notice_way": ["wechat", "im"],
+                        "notice_role": ["maintainer"],
+                        "notice_extra_receiver": ["admin"],
+                    },
+                    "filter_config": {
+                        "type": "black_list",
+                        "match": "contains",
+                        "items": ["ignore_this"],
+                    },
+                },
+                "expected": {
+                    "gateway": self.gateway,
+                    "name": "test_with_filter",
+                    "alarm_type": "resource_backend",
+                    "alarm_subtype": "status_code_5xx",
+                    "gateway_label_ids": [label_1.id, label_2.id],
+                    "config": json.dumps(
+                        {
+                            "detect_config": {
+                                "duration": 60,
+                                "method": "gte",
+                                "count": 10,
+                            },
+                            "converge_config": {
+                                "duration": 60,
+                            },
+                            "notice_config": {
+                                "notice_way": ["wechat", "im"],
+                                "notice_role": ["maintainer"],
+                                "notice_extra_receiver": ["admin"],
+                            },
+                            "filter_config": {
+                                "type": "black_list",
+                                "match": "contains",
+                                "items": ["ignore_this"],
+                            },
+                        }
+                    ),
+                },
+            },
         ]
         for test in data:
             slz = serializers.AlarmStrategyInputSLZ(data=test, context={"request": self.request})
@@ -209,6 +312,7 @@ class TestAlarmStrategyInputSLZ(TestCase):
                             "notice_role": ["creator", "maintainer"],
                             "notice_extra_receiver": ["admin"],
                         },
+                        "filter_config": None,
                     },
                     "effective_stages": ["prod", "test"],
                 },
