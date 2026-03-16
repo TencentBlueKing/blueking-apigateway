@@ -19,6 +19,7 @@ import json
 
 from django import forms
 from django.contrib import admin
+from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 
@@ -77,8 +78,9 @@ class DataPlaneAdminForm(forms.ModelForm):
 
 
 @admin.register(DataPlane)
-class DataPlaneAdmin(admin.ModelAdmin):
+class DataPlaneAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     form = DataPlaneAdminForm
+    djangoql_completion_enabled_by_default = False
 
     list_display = [
         "id",
@@ -110,7 +112,9 @@ class DataPlaneAdmin(admin.ModelAdmin):
 
 
 @admin.register(GatewayDataPlaneBinding)
-class GatewayDataPlaneBindingAdmin(admin.ModelAdmin):
+class GatewayDataPlaneBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+    djangoql_completion_enabled_by_default = False
+
     list_display = [
         "id",
         "gateway",
