@@ -105,6 +105,11 @@ func BkGatewayJWTAuthMiddleware() func(c *gin.Context) {
 		}
 		util.SetBkAppCode(c, claims.App.AppCode)
 		util.SetBkUsername(c, claims.User.Username)
+		// Store client IP for downstream logging
+		util.SetClientIP(c)
+		// Set initial client_id based on app_code; LoggingMiddleware will override
+		// with clientInfo.Name from the MCP initialize handshake if available.
+		util.SetClientID(c, claims.App.AppCode)
 		// 将 claims 转换为延迟签发结构体，保存到 context
 		// 只有在调用外部 API 的 tool handler 中才会签发 JWT
 		lazySigningClaims := &util.JWTClaimsForLazySigning{

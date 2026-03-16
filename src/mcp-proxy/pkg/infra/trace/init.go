@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
@@ -85,6 +86,12 @@ func InitTrace(config config.Tracing) error {
 		tp := trace.NewTracerProvider(traceOptions...)
 		// set  global provider
 		otel.SetTracerProvider(tp)
+		// Set global propagator so trace context (traceparent/tracestate) is injected
+		// into outgoing HTTP requests and extracted from incoming ones.
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		))
 		globalTracer = &Trace{
 			Tracer: tp.Tracer(config.ServiceName),
 			config: config,
@@ -121,6 +128,35 @@ func StartTrace(ctx context.Context, name string) (context.Context, tc.Span) {
 	} else {
 		return ctx, nil
 	}
+}
+
+// GetTraceIDFromContext extracts the trace ID from the context.
+// Returns an empty string if tracing is not enabled or no span exists in the context.
+func GetTraceIDFromContext(ctx context.Context) string {
+	span := tc.SpanFromContext(ctx)
+	if span == nil {
+		return ""
+	}
+	sc := span.SpanContext()
+	if !sc.TraceID().IsValid() {
+		return ""
+	}
+	return sc.TraceID().String()
+}
+
+// WrapErrorWithTraceID wraps an error with trace_id if available in the context.
+// NOTE: The returned error preserves the original error chain via %w, so callers
+// can still use errors.Is / errors.As on the result. The appended "(trace_id=...)"
+// text appears only in the error message string.
+func WrapErrorWithTraceID(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+	traceID := GetTraceIDFromContext(ctx)
+	if traceID == "" {
+		return err
+	}
+	return fmt.Errorf("%w (trace_id=%s)", err, traceID)
 }
 
 // getTraceSampler get the sampler strategy
