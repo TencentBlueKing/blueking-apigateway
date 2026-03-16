@@ -45,6 +45,7 @@
             :custom-request="handleReq"
             class="upload-cls"
             accept=".yaml,.json,.yml"
+            :size="5"
           >
             <div>
               <AgIcon
