@@ -25,6 +25,7 @@ from apigateway.service.plugin.checker import (
     BkCorsChecker,
     BkIPRestrictionChecker,
     BKRequestBodyLimitChecker,
+    BkTrafficLabelChecker,
     BKUserRestrictionChecker,
     FaultInjectionChecker,
     HeaderRewriteChecker,
@@ -710,5 +711,153 @@ class TestProxyCacheChecker:
     )
     def test_check(self, data, ctx):
         checker = ProxyCacheChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestBkTrafficLabelChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}}],
+                        }
+                    ]
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "rules": [
+                        {
+                            "match": ["OR", ["arg_version", "==", "v1"], ["arg_env", "==", "dev"]],
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}}],
+                        }
+                    ]
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [
+                                {"set_headers": {"X-Server-Id": "100"}, "weight": 3},
+                                {"set_headers": {"X-API-Version": "v2"}, "weight": 2},
+                                {"set_headers": {"X-Canary": "true"}, "weight": 5},
+                            ],
+                        }
+                    ]
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["arg_version", "==", "v1"]],
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}}],
+                        },
+                        {
+                            "match": [["arg_version", "==", "v2"]],
+                            "actions": [{"set_headers": {"X-Server-Id": "200"}}],
+                        },
+                    ]
+                },
+                does_not_raise(),
+            ),
+            # empty YAML
+            (
+                {},
+                pytest.raises(ValueError),
+            ),
+            # empty rules
+            (
+                {"rules": []},
+                pytest.raises(ValueError),
+            ),
+            # empty actions
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+            # no actions key
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+            # negative weight
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}, "weight": -1}],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+            # set_headers value not a string
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [{"set_headers": {"X-Server-Id": 100}}],
+                        }
+                    ]
+                },
+                pytest.raises(TypeError),
+            ),
+            # action missing set_headers
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [{"weight": 5}],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+            # one action missing set_headers among multiple
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [["uri", "==", "/headers"]],
+                            "actions": [
+                                {"set_headers": {"X-Server-Id": "100"}, "weight": 3},
+                                {"weight": 5},
+                            ],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = BkTrafficLabelChecker()
         with ctx:
             checker.check(yaml_dumps(data))

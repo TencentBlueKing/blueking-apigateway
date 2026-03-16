@@ -401,6 +401,38 @@ def check_vars(vars, location):
                 raise TypeError(f"The vars of {location} at index [{index}][{i}] should be list")
 
 
+class BkTrafficLabelChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        rules = loaded_data.get("rules")
+        if not rules:
+            raise ValueError("rules cannot be empty")
+
+        for idx, rule in enumerate(rules):
+            actions = rule.get("actions")
+            if not actions:
+                raise ValueError(f"rule[{idx}]: actions cannot be empty")
+
+            for action_idx, action in enumerate(actions):
+                weight = action.get("weight")
+                if weight is not None and (not isinstance(weight, int) or weight < 0):
+                    raise ValueError(f"rule[{idx}].actions[{action_idx}]: weight must be a non-negative integer")
+
+                set_headers = action.get("set_headers")
+                if not set_headers:
+                    raise ValueError(f"rule[{idx}].actions[{action_idx}]: set_headers cannot be empty")
+
+                for key, value in set_headers.items():
+                    if not isinstance(value, str):
+                        raise TypeError(
+                            f"rule[{idx}].actions[{action_idx}].set_headers: "
+                            f"value for '{key}' must be a string, got {type(value).__name__}"
+                        )
+
+
 class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
@@ -415,6 +447,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.BK_USER_RESTRICTION.value: BKUserRestrictionChecker(),
         PluginTypeCodeEnum.PROXY_CACHE.value: ProxyCacheChecker(),
         PluginTypeCodeEnum.AI_RATE_LIMITING.value: AIRateLimitingChecker(),
+        PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value: BkTrafficLabelChecker(),
     }
 
     def __init__(self, type_code: str):

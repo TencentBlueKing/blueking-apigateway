@@ -4151,3 +4151,129 @@
         "formData": {},
         "rules": {}
       }
+- model: schema.schema
+  fields:
+    created_time: 2025-01-01 00:00:00.000000+00:00
+    updated_time: 2025-01-01 00:00:00.000000+00:00
+    name: bk-traffic-label
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "match": {
+                  "type": "array"
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "set_headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "weight": {
+                        "type": "integer",
+                        "default": 1,
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "minItems": 1,
+                  "maxItems": 20
+                }
+              }
+            }
+          }
+        },
+        "required": ["rules"]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-traffic-label
+    name: 流量染色
+    name_en: Traffic Label
+    is_public: true
+    scope: stage_and_resource
+    priority: 17460
+    _tags: "流量,Traffic"
+    schema:
+    - bk-traffic-label
+    - plugin
+    - '0'
+- model: plugin.pluginform
+  fields:
+    language: ''
+    type:
+      - bk-traffic-label
+    notes: |-
+      流量染色插件，根据匹配条件为请求设置自定义 Header，支持加权随机分配。
+      Traffic Label plugin. Sets custom headers on requests based on match conditions, with optional weighted random distribution.
+    style: raw
+    default_value: |-
+      rules:
+        - match:
+            - - uri
+              - "=="
+              - /example
+          actions:
+            - set_headers:
+                X-Custom-Header: "value"
+    config: |-
+      {
+        "schema": {},
+        "layout": [],
+        "formData": {},
+        "rules": {}
+      }
+    example: |-
+      # Single match condition
+      rules:
+        - match:
+            - - uri
+              - "=="
+              - /headers
+          actions:
+            - set_headers:
+                X-Server-Id: "100"
+
+      # Multiple match conditions with OR logic
+      rules:
+        - match:
+            - "OR"
+            - - arg_version
+              - "=="
+              - v1
+            - - arg_env
+              - "=="
+              - dev
+          actions:
+            - set_headers:
+                X-Server-Id: "100"
+
+      # Weighted actions (30%/20%/50%)
+      rules:
+        - match:
+            - - uri
+              - "=="
+              - /headers
+          actions:
+            - set_headers:
+                X-Server-Id: "100"
+              weight: 3
+            - set_headers:
+                X-API-Version: v2
+              weight: 2
+            - weight: 5
