@@ -432,7 +432,7 @@ class TestMCPMarketplaceServerListApi:
 class TestMCPMarketplaceServerRetrieveApi:
     def test_retrieve(self, mocker, request_view, fake_public_mcp_server, fake_categories):
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
         mocker.patch(
@@ -472,7 +472,7 @@ class TestMCPMarketplaceServerRetrieveApi:
     def test_retrieve_with_oauth2_public_client_enabled(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回 oauth2_public_client_enabled 字段"""
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
         mocker.patch(
@@ -496,7 +496,7 @@ class TestMCPMarketplaceServerRetrieveApi:
     def test_retrieve_with_prompts(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回 prompts 列表（私有 prompt 的 content 为空）"""
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
         mocker.patch(
@@ -611,7 +611,7 @@ class TestMCPMarketplaceServerRetrieveApi:
     def test_retrieve_with_user_custom_doc(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口返回用户自定义文档"""
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
         mocker.patch(
@@ -642,7 +642,7 @@ class TestMCPMarketplaceServerRetrieveApi:
     def test_retrieve_without_user_custom_doc(self, mocker, request_view, fake_public_mcp_server):
         """测试详情接口在没有用户自定义文档时返回空字符串"""
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
         mocker.patch(
@@ -692,7 +692,7 @@ class TestMCPMarketplaceServerConfigListApi:
     def test_retrieve_config_list(self, mocker, request_view, fake_public_mcp_server):
         """测试获取配置列表"""
         mocker.patch(
-            "apigateway.apis.web.mcp_marketplace.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Config Content",
         )
 

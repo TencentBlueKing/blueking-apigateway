@@ -17,10 +17,8 @@
 #
 
 
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -48,7 +46,6 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.constants import CallSourceTypeEnum
-from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
@@ -142,20 +139,10 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         if label:
             queryset = queryset.filter(_labels__icontains=label)
 
-        # 分类筛选（支持多个分类）
-        # 当选择的分类中包含 Official 或 Featured 时，使用 AND 逻辑，确保返回的结果同时满足所有选择的分类
-        # 当选择的分类中不包含这些特殊分类时，使用 OR 逻辑
+        # 分类筛选 —— 使用 biz 层的通用方法
         categories = slz.validated_data.get("categories")
         if categories:
-            special_categories = {OFFICIAL_MCP_CATEGORY_NAME, FEATURED_MCP_CATEGORY_NAME}
-            if special_categories & set(categories):
-                # 包含 Official 或 Featured 分类时，使用 AND 逻辑：必须同时属于所有选择的分类
-                for category in categories:
-                    queryset = queryset.filter(categories__name=category, categories__is_active=True)
-                queryset = queryset.distinct()
-            else:
-                # 不包含特殊分类时，使用 OR 逻辑：属于任意一个选择的分类即可
-                queryset = queryset.filter(categories__name__in=categories, categories__is_active=True).distinct()
+            queryset = MCPServerHandler.apply_category_filter(queryset, categories)
 
         # 排序（支持多字段排序，如 "-status,-updated_time"）
         order_by = slz.validated_data.get("order_by", "-status,-updated_time")
@@ -475,22 +462,14 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
 
         least_privileges = MCPServerHandler.get_least_privileges([instance])
         least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
-        mcp_url = MCPServerHandler.get_mcp_server_url(instance, least_privilege)
 
         user_tenant_id = get_user_tenant_id(request)
-        template_name = f"mcp_server/{get_current_language_code()}/guideline.md"
-        content = render_to_string(
-            template_name,
-            context={
-                "name": instance.name,
-                "url": mcp_url,
-                "description": instance.description,
-                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
-                "bk_access_token_doc_url": settings.BK_ACCESS_TOKEN_DOC_URL,
-                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
-                "user_tenant_id": user_tenant_id,
-                "protocol_type": instance.protocol_type,
-            },
+
+        # 使用 biz 层的通用方法生成 guideline
+        content = MCPServerHandler.build_guideline(
+            instance,
+            user_tenant_id=user_tenant_id,
+            least_privilege=least_privilege,
         )
 
         slz = self.get_serializer({"content": content})

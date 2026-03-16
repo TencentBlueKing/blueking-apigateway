@@ -819,7 +819,7 @@ class TestMCPServerToolsListApi:
 class TestMCPServerGuidelineRetrieveApi:
     def test_retrieve(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
 
@@ -839,7 +839,7 @@ class TestMCPServerConfigListApi:
     def test_retrieve_config_list(self, mocker, request_view, fake_gateway, fake_mcp_server):
         """测试获取配置列表（默认 AIDEV 关闭）"""
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Config Content",
         )
 
@@ -884,7 +884,7 @@ class TestMCPServerConfigListApi:
     ):
         """测试获取配置列表（配置了 AIDEV_CREATE_URL）"""
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Config Content",
         )
         # 模拟配置了 AIDEV_AGENT_CREATE_URL（AIDev 启用）
@@ -917,7 +917,7 @@ class TestMCPServerConfigListApi:
     def test_retrieve_config_list_display_names(self, mocker, request_view, fake_gateway, fake_mcp_server):
         """测试配置项显示名称"""
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Config Content",
         )
 
@@ -2208,7 +2208,7 @@ class TestMCPServerProtocolType:
         fake_mcp_server.save()
 
         mock_render = mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
 
@@ -2234,7 +2234,7 @@ class TestMCPServerProtocolType:
         fake_mcp_server.save()
 
         mock_render = mocker.patch(
-            "apigateway.apis.web.mcp_server.views.render_to_string",
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
             return_value="# Guideline Content",
         )
 
