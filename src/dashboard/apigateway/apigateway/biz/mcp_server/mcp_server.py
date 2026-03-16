@@ -18,7 +18,7 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 from urllib.parse import quote
 
 from django.conf import settings
@@ -309,7 +309,7 @@ class MCPServerHandler:
 
     @staticmethod
     def get_app_permission_risks(
-        mcp_servers: list,
+        mcp_servers: Sequence,
         releases: Optional[Dict[Tuple[int, int], Release]] = None,
     ) -> Dict[int, List[str]]:
         """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
@@ -557,7 +557,7 @@ class MCPServerHandler:
 
     @staticmethod
     def build_list_context(
-        mcp_servers: list,
+        mcp_servers: Sequence,
         include_prompts_count: bool = False,
         include_least_privileges: bool = False,
         include_app_permission_risks: bool = False,
