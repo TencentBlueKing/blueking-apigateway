@@ -793,6 +793,29 @@ class TestBkTrafficLabelChecker:
                 },
                 pytest.raises(ValueError),
             ),
+            # empty match
+            (
+                {
+                    "rules": [
+                        {
+                            "match": [],
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}}],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
+            # no match key
+            (
+                {
+                    "rules": [
+                        {
+                            "actions": [{"set_headers": {"X-Server-Id": "100"}}],
+                        }
+                    ]
+                },
+                pytest.raises(ValueError),
+            ),
             # no actions key
             (
                 {

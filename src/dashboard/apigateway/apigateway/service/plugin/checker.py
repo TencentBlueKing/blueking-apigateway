@@ -412,6 +412,10 @@ class BkTrafficLabelChecker(BaseChecker):
             raise ValueError("rules cannot be empty")
 
         for idx, rule in enumerate(rules):
+            match = rule.get("match")
+            if not match:
+                raise ValueError(f"rule[{idx}]: match cannot be empty")
+
             actions = rule.get("actions")
             if not actions:
                 raise ValueError(f"rule[{idx}]: actions cannot be empty")
