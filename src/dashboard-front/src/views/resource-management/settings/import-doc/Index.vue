@@ -106,6 +106,7 @@
             :custom-request="handleReq"
             class="upload-cls"
             accept=".yaml,.json,.yml"
+            :size="5"
           >
             <template #default>
               <div>
@@ -144,6 +145,7 @@
           class="upload-cls"
           name="file"
           :header="{ name: 'X-CSRFToken', value: CSRFToken }"
+          :size="5"
           @done="handleUploadDone"
           @progress="handleUploadSuccess"
         >
