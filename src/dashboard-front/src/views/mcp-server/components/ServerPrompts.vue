@@ -133,11 +133,10 @@
 
 <script lang="ts" setup>
 import { escape } from 'lodash-es';
-import { useFeatureFlag, useGateway } from '@/stores';
+import { useFeatureFlag } from '@/stores';
 import {
   type IMCPServerPrompt,
   getServer,
-  getServerPromptsDetail,
 } from '@/services/source/mcp-server';
 import AgDescription from '@/components/ag-description/Index.vue';
 
@@ -154,7 +153,6 @@ const emit = defineEmits<{ 'update-count': [count: number] }>();
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
-const gatewayStore = useGateway();
 
 const mcpPromptRef = ref<HTMLDivElement | null>(null);
 const curPromptData = ref<IMCPServerPrompt>({});
@@ -180,21 +178,6 @@ const promptList = computed<IMCPServerPrompt[]>(() => {
 const escapedCodeContent = computed(() => {
   return escape(curPromptData.value?.content ?? '');
 });
-const gatewayId = computed(() => gatewayStore.currentGateway?.id || server?.gateway?.id);
-
-const fetchPromptDetail = async () => {
-  promptDetailLoading.value = true;
-  try {
-    const res = await getServerPromptsDetail(gatewayId.value, { ids: [curPromptData.value.id] });
-    curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
-  }
-  catch {
-    curPromptData.value = {};
-  }
-  finally {
-    promptDetailLoading.value = false;
-  }
-};
 
 const handlePromptCollapseChange = (isCollapse: boolean) => {
   if (isCollapse) {
@@ -206,11 +189,15 @@ const handlePromptCollapseChange = (isCollapse: boolean) => {
 };
 
 const handlePromptClick = (row: IMCPServerPrompt) => {
+  promptDetailLoading.value = true;
   const isRepeat = `${curPromptData.value.id}&${curPromptData.value.code}` === `${row.id}&${row.code}`;
   if (!isRepeat) {
     curPromptData.value = row;
-    fetchPromptDetail();
   }
+  // 增加个loading效果增加页面美化
+  setTimeout(() => {
+    promptDetailLoading.value = false;
+  }, 300);
 };
 
 const handlePromptMouseenter = (e: MouseEvent, row: IMCPServerPrompt) => {
