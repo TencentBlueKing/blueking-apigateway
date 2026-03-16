@@ -22,14 +22,16 @@ import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerExtendTypeEnum,
     MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerExtend
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory, MCPServerExtend
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime
@@ -907,3 +909,554 @@ class TestMCPServerHandler:
         assert "tool_a" in risks[mcp_server.id]
         key = (fake_gateway.id, fake_stage.id)
         assert privileges[key] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+
+    # ========== validate_access 测试 ==========
+
+    def test_validate_access_ok(self, fake_gateway, fake_stage):
+        """正常情况：状态均为 ACTIVE，校验通过"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        # 不应抛出异常
+        MCPServerHandler.validate_access(mcp_server)
+
+    def test_validate_access_inactive_server(self, fake_gateway, fake_stage):
+        """MCPServer 未启用时应抛出 NOT_FOUND"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            is_public=True,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.validate_access(mcp_server)
+
+    def test_validate_access_inactive_gateway(self, fake_gateway, fake_stage):
+        """网关未启用时应抛出 NOT_FOUND"""
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.validate_access(mcp_server)
+
+    def test_validate_access_inactive_stage(self, fake_gateway, fake_stage):
+        """环境未启用时应抛出 NOT_FOUND"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.INACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.validate_access(mcp_server)
+
+    def test_validate_access_check_public_not_public(self, fake_gateway, fake_stage):
+        """check_public=True 时，非公开且非维护者应抛出 NOT_FOUND"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway._maintainers = "admin"
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.validate_access(mcp_server, check_public=True, username="other_user")
+
+    def test_validate_access_check_public_maintainer_allowed(self, fake_gateway, fake_stage):
+        """check_public=True 时，非公开但是维护者可以访问"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway._maintainers = "admin"
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        # 维护者不应抛异常
+        MCPServerHandler.validate_access(mcp_server, check_public=True, username="admin")
+
+    def test_validate_access_check_public_is_public(self, fake_gateway, fake_stage):
+        """check_public=True 时，公开的 MCPServer 无需检查维护者"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        # 公开的 MCPServer，任何用户都可以访问
+        MCPServerHandler.validate_access(mcp_server, check_public=True, username="anyone")
+
+    def test_validate_access_check_public_no_username(self, fake_gateway, fake_stage):
+        """check_public=True 且 is_public=False，不传 username 应抛出 NOT_FOUND"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.validate_access(mcp_server, check_public=True)
+
+    # ========== build_guideline 测试 ==========
+
+    def test_build_guideline(self, fake_gateway, fake_stage, mocker):
+        """测试 build_guideline 返回渲染后的内容"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            name="test-mcp",
+            description="A test MCP server",
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Guideline for test-mcp",
+        )
+
+        result = MCPServerHandler.build_guideline(mcp_server, user_tenant_id="tenant_1")
+
+        assert result == "# Guideline for test-mcp"
+
+    def test_build_guideline_with_least_privilege(self, fake_gateway, fake_stage, mocker):
+        """测试 build_guideline 传入 least_privilege 参数"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            name="test-mcp",
+        )
+
+        mock_render = mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Guideline",
+        )
+
+        MCPServerHandler.build_guideline(
+            mcp_server,
+            least_privilege=MCPServerLeastPrivilegeEnum.APPLICATION.value,
+        )
+
+        # 验证 render_to_string 被调用
+        mock_render.assert_called_once()
+
+    # ========== apply_category_filter 测试 ==========
+
+    def test_apply_category_filter_empty(self, fake_gateway, fake_stage):
+        """空分类列表不做过滤"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        queryset = MCPServer.objects.filter(id=mcp_server.id)
+
+        result = MCPServerHandler.apply_category_filter(queryset, [])
+
+        assert list(result) == list(queryset)
+
+    def test_apply_category_filter_or_logic(self, fake_gateway, fake_stage):
+        """不包含特殊分类时使用 OR 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        cat_a = G(MCPServerCategory, name="CatA", is_active=True)
+        cat_b = G(MCPServerCategory, name="CatB", is_active=True)
+
+        server_a = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_a.categories.add(cat_a)
+
+        server_b = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_b.categories.add(cat_b)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(queryset, ["CatA", "CatB"])
+
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_a.id in result_ids
+        assert server_b.id in result_ids
+        assert server_none.id not in result_ids
+
+    def test_apply_category_filter_and_logic_with_special(self, fake_gateway, fake_stage):
+        """包含 Official 分类时使用 AND 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        official_cat = G(MCPServerCategory, name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        # 同时属于两个分类的 server
+        server_both = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_both.categories.add(official_cat, devops_cat)
+
+        # 只属于一个分类的 server
+        server_official_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_only.categories.add(official_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(queryset, [OFFICIAL_MCP_CATEGORY_NAME, "DevOps"])
+
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_both.id in result_ids
+        assert server_official_only.id not in result_ids
+
+    def test_apply_category_filter_inactive_category(self, fake_gateway, fake_stage):
+        """未激活的分类不匹配"""
+        MCPServerCategory.objects.all().delete()
+
+        inactive_cat = G(MCPServerCategory, name="InactiveCat", is_active=False)
+        server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server.categories.add(inactive_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(queryset, ["InactiveCat"])
+
+        assert result.count() == 0
+
+    # ========== build_list_queryset 测试 ==========
+
+    def test_build_list_queryset_basic(self, fake_gateway, fake_stage):
+        """基础查询：只返回 ACTIVE 的 MCPServer"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        active_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        inactive_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset()
+        result_ids = set(result.values_list("id", flat=True))
+
+        assert active_server.id in result_ids
+        assert inactive_server.id not in result_ids
+
+    def test_build_list_queryset_with_keyword(self, fake_gateway, fake_stage):
+        """关键字过滤"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            name="unique_keyword_test",
+        )
+
+        result = MCPServerHandler.build_list_queryset(keyword="unique_keyword")
+        result_ids = set(result.values_list("id", flat=True))
+        assert server.id in result_ids
+
+        result_empty = MCPServerHandler.build_list_queryset(keyword="nonexistent_xyz")
+        assert server.id not in set(result_empty.values_list("id", flat=True))
+
+    def test_build_list_queryset_with_is_public(self, fake_gateway, fake_stage):
+        """按 is_public 过滤"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        public_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        private_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        result_public = MCPServerHandler.build_list_queryset(is_public=True)
+        result_public_ids = set(result_public.values_list("id", flat=True))
+        assert public_server.id in result_public_ids
+        assert private_server.id not in result_public_ids
+
+        result_private = MCPServerHandler.build_list_queryset(is_public=False)
+        result_private_ids = set(result_private.values_list("id", flat=True))
+        assert private_server.id in result_private_ids
+        assert public_server.id not in result_private_ids
+
+    def test_build_list_queryset_with_category(self, fake_gateway, fake_stage):
+        """按单个分类过滤"""
+        MCPServerCategory.objects.all().delete()
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        cat = G(MCPServerCategory, name="TestCat", is_active=True)
+        server_with_cat = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_with_cat.categories.add(cat)
+
+        server_no_cat = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset(category="TestCat")
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_with_cat.id in result_ids
+        assert server_no_cat.id not in result_ids
+
+    def test_build_list_queryset_with_categories(self, fake_gateway, fake_stage):
+        """按多个分类过滤"""
+        MCPServerCategory.objects.all().delete()
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        cat_a = G(MCPServerCategory, name="CatA", is_active=True)
+        cat_b = G(MCPServerCategory, name="CatB", is_active=True)
+
+        server_a = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_a.categories.add(cat_a)
+
+        server_b = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_b.categories.add(cat_b)
+
+        result = MCPServerHandler.build_list_queryset(categories=["CatA", "CatB"])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_a.id in result_ids
+        assert server_b.id in result_ids
+
+    def test_build_list_queryset_inactive_gateway_excluded(self, fake_gateway, fake_stage):
+        """网关未启用的 MCPServer 应被排除"""
+        fake_gateway.status = GatewayStatusEnum.INACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset()
+        assert server.id not in set(result.values_list("id", flat=True))
+
+    # ========== build_list_context 测试 ==========
+
+    def test_build_list_context_basic(self, fake_gateway, fake_stage):
+        """基础上下文包含 gateways 和 stages"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        context = MCPServerHandler.build_list_context([mcp_server])
+
+        assert "gateways" in context
+        assert "stages" in context
+        assert fake_gateway.id in context["gateways"]
+        assert fake_stage.id in context["stages"]
+
+    def test_build_list_context_with_prompts_count(self, fake_gateway, fake_stage):
+        """include_prompts_count=True 时包含 prompts_count_map"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([{"id": 1}, {"id": 2}]),
+        )
+
+        context = MCPServerHandler.build_list_context([mcp_server], include_prompts_count=True)
+
+        assert "prompts_count_map" in context
+        assert context["prompts_count_map"][mcp_server.id] == 2
+
+    def test_build_list_context_with_least_privileges(self, fake_gateway, fake_stage):
+        """include_least_privileges=True 时包含 least_privileges"""
+        rv = self._make_resource_version_with_data(
+            fake_gateway,
+            [{"name": "tool_a", "auth_verified_required": False}],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, _resource_names="tool_a")
+
+        context = MCPServerHandler.build_list_context([mcp_server], include_least_privileges=True)
+
+        assert "least_privileges" in context
+        key = (fake_gateway.id, fake_stage.id)
+        assert key in context["least_privileges"]
+
+    def test_build_list_context_empty(self, fake_gateway):
+        """空列表应返回空 gateways/stages"""
+        context = MCPServerHandler.build_list_context([])
+
+        assert context["gateways"] == {}
+        assert context["stages"] == {}
+
+    # ========== build_retrieve_context 测试 ==========
+
+    def test_build_retrieve_context_ok(self, fake_gateway, fake_stage, mocker):
+        """正常情况下返回完整上下文"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            _resource_names="tool_a",
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Guideline",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([], {}),
+        )
+
+        context = MCPServerHandler.build_retrieve_context(mcp_server)
+
+        assert "gateways" in context
+        assert "stages" in context
+        assert "labels" in context
+        assert "tool_name_map" in context
+        assert "prompts_count_map" in context
+        assert "prompts" in context
+        assert "user_custom_doc" in context
+        assert "least_privileges" in context
+
+    def test_build_retrieve_context_check_public_raises(self, fake_gateway, fake_stage):
+        """check_public=True 且非公开非维护者时应抛出异常"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway._maintainers = "admin"
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.build_retrieve_context(mcp_server, check_public=True, username="other")
+
+    def test_build_retrieve_context_inactive_raises(self, fake_gateway, fake_stage):
+        """MCPServer 未启用时应抛出异常"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            is_public=True,
+        )
+
+        with pytest.raises(Exception):
+            MCPServerHandler.build_retrieve_context(mcp_server)
