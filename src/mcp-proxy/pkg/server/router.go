@@ -45,6 +45,10 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	router.Use(middleware.Metrics())
 	// recovery sentry
 	router.Use(sentry.Recovery(raven.DefaultClient, false))
+	// trace - otelgin middleware must be placed before route groups to cover all routes
+	if cfg.Tracing.GinAPIEnabled() {
+		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
+	}
 
 	// basic
 	// liveness
@@ -131,12 +135,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// Streamable HTTP 协议路由
 	seeAppRouter.GET("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
 	seeAppRouter.POST("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
-
-	// trace
-	if cfg.Tracing.GinAPIEnabled() {
-		// set gin otel
-		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
-	}
 
 	return router
 }

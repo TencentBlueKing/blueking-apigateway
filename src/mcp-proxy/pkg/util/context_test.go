@@ -202,6 +202,92 @@ var _ = Describe("Context", func() {
 		})
 	})
 
+	Describe("ClientIP", func() {
+		It("should set and get client IP from gin context and request context", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetClientIP(c)
+
+			ip, exists := c.Get(string(constant.ClientIP))
+			Expect(exists).To(BeTrue())
+			Expect(ip).NotTo(BeEmpty())
+
+			ipFromCtx := util.GetClientIPFromContext(c.Request.Context())
+			Expect(ipFromCtx).To(Equal(ip))
+		})
+
+		It("should return empty when not set", func() {
+			ctx := context.Background()
+			ip := util.GetClientIPFromContext(ctx)
+			Expect(ip).To(BeEmpty())
+		})
+	})
+
+	Describe("ClientID", func() {
+		It("should set and get client ID from gin context and request context", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetClientID(c, "my-mcp-client")
+
+			clientID, exists := c.Get(string(constant.ClientID))
+			Expect(exists).To(BeTrue())
+			Expect(clientID).To(Equal("my-mcp-client"))
+
+			clientIDFromCtx := util.GetClientIDFromContext(c.Request.Context())
+			Expect(clientIDFromCtx).To(Equal("my-mcp-client"))
+		})
+
+		It("should return empty when not set", func() {
+			ctx := context.Background()
+			clientID := util.GetClientIDFromContext(ctx)
+			Expect(clientID).To(BeEmpty())
+		})
+
+		It("should overwrite previous value", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetClientID(c, "old-client")
+			util.SetClientID(c, "new-client")
+
+			clientIDFromCtx := util.GetClientIDFromContext(c.Request.Context())
+			Expect(clientIDFromCtx).To(Equal("new-client"))
+		})
+	})
+
+	Describe("GatewayName", func() {
+		It("should set and get gateway name", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetGatewayName(c, "test-gateway")
+
+			name := util.GetGatewayName(c)
+			Expect(name).To(Equal("test-gateway"))
+
+			nameFromCtx := util.GetGatewayNameFromContext(c.Request.Context())
+			Expect(nameFromCtx).To(Equal("test-gateway"))
+		})
+
+		It("should return empty when not set", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			name := util.GetGatewayName(c)
+			Expect(name).To(BeEmpty())
+
+			nameFromCtx := util.GetGatewayNameFromContext(context.Background())
+			Expect(nameFromCtx).To(BeEmpty())
+		})
+	})
+
 	Describe("BkApiAllowedHeaders", func() {
 		It("should set and get allowed headers", func() {
 			w := httptest.NewRecorder()

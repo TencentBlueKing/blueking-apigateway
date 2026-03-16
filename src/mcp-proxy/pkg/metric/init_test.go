@@ -20,6 +20,7 @@ package metric_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"mcp_proxy/pkg/metric"
 )
@@ -28,6 +29,28 @@ var _ = Describe("Metric", func() {
 	Describe("InitMetrics", func() {
 		It("should initialize metrics without panic", func() {
 			metric.InitMetrics()
+		})
+	})
+
+	Describe("MCP Protocol Metrics", func() {
+		It("MCPRequestTotal should be valid", func() {
+			Expect(metric.MCPRequestTotal).NotTo(BeNil())
+		})
+
+		It("MCPRequestDuration should be valid", func() {
+			Expect(metric.MCPRequestDuration).NotTo(BeNil())
+		})
+
+		It("MCPToolCallTotal should be valid", func() {
+			Expect(metric.MCPToolCallTotal).NotTo(BeNil())
+		})
+
+		It("MCPSessionTotal should be valid", func() {
+			Expect(metric.MCPSessionTotal).NotTo(BeNil())
+		})
+
+		It("MCPErrorTotal should be valid", func() {
+			Expect(metric.MCPErrorTotal).NotTo(BeNil())
 		})
 	})
 })

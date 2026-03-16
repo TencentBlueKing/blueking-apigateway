@@ -16,29 +16,24 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package trace
 
 import (
-	"github.com/gin-gonic/gin"
+	tc "go.opentelemetry.io/otel/trace"
 
-	"mcp_proxy/pkg/constant"
-	"mcp_proxy/pkg/util"
+	"mcp_proxy/pkg/config"
 )
 
-// RequestID add the request_id for each api request
-func RequestID() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Extract X-Bkapi-Request-ID as the per-segment request_id
-		requestID := c.GetHeader(constant.BkGatewayRequestIDKey)
-		if requestID == "" {
-			requestID = util.GenUUID4()
-		}
-		util.SetRequestID(c, requestID)
-
-		// Extract X-Request-ID as the full-chain x_request_id
-		xRequestID := c.GetHeader(constant.RequestIDHeaderKey)
-		util.SetXRequestID(c, xRequestID)
-
-		c.Next()
+// SetGlobalTracerForTest sets the global tracer for testing purposes.
+// It returns a cleanup function that restores the original tracer.
+// NOTE: This function is intended for use in tests only.
+func SetGlobalTracerForTest(tracer tc.Tracer, cfg config.Tracing) func() {
+	original := globalTracer
+	globalTracer = &Trace{
+		Tracer: tracer,
+		config: cfg,
+	}
+	return func() {
+		globalTracer = original
 	}
 }

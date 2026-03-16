@@ -83,5 +83,52 @@ var _ = Describe("RequestID", func() {
 				requestIDs[requestID] = true
 			}
 		})
+
+		It("should extract X-Request-ID as x_request_id", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			xRequestID := "global-chain-request-id-789"
+			c.Request.Header.Set(constant.RequestIDHeaderKey, xRequestID)
+
+			mw := middleware.RequestID()
+			mw(c)
+
+			gotXRequestID := util.GetXRequestIDFromContext(c.Request.Context())
+			Expect(gotXRequestID).To(Equal(xRequestID))
+		})
+
+		It("should set empty x_request_id when X-Request-ID not provided", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			mw := middleware.RequestID()
+			mw(c)
+
+			gotXRequestID := util.GetXRequestIDFromContext(c.Request.Context())
+			Expect(gotXRequestID).To(BeEmpty())
+		})
+
+		It("should extract both request_id and x_request_id independently", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			requestID := "segment-request-id-abc"
+			xRequestID := "global-chain-id-xyz"
+			c.Request.Header.Set(constant.BkGatewayRequestIDKey, requestID)
+			c.Request.Header.Set(constant.RequestIDHeaderKey, xRequestID)
+
+			mw := middleware.RequestID()
+			mw(c)
+
+			gotRequestID := util.GetRequestIDFromContext(c.Request.Context())
+			Expect(gotRequestID).To(Equal(requestID))
+
+			gotXRequestID := util.GetXRequestIDFromContext(c.Request.Context())
+			Expect(gotXRequestID).To(Equal(xRequestID))
+		})
 	})
 })

@@ -317,6 +317,96 @@ var _ = Describe("SSE Protocol", func() {
 		})
 	})
 
+	Describe("SSE X-Request-ID Propagation", func() {
+		It("should propagate X-Request-ID through SSE protocol", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			xRequestID := "sse-global-chain-id-test-67890"
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"X-Request-Id": xRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 验证连接成功
+			err = session.Ping(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 调用工具，验证带 X-Request-ID 的请求正常工作
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello SSE with X-Request-ID",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should propagate both X-Request-ID and X-Bkapi-Request-ID via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			xRequestID := "sse-full-chain-id-abc"
+			bkapiRequestID := "sse-segment-id-xyz"
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"X-Request-Id":       xRequestID,
+						"X-Bkapi-Request-ID": bkapiRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 两个 ID 同时存在时应正常工作
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello SSE with both IDs",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
 	Describe("SSE MCP Server Not Found", func() {
 		It("should reject connection for non-existent MCP server via SSE", func() {
 			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "non-existent-server-xyz")
@@ -432,13 +522,17 @@ var _ = Describe("SSE Protocol", func() {
 
 // jwtRoundTripper 是一个自定义的 http.RoundTripper，用于在每个请求中添加 JWT 认证头
 type jwtRoundTripper struct {
-	token string
-	base  http.RoundTripper
+	token        string
+	base         http.RoundTripper
+	extraHeaders map[string]string
 }
 
 func (j *jwtRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// 克隆请求以避免修改原始请求
 	reqClone := req.Clone(req.Context())
 	reqClone.Header.Set(constant.BkGatewayJWTHeaderKey, j.token)
+	for k, v := range j.extraHeaders {
+		reqClone.Header.Set(k, v)
+	}
 	return j.base.RoundTrip(reqClone)
 }

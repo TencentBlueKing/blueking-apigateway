@@ -321,6 +321,133 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 		})
 	})
 
+	Describe("X-Request-ID Propagation", func() {
+		It("should propagate X-Request-ID through the full chain", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			xRequestID := "global-chain-id-integration-test-12345"
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"X-Request-Id": xRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 验证连接成功
+			err = session.Ping(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 调用工具，验证带 X-Request-ID 的请求正常工作
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello with X-Request-ID",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should work without X-Request-ID header", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 不带 X-Request-ID 也应该正常工作
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello without X-Request-ID",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should propagate both X-Request-ID and X-Bkapi-Request-ID independently", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			xRequestID := "full-chain-id-abc-789"
+			bkapiRequestID := "segment-id-xyz-456"
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"X-Request-Id":       xRequestID,
+						"X-Bkapi-Request-ID": bkapiRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 两个 ID 同时存在时应正常工作
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello with both IDs",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
 	Describe("MCP Server Not Found", func() {
 		It("should return error for non-existent MCP server", func() {
 			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "non-existent-server-xyz")
@@ -346,6 +473,222 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			// 连接应该失败
 			_, err := mcpClient.Connect(ctx, transport, nil)
 			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Describe("Trace Context Propagation", func() {
+		It("should propagate incoming traceparent through to tool call without error", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			// Include a W3C traceparent header to simulate an instrumented caller
+			incomingTraceID := "abcdef1234567890abcdef1234567890"
+			incomingSpanID := "1234567890abcdef"
+			traceparent := fmt.Sprintf("00-%s-%s-01", incomingTraceID, incomingSpanID)
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"Traceparent": traceparent,
+					},
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Verify tool call works with traceparent present
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello with trace context",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should work normally without traceparent header", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Without traceparent, tool call should still succeed
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello without trace context",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should propagate both traceparent and X-Request-ID simultaneously", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			incomingTraceID := "11223344556677889900aabbccddeeff"
+			incomingSpanID := "aabbccddeeff0011"
+			traceparent := fmt.Sprintf("00-%s-%s-01", incomingTraceID, incomingSpanID)
+			xRequestID := "trace-and-request-id-combined-test"
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"Traceparent":  traceparent,
+						"X-Request-Id": xRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Both headers should coexist without issues
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello with both trace and request ID",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("Client Info Propagation", func() {
+		It("should preserve clientInfo through initialize and subsequent tool calls", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			// Connect with a specific client name to verify clientInfo propagation
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "integration-test-client",
+				Version: "3.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Verify the session works — clientInfo should have been sent during initialize
+			err = session.Ping(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			// List tools to verify normal operations work with clientInfo set
+			listResult, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(listResult).NotTo(BeNil())
+
+			// Call a tool — the LoggingMiddleware should log client_id as "integration-test-client"
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello from integration-test-client",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should work with different client names", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			// Use a different client name (simulating cursor, claude-code, etc.)
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "cursor",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello from cursor",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
 		})
 	})
 })

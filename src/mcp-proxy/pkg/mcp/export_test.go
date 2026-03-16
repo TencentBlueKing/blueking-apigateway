@@ -16,29 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package mcp
 
-import (
-	"github.com/gin-gonic/gin"
+import sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"mcp_proxy/pkg/constant"
-	"mcp_proxy/pkg/util"
-)
+// ExtractToolNameForTest exposes extractToolName for testing.
+func ExtractToolNameForTest(req sdkmcp.Request) string {
+	return extractToolName(req)
+}
 
-// RequestID add the request_id for each api request
-func RequestID() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Extract X-Bkapi-Request-ID as the per-segment request_id
-		requestID := c.GetHeader(constant.BkGatewayRequestIDKey)
-		if requestID == "" {
-			requestID = util.GenUUID4()
-		}
-		util.SetRequestID(c, requestID)
-
-		// Extract X-Request-ID as the full-chain x_request_id
-		xRequestID := c.GetHeader(constant.RequestIDHeaderKey)
-		util.SetXRequestID(c, xRequestID)
-
-		c.Next()
-	}
+// MatchErrorCodeNameForTest exposes matchErrorCodeName for testing.
+func MatchErrorCodeNameForTest(code int64) string {
+	return matchErrorCodeName(code)
 }

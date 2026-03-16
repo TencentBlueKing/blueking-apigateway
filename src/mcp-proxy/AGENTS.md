@@ -89,6 +89,33 @@ Header extraction.
 Incoming requests must include `X-Bkapi-Jwt`. Claims are stored in context and inner JWTs are lazily signed
 per tool call using the virtual app code format `v_mcp_{server_id}_{app_code}`.
 
+### Request ID Propagation
+
+The full request chain: `User -> bk-apigateway -> mcp-proxy -> biz-gateway -> biz-backend`
+
+Two request ID headers are used with different semantics:
+
+| Header | Semantics | Propagation Behavior |
+|---|---|---|
+| `X-Request-Id` | **Full-chain request ID**. Set by the first gateway in the chain, passed through all hops unchanged. | mcp-proxy extracts it from the incoming request and forwards it to downstream via `X-Request-Id` header. |
+| `X-Bkapi-Request-ID` | **Per-segment request ID**. Each bk-apigateway instance generates a new one for its own segment. | mcp-proxy extracts it from the incoming request for logging. When calling downstream biz-gateway, the downstream gateway will generate a new `X-Bkapi-Request-ID` for that segment. |
+
+**Context keys:**
+- `x_request_id` (constant.XRequestID) — stores the full-chain `X-Request-Id`
+- `util.RequestIDKey` — stores the per-segment `X-Bkapi-Request-ID`
+
+**Log fields:**
+- `x_request_id` — full-chain ID, use this to correlate logs across all services
+- `request_id` — per-segment ID from the bk-apigateway that called mcp-proxy
+
+**Mapping example:**
+```
+bk-apigateway (generates X-Request-Id=abc, X-Bkapi-Request-ID=seg1)
+  -> mcp-proxy (reads both; logs x_request_id=abc, request_id=seg1; forwards X-Request-Id=abc to downstream)
+    -> biz-gateway (receives X-Request-Id=abc; generates new X-Bkapi-Request-ID=seg2)
+      -> biz-backend (receives X-Request-Id=abc, X-Bkapi-Request-ID=seg2)
+```
+
 ## Code Conventions
 
 - **Go version**: 1.24.4 (from `go.mod`)
