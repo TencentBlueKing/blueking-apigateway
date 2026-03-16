@@ -494,6 +494,7 @@ const rules = {
     {
       validator: async (value: string) => {
         try {
+          if (isEdit.value) return true;
           if (!value) return true;
 
           const response = await checkNameAvailable({ name: value });
