@@ -129,6 +129,9 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(headerParamSchema.Properties) > 0 {
+					headerParamDesc := "HTTP request header parameters, " +
+						"used to pass metadata such as authentication tokens, content type, etc."
+					headerParamSchema.Description = &headerParamDesc
 					paramSchema.WithPropertiesItem("header_param", jsonschema.SchemaOrBool{
 						TypeObject: &headerParamSchema,
 					})
@@ -137,6 +140,9 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(queryParamSchema.Properties) > 0 {
+					queryParamDesc := "URL query string parameters, " +
+						"appended to the request URL after '?' for filtering, pagination, sorting, etc."
+					queryParamSchema.Description = &queryParamDesc
 					paramSchema.WithPropertiesItem("query_param", jsonschema.SchemaOrBool{
 						TypeObject: &queryParamSchema,
 					})
@@ -145,6 +151,8 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(pathParamSchema.Properties) > 0 {
+					pathParamDesc := "URL path parameters, used to identify specific resources in the URL path (e.g., /users/{id})."
+					pathParamSchema.Description = &pathParamDesc
 					paramSchema.WithPropertiesItem("path_param", jsonschema.SchemaOrBool{
 						TypeObject: &pathParamSchema,
 					})
@@ -158,6 +166,11 @@ func OpenapiToMcpToolConfig(
 					marshalJSON, _ := schema.MarshalJSON()
 					var jsonSchema jsonschema.Schema
 					_ = json.Unmarshal(marshalJSON, &jsonSchema)
+					// Add description if not already set
+					if jsonSchema.Description == nil || *jsonSchema.Description == "" {
+						bodyParamDesc := "HTTP request body in JSON format, containing the main data payload for the API request."
+						jsonSchema.Description = &bodyParamDesc
+					}
 					paramSchema.WithPropertiesItem("body_param", jsonschema.SchemaOrBool{
 						TypeObject: &jsonSchema,
 					})
