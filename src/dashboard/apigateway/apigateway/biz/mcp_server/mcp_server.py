@@ -425,7 +425,6 @@ class MCPServerHandler:
     @staticmethod
     def validate_access(
         instance: MCPServer,
-        *,
         check_public: bool = False,
         username: Optional[str] = None,
     ) -> None:
@@ -454,7 +453,6 @@ class MCPServerHandler:
     @staticmethod
     def build_guideline(
         instance: MCPServer,
-        *,
         user_tenant_id: str = "",
         least_privilege: str = "",
     ) -> str:
@@ -515,7 +513,6 @@ class MCPServerHandler:
 
     @staticmethod
     def build_list_queryset(
-        *,
         keyword: Optional[str] = None,
         category: Optional[str] = None,
         categories: Optional[List[str]] = None,
@@ -560,8 +557,7 @@ class MCPServerHandler:
 
     @staticmethod
     def build_list_context(
-        mcp_servers,
-        *,
+        mcp_servers: list,
         include_prompts_count: bool = False,
         include_least_privileges: bool = False,
         include_app_permission_risks: bool = False,
@@ -623,7 +619,6 @@ class MCPServerHandler:
     @staticmethod
     def build_retrieve_context(
         instance: MCPServer,
-        *,
         check_public: bool = False,
         username: Optional[str] = None,
         user_tenant_id: str = "",

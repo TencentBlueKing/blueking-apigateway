@@ -35,7 +35,6 @@ from apigateway.biz.mcp_server import MCPServerHandler
 
 
 def build_mcp_server_list_queryset(
-    *,
     keyword: Optional[str] = None,
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
@@ -65,7 +64,6 @@ def build_mcp_server_list_context(mcp_servers: Sequence[MCPServer]) -> Dict[str,
 
 def validate_and_enrich_mcp_server_for_retrieve(
     instance: MCPServer,
-    *,
     check_public: bool = False,
     username: Optional[str] = None,
 ) -> Dict[str, Any]:
