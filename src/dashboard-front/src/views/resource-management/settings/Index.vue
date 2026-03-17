@@ -1098,7 +1098,7 @@ watch(
 
 watch(tableQueries, () => {
   nextTick(() => {
-    tableRef.value!.fetchData(tableQueries.value);
+    tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
   });
 }, { deep: true });
 
