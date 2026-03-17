@@ -143,12 +143,11 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 				}
 			}
 			tool := &mcp.Tool{
-				Name:         toolConfig.Name,
-				Description:  toolConfig.Description,
-				InputSchema:  inputSchema,
-				OutputSchema: toolConfig.OutputSchema,
+				Name:        toolConfig.Name,
+				Description: toolConfig.Description,
+				InputSchema: inputSchema,
 			}
-			// 处理 OutputSchema
+			// 处理 OutputSchema (converter.go 已确保包含 type: "object")
 			if len(toolConfig.OutputSchema) > 0 {
 				var outputSchema map[string]any
 				if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
@@ -158,10 +157,6 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 						zap.String("mcp_server", config.Name),
 					)
 				} else {
-					// 确保 OutputSchema 包含 type: "object"，否则 SDK 会 panic
-					if _, ok := outputSchema["type"]; !ok {
-						outputSchema["type"] = "object"
-					}
 					tool.OutputSchema = outputSchema
 				}
 			}
@@ -232,10 +227,22 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 			}
 		}
 		tool := &mcp.Tool{
-			Name:         toolConfig.Name,
-			Description:  toolConfig.Description,
-			InputSchema:  inputSchema,
-			OutputSchema: toolConfig.OutputSchema,
+			Name:        toolConfig.Name,
+			Description: toolConfig.Description,
+			InputSchema: inputSchema,
+		}
+		// 处理 OutputSchema (converter.go 已确保包含 type: "object")
+		if len(toolConfig.OutputSchema) > 0 {
+			var outputSchema map[string]any
+			if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
+				logging.GetLogger().Error("failed to unmarshal tool output schema",
+					zap.Error(err),
+					zap.String("tool_name", toolConfig.Name),
+					zap.String("mcp_server", name),
+				)
+			} else {
+				tool.OutputSchema = outputSchema
+			}
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.AddTool(tool, toolHandler)
