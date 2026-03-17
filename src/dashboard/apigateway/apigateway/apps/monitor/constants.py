@@ -62,6 +62,16 @@ class NoticeWayEnum(StructuredEnum):
     MAIL = EnumField("mail")
 
 
+class AlarmFilterTypeEnum(StructuredEnum):
+    BLACK_LIST = EnumField("black_list", label=_("黑名单"))
+    WHITE_LIST = EnumField("white_list", label=_("白名单"))
+
+
+class AlarmFilterMatchMethodEnum(StructuredEnum):
+    CONTAINS = EnumField("contains", label=_("包含"))
+    REGEX_MATCH = EnumField("regex_match", label=_("正则匹配"))
+
+
 class NoticeRoleEnum(StructuredEnum):
     MAINTAINER = EnumField("maintainer")
 

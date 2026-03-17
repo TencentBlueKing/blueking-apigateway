@@ -18,12 +18,19 @@
 #
 import json
 import logging
+import re
 import textwrap
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from django.template import Context, Template
 
-from apigateway.apps.monitor.constants import DEFAULT_SENDER, AlarmStatusEnum, AlarmTypeEnum
+from apigateway.apps.monitor.constants import (
+    DEFAULT_SENDER,
+    AlarmFilterMatchMethodEnum,
+    AlarmFilterTypeEnum,
+    AlarmStatusEnum,
+    AlarmTypeEnum,
+)
 from apigateway.apps.monitor.models import AlarmFilterConfig, AlarmRecord
 from apigateway.core.models import Gateway
 from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
@@ -152,6 +159,9 @@ class Alerter(AlertHandler):
         if not receivers:
             return AlarmStatusEnum.FAILURE.value, "告警接收人为空", message
 
+        if self._is_message_filtered(message, event):
+            return AlarmStatusEnum.SKIPPED.value, "告警消息被过滤规则拦截", message
+
         status = AlarmStatusEnum.SUCCESS.value
         result_messages = []
 
@@ -185,3 +195,42 @@ class Alerter(AlertHandler):
 
     def get_tenant_id(self, event: MonitorEvent) -> str:
         raise NotImplementedError
+
+    def _is_message_filtered(self, message: str, event: MonitorEvent) -> bool:
+        alarm_strategies = event.extend.get("alarm_strategies", [])
+        if not alarm_strategies:
+            return False
+
+        for strategy in alarm_strategies:
+            filter_config = strategy.config.get("filter_config")
+            if not filter_config:
+                continue
+
+            filter_type = filter_config["type"]
+            match_method = filter_config["match"]
+            items = filter_config.get("items", [])
+
+            if not items:
+                continue
+
+            matched = self._match_message(message, match_method, items)
+
+            if filter_type == AlarmFilterTypeEnum.WHITE_LIST.value and not matched:
+                return True
+            if filter_type == AlarmFilterTypeEnum.BLACK_LIST.value and matched:
+                return True
+
+        return False
+
+    @staticmethod
+    def _match_message(message: str, match_method: str, items: List[str]) -> bool:
+        for item in items:
+            if match_method == AlarmFilterMatchMethodEnum.CONTAINS.value and item in message:
+                return True
+            if match_method == AlarmFilterMatchMethodEnum.REGEX_MATCH.value:
+                try:
+                    if re.search(item, message):
+                        return True
+                except re.error:
+                    logger.warning("invalid regex pattern in filter_config: %s", item)
+        return False
