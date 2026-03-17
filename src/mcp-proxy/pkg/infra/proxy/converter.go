@@ -179,7 +179,17 @@ func OpenapiToMcpToolConfig(
 
 			if operation.Responses != nil {
 				marshalJSON, _ := operation.Responses.MarshalJSON()
-				toolConfig.OutputSchema = marshalJSON
+				// 确保 OutputSchema 包含 type: "object"，否则 MCP SDK 会 panic
+				var outputSchema map[string]any
+				if err := json.Unmarshal(marshalJSON, &outputSchema); err == nil {
+					if _, ok := outputSchema["type"]; !ok {
+						outputSchema["type"] = "object"
+					}
+					toolConfig.OutputSchema, _ = json.Marshal(outputSchema)
+				} else {
+					// 如果解析失败，提供默认的空对象 schema
+					toolConfig.OutputSchema = []byte(`{"type":"object"}`)
+				}
 			}
 
 			toolConfig.ParamSchema = paramSchema
