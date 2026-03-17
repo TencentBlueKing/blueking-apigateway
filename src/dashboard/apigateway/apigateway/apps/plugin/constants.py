@@ -44,6 +44,7 @@ class PluginTypeCodeEnum(StructuredEnum):
     PROXY_CACHE = EnumField("proxy-cache", label=_("代理缓存"))
     AI_PROXY = EnumField("ai-proxy", label=_("AI 代理"))
     AI_RATE_LIMITING = EnumField("ai-rate-limiting", label=_("AI 速率限制"))
+    BK_TRAFFIC_LABEL = EnumField("bk-traffic-label", label=_("流量染色"))
 
     BK_OAUTH2_PROTECTED_RESOURCE = EnumField("bk-oauth2-protected-resource", label=_("OAuth2 保护资源"))
     BK_OAUTH2_VERIFY = EnumField("bk-oauth2-verify", label=_("OAuth2 验证"))

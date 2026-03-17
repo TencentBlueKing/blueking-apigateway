@@ -87,6 +87,8 @@ make lint
 make lint-check
 ```
 
+RUN `make lint` every time you finish coding.
+
 ### Testing
 
 ```bash
@@ -107,6 +109,8 @@ make test-pdb
 # Run tests with coverage
 make test-cov
 ```
+
+RUN `make test` every time you finish coding(a lot of changes to the codebase).
 
 #### Running tests from an agent (critical notes)
 
