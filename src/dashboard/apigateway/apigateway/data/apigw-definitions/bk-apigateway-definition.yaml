@@ -37,8 +37,8 @@ apigateway:
                 weight: 100
 
       mcp_servers:
-        - name: "context-streamable"
-          title: "蓝鲸 API 网关 Context (Streamable)"
+        - name: "context"
+          title: "蓝鲸 API 网关 Context"
           description: "提供网关上下文相关的工具接口"
           resource_names:
             - v2_open_list_gateways
@@ -49,7 +49,7 @@ apigateway:
           protocol_type: "streamable_http"
 
         - name: "debugger"
-          title: "蓝鲸 API 网关 Debugger (Streamable)"
+          title: "蓝鲸 API 网关 Debugger"
           description: "提供调试相关的工具接口"
           resource_names:
             - v2_open_tools_time_get_datetime
