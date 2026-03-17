@@ -18,11 +18,19 @@
 #
 import json
 import operator
+import re
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.monitor.constants import DETECT_METHOD_CHOICES, AlarmStatusEnum, NoticeRoleEnum, NoticeWayEnum
+from apigateway.apps.monitor.constants import (
+    DETECT_METHOD_CHOICES,
+    AlarmFilterMatchMethodEnum,
+    AlarmFilterTypeEnum,
+    AlarmStatusEnum,
+    NoticeRoleEnum,
+    NoticeWayEnum,
+)
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.biz.gateway import GatewayLabelHandler
 from apigateway.common.fields import CurrentGatewayDefault, TimestampField
@@ -70,10 +78,31 @@ class NoticeConfigSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.monitor.serializers.NoticeConfigSLZ"
 
 
+class FilterConfigSLZ(serializers.Serializer):
+    type = serializers.ChoiceField(choices=AlarmFilterTypeEnum.get_choices(), help_text="过滤类型")
+    match = serializers.ChoiceField(choices=AlarmFilterMatchMethodEnum.get_choices(), help_text="匹配方式")
+    items = serializers.ListField(child=serializers.CharField(), allow_empty=True, help_text="匹配项列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.monitor.serializers.FilterConfigSLZ"
+
+    def validate(self, data):
+        if data.get("match") == AlarmFilterMatchMethodEnum.REGEX_MATCH.value:
+            for item in data.get("items", []):
+                try:
+                    re.compile(item)
+                except re.error as e:
+                    raise serializers.ValidationError(
+                        _("匹配项 '{item}' 不是合法的正则表达式: {error}").format(item=item, error=str(e))
+                    )
+        return data
+
+
 class AlarmStrategyConfigSLZ(serializers.Serializer):
     detect_config = DetectConfigSLZ(help_text="检测配置")
     converge_config = ConvergeConfigSLZ(help_text="收敛配置")
     notice_config = NoticeConfigSLZ(help_text="通知配置")
+    filter_config = FilterConfigSLZ(help_text="过滤配置", required=False, allow_null=True, default=None)
 
     class Meta:
         ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyConfigSLZ"

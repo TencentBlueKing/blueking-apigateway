@@ -165,3 +165,92 @@ class TestAlerter:
         template = "It is {{color}}"
         result = self.alerter.render_template(template, color="green")
         assert result == "It is green"
+
+    @pytest.mark.parametrize(
+        "message, match_method, items, expected",
+        [
+            ("backend timeout error", "contains", ["timeout"], True),
+            ("backend timeout error", "contains", ["not_found"], False),
+            ("backend timeout error", "contains", ["not_found", "timeout"], True),
+            ("backend timeout error", "contains", [], False),
+            ("error code 500", "regex_match", [r"code \d+"], True),
+            ("error code abc", "regex_match", [r"code \d+"], False),
+            ("error code 500", "regex_match", [r"no_match", r"code \d+"], True),
+            ("error code 500", "regex_match", [], False),
+            ("error code 500", "regex_match", [r"[invalid"], False),
+        ],
+    )
+    def test_match_message(self, message, match_method, items, expected):
+        assert self.alerter._match_message(message, match_method, items) is expected
+
+    def test_is_message_filtered_no_strategies(self, mocker, mock_event):
+        mock_event.extend = {}
+        assert self.alerter._is_message_filtered("some message", mock_event) is False
+
+    def test_is_message_filtered_no_filter_config(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {"notice_config": {}}
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("some message", mock_event) is False
+
+    def test_is_message_filtered_white_list_matched(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "white_list", "match": "contains", "items": ["important"]},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("important alert message", mock_event) is False
+
+    def test_is_message_filtered_white_list_not_matched(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "white_list", "match": "contains", "items": ["important"]},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("regular alert message", mock_event) is True
+
+    def test_is_message_filtered_black_list_matched(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "black_list", "match": "contains", "items": ["ignore"]},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("please ignore this", mock_event) is True
+
+    def test_is_message_filtered_black_list_not_matched(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "black_list", "match": "contains", "items": ["ignore"]},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("important alert message", mock_event) is False
+
+    def test_is_message_filtered_regex_match(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "black_list", "match": "regex_match", "items": [r"error_\d{3}"]},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("got error_500 from backend", mock_event) is True
+        assert self.alerter._is_message_filtered("got error_abc from backend", mock_event) is False
+
+    def test_is_message_filtered_empty_items(self, mocker, mock_event):
+        strategy = mocker.MagicMock()
+        strategy.config = {
+            "filter_config": {"type": "black_list", "match": "contains", "items": []},
+        }
+        mock_event.extend = {"alarm_strategies": [strategy]}
+        assert self.alerter._is_message_filtered("any message", mock_event) is False
+
+    def test_alert_filtered(self, mocker, mock_event):
+        mocker.patch("apigateway.service.alert_flow.handlers.base.Alerter.get_message", return_value="message")
+        mocker.patch("apigateway.service.alert_flow.handlers.base.Alerter.get_receivers", return_value=["admin"])
+        mocker.patch("apigateway.service.alert_flow.handlers.base.Alerter.get_tenant_id", return_value="")
+        mocker.patch(
+            "apigateway.service.alert_flow.handlers.base.Alerter._is_message_filtered",
+            return_value=True,
+        )
+
+        status, comment, _ = self.alerter._alert(mock_event)
+        assert status == "skipped"
+        assert comment == "告警消息被过滤规则拦截"
