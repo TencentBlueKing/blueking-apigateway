@@ -130,7 +130,11 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		var mcpServer *MCPServer
 
 		// 创建 MCP Server
-		server := mcp.NewServer(&mcp.Implementation{Name: config.Name}, nil)
+		server := mcp.NewServer(&mcp.Implementation{
+			Name:    config.Name,
+			Title:   config.Title,
+			Version: fmt.Sprintf("%d", config.ResourceVersionID),
+		}, nil)
 
 		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
 			// 创建 Streamable HTTP Handler
@@ -170,9 +174,10 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 				}
 			}
 			tool := &mcp.Tool{
-				Name:        toolConfig.Name,
-				Description: toolConfig.Description,
-				InputSchema: inputSchema,
+				Name:         toolConfig.Name,
+				Description:  toolConfig.Description,
+				InputSchema:  inputSchema,
+				OutputSchema: toolConfig.OutputSchema,
 			}
 			// 处理 OutputSchema
 			if len(toolConfig.OutputSchema) > 0 {
@@ -258,9 +263,10 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 			}
 		}
 		tool := &mcp.Tool{
-			Name:        toolConfig.Name,
-			Description: toolConfig.Description,
-			InputSchema: inputSchema,
+			Name:         toolConfig.Name,
+			Description:  toolConfig.Description,
+			InputSchema:  inputSchema,
+			OutputSchema: toolConfig.OutputSchema,
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.AddTool(tool, toolHandler)
