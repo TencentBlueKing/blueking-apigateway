@@ -91,7 +91,6 @@
                 v-model="row.arg_on"
                 :clearable="false"
                 :filterable="false"
-                @change="(value: string) => handleArgOnChange(row, value)"
               >
                 <BkOption
                   v-for="item in argOnList"
@@ -117,7 +116,6 @@
               <BkInput
                 v-else
                 v-model="row.name"
-                :disabled="['scheme', 'uri'].includes(row.arg_on)"
                 :placeholder="t('bk-traffic-label.参数名')"
               />
             </td>
@@ -359,32 +357,24 @@ const actionFormRules = {
 
 const argOnList = [
   {
-    label: 'Header',
-    value: 'header',
+    label: 'Arg',
+    value: 'arg',
+  },
+  {
+    label: 'Post',
+    value: 'post',
+  },
+  {
+    label: 'HTTP',
+    value: 'http',
   },
   {
     label: 'Cookie',
     value: 'cookie',
   },
   {
-    label: 'Query',
-    value: 'query',
-  },
-  {
-    label: 'Path',
-    value: 'path',
-  },
-  {
-    label: 'Method',
-    value: 'method',
-  },
-  {
-    label: 'Scheme',
-    value: 'scheme',
-  },
-  {
-    label: 'URI',
-    value: 'uri',
+    label: t('bk-traffic-label.内置变量'),
+    value: 'built_in',
   },
 ];
 
@@ -425,15 +415,7 @@ const parseArgOnAndName = (str: string): {
 } => {
   const prefixes = argOnList.map(item => item.value);
   for (const prefix of prefixes) {
-    if (prefix === 'scheme' || prefix === 'uri') {
-      if (str.startsWith(prefix)) {
-        return {
-          arg_on: prefix,
-          name: prefix,
-        };
-      }
-    }
-    else if (str.startsWith(`${prefix}_`)) {
+    if (str.startsWith(`${prefix}_`)) {
       return {
         arg_on: prefix,
         name: str.slice(prefix.length + 1),
@@ -441,8 +423,8 @@ const parseArgOnAndName = (str: string): {
     }
   }
   return {
-    arg_on: str,
-    name: '',
+    arg_on: 'built_in',
+    name: str,
   };
 };
 
@@ -514,19 +496,6 @@ const removeActionRow = (action: IFormModel['actions'][number]) => {
   }
 };
 
-const handleArgOnChange = (row: IFormModel['match'][number], value: string) => {
-  // 对于位置是 scheme 和 uri 的行要特殊处理
-  const targetRow = form.value.match.find(item => item.id === row.id);
-  if (targetRow) {
-    if (value === 'scheme' || value === 'uri') {
-      targetRow.name = value;
-    }
-    else {
-      targetRow.name = '';
-    }
-  }
-};
-
 const handleWeightInput = () => {
   if (Array.isArray(actionFormRefs.value)) {
     actionFormRefs.value.forEach((item) => {
@@ -542,7 +511,7 @@ const genRules = () => {
   formRef.value.validate();
   const finalRule: IRules = {
     match: form.value.match.map(item => [
-      ['scheme', 'uri'].includes(item.arg_on) ? item.arg_on : `${item.arg_on}_${item.name}`,
+      item.arg_on === 'built_in' ? item.name : `${item.arg_on}_${item.name}`,
       item.operator,
       item.value,
     ]),
