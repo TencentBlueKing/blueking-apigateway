@@ -130,7 +130,8 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 				)
 			}
 			// 默认提供空对象 schema，避免 AddTool panic
-			inputSchema := map[string]any{"type": "object"}
+			// 同时确保包含 properties 字段，否则很多模型会报错
+			inputSchema := map[string]any{"type": "object", "properties": map[string]any{}}
 			if len(schemaBytes) > 0 {
 				if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
 					logging.GetLogger().Error("failed to unmarshal tool input schema",
@@ -139,15 +140,19 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 						zap.String("mcp_server", config.Name),
 					)
 					// 保持默认的空对象 schema
-					inputSchema = map[string]any{"type": "object"}
+					inputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 				}
+			}
+			// 确保 inputSchema 包含 properties 字段，避免模型报错
+			if _, ok := inputSchema["properties"]; !ok {
+				inputSchema["properties"] = map[string]any{}
 			}
 			tool := &mcp.Tool{
 				Name:        toolConfig.Name,
 				Description: toolConfig.Description,
 				InputSchema: inputSchema,
 			}
-			// 处理 OutputSchema (converter.go 已确保包含 type: "object")
+			// 处理 OutputSchema (converter.go 已确保包含 type: "object" 和 properties)
 			if len(toolConfig.OutputSchema) > 0 {
 				var outputSchema map[string]any
 				if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
@@ -156,9 +161,18 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 						zap.String("tool_name", toolConfig.Name),
 						zap.String("mcp_server", config.Name),
 					)
+					// 使用默认的空对象 schema
+					tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 				} else {
+					// 确保 outputSchema 包含 properties 字段
+					if _, ok := outputSchema["properties"]; !ok {
+						outputSchema["properties"] = map[string]any{}
+					}
 					tool.OutputSchema = outputSchema
 				}
+			} else {
+				// 如果没有 OutputSchema，提供默认值
+				tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 			}
 			toolHandler := genToolHandler(toolConfig)
 			mcpServer.AddTool(tool, toolHandler)
@@ -214,7 +228,8 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 			)
 		}
 		// 默认提供空对象 schema，避免 AddTool panic
-		inputSchema := map[string]any{"type": "object"}
+		// 同时确保包含 properties 字段，否则很多模型会报错
+		inputSchema := map[string]any{"type": "object", "properties": map[string]any{}}
 		if len(schemaBytes) > 0 {
 			if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
 				logging.GetLogger().Error("failed to unmarshal tool input schema",
@@ -223,15 +238,19 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 					zap.String("mcp_server", name),
 				)
 				// 保持默认的空对象 schema
-				inputSchema = map[string]any{"type": "object"}
+				inputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 			}
+		}
+		// 确保 inputSchema 包含 properties 字段，避免模型报错
+		if _, ok := inputSchema["properties"]; !ok {
+			inputSchema["properties"] = map[string]any{}
 		}
 		tool := &mcp.Tool{
 			Name:        toolConfig.Name,
 			Description: toolConfig.Description,
 			InputSchema: inputSchema,
 		}
-		// 处理 OutputSchema (converter.go 已确保包含 type: "object")
+		// 处理 OutputSchema (converter.go 已确保包含 type: "object" 和 properties)
 		if len(toolConfig.OutputSchema) > 0 {
 			var outputSchema map[string]any
 			if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
@@ -240,9 +259,18 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 					zap.String("tool_name", toolConfig.Name),
 					zap.String("mcp_server", name),
 				)
+				// 使用默认的空对象 schema
+				tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 			} else {
+				// 确保 outputSchema 包含 properties 字段
+				if _, ok := outputSchema["properties"]; !ok {
+					outputSchema["properties"] = map[string]any{}
+				}
 				tool.OutputSchema = outputSchema
 			}
+		} else {
+			// 如果没有 OutputSchema，提供默认值
+			tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
 		}
 		toolHandler := genToolHandler(toolConfig)
 		mcpServer.AddTool(tool, toolHandler)
