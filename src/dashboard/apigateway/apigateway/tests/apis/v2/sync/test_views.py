@@ -532,15 +532,19 @@ class TestSyncApiCategory:
         fake_stage.save()
 
         # 创建分类
-        category1 = MCPServerCategory.objects.create(
+        category1, _ = MCPServerCategory.objects.get_or_create(
             name="Official",
-            display_name="官方资源",
-            description="蓝鲸官方提供的SRE工具链",
+            defaults={
+                "display_name": "官方资源",
+                "description": "蓝鲸官方提供的SRE工具链",
+            },
         )
-        category2 = MCPServerCategory.objects.create(
+        category2, _ = MCPServerCategory.objects.get_or_create(
             name="Featured",
-            display_name="精选推荐",
-            description="专家精选的SRE效能工具",
+            defaults={
+                "display_name": "精选推荐",
+                "description": "专家精选的SRE效能工具",
+            },
         )
 
         data = {
@@ -681,10 +685,12 @@ class TestSyncApiCategory:
         fake_stage.save()
 
         # 创建一个存在的分类
-        MCPServerCategory.objects.create(
+        MCPServerCategory.objects.get_or_create(
             name="Official",
-            display_name="官方资源",
-            description="蓝鲸官方提供的SRE工具链",
+            defaults={
+                "display_name": "官方资源",
+                "description": "蓝鲸官方提供的SRE工具链",
+            },
         )
 
         data = {
@@ -729,15 +735,19 @@ class TestSyncApiCategory:
         fake_stage.save()
 
         # 创建分类
-        category1 = MCPServerCategory.objects.create(
+        category1, _ = MCPServerCategory.objects.get_or_create(
             name="Official",
-            display_name="官方资源",
-            description="蓝鲸官方提供的SRE工具链",
+            defaults={
+                "display_name": "官方资源",
+                "description": "蓝鲸官方提供的SRE工具链",
+            },
         )
-        category2 = MCPServerCategory.objects.create(
+        category2, _ = MCPServerCategory.objects.get_or_create(
             name="Monitoring",
-            display_name="监控告警",
-            description="基础设施与应用性能监控工具",
+            defaults={
+                "display_name": "监控告警",
+                "description": "基础设施与应用性能监控工具",
+            },
         )
 
         # 先创建一个带有分类的 MCPServer
@@ -799,10 +809,12 @@ class TestSyncApiCategory:
         fake_stage.save()
 
         # 创建分类
-        category = MCPServerCategory.objects.create(
+        category, _ = MCPServerCategory.objects.get_or_create(
             name="Official",
-            display_name="官方资源",
-            description="蓝鲸官方提供的SRE工具链",
+            defaults={
+                "display_name": "官方资源",
+                "description": "蓝鲸官方提供的SRE工具链",
+            },
         )
 
         # 先创建一个带有分类的 MCPServer

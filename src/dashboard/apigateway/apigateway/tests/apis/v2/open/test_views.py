@@ -516,7 +516,7 @@ class TestMCPServerRetrieveApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            _resource_names="original_tool:renamed_tool",
+            _resource_names="original_tool@renamed_tool",  # 使用 @ 作为分隔符
         )
 
         # 创建一个模拟的 Resource 对象

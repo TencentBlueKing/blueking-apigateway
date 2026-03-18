@@ -121,7 +121,7 @@ class TestMCPServerPermissionListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            _resource_names="original_tool:renamed_tool;tool2",  # resource_name:tool_name 格式
+            _resource_names="original_tool@renamed_tool;tool2",  # resource_name@tool_name 格式
         )
 
         resp = request_view(
@@ -296,7 +296,7 @@ class TestMCPServerAppPermissionListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            _resource_names="original_tool:renamed_tool;tool2",
+            _resource_names="original_tool@renamed_tool;tool2",
         )
 
         # 创建已批准的申请记录
@@ -420,7 +420,7 @@ class TestMCPServerAppPermissionRecordListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-            _resource_names="resource1:tool_name_1;resource2:tool_name_2",
+            _resource_names="resource1@tool_name_1;resource2@tool_name_2",
         )
 
         G(
@@ -499,7 +499,7 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
             name="test-mcp-server-tool-names",
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
-            _resource_names="resource1:renamed_tool1;resource2",
+            _resource_names="resource1@renamed_tool1;resource2",
         )
 
         apply_record = G(

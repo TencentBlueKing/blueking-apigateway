@@ -900,15 +900,20 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
     def validate_tool_names(self, tool_names):
         """验证工具名称列表"""
-        resource_names = self.initial_data.get("resource_names", [])
-
         if tool_names and len(tool_names) != len(set(tool_names)):
             raise serializers.ValidationError("工具名称不能重复")
+
+        return tool_names
+
+    def validate(self, data):
+        """验证 tool_names 和 resource_names 的长度一致性"""
+        tool_names = data.get("tool_names")
+        resource_names = data.get("resource_names")
 
         if tool_names and len(tool_names) != len(resource_names):
             raise serializers.ValidationError("工具名称列表长度与资源名称列表长度不一致")
 
-        return tool_names
+        return data
 
     def _fill_data(self, data):
         data["gateway_id"] = self.context["gateway"].id
