@@ -18,6 +18,7 @@ export const PLUGIN_FORM_EXAMPLE_MAP: { [pluginCode: string]: string } = {
   'bk-ip-restriction': t('插件示例.bk-ip-restriction'),
   'bk-header-rewrite': t('插件示例.bk-header-rewrite'),
   'bk-rate-limit': t('插件示例.bk-rate-limit'),
+  'bk-traffic-label': t('插件示例.bk-traffic-label'),
   'bk-status-rewrite': '',
   'bk-legacy-invalid-params': '',
   'bk-username-required': '',

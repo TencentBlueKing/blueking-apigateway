@@ -35,6 +35,7 @@ import ConfigDisplayTableRateLimit from './ConfigDisplayTableRateLimit.vue';
 import ConfigDisplayTableIpRestriction from './ConfigDisplayTableIpRestriction.vue';
 import ConfigDisplayTableStatusRewrite from './ConfigDisplayTableStatusRewrite.vue';
 import ConfigDisplayTableGeneric from './ConfigDisplayTableGeneric.vue';
+import ConfigDisplayTableBkTrafficLabel from './ConfigDisplayTableBkTrafficLabel.vue';
 import type {
   IBaseTableRow,
   IColumn,
@@ -81,6 +82,7 @@ const tableComponentMap: { [key: string]: Component } = {
   'bk-ip-restriction': ConfigDisplayTableIpRestriction,
   'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
   'bk-username-required': ConfigDisplayTableStatusRewrite,
+  'bk-traffic-label': ConfigDisplayTableBkTrafficLabel,
 };
 
 // 根据 code 或 type 动态获取表格组件

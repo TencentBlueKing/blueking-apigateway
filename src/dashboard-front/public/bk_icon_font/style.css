@@ -65,6 +65,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-delet:before {
 	content: "\e15d";
 }
+.icon-ag-up-fill:before {
+	content: "\e1fb";
+}
 .icon-ag-audit1-fill:before {
 	content: "\e1af";
 }
@@ -73,6 +76,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-danger-fill:before {
 	content: "\e181";
+}
+.icon-ag-down-fill:before {
+	content: "\e1fc";
 }
 .icon-ag-down:before {
 	content: "\e114";
@@ -449,6 +455,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-jibenxinxi:before {
 	content: "\e177";
 }
+.icon-ag-user-circle:before {
+	content: "\e1fa";
+}
 .icon-ag-upload:before {
 	content: "\e186";
 }
@@ -655,4 +664,7 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-oauth2:before {
 	content: "\e1f9";
+}
+.icon-ag-plugin-bk-traffic-label:before {
+	content: "\e1fd";
 }

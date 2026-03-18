@@ -2265,7 +2265,8 @@
     "bk-cors": "作用：允许 https://a.example.com:8081, https://b.example.com:8081 这两个站点发起跨域请求\n\nallow_origins: \nallow_origins_by_regex: ^https://.*\\.example\\.com:8081$\nallow_methods: GET,POST,PUT,PATCH,HEAD,DELETE,OPTIONS\nallow_headers: **\nexpose_headers: \nmax_age: 86400\nallow_credential: false",
     "bk-ip-restriction": "作用：仅允许 IP 192.168.1.1 和 192.168.1.1 请求当前接口\n\n类型：白名单\n白名单： \n      # comment\n       192.168.1.1\n       192.168.1.2",
     "bk-header-rewrite": "作用：设置 header `X-Api-Version: 1`，并且删除 header `X-test`\n\n设置：X-Api-Version: 1\n删除：X-test",
-    "bk-rate-limit": "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制：次数：100 时间范围：秒\n特殊应用频率限制：次数：200  时间范围：秒  蓝鲸应用 ID: demo"
+    "bk-rate-limit": "作用：默认每个应用 100 次/秒，应用 demo 200 次/秒\n\n默认频率限制：次数：100 时间范围：秒\n特殊应用频率限制：次数：200  时间范围：秒  蓝鲸应用 ID: demo",
+    "bk-traffic-label": "# 一个match条件\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"uri\", \"==\", \"/headers\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# 一个match多个条件，有逻辑关系\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             \"OR\",\n             [\"arg_version\", \"==\", \"v1\"],\n             [\"arg_env\", \"==\", \"dev\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# 一个match多个action，有权重的\n# ❶ 30% of the requests should have the `X-Server-Id: 100` request header.\n# ❷ 20% of the requests should have the `X-API-Version: v2` request header.\n# ❸ 50% of the requests should not have any action performed on them.\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"uri\", \"==\", \"/headers\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'},\n               \"weight\": 3\n             {'}'},\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-API-Version\": \"v2\"\n               {'}'},\n               \"weight\": 2\n             {'}'},\n             {'{'}\n               \"weight\": 5\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}\n\n# 多个match   => 顺序执行\n     \"bk-traffic-label\": {'{'}\n       \"rules\": [\n         {'{'}\n           \"match\": [\n             [\"arg_version\", \"==\", \"v1\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 100\n               {'}'}\n             {'}'}\n           ]\n         {'}'},\n         {'{'}\n           \"match\": [\n             [\"arg_version\", \"==\", \"v2\"]\n           ],\n           \"actions\": [\n             {'{'}\n               \"set_headers\": {'{'}\n                 \"X-Server-Id\": 200\n               {'}'}\n             {'}'}\n           ]\n         {'}'}\n       ]\n     {'}'}"
   },
   "风险": "风险",
   "用户态": "用户态",
@@ -2287,5 +2288,27 @@
   "开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。": "开启 OAuth2 公开客户端模式后，这些工具将通过 public 应用身份调用，所有通过 OAuth2 授权的用户均可调用，原有的应用级权限隔离将不再生效。",
   "开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。": "开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。",
   "当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。": "当前已选择的工具均为「用户态」鉴权，开启 OAuth2 公开客户端模式不会产生额外安全风险。每个用户仍需通过 OAuth2 授权验证身份后才能调用。",
-  "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用": "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用"
+  "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用": "已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用",
+  "bk-traffic-label": {
+    "染色条件": "染色条件",
+    "条件关系": "条件关系",
+    "满足全部条件": "满足全部条件",
+    "满足任意条件": "满足任意条件",
+    "参数位置": "参数位置",
+    "参数名": "参数名",
+    "关系": "关系",
+    "参数值": "参数值",
+    "请求匹配 Header": "请求匹配 Header",
+    "match 不能为空": "match 不能为空",
+    "每条 match 的每一项都需要填写": "每条 match 的每一项都需要填写",
+    "actions 不能为空": "actions 不能为空",
+    "weight 总和不等于 100": "weight 总和不等于 100",
+    "=（等于）": "=（等于）",
+    "≠（不等于）": "≠（不等于）",
+    ">（大于）": ">（大于）",
+    "≧（大于等于）": "≧（大于等于）",
+    "<（小于）": "<（小于）",
+    "≦（小于等于）": "≦（小于等于）",
+    "~~（正则）": "~~（正则）"
+  }
 }
