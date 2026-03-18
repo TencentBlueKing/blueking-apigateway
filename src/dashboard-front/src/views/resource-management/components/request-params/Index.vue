@@ -890,7 +890,6 @@ defineExpose({
 :deep(.t-table) {
 
   .t-table__content {
-    border-bottom: none;
     border-radius: 0;
 
     .t-table__body .t-table__expanded-row .t-table__expanded-row-inner .t-table__row-full-element {
