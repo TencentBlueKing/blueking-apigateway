@@ -863,8 +863,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         child=serializers.CharField(),
         required=False,
         allow_empty=True,
-        default=list,
-        help_text="MCPServer 分类名称列表",
+        help_text="MCPServer 分类名称列表，不传则保持原分类不变",
     )
 
     class Meta:
@@ -975,14 +974,15 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if not tool_names:
             tool_names = resource_names
 
-        target_app_codes = validated_data.pop("target_app_codes", [])
-        category_names = validated_data.pop("category_names", [])
+        target_app_codes = validated_data.pop("target_app_codes", None)
+        category_names = validated_data.pop("category_names", None)
 
         instance = super().update(instance, validated_data)
         instance.update_resource_names(resource_names, tool_names)
         instance.save()
 
-        self._sync_permission(instance.id, target_app_codes)
+        if target_app_codes is not None:
+            self._sync_permission(instance.id, target_app_codes)
         self._sync_categories(instance, category_names)
 
         return instance
