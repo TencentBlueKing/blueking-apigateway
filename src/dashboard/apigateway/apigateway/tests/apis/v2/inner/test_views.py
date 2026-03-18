@@ -108,6 +108,38 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
 
+    def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表包含 tool_names 字段（重命名后的工具名称）"""
+        # 创建 MCP Server，resource_name=original_tool，tool_name=renamed_tool
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-tool-names",
+            title="Test MCP Server Tool Names",
+            description="Test Description",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="original_tool:renamed_tool;tool2",  # resource_name:tool_name 格式
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["id"] == mcp_server.id
+        # 验证 tool_names 返回重命名后的名称
+        assert mcp_server_data["tool_names"] == ["renamed_tool", "tool2"]
+
     def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试 MCP Server 权限列表包含审批 URL"""
         # 设置审批 URL 模板
@@ -254,6 +286,43 @@ class TestMCPServerAppPermissionListApi:
         mcp_server_data = result["data"][0]["mcp_server"]
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
 
+    def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
+        """测试已申请权限列表包含 tool_names 字段（重命名后的工具名称）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-tool-names",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="original_tool:renamed_tool;tool2",
+        )
+
+        # 创建已批准的申请记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        # 验证 tool_names 返回重命名后的名称
+        assert mcp_server_data["tool_names"] == ["renamed_tool", "tool2"]
+
     def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
         """测试已申请权限列表包含审批 URL"""
         # 设置审批 URL 模板
@@ -341,6 +410,43 @@ class TestMCPServerAppPermissionRecordListApi:
         assert "approval_url" in record_data
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
 
+    def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
+        """测试申请记录列表包含 tool_names 字段（重命名后的工具名称）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-tool-names",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="resource1:tool_name_1;resource2:tool_name_2",
+        )
+
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+            reason="Test reason",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        # 验证 tool_names 返回重命名后的名称
+        assert mcp_server_data["tool_names"] == ["tool_name_1", "tool_name_2"]
+
 
 class TestMCPServerAppPermissionRecordRetrieveApi:
     def test_retrieve_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
@@ -383,6 +489,42 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
         assert record_data["id"] == apply_record.id
         assert "approval_url" in record_data
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
+
+    def test_retrieve_with_tool_names(self, request_view, fake_gateway, fake_stage):
+        """测试申请记录详情包含 tool_names 字段（重命名后的工具名称）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-tool-names",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1:renamed_tool1;resource2",
+        )
+
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            applied_by="test-user",
+            handled_by="admin",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-record-detail",
+            path_params={"record_id": apply_record.id},
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+
+        mcp_server_data = result["data"]["mcp_server"]
+        # 验证 tool_names 返回重命名后的名称
+        assert mcp_server_data["tool_names"] == ["renamed_tool1", "resource2"]
 
 
 class TestGatewayUpdateStatusApi:

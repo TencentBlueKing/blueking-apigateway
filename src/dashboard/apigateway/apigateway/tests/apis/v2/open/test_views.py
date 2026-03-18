@@ -500,6 +500,73 @@ class TestMCPServerRetrieveApi:
         assert "maintainers" in result["data"]
         assert "oauth2_public_client_enabled" in result["data"]
 
+    def test_retrieve_returns_tool_name_with_rename(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 详情接口返回 tool_name（重命名后的名称）"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        # 创建带重命名的 MCPServer: resource_name=original_tool, tool_name=renamed_tool
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="mcp-server-with-rename",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="original_tool:renamed_tool",
+        )
+
+        # 创建一个模拟的 Resource 对象
+        mock_resource = mock.MagicMock()
+        mock_resource.id = 1
+        mock_resource.name = "original_tool"
+        mock_resource.description = "Test tool description"
+        mock_resource.method = "GET"
+        mock_resource.path = "/api/test"
+        mock_resource.verified_user_required = False
+        mock_resource.verified_app_required = True
+        mock_resource.resource_perm_required = False
+        mock_resource.allow_apply_permission = True
+
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([mock_resource], {1: ["label1"]}),
+        )
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            return_value={mcp_server.id: 0},
+        )
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            return_value=[],
+        )
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            return_value="",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.retrieve",
+            path_params={"mcp_server_id": mcp_server.id},
+            app=mock.MagicMock(app_code="test"),
+            user=mock.MagicMock(username="test_user"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+
+        # 验证 tools 列表包含 tool_name 字段
+        assert "tools" in result["data"]
+        assert len(result["data"]["tools"]) == 1
+
+        tool_data = result["data"]["tools"][0]
+        assert tool_data["name"] == "original_tool"  # 原始资源名
+        assert tool_data["tool_name"] == "renamed_tool"  # 重命名后的名称
+
     def test_retrieve_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 详情接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
