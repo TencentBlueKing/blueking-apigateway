@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -21,13 +21,30 @@
  */
 import type { PrimaryTableProps, SelectOptions, TableRowData } from '@blueking/tdesign-ui';
 
+// 抽离自定义选择事件入参类型，提升复用性
+export interface CustomSelectChangeParams {
+  isCheck?: boolean
+  tableRowKey?: string
+  row?: TableRowData
+}
+
+// 抽离自定义全选事件入参类型
+export interface CustomSelectAllChangeParams {
+  isCheck?: boolean
+  tableRowKey?: string
+  tables?: TableRowData[]
+}
+
 export const useTDesignSelection = () => {
-  // 全选
-  const isAllSelection = ref(false);
   // 已选择的所有行数的rowKey
-  const selections = ref<any[]>([]);
+  const selections = ref<TableRowData[]>([]);
   const selectionsRowKeys = ref<(string | number)[]>([]);
 
+  /**
+   * TDesign表格原生选择变化事件
+   * @param selectedRowKeys 选中的行Key数组
+   * @param options 选择配置项（包含选中行数据）
+   */
   const handleSelectionChange: PrimaryTableProps['onSelectChange'] = (
     selectedRowKeys: (string | number)[],
     options: SelectOptions<TableRowData>,
@@ -37,47 +54,66 @@ export const useTDesignSelection = () => {
     selectionsRowKeys.value = [...selectedRowKeys];
   };
 
-  // 自定义复选框事件
+  /**
+   * 自定义单行选择事件（支持手动控制单勾选/取消）
+   * @param params 选择参数：是否勾选、行唯一键、行数据
+   */
   const handleCustomSelectChange = ({
     isCheck,
-    row = {},
     tableRowKey = 'id',
-  }: {
-    isCheck?: boolean
-    row?: TableRowData
-    tableRowKey?: string
-  }) => {
+    row = {},
+  }: CustomSelectChangeParams) => {
+    const rowKey = row[tableRowKey] as string | number;
     if (isCheck) {
-      selections.value.push(row);
-      selectionsRowKeys.value.push(row[tableRowKey]);
+      // 避免重复添加
+      if (!selectionsRowKeys.value.includes(rowKey)) {
+        selections.value.push(row);
+        selectionsRowKeys.value.push(rowKey);
+      }
     }
     else {
-      const index = selections.value.findIndex(item => item[tableRowKey] === row[tableRowKey]);
-      selections.value.splice(index, 1);
-      selectionsRowKeys.value = selectionsRowKeys.value.filter(item => item !== row[tableRowKey]);
+      selections.value = selections.value.filter(item => item[tableRowKey] !== rowKey);
+      selectionsRowKeys.value = selectionsRowKeys.value.filter(key => key !== rowKey);
     }
   };
 
-  // 自定义全选事件, 处理复选框自定义交互
+  /**
+   * 自定义全选事件（支持跨页选择的全选/取消全选）
+   * @param params 全选参数：是否全选、行唯一键、当前页表格数据
+   */
   const handleCustomSelectAllChange = ({
     isCheck,
-    tables = [],
     tableRowKey = 'id',
-  }: {
-    isCheck?: boolean
-    tables?: TableRowData[]
-    tableRowKey?: string
-  }) => {
-    const pageSelection = tables.map(item => item[tableRowKey]);
-    const hasSelected = selections.value.filter(item => !pageSelection.includes(item[tableRowKey]));
+    tables = [],
+  }: CustomSelectAllChangeParams) => {
+    if (!tables.length || !tableRowKey) return;
+
+    // 生成当前页行Key集合（用于快速判断）
+    const pageKeySet = new Set(
+      tables.map(item => item[tableRowKey]).filter(key => key != null) as (string | number)[],
+    );
+
+    // 生成已选行Key集合
+    const selectedKeySet = new Set(selectionsRowKeys.value);
+
     if (isCheck) {
-      selections.value = [...hasSelected, ...tables];
-      selectionsRowKeys.value = [...new Set([...selectionsRowKeys.value, ...pageSelection])];
+      pageKeySet.forEach(key => selectedKeySet.add(key));
     }
     else {
-      selections.value = [...hasSelected];
-      selectionsRowKeys.value = selectionsRowKeys.value.filter(item => !pageSelection.includes(item));
+      pageKeySet.forEach(key => selectedKeySet.delete(key));
     }
+
+    // 计算新的已选行数据：过滤掉当前页需取消的，保留其他页+当前页需选中的
+    const newSelections = selections.value
+      .filter(item => !pageKeySet.has(item[tableRowKey] as string | number))
+      .concat(isCheck ? tables : []);
+    const uniqueSelections = Array.from(
+      new Map(newSelections.map(item => [item[tableRowKey], item]))?.values(),
+    );
+
+    // 一次性更新响应式数据，减少视图更新次数
+    selectionsRowKeys.value = Array.from(selectedKeySet);
+    selections.value = uniqueSelections;
   };
 
   const resetSelections = () => {
@@ -86,7 +122,6 @@ export const useTDesignSelection = () => {
   };
 
   return {
-    isAllSelection,
     selections,
     selectionsRowKeys,
     resetSelections,
