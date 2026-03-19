@@ -466,7 +466,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
 };
 
 function handleClearSelection() {
-  tableRef.value.handleResetSelection();
+  tableRef.value?.handleResetSelection();
   curSelections.value = [];
   isBatchRenewal.value = false;
 };
