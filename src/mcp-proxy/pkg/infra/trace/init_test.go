@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/constant"
 )
 
 func TestGetTraceIDFromContext(t *testing.T) {
@@ -38,6 +39,14 @@ func TestGetTraceIDFromContext(t *testing.T) {
 		traceID := GetTraceIDFromContext(ctx)
 		if traceID != "" {
 			t.Errorf("expected empty trace ID, got %q", traceID)
+		}
+	})
+
+	t.Run("returns stored trace ID from context value", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), constant.TraceID, "feedfacefeedfacefeedfacefeedface")
+		traceID := GetTraceIDFromContext(ctx)
+		if traceID != "feedfacefeedfacefeedfacefeedface" {
+			t.Errorf("expected stored trace ID, got %q", traceID)
 		}
 	})
 
@@ -55,6 +64,23 @@ func TestGetTraceIDFromContext(t *testing.T) {
 		}
 		if len(traceID) != 32 {
 			t.Errorf("expected 32-char trace ID, got %d chars: %s", len(traceID), traceID)
+		}
+	})
+}
+
+func TestExtractTraceIDFromTraceparent(t *testing.T) {
+	t.Run("extracts trace ID from valid header", func(t *testing.T) {
+		traceparent := "00-11223344556677889900aabbccddeeff-aabbccddeeff0011-01"
+		traceID := ExtractTraceIDFromTraceparent(traceparent)
+		if traceID != "11223344556677889900aabbccddeeff" {
+			t.Errorf("expected extracted trace ID, got %q", traceID)
+		}
+	})
+
+	t.Run("returns empty for invalid header", func(t *testing.T) {
+		traceID := ExtractTraceIDFromTraceparent("invalid-traceparent")
+		if traceID != "" {
+			t.Errorf("expected empty trace ID, got %q", traceID)
 		}
 	})
 }

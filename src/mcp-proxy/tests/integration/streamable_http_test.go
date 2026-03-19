@@ -163,6 +163,65 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(result.Content).NotTo(BeEmpty())
 		})
 
+		It("should return structured content for tools with output schema", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			toolsResult, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(toolsResult).NotTo(BeNil())
+
+			var pingTool *mcp.Tool
+			for _, tool := range toolsResult.Tools {
+				if tool.Name == "ping" {
+					pingTool = tool
+					break
+				}
+			}
+			Expect(pingTool).NotTo(BeNil())
+			Expect(pingTool.OutputSchema).NotTo(BeNil())
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "ping",
+				Arguments: map[string]any{},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+			Expect(result.StructuredContent).NotTo(BeNil())
+
+			structuredContent, ok := result.StructuredContent.(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(structuredContent).To(HaveKey("status_code"))
+			Expect(structuredContent).To(HaveKey("request_id"))
+			Expect(structuredContent).To(HaveKey("trace_id"))
+			responseBody, ok := structuredContent["response_body"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(responseBody).To(HaveKey("method"))
+			Expect(responseBody).To(HaveKey("url"))
+		})
+
 		It("should return error for non-existent tool", func() {
 			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
 
