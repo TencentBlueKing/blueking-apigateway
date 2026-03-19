@@ -173,7 +173,7 @@ const getLogsList = async () => {
 
     // 展示数据面
     if (response.data_plane?.id) {
-      logBody.value += `${response.created_time} [data_plane: ${response.data_plane.name}]${response.data_plane.description}\n\n`;
+      logBody.value += `[data_plane: ${response.data_plane.name}]\n\n`;
     }
 
     const events = response.events || [];
