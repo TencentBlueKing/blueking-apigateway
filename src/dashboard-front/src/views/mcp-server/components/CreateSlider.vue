@@ -155,6 +155,7 @@
                               @clear-filter="handleToolClearFilter"
                               @clear-selection="handleToolClearSelection"
                               @selection-change="handleToolSelectionChange"
+                              @page-change="renderPreviewViewWidth"
                             />
                           </BkLoading>
                         </div>
@@ -195,6 +196,7 @@
                                     @clear-selection="handlePromptClearSelection"
                                     @selection-change="handlePromptSelectionChange"
                                     @row-click="handlePromptRowClick"
+                                    @page-change="renderPreviewViewWidth"
                                   />
                                 </BkLoading>
                               </div>
@@ -292,6 +294,7 @@
                             <div
                               v-if="renderPreviewByTab.length"
                               class="sticky top-0 result-preview-list"
+                              :style="renderPreviewViewWidth()"
                             >
                               <div
                                 v-for="(checks, index) in renderPreviewByTab"
@@ -304,8 +307,7 @@
                                       v-bk-tooltips="{
                                         placement:'top',
                                         content: checks.tool_name || checks.name,
-                                        disabled: !isOverflow,
-                                        extCls: 'max-w-290px',
+                                        disabled: !isOverflow
                                       }"
                                       class="min-w-20px color-#3a84ff text-12px truncate name"
                                       @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
@@ -392,7 +394,7 @@
           {{ t( appAuthStatusList.length > 0 ? '已知晓风险并提交' : '确定') }}
         </BkButton>
         <BkButton
-          class="ml-8px"
+          class="min-w-88px ml-8px"
           @click="handleCancel"
         >
           {{ t('取消') }}
@@ -457,6 +459,9 @@ const { initSidebarFormData, isSidebarClosed } = useSidebar();
 const { t } = i18n.global;
 
 let loadingTimer: NodeJS.Timeout | null = null;
+// 持久化实例，仅创建一次
+const resourceNameToIndexMap = new Map<string, number>();
+const authorizedPromptIds = new Set<number>();
 
 const footerRef = ref<InstanceType<typeof HTMLDivElement>>(null);
 const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
@@ -479,7 +484,6 @@ const defaultFormData = ref<IMCPFormData>({
   categories: [],
 });
 const formData = ref<IMCPFormData>(cloneDeep(defaultFormData.value));
-const toolNameRowData = ref({});
 const isShow = ref(false);
 const submitLoading = ref(false);
 const searchLoading = ref(false);
@@ -516,6 +520,8 @@ const customMethodsList = computed(() => {
     ...methods,
   ];
 });
+
+const toolNameRowData = shallowRef({});
 const resourceTabList = shallowRef<{
   label: string
   value: string
@@ -873,7 +879,10 @@ const filteredToolList = computed(() => {
   });
 });
 const filteredPromptList = computed(() => {
-  handleSetLoading(true);
+  const hasSearchCondition = filterPromptValues.value.length > 0;
+  if (hasSearchCondition) {
+    handleSetLoading(true);
+  }
 
   const searchConditions = {
     name: filterPromptValues.value.find(item => item.id === 'name')?.values[0]?.id ?? '',
@@ -974,6 +983,14 @@ const renderOAuthConfig = (payload) => {
   return {};
 };
 
+// 结果预览高度自适应不同选项表格的高度
+const renderPreviewViewWidth = () => {
+  const initH = 32;
+  const toolClientH = (toolTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
+  const promptClientH = (promptTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
+  return { maxHeight: `${activeTab.value.includes('tool') ? toolClientH : promptClientH}px` };
+};
+
 /**
  * 获取公共异步数据（提取重复逻辑，降低耦合）
  * @param {boolean} isEnablePrompt  是否启用 Prompt 功能
@@ -1014,6 +1031,11 @@ const getCommonListData = async () => {
  * @param {boolean} isShowVal 当前 isShow 的值
  */
 const handleIsShowChange = async (isShowVal: boolean) => {
+  const bodyEl = document.querySelector('body');
+  if (bodyEl) {
+    bodyEl.classList.toggle('overflow-hidden', isShowVal);
+  }
+
   // 仅在 isShow 为 true 时执行后续逻辑
   if (!isShowVal) return;
 
@@ -1022,6 +1044,7 @@ const handleIsShowChange = async (isShowVal: boolean) => {
     await fetchServer();
   }
   getCommonListData();
+  renderPreviewViewWidth();
 };
 
 watch(isShow, handleIsShowChange, { immediate: false });
@@ -1245,9 +1268,169 @@ const fetchStageList = async () => {
   }
 };
 
+/**
+ * 统一更新全选数据（确保工具/Prompt 都处理完成）
+ */
+const updateAllSelections = () => {
+  setTimeout(() => {
+    allSelections.value = [...toolSelections.value, ...promptSelections.value];
+  }, 200);
+};
+
+/**
+ * 工具资源渲染（分片处理，不阻塞主线程）
+ * @param resource_names 资源名称列表
+ * @param tool_names 工具名称列表
+ */
+const renderToolResource = (resource_names: string[], tool_names: string[]) => {
+  try {
+    if (!resource_names?.length) {
+      return;
+    }
+
+    // 清空复用的Map（避免旧数据干扰）
+    resourceNameToIndexMap.clear();
+    const chunkSize = 50;
+    let currentIndex = 0;
+
+    const processChunk = () => {
+      const endIndex = Math.min(currentIndex + chunkSize, resource_names.length);
+      for (let i = currentIndex; i < endIndex; i++) {
+        resourceNameToIndexMap.set(resource_names[i], i);
+      }
+      currentIndex = endIndex;
+
+      // 未处理完则继续分片（利用浏览器空闲时间）
+      if (currentIndex < resource_names.length) {
+        requestIdleCallback(processChunk);
+      }
+      else {
+        const hasToolNames = tool_names?.length > 0;
+        // 轻量遍历，避免修改原数组
+        const updatedResourceList = resourceList.value.map((item) => {
+          const nameIndex = resourceNameToIndexMap.get(item.name);
+          if (hasToolNames && nameIndex !== undefined && nameIndex > -1) {
+            return {
+              ...item,
+              tool_name: tool_names[nameIndex] || item.name,
+            };
+          }
+          return item;
+        });
+
+        const resourceToolData = updatedResourceList.filter(item =>
+          resourceNameToIndexMap.has(item.name),
+        );
+
+        // 分片更新：先更20条，快速渲染
+        toolSelections.value = resourceToolData.slice(0, 20).map(({ name, id, contexts }) => ({
+          name,
+          id,
+          mode_type: 'tool',
+          tool_name: hasToolNames && resourceNameToIndexMap.get(name) !== undefined
+            ? tool_names[resourceNameToIndexMap.get(name)] || ''
+            : '',
+          contexts,
+        }));
+
+        // 剩余数据异步更新，确保DOM挂载
+        setTimeout(() => {
+          toolSelections.value = resourceToolData.map(({ name, id, contexts }) => ({
+            name,
+            id,
+            mode_type: 'tool',
+            tool_name: hasToolNames && resourceNameToIndexMap.get(name) !== undefined
+              ? tool_names[resourceNameToIndexMap.get(name)] || ''
+              : '',
+            contexts,
+          }));
+          toolTableRef.value?.setSelectionData(toolSelections.value);
+          // 延迟清空Map，确保数据使用完成
+          setTimeout(() => resourceNameToIndexMap.clear(), 500);
+        }, 0);
+      }
+    };
+
+    // 启动分片处理
+    processChunk();
+  }
+  catch {
+    resourceNameToIndexMap.clear();
+  }
+};
+
+/**
+ * Prompt 资源渲染（分片处理，不阻塞主线程）
+ * @param prompts Prompt 数据列表
+ */
+const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
+  try {
+    if (!prompts?.length) {
+      return;
+    }
+
+    // 清空复用的Set
+    authorizedPromptIds.clear();
+    const chunkSize = 50;
+    let currentIndex = 0;
+
+    const processPromptChunk = () => {
+      const endIndex = Math.min(currentIndex + chunkSize, promptTableData.value.length);
+      for (let i = currentIndex; i < endIndex; i++) {
+        authorizedPromptIds.add(promptTableData.value[i].id);
+      }
+      currentIndex = endIndex;
+
+      if (currentIndex < promptTableData.value.length) {
+        requestIdleCallback(processPromptChunk);
+      }
+      else {
+        // 处理无权限数据
+        noPermPrompt.value = prompts.filter(item => !authorizedPromptIds.has(item.id)).map(item => ({
+          ...item,
+          mode_type: 'prompt',
+          is_no_perm: true,
+        }));
+
+        // 分片更新
+        promptSelections.value = prompts.slice(0, 20).map(item => ({
+          ...item,
+          mode_type: 'prompt',
+          is_no_perm: !authorizedPromptIds.has(item.id),
+        }));
+
+        setTimeout(() => {
+          promptSelections.value = prompts.map(item => ({
+            ...item,
+            mode_type: 'prompt',
+            is_no_perm: !authorizedPromptIds.has(item.id),
+          }));
+
+          // 合并无权限数据（避免重复创建数组）
+          if (noPermPrompt.value.length) {
+            promptTableData.value.push(...noPermPrompt.value);
+            if (Object.keys(curPromptData.value).length === 0 && promptTableData.value.length) {
+              curPromptData.value = { ...promptTableData.value[0] };
+            }
+          }
+          promptTableRef.value?.setSelectionData(promptSelections.value);
+          // 延迟清空Set
+          setTimeout(() => authorizedPromptIds.clear(), 500);
+        }, 0);
+      }
+    };
+
+    processPromptChunk();
+  }
+  catch {
+    authorizedPromptIds?.clear();
+  }
+};
+
 const fetchServer = async () => {
   try {
     const response = await getServer(gatewayId.value, serverId!);
+
     const {
       name = '',
       title = '',
@@ -1263,6 +1446,7 @@ const fetchServer = async () => {
       prompts = [],
       categories = [],
     } = response ?? {};
+
     formData.value = {
       ...formData.value,
       name,
@@ -1274,70 +1458,19 @@ const fetchServer = async () => {
       oauth2_public_client_enabled,
       stage_id: stage.id || 0,
       protocol_type,
-      categories: categories.map(item => item.name),
+      categories: categories.map(item => item.name || ''),
     };
-    // 会存在MCP工具资源被移除业务场景，所以优先获取环境列表
-    await fetchStageList();
-    if (resource_names?.length) {
-      const resourceNameToIndexMap = new Map();
-      resource_names.forEach((name, index) => {
-        resourceNameToIndexMap.set(name, index);
-      });
-      const hasToolNames = tool_names?.length > 0;
 
-      resourceList.value.forEach((item) => {
-        const nameIndex = resourceNameToIndexMap.get(item.name);
-        if (hasToolNames && nameIndex !== undefined && nameIndex > -1) {
-          item.tool_name = tool_names[nameIndex] || item.name;
-        }
-      });
-
-      const resourceToolData = resourceList.value.filter(item =>
-        resourceNameToIndexMap.has(item.name),
-      );
-
-      toolSelections.value = resourceToolData.map(({ name, id, contexts }) => {
-        const correctIndex = resourceNameToIndexMap.get(name);
-        const toolName = hasToolNames && correctIndex !== undefined
-          ? tool_names[correctIndex] || ''
-          : '';
-
-        return {
-          name,
-          id,
-          mode_type: 'tool',
-          tool_name: toolName,
-          contexts,
-        };
-      });
-
-      toolTableRef.value?.setSelectionData(toolSelections.value);
-      resourceNameToIndexMap.clear();
+    try {
+      await fetchStageList();
     }
-    // 渲染prompt勾选数据
-    if (prompts.length) {
-      // 处理已经是绑定的但是列表里面没有这个prompt的无权限数据
-      const authorizedPromptIds = new Set(promptTableData.value.map(item => item.id));
-      noPermPrompt.value = prompts.filter(item => !authorizedPromptIds.has(item.id)).map((item) => {
-        return {
-          ...item,
-          is_no_perm: !authorizedPromptIds.has(item.id),
-        };
-      });
-      promptSelections.value = prompts.map(item => ({
-        ...item,
-        mode_type: 'prompt',
-        is_no_perm: !authorizedPromptIds.has(item.id),
-      }));
-      if (noPermPrompt.value.length) {
-        promptTableData.value = [...promptTableData.value, ...noPermPrompt.value];
-        if (Object.keys(curPromptData.value).length === 0 && promptTableData.value.length) {
-          curPromptData.value = { ...promptTableData.value[0] };
-        }
-      }
-      promptTableRef.value?.setSelectionData(promptSelections.value);
+    finally {
+      // 启动资源渲染（微任务执行，不阻塞主线程）
+      queueMicrotask(() => renderToolResource(resource_names, tool_names));
+      queueMicrotask(() => renderPromptResource(prompts));
+      // 统一更新全选数据
+      updateAllSelections();
     }
-    allSelections.value = [...toolSelections.value, ...promptSelections.value];
   }
   catch {
     formData.value = cloneDeep(defaultFormData.value);
@@ -1463,26 +1596,32 @@ const handleRemoveResource = ({
 };
 
 const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
-  toolSelections.value = selections;
-  // 保留 Prompt 项，替换工具项
-  const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
-  const toolItems = selections.map(item => ({
-    ...item,
-    mode_type: 'tool',
-  }));
-  allSelections.value = [...promptItems, ...toolItems];
-  getSliderContentHeight();
+  // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
+  setTimeout(() => {
+    toolSelections.value = selections;
+    // 保留 Prompt 项，替换工具项
+    const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
+    const toolItems = selections.map(item => ({
+      ...item,
+      mode_type: 'tool',
+    }));
+    allSelections.value = [...promptItems, ...toolItems];
+    getSliderContentHeight();
+  }, 0);
 };
 
 const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
-  promptSelections.value = selections;
-  // 保留工具项，替换 Prompt 项
-  const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
-  const promptItems = selections.map(item => ({
-    ...item,
-    mode_type: 'prompt',
-  }));
-  allSelections.value = [...toolItems, ...promptItems];
+  // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
+  setTimeout(() => {
+    promptSelections.value = selections;
+    // 保留工具项，替换 Prompt 项
+    const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
+    const promptItems = selections.map(item => ({
+      ...item,
+      mode_type: 'prompt',
+    }));
+    allSelections.value = [...toolItems, ...promptItems];
+  }, 0);
 };
 
 const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
@@ -1490,10 +1629,6 @@ const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters) =>
 };
 
 const handleEditToolName = (row: IMCPServerTool) => {
-  const bodyEl = document.querySelector('body');
-  if (bodyEl) {
-    bodyEl.classList.add('overflow-hidden');
-  }
   toolNameRowData.value = {
     ...row,
     tool_name: row.tool_name ?? row.name,
@@ -1521,10 +1656,6 @@ const handleConfirmToolName = async (row) => {
 
 const handleCancelToolName = () => {
   toolNameRowData.value = {};
-  const bodyEl = document.querySelector('body');
-  if (bodyEl) {
-    bodyEl.classList.remove('overflow-hidden');
-  }
 };
 
 const handleClickOutSide = (e: MouseEvent) => {
@@ -1671,6 +1802,14 @@ const resetSliderData = () => {
     max: 800,
   };
   toolFilterData.value = {};
+  toolTableRef.value?.setPagination({
+    current: 1,
+    pageSize: 10,
+  });
+  promptTableRef.value?.setPagination({
+    current: 1,
+    pageSize: 10,
+  });
 };
 
 const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
@@ -1854,7 +1993,6 @@ defineExpose({
       }
 
       &-list {
-        max-height: 713px;
         overflow-y: auto;
 
         .list-main {

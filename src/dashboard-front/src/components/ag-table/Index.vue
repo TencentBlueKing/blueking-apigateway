@@ -106,6 +106,7 @@
 </template>
 
 <script setup lang="tsx">
+import { cloneDeep, memoize, sortBy, sortedUniq, throttle } from 'lodash-es';
 import {
   PrimaryTable,
   type PrimaryTableInstance,
@@ -117,7 +118,6 @@ import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
-import { cloneDeep, sortBy, sortedUniq } from 'lodash-es';
 import type { BkUiSettings } from '@blueking/tdesign-ui/typings/packages/table/types/table';
 import type { ITableMethod } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
@@ -128,7 +128,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 
 interface IProps {
   apiMethod?: (params?: Record<string, any>) => Promise<unknown>
-  disabledCheckSelection?: (params?: Record<string, any>) => any
+  disabledCheckSelection?: (row: TableRowData) => boolean
   columns?: PrimaryTableProps['columns']
   tableRowKey?: string
   immediate?: boolean
@@ -169,7 +169,7 @@ const {
   // 表格布局方式
   tableLayout = 'fixed',
   // 禁止勾选复选框的条件
-  disabledCheckSelection = undefined,
+  disabledCheckSelection = () => false,
   // 表格最大可分页数量配置项
   maxLimitConfig = {},
   // 显示分页组件
@@ -193,9 +193,13 @@ const emit = defineEmits<{
     selections: TableRowData
     selectionsRowKeys: string[] | number[]
   }
+  'page-change': {
+    current: number
+    pageSize: number
+  }
   'clear-selection': [void]
-  'request-done': [void]
   'clear-filter': [void]
+  'request-done': [void]
   'refresh': [void]
 }>();
 
@@ -206,7 +210,6 @@ const slots = useSlots();
 const { maxTableLimit, clientHeight } = useMaxTableLimit(maxLimitConfig);
 
 const {
-  isAllSelection,
   selections,
   selectionsRowKeys,
   resetSelections,
@@ -214,10 +217,6 @@ const {
   handleCustomSelectChange,
   handleCustomSelectAllChange,
 } = useTDesignSelection();
-
-const disabledSelected = computed(() => {
-  return !tableData.value?.length;
-});
 
 const TDesignTableRef = useTemplateRef<PrimaryTableInstance & ITableMethod>('primaryTableRef');
 
@@ -240,6 +239,8 @@ const pagination = ref<PrimaryTableProps['pagination']>({
   pageSizeOptions: [10, 20, 50, 100],
 });
 
+const isAllSelection = ref(false);
+
 if (Object.keys(maxLimitConfig)?.length) {
   pagination.value = Object.assign(pagination.value, {
     pageSize: maxTableLimit,
@@ -253,12 +254,28 @@ const isShowSelectionRow = computed(() => {
   return showFirstFullRow && selections.value.length > 0;
 });
 
+const disabledSelected = computed(() => {
+  return !tableData.value?.length;
+});
+// 缓存filteredTableData
+const memoizedFilter = memoize(
+  (list: any[]) => list.filter(item => !disabledCheckSelection(item)),
+  list => JSON.stringify(list.map(item => item[tableRowKey])),
+);
+
+// 过滤掉禁止勾选的数据
+const filteredTableData = computed(() => memoizedFilter(tableData.value));
+
 // 设置表格半选效果
 const setIndeterminate = computed(() => {
-  const isExistCheck = tableData.value.some(item =>
-    item.isCustomCheck || selections.value.map(check => check[tableRowKey]).includes(item[tableRowKey]),
-  );
-  return isExistCheck && selections.value.length > 0 && !isAllSelection.value;
+  const availableCount = filteredTableData.value.length;
+  if (availableCount === 0) return false;
+
+  const selectedAvailableCount = filteredTableData.value.filter((item) => {
+    return selectionsRowKeys.value.includes(item[tableRowKey]);
+  }).length;
+
+  return selectedAvailableCount > 0 && selectedAvailableCount < availableCount;
 });
 
 // 这里采用自定义checkbox是为了后续功能扩展，用自带的无法自定义渲染函数(暂时支持跨页选择，不支持跨页全选)
@@ -280,17 +297,13 @@ const selectionColumns = computed(() => [{
           if (isDisabled) {
             return;
           }
-          tableData.value.forEach((item) => {
-            if (!disabledCheckSelection?.(item)) {
-              item.isCustomCheck = isAllSelection.value;
-            }
-          });
-          const tables = tableData.value.filter(item => !disabledCheckSelection?.(item));
+
           handleCustomSelectAllChange({
             isCheck: isAllSelection.value,
             tableRowKey,
-            tables,
+            tables: filteredTableData.value,
           });
+
           emit('selection-change', {
             selectionsRowKeys: selections.value.map(item => item[tableRowKey]),
             selections: selections.value,
@@ -322,7 +335,7 @@ const selectionColumns = computed(() => [{
             tableRowKey,
             row,
           });
-          const selectionTable = tableData.value.filter(item => !disabledCheckSelection?.(item));
+          const selectionTable = filteredTableData.value;
           const checkedIds = selectionsRowKeys.value.filter(id =>
             selectionTable.some(item => item[tableRowKey] === id),
           );
@@ -420,10 +433,18 @@ watch(tableSetting, () => {
   }
 }, { immediate: true });
 
-watch(tableData, () => {
-  localTableData.value = cloneDeep(tableData.value || []);
-  if (localPage) {
-    pagination.value = Object.assign(pagination.value, { total: localTableData.value.length });
+watch(tableData, (newTableData) => {
+  setTimeout(() => {
+    localTableData.value = cloneDeep(newTableData || []);
+    if (localPage) {
+      pagination.value.total = localTableData.value.length;
+    }
+  }, 0);
+
+  // 缓存清空仍同步执行，避免数据不一致
+  const rowKeys = (newTableData || []).map(item => item?.[tableRowKey]);
+  if (rowKeys.length > 0) {
+    memoizedFilter?.cache?.clear();
   }
 }, {
   immediate: true,
@@ -465,7 +486,7 @@ const renderSelectionData = (selectList?: any[]) => {
   }
   const checkTableData = selectList || selectionsRowKeys.value;
   if (checkTableData?.length > 0 && tableData.value?.length > 0) {
-    const selectionTable = tableData.value.filter(item => !disabledCheckSelection?.(item));
+    const selectionTable = filteredTableData.value;
     const checkedIds = selectionTable
       .filter(item => checkTableData.includes(item[tableRowKey]))
       .map(check => check[tableRowKey]);
@@ -484,33 +505,47 @@ const renderSelectionData = (selectList?: any[]) => {
 
 // 获取回显勾选项数据
 const getSelectionData = () => {
-  renderSelectionData();
+  setTimeout(() => {
+    renderSelectionData();
+  }, 50);
 };
 
 // 本地分页设置回显勾选项数据
 const setSelectionData = (selectionList: any[]) => {
-  renderSelectionData(selectionList);
+  // 延迟执行，确保表格 DOM 已挂载
+  setTimeout(() => {
+    renderSelectionData(selectionList);
+  }, 100);
 };
+
+// 节流处理：100ms 内最多触发 1 次
+const throttledHandleRowEnter = throttle((e, row) => {
+  emit('row-mouseenter', {
+    e,
+    row,
+  });
+}, 100);
+
+const throttledHandleRowLeave = throttle((e, row) => {
+  delete row.isOverflow;
+  emit('row-mouseleave', {
+    e,
+    row,
+  });
+}, 100);
 
 const handleRowEnter = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  emit('row-mouseenter', {
-    e,
-    row,
-  });
+  throttledHandleRowEnter(e, row);
 };
 
 const handleRowLeave = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
-  delete row.isOverflow;
-  emit('row-mouseleave', {
-    e,
-    row,
-  });
+  throttledHandleRowLeave(e, row);
 };
 
 const handleCellEnter = ({ e, row }: {
@@ -519,12 +554,18 @@ const handleCellEnter = ({ e, row }: {
 }) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
-    row.isOverflow = cell.scrollWidth > cell.clientWidth;
+    const isOverflow = cell.scrollWidth > cell.clientWidth;
+    // 仅当状态变化时才赋值
+    if (row.isOverflow !== isOverflow) {
+      row.isOverflow = isOverflow;
+    }
   }
 };
 
 const handleCellLeave = ({ row }: { row: TableRowData }) => {
-  delete row.isOverflow;
+  if (row.isOverflow) {
+    delete row.isOverflow;
+  }
 };
 
 const handlePageChange = ({ current, pageSize }: {
@@ -545,6 +586,10 @@ const handlePageChange = ({ current, pageSize }: {
   if (localPage) {
     getSelectionData();
   }
+  emit('page-change', {
+    current,
+    pageSize,
+  });
 };
 
 const handleSettingChange = (setting: BkUiSettings) => {
@@ -673,6 +718,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  memoizedFilter?.cache?.clear();
   document.removeEventListener('click', handleRadioFilterClick);
   radioEl.value?.removeEventListener('click', radioClickHandler);
   settingColumnEl.value?.removeEventListener('click', handleSettingColumnClick);
