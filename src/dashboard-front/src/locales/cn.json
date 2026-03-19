@@ -2298,7 +2298,7 @@
     "参数名": "参数名",
     "关系": "关系",
     "参数值": "参数值",
-    "请求匹配 Header": "请求匹配 Header",
+    "设置 Header": "设置 Header",
     "match 不能为空": "match 不能为空",
     "每条 match 的每一项都需要填写": "每条 match 的每一项都需要填写",
     "actions 不能为空": "actions 不能为空",

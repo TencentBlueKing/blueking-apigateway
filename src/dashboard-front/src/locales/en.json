@@ -2298,7 +2298,7 @@
     "参数名": "Arg Name",
     "关系": "Relation",
     "参数值": "Value",
-    "请求匹配 Header": "Set Header",
+    "设置 Header": "Set Header",
     "match 不能为空": "Match is required",
     "每条 match 的每一项都需要填写": "Must fill each match",
     "actions 不能为空": "Actions is required",
