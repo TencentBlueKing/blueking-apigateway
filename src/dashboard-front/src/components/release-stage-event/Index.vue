@@ -171,6 +171,11 @@ const getLogsList = async () => {
     state.totalDuration = 0;
     logBody.value = '';
 
+    // 展示数据面
+    if (response.data_plane?.id) {
+      logBody.value += `${response.created_time} [data_plane: ${response.data_plane.name}]${response.data_plane.description}\n\n`;
+    }
+
     const events = response.events || [];
     const eventTemplates = response.events_template || [];
 
