@@ -42,6 +42,12 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+const (
+	toolResponseStatusCodeField = "status_code"
+	toolResponseRequestIDField  = "request_id"
+	toolResponseBodyField       = "response_body"
+)
+
 // MCPProxy ...
 type MCPProxy struct {
 	mcpServers map[string]*MCPServer
@@ -168,7 +174,41 @@ func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 		)
 		return nil
 	}
+
+	// go-sdk 的 AddTool 要求 OutputSchema 顶层为 object；数组或 ref-only schema 直接忽略。
+	schemaType, hasType := outputSchema["type"]
+	_, hasProperties := outputSchema["properties"]
+	if !hasObjectSchemaType(schemaType) && (hasType || !hasProperties) {
+		return nil
+	}
+
 	return normalizeToolOutputSchema(outputSchema)
+}
+
+func buildToolResponseEnvelope(statusCode int, requestID string, responseBody any) map[string]any {
+	responseResult := map[string]any{
+		toolResponseStatusCodeField: statusCode,
+		toolResponseRequestIDField:  requestID,
+	}
+	if responseBody != nil {
+		responseResult[toolResponseBodyField] = responseBody
+	}
+	return responseResult
+}
+
+func buildToolResult(output any) *mcp.CallToolResult {
+	result := &mcp.CallToolResult{}
+	if structuredContent, ok := output.(map[string]any); ok {
+		result.StructuredContent = structuredContent
+	}
+	text := cast.ToString(output)
+	if rawOutput, err := json.Marshal(output); err == nil {
+		text = string(rawOutput)
+	}
+	result.Content = []mcp.Content{
+		&mcp.TextContent{Text: text},
+	}
+	return result
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
@@ -582,19 +622,21 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 					if response.Body() != nil {
 						defer response.Body().Close()
 					}
-					responseResult := map[string]any{
-						"status_code": response.Code(),
-						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
+					var res any
+					if response.Body() != nil {
+						if e := consumer.Consume(response.Body(), &res); e != nil {
+							return nil, e
+						}
 					}
-					var res map[string]any
-					if e := consumer.Consume(response.Body(), &res); e == nil {
-						responseResult["response_body"] = res
-					}
+					responseResult := buildToolResponseEnvelope(
+						response.Code(),
+						response.GetHeader(constant.BkGatewayRequestIDKey),
+						res,
+					)
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
 					}
-					rawResult, _ := json.Marshal(responseResult)
-					return string(rawResult), nil
+					return responseResult, nil
 				},
 			),
 		}
@@ -615,13 +657,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
 			zap.Any("response", submit), zap.Any("header", headerInfo))
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				&mcp.TextContent{
-					Text: cast.ToString(submit),
-				},
-			},
-		}, nil
+		return buildToolResult(submit), nil
 	}
 	return handler
 }
