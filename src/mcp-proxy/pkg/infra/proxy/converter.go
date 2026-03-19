@@ -21,10 +21,93 @@ package proxy
 import (
 	"encoding/json"
 	"net/url"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
+
+func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMessage {
+	if responseRef == nil || responseRef.Value == nil || len(responseRef.Value.Content) == 0 {
+		return nil
+	}
+	if schemaRef := getPreferredResponseSchemaRef(responseRef.Value.Content); schemaRef != nil {
+		if marshalJSON, err := schemaRef.MarshalJSON(); err == nil {
+			return marshalJSON
+		}
+	}
+	return nil
+}
+
+func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef {
+	if mediaType, ok := content["application/json"]; ok && mediaType != nil && mediaType.Schema != nil {
+		return mediaType.Schema
+	}
+
+	jsonLikeKeys := make([]string, 0)
+	otherKeys := make([]string, 0)
+	for mediaTypeName, mediaType := range content {
+		if mediaType == nil || mediaType.Schema == nil {
+			continue
+		}
+		lowerMediaTypeName := strings.ToLower(mediaTypeName)
+		if strings.Contains(lowerMediaTypeName, "json") {
+			jsonLikeKeys = append(jsonLikeKeys, mediaTypeName)
+			continue
+		}
+		otherKeys = append(otherKeys, mediaTypeName)
+	}
+	if len(jsonLikeKeys) > 0 {
+		sort.Strings(jsonLikeKeys)
+		return content[jsonLikeKeys[0]].Schema
+	}
+	if len(otherKeys) > 0 {
+		sort.Strings(otherKeys)
+		return content[otherKeys[0]].Schema
+	}
+	return nil
+}
+
+func getOutputSchemaFromResponses(responses *openapi3.Responses) json.RawMessage {
+	if responses == nil || len(responses.Map()) == 0 {
+		return nil
+	}
+
+	responseMap := responses.Map()
+	successStatusCodes := make([]int, 0)
+	otherStatusCodes := make([]string, 0)
+	for statusCode := range responseMap {
+		if statusCode == "default" {
+			continue
+		}
+		statusCodeInt, err := strconv.Atoi(statusCode)
+		if err == nil && statusCodeInt >= 200 && statusCodeInt < 300 {
+			successStatusCodes = append(successStatusCodes, statusCodeInt)
+			continue
+		}
+		otherStatusCodes = append(otherStatusCodes, statusCode)
+	}
+
+	sort.Ints(successStatusCodes)
+	for _, statusCode := range successStatusCodes {
+		if outputSchema := getOutputSchemaFromResponse(responseMap[strconv.Itoa(statusCode)]); len(outputSchema) > 0 {
+			return outputSchema
+		}
+	}
+	if outputSchema := getOutputSchemaFromResponse(responseMap["default"]); len(outputSchema) > 0 {
+		return outputSchema
+	}
+
+	sort.Strings(otherStatusCodes)
+	for _, statusCode := range otherStatusCodes {
+		if outputSchema := getOutputSchemaFromResponse(responseMap[statusCode]); len(outputSchema) > 0 {
+			return outputSchema
+		}
+	}
+	return nil
+}
 
 // OpenapiToMcpToolConfig ...
 // nolint:gocyclo
@@ -129,6 +212,9 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(headerParamSchema.Properties) > 0 {
+					headerParamDesc := "HTTP request header parameters, " +
+						"used to pass metadata such as authentication tokens, content type, etc."
+					headerParamSchema.Description = &headerParamDesc
 					paramSchema.WithPropertiesItem("header_param", jsonschema.SchemaOrBool{
 						TypeObject: &headerParamSchema,
 					})
@@ -137,6 +223,9 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(queryParamSchema.Properties) > 0 {
+					queryParamDesc := "URL query string parameters, " +
+						"appended to the request URL after '?' for filtering, pagination, sorting, etc."
+					queryParamSchema.Description = &queryParamDesc
 					paramSchema.WithPropertiesItem("query_param", jsonschema.SchemaOrBool{
 						TypeObject: &queryParamSchema,
 					})
@@ -145,6 +234,8 @@ func OpenapiToMcpToolConfig(
 					}
 				}
 				if len(pathParamSchema.Properties) > 0 {
+					pathParamDesc := "URL path parameters, used to identify specific resources in the URL path (e.g., /users/{id})."
+					pathParamSchema.Description = &pathParamDesc
 					paramSchema.WithPropertiesItem("path_param", jsonschema.SchemaOrBool{
 						TypeObject: &pathParamSchema,
 					})
@@ -158,26 +249,18 @@ func OpenapiToMcpToolConfig(
 					marshalJSON, _ := schema.MarshalJSON()
 					var jsonSchema jsonschema.Schema
 					_ = json.Unmarshal(marshalJSON, &jsonSchema)
+					// Add description if not already set
+					if jsonSchema.Description == nil || *jsonSchema.Description == "" {
+						bodyParamDesc := "HTTP request body in JSON format, containing the main data payload for the API request."
+						jsonSchema.Description = &bodyParamDesc
+					}
 					paramSchema.WithPropertiesItem("body_param", jsonschema.SchemaOrBool{
 						TypeObject: &jsonSchema,
 					})
 				}
 			}
 
-			if operation.Responses != nil {
-				marshalJSON, _ := operation.Responses.MarshalJSON()
-				// 确保 OutputSchema 包含 type: "object"，否则 MCP SDK 会 panic
-				var outputSchema map[string]any
-				if err := json.Unmarshal(marshalJSON, &outputSchema); err == nil {
-					if _, ok := outputSchema["type"]; !ok {
-						outputSchema["type"] = "object"
-					}
-					toolConfig.OutputSchema, _ = json.Marshal(outputSchema)
-				} else {
-					// 如果解析失败，提供默认的空对象 schema
-					toolConfig.OutputSchema = []byte(`{"type":"object"}`)
-				}
-			}
+			toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
 
 			toolConfig.ParamSchema = paramSchema
 			toolConfigs = append(toolConfigs, toolConfig)

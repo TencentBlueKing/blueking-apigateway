@@ -20,6 +20,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -280,6 +281,62 @@ var _ = Describe("MCPProxy", func() {
 				}(i)
 			}
 			wg.Wait()
+		})
+	})
+
+	Describe("buildMCPTool", func() {
+		It("should omit output schema when config output schema is empty", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:        "getUsers",
+				Description: "Get users",
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.InputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeNil())
+		})
+
+		It("should add properties for object output schema", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:         "getUsers",
+				Description:  "Get users",
+				OutputSchema: json.RawMessage(`{"type":"object"}`),
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.OutputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
+			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "object"))
+			Expect(tool.OutputSchema.(map[string]any)).To(HaveKey("properties"))
+		})
+
+		It("should not add properties for array output schema", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:         "listUsers",
+				Description:  "List users",
+				OutputSchema: json.RawMessage(`{"type":"array","items":{"type":"string"}}`),
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.OutputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
+			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "array"))
+			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
+		})
+
+		It("should keep ref output schema unchanged", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:         "listUsers",
+				Description:  "List users",
+				OutputSchema: json.RawMessage(`{"$ref":"#/components/schemas/UserList"}`),
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.OutputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
+			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("$ref", "#/components/schemas/UserList"))
+			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("type"))
+			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
 		})
 	})
 
