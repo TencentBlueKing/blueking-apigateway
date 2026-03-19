@@ -520,7 +520,7 @@ const handleClearFilter = () => {
 };
 
 const handleClearSelection = () => {
-  tableRef.value.handleResetSelection();
+  tableRef.value?.handleResetSelection();
   selections.value = [];
 };
 
