@@ -41,6 +41,7 @@ class PluginTypeOutputSLZ(serializers.ModelSerializer):
     name = serializers.CharField(source="name_i18n", help_text="插件类型名称")
     description = serializers.CharField(source="description_i18n", help_text="插件类型描述")
 
+    # NOTE: deprecated, use description instead
     notes = serializers.CharField(source="description_i18n", help_text="插件类型备注")
     related_scope_count = serializers.SerializerMethodField(help_text="插件类型绑定的环境及资源数量")
     is_bound = serializers.SerializerMethodField(help_text="插件类型是否已绑定到当前环境或资源")
