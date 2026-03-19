@@ -151,6 +151,40 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
+func hasObjectSchemaType(schemaType any) bool {
+	switch value := schemaType.(type) {
+	case string:
+		return value == "object"
+	case []string:
+		for _, item := range value {
+			if item == "object" {
+				return true
+			}
+		}
+	case []any:
+		for _, item := range value {
+			if itemStr, ok := item.(string); ok && itemStr == "object" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
+	schemaType, hasType := outputSchema["type"]
+	_, hasProperties := outputSchema["properties"]
+	if hasObjectSchemaType(schemaType) || (!hasType && hasProperties) {
+		if !hasType {
+			outputSchema["type"] = "object"
+		}
+		if !hasProperties {
+			outputSchema["properties"] = map[string]any{}
+		}
+	}
+	return outputSchema
+}
+
 func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 	if len(toolConfig.OutputSchema) == 0 {
 		return nil
@@ -165,13 +199,7 @@ func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 		)
 		return nil
 	}
-	if _, ok := outputSchema["type"]; !ok {
-		outputSchema["type"] = "object"
-	}
-	if _, ok := outputSchema["properties"]; !ok {
-		outputSchema["properties"] = map[string]any{}
-	}
-	return outputSchema
+	return normalizeToolOutputSchema(outputSchema)
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
