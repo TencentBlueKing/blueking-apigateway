@@ -20,6 +20,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -280,6 +281,32 @@ var _ = Describe("MCPProxy", func() {
 				}(i)
 			}
 			wg.Wait()
+		})
+	})
+
+	Describe("buildMCPTool", func() {
+		It("should omit output schema when config output schema is empty", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:        "getUsers",
+				Description: "Get users",
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.InputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeNil())
+		})
+
+		It("should keep output schema when config output schema is present", func() {
+			tool := buildMCPTool(&ToolConfig{
+				Name:         "getUsers",
+				Description:  "Get users",
+				OutputSchema: json.RawMessage(`{"type":"object","properties":{"status_code":{"type":"integer"}}}`),
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.OutputSchema).NotTo(BeNil())
+			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
+			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "object"))
 		})
 	})
 

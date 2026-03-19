@@ -346,6 +346,28 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].OutputSchema).NotTo(BeNil())
 		})
 
+		It("should omit output schema when responses are empty", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Responses:   &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].OutputSchema).To(BeNil())
+		})
+
 		It("should handle multiple operations in one path", func() {
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",
