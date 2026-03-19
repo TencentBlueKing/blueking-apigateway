@@ -54,6 +54,9 @@ class PluginType(models.Model):
     name_i18n = I18nProperty(models.CharField(max_length=128, help_text="dashboard display name"))
     name = name_i18n.default_field()
     name_en = name_i18n.field("en", default=None, blank=True, null=True)
+    description_i18n = I18nProperty(models.TextField(default="", blank=True, help_text="plugin type description"))
+    description = description_i18n.default_field()
+    description_en = description_i18n.field("en", default=None, blank=True, null=True)
     is_public = models.BooleanField(default=False)
     schema = models.ForeignKey(
         Schema,
