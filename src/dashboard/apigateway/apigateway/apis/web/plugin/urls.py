@@ -22,7 +22,6 @@ from .views import (
     PluginBindingListApi,
     PluginConfigCreateApi,
     PluginConfigRetrieveUpdateDestroyApi,
-    PluginFormRetrieveApi,
     PluginTypeListApi,
     PluginTypeTagsListApi,
     ScopePluginConfigListApi,
@@ -61,7 +60,6 @@ urlpatterns = [
         "<str:code>/",
         include(
             [
-                path("form/", PluginFormRetrieveApi.as_view(), name="plugins.form"),
                 path("bindings/", PluginBindingListApi.as_view(), name="plugins.bindings"),
             ]
         ),
