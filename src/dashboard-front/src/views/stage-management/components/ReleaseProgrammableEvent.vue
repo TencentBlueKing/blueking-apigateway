@@ -591,7 +591,6 @@ async function getEvents() {
     paas_deploy_info: paasResponse,
     source: sourceResponse,
     status,
-    created_time,
     data_plane,
   } = await requestFunc(apigwId.value, deployId || historyId);
 
@@ -674,7 +673,7 @@ async function getEvents() {
 
   // 处理网关 event 数据面
   if (data_plane?.id) {
-    gatewayEventTextLines.value += `${created_time} [data_plane: ${data_plane.name}]${data_plane.description}\n`;
+    gatewayEventTextLines.value += `[data_plane: ${data_plane.name}]\n`;
   }
 
   gatewayEventTextLines.value = gatewayOutputLines.join('');
