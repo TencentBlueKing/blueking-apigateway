@@ -100,9 +100,11 @@ integration-down:
 cov:
 	go tool cover -html=.coverage.cov
 
+GO_BUILD_FLAGS ?=
+
 .PHONY: build
 build:
-	go build -ldflags "-X core/pkg/version.Version=$(VERSION) -X core/pkg/version.Commit=$(COMMIT) -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-mcp-proxy
+	go build $(GO_BUILD_FLAGS) -ldflags "-X core/pkg/version.Version=$(VERSION) -X core/pkg/version.Commit=$(COMMIT) -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-mcp-proxy
 
 .PHONY: serve
 serve: build
