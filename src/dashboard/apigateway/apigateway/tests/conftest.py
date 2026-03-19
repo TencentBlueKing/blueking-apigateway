@@ -38,8 +38,8 @@ from apigateway.apps.openapi.models import (
     OpenAPIResourceSchema,
     OpenAPIResourceSchemaVersion,
 )
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginStyleEnum, PluginTypeCodeEnum
-from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
+from apigateway.apps.plugin.constants import PluginBindingScopeEnum, PluginTypeCodeEnum
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
@@ -791,28 +791,6 @@ def echo_plugin_type(echo_plugin_type_schema):
         name="echo",
         schema=echo_plugin_type_schema,
         is_public=True,
-    )
-
-
-@pytest.fixture()
-def echo_plugin_default_form(echo_plugin_type):
-    return G(
-        PluginForm,
-        language="",
-        type=echo_plugin_type,
-        config=None,
-        style=PluginStyleEnum.RAW.value,
-    )
-
-
-@pytest.fixture()
-def echo_plugin_en_form(echo_plugin_type):
-    return G(
-        PluginForm,
-        language="en",
-        type=echo_plugin_type,
-        config=None,
-        style=PluginStyleEnum.RAW.value,
     )
 
 
