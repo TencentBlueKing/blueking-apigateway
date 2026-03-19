@@ -124,6 +124,68 @@ func (m *MCPProxy) GetMCPServer(name string) *MCPServer {
 	return m.mcpServers[name]
 }
 
+func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]any {
+	schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
+	if err != nil {
+		logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
+			zap.Error(err),
+			zap.String("tool_name", toolConfig.Name),
+			zap.String("mcp_server", serverName),
+		)
+	}
+
+	inputSchema := map[string]any{"type": "object", "properties": map[string]any{}}
+	if len(schemaBytes) > 0 {
+		if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
+			logging.GetLogger().Error("failed to unmarshal tool input schema",
+				zap.Error(err),
+				zap.String("tool_name", toolConfig.Name),
+				zap.String("mcp_server", serverName),
+			)
+			inputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
+		}
+	}
+	if _, ok := inputSchema["properties"]; !ok {
+		inputSchema["properties"] = map[string]any{}
+	}
+	return inputSchema
+}
+
+func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
+	if len(toolConfig.OutputSchema) == 0 {
+		return nil
+	}
+
+	var outputSchema map[string]any
+	if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
+		logging.GetLogger().Error("failed to unmarshal tool output schema",
+			zap.Error(err),
+			zap.String("tool_name", toolConfig.Name),
+			zap.String("mcp_server", serverName),
+		)
+		return nil
+	}
+	if _, ok := outputSchema["type"]; !ok {
+		outputSchema["type"] = "object"
+	}
+	if _, ok := outputSchema["properties"]; !ok {
+		outputSchema["properties"] = map[string]any{}
+	}
+	return outputSchema
+}
+
+func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
+	tool := &mcp.Tool{
+		Name:        toolConfig.Name,
+		Description: toolConfig.Description,
+		InputSchema: buildToolInputSchema(toolConfig, serverName),
+	}
+	if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
+		tool.OutputSchema = outputSchema
+	}
+	return tool
+}
+
 // AddMCPServerFromConfigs ...
 func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 	for _, config := range configs {
@@ -152,61 +214,8 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
-			if err != nil {
-				logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
-					zap.Error(err),
-					zap.String("tool_name", toolConfig.Name),
-					zap.String("mcp_server", config.Name),
-				)
-			}
-			// 默认提供空对象 schema，避免 AddTool panic
-			// 同时确保包含 properties 字段，否则很多模型会报错
-			inputSchema := map[string]any{"type": "object", "properties": map[string]any{}}
-			if len(schemaBytes) > 0 {
-				if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
-					logging.GetLogger().Error("failed to unmarshal tool input schema",
-						zap.Error(err),
-						zap.String("tool_name", toolConfig.Name),
-						zap.String("mcp_server", config.Name),
-					)
-					// 保持默认的空对象 schema
-					inputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-				}
-			}
-			// 确保 inputSchema 包含 properties 字段，避免模型报错
-			if _, ok := inputSchema["properties"]; !ok {
-				inputSchema["properties"] = map[string]any{}
-			}
-			tool := &mcp.Tool{
-				Name:        toolConfig.Name,
-				Description: toolConfig.Description,
-				InputSchema: inputSchema,
-			}
-			// 处理 OutputSchema (converter.go 已确保包含 type: "object" 和 properties)
-			if len(toolConfig.OutputSchema) > 0 {
-				var outputSchema map[string]any
-				if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
-					logging.GetLogger().Error("failed to unmarshal tool output schema",
-						zap.Error(err),
-						zap.String("tool_name", toolConfig.Name),
-						zap.String("mcp_server", config.Name),
-					)
-					// 使用默认的空对象 schema
-					tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-				} else {
-					// 确保 outputSchema 包含 properties 字段
-					if _, ok := outputSchema["properties"]; !ok {
-						outputSchema["properties"] = map[string]any{}
-					}
-					tool.OutputSchema = outputSchema
-				}
-			} else {
-				// 如果没有 OutputSchema，提供默认值
-				tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-			}
 			toolHandler := genToolHandler(toolConfig)
-			mcpServer.AddTool(tool, toolHandler)
+			mcpServer.AddTool(buildMCPTool(toolConfig, config.Name), toolHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
 	}
@@ -250,61 +259,8 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		schemaBytes, err := toolConfig.ParamSchema.JSONSchemaBytes()
-		if err != nil {
-			logging.GetLogger().Error("failed to convert ParamSchema to JSON schema bytes",
-				zap.Error(err),
-				zap.String("tool_name", toolConfig.Name),
-				zap.String("mcp_server", name),
-			)
-		}
-		// 默认提供空对象 schema，避免 AddTool panic
-		// 同时确保包含 properties 字段，否则很多模型会报错
-		inputSchema := map[string]any{"type": "object", "properties": map[string]any{}}
-		if len(schemaBytes) > 0 {
-			if err := json.Unmarshal(schemaBytes, &inputSchema); err != nil {
-				logging.GetLogger().Error("failed to unmarshal tool input schema",
-					zap.Error(err),
-					zap.String("tool_name", toolConfig.Name),
-					zap.String("mcp_server", name),
-				)
-				// 保持默认的空对象 schema
-				inputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-			}
-		}
-		// 确保 inputSchema 包含 properties 字段，避免模型报错
-		if _, ok := inputSchema["properties"]; !ok {
-			inputSchema["properties"] = map[string]any{}
-		}
-		tool := &mcp.Tool{
-			Name:        toolConfig.Name,
-			Description: toolConfig.Description,
-			InputSchema: inputSchema,
-		}
-		// 处理 OutputSchema (converter.go 已确保包含 type: "object" 和 properties)
-		if len(toolConfig.OutputSchema) > 0 {
-			var outputSchema map[string]any
-			if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
-				logging.GetLogger().Error("failed to unmarshal tool output schema",
-					zap.Error(err),
-					zap.String("tool_name", toolConfig.Name),
-					zap.String("mcp_server", name),
-				)
-				// 使用默认的空对象 schema
-				tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-			} else {
-				// 确保 outputSchema 包含 properties 字段
-				if _, ok := outputSchema["properties"]; !ok {
-					outputSchema["properties"] = map[string]any{}
-				}
-				tool.OutputSchema = outputSchema
-			}
-		} else {
-			// 如果没有 OutputSchema，提供默认值
-			tool.OutputSchema = map[string]any{"type": "object", "properties": map[string]any{}}
-		}
 		toolHandler := genToolHandler(toolConfig)
-		mcpServer.AddTool(tool, toolHandler)
+		mcpServer.AddTool(buildMCPTool(toolConfig, name), toolHandler)
 	}
 	// 更新资源版本号
 	mcpServer.SetResourceVersionID(resourceVersionID)

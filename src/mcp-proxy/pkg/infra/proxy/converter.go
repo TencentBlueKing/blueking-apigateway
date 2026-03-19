@@ -177,9 +177,9 @@ func OpenapiToMcpToolConfig(
 				}
 			}
 
-			if operation.Responses != nil {
+			if operation.Responses != nil && len(operation.Responses.Map()) > 0 {
 				marshalJSON, _ := operation.Responses.MarshalJSON()
-				// 确保 OutputSchema 包含 type: "object" 和 properties，否则 MCP SDK 会 panic 或模型会报错
+				// OutputSchema 是可选字段，仅在 OpenAPI 存在响应定义时才设置
 				var outputSchema map[string]any
 				if err := json.Unmarshal(marshalJSON, &outputSchema); err == nil {
 					if _, ok := outputSchema["type"]; !ok {
@@ -189,13 +189,7 @@ func OpenapiToMcpToolConfig(
 						outputSchema["properties"] = map[string]any{}
 					}
 					toolConfig.OutputSchema, _ = json.Marshal(outputSchema)
-				} else {
-					// 如果解析失败，提供默认的空对象 schema
-					toolConfig.OutputSchema = []byte(`{"type":"object","properties":{}}`)
 				}
-			} else {
-				// 如果没有 Responses，提供默认的空对象 schema
-				toolConfig.OutputSchema = []byte(`{"type":"object","properties":{}}`)
 			}
 
 			toolConfig.ParamSchema = paramSchema
