@@ -186,7 +186,7 @@
     <BkFormItem
       property="actions"
       required
-      :label="t('bk-traffic-label.请求匹配 Header')"
+      :label="t('bk-traffic-label.设置 Header')"
     >
       <BkForm
         v-for="action in form.actions"

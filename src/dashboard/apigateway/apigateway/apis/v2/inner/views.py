@@ -528,7 +528,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "title": obj.title or obj.name,
                         "description": obj.description,
                         "tools_count": obj.tools_count,
-                        "tool_names": obj.resource_names,
+                        "tool_names": obj.tool_names,
                         "protocol_type": obj.protocol_type,
                     },
                     "permission": {
@@ -612,7 +612,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "title": obj.mcp_server.title or obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": obj.mcp_server.resource_names,
+                    "tool_names": obj.mcp_server.tool_names,
                     "protocol_type": obj.mcp_server.protocol_type,
                 },
                 "permission": {
@@ -667,7 +667,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "title": obj.mcp_server.title or obj.mcp_server.name,
                     "description": obj.mcp_server.description,
                     "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": obj.mcp_server.resource_names,
+                    "tool_names": obj.mcp_server.tool_names,
                     "protocol_type": obj.mcp_server.protocol_type,
                     "gateway_id": obj.mcp_server.gateway_id,  # 添加 gateway_id 用于构建审批 URL
                 },
@@ -731,7 +731,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "title": instance.mcp_server.title or instance.mcp_server.name,
                 "description": instance.mcp_server.description,
                 "tools_count": instance.mcp_server.tools_count,
-                "tool_names": instance.mcp_server.resource_names,
+                "tool_names": instance.mcp_server.tool_names,
                 "protocol_type": instance.mcp_server.protocol_type,
                 "gateway_id": instance.mcp_server.gateway_id,  # 添加 gateway_id 用于构建审批 URL
             },

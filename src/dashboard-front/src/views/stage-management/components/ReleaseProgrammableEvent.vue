@@ -591,6 +591,7 @@ async function getEvents() {
     paas_deploy_info: paasResponse,
     source: sourceResponse,
     status,
+    data_plane,
   } = await requestFunc(apigwId.value, deployId || historyId);
 
   historyStage.value = stageResponse || null;
@@ -669,6 +670,12 @@ async function getEvents() {
   });
 
   paasEventTextLines.value = paasOutputLines.join('');
+
+  // 处理网关 event 数据面
+  if (data_plane?.id) {
+    gatewayEventTextLines.value += `[data_plane: ${data_plane.name}]\n`;
+  }
+
   gatewayEventTextLines.value = gatewayOutputLines.join('');
 
   editorRef.value?.setCursorPos({ toBottom: true });
@@ -679,7 +686,7 @@ async function getEvents() {
     }
     pausePoll();
   }
-};
+}
 
 const showSideslider = () => {
   isShow.value = true;
