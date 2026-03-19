@@ -44,9 +44,18 @@ stages:
           - v2_open_list_gateways
           - v2_open_list_gateway_resources
           - v2_open_retrieve_gateway_api_details
+        tool_names:
+          - list_gateways
+          - list_gateway_resources
+          - retrieve_gateway_api_details
         is_public: true
         status: 1
         protocol_type: "streamable_http"
+        oauth2_public_client_enabled: true
+        category_names:
+          - "Official"
+          - "Featured"
+          - "DevOps"
 
       - name: "debugger"
         title: "蓝鲸 API 网关 Debugger"
@@ -56,9 +65,19 @@ stages:
           - v2_open_tools_time_get_current_unix_timestamp
           - v2_open_tools_time_parse_datetime_str_to_timestamp
           - v2_open_tools_log_query_by_request_id
+        tool_names:
+          - tools_time_get_datetime
+          - tools_time_get_current_unix_timestamp
+          - tools_time_parse_datetime_str_to_timestamp
+          - tools_log_query_by_request_id
         is_public: true
         status: 1
         protocol_type: "streamable_http"
+        oauth2_public_client_enabled: true
+        category_names:
+          - "Official"
+          - "Featured"
+          - "Automation"
 
 grant_permissions:
   - bk_app_code: {{ settings.BK_APP_CODE }}
