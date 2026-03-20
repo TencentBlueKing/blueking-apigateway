@@ -5,6 +5,8 @@ build.yml
 .codecc
 .idea
 .vscode
+.cursor/
+.codebuddy/
 
 .envrc
 src/dashboard/apigateway/apigateway/editions/te

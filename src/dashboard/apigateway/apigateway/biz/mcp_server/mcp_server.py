@@ -658,6 +658,20 @@ class MCPServerHandler:
         prompts = MCPServerHandler.get_prompts(instance.id)
         user_custom_doc = MCPServerHandler.get_user_custom_doc(instance.id)
 
+        resource_schema_map: Dict[int, dict] = {}
+        release = Release.objects.filter(
+            gateway_id=instance.gateway.id,
+            stage=instance.stage,
+        ).first()
+        if release:
+            resource_schema_map = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
+                release.resource_version_id
+            )
+
+        categories = [
+            {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)
+        ]
+
         # 构建 gateway/stage 上下文
         gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config([instance.gateway.id])
         gateways = {
@@ -681,6 +695,8 @@ class MCPServerHandler:
             "stages": stages,
             "labels": labels,
             "tool_name_map": instance.gen_tool_name_map(),
+            "resource_schema_map": resource_schema_map,
+            "categories": categories,
             "prompts_count_map": prompts_count_map,
             "prompts": prompts,
             "user_custom_doc": user_custom_doc,
