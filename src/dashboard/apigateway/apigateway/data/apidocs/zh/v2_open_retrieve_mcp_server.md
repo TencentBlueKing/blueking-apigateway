@@ -22,6 +22,10 @@
     "description": "这是一个测试 MCP Server",
     "is_public": true,
     "labels": ["AI", "工具"],
+    "categories": [
+      {"name": "Official", "display_name": "官方资源"},
+      {"name": "Monitoring", "display_name": "监控告警"}
+    ],
     "status": 1,
     "protocol_type": "sse",
     "oauth2_public_client_enabled": false,
@@ -35,6 +39,20 @@
         "description": "工具1描述",
         "method": "POST",
         "path": "/api/v1/tool1/",
+        "schema": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        },
         "verified_user_required": false,
         "verified_app_required": true,
         "resource_perm_required": true,
@@ -82,6 +100,7 @@
 | description      | string   | mcp_server 描述                                              |
 | is_public        | boolean  | mcp_server 是否公开                                          |
 | labels           | array    | mcp_server 标签                                              |
+| categories       | array    | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | status           | int      | mcp_server 状态（0：已停用，1：启用中）                      |
 | protocol_type    | string   | MCP 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
 | oauth2_public_client_enabled   | boolean  | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权                                         |
@@ -106,11 +125,64 @@
 | description            | string   | 资源描述               |
 | method                 | string   | 资源前端请求方法       |
 | path                   | string   | 资源前端请求路径       |
+| schema                 | object   | 工具的 OpenAPI Schema 定义，详见 data.tools.schema |
 | verified_user_required | boolean  | 是否需要认证用户       |
 | verified_app_required  | boolean  | 是否需要认证应用       |
 | resource_perm_required | boolean  | 是否验证应用访问资源的权限 |
 | allow_apply_permission | boolean  | 是否需要申请权限       |
 | labels                 | array    | 资源标签列表           |
+
+
+#### data.tools.schema
+
+工具的 OpenAPI Schema 定义，遵循 [OpenAPI 3.0 Specification](https://swagger.io/specification/) 格式。
+包含该工具（资源）的请求参数、请求体、响应等 Schema 描述，可用于自动生成工具调用的参数结构。
+
+| 参数名称      | 参数类型 | 描述                                                                 |
+| ------------- | -------- | -------------------------------------------------------------------- |
+| parameters    | array    | 路径参数、查询参数等，每个元素包含 name、in、schema、required 等字段  |
+| requestBody   | object   | 请求体定义，包含 content（如 application/json）及其 schema            |
+| responses     | object   | 响应定义（可选），包含各状态码对应的 schema                          |
+
+示例：
+
+```json
+{
+  "parameters": [
+    {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "integer"
+      },
+      "description": "资源 ID"
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "名称"
+            },
+            "description": {
+              "type": "string",
+              "description": "描述"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+> **说明**：schema 内容取决于资源版本中定义的 OpenAPI Schema，若资源未定义 Schema 则返回空对象 `{}`。
 
 
 #### data.prompts
