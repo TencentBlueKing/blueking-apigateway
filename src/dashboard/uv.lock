@@ -153,11 +153,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apigw-manager", specifier = "==4.1.0" },
+    { name = "apigw-manager", specifier = "==4.2.3" },
     { name = "arrow", specifier = "==1.3.0" },
     { name = "bk-crypto-python-sdk", specifier = "==2.0.1" },
     { name = "bk-notice-sdk", specifier = "==1.4.2" },
-    { name = "bkapi-bk-apigateway", specifier = "==1.0.11" },
+    { name = "bkapi-bk-apigateway", specifier = ">=1.0.12,<2" },
     { name = "bkapi-client-core", specifier = "==1.2.0" },
     { name = "bkapi-client-generator", specifier = "==0.1.30" },
     { name = "bkapi-component-open", specifier = ">=1.0.3,<2" },
@@ -178,7 +178,7 @@ requires-dist = [
     { name = "django-prometheus", specifier = "==2.4.1" },
     { name = "djangoql", specifier = ">=0.18.1,<0.19" },
     { name = "djangorestframework", specifier = "==3.16.0" },
-    { name = "docutils", specifier = "==0.21.2" },
+    { name = "docutils", specifier = ">=0.20.1" },
     { name = "drf-yasg", specifier = "==1.21.10" },
     { name = "elasticsearch", specifier = "==7.7.1" },
     { name = "elasticsearch-dsl", specifier = "==7.4.1" },
@@ -264,18 +264,19 @@ dev = [
 
 [[package]]
 name = "apigw-manager"
-version = "4.1.0"
+version = "4.2.3"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "bkapi-bk-apigateway" },
     { name = "bkapi-client-core" },
+    { name = "docutils" },
     { name = "packaging" },
     { name = "pyyaml" },
     { name = "setuptools" },
     { name = "urllib3" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/33/a04dd27cbff8c7ad333fd7afc2c5d960f798eac21a31d5ded49821b8e088/apigw_manager-4.1.0-py3-none-any.whl", hash = "sha256:861afaa544f0fbf042be5529778e7c0716707d61e43246025c473754bfaa2ac9", size = 73070, upload-time = "2025-05-29T06:58:52.073Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/3b/2c22b6a9eb462ab61ff604f9aacbd9ef0b26b690a8c2e69c7e6b0fe4f838/apigw_manager-4.2.3-py3-none-any.whl", hash = "sha256:ecc531a17fbd1c52e903583ca4abb2fc1c3c7d37954e56df691c3e93577754da", size = 77081, upload-time = "2026-02-03T07:58:11.911Z" },
 ]
 
 [[package]]
@@ -384,12 +385,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/e4/5b/242444a0fb700335f
 
 [[package]]
 name = "bkapi-bk-apigateway"
-version = "1.0.11"
+version = "1.0.12"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "bkapi-client-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/b2/9ad0ae851955ceee8d3bd99298cc0ac9462594f39d066efd5a388c6ef4c7/bkapi-bk-apigateway-1.0.11.tar.gz", hash = "sha256:fcdbc4eca8bfd3310995cec532ae127ee0533ea858c82916d9782e4df3df4c49", size = 5946, upload-time = "2023-02-24T10:50:25.984Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/63/1a68fa726f45709abd9c40192062966690b527dfc02798e8d515feec378b/bkapi-bk-apigateway-1.0.12.tar.gz", hash = "sha256:4e32b3b3c5f45f8a264aab84a73a827edcb29698357d3c90e689d0271ce97902", size = 10361, upload-time = "2025-08-07T10:11:48.268Z" }
 
 [[package]]
 name = "bkapi-client-core"
@@ -899,11 +900,11 @@ wheels = [
 
 [[package]]
 name = "docutils"
-version = "0.21.2"
+version = "0.20.1"
 source = { registry = "https://pypi.org/simple/" }
-sdist = { url = "https://files.pythonhosted.org/packages/ae/ed/aefcc8cd0ba62a0560c3c18c33925362d46c6075480bfa4df87b28e169a9/docutils-0.21.2.tar.gz", hash = "sha256:3a6b18732edf182daa3cd12775bbb338cf5691468f91eeeb109deff6ebfa986f", size = 2204444, upload-time = "2024-04-23T18:57:18.24Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1f/53/a5da4f2c5739cf66290fac1431ee52aff6851c7c8ffd8264f13affd7bcdd/docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b", size = 2058365, upload-time = "2023-05-16T23:39:19.748Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/d7/9322c609343d929e75e7e5e6255e614fcc67572cfd083959cdef3b7aad79/docutils-0.21.2-py3-none-any.whl", hash = "sha256:dafca5b9e384f0e419294eb4d2ff9fa826435bf15f15b7bd45723e8ad76811b2", size = 587408, upload-time = "2024-04-23T18:57:14.835Z" },
+    { url = "https://files.pythonhosted.org/packages/26/87/f238c0670b94533ac0353a4e2a1a771a0cc73277b88bff23d3ae35a256c1/docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6", size = 572666, upload-time = "2023-05-16T23:39:15.976Z" },
 ]
 
 [[package]]
@@ -2455,16 +2456,16 @@ wheels = [
 
 [[package]]
 name = "readme-renderer"
-version = "44.0"
+version = "43.0"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "docutils" },
     { name = "nh3" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/a9/104ec9234c8448c4379768221ea6df01260cd6c2ce13182d4eac531c8342/readme_renderer-44.0.tar.gz", hash = "sha256:8712034eabbfa6805cacf1402b4eeb2a73028f72d1166d6f5cb7f9c047c5d1e1", size = 32056, upload-time = "2024-07-08T15:00:57.805Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/b5/536c775084d239df6345dccf9b043419c7e3308bc31be4c7882196abc62e/readme_renderer-43.0.tar.gz", hash = "sha256:1818dd28140813509eeed8d62687f7cd4f7bad90d4db586001c5dc09d4fde311", size = 31768, upload-time = "2024-02-26T16:10:59.415Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/67/921ec3024056483db83953ae8e48079ad62b92db7880013ca77632921dd0/readme_renderer-44.0-py3-none-any.whl", hash = "sha256:2fbca89b81a08526aadf1357a8c2ae889ec05fb03f5da67f9769c9a592166151", size = 13310, upload-time = "2024-07-08T15:00:56.577Z" },
+    { url = "https://files.pythonhosted.org/packages/45/be/3ea20dc38b9db08387cf97997a85a7d51527ea2057d71118feb0aa8afa55/readme_renderer-43.0-py3-none-any.whl", hash = "sha256:19db308d86ecd60e5affa3b2a98f017af384678c63c88e5d4556a380e674f3f9", size = 13301, upload-time = "2024-02-26T16:10:57.945Z" },
 ]
 
 [[package]]

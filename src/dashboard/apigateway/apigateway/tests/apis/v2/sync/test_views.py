@@ -460,7 +460,9 @@ class TestSyncApiCategory:
         fake_gateway.save()
         fake_stage.save()
 
-        category = G(MCPServerCategory, name="Official", display_name="官方资源", is_active=True)
+        category, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
 
         data = {
             "mcp_servers": [
@@ -508,8 +510,12 @@ class TestSyncApiCategory:
         fake_gateway.save()
         fake_stage.save()
 
-        category_official = G(MCPServerCategory, name="Official", display_name="官方资源", is_active=True)
-        category_featured = G(MCPServerCategory, name="Featured", display_name="精选推荐", is_active=True)
+        category_official, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
+        category_featured, _ = MCPServerCategory.objects.get_or_create(
+            name="Featured", defaults={"display_name": "精选推荐", "is_active": True}
+        )
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-update-category"
@@ -561,7 +567,9 @@ class TestSyncApiCategory:
         fake_gateway.save()
         fake_stage.save()
 
-        category = G(MCPServerCategory, name="Official", display_name="官方资源", is_active=True)
+        category, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
 
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-keep-category"
