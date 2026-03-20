@@ -100,6 +100,7 @@
             v-model:filter-data="filterData"
             v-model:search-data="searchData"
             :filter-condition="mcpFilterOptions"
+            @view="handleView"
             @delete="handleDelete"
             @edit="handleEdit"
             @enable="handleEnable"
@@ -131,7 +132,7 @@
               @edit="handleEdit"
               @enable="handleEnable"
               @suspend="handleSuspend"
-              @click="() => handleCardClick(server.id)"
+              @click.stop="() => handleView(server.id)"
             >
               <template #mcpStatus>
                 <div
@@ -535,7 +536,7 @@ const handleServerUpdated = () => {
   resetPagination();
 };
 
-const handleCardClick = (id: number) => {
+const handleView = (id: number) => {
   router.replace({
     name: 'MCPServerDetail',
     params: { serverId: id },
