@@ -12,6 +12,8 @@
 *.so
 *.dylib
 
+.codebuddy/
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -36,3 +38,4 @@ bk-apigateway-mcp-proxy
 config.yaml
 *.pprof
 *.out
+.codebuddy/
