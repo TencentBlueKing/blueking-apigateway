@@ -37,6 +37,11 @@ export interface IAlarmStrategy {
       notice_role: string[]
       notice_extra_receiver: string[]
     }
+    filter_config?: {
+      type: string
+      match: string
+      items: string[]
+    }
   }
   enabled?: boolean
 }

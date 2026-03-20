@@ -29,8 +29,8 @@
       <div class="strategy-form">
         <BkForm
           ref="strategyFormRef"
-          :label-width="108"
           :model="formData"
+          form-type="vertical"
         >
           <div class="form-content">
             <div class="content-panel single">
@@ -82,12 +82,10 @@
                   class="m-b-20px"
                 >
                   <div class="flex-group">
-                    <div class="item label">
-                      {{ t('资源标签包含') }}
-                    </div>
                     <div class="item flex-none">
                       <BkSelect
                         v-model="formData.gateway_label_ids"
+                        :prefix="t('资源标签包含')"
                         filterable
                         multiple
                         :input-search="false"
@@ -141,17 +139,15 @@
                       </div>
                     </div>
                     <div class="flex-group">
-                      <div class="item w-95px">
+                      <div class="item w-120px">
                         <BkInput
                           v-model="formData.config.detect_config.count"
                           disabled
                           :placeholder="t('请输入')"
                           type="number"
                           :min="0"
+                          :suffix="t('时触发')"
                         />
-                      </div>
-                      <div class="item label min-w-67px">
-                        {{ t('时触发') }}
                       </div>
                     </div>
                   </div>
@@ -161,12 +157,11 @@
                   class="m-b-24px"
                 >
                   <div class="flex-group">
-                    <div class="item label">
-                      {{ t('告警产生后') }}，
-                    </div>
-                    <div class="item flex-none! w-117px custom-select-class">
+                    <div class="item flex-1! custom-select-class">
                       <BkSelect
                         v-model="formData.config.converge_config.duration"
+                        :prefix="t('告警产生后')"
+                        :suffix="t('内不再发送告警')"
                         disabled
                         :clearable="false"
                       >
@@ -178,7 +173,7 @@
                         />
                       </BkSelect>
                     </div>
-                    <div class="item label flex-1!">
+                    <div class="item label">
                       {{ t('内不再发送告警') }}
                     </div>
                   </div>
@@ -219,81 +214,167 @@
                         :value="stage.name"
                       />
                     </BkSelect>
-                  </div>
-                  <div
-                    class="mb-16px stage-select-tips"
-                    :class="['all'].includes(effectiveStageType) ? 'mt-4px' : 'mt-8px'"
-                  >
-                    {{
-                      t(['all'].includes(effectiveStageType)
-                        ? '选择后，当前所有环境及后续新增环境都将生效'
-                        : '仅对已选择的环境生效'
-                      )
-                    }}
+                    <div
+                      class="stage-select-tips"
+                      :class="['all'].includes(effectiveStageType) ? 'mt-4px' : 'mt-8px'"
+                    >
+                      {{
+                        t(['all'].includes(effectiveStageType)
+                          ? '选择后，当前所有环境及后续新增环境都将生效'
+                          : '仅对已选择的环境生效'
+                        )
+                      }}
+                    </div>
                   </div>
                 </BkFormItem>
               </div>
             </div>
+
+            <div class="content-panel keyword-filter">
+              <div class="keyword-filter-header">
+                <div class="header-left">
+                  <div class="filter-icon">
+                    <AgIcon
+                      size="24"
+                      color="#3a84ff"
+                      name="filter"
+                    />
+                  </div>
+                  <div class="header-text">
+                    <div class="header-title">
+                      {{ t('关键字过滤') }}
+                    </div>
+                    <div class="header-desc">
+                      {{ t('根据关键字匹配告警内容，决定是否推送') }}
+                    </div>
+                  </div>
+                </div>
+                <BkSwitcher
+                  v-model="filterEnabled"
+                  theme="primary"
+                />
+              </div>
+              <div
+                v-show="filterEnabled"
+                class="keyword-filter-content"
+              >
+                <BkForm
+                  ref="filter-config-form"
+                  :model="filterConfig"
+                  :rules="filterConfigRules"
+                  form-type="vertical"
+                >
+                  <BkFormItem
+                    :label="t('过滤模式')"
+                    class="mb-16px"
+                  >
+                    <div class="filter-mode-wrapper">
+                      <BkRadioGroup v-model="filterConfig.type">
+                        <BkRadio label="black_list">
+                          {{ t('黑名单') }}
+                        </BkRadio>
+                        <BkRadio label="white_list">
+                          {{ t('白名单') }}
+                        </BkRadio>
+                      </BkRadioGroup>
+                      <span class="filter-mode-tip">
+                        {{ filterModeTip }}
+                      </span>
+                    </div>
+                  </BkFormItem>
+                  <BkFormItem
+                    :label="t('匹配方式')"
+                    class="mb-16px"
+                  >
+                    <BkRadioGroup v-model="filterConfig.match">
+                      <BkRadio label="contains">
+                        {{ t('包含匹配') }}
+                      </BkRadio>
+                      <BkRadio label="regex_match">
+                        {{ t('正则匹配') }}
+                      </BkRadio>
+                    </BkRadioGroup>
+                  </BkFormItem>
+                  <BkFormItem
+                    :label="t('添加关键字')"
+                    class="mb-16px"
+                    property="items"
+                    required
+                  >
+                    <BkTagInput
+                      v-model="filterConfig.items"
+                      allow-create
+                      has-delete-icon
+                    />
+                  </BkFormItem>
+                  <div class="keyword-filter-summary">
+                    {{ filterSummary }}
+                  </div>
+                </BkForm>
+              </div>
+            </div>
+
             <div class="content-panel">
               <div class="panel-title">
                 {{ t('通知方式') }}
               </div>
               <div class="notice-way-form">
-                <BkFormItem
-                  :label="t('通知方式')"
-                  :rules="rules.notice_way"
-                  property="config.notice_config.notice_way"
-                  class="mb-10px"
-                  required
+                <BkForm
+                  ref="notice-config-form"
+                  :model="noticeConfig"
+                  :rules="noticeConfigRules"
+                  form-type="vertical"
                 >
-                  <BkCheckboxGroup
-                    ref="noticeWayRef"
-                    v-model="formData.config.notice_config.notice_way"
-                    class="checkbox-group"
+                  <BkFormItem
+                    :label="t('通知方式')"
+                    property="notice_way"
+                    class="mb-16px"
+                    required
                   >
-                    <BkCheckbox :label="'wechat'">
-                      <!-- <span class="icon apigateway-icon icon-ag-wechat-color" /> -->
-                      {{ t('微信') }}
-                    </BkCheckbox>
-                    <BkCheckbox :label="'im'">
-                      <!-- <span class="icon apigateway-icon icon-ag-qw" /> -->
-                      {{ t('企业微信') }}
-                    </BkCheckbox>
-                    <BkCheckbox :label="'mail'">
-                      <!-- <span class="icon apigateway-icon icon-ag-email-color" /> -->
-                      {{ t('邮箱') }}
-                    </BkCheckbox>
-                  </BkCheckboxGroup>
-                </BkFormItem>
-                <BkFormItem
-                  :label="t('通知对象')"
-                  class="mb-14px"
-                >
-                  <BkCheckboxGroup
-                    v-model="formData.config.notice_config.notice_role"
-                    class="checkbox-group"
+                    <BkCheckboxGroup
+                      ref="noticeWayRef"
+                      v-model="noticeConfig.notice_way"
+                    >
+                      <BkCheckbox label="wechat">
+                        {{ t('微信') }}
+                      </BkCheckbox>
+                      <BkCheckbox label="im">
+                        {{ t('企业微信') }}
+                      </BkCheckbox>
+                      <BkCheckbox label="mail">
+                        {{ t('邮箱') }}
+                      </BkCheckbox>
+                    </BkCheckboxGroup>
+                  </BkFormItem>
+                  <BkFormItem
+                    required
+                    :label="t('通知对象')"
+                    class="mb-14px"
+                    property="notice_role"
                   >
-                    <BkCheckbox :label="'maintainer'">
-                      {{ t('网关维护者') }}
-                    </BkCheckbox>
-                  </BkCheckboxGroup>
-                </BkFormItem>
-                <BkFormItem
-                  :label="t('其他通知对象')"
-                  class="m-b-0!"
-                >
-                  <BkTagInput
-                    v-model="formData.config.notice_config.notice_extra_receiver"
-                    :placeholder="t('请输入用户')"
-                    allow-create
-                    has-delete-icon
-                    collapse-tags
-                  />
-                  <p class="notice-tip mt-4px">
-                    <i class="m-r-4px apigateway-icon icon-ag-info" />
-                    <span>{{ t('通知对象、其他通知对象至少一个有效') }}</span>
-                  </p>
-                </BkFormItem>
+                    <BkCheckboxGroup v-model="noticeConfig.notice_role">
+                      <BkCheckbox label="maintainer">
+                        {{ t('网关维护者') }}
+                      </BkCheckbox>
+                      <BkCheckbox label="custom">
+                        {{ t('自定义') }}
+                      </BkCheckbox>
+                    </BkCheckboxGroup>
+                  </BkFormItem>
+                  <BkFormItem
+                    v-if="noticeConfig.notice_role.includes('custom')"
+                    label=""
+                    property="notice_extra_receiver"
+                  >
+                    <BkTagInput
+                      v-model="noticeConfig.notice_extra_receiver"
+                      :placeholder="t('请输入用户')"
+                      allow-create
+                      has-delete-icon
+                      collapse-tags
+                    />
+                  </BkFormItem>
+                </BkForm>
               </div>
             </div>
           </div>
@@ -301,10 +382,10 @@
       </div>
     </template>
     <template #footer>
-      <div class="pl-152px pt-16px">
+      <div class="pl-40px pt-16px">
         <BkButton
           :loading="saveLoading"
-          class="m-r-8px w-88px"
+          class="mr-8px w-88px"
           theme="primary"
           @click="handleSave"
         >
@@ -333,29 +414,15 @@ import {
   updateStrategy,
 } from '@/services/source/monitor';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
-const effectiveStageType = defineModel('effectiveStage', {
-  type: String,
-  default: 'all',
-});
-const {
-  sliderParams = {},
-  detailData = {},
-  initData = {},
-  labelList = [],
-  stageList = [],
-} = defineProps<IProps>();
-const emits = defineEmits<Emits>();
 
 type ISliderParams = {
   isShow: boolean
   title: string
 };
 
-type IDetailData = { detailData: IAlarmStrategy };
-
 interface IProps {
   sliderParams?: ISliderParams
-  detailData?: IAlarmStrategy
+  strategy?: IAlarmStrategy
   initData?: {
     form?: IAlarmStrategy
     effectiveStage?: string
@@ -367,23 +434,109 @@ interface IProps {
   stageList?: IStageListItem[]
 }
 
-interface Emits {
-  (e: 'update:detailData', value: IDetailData)
-  (e: 'update:sliderParams', value: ISliderParams)
-  (e: 'done'): void
+interface IEmits {
+  'update:sliderParams': [value: ISliderParams]
+  'done': [void]
 }
+
+const effectiveStageType = defineModel('effectiveStage', {
+  type: String,
+  default: 'all',
+});
+
+const {
+  sliderParams = {},
+  strategy = {},
+  initData = {},
+  labelList = [],
+  stageList = [],
+} = defineProps<IProps>();
+
+const emits = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const accessLogStore = useAccessLog();
 const { alarmStrategyOptions } = accessLogStore;
+
+const formData = ref<any>({
+  name: '',
+  alarm_type: 'resource_backend',
+  alarm_subtype: '',
+  gateway_label_ids: [],
+  config: {
+    detect_config: {
+      duration: 300,
+      method: 'gte',
+      count: 3,
+    },
+    filter_config: null,
+    converge_config: { duration: 86400 },
+    notice_config: {
+      notice_way: ['im'],
+      notice_role: ['maintainer'],
+      notice_extra_receiver: [],
+    },
+  },
+  effective_stages: [],
+});
 const saveLoading = ref(false);
-const nameRef = ref<InstanceType<typeof Input>>(null);
-const alarmTypeRef = ref<InstanceType<typeof Select>>(null);
-const effectiveRef = ref<InstanceType<typeof Select>>(null);
-const noticeWayRef = ref<InstanceType<typeof Checkbox.Group>>(null);
+
+const nameRef = ref<InstanceType<typeof Input>>();
+const alarmTypeRef = ref<InstanceType<typeof Select>>();
+const effectiveRef = ref<InstanceType<typeof Select>>();
+const noticeWayRef = ref<InstanceType<typeof Checkbox.Group>>();
 const strategyFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const rules = reactive({
+const filterConfigFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('filter-config-form');
+const noticeConfigFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('notice-config-form');
+
+// 关键字过滤相关
+const filterEnabled = ref(false);
+
+const filterConfig = ref({
+  type: 'black_list',
+  match: 'contains',
+  items: [] as string[],
+});
+
+// 通知方式相关
+const noticeConfig = ref<{
+  notice_way: string[]
+  notice_role: string[]
+  notice_extra_receiver: string[]
+}>({
+  notice_way: [],
+  notice_role: [],
+  notice_extra_receiver: [],
+});
+
+const sliderConfig = computed({
+  get: () => sliderParams,
+  set: (form) => {
+    emits('update:sliderParams', form);
+  },
+});
+const apigwId = computed(() => gatewayStore.apigwId);
+const strategyId = computed(() => formData.value?.id);
+const labelOption = computed(() => labelList);
+const stageOption = computed(() => stageList);
+
+const filterModeTip = computed(() => {
+  return filterConfig.value.type === 'black_list'
+    ? t('命中关键字的告警不会推送')
+    : t('仅命中关键字的告警才会推送');
+});
+
+const filterSummary = computed(() => {
+  const count = filterConfig.value.items.length;
+  const mode = filterConfig.value.type === 'black_list' ? t('黑名单') : t('白名单');
+  return t('已配置关键字：{mode}{count}个', {
+    mode,
+    count,
+  });
+});
+
+const rules = {
   name: [
     {
       required: true,
@@ -407,33 +560,73 @@ const rules = reactive({
       trigger: 'change',
     },
   ],
-  notice_way: [
+};
+
+const filterConfigRules = {
+  items: [
     {
-      validator: () => {
-        return formData.value.config?.notice_config?.notice_way.length > 0;
-      },
+      validator: () => !!filterConfig.value.items.length,
       message: t('必填项'),
       trigger: 'change',
     },
   ],
-});
+};
 
-const sliderConfig = computed({
-  get: () => sliderParams,
-  set: (form) => {
-    emits('update:sliderParams', form);
-  },
-});
-const formData = computed({
-  get: () => detailData,
-  set: (form) => {
-    emits('update:detailData', form);
-  },
-});
-const apigwId = computed(() => gatewayStore.apigwId);
-const strategyId = computed(() => formData.value.id);
-const labelOption = computed(() => labelList);
-const stageOption = computed(() => stageList);
+const noticeConfigRules = {
+  notice_way: [
+    {
+      validator: () => !!noticeConfig.value.notice_way.length,
+      message: t('必填项'),
+      trigger: 'change',
+    },
+  ],
+  notice_role: [
+    {
+      validator: () => !!noticeConfig.value.notice_role.length,
+      message: t('通知对象和自定义通知对象至少勾选一个'),
+      trigger: 'change',
+    },
+  ],
+  notice_extra_receiver: [
+    {
+      validator: () => {
+        if (noticeConfig.value.notice_role.includes('custom')) {
+          return noticeConfig.value.notice_extra_receiver.length > 0;
+        }
+        return true;
+      },
+      message: t('请填写自定义通知对象'),
+      trigger: 'change',
+    },
+  ],
+};
+
+watch(() => strategy, () => {
+  if (strategy) {
+    formData.value = cloneDeep(strategy);
+
+    if (strategy.config?.filter_config) {
+      filterEnabled.value = true;
+      filterConfig.value = cloneDeep(strategy.config.filter_config);
+    }
+    else {
+      filterEnabled.value = false;
+      filterConfig.value = {
+        type: 'black_list',
+        match: 'contains',
+        items: [] as string[],
+      };
+    }
+
+    if (strategy.config?.notice_config) {
+      noticeConfig.value = cloneDeep(strategy.config.notice_config);
+
+      if (strategy.config.notice_config.notice_extra_receiver?.length) {
+        noticeConfig.value.notice_role.push('custom');
+      }
+    }
+  }
+}, { deep: true });
 
 const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
   el.scrollIntoView({
@@ -444,7 +637,11 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
 
 const handleSave = async () => {
   try {
-    await strategyFormRef?.value?.validate();
+    await Promise.all([
+      strategyFormRef.value?.validate(),
+      filterConfigFormRef.value?.validate(),
+      noticeConfigFormRef.value?.validate(),
+    ]);
   }
   catch {
     const {
@@ -470,22 +667,43 @@ const handleSave = async () => {
       handleScrollView(noticeWayRef?.value?.$el);
       return;
     }
+    return;
   }
+
+  const params = cloneDeep(formData.value);
+
+  if (filterEnabled.value) {
+    params.config.filter_config = filterConfig.value;
+  }
+  else {
+    params.config.filter_config = null;
+  }
+
+  params.config.notice_config = cloneDeep(noticeConfig.value);
+  if (params.config.notice_config?.notice_role.includes('custom')) {
+    params.config.notice_config.notice_role = params.config.notice_config.notice_role.filter(item => item !== 'custom');
+  }
+  else {
+    params.config.notice_config.notice_extra_receiver = [];
+  }
+
   // 如果内容一致无需调用编辑接口
-  if (Boolean(strategyId?.value) && isEqual(initData.form, formData.value)) {
+  if (Boolean(strategyId.value) && isEqual(initData.form, params)) {
     handleCancel();
     return;
   }
+
   saveLoading.value = true;
+
   try {
-    if (strategyId?.value) {
-      await updateStrategy(apigwId.value, strategyId.value, formData.value);
+    if (strategyId.value) {
+      await updateStrategy(apigwId.value, strategyId.value, params);
     }
     else {
-      await createStrategy(apigwId.value, formData.value);
+      await createStrategy(apigwId.value, params);
     }
     Message({
-      message: t(strategyId?.value ? '编辑成功' : '新建成功'),
+      message: t(strategyId.value ? '编辑成功' : '新建成功'),
       theme: 'success',
     });
     sliderConfig.value.isShow = false;
@@ -517,12 +735,15 @@ const handleCancel = () => {
 };
 </script>
 
-<style lang="scss" setup>
+<style lang="scss" scoped>
+
 .alarm-strategy-slider {
+
   .strategy-form {
     padding: 24px 24px 0 40px;
 
     .form-content {
+
       .content-panel {
         margin-bottom: 16px;
 
@@ -534,28 +755,29 @@ const handleCancel = () => {
            line-height: 22px;
         }
 
-        .bk-form-item.is-required .bk-form-label:after {
+        .bk-form-item.is-required .bk-form-label::after {
            top: 3px;
         }
 
         .panel-title {
+          margin-bottom: 20px;
           font-size: 14px;
-          font-weight: 500;
-          color: #4d4f56;
-          margin-bottom: 12px;
+          font-weight: 700;
+          color: #000;
         }
 
         .stage-select-tips {
           font-size: 12px;
-          color: #979ba5;
           line-height: 17px;
+          color: #979ba5;
         }
 
         &.single {
-          border: none;
           margin-bottom: 24px;
+          border: none;
 
           .bk-form-item {
+
             .bk-form-label {
               font-size: 14px;
               font-weight: 500;
@@ -573,7 +795,9 @@ const handleCancel = () => {
         }
 
         .effective-stages {
+
           .bk-form-label {
+
             &::after {
               position: absolute;
               top: 3px;
@@ -585,15 +809,17 @@ const handleCancel = () => {
           }
 
           .effective-stages-radio {
-            line-height: 22px;
             margin-top: 5px;
+            line-height: 22px;
           }
         }
 
         .notice-way-form {
+
           .bk-form-label {
             line-height: 22px;
           }
+
           .bk-form-content {
             line-height: 22px;
           }
@@ -610,23 +836,22 @@ const handleCancel = () => {
     display: flex;
     height: 32px;
     color: #4d4f56;
+    align-items: flex-end;
 
     .item {
       flex: 1;
 
       &.label {
-        flex: none;
+        height: 32px;
+        padding: 4px 7px 6px;
         font-size: 14px;
-        color: #4d4f56;
-        padding-left: 7px;
-        padding-right: 7px;
-        padding-top: 4px;
-        padding-bottom: 6px;
-        border: 1px solid #c4c6cc;
-        background-color: #fafbfd;
-        border-radius: 2px 0 0 2px;
         line-height: 22px;
+        color: #4d4f56;
         text-align: center;
+        background-color: #fafbfd;
+        border: 1px solid #c4c6cc;
+        border-radius: 2px 0 0 2px;
+        flex: none;
       }
 
       & + .item {
@@ -634,9 +859,10 @@ const handleCancel = () => {
       }
 
       &.custom-select-class {
+
         .bk-select.is-disabled .bk-input--text {
           font-size: 14px;
-          background-color: #ffffff;
+          background-color: #fff;
         }
       }
     }
@@ -651,6 +877,7 @@ const handleCancel = () => {
     height: 32px;
 
     .flex-group {
+
       & + .flex-group {
         margin-left: 8px;
       }
@@ -659,8 +886,77 @@ const handleCancel = () => {
 }
 
 .notice-tip {
-  color: #979ba5;
   font-size: 12px;
   line-height: 17px;
+  color: #979ba5;
+}
+
+.keyword-filter {
+  margin-top: 32px;
+  border: 1px solid #DCDEE5;
+  border-radius: 2px;
+
+  .keyword-filter-header {
+    display: flex;
+    padding: 16px;
+    background-color: #fff;
+    align-items: center;
+    justify-content: space-between;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+
+      .filter-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        margin-right: 12px;
+        background-color: #e1ecff;
+        border-radius: 2px;
+      }
+
+      .header-text {
+
+        .header-title {
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 22px;
+          color: #313238;
+        }
+
+        .header-desc {
+          font-size: 12px;
+          line-height: 20px;
+          color: #979ba5;
+        }
+      }
+    }
+  }
+
+  .keyword-filter-content {
+    padding: 16px 12px 12px;
+    background: #FAFBFD;
+    border-top: 1px solid #DCDEE5;
+
+    .filter-mode-wrapper {
+      display: flex;
+      align-items: center;
+
+      .filter-mode-tip {
+        margin-left: 8px;
+        font-size: 12px;
+        color: #979ba5;
+      }
+    }
+
+    .keyword-filter-summary {
+      font-size: 12px;
+      line-height: 20px;
+      color: #979BA5;
+    }
+  }
 }
 </style>
