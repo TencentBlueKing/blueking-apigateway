@@ -30,6 +30,7 @@ import (
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	sty "mcp_proxy/pkg/infra/sentry"
+	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/util"
 )
 
@@ -100,6 +101,9 @@ func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 	}
 	if xRequestID, ok := ctx.Value(constant.XRequestID).(string); ok && xRequestID != "" {
 		ctxLogger = ctxLogger.With(zap.String("x_request_id", xRequestID))
+	}
+	if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+		ctxLogger = ctxLogger.With(zap.String("trace_id", traceID))
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
 		ctxLogger = ctxLogger.With(zap.String("bk_app_code", appCode))

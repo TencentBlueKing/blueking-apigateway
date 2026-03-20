@@ -1,15 +1,14 @@
 VERSION = `git describe --tags --abbrev=0`
 COMMIT=`git rev-parse HEAD`
+GINKGO_VERSION := $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 
 # 检测 Docker Compose 命令（兼容 V1 和 V2）
 DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "docker compose"; elif command -v docker-compose >/dev/null 2>&1; then echo "docker-compose"; else echo ""; fi)
 
 .PHONY: init
-init:
+init: install-ginkgo
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) v2.1.6
-	# for ginkgo
-	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@latest
 	# for make mock
 	GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen@v1.6.0
 	# for gofumpt
@@ -20,6 +19,10 @@ init:
 	GOBIN=$(LOCALBIN) go install -v github.com/incu6us/goimports-reviser/v3@latest
 	# for swag
 	GOBIN=$(LOCALBIN) go install github.com/swaggo/swag/cmd/swag@latest
+
+.PHONY: install-ginkgo
+install-ginkgo: | $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: dep
 dep:
@@ -53,11 +56,11 @@ fmt:
 
 
 .PHONY: test
-test:
-	$(GINKGO) -r -mod=vendor --cover --coverprofile=.coverage.cov ./...
+test: install-ginkgo
+	$(GINKGO) -r -mod=vendor --output-dir=$(CURDIR) --cover --coverprofile=.coverage.cov ./...
 
 .PHONY: integration
-integration:
+integration: install-ginkgo
 	@if [ -z "$(DOCKER_COMPOSE)" ]; then \
 		echo "Neither 'docker compose' nor 'docker-compose' found. Please install Docker Compose."; \
 		exit 1; \
@@ -97,9 +100,11 @@ integration-down:
 cov:
 	go tool cover -html=.coverage.cov
 
+GO_BUILD_FLAGS ?=
+
 .PHONY: build
 build:
-	go build -ldflags "-X core/pkg/version.Version=$(VERSION) -X core/pkg/version.Commit=$(COMMIT) -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-mcp-proxy
+	go build $(GO_BUILD_FLAGS) -ldflags "-X core/pkg/version.Version=$(VERSION) -X core/pkg/version.Commit=$(COMMIT) -X core/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` -X 'core/pkg/version.GoVersion=`go version`'" -o bk-apigateway-mcp-proxy
 
 .PHONY: serve
 serve: build

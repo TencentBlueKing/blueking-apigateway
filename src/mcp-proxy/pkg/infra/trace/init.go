@@ -22,6 +22,7 @@ package trace
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel"
@@ -36,6 +37,7 @@ import (
 	tc "go.opentelemetry.io/otel/trace"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/constant"
 )
 
 const (
@@ -130,9 +132,25 @@ func StartTrace(ctx context.Context, name string) (context.Context, tc.Span) {
 	}
 }
 
+// ExtractTraceIDFromTraceparent extracts the trace ID from a W3C traceparent header.
+func ExtractTraceIDFromTraceparent(traceparent string) string {
+	parts := strings.Split(strings.TrimSpace(traceparent), "-")
+	if len(parts) != 4 {
+		return ""
+	}
+	traceID, err := tc.TraceIDFromHex(parts[1])
+	if err != nil || !traceID.IsValid() {
+		return ""
+	}
+	return traceID.String()
+}
+
 // GetTraceIDFromContext extracts the trace ID from the context.
-// Returns an empty string if tracing is not enabled or no span exists in the context.
+// It first prefers a trace_id stored explicitly in context, then falls back to the active span.
 func GetTraceIDFromContext(ctx context.Context) string {
+	if traceID, ok := ctx.Value(constant.TraceID).(string); ok && traceID != "" {
+		return traceID
+	}
 	span := tc.SpanFromContext(ctx)
 	if span == nil {
 		return ""

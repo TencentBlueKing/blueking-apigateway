@@ -32,6 +32,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v4"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/util"
@@ -88,6 +89,42 @@ type ToolInfo struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	InputSchema json.RawMessage `json:"inputSchema,omitempty"`
+}
+
+func extractToolResponseEnvelope(result *mcp.CallToolResult) (map[string]any, error) {
+	if result == nil {
+		return nil, fmt.Errorf("call tool result is nil")
+	}
+	if result.StructuredContent != nil {
+		switch value := result.StructuredContent.(type) {
+		case map[string]any:
+			return value, nil
+		case json.RawMessage:
+			var envelope map[string]any
+			if err := json.Unmarshal(value, &envelope); err != nil {
+				return nil, fmt.Errorf("unmarshal structured content: %w", err)
+			}
+			return envelope, nil
+		case []byte:
+			var envelope map[string]any
+			if err := json.Unmarshal(value, &envelope); err != nil {
+				return nil, fmt.Errorf("unmarshal structured content bytes: %w", err)
+			}
+			return envelope, nil
+		}
+	}
+	if len(result.Content) == 0 {
+		return nil, fmt.Errorf("call tool result content is empty")
+	}
+	textContent, ok := result.Content[0].(*mcp.TextContent)
+	if !ok {
+		return nil, fmt.Errorf("first content is not text content")
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal([]byte(textContent.Text), &envelope); err != nil {
+		return nil, fmt.Errorf("unmarshal text content envelope: %w", err)
+	}
+	return envelope, nil
 }
 
 // PromptsListResult prompts/list 响应结果

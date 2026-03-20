@@ -6,7 +6,7 @@ WORKDIR /app
 ARG BINARY=bk-apigateway-mcp-proxy
 ARG VERSION=latest
 ARG COMMIT=HEAD
-RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ${BINARY}
+RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} -e GO_BUILD_FLAGS=-buildvcs=false && chmod +x ${BINARY}
 
 # install dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2

@@ -29,6 +29,7 @@ import (
 	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
+	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/util"
 )
 
@@ -40,6 +41,14 @@ func APILogger() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		start := time.Now()
+
+		traceID := trace.GetTraceIDFromContext(c.Request.Context())
+		if traceID == "" {
+			traceID = trace.ExtractTraceIDFromTraceparent(c.GetHeader("Traceparent"))
+		}
+		if traceID != "" {
+			util.SetTraceID(c, traceID)
+		}
 
 		// set mcp server info to context
 		mcpName := c.Param("name")
@@ -73,6 +82,7 @@ func APILogger() gin.HandlerFunc {
 
 		fields := []zap.Field{
 			zap.Int("gateway_id", util.GetGatewayID(c)),
+			zap.String("gateway_name", util.GetGatewayName(c)),
 			zap.String("mcp_server_name", mcpName),
 			zap.Int("mcp_server_id", util.GetMCPServerID(c)),
 			zap.String("method", c.Request.Method),

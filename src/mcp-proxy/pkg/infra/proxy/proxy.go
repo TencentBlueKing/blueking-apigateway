@@ -50,6 +50,13 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+const (
+	toolResponseStatusCodeField = "status_code"
+	toolResponseRequestIDField  = "request_id"
+	toolResponseTraceIDField    = "trace_id"
+	toolResponseBodyField       = "response_body"
+)
+
 // sensitiveHeaderKeys lists header keys whose values must be masked in logs.
 var sensitiveHeaderKeys = map[string]struct{}{
 	constant.BkApiAuthorizationHeaderKey: {},
@@ -190,6 +197,8 @@ func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 		return nil
 	}
 
+	// go-sdk 的低层 AddTool 要求 OutputSchema 顶层是 object，且 handler 返回的 structuredContent 也必须是 object。
+	// 当前 proxy 统一返回带元信息的 response envelope，因此这里期望 OutputSchema 已经是该 envelope 对象。
 	var outputSchema map[string]any
 	if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
 		logging.GetLogger().Error("failed to unmarshal tool output schema",
@@ -199,7 +208,43 @@ func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 		)
 		return nil
 	}
-	return normalizeToolOutputSchema(outputSchema)
+	outputSchema = normalizeToolOutputSchema(outputSchema)
+	if !hasObjectSchemaType(outputSchema["type"]) {
+		logging.GetLogger().Warn("skip unsupported tool output schema",
+			zap.String("tool_name", toolConfig.Name),
+			zap.String("mcp_server", serverName),
+			zap.Any("output_schema_type", outputSchema["type"]),
+		)
+		return nil
+	}
+	return outputSchema
+}
+
+func buildToolResponseEnvelope(statusCode int, requestID, traceID string, responseBody any) map[string]any {
+	responseResult := map[string]any{
+		toolResponseStatusCodeField: statusCode,
+		toolResponseRequestIDField:  requestID,
+		toolResponseTraceIDField:    traceID,
+	}
+	if responseBody != nil {
+		responseResult[toolResponseBodyField] = responseBody
+	}
+	return responseResult
+}
+
+func buildToolResult(output any) *mcp.CallToolResult {
+	result := &mcp.CallToolResult{}
+	if structuredContent, ok := output.(map[string]any); ok {
+		result.StructuredContent = structuredContent
+	}
+	text := cast.ToString(output)
+	if rawOutput, err := json.Marshal(output); err == nil {
+		text = string(rawOutput)
+	}
+	result.Content = []mcp.Content{
+		&mcp.TextContent{Text: text},
+	}
+	return result
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
@@ -421,13 +466,32 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 
 // loggingTransport 是一个带日志的 HTTP Transport
 type loggingTransport struct {
-	base       http.RoundTripper
-	logger     *zap.SugaredLogger
-	appCode    string
-	username   string
-	requestID  string
-	xRequestID string
-	toolName   string
+	base        http.RoundTripper
+	logger      *zap.SugaredLogger
+	appCode     string
+	username    string
+	requestID   string
+	xRequestID  string
+	gatewayName string
+	toolName    string
+}
+
+func buildLoggingTransport(
+	ctx context.Context,
+	baseTransport http.RoundTripper,
+	toolApiConfig *ToolConfig,
+	appCode, username, requestID, xRequestID string,
+) *loggingTransport {
+	return &loggingTransport{
+		base:        baseTransport,
+		logger:      logging.GetLogger(),
+		appCode:     appCode,
+		username:    username,
+		requestID:   requestID,
+		xRequestID:  xRequestID,
+		gatewayName: util.GetGatewayNameFromContext(ctx),
+		toolName:    toolApiConfig.String(),
+	}
 }
 
 // RoundTrip 实现 http.RoundTripper 接口
@@ -460,6 +524,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
+		"gateway_name", t.gatewayName,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.Path,
@@ -481,6 +546,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			"bk_username", t.username,
 			"request_id", t.requestID,
 			"x_request_id", t.xRequestID,
+			"gateway_name", t.gatewayName,
 			"tool", t.toolName,
 			"method", req.Method,
 			"url", req.URL.Path,
@@ -503,6 +569,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
+		"gateway_name", t.gatewayName,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.Path,
@@ -593,10 +660,6 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			zap.String("bk_username", username),
 			zap.String("client_ip", clientIP),
 		)
-		// 仅在 trace_id 非空时附加，避免日志中出现空 trace_id 字段
-		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
-			auditLog = auditLog.With(zap.String("trace_id", traceID))
-		}
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
@@ -622,15 +685,15 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		baseTransport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
-		logTransport := &loggingTransport{
-			base:       baseTransport,
-			logger:     logging.GetLogger(),
-			appCode:    appCode,
-			username:   username,
-			requestID:  requestID,
-			xRequestID: xRequestID,
-			toolName:   toolApiConfig.String(),
-		}
+		logTransport := buildLoggingTransport(
+			ctx,
+			baseTransport,
+			toolApiConfig,
+			appCode,
+			username,
+			requestID,
+			xRequestID,
+		)
 		client := &http.Client{Transport: logTransport}
 		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
@@ -690,20 +753,22 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 					if response.Body() != nil {
 						defer response.Body().Close()
 					}
-					responseResult := map[string]any{
-						"status_code": response.Code(),
-						"request_id":  response.GetHeader(constant.BkGatewayRequestIDKey),
-						"trace_id":    trace.GetTraceIDFromContext(ctx),
+					var res any
+					if response.Body() != nil {
+						if e := consumer.Consume(response.Body(), &res); e != nil {
+							return nil, e
+						}
 					}
-					var res map[string]any
-					if e := consumer.Consume(response.Body(), &res); e == nil {
-						responseResult["response_body"] = res
-					}
+					responseResult := buildToolResponseEnvelope(
+						response.Code(),
+						response.GetHeader(constant.BkGatewayRequestIDKey),
+						trace.GetTraceIDFromContext(ctx),
+						res,
+					)
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
 					}
-					rawResult, _ := json.Marshal(responseResult)
-					return string(rawResult), nil
+					return responseResult, nil
 				},
 			),
 		}
@@ -741,13 +806,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
 			zap.Any("response", submit), zap.Any("header", maskSensitiveHeaders(headerInfo)))
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{
-				&mcp.TextContent{
-					Text: cast.ToString(submit),
-				},
-			},
-		}, nil
+		return buildToolResult(submit), nil
 	}
 	return handler
 }

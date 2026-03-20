@@ -29,16 +29,35 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
+func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.RawMessage {
+	properties := map[string]any{
+		toolResponseStatusCodeField: map[string]any{"type": "integer"},
+		toolResponseRequestIDField:  map[string]any{"type": "string"},
+		toolResponseTraceIDField:    map[string]any{"type": "string"},
+	}
+	if len(responseBodySchema) > 0 {
+		var responseBodySchemaValue any
+		if err := json.Unmarshal(responseBodySchema, &responseBodySchemaValue); err == nil {
+			properties[toolResponseBodyField] = responseBodySchemaValue
+		}
+	}
+	marshalJSON, _ := json.Marshal(map[string]any{
+		"type":       "object",
+		"properties": properties,
+	})
+	return marshalJSON
+}
+
 func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMessage {
-	if responseRef == nil || responseRef.Value == nil || len(responseRef.Value.Content) == 0 {
+	if responseRef == nil || responseRef.Value == nil {
 		return nil
 	}
 	if schemaRef := getPreferredResponseSchemaRef(responseRef.Value.Content); schemaRef != nil {
 		if marshalJSON, err := schemaRef.MarshalJSON(); err == nil {
-			return marshalJSON
+			return buildToolResponseEnvelopeSchema(marshalJSON)
 		}
 	}
-	return nil
+	return buildToolResponseEnvelopeSchema(nil)
 }
 
 func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef {

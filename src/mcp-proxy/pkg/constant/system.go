@@ -57,6 +57,7 @@ const (
 	GatewayName         CtxKey = "gateway_name"
 	RequestID           CtxKey = "request_id"
 	XRequestID          CtxKey = "x_request_id"
+	TraceID             CtxKey = "trace_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
 	ClientIP            CtxKey = "client_ip"

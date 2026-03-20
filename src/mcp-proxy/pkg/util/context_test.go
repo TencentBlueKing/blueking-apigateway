@@ -202,6 +202,23 @@ var _ = Describe("Context", func() {
 		})
 	})
 
+	Describe("TraceID", func() {
+		It("should set and get trace ID from gin context and request context", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetTraceID(c, "11223344556677889900aabbccddeeff")
+
+			traceID, exists := c.Get(string(constant.TraceID))
+			Expect(exists).To(BeTrue())
+			Expect(traceID).To(Equal("11223344556677889900aabbccddeeff"))
+
+			traceIDFromCtx := c.Request.Context().Value(constant.TraceID)
+			Expect(traceIDFromCtx).To(Equal("11223344556677889900aabbccddeeff"))
+		})
+	})
+
 	Describe("ClientIP", func() {
 		It("should set and get client IP from gin context and request context", func() {
 			w := httptest.NewRecorder()
