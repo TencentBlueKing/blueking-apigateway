@@ -811,6 +811,144 @@ class TestMCPServerRetrieveApi:
 
         assert resp.status_code == 404
 
+    def test_retrieve_returns_categories(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 详情接口返回分类信息"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="category-retrieve-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        cat1, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
+        cat2, _ = MCPServerCategory.objects.get_or_create(
+            name="Monitoring", defaults={"display_name": "监控告警", "is_active": True}
+        )
+        mcp_server.categories.set([cat1, cat2])
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([], []),
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_prompts_count_map",
+            return_value={mcp_server.id: 0},
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_prompts",
+            return_value=[],
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_user_custom_doc",
+            return_value="",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.retrieve",
+            path_params={"mcp_server_id": mcp_server.id},
+            app=mock.MagicMock(app_code="test"),
+            user=mock.MagicMock(username="test_user"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert "categories" in result["data"]
+        category_names = {c["name"] for c in result["data"]["categories"]}
+        assert "Official" in category_names
+        assert "Monitoring" in category_names
+        for cat in result["data"]["categories"]:
+            assert "name" in cat
+            assert "display_name" in cat
+
+    def test_retrieve_returns_tool_schema(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 详情接口返回工具的 schema 信息"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="schema-retrieve-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="tool1",
+        )
+
+        tool_resource = mock.MagicMock()
+        tool_resource.id = 101
+        tool_resource.name = "tool1"
+        tool_resource.description = "Tool 1 Description"
+        tool_resource.method = "POST"
+        tool_resource.path = "/api/v1/tool1/"
+        tool_resource.verified_user_required = False
+        tool_resource.verified_app_required = True
+        tool_resource.resource_perm_required = True
+        tool_resource.allow_apply_permission = True
+
+        fake_schema = {
+            "requestBody": {
+                "content": {
+                    "application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}}}}
+                }
+            }
+        }
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            return_value=([tool_resource], {101: ["label1"]}),
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_prompts_count_map",
+            return_value={mcp_server.id: 0},
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_prompts",
+            return_value=[],
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.MCPServerHandler.get_user_custom_doc",
+            return_value="",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.ResourceVersionHandler.get_resource_id_to_schema_by_resource_version",
+            return_value={101: fake_schema},
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.Release.objects.filter",
+            return_value=mock.MagicMock(first=mock.MagicMock(return_value=mock.MagicMock(resource_version_id=1))),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.retrieve",
+            path_params={"mcp_server_id": mcp_server.id},
+            app=mock.MagicMock(app_code="test"),
+            user=mock.MagicMock(username="test_user"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert len(result["data"]["tools"]) == 1
+        tool = result["data"]["tools"][0]
+        assert tool["name"] == "tool1"
+        assert "schema" in tool
+        assert tool["schema"]["requestBody"]["content"]["application/json"]["schema"]["type"] == "object"
+
 
 class TestGatewayListApiKeyword:
     def test_list_with_keyword_matches_description(self, request_view, fake_gateway):
