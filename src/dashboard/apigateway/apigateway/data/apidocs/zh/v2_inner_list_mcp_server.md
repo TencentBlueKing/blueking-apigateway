@@ -30,6 +30,7 @@
         "is_public": true,
         "labels": ["label1", "label2"],
         "resource_names": ["resource1", "resource2"],
+        "tool_names": ["resource1", "custom_tool2"],
         "status": "active",
         "protocol_type": "sse",
         "oauth2_public_client_enabled": false,
@@ -83,6 +84,7 @@
 | is_public    | bool   | MCPServer 是否公开        |
 | labels       | array  | MCPServer 标签列表        |
 | resource_names | array  | MCPServer 资源名称列表      |
+| tool_names   | array  | MCPServer 工具名称列表      |
 | status       | string | MCPServer 状态          |
 | protocol_type | string | MCPServer 协议类型        |
 | oauth2_public_client_enabled | bool   | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权       |

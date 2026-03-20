@@ -1042,3 +1042,43 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
+
+    def test_list_returns_tool_names(self, request_view, fake_gateway, mocker):
+        """测试 MCPServer 列表接口返回 tool_names（含重命名场景）"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="tool-names-mcp",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="res1;res2@custom_tool2",
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
+            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_data = next(
+            (item for item in result["data"]["results"] if item["id"] == mcp_server.id),
+            None,
+        )
+        assert mcp_data is not None
+        assert "tool_names" in mcp_data
+        assert mcp_data["tool_names"] == ["res1", "custom_tool2"]
+        assert mcp_data["resource_names"] == ["res1", "res2"]

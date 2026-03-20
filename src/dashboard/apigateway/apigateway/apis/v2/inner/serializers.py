@@ -554,6 +554,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
 
     labels = serializers.ListField(read_only=True, help_text="MCPServer 标签")
     resource_names = serializers.ListField(read_only=True, help_text="MCPServer 资源名称")
+    tool_names = serializers.ListField(read_only=True, help_text="MCPServer 工具名称列表")
 
     status = serializers.CharField(read_only=True, help_text="MCPServer 状态")
 

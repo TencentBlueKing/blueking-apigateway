@@ -453,6 +453,7 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
     description = serializers.CharField(read_only=True, help_text="资源描述")
     method = serializers.CharField(read_only=True, help_text="资源前端请求方法")
     path = serializers.CharField(read_only=True, help_text="资源前端请求路径")
+    schema = serializers.SerializerMethodField(help_text="工具的 OpenAPI Schema 定义")
 
     verified_user_required = serializers.BooleanField(read_only=True, help_text="是否需要认证用户")
     verified_app_required = serializers.BooleanField(read_only=True, help_text="是否需要认证应用")
@@ -470,6 +471,10 @@ class MCPServerToolOutputSLZ(serializers.Serializer):
         """获取工具名称（重命名后的名称）"""
         tool_name_map = self.context.get("tool_name_map", {})
         return tool_name_map.get(obj.name, "")
+
+    def get_schema(self, obj) -> dict:
+        resource_schema_map = self.context.get("resource_schema_map", {})
+        return resource_schema_map.get(obj.id, {})
 
 
 class MCPServerPromptOutputSLZ(serializers.Serializer):
@@ -501,6 +506,7 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
     description = serializers.CharField(read_only=True, help_text="MCPServer 描述")
     is_public = serializers.BooleanField(read_only=True, help_text="MCPServer 是否公开")
     labels = serializers.SerializerMethodField(help_text="MCPServer 标签")
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
     status = serializers.ChoiceField(
         read_only=True, help_text="MCPServer 状态", choices=MCPServerStatusEnum.get_choices()
     )
@@ -531,6 +537,9 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
     def get_labels(self, obj) -> list:
         return self.context.get("labels", [])
 
+    def get_categories(self, obj) -> list:
+        return self.context.get("categories", [])
+
     def get_url(self, obj) -> str:
         return build_mcp_server_url(obj.name, obj.protocol_type)
 
@@ -543,7 +552,6 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
 
     def get_prompts(self, obj):
         prompts = self.context.get("prompts", [])
-        # 私有的 prompt 将 content 设置为空
         result = []
         for p in prompts:
             prompt_data = dict(p)
