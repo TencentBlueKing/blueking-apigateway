@@ -363,7 +363,7 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].OutputSchema).NotTo(BeNil())
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"users":{"type":"array","items":{"type":"string"}}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"object","properties":{"users":{"type":"array","items":{"type":"string"}}}}}}`))
 		})
 
 		It("should prefer successful response schema over error response schema", func() {
@@ -423,7 +423,9 @@ var _ = Describe("Converter", func() {
 
 			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
-			Expect(string(result[0].OutputSchema)).To(MatchJSON(`{"type":"array","items":{"type":"string"}}`))
+			Expect(
+				string(result[0].OutputSchema),
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"array","items":{"type":"string"}}}}`))
 		})
 
 		It("should support json-like response media types", func() {
@@ -468,10 +470,10 @@ var _ = Describe("Converter", func() {
 			Expect(result).To(HaveLen(1))
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"data":{"type":"string"}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"object","properties":{"data":{"type":"string"}}}}}`))
 		})
 
-		It("should omit output schema when response body schema is absent", func() {
+		It("should build metadata envelope when response body schema is absent", func() {
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",
 				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
@@ -497,7 +499,10 @@ var _ = Describe("Converter", func() {
 
 			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].OutputSchema).To(BeNil())
+			Expect(result[0].OutputSchema).NotTo(BeNil())
+			Expect(
+				string(result[0].OutputSchema),
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"}}}`))
 		})
 
 		It("should omit output schema when responses are empty", func() {

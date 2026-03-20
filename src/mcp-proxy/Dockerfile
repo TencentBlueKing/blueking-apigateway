@@ -1,12 +1,18 @@
 FROM golang:1.24.4-bullseye AS builder
 
-COPY ./ /app
 WORKDIR /app
+
+# Cache dependencies first
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code (vendor excluded via .dockerignore)
+COPY ./ ./
 
 ARG BINARY=bk-apigateway-mcp-proxy
 ARG VERSION=latest
 ARG COMMIT=HEAD
-RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ${BINARY}
+RUN GOMAXPROCS=1 go build -buildvcs=false -p 1 -ldflags "-X core/pkg/version.Version=${VERSION} -X core/pkg/version.Commit=${COMMIT} -X core/pkg/version.BuildTime=$(date +%Y-%m-%d_%I:%M:%S) -X 'core/pkg/version.GoVersion=$(go version)'" -o ${BINARY} && chmod +x ${BINARY}
 
 # install dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2

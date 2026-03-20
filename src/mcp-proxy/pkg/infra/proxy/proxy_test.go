@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -310,7 +311,7 @@ var _ = Describe("MCPProxy", func() {
 			Expect(tool.OutputSchema.(map[string]any)).To(HaveKey("properties"))
 		})
 
-		It("should not add properties for array output schema", func() {
+		It("should omit unsupported array output schema", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "listUsers",
 				Description:  "List users",
@@ -318,13 +319,10 @@ var _ = Describe("MCPProxy", func() {
 			}, "test-server")
 
 			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "array"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
+			Expect(tool.OutputSchema).To(BeNil())
 		})
 
-		It("should keep ref output schema unchanged", func() {
+		It("should omit unsupported ref-only output schema", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "listUsers",
 				Description:  "List users",
@@ -332,11 +330,31 @@ var _ = Describe("MCPProxy", func() {
 			}, "test-server")
 
 			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("$ref", "#/components/schemas/UserList"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("type"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
+			Expect(tool.OutputSchema).To(BeNil())
+		})
+	})
+
+	Describe("buildToolResponseEnvelope", func() {
+		It("should omit response_body when body is nil", func() {
+			envelope := buildToolResponseEnvelope(204, "req-1", nil)
+
+			Expect(envelope).To(Equal(map[string]any{
+				toolResponseStatusCodeField: 204,
+				toolResponseRequestIDField:  "req-1",
+			}))
+		})
+
+		It("should populate structured content for envelope with array body", func() {
+			envelope := buildToolResponseEnvelope(200, "req-1", []any{"a", "b"})
+			result := buildToolResult(envelope)
+
+			Expect(result.StructuredContent).To(Equal(envelope))
+			Expect(result.Content).To(HaveLen(1))
+			textContent, ok := result.Content[0].(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			Expect(textContent.Text).To(MatchJSON(
+				`{"status_code":200,"request_id":"req-1","response_body":["a","b"]}`,
+			))
 		})
 	})
 

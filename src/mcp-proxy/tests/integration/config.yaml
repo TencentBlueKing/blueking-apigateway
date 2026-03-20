@@ -31,7 +31,7 @@ logger:
 
 mcpServer:
   innerJwtExpireTime: 5m
-  bkApiUrlTmpl: "http://localhost:8080/api/{api_name}"
+  bkApiUrlTmpl: ""
   interval: 60
 
 tracing:

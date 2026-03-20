@@ -182,6 +182,63 @@ var _ = Describe("SSE Protocol", func() {
 			Expect(result).NotTo(BeNil())
 			Expect(result.Content).NotTo(BeEmpty())
 		})
+
+		It("should return tool response envelope for tools with output schema", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			toolsResult, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(toolsResult).NotTo(BeNil())
+
+			var pingTool *mcp.Tool
+			for _, tool := range toolsResult.Tools {
+				if tool.Name == "ping" {
+					pingTool = tool
+					break
+				}
+			}
+			Expect(pingTool).NotTo(BeNil())
+			Expect(pingTool.OutputSchema).NotTo(BeNil())
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "ping",
+				Arguments: map[string]any{},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			envelope, err := extractToolResponseEnvelope(result)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(envelope).To(HaveKey("status_code"))
+			Expect(envelope).To(HaveKey("request_id"))
+			responseBody, ok := envelope["response_body"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(responseBody).To(HaveKey("method"))
+			Expect(responseBody).To(HaveKey("url"))
+		})
 	})
 
 	Describe("SSE Prompts", func() {
