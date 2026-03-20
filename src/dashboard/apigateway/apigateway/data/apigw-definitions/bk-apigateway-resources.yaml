@@ -2087,7 +2087,7 @@ paths:
                     doc_maintainers: ["admin"]
       x-bk-apigateway-resource:
         isPublic: true
-        allowApplyPermission: true
+        allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
         backend:
@@ -2100,7 +2100,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: true
+          resourcePermissionRequired: false
         descriptionEn: None
   /api/v2/open/gateways/batch-query/:
     post:
@@ -2335,7 +2335,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: true
+          resourcePermissionRequired: false
         descriptionEn: None
   /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/:
     get:
@@ -2441,7 +2441,7 @@ paths:
         authConfig:
           userVerifiedRequired: false
           appVerifiedRequired: true
-          resourcePermissionRequired: true
+          resourcePermissionRequired: false
         descriptionEn: None
   /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/info/:
     get:
