@@ -1,9 +1,9 @@
-spec_version: 1
+spec_version: 2
 
 release:
   version: 1.4.0
   title: v2 open api 新增 OAuth2 保护资源元数据接口
-  comment:  v2 open api 新增 OAuth2 保护资源元数据接口
+  comment: v2 open api 新增 OAuth2 保护资源元数据接口
 
 apigateway:
   description: 蓝鲸 API 网关（BlueKing API Gateway）是一种高性能、高可用的 API 托管服务。网关提供了该服务的基础通用接口，包含网关、资源、环境、版本发布、权限等相关接口。(官方内置网关，请勿修改!)
@@ -11,31 +11,73 @@ apigateway:
   is_public: true
   api_type: 1
 
+stages:
+  - name: prod
+    backends:
+      - name: "default"
+        config:
+          timeout: 60
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "{{ environ.DASHBOARD_INNER_URL }}"
+              weight: 100
+      - name: "core-api"
+        config:
+          timeout: 60
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "{{ environ.CORE_API_INNER_URL }}"
+              weight: 100
+      - name: "mcp-proxy"
+        config:
+          timeout: 300
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "{{ environ.MCP_PROXY_INNER_URL }}"
+              weight: 100
 
-stage:
-  name: prod
-  backends:
-    - name: "default"
-      config:
-        timeout: 60
-        loadbalance: "roundrobin"
-        hosts:
-          - host: "{{ environ.DASHBOARD_INNER_URL }}"
-            weight: 100
-    - name: "core-api"
-      config:
-        timeout: 60
-        loadbalance: "roundrobin"
-        hosts:
-          - host: "{{ environ.CORE_API_INNER_URL }}"
-            weight: 100
-    - name: "mcp-proxy"
-      config:
-        timeout: 300
-        loadbalance: "roundrobin"
-        hosts:
-          - host: "{{ environ.MCP_PROXY_INNER_URL }}"
-            weight: 100
+    mcp_servers:
+      - name: "context"
+        title: "蓝鲸 API 网关 Context"
+        description: "提供网关上下文相关的工具接口"
+        resource_names:
+          - v2_open_list_gateways
+          - v2_open_list_gateway_resources
+          - v2_open_retrieve_gateway_api_details
+        tool_names:
+          - list_gateways
+          - list_gateway_resources
+          - retrieve_gateway_api_details
+        is_public: true
+        status: 1
+        protocol_type: "streamable_http"
+        oauth2_public_client_enabled: true
+        category_names:
+          - "Official"
+          - "Featured"
+          - "DevOps"
+
+      - name: "debugger"
+        title: "蓝鲸 API 网关 Debugger"
+        description: "提供调试相关的工具接口"
+        resource_names:
+          - v2_open_tools_time_get_datetime
+          - v2_open_tools_time_get_current_unix_timestamp
+          - v2_open_tools_time_parse_datetime_str_to_timestamp
+          - v2_open_tools_log_query_by_request_id
+        tool_names:
+          - tools_time_get_datetime
+          - tools_time_get_current_unix_timestamp
+          - tools_time_parse_datetime_str_to_timestamp
+          - tools_log_query_by_request_id
+        is_public: true
+        status: 1
+        protocol_type: "streamable_http"
+        oauth2_public_client_enabled: true
+        category_names:
+          - "Official"
+          - "Featured"
+          - "Automation"
 
 grant_permissions:
   - bk_app_code: {{ settings.BK_APP_CODE }}

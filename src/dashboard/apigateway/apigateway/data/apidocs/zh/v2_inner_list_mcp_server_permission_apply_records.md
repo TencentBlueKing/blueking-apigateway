@@ -30,6 +30,8 @@ mcp_server 申请记录列表
         "title": "测试服务",
         "description": "test",
         "tools_count": "1",
+        "tool_names": ["tool1"],
+        "protocol_type": "sse",
         "doc_link": ""
       },
       "record": {
@@ -72,6 +74,8 @@ mcp_server 申请记录列表
 | title           | string | mcp_server 中文名/显示名称  |
 | description     | string | mcp_server 描述        |
 | tools_count     | int    | mcp_server 工具数量      |
+| tool_names      | array  | mcp_server 工具名称列表    |
+| protocol_type   | string | mcp_server 协议类型      |
 | doc_link        | string | mcp_server 文档访问地址    |
 
 

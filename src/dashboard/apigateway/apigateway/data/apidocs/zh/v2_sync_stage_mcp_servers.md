@@ -29,11 +29,13 @@ mcp_servers 参数说明
 | `description` | string        | 是  | MCP Server 描述                                                           |
 | `labels`   | array[string] | 否  | MCP Server 标签                                                          |
 | `resource_names` | array[string] | 是  | MCP Server 关联的 resource 列表                                             |
+| `tool_names` | array[string] | 否  | MCP Server 工具名称列表，默认等于 resource_names。如果需要对资源进行重命名，可设置此字段，长度必须与 resource_names 一致，且不能重复 |
 | `is_public` | bool          | 否  | 是否公开，默认不公开                                                             |
 | `status`   | integer          | 否  | 状态：1：启用，0：关闭(默认关闭)                                                     |
 | `protocol_type` | string       | 否  | MCP 协议类型：sse（默认）、streamable_http                                       |
 | `target_app_codes`   | array[string]          | 否  | 主动授权的应用列表                                                              |
 | `oauth2_public_client_enabled`     | bool                   | 否  | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权，默认不开启                     |
+| `category_names` | array[string] | 否  | MCP Server 分类名称列表，不传则不更新分类。当前支持的分类：`Uncategorized`（未分类）、`Official`（官方资源）、`Featured`（精选推荐）、`Monitoring`（监控告警）、`ConfigManagement`（配置管理）、`DevOps`（持续交付）、`Emergency`（故障管理）、`Database`（数据服务）、`Automation`（运维自动化）、`Observability`（可观测性）、`Security`（安全合规）、`ResourceOptimize`（资源优化）、`ChaosEngineering`（混沌工程）、`Network`（网络管理） |
 
 
 ### 请求参数示例
@@ -49,7 +51,12 @@ mcp_servers 参数说明
       "name": "server1",
       "title": "服务1",
       "resource_names": [
-        "resource1"
+        "resource1",
+        "resource2"
+      ],
+      "tool_names": [
+        "tool1",
+        "tool2"
       ],
       "is_public": true,
       "description": "description",
@@ -59,7 +66,10 @@ mcp_servers 参数说明
         "app1",
         "app2"
       ],
-      "oauth2_public_client_enabled": false
+      "oauth2_public_client_enabled": false,
+      "category_names": [
+        "Official"
+      ]
     }
   ]
 }

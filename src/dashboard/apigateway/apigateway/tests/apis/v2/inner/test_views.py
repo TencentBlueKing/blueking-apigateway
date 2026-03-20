@@ -171,6 +171,33 @@ class TestMCPServerPermissionListApi:
         mcp_server_data = result["data"][0]["mcp_server"]
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
 
+    def test_list_returns_tool_names(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表返回正确的 tool_names（区别于 resource_names）"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-tool-names",
+            title="Test Tool Names",
+            description="Test Description",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+            _resource_names="resource1@tool1;resource2@tool2",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["tool_names"] == ["tool1", "tool2"]
+
 
 class TestMCPServerAppPermissionApplyCreateApi:
     def test_create_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):

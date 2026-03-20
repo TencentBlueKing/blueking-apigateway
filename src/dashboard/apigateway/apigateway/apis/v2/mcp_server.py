@@ -144,6 +144,7 @@ def validate_and_enrich_mcp_server_for_retrieve(
 
     return {
         "labels": labels,
+        "tool_name_map": instance.gen_tool_name_map(),
         "prompts_count_map": prompts_count_map,
         "prompts": prompts,
         "user_custom_doc": user_custom_doc,

@@ -4047,7 +4047,13 @@ paths:
                         items:
                           type: string
                         description: MCP Server 关联的 resource 列表
-                        example: ["resource1"]
+                        example: ["resource1", "resource2"]
+                      tool_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 'MCP Server 工具名称列表，默认等于 resource_names。如果需要对资源进行重命名，可设置此字段，长度必须与 resource_names 一致，且不能重复'
+                        example: ["tool1", "tool2"]
                       is_public:
                         type: boolean
                         description: 是否公开，默认不公开
@@ -4066,6 +4072,16 @@ paths:
                           type: string
                         description: 主动授权的应用列表
                         example: ["app1", "app2"]
+                      oauth2_public_client_enabled:
+                        type: boolean
+                        description: 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权，默认不开启
+                        example: false
+                      category_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 'MCP Server 分类名称列表，不传则不更新分类。当前支持的分类：Uncategorized（未分类）、Official（官方资源）、Featured（精选推荐）、Monitoring（监控告警）、ConfigManagement（配置管理）、DevOps（持续交付）、Emergency（故障管理）、Database（数据服务）、Automation（运维自动化）、Observability（可观测性）、Security（安全合规）、ResourceOptimize（资源优化）、ChaosEngineering（混沌工程）、Network（网络管理）'
+                        example: ["Official", "tools"]
       responses:
         '200':
           description: 成功同步 MCP Servers

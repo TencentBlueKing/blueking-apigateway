@@ -31,6 +31,7 @@
       {
         "id": 1,
         "name": "tool1",
+        "tool_name": "custom_tool1",
         "description": "工具1描述",
         "method": "POST",
         "path": "/api/v1/tool1/",
@@ -101,6 +102,7 @@
 | ---------------------- | -------- | ---------------------- |
 | id                     | int      | 资源 ID                |
 | name                   | string   | 资源名称               |
+| tool_name              | string   | 工具名称（重命名后的名称） |
 | description            | string   | 资源描述               |
 | method                 | string   | 资源前端请求方法       |
 | path                   | string   | 资源前端请求路径       |
