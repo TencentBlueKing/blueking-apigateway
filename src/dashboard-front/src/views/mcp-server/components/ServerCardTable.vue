@@ -53,6 +53,7 @@ type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number];
 interface IProps { filterCondition?: IMCPServerFilterOptions }
 
 type IEmits = {
+  'view': [id: number]
   'edit': [id: number]
   'suspend': [id: number]
   'enable': [id: number]
@@ -118,7 +119,15 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
-            class="truncate"
+            class={[
+              'hover-cursor-pointer truncate',
+              { 'color-#3a84ff': Boolean(row.status) },
+              { 'color-#c4c6cc hover:color-#3a84ff': !row.status },
+            ]}
+            onClick={(e: MouseEvent) => {
+              e?.stopPropagation();
+              handleView(row.id);
+            }}
             onMouseenter={e =>
               tableRef.value?.handleCellEnter({
                 e,
@@ -136,7 +145,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             && (
               <Tag
                 theme="danger"
-                class="ml-4px cursor-pointer"
+                class="ml-4px hover-cursor-pointer"
                 v-slots={{
                   icon: () => (
                     <AgIcon name="zhiming" />
@@ -181,7 +190,6 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
         <Tag class={[
           'max-w-100px truncate border-transparent',
           { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
-          { 'bg-#f5f7fa color-#c4c6cc! hover:bg-#f5f7fa!': !row.status },
         ]}
         >
           {row?.stage?.name || '--'}
@@ -251,7 +259,6 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             [
               'border-transparent',
               { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
-              { 'bg-#f5f7fa color-#c4c6cc! hover:bg-#f5f7fa!': !row.status },
             ]
           }
         >
@@ -360,6 +367,10 @@ const getTableData = async (params: Record<string, any> = {}): Promise<any[]> =>
   return res;
 };
 
+const handleView = (id: number) => {
+  emit('view', id);
+};
+
 const handleEditClick = (row: IMCPServer) => {
   emit('edit', row.id);
 };
@@ -421,6 +432,8 @@ defineExpose({ getList });
 
     &:hover {
       border-color: transparent;
+      background-color: #f5f7fa;
+      color: #c4c6cc;
     }
   }
 }
