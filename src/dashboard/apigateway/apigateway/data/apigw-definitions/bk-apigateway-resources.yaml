@@ -2975,12 +2975,172 @@ paths:
       description: 获取 mcp_server 详情
       tags:
         - v2_open
+      parameters:
+        - name: mcp_server_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: mcp_server ID
+          example: 1
       responses:
-        default:
-          description: ''
+        '200':
+          description: 成功返回 mcp_server 详情
           content:
             application/json:
-              schema: { }
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: MCPServer ID
+                      name:
+                        type: string
+                        description: MCPServer 名称
+                      title:
+                        type: string
+                        description: MCPServer 中文名/显示名称
+                      description:
+                        type: string
+                        description: MCPServer 描述
+                      is_public:
+                        type: boolean
+                        description: 是否公开
+                      labels:
+                        type: array
+                        items:
+                          type: string
+                        description: MCPServer 标签
+                      categories:
+                        type: array
+                        description: MCPServer 分类列表
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              description: 分类名称（英文标识）
+                            display_name:
+                              type: string
+                              description: 分类显示名称
+                      status:
+                        type: integer
+                        description: MCPServer 状态（0：已停用，1：启用中）
+                      protocol_type:
+                        type: string
+                        description: MCP 协议类型
+                        example: sse
+                      oauth2_public_client_enabled:
+                        type: boolean
+                        description: 是否开启 OAuth2 公开客户端模式
+                      url:
+                        type: string
+                        description: MCPServer 访问地址
+                      guideline:
+                        type: string
+                        description: MCPServer 使用指南
+                      tools:
+                        type: array
+                        description: MCPServer 工具列表
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: 资源 ID
+                            name:
+                              type: string
+                              description: 资源名称
+                            tool_name:
+                              type: string
+                              description: 工具名称（重命名后的名称）
+                            description:
+                              type: string
+                              description: 资源描述
+                            method:
+                              type: string
+                              description: 资源前端请求方法
+                            path:
+                              type: string
+                              description: 资源前端请求路径
+                            schema:
+                              type: object
+                              description: 工具的 OpenAPI Schema 定义，包含 parameters、requestBody、responses 等
+                            verified_user_required:
+                              type: boolean
+                              description: 是否需要认证用户
+                            verified_app_required:
+                              type: boolean
+                              description: 是否需要认证应用
+                            resource_perm_required:
+                              type: boolean
+                              description: 是否验证应用访问资源的权限
+                            allow_apply_permission:
+                              type: boolean
+                              description: 是否需要申请权限
+                            labels:
+                              type: array
+                              items:
+                                type: string
+                              description: 资源标签列表
+                      prompts:
+                        type: array
+                        description: MCPServer Prompts 列表
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              description: Prompt ID
+                            name:
+                              type: string
+                              description: Prompt 名称
+                            code:
+                              type: string
+                              description: Prompt 标识码
+                            content:
+                              type: string
+                              description: Prompt 内容
+                            updated_time:
+                              type: string
+                              description: Prompt 更新时间
+                            updated_by:
+                              type: string
+                              description: Prompt 更新人
+                            labels:
+                              type: array
+                              items:
+                                type: string
+                              description: Prompt 标签列表
+                            is_public:
+                              type: boolean
+                              description: Prompt 是否公开
+                            space_code:
+                              type: string
+                              description: Prompt 所在空间标识
+                            space_name:
+                              type: string
+                              description: Prompt 所在空间名称
+                      prompts_count:
+                        type: integer
+                        description: MCPServer Prompts 数量
+                      maintainers:
+                        type: array
+                        items:
+                          type: string
+                        description: MCPServer 维护者
+                      user_custom_doc:
+                        type: string
+                        description: 用户自定义文档
+                      updated_time:
+                        type: string
+                        description: 更新时间
+                      created_time:
+                        type: string
+                        description: 创建时间
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -4047,7 +4207,13 @@ paths:
                         items:
                           type: string
                         description: MCP Server 关联的 resource 列表
-                        example: ["resource1"]
+                        example: ["resource1", "resource2"]
+                      tool_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 'MCP Server 工具名称列表，默认等于 resource_names。如果需要对资源进行重命名，可设置此字段，长度必须与 resource_names 一致，且不能重复'
+                        example: ["tool1", "tool2"]
                       is_public:
                         type: boolean
                         description: 是否公开，默认不公开
@@ -4066,6 +4232,16 @@ paths:
                           type: string
                         description: 主动授权的应用列表
                         example: ["app1", "app2"]
+                      oauth2_public_client_enabled:
+                        type: boolean
+                        description: 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权，默认不开启
+                        example: false
+                      category_names:
+                        type: array
+                        items:
+                          type: string
+                        description: 'MCP Server 分类名称列表，不传则不更新分类。当前支持的分类：Uncategorized（未分类）、Official（官方资源）、Featured（精选推荐）、Monitoring（监控告警）、ConfigManagement（配置管理）、DevOps（持续交付）、Emergency（故障管理）、Database（数据服务）、Automation（运维自动化）、Observability（可观测性）、Security（安全合规）、ResourceOptimize（资源优化）、ChaosEngineering（混沌工程）、Network（网络管理）'
+                        example: ["Official", "tools"]
       responses:
         '200':
           description: 成功同步 MCP Servers

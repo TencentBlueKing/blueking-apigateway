@@ -21,7 +21,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
 
@@ -438,6 +438,335 @@ class TestSyncApiOAuth2:
             mcp_server=mcp_server,
             bk_app_code=settings.MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE,
         ).exists()
+
+
+class TestSyncApiCategory:
+    """测试 MCPServer 同步接口的分类功能"""
+
+    def test_mcp_server_sync_create_with_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试创建 MCPServer 时设置分类"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        category, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "category-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "category test server",
+                    "status": 1,
+                    "category_names": ["Official"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_server_id = result["data"][0]["id"]
+        assert result["data"][0]["action"] == "created"
+
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Official"]
+
+    def test_mcp_server_sync_update_with_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试更新 MCPServer 时设置分类"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        category_official, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
+        category_featured, _ = MCPServerCategory.objects.get_or_create(
+            name="Featured", defaults={"display_name": "精选推荐", "is_active": True}
+        )
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-update-category"
+        mcp_server.status = 0
+        mcp_server.save()
+        mcp_server.categories.add(category_official)
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "update-category",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "update category",
+                    "status": 1,
+                    "category_names": ["Featured"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"][0]["action"] == "updated"
+
+        mcp_server.refresh_from_db()
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Featured"]
+
+    def test_mcp_server_sync_update_without_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试更新 MCPServer 时不传 category_names，保持原分类不变"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        category, _ = MCPServerCategory.objects.get_or_create(
+            name="Official", defaults={"display_name": "官方资源", "is_active": True}
+        )
+
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server.name = f"{fake_gateway.name}-{fake_stage.name}-keep-category"
+        mcp_server.status = 0
+        mcp_server.save()
+        mcp_server.categories.add(category)
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "keep-category",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "keep category",
+                    "status": 1,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+
+        mcp_server.refresh_from_db()
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Official"]
+
+    def test_mcp_server_sync_with_invalid_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试创建 MCPServer 时传入不存在的分类名称"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "invalid-category-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "invalid category test",
+                    "status": 1,
+                    "category_names": ["NonExistentCategory"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 400
+
+
+class TestSyncApiToolNames:
+    """测试 MCPServer 同步接口的工具名称重命名功能"""
+
+    def test_mcp_server_sync_with_tool_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试创建 MCPServer 时设置工具名称"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "tool-names-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": ["custom_tool_name"],
+                    "is_public": True,
+                    "description": "tool names test",
+                    "status": 1,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_server_id = result["data"][0]["id"]
+
+        mcp_server = MCPServer.objects.get(id=mcp_server_id)
+        assert mcp_server.tool_names == ["custom_tool_name"]
+        assert mcp_server.resource_names == [fake_resource.name]
+
+    def test_mcp_server_sync_with_mismatched_tool_names_length(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试 tool_names 与 resource_names 长度不一致时返回 400"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "mismatch-server",
+                    "resource_names": [fake_resource.name],
+                    "tool_names": ["tool1", "tool2"],
+                    "is_public": True,
+                    "description": "mismatch test",
+                    "status": 1,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 400
+
+    def test_mcp_server_sync_with_duplicate_tool_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """测试 tool_names 中有重复值时返回 400"""
+        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        data = {
+            "mcp_servers": [
+                {
+                    "labels": ["tag1"],
+                    "name": "dup-tool-server",
+                    "resource_names": [fake_resource.name, fake_resource.name + "_2"],
+                    "tool_names": ["same_tool", "same_tool"],
+                    "is_public": True,
+                    "description": "duplicate tool names test",
+                    "status": 1,
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 400
 
 
 class TestGatewayAppPermissionGrantApi:

@@ -30,7 +30,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
@@ -850,6 +850,12 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    category_names = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+        help_text="MCPServer 分类名称列表，不传则保持原分类不变",
+    )
 
     class Meta:
         model = MCPServer
@@ -866,10 +872,35 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "protocol_type",
             "target_app_codes",
             "oauth2_public_client_enabled",
+            "category_names",
         )
         lookup_field = "id"
-        non_model_fields = ["target_app_codes"]
+        non_model_fields = ["target_app_codes", "category_names"]
         validators = [MCPServerValidator()]
+
+    def validate_resource_names(self, resource_names):
+        if not resource_names:
+            raise serializers.ValidationError("资源名称列表不能为空")
+
+        if len(resource_names) != len(set(resource_names)):
+            raise serializers.ValidationError("资源名称列表中不能存在重复的资源名称")
+
+        return resource_names
+
+    def validate_tool_names(self, tool_names):
+        if tool_names and len(tool_names) != len(set(tool_names)):
+            raise serializers.ValidationError("工具名称不能重复")
+
+        return tool_names
+
+    def validate(self, data):
+        tool_names = data.get("tool_names")
+        resource_names = data.get("resource_names")
+
+        if tool_names and len(tool_names) != len(resource_names):
+            raise serializers.ValidationError("工具名称列表长度与资源名称列表长度不一致")
+
+        return data
 
     def _fill_data(self, data):
         data["gateway_id"] = self.context["gateway"].id
@@ -886,6 +917,19 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             )
         MCPServerHandler.sync_permissions(mcp_server_id)
 
+    def _sync_categories(self, instance: MCPServer, category_names: List[str]):
+        if category_names is None:
+            return
+
+        existing_categories = MCPServerCategory.objects.filter(name__in=category_names)
+        existing_names = set(existing_categories.values_list("name", flat=True))
+
+        invalid_names = set(category_names) - existing_names
+        if invalid_names:
+            raise serializers.ValidationError(f"分类不存在: {', '.join(invalid_names)}")
+
+        instance.categories.set(existing_categories)
+
     def create(self, validated_data):
         self._fill_data(validated_data)
 
@@ -895,6 +939,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             tool_names = resource_names
 
         target_app_codes = validated_data.pop("target_app_codes", [])
+        category_names = validated_data.pop("category_names", [])
 
         instance = MCPServer(**validated_data)
         if resource_names is not None:
@@ -902,6 +947,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         instance.save()
 
         self._sync_permission(instance.id, target_app_codes)
+        self._sync_categories(instance, category_names)
 
         return instance
 
@@ -913,13 +959,16 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if not tool_names:
             tool_names = resource_names
 
-        target_app_codes = validated_data.pop("target_app_codes", [])
+        target_app_codes = validated_data.pop("target_app_codes", None)
+        category_names = validated_data.pop("category_names", None)
 
         instance = super().update(instance, validated_data)
         instance.update_resource_names(resource_names, tool_names)
         instance.save()
 
-        self._sync_permission(instance.id, target_app_codes)
+        if target_app_codes is not None:
+            self._sync_permission(instance.id, target_app_codes)
+        self._sync_categories(instance, category_names)
 
         return instance
 

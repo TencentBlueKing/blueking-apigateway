@@ -27,10 +27,11 @@ from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
@@ -138,12 +139,29 @@ def validate_and_enrich_mcp_server_for_retrieve(
     instance.tools = tool_resources
     instance.maintainers = instance.gateway.maintainers
 
+    resource_schema_map: Dict[int, dict] = {}
+    release = Release.objects.filter(
+        gateway_id=instance.gateway.id,
+        stage=instance.stage,
+    ).first()
+    if release:
+        resource_schema_map = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
+            release.resource_version_id
+        )
+
     prompts_count_map = MCPServerHandler.get_prompts_count_map([instance.id])
     prompts = MCPServerHandler.get_prompts(instance.id)
     user_custom_doc = MCPServerHandler.get_user_custom_doc(instance.id)
 
+    categories = [
+        {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)
+    ]
+
     return {
         "labels": labels,
+        "tool_name_map": instance.gen_tool_name_map(),
+        "resource_schema_map": resource_schema_map,
+        "categories": categories,
         "prompts_count_map": prompts_count_map,
         "prompts": prompts,
         "user_custom_doc": user_custom_doc,
