@@ -640,7 +640,7 @@
   "通知对象": "Recipients",
   "网关维护者": "Gateway Maintainers",
   "其他通知对象": "Other Recipients",
-  "通知对象、其他通知对象至少一个有效": "At least one of recipients and other recipients is valid",
+  "通知对象和自定义通知对象至少勾选一个": "At least check one of these recipients",
   "不能多于128个字符": "No more than 128",
   "请输入告警策略名称": "Please input alarm strategy name",
   "请选择通知方式": "请选择通知方式",
@@ -2310,6 +2310,13 @@
     "≧（大于等于）": "≧",
     "<（小于）": "<",
     "≦（小于等于）": "≦",
-    "~~（正则）": "~~(RegExp)"
+    "~~（正则）": "~~(RegExp)",
+    "关键字过滤": "Keyword Filter",
+    "根据关键字匹配告警内容，决定是否推送": "Match alert content by keyword and decide whether to push",
+    "过滤模式": "Type",
+    "匹配方式": "Match mode",
+    "包含匹配": "Contains",
+    "正则匹配": "Regex",
+    "添加关键字": "Keywords"
   }
 }

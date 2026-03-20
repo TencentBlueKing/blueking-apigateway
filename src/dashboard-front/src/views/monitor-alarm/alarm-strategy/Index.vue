@@ -54,8 +54,8 @@
     <!-- 新建/编辑 -->
     <AddAlarmStrategy
       v-model:slider-params="sliderConfig"
-      v-model:detail-data="formData"
       v-model:effective-stage="effectiveStage"
+      :strategy="editingStrategy"
       :init-data="initData"
       :label-list="labelList"
       :stage-list="stageList"
@@ -216,8 +216,9 @@ const statusSwitcherDisabled = ref(false);
 const tableData = ref([]);
 const labelList = ref([]);
 const effectiveStage = ref('');
+
 // 新建初始数据
-const formData = ref({
+const editingStrategy = ref({
   name: '',
   alarm_type: 'resource_backend',
   alarm_subtype: '',
@@ -228,6 +229,7 @@ const formData = ref({
       method: 'gte',
       count: 3,
     },
+    filter_config: null,
     converge_config: { duration: 86400 },
     notice_config: {
       notice_way: ['im'],
@@ -237,6 +239,7 @@ const formData = ref({
   },
   effective_stages: [],
 });
+
 const stageList = ref<{
   id: number
   name: string
@@ -284,7 +287,7 @@ const handleAdd = () => {
     isShow: true,
     title: t('新建告警策略'),
   });
-  formData.value = Object.assign({}, {
+  editingStrategy.value = {
     name: '',
     alarm_type: 'resource_backend',
     alarm_subtype: '',
@@ -295,6 +298,7 @@ const handleAdd = () => {
         method: 'gte',
         count: 3,
       },
+      filter_config: null,
       converge_config: { duration: 86400 },
       notice_config: {
         notice_way: ['im'],
@@ -303,9 +307,9 @@ const handleAdd = () => {
       },
     },
     effective_stages: [],
-  });
+  };
   initData = cloneDeep({
-    form: formData.value,
+    form: editingStrategy.value,
     effectiveStage: 'all',
   });
   effectiveStage.value = 'all';
@@ -335,11 +339,11 @@ const handleIsEnable = async (item: IAlarmStrategy) => {
 const handleEdit = async ({ id }: { id: number }) => {
   try {
     const res = await getStrategyDetail(apigwId.value, id);
-    formData.value = { ...res };
+    editingStrategy.value = res;
     // 当生效环境为空时，应该把生效环境初始化为 ‘全部环境’
     effectiveStage.value = res?.effective_stages?.length > 0 ? 'custom' : 'all';
     initData = cloneDeep({
-      form: formData.value,
+      form: editingStrategy.value,
       effectiveStage: effectiveStage.value,
     });
   }
@@ -404,20 +408,21 @@ onBeforeMount(() => {
 
 <style lang="scss" scoped>
 :deep(.label-box) {
+
   .ag-label {
-    height: 24px;
-    line-height: 22px;
-    border: 1px solid #dcdee5;
-    text-align: center;
-    padding: 0 10px;
-    max-width: 90px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: normal;
     display: inline-block;
+    height: 24px;
+    max-width: 90px;
+    padding: 0 10px;
     margin-right: 4px;
-    border-radius: 2px;
+    overflow: hidden;
+    line-height: 22px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: normal;
     white-space: nowrap;
+    border: 1px solid #dcdee5;
+    border-radius: 2px;
   }
 }
 </style>

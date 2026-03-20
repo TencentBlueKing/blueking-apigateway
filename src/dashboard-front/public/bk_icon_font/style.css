@@ -668,3 +668,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-plugin-bk-traffic-label:before {
 	content: "\e1fd";
 }
+.icon-ag-jiantou:before {
+	content: "\e1fe";
+}
+.icon-ag-filter:before {
+	content: "\e1ff";
+}
