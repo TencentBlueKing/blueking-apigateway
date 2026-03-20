@@ -200,6 +200,14 @@ func SetBkApiTimeout(c *gin.Context, timeout int) {
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiTimeout, timeout))
 }
 
+// SetTraceID stores the trace ID into both gin context and request context.
+func SetTraceID(c *gin.Context, traceID string) {
+	c.Set(string(constant.TraceID), traceID)
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.TraceID, traceID))
+	}
+}
+
 // SetClientIP stores the client IP into both gin context and request context.
 func SetClientIP(c *gin.Context) {
 	clientIP := c.ClientIP()

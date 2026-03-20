@@ -19,13 +19,16 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.opentelemetry.io/otel"
@@ -33,8 +36,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/trace"
 )
 
@@ -318,7 +323,7 @@ var _ = Describe("MCPProxy", func() {
 			Expect(tool.OutputSchema.(map[string]any)).To(HaveKey("properties"))
 		})
 
-		It("should not add properties for array output schema", func() {
+		It("should omit unsupported array output schema", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "listUsers",
 				Description:  "List users",
@@ -326,13 +331,10 @@ var _ = Describe("MCPProxy", func() {
 			}, "test-server")
 
 			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "array"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
+			Expect(tool.OutputSchema).To(BeNil())
 		})
 
-		It("should keep ref output schema unchanged", func() {
+		It("should omit unsupported ref-only output schema", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "listUsers",
 				Description:  "List users",
@@ -340,11 +342,78 @@ var _ = Describe("MCPProxy", func() {
 			}, "test-server")
 
 			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("$ref", "#/components/schemas/UserList"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("type"))
-			Expect(tool.OutputSchema.(map[string]any)).NotTo(HaveKey("properties"))
+			Expect(tool.OutputSchema).To(BeNil())
+		})
+	})
+
+	Describe("buildToolResponseEnvelope", func() {
+		It("should omit response_body when body is nil", func() {
+			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
+
+			Expect(envelope).To(Equal(map[string]any{
+				toolResponseStatusCodeField: 204,
+				toolResponseRequestIDField:  "req-1",
+				toolResponseTraceIDField:    "trace-1",
+			}))
+		})
+	})
+
+	Describe("buildToolResult", func() {
+		It("should populate structured content for envelope with object body", func() {
+			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", map[string]any{
+				"timezone": "Asia/Shanghai",
+				"datetime": "2026-03-19T15:04:05+08:00",
+			})
+			result := buildToolResult(envelope)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.StructuredContent).To(Equal(envelope))
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","response_body":{"datetime":"2026-03-19T15:04:05+08:00","timezone":"Asia/Shanghai"}}`))
+		})
+
+		It("should populate structured content for envelope with array body", func() {
+			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", []any{"a", "b"})
+			result := buildToolResult(envelope)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.StructuredContent).To(Equal(envelope))
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","response_body":["a","b"]}`))
+		})
+	})
+
+	Describe("buildLoggingTransport", func() {
+		It("should populate gateway name from context", func() {
+			ctx := context.WithValue(context.Background(), constant.GatewayName, "test-gateway")
+			toolConfig := &ToolConfig{
+				Name:   "test-tool",
+				Host:   "https://example.com",
+				Url:    "/ping",
+				Method: http.MethodGet,
+			}
+
+			transport := buildLoggingTransport(
+				ctx,
+				http.DefaultTransport,
+				toolConfig,
+				"test-app",
+				"tester",
+				"req-1",
+				"x-req-1",
+			)
+
+			Expect(transport).NotTo(BeNil())
+			Expect(transport.gatewayName).To(Equal("test-gateway"))
+			Expect(transport.requestID).To(Equal("req-1"))
+			Expect(transport.xRequestID).To(Equal("x-req-1"))
+			Expect(transport.toolName).To(Equal(toolConfig.String()))
 		})
 	})
 
@@ -699,6 +768,45 @@ var _ = Describe("MCPProxy", func() {
 			// http.status_code should be set
 			Expect(attrMap).To(HaveKey("http.status_code"))
 			Expect(attrMap["http.status_code"]).To(Equal(int64(500)))
+		})
+
+		It("should include gateway name in outgoing logs", func() {
+			var buf bytes.Buffer
+			encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+			core := zapcore.NewCore(encoder, zapcore.AddSync(&buf), zap.InfoLevel)
+			logger := zap.New(core).Sugar()
+
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer backend.Close()
+
+			transport := &loggingTransport{
+				base:        backend.Client().Transport,
+				logger:      logger,
+				gatewayName: "test-gateway",
+				toolName:    "test-tool",
+			}
+
+			req, err := http.NewRequest(http.MethodGet, backend.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			resp, err := transport.RoundTrip(req)
+			Expect(err).NotTo(HaveOccurred())
+			_ = resp.Body.Close()
+
+			lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+			Expect(lines).To(HaveLen(2))
+
+			var requestLog map[string]any
+			Expect(json.Unmarshal([]byte(lines[0]), &requestLog)).To(Succeed())
+			Expect(requestLog).To(HaveKeyWithValue("msg", "outgoing request"))
+			Expect(requestLog).To(HaveKeyWithValue("gateway_name", "test-gateway"))
+
+			var responseLog map[string]any
+			Expect(json.Unmarshal([]byte(lines[1]), &responseLog)).To(Succeed())
+			Expect(responseLog).To(HaveKeyWithValue("msg", "outgoing response"))
+			Expect(responseLog).To(HaveKeyWithValue("gateway_name", "test-gateway"))
 		})
 	})
 })
