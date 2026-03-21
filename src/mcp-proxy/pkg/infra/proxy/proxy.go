@@ -45,6 +45,43 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+const (
+	// MaxAuditLogSize defines the maximum size for audit log fields
+	MaxAuditLogSize = 16384 // 16KB for audit logs
+)
+
+// truncateForAudit safely truncates any value for audit logging
+// Returns a string representation, truncated if needed
+func truncateForAudit(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		if len(val) > MaxAuditLogSize {
+			return val[:MaxAuditLogSize] + "...[truncated]"
+		}
+		return val
+	case []byte:
+		if len(val) > MaxAuditLogSize {
+			return string(val[:MaxAuditLogSize]) + "...[truncated]"
+		}
+		return string(val)
+	case json.RawMessage:
+		if len(val) > MaxAuditLogSize {
+			return string(val[:MaxAuditLogSize]) + "...[truncated]"
+		}
+		return string(val)
+	default:
+		// For other types, marshal to JSON and truncate if needed
+		data, err := json.Marshal(val)
+		if err != nil {
+			return fmt.Sprintf("%v", val)
+		}
+		if len(data) > MaxAuditLogSize {
+			return string(data[:MaxAuditLogSize]) + "...[truncated]"
+		}
+		return string(data)
+	}
+}
+
 // MCPProxy ...
 type MCPProxy struct {
 	mcpServers map[string]*MCPServer
@@ -326,12 +363,13 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		requestID := util.GetRequestIDFromContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
 		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
-		auditLog.Info("call tool", zap.Any("request", request.RawArguments))
+		auditLog.Info("call tool", zap.String("request", truncateForAudit(request.RawArguments)))
 		var handlerRequest HandlerRequest
 		err := json.Unmarshal(request.RawArguments, &handlerRequest)
 		if err != nil {
-			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(request.RawArguments)), zap.Error(err))
+			auditLog.Error("unmarshal handler request err", 
+				zap.String("request", truncateForAudit(request.RawArguments)), 
+				zap.Error(err))
 			return nil, err
 		}
 		tr := &http.Transport{
@@ -461,8 +499,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 				IsError: true,
 			}, nil
 		}
-		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.Any("response", submit), zap.Any("header", headerInfo))
+		auditLog.Info("call tool", zap.String("response", truncateForAudit(submit)), zap.Any("header", headerInfo))
 		return &protocol.CallToolResult{
 			Content: []protocol.Content{
 				&protocol.TextContent{

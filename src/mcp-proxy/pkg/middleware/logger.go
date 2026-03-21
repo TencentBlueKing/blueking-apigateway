@@ -34,14 +34,29 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
+const (
+	// MaxLogBodySize defines the maximum size for logging request/response bodies
+	MaxLogBodySize = 2048 // 2KB
+)
+
 type bodyLogWriter struct {
 	gin.ResponseWriter
-	body *bytes.Buffer
+	body    *bytes.Buffer
+	maxSize int
 }
 
 // Write will write body and return the length of body
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
+// Limits buffered body to maxSize to prevent unbounded memory usage
+func (w *bodyLogWriter) Write(b []byte) (int, error) {
+	// Only buffer up to maxSize bytes for logging
+	if w.body.Len() < w.maxSize {
+		remaining := w.maxSize - w.body.Len()
+		if len(b) <= remaining {
+			w.body.Write(b)
+		} else {
+			w.body.Write(b[:remaining])
+		}
+	}
 	return w.ResponseWriter.Write(b)
 }
 
@@ -57,16 +72,20 @@ func APILogger() gin.HandlerFunc {
 
 func logContextFields(c *gin.Context) []zap.Field {
 	start := time.Now()
-	// request body
+	// request body - limit read to MaxLogBodySize + 1 to detect truncation
 	var body string
 	requestBody, err := util.ReadRequestBody(c.Request)
 	if err != nil {
 		body = ""
 	} else {
-		body = util.TruncateBytesToString(requestBody, 1024)
+		body = util.TruncateBytesToString(requestBody, MaxLogBodySize)
 	}
 
-	newWriter := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	newWriter := &bodyLogWriter{
+		body:           bytes.NewBufferString(""),
+		ResponseWriter: c.Writer,
+		maxSize:        MaxLogBodySize,
+	}
 	c.Writer = newWriter
 
 	// set inner app code
@@ -77,6 +96,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 		if err != nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
 			c.Abort()
+			return nil
 		}
 		// set mcp_id to ctx
 		util.SetMCPServerID(c, mcp.ID)
@@ -94,9 +114,11 @@ func logContextFields(c *gin.Context) []zap.Field {
 
 	status := c.Writer.Status()
 
-	hasError := status != http.StatusOK
-
-	params := stringx.Truncate(c.Request.URL.RawQuery, 1024)
+	params := stringx.Truncate(c.Request.URL.RawQuery, MaxLogBodySize)
+	
+	// Always truncate response body to prevent excessive log size
+	responseBody := stringx.Truncate(newWriter.body.String(), MaxLogBodySize)
+	
 	fields := []zap.Field{
 		zap.Int("gateway_id", util.GetGatewayID(c)),
 		zap.String("mcp_server_name", mcpName),
@@ -110,12 +132,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 		zap.String("request_id", c.GetString(util.RequestIDKey)),
 		zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 		zap.String("client_ip", c.ClientIP()),
-	}
-
-	if hasError {
-		fields = append(fields, zap.String("response_body", newWriter.body.String()))
-	} else {
-		fields = append(fields, zap.String("response_body", stringx.Truncate(newWriter.body.String(), 1024)))
+		zap.String("response_body", responseBody),
 	}
 
 	// only send 5xx err to sentry
