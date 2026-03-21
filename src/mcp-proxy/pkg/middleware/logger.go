@@ -41,12 +41,22 @@ const (
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
-	body *bytes.Buffer
+	body    *bytes.Buffer
+	maxSize int
 }
 
 // Write will write body and return the length of body
-func (w bodyLogWriter) Write(b []byte) (int, error) {
-	w.body.Write(b)
+// Limits buffered body to maxSize to prevent unbounded memory usage
+func (w *bodyLogWriter) Write(b []byte) (int, error) {
+	// Only buffer up to maxSize bytes for logging
+	if w.body.Len() < w.maxSize {
+		remaining := w.maxSize - w.body.Len()
+		if len(b) <= remaining {
+			w.body.Write(b)
+		} else {
+			w.body.Write(b[:remaining])
+		}
+	}
 	return w.ResponseWriter.Write(b)
 }
 
@@ -62,7 +72,7 @@ func APILogger() gin.HandlerFunc {
 
 func logContextFields(c *gin.Context) []zap.Field {
 	start := time.Now()
-	// request body
+	// request body - limit read to MaxLogBodySize + 1 to detect truncation
 	var body string
 	requestBody, err := util.ReadRequestBody(c.Request)
 	if err != nil {
@@ -71,7 +81,11 @@ func logContextFields(c *gin.Context) []zap.Field {
 		body = util.TruncateBytesToString(requestBody, MaxLogBodySize)
 	}
 
-	newWriter := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	newWriter := &bodyLogWriter{
+		body:           bytes.NewBufferString(""),
+		ResponseWriter: c.Writer,
+		maxSize:        MaxLogBodySize,
+	}
 	c.Writer = newWriter
 
 	// set inner app code

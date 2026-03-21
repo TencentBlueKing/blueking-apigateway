@@ -51,7 +51,8 @@ const (
 )
 
 // truncateForAudit safely truncates any value for audit logging
-func truncateForAudit(v interface{}) interface{} {
+// Returns a string representation, truncated if needed
+func truncateForAudit(v interface{}) string {
 	switch val := v.(type) {
 	case string:
 		if len(val) > MaxAuditLogSize {
@@ -362,12 +363,12 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 		requestID := util.GetRequestIDFromContext(ctx)
 		auditLog = auditLog.With(zap.String("tool", toolApiConfig.String()))
 		innerJwt := util.GetInnerJWTTokenFromContext(ctx)
-		auditLog.Info("call tool", zap.Any("request", truncateForAudit(request.RawArguments)))
+		auditLog.Info("call tool", zap.String("request", truncateForAudit(request.RawArguments)))
 		var handlerRequest HandlerRequest
 		err := json.Unmarshal(request.RawArguments, &handlerRequest)
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", 
-				zap.String("request", truncateForAudit(request.RawArguments).(string)), 
+				zap.String("request", truncateForAudit(request.RawArguments)), 
 				zap.Error(err))
 			return nil, err
 		}
@@ -498,8 +499,7 @@ func genToolHandler(toolApiConfig *ToolConfig) server.ToolHandlerFunc {
 				IsError: true,
 			}, nil
 		}
-		log.Printf("call %s result: %s\n", toolApiConfig, submit)
-		auditLog.Info("call tool", zap.Any("response", truncateForAudit(submit)), zap.Any("header", headerInfo))
+		auditLog.Info("call tool", zap.String("response", truncateForAudit(submit)), zap.Any("header", headerInfo))
 		return &protocol.CallToolResult{
 			Content: []protocol.Content{
 				&protocol.TextContent{
