@@ -77,6 +77,7 @@ func logContextFields(c *gin.Context) []zap.Field {
 		if err != nil {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
 			c.Abort()
+			return
 		}
 		// set mcp_id to ctx
 		util.SetMCPServerID(c, mcp.ID)
