@@ -167,28 +167,11 @@ origin   → https://github.com/<USERNAME>/blueking-apigateway.git       # perso
 upstream → https://github.com/TencentBlueKing/blueking-apigateway.git  # main repo — PRs target here
 ```
 
-### CRITICAL: Always verify remotes before creating a PR
+## After Code Changes
 
-```bash
-git remote -v   # must confirm origin=fork, upstream=main before proceeding
-```
+Always run `make lint` and `make test` after making code changes and fix any issues before considering the work done.
 
-### Creating a PR (correct command)
-
-PRs must ALWAYS target the **upstream** main repo, never the personal fork (`<USERNAME>`).
-
-```bash
-gh pr create \
-  --repo TencentBlueKing/blueking-apigateway \
-  --head <USERNAME>:<branch-name> \
-  --base master \
-  --title "..." \
-  --body "..."
-```
-
-Common mistake: omitting `--repo` or setting `--repo <USERNAME>/blueking-apigateway` sends the PR to the fork instead of upstream. Always be explicit.
-
----
+When asked to "make a PR", create the pull request targeting `upstream/master`.
 
 ## Naming Convention: Gateway vs API
 
