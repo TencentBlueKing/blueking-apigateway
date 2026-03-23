@@ -39,7 +39,10 @@ func (k JWTPublicKeyCacheKey) Key() string {
 }
 
 func retrieveJWTPublicKey(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(JWTPublicKeyCacheKey)
+	key, ok := k.(JWTPublicKeyCacheKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected JWTPublicKeyCacheKey")
+	}
 
 	manager := dao.NewJWTManager()
 

@@ -39,7 +39,10 @@ func (k ReleaseHistoryCacheKey) Key() string {
 }
 
 func retrieveReleaseHistory(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(ReleaseHistoryCacheKey)
+	key, ok := k.(ReleaseHistoryCacheKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected ReleaseHistoryCacheKey")
+	}
 
 	manager := dao.NewReleaseHistoryManger()
 

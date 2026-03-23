@@ -42,7 +42,10 @@ func (k ResourceVersionMappingKey) Key() string {
 }
 
 func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(ResourceVersionMappingKey)
+	key, ok := k.(ResourceVersionMappingKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected ResourceVersionMappingKey")
+	}
 
 	manager := dao.NewResourceVersionManager()
 
@@ -62,14 +65,21 @@ func retrieveResourceVersionMapping(ctx context.Context, k cache.Key) (any, erro
 
 	resourceNameToID := make(map[string]int64, len(releaseResourcesData))
 	for _, d := range releaseResourcesData {
-		valueID := d["id"].(json.Number)
+		valueID, ok := d["id"].(json.Number)
+		if !ok {
+			return nil, errors.New("resource id is not a json.Number")
+		}
 
 		id, err := valueID.Int64()
 		if err != nil {
 			return nil, err
 		}
 
-		resourceNameToID[d["name"].(string)] = id
+		name, ok := d["name"].(string)
+		if !ok {
+			return nil, errors.New("resource name is not a string")
+		}
+		resourceNameToID[name] = id
 	}
 
 	logging.GetLogger().Debugw("retrieveResourceVersionMapping",

@@ -43,7 +43,10 @@ func (k AppGatewayPermissionKey) Key() string {
 }
 
 func retrieveAppGatewayPermission(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(AppGatewayPermissionKey)
+	key, ok := k.(AppGatewayPermissionKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected AppGatewayPermissionKey")
+	}
 
 	manager := dao.NewAppGatewayPermissionManager()
 

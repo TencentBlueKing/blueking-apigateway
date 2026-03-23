@@ -43,13 +43,13 @@ func Init(config config.Sentry) error {
 			Dsn: config.DSN,
 		})
 		if err != nil {
-			return fmt.Errorf("init sentry fail: %s", err)
+			return fmt.Errorf("init sentry fail: %w", err)
 		}
 
 		// init gin sentry
 		err = raven.SetDSN(config.DSN)
 		if err != nil {
-			return fmt.Errorf("init gin sentry fail: %s", err)
+			return fmt.Errorf("init gin sentry fail: %w", err)
 		}
 		s.enabled = true
 	}

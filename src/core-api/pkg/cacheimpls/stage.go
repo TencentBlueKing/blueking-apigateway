@@ -40,7 +40,10 @@ func (k StageKey) Key() string {
 }
 
 func retrieveStageByGatewayIDStageName(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(StageKey)
+	key, ok := k.(StageKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected StageKey")
+	}
 
 	manager := dao.NewStageManager()
 

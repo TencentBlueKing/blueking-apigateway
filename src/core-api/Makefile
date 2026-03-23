@@ -6,19 +6,19 @@ init:
 	pip install pre-commit
 	pre-commit install
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.6.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(LOCALBIN) v2.11.2
 	# for ginkgo
-	go install github.com/onsi/ginkgo/v2/ginkgo@latest
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@latest
 	# for make mock
-	go install github.com/golang/mock/mockgen@v1.6.0
+	GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen@v1.6.0
 	# for gofumpt
-	go install mvdan.cc/gofumpt@latest
+	GOBIN=$(LOCALBIN) go install mvdan.cc/gofumpt@latest
 	# for golines
-	go install github.com/segmentio/golines@latest
+	GOBIN=$(LOCALBIN) go install github.com/segmentio/golines@latest
 	# for goimports
-	go install -v github.com/incu6us/goimports-reviser/v3@latest
+	GOBIN=$(LOCALBIN) go install -v github.com/incu6us/goimports-reviser/v3@latest
 	# for swag
-	go install github.com/swaggo/swag/cmd/swag@latest
+	GOBIN=$(LOCALBIN) go install github.com/swaggo/swag/cmd/swag@latest
 
 .PHONY: dep
 dep:
@@ -26,7 +26,7 @@ dep:
 	go mod vendor
 
 doc:
-	swag init
+	$(SWAG) init
 
 .PHONY: mock
 mock:
@@ -35,7 +35,7 @@ mock:
 .PHONY: lint
 lint:
 	export GOFLAGS=-mod=vendor
-	golangci-lint run
+	$(GOLINTER) run --fix
 	find . -name "*.go" -not -path "./vendor/*" | xargs -n 1 grep -L 'TencentBlueKing is pleased to ' | grep -v '/mock/' | wc -l | xargs -I {} bash -c '[[ {} -eq 0 ]] && exit 0 || exit 1'
 
 .PHONY: check-license
@@ -46,7 +46,7 @@ check-license:
 
 .PHONY: fmt
 fmt:
-	golangci-lint fmt
+	$(GOLINTER) fmt
 
 
 .PHONY: test
@@ -68,3 +68,16 @@ serve: build
 .PHONY: dev-image
 dev-image:
 	docker build --build-arg VERSION=`git describe --tags --abbrev=0` --build-arg COMMIT=`git rev-parse HEAD`  -f  Dockerfile . -t bk-apigateway-core-api:development
+
+
+
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+## Tool Binaries
+GOLINES ?= $(LOCALBIN)/golines
+GOFUMPT ?= $(LOCALBIN)/gofumpt
+SWAG ?= $(LOCALBIN)/swag
+GOLINTER ?=$(LOCALBIN)/golangci-lint
+GOIMPORTS ?=$(LOCALBIN)/goimports-reviser
