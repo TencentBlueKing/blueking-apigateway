@@ -304,6 +304,7 @@
                     <BkTagInput
                       v-model="filterConfig.items"
                       allow-create
+                      :copyable="false"
                       has-delete-icon
                     />
                   </BkFormItem>
