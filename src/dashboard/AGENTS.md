@@ -158,6 +158,38 @@ make edition-reset    # clear edition symlinks
 make edition-modules  # create __init__.pyi files for mypy compatibility
 ```
 
+## Git & Pull Request Workflow
+
+### Repository structure (fork model)
+
+```
+origin   → https://github.com/<USERNAME>/blueking-apigateway.git       # personal fork — push branches here
+upstream → https://github.com/TencentBlueKing/blueking-apigateway.git  # main repo — PRs target here
+```
+
+### CRITICAL: Always verify remotes before creating a PR
+
+```bash
+git remote -v   # must confirm origin=fork, upstream=main before proceeding
+```
+
+### Creating a PR (correct command)
+
+PRs must ALWAYS target the **upstream** main repo, never the personal fork (`<USERNAME>`).
+
+```bash
+gh pr create \
+  --repo TencentBlueKing/blueking-apigateway \
+  --head <USERNAME>:<branch-name> \
+  --base master \
+  --title "..." \
+  --body "..."
+```
+
+Common mistake: omitting `--repo` or setting `--repo <USERNAME>/blueking-apigateway` sends the PR to the fork instead of upstream. Always be explicit.
+
+---
+
 ## Naming Convention: Gateway vs API
 
 Legacy code uses `API`/`api`/`api_id` to refer to gateways. All new code must use `Gateway`. The `api` naming persists in:
