@@ -153,6 +153,14 @@ type Instrument struct {
 	McpAPI bool
 }
 
+// Transport is the config for the shared HTTP transport used by tool calls.
+type Transport struct {
+	InsecureSkipVerify    bool
+	MaxIdleConns          int
+	MaxIdleConnsPerHost   int
+	IdleConnTimeoutSecond int
+}
+
 // McpServer ...
 type McpServer struct {
 	// the interval of mcp server reload
@@ -163,6 +171,11 @@ type McpServer struct {
 	InnerJwtExpireTime          time.Duration
 	EncryptKey                  string
 	CryptoNonce                 string
+	// MaxConcurrentPrefetch limits the number of concurrent goroutines when prefetching server configs.
+	// Defaults to 20 if not set.
+	MaxConcurrentPrefetch int
+	// Transport is the config for the shared HTTP transport used by upstream tool calls.
+	Transport Transport
 }
 
 // Pprof is the config for pprof
@@ -235,6 +248,20 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.CryptoNonce == "" {
 		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
+	}
+	// Transport defaults for upstream tool calls
+	if cfg.McpServer.Transport.MaxIdleConns == 0 {
+		cfg.McpServer.Transport.MaxIdleConns = 200
+	}
+	if cfg.McpServer.Transport.MaxIdleConnsPerHost == 0 {
+		cfg.McpServer.Transport.MaxIdleConnsPerHost = 20
+	}
+	if cfg.McpServer.Transport.IdleConnTimeoutSecond == 0 {
+		cfg.McpServer.Transport.IdleConnTimeoutSecond = 90
+	}
+	// MaxConcurrentPrefetch defaults to 20
+	if cfg.McpServer.MaxConcurrentPrefetch == 0 {
+		cfg.McpServer.MaxConcurrentPrefetch = 20
 	}
 
 	if cfg.PProf.Username == "" {

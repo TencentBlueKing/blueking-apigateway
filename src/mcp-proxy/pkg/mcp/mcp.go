@@ -158,7 +158,9 @@ func cleanupAllMCPServers(ctx context.Context, mcpProxy *proxy.MCPProxy) {
 	}
 }
 
-// prefetchServerConfigs 并发预取所有 server 的 release 和 openapi spec
+// prefetchServerConfigs 并发预取所有 server 的 release 和 openapi spec。
+// 使用 config.G.McpServer.MaxConcurrentPrefetch 限制并发数（默认 20），
+// 避免在 server 数量较多时导致数据库连接池耗尽。
 func prefetchServerConfigs(
 	ctx context.Context,
 	mcpProxy *proxy.MCPProxy,
@@ -166,12 +168,19 @@ func prefetchServerConfigs(
 ) []*serverLoadResult {
 	results := make([]*serverLoadResult, len(servers))
 	var wg sync.WaitGroup
+
+	// 使用 buffered channel 作为 semaphore 限制并发数
+	maxConcurrent := config.G.McpServer.MaxConcurrentPrefetch
+	sem := make(chan struct{}, maxConcurrent)
+
 	for i, svr := range servers {
 		results[i] = &serverLoadResult{server: svr}
 		wg.Add(1)
 		idx, s := i, svr
 		util.GoroutineWithRecovery(ctx, func() {
 			defer wg.Done()
+			sem <- struct{}{}        // acquire
+			defer func() { <-sem }() // release
 			prefetchSingleServer(ctx, mcpProxy, results[idx], s)
 		})
 	}
@@ -237,10 +246,13 @@ func checkNeedLoad(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.
 		return true
 	}
 
-	// 版本未变化，检查是否有新增工具
-	currentTools := mcpServer.GetTools()
+	// 版本未变化，检查是否有新增工具（使用 map 进行 O(1) 查找）
+	currentToolSet := make(map[string]struct{}, len(mcpServer.GetTools()))
+	for _, t := range mcpServer.GetTools() {
+		currentToolSet[t] = struct{}{}
+	}
 	for _, toolName := range s.GetToolNames() {
-		if !arrutil.Contains(currentTools, toolName) {
+		if _, exists := currentToolSet[toolName]; !exists {
 			logging.GetLogger().Infof(
 				"mcp server[%s] resource_names changed, will reload openapi spec", s.Name)
 			return true

@@ -34,8 +34,9 @@ import (
 )
 
 // APILogger is a middleware to log request
-// 优化：移除 bodyLogWriter 避免 SSE 长连接场景下的内存泄露
-// 详细的请求/响应参数由 MCP 层的日志中间件记录
+// 优化：移除 bodyLogWriter 避免 SSE 长连接场景下的内存泄露。
+// 在 SSE 场景中，bodyLogWriter 会持续缓存整个连接生命周期的所有响应数据，
+// 导致内存不断增长。详细的请求/响应参数现已由 MCP 层的 LoggingMiddleware 记录。
 func APILogger() gin.HandlerFunc {
 	logger := logging.GetAPILogger()
 

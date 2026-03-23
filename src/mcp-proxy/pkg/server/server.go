@@ -66,11 +66,12 @@ func Run(cfg *config.Config) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	// Flush buffered sentry events before exit (defer ensures this runs even on fatal paths)
+	defer sty.Flush(2 * time.Second)
+
 	if err := srv.Shutdown(ctx); err != nil {
 		logging.GetLogger().Fatalf("Server Shutdown: %s", err)
 	}
-	// Flush buffered sentry events before exit
-	sty.Flush(2 * time.Second)
 	// catching ctx.Done(). timeout of 5 seconds.
 	<-ctx.Done()
 	logging.GetLogger().Info("timeout of 5 seconds.")

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"sync/atomic"
 	"time"
 
 	sentry "github.com/getsentry/sentry-go"
@@ -32,12 +33,10 @@ import (
 	"mcp_proxy/pkg/config"
 )
 
-var s sentryState
-
-// sentryState holds the runtime state of sentry integration.
-type sentryState struct {
-	enabled bool
-}
+// enabled tracks whether the sentry SDK has been initialized.
+// Uses atomic.Bool for thread-safety (Init is expected to be called once at startup,
+// but atomic access avoids any potential data race if called concurrently).
+var enabled atomic.Bool
 
 // Init initializes the sentry SDK (sentry-go only, raven-go removed).
 func Init(cfg config.Sentry) error {
@@ -49,28 +48,28 @@ func Init(cfg config.Sentry) error {
 		if err != nil {
 			return fmt.Errorf("init sentry fail: %w", err)
 		}
-		s.enabled = true
+		enabled.Store(true)
 	}
 	return nil
 }
 
 // Enabled returns whether sentry is enabled.
 func Enabled() bool {
-	return s.enabled
+	return enabled.Load()
 }
 
 // Flush waits until the underlying transport sends any buffered events to
 // the Sentry server, blocking for at most the given timeout.
 // It should be called before the process exits.
 func Flush(timeout time.Duration) {
-	if s.enabled {
+	if enabled.Load() {
 		sentry.Flush(timeout)
 	}
 }
 
 // ReportToSentry reports an error event to sentry with tags, extra data and fingerprint.
 func ReportToSentry(message string, tags map[string]string, extra map[string]interface{}) {
-	if !s.enabled {
+	if !enabled.Load() {
 		return
 	}
 

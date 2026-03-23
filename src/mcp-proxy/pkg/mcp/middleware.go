@@ -308,9 +308,14 @@ func extractToolName(req mcp.Request) string {
 
 // SessionMetricMiddleware returns a middleware that tracks active MCP sessions.
 // It decrements the session gauge when a session ends (notifications/cancelled).
-// NOTE: notifications/cancelled is an approximation; clients that crash or lose network
-// will not send this notification. A future improvement could use HTTP-layer disconnect
-// detection for more accurate tracking.
+//
+// KNOWN LIMITATION: notifications/cancelled is an approximation. Clients that crash
+// or lose network connectivity will NOT send this notification, causing the gauge to
+// drift upward over time. When interpreting MCPSessionTotal in Grafana, treat it as a
+// best-effort approximation rather than an exact count.
+//
+// TODO: A future improvement could use HTTP-layer disconnect detection (e.g., SSE
+// connection close callback) for more accurate tracking of active sessions.
 func SessionMetricMiddleware(serverName string) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {

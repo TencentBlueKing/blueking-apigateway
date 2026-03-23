@@ -67,13 +67,22 @@ var sensitiveHeaderKeys = map[string]struct{}{
 	constant.BkGatewayJWTHeaderKey:       {},
 }
 
-// sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池
+// sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
+// 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
+var sharedTransport *http.Transport
+
+// InitSharedTransport initializes the shared HTTP Transport from config.
+// It MUST be called once during startup (before any tool calls).
 // nolint:gosec
-var sharedTransport = &http.Transport{
-	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-	MaxIdleConns:        200,
-	MaxIdleConnsPerHost: 20,
-	IdleConnTimeout:     90 * time.Second,
+func InitSharedTransport(cfg config.Transport) {
+	sharedTransport = &http.Transport{
+		// NOTE: InsecureSkipVerify 跳过 TLS 证书验证，仅在内部网络环境下使用。
+		// 公网环境请在 config.yaml 中设置 mcpServer.transport.insecureSkipVerify: false。
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify},
+		MaxIdleConns:        cfg.MaxIdleConns,
+		MaxIdleConnsPerHost: cfg.MaxIdleConnsPerHost,
+		IdleConnTimeout:     time.Duration(cfg.IdleConnTimeoutSecond) * time.Second,
+	}
 }
 
 // truncateJSON 将任意对象序列化为 JSON 并截断到指定长度

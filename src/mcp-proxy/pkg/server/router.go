@@ -93,10 +93,11 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// mcp proxy: 用户态和应用态共享同一个 MCPProxy 实例
 	// 两者加载相同的 MCP Server 数据，仅路由前缀不同
 	mcpInitStart := time.Now()
+	proxy.InitSharedTransport(cfg.McpServer.Transport)
 	mcpProxy := proxy.NewMCPProxy()
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
-		logging.GetLogger().Panic("mcp proxy init failed: %v", err)
+		logging.GetLogger().Panicf("mcp proxy init failed: %v", err)
 		return nil
 	}
 	util.GoroutineWithRecovery(ctx, func() {
