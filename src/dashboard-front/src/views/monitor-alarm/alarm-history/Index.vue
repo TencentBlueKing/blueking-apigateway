@@ -110,7 +110,7 @@
           <section class="ag-kv-list">
             <div class="item">
               <div class="key">
-                {{ t("告警ID：") }}
+                {{ t('告警ID：') }}
               </div>
               <div class="value">
                 {{ sliderConfig?.data?.id }}
@@ -118,7 +118,7 @@
             </div>
             <div class="item">
               <div class="key">
-                {{ t("告警时间：") }}
+                {{ t('告警时间：') }}
               </div>
               <div class="value">
                 {{ sliderConfig?.data?.created_time }}
@@ -126,7 +126,7 @@
             </div>
             <div class="item">
               <div class="key">
-                {{ t("告警策略：") }}
+                {{ t('告警策略：') }}
               </div>
               <div class="value strategy-name-list">
                 <p
@@ -145,23 +145,23 @@
             </div>
             <div class="item">
               <div class="key">
-                {{ t("告警内容：") }}
+                {{ t('告警内容：') }}
               </div>
               <div class="value message">
-                <pre>{{ sliderConfig.data.message || "--" }}</pre>
+                <pre>{{ sliderConfig.data?.message || '--' }}</pre>
               </div>
             </div>
             <div class="item">
               <div class="key">
-                {{ t("状态：") }}
+                {{ t('状态：') }}
               </div>
               <div class="value">
                 <span
-                  class="m-r-4px ag-outline-dot"
-                  :class="[sliderConfig.data.status]"
+                  class="mr-4px ag-outline-dot"
+                  :class="[sliderConfig.data?.status]"
                 />
                 <span class="status-text">
-                  {{ getAlarmStatusText(sliderConfig.data.status) }}
+                  {{ getAlarmStatusText(sliderConfig.data?.status) }}
                 </span>
               </div>
             </div>
@@ -241,8 +241,8 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStrategyOption.value,
     },
-    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
-      if (row?.alarm_strategy_names?.length) {
+    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+      if (row.alarm_strategy_names?.length) {
         return (
           <div class="lh-1">
             <span
@@ -277,10 +277,10 @@ const tableColumns = computed(() => ([
     title: t('告警内容'),
     colKey: 'message',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
+    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
-          { row?.message }
+          { row.message || '--' }
         </span>
       );
     },
@@ -294,18 +294,18 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStatus,
     },
-    cell: (h, { row }: { row?: Partial<IAlarmRecord> }) => {
+    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
-          <span class={['m-r-4px', 'ag-outline-dot', row?.status]} />
+          <span class={['m-r-4px', 'ag-outline-dot', row.status]} />
           <span
             v-bk-tooltips={{
-              content: row?.comment || '--',
-              disabled: !['skipped'].includes(row?.status),
+              content: row.comment || '--',
+              disabled: !['skipped'].includes(row.status),
             }}
             class="status-text"
           >
-            { getAlarmStatusText(row?.status) }
+            { getAlarmStatusText(row.status) }
           </span>
         </span>
       );
