@@ -297,36 +297,12 @@ var _ = Describe("MCPProxy", func() {
 			Expect(tool.OutputSchema).To(BeNil())
 		})
 
-		It("should add properties for object output schema", func() {
+		// NOTE: OutputSchema tests temporarily disabled due to OutputSchema being commented out.
+		It("should always omit output schema when OutputSchema feature is disabled", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "getUsers",
 				Description:  "Get users",
 				OutputSchema: json.RawMessage(`{"type":"object"}`),
-			}, "test-server")
-
-			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "object"))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKey("properties"))
-		})
-
-		It("should omit unsupported array output schema", func() {
-			tool := buildMCPTool(&ToolConfig{
-				Name:         "listUsers",
-				Description:  "List users",
-				OutputSchema: json.RawMessage(`{"type":"array","items":{"type":"string"}}`),
-			}, "test-server")
-
-			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeNil())
-		})
-
-		It("should omit unsupported ref-only output schema", func() {
-			tool := buildMCPTool(&ToolConfig{
-				Name:         "listUsers",
-				Description:  "List users",
-				OutputSchema: json.RawMessage(`{"$ref":"#/components/schemas/UserList"}`),
 			}, "test-server")
 
 			Expect(tool).NotTo(BeNil())
@@ -348,7 +324,8 @@ var _ = Describe("MCPProxy", func() {
 			envelope := buildToolResponseEnvelope(200, "req-1", []any{"a", "b"})
 			result := buildToolResult(envelope)
 
-			Expect(result.StructuredContent).To(Equal(envelope))
+			// NOTE: StructuredContent is temporarily disabled along with OutputSchema.
+			Expect(result.StructuredContent).To(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			textContent, ok := result.Content[0].(*mcp.TextContent)
 			Expect(ok).To(BeTrue())

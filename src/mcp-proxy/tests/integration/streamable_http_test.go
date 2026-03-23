@@ -200,7 +200,8 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				}
 			}
 			Expect(pingTool).NotTo(BeNil())
-			Expect(pingTool.OutputSchema).NotTo(BeNil())
+			// NOTE: OutputSchema temporarily disabled.
+			// Expect(pingTool.OutputSchema).NotTo(BeNil())
 
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{
 				Name:      "ping",

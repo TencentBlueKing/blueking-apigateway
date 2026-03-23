@@ -29,6 +29,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.RawMessage {
 	properties := map[string]any{
 		toolResponseStatusCodeField: map[string]any{"type": "integer"},
@@ -47,6 +48,7 @@ func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.Ra
 	return marshalJSON
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMessage {
 	if responseRef == nil || responseRef.Value == nil {
 		return nil
@@ -59,6 +61,7 @@ func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMess
 	return buildToolResponseEnvelopeSchema(nil)
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef {
 	if mediaType, ok := content["application/json"]; ok && mediaType != nil && mediaType.Schema != nil {
 		return mediaType.Schema
@@ -88,6 +91,7 @@ func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef
 	return nil
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func getOutputSchemaFromResponses(responses *openapi3.Responses) json.RawMessage {
 	if responses == nil || len(responses.Map()) == 0 {
 		return nil
@@ -278,7 +282,8 @@ func OpenapiToMcpToolConfig(
 				}
 			}
 
-			toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
+			// NOTE: OutputSchema temporarily disabled due to issues discovered in practice.
+			// toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
 
 			toolConfig.ParamSchema = paramSchema
 			toolConfigs = append(toolConfigs, toolConfig)

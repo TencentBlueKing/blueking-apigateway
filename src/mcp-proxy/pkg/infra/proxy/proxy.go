@@ -126,6 +126,7 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func hasObjectSchemaType(schemaType any) bool {
 	switch value := schemaType.(type) {
 	case string:
@@ -146,6 +147,7 @@ func hasObjectSchemaType(schemaType any) bool {
 	return false
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	schemaType, hasType := outputSchema["type"]
 	_, hasProperties := outputSchema["properties"]
@@ -160,6 +162,7 @@ func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	return outputSchema
 }
 
+//nolint:unused // temporarily unused while OutputSchema is disabled
 func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 	if len(toolConfig.OutputSchema) == 0 {
 		return nil
@@ -198,9 +201,10 @@ func buildToolResponseEnvelope(statusCode int, requestID string, responseBody an
 
 func buildToolResult(output any) *mcp.CallToolResult {
 	result := &mcp.CallToolResult{}
-	if structuredContent, ok := output.(map[string]any); ok {
-		result.StructuredContent = structuredContent
-	}
+	// NOTE: StructuredContent temporarily disabled along with OutputSchema.
+	// if structuredContent, ok := output.(map[string]any); ok {
+	// 	result.StructuredContent = structuredContent
+	// }
 	text := cast.ToString(output)
 	if rawOutput, err := json.Marshal(output); err == nil {
 		text = string(rawOutput)
@@ -217,9 +221,10 @@ func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
 		Description: toolConfig.Description,
 		InputSchema: buildToolInputSchema(toolConfig, serverName),
 	}
-	if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
-		tool.OutputSchema = outputSchema
-	}
+	// NOTE: OutputSchema temporarily disabled due to issues discovered in practice.
+	// if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
+	// 	tool.OutputSchema = outputSchema
+	// }
 	return tool
 }
 
