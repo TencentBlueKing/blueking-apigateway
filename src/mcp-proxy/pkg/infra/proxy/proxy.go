@@ -263,9 +263,9 @@ func buildToolResponseEnvelope(statusCode int, requestID, traceID string, respon
 		toolResponseStatusCodeField: statusCode,
 		toolResponseRequestIDField:  requestID,
 		toolResponseTraceIDField:    traceID,
-	}
-	if responseBody != nil {
-		responseResult[toolResponseBodyField] = responseBody
+		// Always include response_body to keep consistency with the outputSchema definition.
+		// When responseBody is nil, the field will be JSON null, which matches the schema expectation.
+		toolResponseBodyField: responseBody,
 	}
 	return responseResult
 }
@@ -819,22 +819,35 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				span.SetStatus(codes.Error, msg)
 				span.RecordError(err)
 			}
-			// Append trace_id to the error message for traceability
-			// Skip if err is APIError, since responseResult already contains trace_id
-			if _, ok := err.(*runtime.APIError); !ok {
-				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
-					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
-				}
-			}
-			// nolint:nilerr
-			return &mcp.CallToolResult{
+			result := &mcp.CallToolResult{
 				Content: []mcp.Content{
 					&mcp.TextContent{
 						Text: msg,
 					},
 				},
 				IsError: true,
-			}, nil
+			}
+			// When the error is an APIError (non-2xx HTTP response), the Response field
+			// contains the structured envelope (from buildToolResponseEnvelope).
+			// Set it as StructuredContent so it matches the tool's outputSchema,
+			// preventing validation errors in MCP clients like Cursor.
+			if apiErr, ok := err.(*runtime.APIError); ok {
+				if structuredContent, ok := apiErr.Response.(map[string]any); ok {
+					result.StructuredContent = structuredContent
+				}
+			} else {
+				// For non-APIError, append trace_id to the error message for traceability
+				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+					result.Content = []mcp.Content{
+						&mcp.TextContent{
+							Text: msg,
+						},
+					}
+				}
+			}
+			// nolint:nilerr
+			return result, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
 			zap.String("response", truncateJSON(submit, auditLogMaxResponseSize)),

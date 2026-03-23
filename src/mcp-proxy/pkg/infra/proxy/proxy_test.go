@@ -347,13 +347,14 @@ var _ = Describe("MCPProxy", func() {
 	})
 
 	Describe("buildToolResponseEnvelope", func() {
-		It("should omit response_body when body is nil", func() {
+		It("should include response_body as nil when body is nil", func() {
 			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
 
 			Expect(envelope).To(Equal(map[string]any{
 				toolResponseStatusCodeField: 204,
 				toolResponseRequestIDField:  "req-1",
 				toolResponseTraceIDField:    "trace-1",
+				toolResponseBodyField:       nil,
 			}))
 		})
 	})

@@ -108,3 +108,12 @@ func NewConfig(resourceVersion int) *Config {
 func GetLoadStatsValues(stats *loadStats) (added, updated, skipped, errorCount int) {
 	return stats.addedCount, stats.updatedCount, stats.skippedCount, stats.errorCount
 }
+
+// PrefetchServerConfigsForTest exposes prefetchServerConfigs for benchmark testing.
+func PrefetchServerConfigsForTest(
+	ctx context.Context,
+	mcpProxy *proxy.MCPProxy,
+	servers []*model.MCPServer,
+) []*ServerLoadResult {
+	return prefetchServerConfigs(ctx, mcpProxy, servers)
+}

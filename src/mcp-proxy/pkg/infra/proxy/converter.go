@@ -44,6 +44,10 @@ func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.Ra
 	marshalJSON, _ := json.Marshal(map[string]any{
 		"type":       "object",
 		"properties": properties,
+		// additionalProperties: true allows the actual response to contain fields not described in the schema.
+		// This is essential because backend APIs may return extra fields beyond their OpenAPI spec,
+		// and strict schema validation by MCP clients (e.g., Cursor) would otherwise reject such responses.
+		"additionalProperties": true,
 	})
 	return marshalJSON
 }

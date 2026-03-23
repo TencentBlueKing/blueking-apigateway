@@ -363,7 +363,7 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].OutputSchema).NotTo(BeNil())
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"object","properties":{"users":{"type":"array","items":{"type":"string"}}}}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"object","properties":{"users":{"type":"array","items":{"type":"string"}}}}},"additionalProperties":true}`))
 		})
 
 		It("should prefer successful response schema over error response schema", func() {
@@ -425,7 +425,7 @@ var _ = Describe("Converter", func() {
 			Expect(result).To(HaveLen(1))
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"array","items":{"type":"string"}}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"array","items":{"type":"string"}}},"additionalProperties":true}`))
 		})
 
 		It("should support json-like response media types", func() {
@@ -470,7 +470,7 @@ var _ = Describe("Converter", func() {
 			Expect(result).To(HaveLen(1))
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"object","properties":{"data":{"type":"string"}}}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"},"response_body":{"type":"object","properties":{"data":{"type":"string"}}}},"additionalProperties":true}`))
 		})
 
 		It("should build metadata envelope when response body schema is absent", func() {
@@ -502,7 +502,7 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].OutputSchema).NotTo(BeNil())
 			Expect(
 				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"}}}`))
+			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"trace_id":{"type":"string"}},"additionalProperties":true}`))
 		})
 
 		It("should omit output schema when responses are empty", func() {

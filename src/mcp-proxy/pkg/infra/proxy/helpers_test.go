@@ -238,11 +238,12 @@ var _ = Describe("Helper Functions", func() {
 			Expect(envelope[toolResponseBodyField]).To(Equal("body-content"))
 		})
 
-		It("should omit response_body when body is nil", func() {
+		It("should include response_body as nil when body is nil", func() {
 			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
 
-			Expect(envelope).To(HaveLen(3))
-			Expect(envelope).NotTo(HaveKey(toolResponseBodyField))
+			Expect(envelope).To(HaveLen(4))
+			Expect(envelope).To(HaveKey(toolResponseBodyField))
+			Expect(envelope[toolResponseBodyField]).To(BeNil())
 		})
 
 		It("should handle zero status code", func() {
