@@ -16,17 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import json
 
 from django.test import TestCase
 from django_dynamic_fixture import G
-from rest_framework.fields import DateTimeField
 
 from apigateway.apis.web.monitor.views import (
     AlarmRecordListApi,
     AlarmRecordRetrieveApi,
-    AlarmRecordSummaryListApi,
     AlarmStrategyListCreateApi,
     AlarmStrategyRetrieveUpdateDestroyApi,
     AlarmStrategyUpdateStatusApi,
@@ -368,97 +365,3 @@ class TestAlarmRecordRetrieveApi(TestCase):
 
         result = get_response_json(response)
         self.assertEqual(response.status_code, 200, result)
-
-
-class TestAlarmRecordSummaryListApi(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.factory = APIRequestFactory()
-        cls.gateway = create_gateway()
-
-    def test_get(self):
-        strategy_1 = G(AlarmStrategy, gateway=self.gateway)
-        strategy_2 = G(AlarmStrategy, gateway=self.gateway)
-
-        alarm_record_1 = G(AlarmRecord, created_time=dummy_time.time)
-        alarm_record_1.alarm_strategies.set([strategy_1])
-
-        alarm_record_2 = G(AlarmRecord, created_time=dummy_time.time)
-        alarm_record_2.alarm_strategies.set([strategy_1])
-
-        alarm_record_3 = G(AlarmRecord, created_time=dummy_time.time + datetime.timedelta(seconds=-300))
-        alarm_record_3.alarm_strategies.set([strategy_2])
-
-        data = [
-            {
-                "params": {},
-                "expected": [
-                    {
-                        "gateway": {
-                            "id": self.gateway.id,
-                            "name": self.gateway.name,
-                        },
-                        "alarm_record_count": 3,
-                        "strategy_summary": [
-                            {
-                                "id": strategy_1.id,
-                                "name": strategy_1.name,
-                                "alarm_record_count": 2,
-                                "latest_alarm_record": {
-                                    "id": alarm_record_2.id,
-                                    "message": alarm_record_2.message,
-                                    "created_time": dummy_time.str,
-                                },
-                            },
-                            {
-                                "id": strategy_2.id,
-                                "name": strategy_2.name,
-                                "alarm_record_count": 1,
-                                "latest_alarm_record": {
-                                    "id": alarm_record_3.id,
-                                    "message": alarm_record_3.message,
-                                    "created_time": DateTimeField().to_representation(alarm_record_3.created_time),
-                                },
-                            },
-                        ],
-                    }
-                ],
-            },
-            {
-                "params": {
-                    "time_start": dummy_time.timestamp,
-                    "time_end": dummy_time.timestamp + 10,
-                },
-                "expected": [
-                    {
-                        "gateway": {
-                            "id": self.gateway.id,
-                            "name": self.gateway.name,
-                        },
-                        "alarm_record_count": 2,
-                        "strategy_summary": [
-                            {
-                                "id": strategy_1.id,
-                                "name": strategy_1.name,
-                                "alarm_record_count": 2,
-                                "latest_alarm_record": {
-                                    "id": alarm_record_2.id,
-                                    "message": alarm_record_2.message,
-                                    "created_time": dummy_time.str,
-                                },
-                            },
-                        ],
-                    }
-                ],
-            },
-        ]
-
-        for test in data:
-            request = self.factory.get("/apis/monitors/alarm/records/summary/", data=test["params"])
-
-            view = AlarmRecordSummaryListApi.as_view()
-            response = view(request)
-
-            result = get_response_json(response)
-            self.assertEqual(response.status_code, 200, result)
-            self.assertEqual(result["data"], test["expected"])

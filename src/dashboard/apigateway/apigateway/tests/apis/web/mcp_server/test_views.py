@@ -779,26 +779,6 @@ class TestMCPServerUpdateStatusApi:
         assert fake_mcp_server.status == MCPServerStatusEnum.INACTIVE.value
 
 
-class TestMCPServerUpdateLabelsApi:
-    def test_update_labels(self, request_view, fake_gateway, fake_mcp_server):
-        data = {
-            "labels": ["label1", "label2"],
-        }
-
-        resp = request_view(
-            method="PATCH",
-            view_name="mcp_server.update_labels",
-            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
-            gateway=fake_gateway,
-            data=data,
-        )
-
-        assert resp.status_code == 204
-
-        fake_mcp_server.refresh_from_db()
-        assert fake_mcp_server.labels == data["labels"]
-
-
 class TestMCPServerToolsListApi:
     def test_list(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
