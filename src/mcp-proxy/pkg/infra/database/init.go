@@ -32,6 +32,7 @@ import (
 	ms "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"mcp_proxy/pkg/config"
@@ -146,6 +147,23 @@ func newClient(cfg *config.Database) (*gorm.DB, error) {
 		DefaultStringSize:         defaultStringSize,
 		SkipInitializeWithVersion: false,
 	}
+
+	// SQL 日志配置：默认 Silent（关闭 SQL 日志），仅记录慢查询(>200ms) 和错误
+	// debug 模式下开启全量 SQL 日志
+	gormLogLevel := logger.Silent
+	if config.G != nil && config.G.Debug {
+		gormLogLevel = logger.Info
+	}
+	gormLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             200 * time.Millisecond, // 慢查询阈值
+			LogLevel:                  gormLogLevel,
+			IgnoreRecordNotFoundError: true, // 忽略 record not found 错误
+			Colorful:                  false,
+		},
+	)
+
 	gormCfg := &gorm.Config{
 		ConnPool: sqlDB,
 		// 禁用默认事务（需要手动管理）
@@ -158,6 +176,8 @@ func newClient(cfg *config.Database) (*gorm.DB, error) {
 		CreateBatchSize: defaultBatchSize,
 		// 数据库迁移时，忽略外键约束
 		DisableForeignKeyConstraintWhenMigrating: true,
+		// SQL 日志
+		Logger: gormLogger,
 	}
 	client, err := gorm.Open(mysql.New(mysqlCfg), gormCfg)
 	if err != nil {

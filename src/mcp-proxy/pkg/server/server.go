@@ -30,6 +30,7 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
+	sty "mcp_proxy/pkg/infra/sentry"
 )
 
 // Run the server, and can be gracefully shutdown
@@ -68,6 +69,8 @@ func Run(cfg *config.Config) {
 	if err := srv.Shutdown(ctx); err != nil {
 		logging.GetLogger().Fatalf("Server Shutdown: %s", err)
 	}
+	// Flush buffered sentry events before exit
+	sty.Flush(2 * time.Second)
 	// catching ctx.Done(). timeout of 5 seconds.
 	<-ctx.Done()
 	logging.GetLogger().Info("timeout of 5 seconds.")

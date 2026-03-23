@@ -18,7 +18,14 @@
 
 package mcp
 
-import sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+import (
+	"context"
+
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"mcp_proxy/pkg/entity/model"
+	"mcp_proxy/pkg/infra/proxy"
+)
 
 // ExtractToolNameForTest exposes extractToolName for testing.
 func ExtractToolNameForTest(req sdkmcp.Request) string {
@@ -28,4 +35,76 @@ func ExtractToolNameForTest(req sdkmcp.Request) string {
 // MatchErrorCodeNameForTest exposes matchErrorCodeName for testing.
 func MatchErrorCodeNameForTest(code int64) string {
 	return matchErrorCodeName(code)
+}
+
+// ShouldReportToSentryForTest exposes shouldReportToSentry for testing.
+func ShouldReportToSentryForTest(err error) bool {
+	return shouldReportToSentry(err)
+}
+
+// CheckNeedLoadForTest exposes checkNeedLoad for testing.
+func CheckNeedLoadForTest(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.Release) bool {
+	return checkNeedLoad(mcpProxy, s, release)
+}
+
+// CleanupAllMCPServersForTest exposes cleanupAllMCPServers for testing.
+func CleanupAllMCPServersForTest(ctx context.Context, mcpProxy *proxy.MCPProxy) {
+	cleanupAllMCPServers(ctx, mcpProxy)
+}
+
+// CleanupStaleMCPServersForTest exposes cleanupStaleMCPServers for testing.
+func CleanupStaleMCPServersForTest(
+	ctx context.Context,
+	mcpProxy *proxy.MCPProxy,
+	activeMcpServer map[string]struct{},
+) int {
+	return cleanupStaleMCPServers(ctx, mcpProxy, activeMcpServer)
+}
+
+// ServerLoadResult is an alias for serverLoadResult for testing.
+type ServerLoadResult = serverLoadResult
+
+// LoadStats is an alias for loadStats for testing.
+type LoadStats = loadStats
+
+// ApplyServerChangesForTest exposes applyServerChanges for testing.
+func ApplyServerChangesForTest(
+	ctx context.Context,
+	mcpProxy *proxy.MCPProxy,
+	results []*ServerLoadResult,
+) (*loadStats, map[string]struct{}) {
+	return applyServerChanges(ctx, mcpProxy, results)
+}
+
+// NewServerLoadResult creates a serverLoadResult for testing.
+func NewServerLoadResult(
+	server *model.MCPServer,
+	release *model.Release,
+	conf *Config,
+	err error,
+	skipped bool,
+	isNew bool,
+	needLoad bool,
+) *ServerLoadResult {
+	return &ServerLoadResult{
+		server:   server,
+		release:  release,
+		conf:     conf,
+		err:      err,
+		skipped:  skipped,
+		isNew:    isNew,
+		needLoad: needLoad,
+	}
+}
+
+// NewConfig creates a Config for testing.
+func NewConfig(resourceVersion int) *Config {
+	return &Config{
+		resourceVersion: resourceVersion,
+	}
+}
+
+// GetLoadStatsValues returns stats values for testing.
+func GetLoadStatsValues(stats *loadStats) (added, updated, skipped, errorCount int) {
+	return stats.addedCount, stats.updatedCount, stats.skippedCount, stats.errorCount
 }

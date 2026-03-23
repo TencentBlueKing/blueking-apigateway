@@ -55,12 +55,41 @@ const (
 	toolResponseRequestIDField  = "request_id"
 	toolResponseTraceIDField    = "trace_id"
 	toolResponseBodyField       = "response_body"
+
+	// 审计日志截断阈值
+	auditLogMaxBodySize     = 4096
+	auditLogMaxResponseSize = 4096
 )
 
 // sensitiveHeaderKeys lists header keys whose values must be masked in logs.
 var sensitiveHeaderKeys = map[string]struct{}{
 	constant.BkApiAuthorizationHeaderKey: {},
 	constant.BkGatewayJWTHeaderKey:       {},
+}
+
+// sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池
+// nolint:gosec
+var sharedTransport = &http.Transport{
+	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+	MaxIdleConns:        200,
+	MaxIdleConnsPerHost: 20,
+	IdleConnTimeout:     90 * time.Second,
+}
+
+// truncateJSON 将任意对象序列化为 JSON 并截断到指定长度
+func truncateJSON(v any, maxLen int) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("<marshal error: %v>", err)
+	}
+	s := string(b)
+	if len(s) > maxLen {
+		return s[:maxLen] + "...(truncated)"
+	}
+	return s
 }
 
 // maskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.
@@ -666,7 +695,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			auditLog.Error("sign inner jwt err", zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
-		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
+		auditLog.Info("call tool", zap.String("request", truncateJSON(req.Params.Arguments, auditLogMaxBodySize)))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
@@ -679,15 +708,10 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				string(argsBytes)), zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
-		// 创建带日志的 Transport
-		// TODO: 1) 将 http.Transport 提升到 MCPProxy/MCPServer 级别复用，避免每次 tool call 创建新连接池
-		// TODO: 2) InsecureSkipVerify 应通过配置项控制，而非硬编码为 true
-		baseTransport := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+		// 使用共享的 HTTP Transport 连接池，避免每次 tool call 创建新连接
 		logTransport := buildLoggingTransport(
 			ctx,
-			baseTransport,
+			sharedTransport,
 			toolApiConfig,
 			appCode,
 			username,
@@ -695,7 +719,6 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			xRequestID,
 		)
 		client := &http.Client{Transport: logTransport}
-		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
@@ -776,7 +799,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			zap.Any("header", maskSensitiveHeaders(headerInfo)),
 			zap.Any("query", handlerRequest.QueryParam),
 			zap.Any("path", handlerRequest.PathParam),
-			zap.Any("body", handlerRequest.BodyParam),
+			zap.String("body", truncateJSON(handlerRequest.BodyParam, auditLogMaxBodySize)),
 		)
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
@@ -805,7 +828,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			}, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
-			zap.Any("response", submit), zap.Any("header", maskSensitiveHeaders(headerInfo)))
+			zap.String("response", truncateJSON(submit, auditLogMaxResponseSize)),
+			zap.Any("header", maskSensitiveHeaders(headerInfo)))
 		return buildToolResult(submit), nil
 	}
 	return handler

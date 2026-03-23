@@ -20,56 +20,112 @@
 package sentry
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"runtime/debug"
 	"time"
 
-	raven "github.com/getsentry/raven-go"
 	sentry "github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 
 	"mcp_proxy/pkg/config"
 )
 
-var s Sentry
+var s sentryState
 
-// Sentry is the sentry for the whole project
-type Sentry struct {
+// sentryState holds the runtime state of sentry integration.
+type sentryState struct {
 	enabled bool
 }
 
-// Init init the sentry
-func Init(config config.Sentry) error {
-	if config.DSN != "" {
+// Init initializes the sentry SDK (sentry-go only, raven-go removed).
+func Init(cfg config.Sentry) error {
+	if cfg.DSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn: config.DSN,
+			Dsn:              cfg.DSN,
+			AttachStacktrace: true,
 		})
 		if err != nil {
-			return fmt.Errorf("init sentry fail: %s", err)
-		}
-
-		// init gin sentry
-		err = raven.SetDSN(config.DSN)
-		if err != nil {
-			return fmt.Errorf("init gin sentry fail: %s", err)
+			return fmt.Errorf("init sentry fail: %w", err)
 		}
 		s.enabled = true
 	}
 	return nil
 }
 
-// Enabled  return if sentry is enabled
+// Enabled returns whether sentry is enabled.
 func Enabled() bool {
 	return s.enabled
 }
 
-// ReportToSentry report to sentry
-func ReportToSentry(message string, extra map[string]interface{}) {
+// Flush waits until the underlying transport sends any buffered events to
+// the Sentry server, blocking for at most the given timeout.
+// It should be called before the process exits.
+func Flush(timeout time.Duration) {
 	if s.enabled {
-		// report to sentry
-		ev := sentry.NewEvent()
-		ev.Message = message
-		ev.Level = "error"
-		ev.Timestamp = time.Now()
+		sentry.Flush(timeout)
+	}
+}
+
+// ReportToSentry reports an error event to sentry with tags, extra data and fingerprint.
+func ReportToSentry(message string, tags map[string]string, extra map[string]interface{}) {
+	if !s.enabled {
+		return
+	}
+
+	ev := sentry.NewEvent()
+	ev.Message = message
+	ev.Level = sentry.LevelError
+	ev.Timestamp = time.Now()
+
+	if len(tags) > 0 {
+		ev.Tags = tags
+	}
+	if len(extra) > 0 {
 		ev.Extra = extra
-		sentry.CaptureEvent(ev)
+	}
+
+	sentry.CaptureEvent(ev)
+}
+
+// Recovery returns a Gin middleware that recovers from panics and reports them to Sentry.
+// This replaces the old raven-go based gin-gonic/contrib/sentry.Recovery.
+func Recovery() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		defer func() {
+			if rval := recover(); rval != nil {
+				// Build a human-readable message
+				var err error
+				switch v := rval.(type) {
+				case error:
+					err = v
+				case string:
+					err = errors.New(v)
+				default:
+					err = fmt.Errorf("%v", v)
+				}
+
+				// Capture to Sentry with request context
+				if hub := sentry.GetHubFromContext(c.Request.Context()); hub != nil {
+					hub.RecoverWithContext(c.Request.Context(), rval)
+				} else {
+					hub = sentry.CurrentHub().Clone()
+					hub.Scope().SetRequest(c.Request)
+					hub.Scope().SetTag("endpoint", c.Request.RequestURI)
+					hub.Scope().SetExtra("stacktrace", string(debug.Stack()))
+					hub.CaptureException(err)
+				}
+
+				c.AbortWithStatus(http.StatusInternalServerError)
+			}
+		}()
+
+		// Clone hub per request so scopes don't leak between requests
+		hub := sentry.CurrentHub().Clone()
+		hub.Scope().SetRequest(c.Request)
+		c.Request = c.Request.WithContext(sentry.SetHubOnContext(c.Request.Context(), hub))
+
+		c.Next()
 	}
 }

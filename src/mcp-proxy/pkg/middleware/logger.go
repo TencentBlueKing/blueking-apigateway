@@ -99,9 +99,23 @@ func APILogger() gin.HandlerFunc {
 		// only send 5xx err to sentry
 		if status >= http.StatusInternalServerError {
 			sentry.ReportToSentry(
-				fmt.Sprintf("%s %s", c.Request.Method, c.Request.URL.Path),
+				fmt.Sprintf("%s %s [%d]", c.Request.Method, c.Request.URL.Path, status),
+				map[string]string{
+					"mcp_server_name": mcpName,
+					"http_method":     c.Request.Method,
+					"http_path":       c.Request.URL.Path,
+					"gateway_name":    util.GetGatewayName(c),
+				},
 				map[string]interface{}{
-					"fields": fields,
+					"status":        status,
+					"gateway_id":    util.GetGatewayID(c),
+					"mcp_server_id": util.GetMCPServerID(c),
+					"request_id":    c.GetString(util.RequestIDKey),
+					"x_request_id":  c.GetString(util.XRequestIDKey),
+					"instance_id":   c.GetString(util.InstanceIDKey),
+					"client_ip":     c.ClientIP(),
+					"app_code":      util.GetAppCode(c),
+					"latency":       duration.String(),
 				},
 			)
 		}
