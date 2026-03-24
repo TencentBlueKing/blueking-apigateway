@@ -29,6 +29,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/config"
 )
 
 var _ = Describe("MCPProxy", func() {
@@ -297,8 +299,12 @@ var _ = Describe("MCPProxy", func() {
 			Expect(tool.OutputSchema).To(BeNil())
 		})
 
-		// NOTE: OutputSchema tests temporarily disabled due to OutputSchema being commented out.
-		It("should always omit output schema when OutputSchema feature is disabled", func() {
+		It("should omit output schema when OutputSchema feature is disabled", func() {
+			// Ensure enableOutputSchema is false (default)
+			savedCfg := config.G
+			config.G = &config.Config{McpServer: config.McpServer{EnableOutputSchema: false}}
+			defer func() { config.G = savedCfg }()
+
 			tool := buildMCPTool(&ToolConfig{
 				Name:         "getUsers",
 				Description:  "Get users",
@@ -307,6 +313,21 @@ var _ = Describe("MCPProxy", func() {
 
 			Expect(tool).NotTo(BeNil())
 			Expect(tool.OutputSchema).To(BeNil())
+		})
+
+		It("should include output schema when OutputSchema feature is enabled", func() {
+			savedCfg := config.G
+			config.G = &config.Config{McpServer: config.McpServer{EnableOutputSchema: true}}
+			defer func() { config.G = savedCfg }()
+
+			tool := buildMCPTool(&ToolConfig{
+				Name:         "getUsers",
+				Description:  "Get users",
+				OutputSchema: json.RawMessage(`{"type":"object","properties":{"id":{"type":"string"}}}`),
+			}, "test-server")
+
+			Expect(tool).NotTo(BeNil())
+			Expect(tool.OutputSchema).NotTo(BeNil())
 		})
 	})
 
@@ -320,11 +341,14 @@ var _ = Describe("MCPProxy", func() {
 			}))
 		})
 
-		It("should populate structured content for envelope with array body", func() {
+		It("should omit structured content when OutputSchema feature is disabled", func() {
+			savedCfg := config.G
+			config.G = &config.Config{McpServer: config.McpServer{EnableOutputSchema: false}}
+			defer func() { config.G = savedCfg }()
+
 			envelope := buildToolResponseEnvelope(200, "req-1", []any{"a", "b"})
 			result := buildToolResult(envelope)
 
-			// FIXME: StructuredContent temporarily disabled on 2026-03-23 (target: 2026-04-15, owner: @Han-Ya-Jun).
 			Expect(result.StructuredContent).To(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			textContent, ok := result.Content[0].(*mcp.TextContent)
@@ -332,6 +356,18 @@ var _ = Describe("MCPProxy", func() {
 			Expect(textContent.Text).To(MatchJSON(
 				`{"status_code":200,"request_id":"req-1","response_body":["a","b"]}`,
 			))
+		})
+
+		It("should include structured content when OutputSchema feature is enabled", func() {
+			savedCfg := config.G
+			config.G = &config.Config{McpServer: config.McpServer{EnableOutputSchema: true}}
+			defer func() { config.G = savedCfg }()
+
+			envelope := buildToolResponseEnvelope(200, "req-1", []any{"a", "b"})
+			result := buildToolResult(envelope)
+
+			Expect(result.StructuredContent).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
 		})
 	})
 

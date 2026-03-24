@@ -37,6 +37,7 @@ import (
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/util"
@@ -126,7 +127,6 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func hasObjectSchemaType(schemaType any) bool {
 	switch value := schemaType.(type) {
 	case string:
@@ -147,7 +147,6 @@ func hasObjectSchemaType(schemaType any) bool {
 	return false
 }
 
-//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	schemaType, hasType := outputSchema["type"]
 	_, hasProperties := outputSchema["properties"]
@@ -162,7 +161,6 @@ func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	return outputSchema
 }
 
-//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 	if len(toolConfig.OutputSchema) == 0 {
 		return nil
@@ -201,12 +199,14 @@ func buildToolResponseEnvelope(statusCode int, requestID string, responseBody an
 
 func buildToolResult(output any) *mcp.CallToolResult {
 	result := &mcp.CallToolResult{}
-	// FIXME: StructuredContent temporarily disabled on 2026-03-23 along with OutputSchema.
+	// FIXME(han-yajun, 2026-03-24): StructuredContent is gated by the same enableOutputSchema flag.
 	// Returning StructuredContent without a valid OutputSchema causes MCP client-side errors.
-	// Re-enable after fixing OutputSchema (target: 2026-04-15, owner: @Han-Ya-Jun).
-	// if structuredContent, ok := output.(map[string]any); ok {
-	// 	result.StructuredContent = structuredContent
-	// }
+	// Recovery: set mcpServer.enableOutputSchema=true after 2026-04-15.
+	if config.G != nil && config.G.McpServer.EnableOutputSchema {
+		if structuredContent, ok := output.(map[string]any); ok {
+			result.StructuredContent = structuredContent
+		}
+	}
 	text := cast.ToString(output)
 	if rawOutput, err := json.Marshal(output); err == nil {
 		text = string(rawOutput)
@@ -223,12 +223,16 @@ func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
 		Description: toolConfig.Description,
 		InputSchema: buildToolInputSchema(toolConfig, serverName),
 	}
-	// FIXME: OutputSchema temporarily disabled on 2026-03-23 because certain OpenAPI response schemas
-	// cause MCP client-side validation failures when StructuredContent is returned.
-	// Re-enable after fixing schema normalization logic (target: 2026-04-15, owner: @Han-Ya-Jun).
-	// if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
-	// 	tool.OutputSchema = outputSchema
-	// }
+	// FIXME(han-yajun, 2026-03-24): OutputSchema is disabled by default via config.enableOutputSchema
+	// because certain OpenAPI response schemas containing allOf/oneOf/$ref cause MCP client-side
+	// validation failures when StructuredContent is returned. See PR #2573 for details.
+	// Recovery: set mcpServer.enableOutputSchema=true after 2026-04-15 when the fix is verified.
+	// Related commit (feature added): f697227da
+	if config.G != nil && config.G.McpServer.EnableOutputSchema {
+		if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
+			tool.OutputSchema = outputSchema
+		}
+	}
 	return tool
 }
 

@@ -200,7 +200,8 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				}
 			}
 			Expect(pingTool).NotTo(BeNil())
-			// FIXME: OutputSchema temporarily disabled on 2026-03-23 (target: 2026-04-15, owner: @Han-Ya-Jun).
+			// FIXME(han-yajun, 2026-03-24): OutputSchema disabled via mcpServer.enableOutputSchema=false.
+			// Enable this assertion after setting enableOutputSchema=true (target: 2026-04-15).
 			// Expect(pingTool.OutputSchema).NotTo(BeNil())
 
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{

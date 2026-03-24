@@ -27,9 +27,10 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	jsonschema "github.com/swaggest/jsonschema-go"
+
+	"mcp_proxy/pkg/config"
 )
 
-//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.RawMessage {
 	properties := map[string]any{
 		toolResponseStatusCodeField: map[string]any{"type": "integer"},
@@ -48,7 +49,6 @@ func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.Ra
 	return marshalJSON
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
 func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMessage {
 	if responseRef == nil || responseRef.Value == nil {
 		return nil
@@ -61,7 +61,6 @@ func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMess
 	return buildToolResponseEnvelopeSchema(nil)
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
 func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef {
 	if mediaType, ok := content["application/json"]; ok && mediaType != nil && mediaType.Schema != nil {
 		return mediaType.Schema
@@ -91,7 +90,6 @@ func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef
 	return nil
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
 func getOutputSchemaFromResponses(responses *openapi3.Responses) json.RawMessage {
 	if responses == nil || len(responses.Map()) == 0 {
 		return nil
@@ -282,9 +280,13 @@ func OpenapiToMcpToolConfig(
 				}
 			}
 
-			// FIXME: OutputSchema temporarily disabled on 2026-03-23 because certain OpenAPI response schemas
-			// cause MCP client-side validation failures. Re-enable after fix (target: 2026-04-15, owner: @Han-Ya-Jun).
-			// toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
+			// FIXME(han-yajun, 2026-03-24): OutputSchema is gated by config.enableOutputSchema.
+			// Disabled by default because certain OpenAPI response schemas containing allOf/oneOf/$ref
+			// cause MCP client-side validation failures. See PR #2573 for details.
+			// Recovery: set mcpServer.enableOutputSchema=true after 2026-04-15.
+			if config.G != nil && config.G.McpServer.EnableOutputSchema {
+				toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
+			}
 
 			toolConfig.ParamSchema = paramSchema
 			toolConfigs = append(toolConfigs, toolConfig)
