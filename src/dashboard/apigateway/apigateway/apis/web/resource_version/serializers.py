@@ -251,7 +251,9 @@ class ResourceVersionExportInputSLZ(serializers.Serializer):
 
 
 class ResourceVersionBatchDeleteInputSLZ(serializers.Serializer):
-    ids = serializers.ListField(child=serializers.IntegerField(min_value=1), min_length=1, help_text="资源版本 ID 列表")
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), min_length=1, max_length=100, help_text="资源版本 ID 列表"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionBatchDeleteInputSLZ"
