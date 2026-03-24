@@ -480,6 +480,29 @@ class TestResourceVersionBatchDeleteApi:
         assert not ResourceVersion.objects.filter(id=rv1.id).exists()
         assert not ResourceVersion.objects.filter(id=rv2.id).exists()
 
+    def test_batch_delete_empty_ids(self, request_view, fake_gateway):
+        resp = request_view(
+            method="DELETE",
+            view_name="gateway.resource_version.batch_delete",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"ids": []},
+        )
+        assert resp.status_code == 400
+
+    def test_batch_delete_duplicate_ids(self, request_view, fake_gateway):
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+
+        resp = request_view(
+            method="DELETE",
+            view_name="gateway.resource_version.batch_delete",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"ids": [rv.id, rv.id]},
+        )
+        assert resp.status_code == 204
+        assert not ResourceVersion.objects.filter(id=rv.id).exists()
+
     def test_batch_delete_not_exist(self, request_view, fake_gateway):
         resp = request_view(
             method="DELETE",

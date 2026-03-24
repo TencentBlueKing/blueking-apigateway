@@ -417,7 +417,7 @@ class ResourceVersionBatchDeleteApi(generics.DestroyAPIView):
         slz = ResourceVersionBatchDeleteInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        ids = slz.validated_data["ids"]
+        ids = list(dict.fromkeys(slz.validated_data["ids"]))
 
         queryset = self.get_queryset().filter(id__in=ids)
         existing_ids = set(queryset.values_list("id", flat=True))
