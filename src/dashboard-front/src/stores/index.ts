@@ -28,3 +28,4 @@ export * from './useResourceVersion';
 export * from './useResourceSetting';
 export * from './useStage';
 export * from './useOnlineDebugging';
+export * from './useTrace';

@@ -42,11 +42,11 @@ export interface IPagination {
   // 是否使用小型分页样式
   small?: boolean
   // 数据偏移量
-  offset: number
+  offset?: number
   // 每页显示的数据条数
-  limit: number
+  limit?: number
   // 数据总条数;
-  count: number
+  count?: number
   // 是否存在异常
   abnormal?: boolean
   // 可选的每页显示条数列表

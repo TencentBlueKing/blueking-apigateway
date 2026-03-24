@@ -198,3 +198,107 @@ export const MCP_TAB_LIST = [
     show: true,
   };
 });
+
+// 状态列表
+export const STATUS_LIST = [
+  {
+    name: t('全部'),
+    id: 'all',
+  },
+  {
+    name: t('成功'),
+    id: 'success',
+  },
+  {
+    name: t('失败'),
+    id: 'failed',
+  },
+];
+
+// 定时刷新时间列表
+export const INTERVAL_TIME_LIST = [
+  {
+    label: 'Off',
+    value: 'off',
+  },
+  {
+    label: '5s',
+    value: '5s',
+  },
+  {
+    label: '10s',
+    value: '10s',
+  },
+  {
+    label: '15s',
+    value: '15s',
+  },
+  {
+    label: '30s',
+    value: '30s',
+  },
+  {
+    label: '1m',
+    value: '1m',
+  },
+  {
+    label: '5m',
+    value: '5m',
+  },
+  {
+    label: '15m',
+    value: '15m',
+  },
+  {
+    label: '30m',
+    value: '30m',
+  },
+  {
+    label: '1h',
+    value: '1h',
+  },
+  {
+    label: '2h',
+    value: '2h',
+  },
+  {
+    label: '1d',
+    value: '1d',
+  },
+];
+
+// 精度刷新时间列表
+export const PRECISION_STEPS_list = [
+  {
+    label: 'Auto',
+    value: 'auto',
+  },
+  {
+    label: '1m',
+    value: '1m',
+  },
+  {
+    label: '5m',
+    value: '5m',
+  },
+  {
+    label: '10m',
+    value: '10m',
+  },
+  {
+    label: '30m',
+    value: '30m',
+  },
+  {
+    label: '1h',
+    value: '1h',
+  },
+  {
+    label: '3h',
+    value: '3h',
+  },
+  {
+    label: '12h',
+    value: '12h',
+  },
+];

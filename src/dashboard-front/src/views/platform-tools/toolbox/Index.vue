@@ -59,6 +59,7 @@
 
 <script lang="ts" setup>
 import QueryLog from './components/QueryLog.vue';
+import QueryTraceChain from './components/QueryTraceChain.vue';
 import JwtDecoder from './components/JwtDecoder.vue';
 import JsonFormat from './components/JsonFormat.vue';
 import UrlDecoder from './components/UrlDecoder.vue';
@@ -75,13 +76,14 @@ const { t } = useI18n();
 
 const toolCompMap: Record<string, any> = {
   queryLog: QueryLog,
+  queryTraceChain: QueryTraceChain,
   jwtDecoder: JwtDecoder,
   jsonFormat: JsonFormat,
   urlDecoder: UrlDecoder,
   base64Decoder: Base64Decoder,
 };
 
-const toolList = ref([
+const toolList = shallowRef([
   {
     id: 1,
     name: t('查询日志'),
@@ -90,24 +92,30 @@ const toolList = ref([
   },
   {
     id: 2,
+    name: t('调用链查询'),
+    desc: t('根据 request_id 或 x_request_id 查询请求调用链'),
+    comp: 'queryTraceChain',
+  },
+  {
+    id: 3,
     name: t('JWT 解析'),
     desc: t('根据 JWT 解析出完整的请求头'),
     comp: 'jwtDecoder',
   },
   {
-    id: 3,
+    id: 4,
     name: t('JSON 格式化'),
     desc: t('对 json 进行格式化及高亮'),
     comp: 'jsonFormat',
   },
   {
-    id: 4,
+    id: 5,
     name: t('URL 解析'),
     desc: t('解析出完整的url'),
     comp: 'urlDecoder',
   },
   {
-    id: 5,
+    id: 6,
     name: t('Base64 解析'),
     desc: t('解析出完整的base64'),
     comp: 'base64Decoder',

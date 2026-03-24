@@ -46,6 +46,7 @@ export interface IStatisticsType {
 export interface ISeriesItemType {
   alias: string // 别名
   datapoints: Array<Array<number>> // 数据点数组
+  dimensions_translation?: Record<string, any>
   dimensions: object // 维度
   metric_field: string // 指标字段
   target: string // 目标
