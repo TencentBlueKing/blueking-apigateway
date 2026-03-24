@@ -389,7 +389,7 @@
           :loading="submitLoading"
           @click="handleSubmit"
         >
-          {{ t( appAuthStatusList.length > 0 ? '已知晓风险并提交' : '确定') }}
+          {{ t(appAuthStatusList.length > 0 ? '已知晓风险并提交' : '确定') }}
         </BkButton>
         <BkButton
           class="ml-8px"
@@ -1106,6 +1106,8 @@ const handleResizeLayout = (resizeWidth: number) => {
  * @returns Promise<boolean> - 确认继续返回true，取消返回false
  */
 const isExistPrivatePrompt = (): Promise<boolean> => {
+  // 此处逻辑是为了强制触发 categories 的 blur 事件以关闭 TagInput 下拉
+  serverBasicFormRef.value?.handleCategoriesBlur();
   const privateData = promptSelections.value.filter(item => !item.is_public);
   if (!privateData.length) {
     return true;

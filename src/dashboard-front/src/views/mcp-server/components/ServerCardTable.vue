@@ -187,10 +187,11 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     width: 130,
     cell: (_, { row }: { row: IMCPServer }) => {
       return (
-        <Tag class={[
-          'max-w-100px truncate border-transparent',
-          { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
-        ]}
+        <Tag
+          class={[
+            'max-w-100px truncate border-transparent',
+            { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
+          ]}
         >
           {row?.stage?.name || '--'}
         </Tag>
@@ -241,6 +242,22 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'tools_count',
     align: 'right',
     ellipsis: true,
+  },
+  {
+    title: t('是否公开'),
+    colKey: 'is_public',
+    width: 110,
+    ellipsis: true,
+    cell: (_, { row }: { row: IMCPServer }) => {
+      return (
+        <Tag
+          class="border-transparent"
+          theme={row?.is_public ? 'success' : 'warning'}
+        >
+          {t(row?.is_public ? '公开' : '不公开')}
+        </Tag>
+      );
+    },
   },
   {
     title: t('Prompt数量'),

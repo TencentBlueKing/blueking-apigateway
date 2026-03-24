@@ -96,7 +96,7 @@
                   <BkTag
                     :theme="curPromptData?.is_public ? 'success' : 'warning'"
                   >
-                    {{ t( curPromptData?.is_public ? '公开' : '私有') }}
+                    {{ t(curPromptData?.is_public ? '公开' : '私有') }}
                   </BkTag>
                 </div>
               </div>
