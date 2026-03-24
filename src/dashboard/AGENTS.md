@@ -173,6 +173,13 @@ Always run `make lint` and `make test` after making code changes and fix any iss
 
 When asked to "make a PR", create the pull request targeting `upstream/master`.
 
+## Post-Implementation Requirements
+
+After finishing any code change (feature, bugfix, refactor), the agent MUST:
+
+1. **Add unit tests** for all changed and newly added code. Tests mirror the source structure under `apigateway/apigateway/tests/`. Biz-layer logic gets tests in `tests/biz/`, view-layer gets tests in `tests/apis/web/`. Follow existing test patterns — use `ddf` `G()` for model instances, `request_view` fixture for API tests.
+2. **Generate markdown API docs** for all changed or newly added API endpoints. Include: HTTP method, URL path, request parameters/body schema, response fields, status codes, and error examples. This documentation is handed to the frontend team for integration.
+
 ## Naming Convention: Gateway vs API
 
 Legacy code uses `API`/`api`/`api_id` to refer to gateways. All new code must use `Gateway`. The `api` naming persists in:
