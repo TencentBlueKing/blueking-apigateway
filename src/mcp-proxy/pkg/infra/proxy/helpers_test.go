@@ -45,9 +45,17 @@ var _ = Describe("Helper Functions", func() {
 			Expect(result).To(HaveSuffix("...(truncated)"))
 		})
 
-		It("should handle non-marshalable input gracefully", func() {
+		It("should fallback to fmt.Sprintf when marshal fails", func() {
 			result := truncateJSON(make(chan int), 100)
-			Expect(result).To(ContainSubstring("marshal error"))
+			Expect(result).NotTo(ContainSubstring("marshal error"))
+			// channel 的 fmt.Sprintf 输出类似 "0xc0001234..."
+			Expect(result).NotTo(BeEmpty())
+		})
+
+		It("should truncate fmt.Sprintf fallback when too long", func() {
+			ch := make(chan int)
+			result := truncateJSON(ch, 5)
+			Expect(len(result)).To(BeNumerically("<=", 5+len("...(truncated)")))
 		})
 
 		It("should handle exact length input without truncation", func() {
@@ -144,87 +152,6 @@ var _ = Describe("Helper Functions", func() {
 
 			Expect(headers[constant.BkApiAuthorizationHeaderKey]).To(Equal("original_value"))
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).NotTo(Equal("original_value"))
-		})
-	})
-
-	Describe("hasObjectSchemaType", func() {
-		It("should return true for string 'object'", func() {
-			Expect(hasObjectSchemaType("object")).To(BeTrue())
-		})
-
-		It("should return false for string 'array'", func() {
-			Expect(hasObjectSchemaType("array")).To(BeFalse())
-		})
-
-		It("should return true for []string containing 'object'", func() {
-			Expect(hasObjectSchemaType([]string{"object", "null"})).To(BeTrue())
-		})
-
-		It("should return false for []string without 'object'", func() {
-			Expect(hasObjectSchemaType([]string{"string", "null"})).To(BeFalse())
-		})
-
-		It("should return true for []any containing 'object'", func() {
-			Expect(hasObjectSchemaType([]any{"object", "null"})).To(BeTrue())
-		})
-
-		It("should return false for []any without 'object'", func() {
-			Expect(hasObjectSchemaType([]any{"string", 123})).To(BeFalse())
-		})
-
-		It("should return false for nil", func() {
-			Expect(hasObjectSchemaType(nil)).To(BeFalse())
-		})
-
-		It("should return false for unexpected type (int)", func() {
-			Expect(hasObjectSchemaType(42)).To(BeFalse())
-		})
-	})
-
-	Describe("normalizeToolOutputSchema", func() {
-		It("should add 'type' when missing but 'properties' exists", func() {
-			schema := map[string]any{
-				"properties": map[string]any{"name": map[string]any{"type": "string"}},
-			}
-			result := normalizeToolOutputSchema(schema)
-			Expect(result["type"]).To(Equal("object"))
-		})
-
-		It("should add 'properties' when type is 'object' but properties missing", func() {
-			schema := map[string]any{
-				"type": "object",
-			}
-			result := normalizeToolOutputSchema(schema)
-			Expect(result["properties"]).To(Equal(map[string]any{}))
-		})
-
-		It("should not modify schema when both type and properties exist", func() {
-			schema := map[string]any{
-				"type":       "object",
-				"properties": map[string]any{"name": map[string]any{"type": "string"}},
-			}
-			result := normalizeToolOutputSchema(schema)
-			Expect(result["type"]).To(Equal("object"))
-			Expect(result["properties"]).NotTo(BeNil())
-		})
-
-		It("should not modify array schema", func() {
-			schema := map[string]any{
-				"type":  "array",
-				"items": map[string]any{"type": "string"},
-			}
-			result := normalizeToolOutputSchema(schema)
-			Expect(result["type"]).To(Equal("array"))
-			Expect(result).NotTo(HaveKey("properties"))
-		})
-
-		It("should handle schema with only type and no properties", func() {
-			schema := map[string]any{
-				"type": "string",
-			}
-			result := normalizeToolOutputSchema(schema)
-			Expect(result["type"]).To(Equal("string"))
-			Expect(result).NotTo(HaveKey("properties"))
 		})
 	})
 

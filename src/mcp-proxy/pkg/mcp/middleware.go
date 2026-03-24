@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/infra/trace"
@@ -74,27 +75,30 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 			hasError := err != nil
 
+			// Resolve truncation limits from config
+			logTruncate := config.G.McpServer.LogTruncate
+
 			// Serialize request params and calculate body sizes
 			var params string
 			var requestBodySize int64
 			if req != nil {
 				if paramsBytes, marshalErr := json.Marshal(req.GetParams()); marshalErr == nil {
 					requestBodySize = int64(len(paramsBytes))
-					params = stringx.Truncate(string(paramsBytes), 2048)
+					params = stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
 				}
 			}
 
 			// Serialize response result with truncation
-			// 正常响应截断到 1024，错误响应截断到 4096（保留更多诊断信息）
+			// 正常响应截断到 APILogResponseSize，错误响应截断到 APILogErrorResponseSize（保留更多诊断信息）
 			var response string
 			var responseBodySize int64
 			if result != nil {
 				if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 					responseBodySize = int64(len(resultBytes))
 					if hasError {
-						response = stringx.Truncate(string(resultBytes), 4096)
+						response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
 					} else {
-						response = stringx.Truncate(string(resultBytes), 1024)
+						response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
 					}
 				}
 			}

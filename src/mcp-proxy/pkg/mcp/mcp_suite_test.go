@@ -29,8 +29,10 @@ import (
 )
 
 var _ = BeforeSuite(func() {
+	// Initialize config.G to avoid nil pointer dereference when middleware accesses config fields.
+	config.G = &config.Config{}
 	// Initialize logger for tests
-	logging.InitLogger(&config.Config{})
+	logging.InitLogger(config.G)
 })
 
 func TestMcp(t *testing.T) {

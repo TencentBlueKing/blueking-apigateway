@@ -53,6 +53,11 @@ logger:
     writer: file
     buffered: true
     settings: {name: core_api.log, size: 100, backups: 10, age: 7, path: ./}
+  database:
+    level: info
+    writer: os
+    buffered: false
+    settings: {name: stdout}
 
 
 
@@ -88,3 +93,15 @@ mcpServer:
     maxIdleConns: 200
     maxIdleConnsPerHost: 20
     idleConnTimeoutSecond: 90
+  # Log truncation limits (bytes)
+  logTruncate:
+    # Audit log body size limit for tool call requests and body params
+    maxBodySize: 4096
+    # Audit log response size limit for tool call responses
+    maxResponseSize: 4096
+    # MCP API log request params size limit
+    apiLogRequestSize: 2048
+    # MCP API log response size limit (normal responses)
+    apiLogResponseSize: 1024
+    # MCP API log response size limit (error responses, keeps more diagnostic info)
+    apiLogErrorResponseSize: 4096

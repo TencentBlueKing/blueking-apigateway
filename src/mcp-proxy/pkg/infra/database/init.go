@@ -30,12 +30,14 @@ import (
 	"time"
 
 	ms "github.com/go-sql-driver/mysql"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/logging"
 )
 
 var db *gorm.DB
@@ -157,8 +159,11 @@ func newClient(cfg *config.Database) (*gorm.DB, error) {
 	if config.G != nil && config.G.Debug {
 		gormLogLevel = logger.Info
 	}
+	// 使用项目统一的 database logger 作为 GORM 的日志输出
+	dbLogger := logging.GetDatabaseLogger()
+	stdLog := zap.NewStdLog(dbLogger)
 	gormLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		stdLog,
 		logger.Config{
 			SlowThreshold:             200 * time.Millisecond, // 慢查询阈值
 			LogLevel:                  gormLogLevel,

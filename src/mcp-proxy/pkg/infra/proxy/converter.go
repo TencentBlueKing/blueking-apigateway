@@ -21,116 +21,10 @@ package proxy
 import (
 	"encoding/json"
 	"net/url"
-	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
-
-func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.RawMessage {
-	properties := map[string]any{
-		toolResponseStatusCodeField: map[string]any{"type": "integer"},
-		toolResponseRequestIDField:  map[string]any{"type": "string"},
-		toolResponseTraceIDField:    map[string]any{"type": "string"},
-	}
-	if len(responseBodySchema) > 0 {
-		var responseBodySchemaValue any
-		if err := json.Unmarshal(responseBodySchema, &responseBodySchemaValue); err == nil {
-			properties[toolResponseBodyField] = responseBodySchemaValue
-		}
-	}
-	marshalJSON, _ := json.Marshal(map[string]any{
-		"type":       "object",
-		"properties": properties,
-		// additionalProperties: true allows the actual response to contain fields not described in the schema.
-		// This is essential because backend APIs may return extra fields beyond their OpenAPI spec,
-		// and strict schema validation by MCP clients (e.g., Cursor) would otherwise reject such responses.
-		"additionalProperties": true,
-	})
-	return marshalJSON
-}
-
-func getOutputSchemaFromResponse(responseRef *openapi3.ResponseRef) json.RawMessage {
-	if responseRef == nil || responseRef.Value == nil {
-		return nil
-	}
-	if schemaRef := getPreferredResponseSchemaRef(responseRef.Value.Content); schemaRef != nil {
-		if marshalJSON, err := schemaRef.MarshalJSON(); err == nil {
-			return buildToolResponseEnvelopeSchema(marshalJSON)
-		}
-	}
-	return buildToolResponseEnvelopeSchema(nil)
-}
-
-func getPreferredResponseSchemaRef(content openapi3.Content) *openapi3.SchemaRef {
-	if mediaType, ok := content["application/json"]; ok && mediaType != nil && mediaType.Schema != nil {
-		return mediaType.Schema
-	}
-
-	jsonLikeKeys := make([]string, 0)
-	otherKeys := make([]string, 0)
-	for mediaTypeName, mediaType := range content {
-		if mediaType == nil || mediaType.Schema == nil {
-			continue
-		}
-		lowerMediaTypeName := strings.ToLower(mediaTypeName)
-		if strings.Contains(lowerMediaTypeName, "json") {
-			jsonLikeKeys = append(jsonLikeKeys, mediaTypeName)
-			continue
-		}
-		otherKeys = append(otherKeys, mediaTypeName)
-	}
-	if len(jsonLikeKeys) > 0 {
-		sort.Strings(jsonLikeKeys)
-		return content[jsonLikeKeys[0]].Schema
-	}
-	if len(otherKeys) > 0 {
-		sort.Strings(otherKeys)
-		return content[otherKeys[0]].Schema
-	}
-	return nil
-}
-
-func getOutputSchemaFromResponses(responses *openapi3.Responses) json.RawMessage {
-	if responses == nil || len(responses.Map()) == 0 {
-		return nil
-	}
-
-	responseMap := responses.Map()
-	successStatusCodes := make([]int, 0)
-	otherStatusCodes := make([]string, 0)
-	for statusCode := range responseMap {
-		if statusCode == "default" {
-			continue
-		}
-		statusCodeInt, err := strconv.Atoi(statusCode)
-		if err == nil && statusCodeInt >= 200 && statusCodeInt < 300 {
-			successStatusCodes = append(successStatusCodes, statusCodeInt)
-			continue
-		}
-		otherStatusCodes = append(otherStatusCodes, statusCode)
-	}
-
-	sort.Ints(successStatusCodes)
-	for _, statusCode := range successStatusCodes {
-		if outputSchema := getOutputSchemaFromResponse(responseMap[strconv.Itoa(statusCode)]); len(outputSchema) > 0 {
-			return outputSchema
-		}
-	}
-	if outputSchema := getOutputSchemaFromResponse(responseMap["default"]); len(outputSchema) > 0 {
-		return outputSchema
-	}
-
-	sort.Strings(otherStatusCodes)
-	for _, statusCode := range otherStatusCodes {
-		if outputSchema := getOutputSchemaFromResponse(responseMap[statusCode]); len(outputSchema) > 0 {
-			return outputSchema
-		}
-	}
-	return nil
-}
 
 // OpenapiToMcpToolConfig ...
 // nolint:gocyclo
@@ -282,8 +176,6 @@ func OpenapiToMcpToolConfig(
 					})
 				}
 			}
-
-			toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
 
 			toolConfig.ParamSchema = paramSchema
 			toolConfigs = append(toolConfigs, toolConfig)

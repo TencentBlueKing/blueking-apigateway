@@ -150,8 +150,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 // cleanupAllMCPServers 清理所有已有的 mcp server
 func cleanupAllMCPServers(ctx context.Context, mcpProxy *proxy.MCPProxy) {
-	for _, name := range mcpProxy.GetActiveMCPServerNames() {
-		mcpProxy.DeleteMCPServer(name)
+	names := mcpProxy.CleanupAll()
+	for _, name := range names {
 		if err := cacheimpls.DeleteMCPServerCache(ctx, name); err != nil {
 			logging.GetLogger().Warnf("delete mcp server[%s] cache error: %v", name, err)
 		}
@@ -200,6 +200,7 @@ func prefetchSingleServer(
 	release, releaseErr := biz.GetRelease(ctx, s.GatewayID, s.StageID)
 	if releaseErr != nil {
 		result.err = fmt.Errorf("get release error: %w", releaseErr)
+		logging.GetLogger().Errorf("mcp server[%s] prefetch failed: %v", s.Name, result.err)
 		return
 	}
 	result.release = release
@@ -219,6 +220,7 @@ func prefetchSingleServer(
 	conf, confErr := GetMCPServerConfigWithRelease(ctx, s, release)
 	if confErr != nil {
 		result.err = fmt.Errorf("get openapi spec error: %w", confErr)
+		logging.GetLogger().Errorf("mcp server[%s] prefetch failed: %v", s.Name, result.err)
 		return
 	}
 	result.conf = conf
@@ -411,17 +413,13 @@ func cleanupStaleMCPServers(
 	mcpProxy *proxy.MCPProxy,
 	activeMcpServer map[string]struct{},
 ) int {
-	var deletedCount int
-	for _, name := range mcpProxy.GetActiveMCPServerNames() {
-		if _, ok := activeMcpServer[name]; !ok {
-			mcpProxy.DeleteMCPServer(name)
-			if err := cacheimpls.DeleteMCPServerCache(ctx, name); err != nil {
-				logging.GetLogger().Warnf("delete mcp server[%s] cache error: %v", name, err)
-			}
-			deletedCount++
+	names := mcpProxy.CleanupStale(activeMcpServer)
+	for _, name := range names {
+		if err := cacheimpls.DeleteMCPServerCache(ctx, name); err != nil {
+			logging.GetLogger().Warnf("delete mcp server[%s] cache error: %v", name, err)
 		}
 	}
-	return deletedCount
+	return len(names)
 }
 
 // GetMCPServerConfigWithRelease 使用已有的 release 信息获取配置，避免重复查询
