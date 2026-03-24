@@ -95,6 +95,7 @@
             :create-tag-validator="tagValidator"
             :placeholder="t('HTTP 状态码')"
             allow-create
+            :copyable="false"
             has-delete-icon
           />
         </BkFormItem>
@@ -140,6 +141,7 @@
             :create-tag-validator="tagValidator"
             :placeholder="t('HTTP 状态码')"
             allow-create
+            :copyable="false"
             has-delete-icon
           />
         </BkFormItem>

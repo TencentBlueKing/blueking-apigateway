@@ -269,6 +269,7 @@
                   allow-create
                   has-delete-icon
                   collapse-tags
+                  :copyable="false"
                   :list="[]"
                 />
                 <span class="common-form-tips">{{ t('仅影响 HomePage 中运维开发分数的计算') }}</span>
@@ -282,6 +283,7 @@
                   :placeholder="t('请输入蓝鲸应用ID，并按enter确认')"
                   allow-create
                   has-delete-icon
+                  :copyable="false"
                   collapse-tags
                 />
                 <span class="common-form-tips">{{ t('允许列表中的应用使用 sdk 或者开放 API 调用网关接口，同步环境/资源以及发布版本') }}</span>
