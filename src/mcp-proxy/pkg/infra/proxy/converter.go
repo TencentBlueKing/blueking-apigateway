@@ -29,7 +29,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
+//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func buildToolResponseEnvelopeSchema(responseBodySchema json.RawMessage) json.RawMessage {
 	properties := map[string]any{
 		toolResponseStatusCodeField: map[string]any{"type": "integer"},
@@ -282,7 +282,8 @@ func OpenapiToMcpToolConfig(
 				}
 			}
 
-			// NOTE: OutputSchema temporarily disabled due to issues discovered in practice.
+			// FIXME: OutputSchema temporarily disabled on 2026-03-23 because certain OpenAPI response schemas
+			// cause MCP client-side validation failures. Re-enable after fix (target: 2026-04-15, owner: @Han-Ya-Jun).
 			// toolConfig.OutputSchema = getOutputSchemaFromResponses(operation.Responses)
 
 			toolConfig.ParamSchema = paramSchema

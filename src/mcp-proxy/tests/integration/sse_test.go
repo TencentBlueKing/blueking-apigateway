@@ -220,7 +220,7 @@ var _ = Describe("SSE Protocol", func() {
 				}
 			}
 			Expect(pingTool).NotTo(BeNil())
-			// NOTE: OutputSchema temporarily disabled.
+			// FIXME: OutputSchema temporarily disabled on 2026-03-23 (target: 2026-04-15, owner: @Han-Ya-Jun).
 			// Expect(pingTool.OutputSchema).NotTo(BeNil())
 
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{

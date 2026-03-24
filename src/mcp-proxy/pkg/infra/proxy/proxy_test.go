@@ -324,7 +324,7 @@ var _ = Describe("MCPProxy", func() {
 			envelope := buildToolResponseEnvelope(200, "req-1", []any{"a", "b"})
 			result := buildToolResult(envelope)
 
-			// NOTE: StructuredContent is temporarily disabled along with OutputSchema.
+			// FIXME: StructuredContent temporarily disabled on 2026-03-23 (target: 2026-04-15, owner: @Han-Ya-Jun).
 			Expect(result.StructuredContent).To(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			textContent, ok := result.Content[0].(*mcp.TextContent)

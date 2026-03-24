@@ -126,7 +126,7 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
+//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func hasObjectSchemaType(schemaType any) bool {
 	switch value := schemaType.(type) {
 	case string:
@@ -147,7 +147,7 @@ func hasObjectSchemaType(schemaType any) bool {
 	return false
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
+//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	schemaType, hasType := outputSchema["type"]
 	_, hasProperties := outputSchema["properties"]
@@ -162,7 +162,7 @@ func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
 	return outputSchema
 }
 
-//nolint:unused // temporarily unused while OutputSchema is disabled
+//nolint:unused // FIXME: re-enable after OutputSchema issues are fixed (target: 2026-04-15, owner: @Han-Ya-Jun)
 func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
 	if len(toolConfig.OutputSchema) == 0 {
 		return nil
@@ -201,7 +201,9 @@ func buildToolResponseEnvelope(statusCode int, requestID string, responseBody an
 
 func buildToolResult(output any) *mcp.CallToolResult {
 	result := &mcp.CallToolResult{}
-	// NOTE: StructuredContent temporarily disabled along with OutputSchema.
+	// FIXME: StructuredContent temporarily disabled on 2026-03-23 along with OutputSchema.
+	// Returning StructuredContent without a valid OutputSchema causes MCP client-side errors.
+	// Re-enable after fixing OutputSchema (target: 2026-04-15, owner: @Han-Ya-Jun).
 	// if structuredContent, ok := output.(map[string]any); ok {
 	// 	result.StructuredContent = structuredContent
 	// }
@@ -221,7 +223,9 @@ func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
 		Description: toolConfig.Description,
 		InputSchema: buildToolInputSchema(toolConfig, serverName),
 	}
-	// NOTE: OutputSchema temporarily disabled due to issues discovered in practice.
+	// FIXME: OutputSchema temporarily disabled on 2026-03-23 because certain OpenAPI response schemas
+	// cause MCP client-side validation failures when StructuredContent is returned.
+	// Re-enable after fixing schema normalization logic (target: 2026-04-15, owner: @Han-Ya-Jun).
 	// if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
 	// 	tool.OutputSchema = outputSchema
 	// }
