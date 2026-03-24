@@ -447,7 +447,7 @@ class ResourceVersionBatchDeleteApi(generics.DestroyAPIView):
             instance_id=";".join(map(str, ids)),
             instance_name=";".join(id_to_version[rv_id] for rv_id in ids),
             comment="批量删除版本",
-            data_before=ids,
+            data_before=[{"id": rv_id, "version": id_to_version[rv_id]} for rv_id in ids],
             data_after=[],
         )
 
