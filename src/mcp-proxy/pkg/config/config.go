@@ -162,12 +162,6 @@ type McpServer struct {
 	InnerJwtExpireTime          time.Duration
 	EncryptKey                  string
 	CryptoNonce                 string
-	// EnableOutputSchema controls whether MCP tool OutputSchema and StructuredContent are enabled.
-	// FIXME(han-yajun, 2026-03-24): Temporarily defaults to false due to allOf/oneOf/$ref validation
-	// failures in MCP SDK clients. Set to true once the schema normalization logic handles complex
-	// OpenAPI response schemas correctly. See PR #2573 for details.
-	// Recovery: set to true after 2026-04-15 when the fix is verified.
-	EnableOutputSchema bool
 }
 
 // Pprof is the config for pprof

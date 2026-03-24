@@ -22,8 +22,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"mcp_proxy/pkg/config"
 )
 
 var _ = Describe("Converter", func() {
@@ -319,14 +317,9 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("body_param"))
 		})
 
-		// NOTE: OutputSchema extraction tests temporarily disabled since OutputSchema is gated by config.
-		// The underlying functions (getOutputSchemaFromResponses, etc.) still exist but only called when enabled.
+		// NOTE: OutputSchema extraction tests temporarily disabled since OutputSchema is commented out.
+		// The underlying functions (getOutputSchemaFromResponses, etc.) still exist but are not called.
 		It("should have nil output schema when OutputSchema feature is disabled", func() {
-			// Ensure enableOutputSchema is false (default)
-			savedCfg := config.G
-			config.G = &config.Config{McpServer: config.McpServer{EnableOutputSchema: false}}
-			defer func() { config.G = savedCfg }()
-
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",
 				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},

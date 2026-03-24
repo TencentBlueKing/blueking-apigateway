@@ -71,12 +71,6 @@ tracing:
     ginAPI: true
     dbAPI: true
 
-mcpServer:
-  # enableOutputSchema controls whether MCP tool OutputSchema and StructuredContent are enabled.
-  # Set to false (default) to disable due to allOf/oneOf/$ref validation failures in MCP SDK clients.
-  # Set to true once the schema normalization logic handles complex OpenAPI response schemas correctly.
-  enableOutputSchema: false
-
 ## config for pprof
 pprof:
   username: "bk-apigateway"  # 可通过环境变量 PPROF_USERNAME 覆盖

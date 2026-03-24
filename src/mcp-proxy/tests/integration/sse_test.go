@@ -220,8 +220,7 @@ var _ = Describe("SSE Protocol", func() {
 				}
 			}
 			Expect(pingTool).NotTo(BeNil())
-			// FIXME(han-yajun, 2026-03-24): OutputSchema disabled via mcpServer.enableOutputSchema=false.
-			// Enable this assertion after setting enableOutputSchema=true (target: 2026-04-15).
+			// FIXME: OutputSchema temporarily disabled (target: 2026-04-15, owner: @Han-Ya-Jun).
 			// Expect(pingTool.OutputSchema).NotTo(BeNil())
 
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{
