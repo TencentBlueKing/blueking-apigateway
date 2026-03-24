@@ -33,6 +33,7 @@ mcpServer:
   innerJwtExpireTime: 5m
   bkApiUrlTmpl: ""
   interval: 60
+  metricNamePrefix: "bk_apigateway_"
 
 tracing:
   enable: false

@@ -76,6 +76,11 @@ export const fetchApigwAccessLogDetail = (gatewayId: number, requestId: string, 
 export const getLogsInfo = (requestId: string) => http.get(`${path}/logs/query/${requestId}/`);
 
 /**
+ *  根据 request_id 查询 MCP Server 日志（工具箱）
+ */
+export const getMCPServerLogsInfo = (requestId: string) => http.get(`${path}/mcp-server-logs/query/${requestId}/`);
+
+/**
  *  获取stage数据
  * @param gatewayId 网关id
  */
