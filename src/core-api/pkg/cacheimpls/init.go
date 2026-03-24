@@ -29,7 +29,7 @@ import (
 
 func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 	return func() time.Duration {
-		return time.Duration(rand.Intn(seconds*1000)) * time.Millisecond
+		return time.Duration(rand.Intn(seconds*1000)) * time.Millisecond //nolint:gosec
 	}
 }
 

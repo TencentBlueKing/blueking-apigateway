@@ -38,7 +38,10 @@ func (k GatewayNameKey) Key() string {
 }
 
 func retrieveGatewayByName(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(GatewayNameKey)
+	key, ok := k.(GatewayNameKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected GatewayNameKey")
+	}
 
 	manager := dao.NewGatewayManager()
 	return manager.GetByName(ctx, key.Name)

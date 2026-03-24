@@ -65,7 +65,7 @@ func NewMockRowsWithoutData(mock sqlmock.Sqlmock, arg any) *sqlmock.Rows {
 		objType = objType.Elem()
 	}
 	var columns []string
-	for i := 0; i < objType.NumField(); i++ {
+	for i := range objType.NumField() {
 		dbTagName := objType.Field(i).Tag.Get("db")
 		if dbTagName != "" {
 			columns = append(columns, dbTagName)
@@ -90,7 +90,7 @@ func NewMockRows(mock sqlmock.Sqlmock, args ...any) *sqlmock.Rows {
 			objValue = objValue.Elem()
 		}
 		values := []driver.Value{}
-		for i := 0; i < objType.NumField(); i++ {
+		for i := range objType.NumField() {
 			dbTagName := objType.Field(i).Tag.Get("db")
 			if dbTagName != "" {
 				values = append(values, objValue.Field(i).Interface())

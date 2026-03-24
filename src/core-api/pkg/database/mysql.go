@@ -19,6 +19,7 @@
 package database
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -78,7 +79,9 @@ func (db *DBClient) TestConnection() (err error) {
 		return err
 	}
 
-	conn.Close()
+	if closeErr := conn.Close(); closeErr != nil {
+		logging.GetLogger().Warnf("failed to close test connection: %s", closeErr)
+	}
 	return nil
 }
 
@@ -100,7 +103,7 @@ func (db *DBClient) Connect() error {
 	db.DB.SetMaxIdleConns(db.maxIdleConns)
 	db.DB.SetConnMaxLifetime(db.connMaxLifetime)
 
-	_, err = db.DB.Exec(`SET time_zone = "+00:00";`) // set session time zon to utc
+	_, err = db.DB.ExecContext(context.Background(), `SET time_zone = "+00:00";`) // set session timezone to utc
 	if err != nil {
 		return err
 	}
@@ -119,7 +122,9 @@ func (db *DBClient) SetTraceEnabled(enabled bool) {
 // Close close db connection
 func (db *DBClient) Close() {
 	if db.DB != nil {
-		db.DB.Close()
+		if err := db.DB.Close(); err != nil {
+			logging.GetLogger().Warnf("failed to close database connection: %s", err)
+		}
 	}
 }
 
@@ -210,9 +215,12 @@ func NewDBClient(cfg *config.Database) *DBClient {
 		if cfg.ConnMaxLifetimeSecond >= 60 {
 			connMaxLifetime = time.Duration(cfg.ConnMaxLifetimeSecond) * time.Second
 		} else {
-			logging.GetLogger().Errorf("error config for database %s, connMaxLifetimeSeconds should be greater than 60 seconds"+
-				"use the default [defaultConnMaxLifetime=%s]",
-				cfg.Name, defaultConnMaxLifetime)
+			logging.GetLogger().Errorf(
+				"error config for database %s, connMaxLifetimeSeconds should be greater than 60 seconds"+
+					"use the default [defaultConnMaxLifetime=%s]",
+				cfg.Name,
+				defaultConnMaxLifetime,
+			)
 		}
 	}
 

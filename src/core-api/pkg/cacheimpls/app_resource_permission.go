@@ -43,7 +43,10 @@ func (k AppResourcePermissionKey) Key() string {
 }
 
 func retrieveAppResourcePermission(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(AppResourcePermissionKey)
+	key, ok := k.(AppResourcePermissionKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected AppResourcePermissionKey")
+	}
 
 	manager := dao.NewAppResourcePermissionManager()
 

@@ -40,7 +40,10 @@ func (k ReleaseKey) Key() string {
 }
 
 func retrieveStageByGatewayIDStageID(ctx context.Context, k cache.Key) (any, error) {
-	key := k.(ReleaseKey)
+	key, ok := k.(ReleaseKey)
+	if !ok {
+		return nil, errors.New("invalid key type, expected ReleaseKey")
+	}
 
 	manager := dao.NewReleaseManager()
 	return manager.Get(ctx, key.GatewayID, key.StageID)
