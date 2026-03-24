@@ -16,15 +16,20 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-export * from './useEnv';
-export * from './useUserInfo';
-export * from './useFeatureFlag';
-export * from './useGateway';
-export * from './useAccessLog';
-export * from './useStaff';
-export * from './usePermission';
-export * from './useAuditLog';
-export * from './useResourceVersion';
-export * from './useResourceSetting';
-export * from './useStage';
-export * from './useOnlineDebugging';
+import { defineStore } from 'pinia';
+
+export const useResourceDebugging = defineStore('useResourceDebugging', {
+  state: () => ({ resourceDebugList: <{ [key: string]: any }>{} }),
+  actions: {
+    // 设置资源调试信息
+    setResourceSettings(name: string, settings: any) {
+      this.resourceDebugList[name] = settings;
+    },
+  },
+  getters: {
+    // 获取资源调试信息
+    getResourceSettings: state => (name: string) => {
+      return state.resourceDebugList[name] || {};
+    },
+  },
+});

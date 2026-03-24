@@ -26,7 +26,7 @@
         <div class="params-header">
           <div class="params-header-title">
             <AgIcon
-              name="angle-up-fill"
+              name="down-shape"
               class="params-header-fold"
               :class="[activeIndex?.includes(1) ? '' : 'fold']"
             />
