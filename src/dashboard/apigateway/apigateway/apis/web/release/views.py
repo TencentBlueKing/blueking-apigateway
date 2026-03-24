@@ -326,44 +326,6 @@ class DeployHistoryListApi(generics.ListAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ReleaseHistoryOutputSLZ()},
-        tags=["WebAPI.Release"],
-        operation_description="发布详情接口",
-    ),
-)
-class ReleaseHistoryRetrieveApi(generics.RetrieveAPIView):
-    serializer_class = ReleaseHistoryOutputSLZ
-
-    def get_queryset(self):
-        return ReleaseHistory.objects.filter(gateway=self.request.gateway)
-
-    def retrieve(self, request, *args, **kwargs):
-        try:
-            # created_time 在极端情况下可能重复，因此，添加字段 id
-            # select_related data_plane to avoid N+1 queries
-            instance = (
-                ReleaseHistory.objects.filter(gateway=request.gateway)
-                .select_related("data_plane")
-                .latest("created_time", "id")
-            )
-        except ReleaseHistory.DoesNotExist:
-            return OKJsonResponse(data={})
-
-        slz_class = self.get_serializer_class()
-        slz = slz_class(
-            instance,
-            context={
-                "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
-                    [instance.id]
-                ),
-            },
-        )
-        return OKJsonResponse(data=slz.data)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
         responses={status.HTTP_200_OK: ReleaseHistoryEventRetrieveOutputSLZ()},
         tags=["WebAPI.Release"],
         operation_description="查询发布事件 (日志)",
