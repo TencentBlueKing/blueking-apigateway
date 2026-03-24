@@ -255,7 +255,8 @@ class MCPServerMetricsRangeFactory:
     def register(cls, metrics_class: Type[BaseMCPServerMetrics]):
         if not hasattr(metrics_class, "metrics"):
             raise ValueError("metrics_class must have a 'metrics' ClassVar")
-        cls._registry[metrics_class.metrics] = metrics_class
+        key = MCPServerMetricsRangeEnum(metrics_class.metrics)
+        cls._registry[key] = metrics_class
 
 
 class MCPServerMetricsInstantFactory:
@@ -272,7 +273,8 @@ class MCPServerMetricsInstantFactory:
     def register(cls, metrics_class: Type[BaseMCPServerMetrics]):
         if not hasattr(metrics_class, "metrics"):
             raise ValueError("metrics_class must have a 'metrics' ClassVar")
-        cls._registry[metrics_class.metrics] = metrics_class
+        key = MCPServerMetricsInstantEnum(metrics_class.metrics)
+        cls._registry[key] = metrics_class
 
 
 # Register all metric classes
