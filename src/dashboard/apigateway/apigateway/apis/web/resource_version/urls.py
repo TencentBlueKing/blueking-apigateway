@@ -21,11 +21,12 @@ from django.urls import path
 from .views import (
     NextProgramGatewayResourceVersionRetrieveApi,
     NextResourceVersionRetrieveApi,
+    ResourceVersionBatchDeleteApi,
     ResourceVersionDiffRetrieveApi,
     ResourceVersionExportApi,
     ResourceVersionListCreateApi,
     ResourceVersionNeedNewVersionRetrieveApi,
-    ResourceVersionRetrieveApi,
+    ResourceVersionRetrieveDestroyApi,
 )
 
 urlpatterns = [
@@ -37,9 +38,10 @@ urlpatterns = [
     ),
     path(
         "<int:id>/",
-        ResourceVersionRetrieveApi.as_view(),
-        name="gateway.resource_version.retrieve",
+        ResourceVersionRetrieveDestroyApi.as_view(),
+        name="gateway.resource_version.retrieve_destroy",
     ),
+    path("batch/", ResourceVersionBatchDeleteApi.as_view(), name="gateway.resource_version.batch_delete"),
     path(
         "need-new-version/",
         ResourceVersionNeedNewVersionRetrieveApi.as_view(),

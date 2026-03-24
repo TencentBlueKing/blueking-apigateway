@@ -32,6 +32,7 @@ from apigateway.apps.openapi.models import (
 )
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import (
@@ -44,7 +45,7 @@ from apigateway.biz.resource import (
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
-from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -346,3 +347,20 @@ class ResourceVersionHandler:
                 raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
             return set()
         return {resource["name"] for resource in resource_version.data}
+
+    @staticmethod
+    def is_resource_version_referenced(resource_version_id: int) -> bool:
+        if Release.objects.filter(resource_version_id=resource_version_id).exists():
+            return True
+        if GatewaySDK.objects.filter(resource_version_id=resource_version_id).exists():
+            return True
+        return False
+
+    @staticmethod
+    def delete_resource_version(resource_version_id: int):
+        # these two use plain IntegerField (no FK), must delete explicitly
+        ReleasedResourceDoc.objects.filter(resource_version_id=resource_version_id).delete()
+        ReleasedResource.objects.filter(resource_version_id=resource_version_id).delete()
+        # ResourceDocVersion, OpenAPIResourceSchemaVersion, OpenAPIFileResourceSchemaVersion
+        # use FK/OneToOne with on_delete=CASCADE, auto-deleted with ResourceVersion
+        ResourceVersion.objects.filter(id=resource_version_id).delete()

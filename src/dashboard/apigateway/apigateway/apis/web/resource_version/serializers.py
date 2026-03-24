@@ -168,6 +168,7 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
     comment = serializers.CharField(help_text="版本日志")
     created_time = serializers.DateTimeField(help_text="创建时间")
     created_by = serializers.CharField(help_text="创建人")
+    deletable = serializers.SerializerMethodField(help_text="是否可以删除")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionListOutputSLZ"
@@ -186,6 +187,11 @@ class ResourceVersionListOutputSLZ(serializers.Serializer):
             title = obj.get("title")
             return f"{title}({name})"
         return version
+
+    def get_deletable(self, obj):
+        released_stages = self.context["released_stages"].get(obj["id"], [])
+        sdk_count = self.context["resource_version_ids_sdk_count"].get(obj["id"], 0)
+        return len(released_stages) == 0 and sdk_count == 0
 
 
 class NeedNewVersionOutputSLZ(serializers.Serializer):
@@ -242,3 +248,10 @@ class ResourceVersionExportInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionExportInputSLZ"
+
+
+class ResourceVersionBatchDeleteInputSLZ(serializers.Serializer):
+    ids = serializers.ListField(child=serializers.IntegerField(min_value=1), help_text="资源版本 ID 列表")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionBatchDeleteInputSLZ"
