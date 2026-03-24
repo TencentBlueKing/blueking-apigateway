@@ -288,6 +288,7 @@
                     allow-create
                     has-delete-icon
                     collapse-tags
+                    :copyable="false"
                   />
                   <p class="notice-tip mt-4px">
                     <i class="m-r-4px apigateway-icon icon-ag-info" />

@@ -128,6 +128,7 @@
       allow-create
       collapse-tags
       has-delete-icon
+      :copyable="false"
     />
   </BkFormItem>
   <BkFormItem
@@ -150,6 +151,7 @@
       :tag-tpl="renderCategoryTagTpl"
       :tpl="renderCategoryTpl"
       :filter-callback="handleSearchCategory"
+      :copyable="false"
       @focus="handleCategoryFocus"
     />
     <div
@@ -396,6 +398,7 @@ defineExpose({
 
 <style lang="scss" scoped>
 .form-protocol-type {
+
   :deep(.bk-form-label) {
 
     &::after {
