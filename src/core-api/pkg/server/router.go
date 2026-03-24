@@ -64,7 +64,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// healthz
 	router.GET("/healthz", func(c *gin.Context) {
 		for _, dbConfig := range cfg.DatabaseMap {
-			dbConfig := dbConfig
 			// reset the options for check
 			dbConfig.MaxIdleConns = 1
 			dbConfig.MaxOpenConns = 1

@@ -20,6 +20,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -32,14 +33,14 @@ var TestingContent = []byte("Hello, World!")
 
 // NewRequestResponse ...
 func NewRequestResponse() (*http.Request, *httptest.ResponseRecorder) {
-	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(TestingContent))
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", bytes.NewReader(TestingContent))
 	w := httptest.NewRecorder()
 	return r, w
 }
 
 // NewRequestResponseWithContent ...
 func NewRequestResponseWithContent(content []byte) (*http.Request, *httptest.ResponseRecorder) {
-	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(content))
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", bytes.NewReader(content))
 	w := httptest.NewRecorder()
 	return r, w
 }
@@ -62,7 +63,7 @@ func (errReader) Read(p []byte) (n int, err error) {
 
 // NewRequestErrorResponse ...
 func NewRequestErrorResponse() (*http.Request, *httptest.ResponseRecorder) {
-	r := httptest.NewRequest(http.MethodPost, "/", errReader(0))
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/", errReader(0))
 	w := httptest.NewRecorder()
 	return r, w
 }

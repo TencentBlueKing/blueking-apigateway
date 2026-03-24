@@ -20,6 +20,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -42,7 +43,7 @@ const (
 // RollBackWithLog will rollback and log if error
 func RollBackWithLog(tx *sqlx.Tx) {
 	err := tx.Rollback()
-	if err != sql.ErrTxDone && err != nil {
+	if !errors.Is(err, sql.ErrTxDone) && err != nil {
 		logging.GetLogger().Error(err)
 	}
 }

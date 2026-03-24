@@ -108,7 +108,8 @@ func (p publishEventManager) Create(ctx context.Context, publishEvent PublishEve
 	result, err := database.SqxExec(ctx, p.DB, query, args...)
 	if err != nil {
 		// make sure err is a mysql.MySQLError.
-		if errMySQL, ok := err.(*mysql.MySQLError); ok {
+		errMySQL := &mysql.MySQLError{}
+		if errors.As(err, &errMySQL) {
 			if errMySQL.Number == database.DuplicateErrCode {
 				return 0, fmt.Errorf("insert event duplicated err: %w", err)
 			}
