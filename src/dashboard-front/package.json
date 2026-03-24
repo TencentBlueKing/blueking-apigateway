@@ -50,6 +50,7 @@
     "monaco-editor": "^0.52.2",
     "pinia": "^3.0.3",
     "qs": "^6.14.0",
+    "reselect": "^5.1.1",
     "semver": "^7.7.2",
     "tdesign-vue-next": "^1.18.0",
     "to-json-schema": "^0.2.5",

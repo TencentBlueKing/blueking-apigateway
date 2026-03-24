@@ -16,13 +16,24 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { defineStore } from 'pinia';
-
 import { t } from '@/locales';
+import router from '@/router';
 
 export const useAccessLog = defineStore('useAccessLog', {
   state: () => ({
     // 日期选择快捷方式
     datepickerShortcuts: [
+      ...(['MCPServerObservability'].includes(router?.currentRoute?.value?.name as string)
+        ? [{
+          text: t('今天'),
+          value() {
+            const end = new Date();
+            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            return [start, end];
+          },
+        }]
+        : []
+      ),
       {
         text: t('最近5分钟'),
         value() {

@@ -492,8 +492,7 @@ const getStatus = async () => {
       }, 5000);
     }
   }
-  catch (e) {
-    console.warn(e);
+  catch {
     return false;
   }
 };

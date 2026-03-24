@@ -1,0 +1,101 @@
+$resizer-border-color: #808;
+$resizer-border-light: #999;
+$resizer-hover-bg: rgba(0, 0, 0, .3);
+$resizer-drag-bg: rgba(136, 0, 136, .05);
+$resizer-grip-color: rgba(136, 0, 136, .5);
+
+.vertical-resizer {
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+
+  // 翻转状态
+  &.is-flipped {
+    transform: scaleX(-1);
+  }
+
+  // 左侧拖拽
+  &.isDraggingLeft > .vertical-resizer-dragger {
+    background: $resizer-drag-bg;
+    width: unset;
+    border-left: 2px solid $resizer-border-color;
+    border-right: 1px solid $resizer-border-light;
+
+    &::before {
+      left: -2000px;
+      right: -2000px;
+    }
+  }
+
+  // 右侧拖拽
+  &.isDraggingRight > .vertical-resizer-dragger {
+    background: $resizer-drag-bg;
+    width: unset;
+    border-left: 1px solid $resizer-border-light;
+    border-right: 2px solid $resizer-border-color;
+
+    &::before {
+      left: -2000px;
+      right: -2000px;
+    }
+  }
+
+  // 拖拽中图标样式统一处理
+  &.isDraggingLeft,
+  &.isDraggingRight {
+    > .vertical-resizer-gripIcon {
+      &::before,
+      &::after {
+        border-right: 1px solid $resizer-grip-color;
+      }
+    }
+  }
+}
+
+.vertical-resizer-wrapper {
+  bottom: 0;
+  position: absolute;
+  top: 0;
+}
+
+.vertical-resizer-dragger {
+  border-left: 2px solid transparent;
+  cursor: col-resize;
+  margin-left: -1px;
+  position: absolute;
+  top: 0;
+  width: 1px;
+
+  &:hover {
+    border-left: 2px solid $resizer-hover-bg;
+  }
+
+  &::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -8px;
+    right: 0;
+    content: " ";
+  }
+}
+
+.vertical-resizer-gripIcon {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  &::before,
+  &::after {
+    content: " ";
+    height: 9px;
+    position: absolute;
+    right: 9px;
+    top: 20px;
+  }
+
+  &::after {
+    right: 5px;
+  }
+}

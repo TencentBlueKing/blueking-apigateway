@@ -1,0 +1,77 @@
+.span-bar-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  overflow: visible;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+/* 时间刻度 + 垂直时间线 - 居中 */
+.time-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #e5e6eb;
+  z-index: 1;
+  pointer-events: none;
+
+  .time-tick-label {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    right: 0;
+    transform: translateX(-50%, -50%);
+    font-size: 12px;
+    color: #979ba5;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  &:first-child{
+    width: 0;
+  }
+}
+
+.span-bar {
+  position: absolute;
+  min-width: 2px;
+  height: 12px;
+  border-radius: 2px;
+  z-index: 3;
+  overflow: visible;
+  will-change: left, width;
+
+  &.is-infer {
+    background-color: #ffffff !important;
+    background-image: linear-gradient(135deg, #dddfe3 35%, transparent 35%, transparent 50%, #dddfe3 50%, #dddfe3 85%, transparent 85%, transparent);
+    background-size: 4px 4px;
+  }
+
+  .span-duration {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 4px;
+    font-size: 12px;
+    color: #979ba5;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 4;
+
+    &.inside {
+      left: auto;
+      right: 16px;
+      background-color: #ffffff;
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+  }
+}

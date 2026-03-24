@@ -1,0 +1,19 @@
+.timeline-collapser {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-right: 10px;
+  gap: 12px;
+
+  .collapser-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    
+    &:hover {
+      cursor: pointer;
+      background-color: #dcdee5;
+    }
+  }
+}

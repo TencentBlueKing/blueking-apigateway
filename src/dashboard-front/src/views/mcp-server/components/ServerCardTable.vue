@@ -52,7 +52,7 @@ type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number];
 
 interface IProps { filterCondition?: IMCPServerFilterOptions }
 
-type IEmits = {
+interface IEmits {
   'view': [id: number]
   'edit': [id: number]
   'suspend': [id: number]

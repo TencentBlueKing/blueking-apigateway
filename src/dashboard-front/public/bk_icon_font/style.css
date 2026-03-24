@@ -74,6 +74,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-time:before {
 	content: "\e1ed";
 }
+.icon-ag-remind:before {
+	content: "\e211";
+}
 .icon-ag-danger-fill:before {
 	content: "\e181";
 }
@@ -694,4 +697,31 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-link-2:before {
 	content: "\e205";
+}
+.icon-ag-star:before {
+	content: "\e210";
+}
+.icon-ag-feedback-fankui:before {
+	content: "\e20a";
+}
+.icon-ag-log-rizhi:before {
+	content: "\e207";
+}
+.icon-ag-roboto:before {
+	content: "\e20b";
+}
+.icon-ag-kuawangguan:before {
+	content: "\e20c";
+}
+.icon-ag-cli:before {
+	content: "\e20e";
+}
+.icon-ag-cli-o:before {
+	content: "\e20f";
+}
+.icon-ag-lightning:before {
+	content: "\e208";
+}
+.icon-ag-tongbu:before {
+	content: "\e212";
 }

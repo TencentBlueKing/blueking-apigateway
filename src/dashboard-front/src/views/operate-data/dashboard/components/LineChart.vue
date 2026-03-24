@@ -35,7 +35,7 @@
         :class="[{ 'side-legend': instanceId === 'non_20x_status' }]"
       >
         <div
-          v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
+          v-for="({ color, name, selected }, legendIndex) of chartLegend[instanceId]"
           :key="legendIndex"
           class="legend-item"
           :class="[selected]"
@@ -480,7 +480,7 @@ const handleClickLegend = (index: number) => {
     });
     chartLegend.value = {
       ...chartLegend.value,
-      ...{ [instanceId]: legend },
+      [instanceId]: legend,
     };
   }
   else {
@@ -493,7 +493,7 @@ const handleClickLegend = (index: number) => {
     legend.forEach((item: LegendItem) => (item.selected = 'all'));
     chartLegend.value = {
       ...chartLegend.value,
-      ...{ [instanceId]: legend },
+      [instanceId]: legend,
     };
   }
 };
