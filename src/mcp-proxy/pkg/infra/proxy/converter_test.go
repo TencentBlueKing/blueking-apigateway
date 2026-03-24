@@ -317,7 +317,9 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("body_param"))
 		})
 
-		It("should extract output schema from successful application/json response body", func() {
+		// NOTE: OutputSchema extraction tests temporarily disabled since OutputSchema is commented out.
+		// The underlying functions (getOutputSchemaFromResponses, etc.) still exist but are not called.
+		It("should have nil output schema when OutputSchema feature is disabled", func() {
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",
 				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
@@ -360,149 +362,7 @@ var _ = Describe("Converter", func() {
 
 			result := OpenapiToMcpToolConfig(spec, nil, nil)
 			Expect(result).To(HaveLen(1))
-			Expect(result[0].OutputSchema).NotTo(BeNil())
-			Expect(
-				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"object","properties":{"users":{"type":"array","items":{"type":"string"}}}}}}`))
-		})
-
-		It("should prefer successful response schema over error response schema", func() {
-			spec := &openapi3.T{
-				OpenAPI: "3.0.0",
-				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
-				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
-				Paths:   &openapi3.Paths{},
-			}
-
-			responses := &openapi3.Responses{}
-			responses.Set("400", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: ptrString("Bad request"),
-					Content: openapi3.Content{
-						"application/json": &openapi3.MediaType{
-							Schema: &openapi3.SchemaRef{
-								Value: &openapi3.Schema{
-									Type: &openapi3.Types{"object"},
-									Properties: openapi3.Schemas{
-										"error": &openapi3.SchemaRef{
-											Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-			responses.Set("200", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: ptrString("Successful response"),
-					Content: openapi3.Content{
-						"application/json": &openapi3.MediaType{
-							Schema: &openapi3.SchemaRef{
-								Value: &openapi3.Schema{
-									Type: &openapi3.Types{"array"},
-									Items: &openapi3.SchemaRef{
-										Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-
-			pathItem := &openapi3.PathItem{
-				Get: &openapi3.Operation{
-					OperationID: "getUsers",
-					Summary:     "Get users",
-					Responses:   responses,
-				},
-			}
-			spec.Paths.Set("/users", pathItem)
-
-			result := OpenapiToMcpToolConfig(spec, nil, nil)
-			Expect(result).To(HaveLen(1))
-			Expect(
-				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"array","items":{"type":"string"}}}}`))
-		})
-
-		It("should support json-like response media types", func() {
-			spec := &openapi3.T{
-				OpenAPI: "3.0.0",
-				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
-				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
-				Paths:   &openapi3.Paths{},
-			}
-
-			responses := &openapi3.Responses{}
-			responses.Set("200", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: ptrString("Successful response"),
-					Content: openapi3.Content{
-						"application/vnd.api+json": &openapi3.MediaType{
-							Schema: &openapi3.SchemaRef{
-								Value: &openapi3.Schema{
-									Type: &openapi3.Types{"object"},
-									Properties: openapi3.Schemas{
-										"data": &openapi3.SchemaRef{
-											Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			})
-
-			pathItem := &openapi3.PathItem{
-				Get: &openapi3.Operation{
-					OperationID: "getUsers",
-					Summary:     "Get users",
-					Responses:   responses,
-				},
-			}
-			spec.Paths.Set("/users", pathItem)
-
-			result := OpenapiToMcpToolConfig(spec, nil, nil)
-			Expect(result).To(HaveLen(1))
-			Expect(
-				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"},"response_body":{"type":"object","properties":{"data":{"type":"string"}}}}}`))
-		})
-
-		It("should build metadata envelope when response body schema is absent", func() {
-			spec := &openapi3.T{
-				OpenAPI: "3.0.0",
-				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
-				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
-				Paths:   &openapi3.Paths{},
-			}
-
-			responses := &openapi3.Responses{}
-			responses.Set("200", &openapi3.ResponseRef{
-				Value: &openapi3.Response{
-					Description: ptrString("Successful response"),
-				},
-			})
-
-			pathItem := &openapi3.PathItem{
-				Get: &openapi3.Operation{
-					OperationID: "getUsers",
-					Summary:     "Get users",
-					Responses:   responses,
-				},
-			}
-			spec.Paths.Set("/users", pathItem)
-
-			result := OpenapiToMcpToolConfig(spec, nil, nil)
-			Expect(result).To(HaveLen(1))
-			Expect(result[0].OutputSchema).NotTo(BeNil())
-			Expect(
-				string(result[0].OutputSchema),
-			).To(MatchJSON(`{"type":"object","properties":{"status_code":{"type":"integer"},"request_id":{"type":"string"}}}`))
+			Expect(result[0].OutputSchema).To(BeNil())
 		})
 
 		It("should omit output schema when responses are empty", func() {

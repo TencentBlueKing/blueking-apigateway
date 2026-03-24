@@ -200,7 +200,8 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				}
 			}
 			Expect(pingTool).NotTo(BeNil())
-			Expect(pingTool.OutputSchema).NotTo(BeNil())
+			// FIXME: OutputSchema temporarily disabled (target: 2026-04-15, owner: @Han-Ya-Jun).
+			// Expect(pingTool.OutputSchema).NotTo(BeNil())
 
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{
 				Name:      "ping",
