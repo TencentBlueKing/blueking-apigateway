@@ -303,6 +303,11 @@ ignore_imports = [
     "apigateway.apps.support.task -> apigateway.biz.ai.constant",
     "apigateway.apps.support.task -> apigateway.biz.ai.ai",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
+    # -- esb legacy
+    "apigateway.apps.esb.*.* -> apigateway.biz.*",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
+    "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
     # 需要重构的依赖
 ]
 
@@ -354,5 +359,12 @@ ignore_imports = [
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
+    # -- esb legacy
+    "apigateway.apps.esb.*.* -> apigateway.core.models",
+    "apigateway.apps.esb.*.* -> apigateway.core.constants",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*",
+    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
+    "apigateway.apps.esb.*.* -> apigateway.components.*",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
 ]
 
