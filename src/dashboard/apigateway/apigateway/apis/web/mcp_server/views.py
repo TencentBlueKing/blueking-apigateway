@@ -78,7 +78,6 @@ from .serializers import (
     MCPServerToolDocOutputSLZ,
     MCPServerToolOutputSLZ,
     MCPServerUpdateInputSLZ,
-    MCPServerUpdateLabelsInputSLZ,
     MCPServerUpdateStatusInputSLZ,
     MCPServerUserCustomDocInputSLZ,
     MCPServerUserCustomDocOutputSLZ,
@@ -356,41 +355,6 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
 class MCPServerUpdateStatusApi(generics.UpdateAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerUpdateStatusInputSLZ
-    lookup_url_kwarg = "mcp_server_id"
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        data_before = get_model_dict(instance)
-
-        slz = self.get_serializer(instance, data=request.data)
-        slz.is_valid(raise_exception=True)
-        slz.save(updated_by=request.user.username)
-
-        Auditor.record_mcp_server_op_success(
-            op_type=OpTypeEnum.MODIFY,
-            username=request.user.username,
-            gateway_id=self.request.gateway.id,
-            instance_id=instance.id,
-            instance_name=instance.name,
-            data_before=data_before,
-            data_after=get_model_dict(slz.instance),
-        )
-
-        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
-
-
-@method_decorator(
-    name="patch",
-    decorator=swagger_auto_schema(
-        operation_description="更新 MCPServer 标签",
-        request_body=MCPServerUpdateLabelsInputSLZ,
-        responses={status.HTTP_204_NO_CONTENT: ""},
-        tags=["WebAPI.MCPServer"],
-    ),
-)
-class MCPServerUpdateLabelsApi(generics.UpdateAPIView):
-    queryset = MCPServer.objects.all()
-    serializer_class = MCPServerUpdateLabelsInputSLZ
     lookup_url_kwarg = "mcp_server_id"
 
     def update(self, request, *args, **kwargs):

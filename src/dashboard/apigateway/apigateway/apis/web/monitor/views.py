@@ -23,7 +23,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
-from apigateway.biz.monitor import MonitorHandler
 from apigateway.common.factories import SchemaFactory
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -32,8 +31,6 @@ from . import filters
 from .serializers import (
     AlarmRecordQueryInputSLZ,
     AlarmRecordQueryOutputSLZ,
-    AlarmRecordSummaryQueryInputSLZ,
-    AlarmRecordSummaryQueryOutputSLZ,
     AlarmStrategyInputSLZ,
     AlarmStrategyListOutputSLZ,
     AlarmStrategyQueryInputSLZ,
@@ -242,31 +239,3 @@ class AlarmRecordRetrieveApi(generics.RetrieveAPIView):
         instance = self.get_object()
         slz = self.get_serializer(instance)
         return OKJsonResponse(data=slz.data)
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        query_serializer=AlarmRecordSummaryQueryInputSLZ,
-        responses={status.HTTP_200_OK: AlarmRecordSummaryQueryOutputSLZ(many=True)},
-        operation_description="获取告警记录统计",
-        tags=["WebAPI.Monitor"],
-    ),
-)
-class AlarmRecordSummaryListApi(generics.ListAPIView):
-    def get_queryset(self):
-        return AlarmRecord.objects.all()
-
-    def list(self, request, *args, **kwargs):
-        slz = AlarmRecordSummaryQueryInputSLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        data = slz.validated_data
-
-        results = MonitorHandler.statistics_gateway_alarm_record(
-            username=self.request.user.username,
-            time_start=data.get("time_start"),
-            time_end=data.get("time_end"),
-        )
-
-        return OKJsonResponse(data=results)

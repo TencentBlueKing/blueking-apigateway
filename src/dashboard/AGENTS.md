@@ -158,6 +158,21 @@ make edition-reset    # clear edition symlinks
 make edition-modules  # create __init__.pyi files for mypy compatibility
 ```
 
+## Git & Pull Request Workflow
+
+### Repository structure (fork model)
+
+```
+origin   → https://github.com/<USERNAME>/blueking-apigateway.git       # personal fork — push branches here
+upstream → https://github.com/TencentBlueKing/blueking-apigateway.git  # main repo — PRs target here
+```
+
+## After Code Changes
+
+Always run `make lint` and `make test` after making code changes and fix any issues before considering the work done.
+
+When asked to "make a PR", create the pull request targeting `upstream/master`.
+
 ## Naming Convention: Gateway vs API
 
 Legacy code uses `API`/`api`/`api_id` to refer to gateways. All new code must use `Gateway`. The `api` naming persists in:

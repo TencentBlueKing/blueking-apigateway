@@ -239,32 +239,3 @@ class AlarmStrategyQueryInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategyQueryInputSLZ"
-
-
-class AlarmRecordSummaryQueryInputSLZ(serializers.Serializer):
-    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
-    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordSummaryQueryInputSLZ"
-
-
-class AlarmStrategySummaryQuerySLZ(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True, help_text="策略 id")
-    name = serializers.CharField(read_only=True, help_text="策略名称")
-    alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
-    latest_alarm_record = serializers.DictField(read_only=True, help_text="最新告警记录")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.monitor.serializers.AlarmStrategySummaryQuerySLZ"
-
-
-class AlarmRecordSummaryQueryOutputSLZ(serializers.Serializer):
-    gateway = serializers.DictField(read_only=True, help_text="网关")
-    alarm_record_count = serializers.IntegerField(read_only=True, help_text="告警记录总数")
-    strategy_summary = serializers.ListField(
-        child=AlarmStrategySummaryQuerySLZ(), read_only=True, help_text="策略汇总"
-    )
-
-    class Meta:
-        ref_name = "apigateway.apis.web.monitor.serializers.AlarmRecordSummaryQueryOutputSLZ"

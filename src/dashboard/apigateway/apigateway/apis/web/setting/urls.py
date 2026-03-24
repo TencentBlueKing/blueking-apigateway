@@ -18,10 +18,11 @@
 #
 from django.urls import path
 
-from .views import EnvVarListApi, FeatureFlagListApi, UserAuthTypeRetrieveApi
+from .views import EnvVarListApi, FeatureFlagListApi
 
 urlpatterns = [
-    path("user_auth_type/", UserAuthTypeRetrieveApi.as_view(), name="settings.user_auth_type"),
+    # FIXME: not used? commented out in 2026-03-23, remove in the future
+    # path("user_auth_type/", UserAuthTypeRetrieveApi.as_view(), name="settings.user_auth_type"),
     path("feature-flags/", FeatureFlagListApi.as_view(), name="settings.feature_flags"),
     path("env-vars/", EnvVarListApi.as_view(), name="settings.env_vars"),
 ]

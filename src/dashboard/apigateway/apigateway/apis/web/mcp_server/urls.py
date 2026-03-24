@@ -35,7 +35,6 @@ from .views import (
     MCPServerStageReleaseCheckApi,
     MCPServerToolDocRetrieveApi,
     MCPServerToolsListApi,
-    MCPServerUpdateLabelsApi,
     MCPServerUpdateStatusApi,
     MCPServerUserCustomDocApi,
 )
@@ -57,7 +56,8 @@ urlpatterns = [
             [
                 path("", MCPServerRetrieveUpdateDestroyApi.as_view(), name="mcp_server.retrieve_update_destroy"),
                 path("status/", MCPServerUpdateStatusApi.as_view(), name="mcp_server.update_status"),
-                path("labels/", MCPServerUpdateLabelsApi.as_view(), name="mcp_server.update_labels"),
+                # FIXME: not used? commented out in 2026-03-23, remove in the future
+                # path("labels/", MCPServerUpdateLabelsApi.as_view(), name="mcp_server.update_labels"),
                 path(
                     "tools/",
                     include(

@@ -561,16 +561,6 @@ class MCPServerUpdateStatusInputSLZ(serializers.ModelSerializer):
         return status
 
 
-class MCPServerUpdateLabelsInputSLZ(serializers.ModelSerializer):
-    labels = serializers.ListField(child=serializers.CharField(), required=True, help_text="MCPServer 标签列表")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerUpdateLabelsInputSLZ"
-        model = MCPServer
-        fields = ("labels",)
-        lookup_field = "id"
-
-
 class MCPServerToolOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
