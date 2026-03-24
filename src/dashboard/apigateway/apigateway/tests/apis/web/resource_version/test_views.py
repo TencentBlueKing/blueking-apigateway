@@ -95,7 +95,6 @@ class TestResourceVersionListCreateApi:
         expected_release_stages.sort(key=operator.itemgetter("name"))
         assert released_stages == expected_release_stages
 
-
     def test_list_deletable_true(self, request_view, fake_gateway):
         """When no release and no SDK, deletable should be True."""
         resource_version = G(

@@ -32,7 +32,7 @@ from apigateway.apps.openapi.models import (
 )
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import (
