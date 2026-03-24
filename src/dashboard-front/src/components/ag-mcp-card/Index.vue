@@ -52,7 +52,7 @@
         v-if="showActions"
         class="header-actions"
       >
-        <div class="ml-8px mr-8px button-group">
+        <div class="mx-8px button-group">
           <BkButton
             v-if="server.status"
             size="small"
@@ -134,6 +134,13 @@
           {{ server?.stage?.name }}
         </BkTag>
       </BkOverflowTitle>
+
+      <BkTag
+        class="mr-8px"
+        :theme="server?.is_public ? 'success' : 'warning'"
+      >
+        {{ t(server?.is_public ? '公开' : '不公开') }}
+      </BkTag>
 
       <template v-if="categoriesFilter?.length">
         <template

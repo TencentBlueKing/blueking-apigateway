@@ -37,7 +37,7 @@
             />
           </div>
           <BkTag :theme="server.status === 1 ? 'success' : 'warning'">
-            {{ t( server.status === 1 ? '启用中' : '未启用') }}
+            {{ t(server.status === 1 ? '启用中' : '未启用') }}
           </BkTag>
         </div>
         <div class="mt-8px flex items-center flex-col">
@@ -72,6 +72,16 @@
                 class="apigateway-icon icon-ag-copy-info"
                 @click.self.stop="copy(server.url)"
               />
+            </div>
+          </div>
+          <div class="apigw-form-item">
+            <div class="label">
+              {{ t('是否公开') }}:
+            </div>
+            <div class="value">
+              <BkTag :theme="server?.is_public ? 'success' : 'warning'">
+                {{ t(server?.is_public ? '公开' : '不公开') }}
+              </BkTag>
             </div>
           </div>
           <div class="apigw-form-item">

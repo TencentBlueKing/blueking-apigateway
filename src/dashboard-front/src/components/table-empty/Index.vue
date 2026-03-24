@@ -49,7 +49,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from 'lodash-es';
-import i18n from '@/locales';
+import { t } from '@/locales';
 
 interface IProps {
   emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'refresh'
@@ -69,8 +69,6 @@ const emit = defineEmits<{
   'clear-filter': void
   'refresh': void
 }>();
-
-const { t } = i18n.global;
 
 const exceptionAttrs = computed(() => {
   if (error || ['error'].includes(emptyType)) {
