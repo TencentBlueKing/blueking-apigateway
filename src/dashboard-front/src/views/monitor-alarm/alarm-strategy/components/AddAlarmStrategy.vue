@@ -373,6 +373,7 @@
                       allow-create
                       has-delete-icon
                       collapse-tags
+                      :copyable="false"
                     />
                   </BkFormItem>
                 </BkForm>
