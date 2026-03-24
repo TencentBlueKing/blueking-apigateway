@@ -110,9 +110,90 @@
     </template>
     <template #main>
       <div
-        v-show="resourceGroupLength"
+        v-show="resourceGroupLength && !!curComponentName"
         class="resize-main"
       >
+        <div
+          ref="tabContainerRef"
+          class="resource-tab"
+        >
+          <div
+            class="resource-list"
+          >
+            <div
+              v-for="resource in resourceTabs"
+              :key="resource?.id"
+              class="name"
+              :class="{ 'active': curResource?.id === resource?.id }"
+              :style="{ flex: `0 0 ${tabWidth}`, width: tabWidth }"
+              @click="handleResourceSwitch(resource)"
+            >
+              <span
+                :title="resource?.name"
+                class="tab-text"
+              >{{ resource?.name }}</span>
+              <AgIcon
+                name="icon-close"
+                class="icon-close"
+                size="16"
+                @click.stop="handleCloseTab(resource)"
+              />
+            </div>
+          </div>
+          <div class="tools">
+            <BkSelect
+              v-model="selectedResourceId"
+              class="bk-select"
+              :placeholder="t('搜索')"
+              :popover-min-width="188"
+              :input-search="false"
+              filterable
+              @change="handleAddResource"
+            >
+              <template #trigger>
+                <AgIcon
+                  name="add-small"
+                  size="24"
+                  class="tool icon-add"
+                />
+              </template>
+              <template v-for="group in resourceGroup">
+                <BkOptionGroup
+                  v-if="group?.resources?.length"
+                  :key="group.labelId"
+                  :label="group.labelName"
+                  collapsible
+                >
+                  <BkOption
+                    v-for="component in group.resources"
+                    :id="component.id"
+                    :key="component.id"
+                    :name="component.name"
+                  />
+                </BkOptionGroup>
+              </template>
+            </BkSelect>
+
+            <BkDropdown>
+              <AgIcon
+                name="gengduo"
+                size="24"
+                class="tool icon-more"
+              />
+              <template #content>
+                <BkDropdownMenu>
+                  <BkDropdownItem
+                    v-for="item in dropdownList"
+                    :key="item.id"
+                    @click="handleResourceClose(item.id)"
+                  >
+                    {{ item.name }}
+                  </BkDropdownItem>
+                </BkDropdownMenu>
+              </template>
+            </BkDropdown>
+          </div>
+        </div>
         <div class="request-setting-title">
           <div
             class="request-source-name"
@@ -345,7 +426,7 @@
       </div>
 
       <div
-        v-show="!resourceGroupLength"
+        v-show="!resourceGroupLength || !curComponentName"
         class="exception-part"
       >
         <BkException
@@ -412,7 +493,7 @@ import ResponseContent from '@/views/online-debugging/components/ResponseContent
 import Doc from '@/views/online-debugging/components/Doc.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
-import { useEnv, useGateway } from '@/stores';
+import { useEnv, useGateway, useResourceDebugging } from '@/stores';
 import {
   getApiDetail,
   getResourcesOnline,
@@ -420,9 +501,11 @@ import {
   postAPITest,
   resourceSchema,
 } from '@/services/source/online-debugging';
+import AgIcon from '@/components/ag-icon/Index.vue';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
+const resourceDebuggingStore = useResourceDebugging();
 const router = useRouter();
 const route = useRoute();
 const envStore = useEnv();
@@ -520,6 +603,153 @@ const userCookies = reactive<any>({
 });
 const response = ref<any>({});
 
+const resourceTabs = ref([]);
+const autoSelectFirstResource = ref(true);
+const dropdownList = ref([
+  {
+    name: t('关闭全部标签页'),
+    id: 'close_all',
+  },
+  {
+    name: t('关闭当前标签页'),
+    id: 'close_current',
+  },
+  {
+    name: t('关闭其他标签页'),
+    id: 'close_others',
+  },
+]);
+const selectedResourceId = ref('');
+const tabContainerRef = ref<HTMLElement | null>(null);
+const containerWidth = ref(0);
+const toolsWidth = ref(0);
+
+const availableTabWidth = computed(() => {
+  const width = containerWidth.value - toolsWidth.value;
+  return width > 0 ? width : 0;
+});
+
+const TAB_MIN_WIDTH = 100;
+const TAB_MAX_WIDTH = 168;
+
+const tabWidth = computed(() => {
+  if (!availableTabWidth.value || resourceTabs.value.length === 0) {
+    return `${TAB_MIN_WIDTH}px`;
+  }
+  const width = availableTabWidth.value / resourceTabs.value.length;
+  const finalWidth = Math.min(TAB_MAX_WIDTH, Math.max(TAB_MIN_WIDTH, width));
+  return `${finalWidth}px`;
+});
+
+const willExceedMinWidth = (addCount = 1) => {
+  if (!availableTabWidth.value) return false;
+  const finalCount = resourceTabs.value.length + addCount;
+  if (finalCount === 0) return false;
+  return availableTabWidth.value / finalCount < TAB_MIN_WIDTH;
+};
+
+const showTabLimitMessage = () => {
+  Message({
+    theme: 'warning',
+    message: t('已达到页签数量上限，请先删除部分页签再创建新的页签'),
+  });
+};
+
+let tabResizeObserver: ResizeObserver | null = null;
+let toolsResizeObserver: ResizeObserver | null = null;
+
+const updateToolsWidth = (el: HTMLElement) => {
+  const style = getComputedStyle(el);
+  const marginLeft = parseFloat(style.marginLeft) || 0;
+  const marginRight = parseFloat(style.marginRight) || 0;
+  toolsWidth.value = el.getBoundingClientRect().width + marginLeft + marginRight;
+};
+
+const updateTabContainerWidth = (entry: ResizeObserverEntry) => {
+  containerWidth.value = entry.contentRect.width;
+
+  const toolsEl = tabContainerRef.value?.querySelector<HTMLElement>('.tools');
+  if (toolsEl) {
+    updateToolsWidth(toolsEl);
+  }
+  else {
+    toolsWidth.value = 0;
+  }
+};
+
+const clearDebuggingCacheData = (names: string[]) => {
+  if (!names?.length) return;
+
+  names.forEach((name) => {
+    resourceDebuggingStore.setResourceSettings(name, {});
+  });
+};
+
+const handleResourceClose = (type: string) => {
+  switch (type) {
+    case 'close_all':
+      clearDebuggingCacheData(resourceTabs.value.map((item: any) => item.name));
+      resourceTabs.value = [];
+      curResource.value = {};
+      curComponentName.value = '';
+      activeName.value = [];
+      autoSelectFirstResource.value = false;
+      break;
+    case 'close_current':
+      if (curResource.value?.id) {
+        const currentIndex = resourceTabs.value.findIndex((item: any) => item.id === curResource.value.id);
+        if (currentIndex !== -1) {
+          clearDebuggingCacheData([resourceTabs.value[currentIndex].name]);
+          resourceTabs.value.splice(currentIndex, 1);
+          if (resourceTabs.value.length > 0) {
+            const newIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+            const newResource = resourceTabs.value[newIndex];
+            handleDebuggingCacheData(newResource, false);
+          }
+          else {
+            curResource.value = {};
+            curComponentName.value = '';
+          }
+        }
+      }
+      break;
+    case 'close_others':
+      if (curResource.value?.id) {
+        clearDebuggingCacheData
+        (resourceTabs.value.filter((item: any) => item.id !== curResource.value.id).map((item: any) => item.name),
+        );
+        resourceTabs.value = resourceTabs.value.filter((item: any) => item.id === curResource.value.id);
+      }
+      break;
+  }
+};
+
+onMounted(() => {
+  if (!tabContainerRef.value) return;
+
+  tabResizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      updateTabContainerWidth(entry);
+    }
+  });
+  tabResizeObserver.observe(tabContainerRef.value);
+
+  const toolsEl = tabContainerRef.value.querySelector<HTMLElement>('.tools');
+  if (toolsEl) {
+    toolsResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        updateToolsWidth(entry.target as HTMLElement);
+      }
+    });
+    toolsResizeObserver.observe(toolsEl);
+  }
+});
+
+onBeforeUnmount(() => {
+  tabResizeObserver?.disconnect();
+  toolsResizeObserver?.disconnect();
+});
+
 const apigwId = computed(() => gatewayStore.apigwId);
 
 const isDefaultAppAuth = computed(() => formData.value.appAuth === 'use_test_app');
@@ -575,12 +805,19 @@ const resourceGroup = computed(() => {
     }
   }
 
-  // 默认选中第一个标签的第一个资源
-  if (!curComponentName.value) {
-    activeName.value = [Object.keys(group)[0]];
-    curResource.value = group[Object.keys(group)[0]]?.resources[0];
-    curComponentName.value = curResource.value?.name;
-    getResourceParams();
+  // 默认选择：仅页面首次加载时生效
+  if (autoSelectFirstResource.value && !curComponentName.value) {
+    if (Object.keys(group).length > 0) {
+      activeName.value = [Object.keys(group)[0]];
+      const firstResource = group[Object.keys(group)[0]]?.resources[0];
+      if (firstResource) {
+        curResource.value = firstResource;
+        curComponentName.value = firstResource?.name;
+        resourceTabs.value = [firstResource];
+        getResourceParams();
+        autoSelectFirstResource.value = false; // 若选中成功则禁用自动选中
+      }
+    }
   }
 
   return group;
@@ -810,11 +1047,18 @@ const handleShowDoc = (resource: any) => {
     return;
   }
 
-  curResource.value = resource;
-  curComponentName.value = resource.name;
-  getResourceParams();
-  responseContentRef.value?.setInit();
-  response.value = {};
+  // 如果当前已达到最大 tab 数，且点击的是未打开的资源，则提示并不创建新 tab
+  if (!resourceTabs.value.some(tab => tab.id === resource.id) && willExceedMinWidth(1)) {
+    showTabLimitMessage();
+    return;
+  }
+
+  // 只在当前 tab 列表中不存在时才添加，避免重复
+  if (!resourceTabs.value.some(tab => tab.id === resource.id)) {
+    resourceTabs.value.push(resource);
+  }
+
+  handleDebuggingCacheData(resource, resourceTabs.value?.length !== 1);
 };
 
 const hightlight = (value: string) => {
@@ -881,6 +1125,147 @@ const handleResponseUnfold = () => {
 const setUserToken = () => {
   // formData.value.authorization[tokenName.value] = '';
   // tokenInputRender.value += 1;
+};
+
+const handleDebuggingCacheData = (resource, save = true) => {
+  // 将当前资源的调试数据保存
+  if (save) {
+    const payload = requestPayloadRef.value?.getData();
+    const { headers } = payload;
+    const { path, query } = payload.params;
+    const { raw } = payload.body;
+    const payloadCache = {
+      headersPayload: headers,
+      queryPayload: query,
+      pathPayload: path,
+      rawPayload: raw,
+      priorityPath: [],
+      fromDataPayload: [],
+    };
+    // formData: formDataList, urlencoded,
+
+    resourceDebuggingStore.setResourceSettings(
+      curResource.value?.name,
+      {
+        payloadType: payloadCache,
+        response: response.value,
+      },
+    );
+  }
+  // 将切换资源的调试数据读取到当前界面
+  curResource.value = resource;
+  curComponentName.value = resource?.name;
+  const settings = resourceDebuggingStore.getResourceSettings(resource.name);
+  if (settings && JSON.stringify(settings) !== '{}') {
+    const {
+      rawPayload,
+      queryPayload,
+      pathPayload,
+      priorityPath,
+      headersPayload,
+      fromDataPayload,
+    } = settings.payloadType;
+
+    // 兼容 rawPayload 可能已经是字符串、对象等多种类型
+    let parsedRawPayload: any = rawPayload;
+    if (typeof rawPayload === 'string' && rawPayload.trim() !== '') {
+      try {
+        parsedRawPayload = JSON.parse(rawPayload);
+      }
+      catch (error) {
+        console.log(error);
+        parsedRawPayload = rawPayload; // 保持原样，避免抛错
+      }
+    }
+    payloadType.rawPayload = parsedRawPayload || {};
+    payloadType.queryPayload = queryPayload || [];
+    payloadType.pathPayload = pathPayload || [];
+    payloadType.priorityPath = priorityPath || [];
+    payloadType.headersPayload = headersPayload || [];
+    payloadType.fromDataPayload = fromDataPayload || [];
+    response.value = settings.response || {};
+  }
+  else {
+    getResourceParams();
+    responseContentRef.value?.setInit();
+    response.value = {};
+  }
+
+  if (JSON.stringify(response.value) === '{}') {
+    handleResponseFold();
+  }
+  else {
+    handleResponseUnfold();
+  }
+};
+
+const handleResourceSwitch = (resource) => {
+  if (resource.id === curResource.value?.id) {
+    return;
+  }
+
+  handleDebuggingCacheData(resource);
+  activeName.value = [...activeName.value, curGroup.value?.labelName];
+};
+
+const handleCloseTab = (resource) => {
+  const index = resourceTabs.value.findIndex(tab => tab.id === resource.id);
+  if (index === -1) return;
+
+  const isCurrent = curResource.value?.id === resource.id;
+
+  // 从 resourceTabs 中移除
+  clearDebuggingCacheData([resourceTabs.value[index].name]);
+  resourceTabs.value.splice(index, 1);
+
+  if (isCurrent && resourceTabs.value.length > 0) {
+    // 如果关闭的是当前活跃的 tab，且还有其他 tab，则切换到前一位资源
+    const newIndex = Math.max(0, index - 1);
+    const newResource = resourceTabs.value[newIndex];
+    handleDebuggingCacheData(newResource, false);
+    activeName.value = [curGroup.value?.labelName];
+  }
+  else if (isCurrent && resourceTabs.value.length === 0) {
+    // 如果没有其他 tab，清空当前资源
+    curResource.value = {};
+    curComponentName.value = '';
+    response.value = {};
+  }
+};
+
+const handleAddResource = () => {
+  if (!selectedResourceId.value) return;
+
+  // 从 resourceGroup 中查找对应的资源对象
+  let targetResource = null;
+  for (const groupKey of Object.keys(resourceGroup.value)) {
+    const group = resourceGroup.value[groupKey];
+    targetResource = group.resources.find((resource: any) => resource.id === selectedResourceId.value);
+    if (targetResource) break;
+  }
+
+  if (!targetResource) {
+    selectedResourceId.value = '';
+    return;
+  }
+
+  // 如果新增后会导致每个 tab 宽度低于最小值，则提示并返回
+  if (!resourceTabs.value.some(tab => tab.id === targetResource.id) && willExceedMinWidth(1)) {
+    showTabLimitMessage();
+    selectedResourceId.value = '';
+    return;
+  }
+
+  // 切换到该资源（无论是否已存在于 tabs）
+  handleDebuggingCacheData(targetResource);
+
+  // 如果未在 tabs 中，则添加
+  if (!resourceTabs.value.some(tab => tab.id === targetResource.id)) {
+    resourceTabs.value.push(targetResource);
+  }
+
+  // 清空选择
+  selectedResourceId.value = '';
 };
 
 const handleEditAppAuth = () => {
@@ -1026,7 +1411,7 @@ const handleSend = async (e: Event) => {
     const res = await postAPITest(apigwId.value, data);
     response.value = res;
 
-    setAsideHeight(400);
+    handleResponseUnfold();
   }
   catch (e) {
     console.log(e);
@@ -1057,14 +1442,42 @@ const openTab = (name?: string) => {
 };
 
 const handleRetry = (row: Record<string, any>) => {
+  const { resource_name } = row;
+
+  if (resource_name === curResource.value?.name) {
+    return;
+  }
+
+  for (const key of Object.keys(resourceGroup.value)) {
+    const cur = resourceGroup.value[key];
+    const match = cur?.resources?.find((item: any) => {
+      return item.name === resource_name;
+    });
+    if (match) {
+      // 如果当前已达到最大 tab 数，且当前资源未打开，则提示并退出
+      if (!resourceTabs.value.some(tab => tab.id === match.id) && willExceedMinWidth(1)) {
+        showTabLimitMessage();
+        break;
+      }
+
+      activeName.value = key;
+      curResource.value = match;
+      curComponentName.value = curResource.value?.name;
+
+      // 如果未在 tabs 中，则添加
+      if (!resourceTabs.value.some(tab => tab.id === match.id)) {
+        resourceTabs.value.push(match);
+      }
+      break;
+    }
+  }
+
   const {
     path_params,
     query_params,
     headers,
     body,
   } = row.request;
-  const { resource_name } = row;
-
   const pathList: any[] = [];
   Object.keys(path_params)?.forEach((key: string) => {
     pathList.push({
@@ -1097,22 +1510,6 @@ const handleRetry = (row: Record<string, any>) => {
   payloadType.priorityPath = [];
   payloadType.fromDataPayload = [];
 
-  if (resource_name === curResource.value?.name) {
-    return;
-  }
-
-  for (const key of Object.keys(resourceGroup.value)) {
-    const cur = resourceGroup.value[key];
-    const match = cur?.resources?.find((item: any) => {
-      return item.name === resource_name;
-    });
-    if (match) {
-      activeName.value = key;
-      curResource.value = match;
-      curComponentName.value = curResource.value?.name;
-      break;
-    }
-  }
   responseContentRef.value?.setInit();
   response.value = {};
 };
@@ -1153,6 +1550,8 @@ init();
     padding: 24px 0;
     background: #FFF;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 
     .source-title {
       padding: 0 24px;
@@ -1340,7 +1739,8 @@ init();
 }
 
 .my-menu {
-  max-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
 
   :deep(.icon-angle-right) {
@@ -1504,6 +1904,102 @@ init();
   .exception-wrap-item {
     height: 100%;
     justify-content: center;
+  }
+}
+
+.resource-tab {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #DCDEE5;
+  .resource-list {
+    display: flex;
+    align-items: center;
+    .name {
+      min-width: 100px;
+      padding: 10px 24px;
+      box-sizing: border-box;
+      color: #4d4f56;
+      font-size: 14px;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+
+      .tab-text {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .icon-close {
+        position: absolute;
+        display: none;
+        right: 6px;
+        top: 6px;
+      }
+      &:hover {
+        .icon-close {
+          display: block;
+          border-radius: 7px;
+          color: #4D4F56;
+          background: #D9D9D9;
+        }
+      }
+      &::before {
+        content: ' ';
+        position: absolute;
+        width: 1px;
+        height: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 0;
+        background: #D9D9D9;
+      }
+      &.active {
+        background-color: #FFFFFF;
+        color: #3A84FF;
+        border-top: 2px solid #3A84FF;
+        margin-bottom: -1px;
+        border-bottom: 1px solid #FFFFFF;
+        &:hover {
+          .icon-close {
+            display: block;
+            color: #979BA5;
+            background: #FFFFFF;
+          }
+        }
+        &::before {
+          height: 100%;
+          top: 0;
+          transform: translateY(0);
+        }
+        &::after {
+          content: ' ';
+          position: absolute;
+          width: 1px;
+          height: 100%;
+          top: 0;
+          left: 0;
+          background: #D9D9D9;
+        }
+      }
+    }
+  }
+  .tools {
+    margin-left: 6px;
+    display: flex;
+    align-items: center;
+    .tool {
+      margin: 10px 7px;
+      cursor: pointer;
+      &:hover {
+        background-color: #FFFFFF;
+        border-radius: 4px;
+      }
+    }
   }
 }
 </style>
