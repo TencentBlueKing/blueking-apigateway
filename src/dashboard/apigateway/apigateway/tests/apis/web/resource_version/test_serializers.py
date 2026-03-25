@@ -97,6 +97,7 @@ class TestResourceVersionListOutputSLZ:
                 ],
                 "created_by": "x",
                 "created_time": "2019-01-01 20:30:00",
+                "deletable": False,
             },
         ]
 

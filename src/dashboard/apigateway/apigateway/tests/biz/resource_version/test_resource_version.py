@@ -22,10 +22,11 @@ import json
 import pytest
 from django_dynamic_fixture import G
 
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.core.models import Gateway, ResourceVersion, Stage
+from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -266,3 +267,56 @@ class TestResourceVersionHandler:
         )
         resource_schema = ResourceVersionHandler.get_resource_schema(fake_resource_version.id, fake_resource.id)
         assert resource_schema["requestBody"] == fake_resource_schema_with_body.schema["requestBody"]
+
+    def test_is_resource_version_referenced_by_release(self, fake_gateway):
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is False
+
+        stage = G(Stage, gateway=fake_gateway, status=1)
+        G(Release, gateway=fake_gateway, stage=stage, resource_version=rv)
+        assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is True
+
+    def test_is_resource_version_referenced_by_sdk(self, fake_gateway):
+        rv = G(ResourceVersion, gateway=fake_gateway, version="2.0.0")
+        assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is False
+
+        G(GatewaySDK, gateway=fake_gateway, resource_version=rv)
+        assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is True
+
+    def test_is_resource_version_referenced_not_referenced(self, fake_gateway):
+        rv = G(ResourceVersion, gateway=fake_gateway, version="3.0.0")
+        assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is False
+
+    def test_delete_resource_version(self, fake_gateway):
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        rv_id = rv.id
+
+        G(ReleasedResourceDoc, gateway=fake_gateway, resource_version_id=rv_id, resource_id=1, language="zh")
+        G(
+            ReleasedResource,
+            gateway=fake_gateway,
+            resource_version_id=rv_id,
+            resource_id=1,
+            resource_name="test",
+            resource_method="GET",
+            resource_path="/test",
+        )
+        G(ResourceDocVersion, gateway=fake_gateway, resource_version=rv)
+        G(OpenAPIResourceSchemaVersion, resource_version=rv, schema=[])
+        G(OpenAPIFileResourceSchemaVersion, gateway=fake_gateway, resource_version=rv, schema="")
+
+        assert ResourceVersion.objects.filter(id=rv_id).exists()
+        assert ReleasedResourceDoc.objects.filter(resource_version_id=rv_id).exists()
+        assert ReleasedResource.objects.filter(resource_version_id=rv_id).exists()
+        assert ResourceDocVersion.objects.filter(resource_version_id=rv_id).exists()
+        assert OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()
+        assert OpenAPIFileResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()
+
+        ResourceVersionHandler.delete_resource_version(rv_id)
+
+        assert not ResourceVersion.objects.filter(id=rv_id).exists()
+        assert not ReleasedResourceDoc.objects.filter(resource_version_id=rv_id).exists()
+        assert not ReleasedResource.objects.filter(resource_version_id=rv_id).exists()
+        assert not ResourceDocVersion.objects.filter(resource_version_id=rv_id).exists()
+        assert not OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()
+        assert not OpenAPIFileResourceSchemaVersion.objects.filter(resource_version_id=rv_id).exists()

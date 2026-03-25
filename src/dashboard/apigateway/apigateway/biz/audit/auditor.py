@@ -289,6 +289,7 @@ class Auditor:
         if comment is None:
             comment = {
                 OpTypeEnum.CREATE: "生成版本",
+                OpTypeEnum.DELETE: "删除版本",
             }.get(op_type, "-")
 
         record_audit_log(
