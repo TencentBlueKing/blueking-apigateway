@@ -83,7 +83,6 @@ class MCPServerLogTimeChartRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        query_serializer=MCPServerLogQueryInputSLZ,
         responses={status.HTTP_200_OK: MCPServerLogOutputSLZ(many=True)},
         operation_description="查询 MCP Server 日志列表",
         tags=["WebAPI.MCPServer.Log"],

@@ -321,7 +321,8 @@ class MCPServerLogChainSearchClient:
 
         try:
             # 使用已有的 access_log LogSearchClient 查询
-            client = LogSearchClient(request_id=self._request_id)
+            # x_request_id 对应 bk-apigateway 的 request_id
+            client = LogSearchClient(request_id=x_request_id)
             total_count, logs = client.search_logs(offset=0, limit=1)
             if logs:
                 log = logs[0]
@@ -347,6 +348,6 @@ class MCPServerLogChainSearchClient:
                     "code_name": log.get("code_name"),
                 }
         except Exception:
-            logger.exception("failed to search gateway log for request_id=%s", self._request_id)
+            logger.exception("failed to search gateway log for x_request_id=%s", x_request_id)
 
         return None

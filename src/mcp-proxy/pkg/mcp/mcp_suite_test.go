@@ -26,11 +26,14 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
+	"mcp_proxy/pkg/metric"
 )
 
 var _ = BeforeSuite(func() {
 	// Initialize logger for tests
 	logging.InitLogger(&config.Config{})
+	// Initialize metrics so that metric.MCPRequestTotal etc. are not nil
+	metric.InitMetrics("")
 })
 
 func TestMcp(t *testing.T) {
