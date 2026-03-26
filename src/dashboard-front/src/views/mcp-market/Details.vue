@@ -67,16 +67,8 @@
               >
                 {{ t('官方') }}
               </BkTag>
-              <BkTag
-                theme="info"
-                class="mr-8px"
-              >
+              <BkTag theme="info">
                 {{ mcpDetails?.stage?.name }}
-              </BkTag>
-              <BkTag
-                :theme="mcpDetails?.is_public ? 'success' : 'warning'"
-              >
-                {{ t(mcpDetails?.is_public ? '公开' : '不公开') }}
               </BkTag>
               <div
                 v-if="mcpDetails?.oauth2_public_client_enabled"
