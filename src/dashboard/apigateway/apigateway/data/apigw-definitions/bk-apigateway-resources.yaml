@@ -3763,6 +3763,7 @@ paths:
         allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
+        noneSchema: true
         backend:
           name: default
           method: get
