@@ -136,6 +136,7 @@
       </BkOverflowTitle>
 
       <BkTag
+        v-if="showPublic"
         class="mr-8px"
         :theme="server?.is_public ? 'success' : 'warning'"
       >
@@ -238,6 +239,7 @@ import AgDescription from '@/components/ag-description/Index.vue';
 interface IProps {
   server?: IMCPServer
   showActions?: boolean
+  showPublic?: boolean
   oauth2Tooltip?: string
 }
 
@@ -251,6 +253,7 @@ interface IEmits {
 const {
   server = {},
   showActions = true,
+  showPublic = true,
   oauth2Tooltip = '',
 } = defineProps<IProps>();
 

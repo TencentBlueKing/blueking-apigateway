@@ -389,7 +389,7 @@ const setResizeMainStyle = computed(() => {
   return { height: `calc(100vh - ${offsetH}px)` };
 });
 
-watch(() => server, () => {
+watch(() => server?.id, () => {
   fetchToolList();
 }, { deep: true });
 
