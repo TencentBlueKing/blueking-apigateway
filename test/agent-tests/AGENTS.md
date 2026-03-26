@@ -2,17 +2,17 @@
 
 This file contains hard-won knowledge from executing test cases against the BlueKing API Gateway dashboard. **Read this before running any test cases** — it will save hours of trial and error.
 
-## Last Run Summary (2026-03-25)
+## Last Run Summary (2026-03-25, run 2)
 
-**835 cases, 31 modules, ~2.5 hours total.**
+**835 cases, 31 modules, ~15 minutes total.**
 
 | Metric | Count | % |
 |--------|-------|---|
-| ✅ Passed | 812 | 97.2% |
-| ❌ Failed | 19 | 2.3% |
-| 🚫 Blocked | 4 | 0.5% |
+| ✅ Passed | 816 | 97.7% |
+| ❌ Failed | 5 | 0.6% |
+| 🚫 Blocked | 14 | 1.7% |
 
-Full report: `test/agent-tests/reports/2026-03-25T14-50-00/report.md`
+Full report: `test/agent-tests/reports/2026-03-25T18-43-37/report.md`
 
 ---
 
@@ -89,7 +89,13 @@ Navigate to each page and verify content loads. These are mostly read-only view/
 
 ### Phase 6: Cleanup
 
-Navigate to test gateway basic info → 停用 → then delete. If 停用 button not found, note in report for manual cleanup.
+Navigate to test gateway basic info → click `停用` button → confirm → page reloads → click `删除` button (text is just `删除`, NOT `删除网关`) → type gateway name in confirmation input if prompted → confirm → verify redirect to home.
+
+**CRITICAL cleanup gotchas:**
+1. After `停用`, the page reloads. You MUST `await page.reload()` or `page.waitForTimeout(2000)` before looking for the `删除` button.
+2. The delete button text is **`删除`** (plain), NOT `删除网关`.
+3. The confirmation dialog may require typing the gateway name.
+4. On successful deletion, you're redirected to home page with toast "删除成功".
 
 ---
 
@@ -160,14 +166,28 @@ await page.getByText('新建网关').waitFor({ timeout: 10000 });
 The create gateway form is a **sideslider** (not a dialog). Key details:
 
 - **Open**: Click `新建网关` button on home page
-- **Type selector**: Radio buttons — `普通网关` (kind=0) / `可编程网关` (kind=1)
+- **Type selector**: **`bk-radio-button`** (NOT BkSelect dropdown, NOT standard radio input). Use: `page.locator('.bk-radio-button').filter({ hasText: '可编程网关' }).click({ force: true })`. The radio has class `bk-radio-button`, NOT `.bk-select`.
 - **Name input placeholder** changes by type:
   - Standard: `请输入小写字母、数字、连字符(-)，以小写字母开头`
   - Programmable: `只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)，长度在 3-16 之间`
-- **Name maxlength**: Standard=30, Programmable=16
+- **Name maxlength**: Standard=30, Programmable=16. Because of `maxlength`, you CANNOT type >30/>16 chars — `fill()` silently truncates. No validation error will appear. Test cases expecting an error for "too long" will see truncation instead.
 - **Maintainers**: Pre-filled with current user (admin). Uses `MemberSelector` component (tag-input), NOT a standard input.
 - **Submit button**: Says `提交` (not `确定`)
 - **Close**: Click `.bk-sideslider-close`. If form is dirty, a confirmation infobox (`.bk-infobox`) appears — must click confirm there too.
+- **After submit**: Gateway creation redirects to home page (NOT to the new gateway). The sideslider closes automatically. You must search for the gateway by name to get its ID.
+
+### Finding the name input after switching type
+
+When switching to programmable gateway, the placeholder changes. Use a dynamic search:
+```javascript
+const inputs = page.locator('.bk-sideslider-content input[type="text"]');
+const count = await inputs.count();
+let nameInput = null;
+for (let i = 0; i < count; i++) {
+  const ph = await inputs.nth(i).getAttribute('placeholder').catch(() => '');
+  if (ph && (ph.includes('小写字母') || ph.includes('只能包含'))) { nameInput = inputs.nth(i); break; }
+}
+```
 
 ### Close sideslider helper pattern:
 ```javascript
@@ -209,7 +229,18 @@ This is a **separate page** (not a dialog/sideslider). Fields:
 3. Select "default" from the `li` popup: `page.locator('li').filter({ hasText: 'default' }).last().click()`
 4. Only then will submit succeed
 
-Without selecting the service, you get: `backend.id: 请填写合法的整数值`
+Without selecting the service, you get: `后端服务地址不允许为空，请更新` (if backend service address is empty) or `backend.id: 请填写合法的整数值` (if no service selected at all).
+
+**CRITICAL: Backend service address must be configured FIRST.** A newly created gateway has a "default" backend service with an **empty address**. If you skip configuring it, resource creation will fail with "后端服务地址不允许为空，请更新" even if you select "default" in the dropdown. Configure it via `/:testGwId/backend` → 编辑 → fill `httpbin.org:80` → 保存.
+
+**CRITICAL: Submit button may be below viewport.** The resource create form is long. You MUST scroll the submit button into view before clicking:
+```javascript
+const submitBtn = page.locator('button').filter({ hasText: '提交' }).first();
+await submitBtn.scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+await submitBtn.click({ force: true });
+```
+Without `scrollIntoViewIfNeeded()`, the click silently does nothing — no error, no network request, no navigation.
 
 **Resource name uniqueness**: Names are globally unique per gateway including camelCase equivalents. If `test_resource_one` was ever created (even if deleted), you cannot reuse it. Always use a timestamp suffix: `test_res_${Date.now().toString().slice(-6)}`.
 
@@ -241,15 +272,25 @@ The resource table row has these buttons:
 - **克隆** — navigates to `/:id/resource/clone/:resourceId`
 - **删除** — opens a confirmation popover/dialog
 
-**Gotcha**: There may be other "编辑" buttons on the page (e.g., disabled ones from sidebar). Always scope to `.bk-table-row button:has-text("编辑")`.
+**CRITICAL: Use `tr button` NOT `.bk-table-row button`.** The resource table renders rows as `<tr>` elements, not `.bk-table-row` divs. The correct selector is:
+```javascript
+// CORRECT:
+await page.locator('tr button').filter({ hasText: '编辑' }).first().click({ force: true });
+
+// WRONG — will timeout:
+await page.locator('.bk-table-row button').filter({ hasText: '编辑' }).first().click({ force: true });
+```
+This applies to ALL table action buttons on the resource config page (编辑, 克隆, 删除).
 
 ## Backend Service Page
 
 - Route: `/:id/backend` (NOT `/:id/backend-services`)
-- The "default" service exists automatically for new gateways
-- Edit button is in the table row: `button:has-text("编辑")`
+- The "default" service exists automatically for new gateways **but its address is EMPTY**
+- **You MUST fill the address before creating resources**, otherwise you get "后端服务地址不允许为空"
+- Edit button is in the table row: `button:has-text("编辑")` (use `tr button` or `page.locator('button').filter(...)`, NOT `.bk-table-row button`)
 - Address field placeholder: `格式如：host:port`
 - Use `httpbin.org:80` as test address
+- Save button text: `保存`
 - **Must configure this BEFORE creating resources**, otherwise resources have no backend to connect to
 
 ## Home Page Selectors
@@ -293,7 +334,7 @@ await input.blur();      // THEN blur triggers the error
 ### BkUI component notes
 - **BkSelect**: Options render inside `.bk-select-option`. Readonly input triggers: `input[placeholder="请选择"]`. The 5 selects on resource create page have fixed order (see Resource Config section).
 - **BkSwitcher**: Toggle via `.bk-switcher`. Check state: `el.classList.contains('is-checked')`.
-- **BkTable**: Rows are `.bk-table-row` or `tbody tr`. Header is `thead tr`. Buttons within rows: `.bk-table-row button`.
+- **BkTable**: Rows are `tr` (NOT `.bk-table-row` — this class does NOT exist on resource table). Use `tr button` to find action buttons in rows. Header is `thead tr`.
 - **BkSideslider**: Content in `.bk-sideslider-content`. Footer buttons in `.bk-sideslider-footer` or custom `template #footer`. Close icon: `.bk-sideslider-close`.
 - **BkInfoBox**: Confirmation dialogs (e.g., "are you sure you want to leave?"). Buttons in `.bk-infobox button`. These appear when closing a dirty sideslider.
 - **BkMessage**: Toast notifications. Text in `.bk-message`. Appears briefly after create/update/delete operations.
@@ -301,10 +342,15 @@ await input.blur();      // THEN blur triggers the error
 ### Gateway IDs
 
 When running tests, you need two gateway IDs:
-1. **Read-only gateway**: Use any existing gateway (e.g., ID 6 = bk-apigateway-inner). Only for view/filter/search cases.
+1. **Read-only gateway**: Use `bk-apigateway-inner` (ID=6). Only for view/filter/search cases.
 2. **Test gateway**: Created at start of run. Use for all create/update/delete cases. Clean up at end.
 
-To get an existing gateway ID: navigate to home, click first gateway name, extract ID from URL (`/:id/stage/overview`).
+To get an existing gateway ID: navigate to home, click a gateway name (e.g., `bk-apigateway-inner`), extract ID from URL (`/:id/stage/overview`). The URL pattern is `bktencent.com/<ID>/stage/overview`.
+
+**After creating test gateway**: The form submits and sideslider closes, but you stay on the home page. To get the new gateway ID:
+1. Search for it: `input[placeholder="请输入网关名称"]` → fill name → Enter
+2. Click on it in the results
+3. Extract ID from URL: `url.match(/bktencent\.com\/(\d+)\//)[1]`
 
 ## Known Issues & Failures
 
@@ -313,17 +359,22 @@ To get an existing gateway ID: navigate to home, click first gateway name, extra
 1. **Name empty validation (M01-05, M01-13)**: "请填写名称" doesn't trigger on blur of initially empty field. Must fill-then-clear-then-blur.
 2. **Sort dropdown timing (M01-28)**: `创建时间` option click times out if Escape wasn't pressed to close the overlapping type filter dropdown first.
 3. **Cancel programmable (M01-10)**: Cancel button `.last()` matches a non-visible button when the sideslider is in programmable mode.
+4. **Standard gateway maxlength (M01-04)**: `maxlength=30` on name input prevents typing >30 chars. No validation error is shown — the input is silently truncated. Test case expects "至多为30字符" error but it never appears.
+5. **Programmable first-char validation (M01-14)**: Input `1abcd` does NOT trigger a validation error for programmable gateway name. The regex `只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)` does not enforce "first char must be lowercase letter" — unlike standard gateway. Potential bug or intentional difference.
 
-### Blocked cases (genuinely impossible)
+### Blocked cases (genuinely impossible — 14 total)
 
-1. **Programmable gateway (M01-09/16/17)**: Requires valid git repository URL, account, and password — not available in test environments.
-2. **Idle gateway (M01-35)**: Requires a gateway with zero API calls over 180 days. No way to manufacture this.
-3. **Logout/cookie clear (M01-39/40)**: Would kill the session and block all remaining tests. Test these manually at the very end of a run.
+1. **Programmable gateway create/private (M01-09/16)**: Requires valid git repository URL, account, and password — not available in test environments.
+2. **Programmable gateway features (M01-17/18/19)**: Requires an existing programmable gateway with published resources.
+3. **Idle gateway (M01-35)**: Requires a gateway with zero API calls over 180 days. No way to manufacture this.
+4. **Logout/cookie clear (M01-39/40)**: Would kill the session and block all remaining tests. Test these manually at the very end of a run.
+
+**When encountering blocked cases, mark as BLOCKED immediately and continue. Do NOT spend time trying to work around them.**
 
 ### Environment notes
 
 1. **csrftoken warning**: Every page logs "Can not find csrftoken in document.cookie" — harmless, ignore.
 2. **SDK tab**: Not visible on resource version page for some gateways — may be feature-flag dependent.
 3. **Language switcher**: Located in top-right header but exact selector varies; use `browser_snapshot` to find it dynamically.
-4. **Gateway deletion**: Must 停用 (disable) first, then delete. The basic-info page may not show a delete/停用 button for active gateways. Manual cleanup may be needed.
+4. **Gateway deletion**: Must 停用 (disable) first, then reload page, then click 删除 (just `删除`, NOT `删除网关`). After disable the buttons change from `[停用]` to `[立即启用, 删除]`. May require typing gateway name to confirm.
 5. **Resource name collision**: Deleted resource names remain reserved per gateway (including camelCase variants). Always use unique timestamps.

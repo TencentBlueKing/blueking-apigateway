@@ -186,9 +186,28 @@ The #1 bottleneck is **LLM round-trip overhead per tool call** (~5-10s each). Mi
 
 ### Token Efficiency
 
-**NEVER use `browser_snapshot` in run mode.** Use `browser_run_code` for everything.
+**NEVER use `browser_snapshot` in ANY mode.** Use `browser_run_code` for everything.
 
-**`browser_snapshot`** is ONLY allowed in `generate` mode (discovering unknown pages).
+- In **run mode**: Use `browser_run_code` with batched cases (as described above).
+- In **generate mode**: Use `H.extractPageElements(page)` inside `browser_run_code` instead of `browser_snapshot`. This returns a compact summary (~500-1000 tokens) instead of the full accessibility tree (~20,000-90,000 tokens).
+
+**Use the selector cache** (`test/agent-tests/selector-cache.json`) instead of reading Vue source files at runtime. Read the JSON once at the start of a run to get all selectors, URL mappings, and component patterns. Only fall back to Vue source analysis if a selector is missing from the cache.
+
+**Use the helpers library** (`test/agent-tests/helpers.js`). Read this file once and inject its content (the `const H = { ... };` block) at the top of every `browser_run_code` call. This reduces generated code size and LLM reasoning overhead. Available helpers:
+- `H.dropdown(page, selector, optionText)` — open select + pick option
+- `H.dropdownNth(page, nthIndex, optionText)` — select by nth placeholder index
+- `H.fillAndBlur(page, selector, value)` — fill input + blur for validation
+- `H.triggerEmptyValidation(page, selector)` — fill-clear-blur for empty validation
+- `H.closeSlider(page)` — close sideslider with confirmation handling
+- `H.getFormError(page)` — get first visible form error text
+- `H.checkToast(page, expectedText)` — check toast message
+- `H.tableRowCount(page)` — count visible table rows
+- `H.isVisible(page, selector)` — safe visibility check
+- `H.getText(page, selector)` — safe text extraction
+- `H.reAuth(page, baseUrl, username, password)` — re-authenticate after session expiry
+- `H.failScreenshot(page, caseName, reportDir)` — take failure screenshot
+- `H.addPlugin(page, pluginName)` — 2-step plugin wizard
+- `H.extractPageElements(page)` — compact page element extraction (generate mode)
 
 ### Dropdown Interaction Pattern
 
@@ -214,18 +233,19 @@ Parse the user's input to determine which mode. Default to `run` if no subcomman
 
 ## Run Mode: `/agent-test run`
 
-### Step 1: Pre-Analyze Pages (Source Code First)
+### Step 1: Load Selector Cache and Parse Cases
 
-Before touching the browser, understand what you'll be testing:
+Before touching the browser, load resources and understand what you'll be testing:
 
-1. Read all test case files from the cases directory
-2. Extract the **Page** field from each case (e.g., `/`, `/gateways/123/resources`)
-3. **Group cases by Page** — this determines your batching
-4. For each unique page, read the corresponding Vue component:
-   - Read the router config at `src/dashboard-front/src/router/index.ts` to map URL paths to component files
-   - Read the Vue component file (e.g., `src/dashboard-front/src/views/home/Index.vue` for `/`)
-   - Extract: element selectors, CSS classes, component structure, v-model bindings, event handlers
-5. Build a **selector map** for each page — used in `browser_run_code` calls
+1. **Read the selector cache**: `test/agent-tests/selector-cache.json` — contains all selectors, URL mappings, component patterns
+2. **Read the helpers library**: `test/agent-tests/helpers.js` — will be injected into `browser_run_code` calls
+3. Read all test case files from the cases directory
+4. Extract the **Page** field from each case (e.g., `/`, `/gateways/123/resources`)
+5. **Group cases by Page** — this determines your batching
+6. Map each page to its selectors using `selector-cache.json` (key: page name, value: selectors object)
+7. Use `urlRouteMap` from the cache to translate test case page patterns to actual Vue routes
+
+**Only read Vue source files if a needed selector is missing from the cache.** In most cases, the cache plus `test/agent-tests/AGENTS.md` have everything you need.
 
 ### Step 2: Authenticate and Create Test Gateway
 
@@ -289,17 +309,32 @@ async (page) => {
 // After login, create test gateway for mutating operations
 async (page) => {
   await page.getByText('新建网关').first().click({ force: true });
-  await page.waitForTimeout(800);
-  const ni = page.locator('input[placeholder*="小写字母"]');
-  const testName = 'test-agent-' + Date.now().toString().slice(-8);
+  await page.waitForTimeout(1000);
+  const testName = 'testagent' + Date.now().toString().slice(-6);
+  const ni = page.locator('input[placeholder*="小写字母"]').first();
   await ni.fill(testName);
-  // ... fill other required fields, set to private, submit
-  // Record the gateway ID from the resulting URL
-  return { testGatewayName: testName, testGatewayId: '...' };
+  await page.waitForTimeout(300);
+  await page.locator('button').filter({ hasText: '提交' }).click();
+  await page.waitForTimeout(3000);
+  // Gateway created — stays on home page. Search for it to get ID.
+  const si = page.locator('input[placeholder="请输入网关名称"]');
+  await si.fill(testName);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1500);
+  await page.locator('.table-item .name').first().click();
+  await page.waitForTimeout(2000);
+  const match = page.url().match(/\/(\d+)\//);
+  return { testGatewayName: testName, testGatewayId: match ? match[1] : null };
 }
 ```
 
-Use the test gateway ID for ALL mutating test cases. Use any existing gateway ID for read-only cases.
+**CRITICAL: After creating test gateway, configure backend service address:**
+```javascript
+// Navigate to /:testGwId/backend → edit "default" → fill httpbin.org:80 → save
+// WITHOUT this, resource creation fails with "后端服务地址不允许为空"
+```
+
+Use the test gateway ID for ALL mutating test cases. Use `bk-apigateway-inner` (ID=6) for read-only cases.
 
 ### Step 3: Execute Test Cases (BATCHED)
 
@@ -319,41 +354,37 @@ For each page group (cases sharing the same Page field):
      - Reset page state for next case (e.g., clear filters, restore defaults)
    - Return a structured results object
 
-**Batch template:**
+**Batch template (with helpers):**
 
 ```javascript
 async (page) => {
+  // --- Inject helpers (read from test/agent-tests/helpers.js) ---
+  const H = { /* ...helpers content injected here... */ };
+
   const results = {};
 
   // Navigate once
-  await page.goto('{{URL}}' + PAGE_PATH);
-  await page.waitForTimeout(1500); // initial page load
+  await H.navigateTo(page, '{{URL}}', PAGE_PATH);
 
   // --- Case: [case-name-1] ---
   try {
-    // Steps...
-    await page.locator('...').click({ force: true });
-    await page.waitForTimeout(800);
-
-    // Verify...
-    const count = await page.locator('...').count();
+    // Steps using helpers — much shorter code
+    await H.dropdown(page, '.my-select', 'Option A');
+    const count = await H.tableRowCount(page);
     const pass = count > 0;
 
     if (!pass) {
-      await page.screenshot({ path: 'case-name-1-FAIL.png' });
+      await H.failScreenshot(page, 'case-name-1', REPORT_DIR);
     }
     results['case-name-1'] = { pass, details: { count }, steps: '3/3' };
   } catch (e) {
-    await page.screenshot({ path: 'case-name-1-ERROR.png' }).catch(() => {});
+    await H.failScreenshot(page, 'case-name-1', REPORT_DIR).catch(() => {});
     results['case-name-1'] = { pass: false, error: e.message, steps: 'error' };
   }
 
-  // Reset state for next case
-  // (e.g., clear search, reset filters to defaults)
-
   // --- Case: [case-name-2] ---
   try {
-    // ...same pattern...
+    // ...same pattern with H.* helpers...
   } catch (e) { /* ... */ }
 
   return results;
@@ -444,18 +475,14 @@ After the report is written, delete the test gateway created in Step 2:
 
 `--url` is the specific page to explore (e.g., `https://example.com/gateways/123/resources`).
 
-### Step 1: Map URL to Vue Component (Source Code First)
+### Step 1: Map URL to Vue Component (Cache First)
 
-1. Read the Vue router at `src/dashboard-front/src/router/index.ts`
-2. Match the given URL path to a route entry. Key mappings:
-   - `/` → `src/dashboard-front/src/views/home/Index.vue`
-   - `/:id` → `src/dashboard-front/src/layout/my-gateway/Index.vue` (with child routes)
-   - `/:id/stage` → find in `src/dashboard-front/src/views/stage-management/route.ts`
-   - `/:id/resource` → find in `src/dashboard-front/src/views/resource-management/route.ts`
-   - `/component` → find in `src/dashboard-front/src/views/component-management/route.ts`
-   - `/platform-tools` → find in `src/dashboard-front/src/views/platform-tools/routes.ts`
-   - `/api-docs` → find in `src/dashboard-front/src/views/api-docs/route.ts`
-3. If the URL has sub-route files (e.g., `route.ts` or `routes.ts` in the view directory), read those too.
+1. Read `test/agent-tests/selector-cache.json` and check the `urlRouteMap` for the given URL path
+2. If the page exists in the cache, use its selectors directly
+3. Only if the page is NOT in the cache, fall back to reading the Vue router:
+   - Read `src/dashboard-front/src/router/index.ts` to map URL paths to component files
+   - Read the matched Vue component file
+4. Read `test/agent-tests/helpers.js` for use in Step 3
 
 ### Step 2: Analyze Vue Component
 
@@ -476,26 +503,40 @@ Read the matched Vue component file and extract:
    - Dialogs/modals → generate dialog interaction cases
    - Pagination → generate pagination test cases
 
-### Step 3: Explore Page in Browser (ONE Snapshot)
+### Step 3: Explore Page in Browser (NO Snapshot)
 
 1. Authenticate using `--user`/`--password` or `--cookie` args (same as run mode)
 2. Navigate to `{{URL}}`
-3. Use ONE `browser_snapshot` to capture the live accessibility tree
-4. Use ONE `browser_run_code` to gather dynamic details:
+3. Use ONE `browser_run_code` call with `H.extractPageElements(page)` to get a compact element summary:
 
 ```javascript
 async (page) => {
+  // --- Inject helpers ---
+  const H = { /* ...helpers content... */ };
+
+  await page.goto('{{URL}}');
+  await page.waitForTimeout(2000);
+
+  const elements = await H.extractPageElements(page);
   return {
     url: page.url(),
     title: await page.title(),
-    buttons: await page.getByRole('button').count(),
-    textboxes: await page.getByRole('textbox').count(),
-    comboboxes: await page.getByRole('combobox').count(),
-    links: await page.getByRole('link').count(),
-    headings: await page.locator('h1, h2, h3').allTextContents(),
+    elements,
+    counts: {
+      buttons: elements.buttons.length,
+      inputs: elements.inputs.length,
+      selects: elements.selects.length,
+      links: elements.links.length,
+      tables: elements.tables.length,
+      tabs: elements.tabs.length,
+    }
   };
 }
 ```
+
+**This returns ~500-1000 tokens** instead of 20,000-90,000 tokens from `browser_snapshot`.
+
+**DO NOT use `browser_snapshot` here.** The `extractPageElements` helper provides all the information needed to generate test cases: element types, text content, placeholders, classes, roles, and IDs — without the massive accessibility tree overhead.
 
 ### Step 4: Cross-Reference and Generate Cases
 
@@ -539,11 +580,51 @@ For each interactive element group found in BOTH source analysis AND live page:
 
 ---
 
+## Maintaining selector-cache.json and helpers.js
+
+These files are living artifacts — keep them updated as you discover new knowledge during test runs.
+
+### When to Update `selector-cache.json`
+
+| Trigger | What to Do |
+|---------|------------|
+| **Generate mode discovers a new page** | Add the page's selectors and URL to the cache after generating cases |
+| **A selector fails during run mode** | Fix the selector in the cache after finding the correct one (via Vue source or `H.extractPageElements`) |
+| **A new module/page is added to test cases** | Add its selectors to the cache. Read Vue source if needed, then cache the result |
+| **URL routes change** (router refactor) | Update `urlRouteMap` entries |
+| **BkUI component patterns change** | Update the `bkuiComponents` section |
+| **New plugins are added to the platform** | Add them to `pluginManagement.availablePlugins` |
+
+**How to update**: After fixing a selector or discovering a new one during execution, use the `Edit` tool to update `test/agent-tests/selector-cache.json` before proceeding. Always update `_meta.lastUpdated` to today's date.
+
+### When to Update `helpers.js`
+
+| Trigger | What to Do |
+|---------|------------|
+| **A repeated interaction pattern appears 3+ times** across different batches | Extract it into a new `H.*` helper |
+| **An existing helper doesn't handle an edge case** (e.g., dropdown with search input, nested dialog) | Fix or extend the helper |
+| **A new BkUI component type is encountered** (e.g., `BkDatePicker`, `BkTree`) | Add a helper for its interaction pattern |
+| **The login flow changes** | Update `H.reAuth()` |
+| **Generate mode needs richer extraction** (e.g., new element types to detect) | Update `H.extractPageElements()` |
+
+**How to update**: Use the `Edit` tool to modify `test/agent-tests/helpers.js`. Keep helpers stateless (no side effects beyond the page interaction). Test the change in the next `browser_run_code` call before relying on it for a full batch.
+
+### When NOT to Update
+
+- **Don't update during a batch run** — finish the current batch, record the issue, then update before the next batch.
+- **Don't add one-off selectors** — if a selector is used by exactly one case on one page, inline it in the `browser_run_code` call instead of adding it to the cache.
+- **Don't duplicate AGENTS.md knowledge** — the cache is for machine-readable selectors; AGENTS.md is for human-readable gotchas and context. Keep them complementary, not redundant.
+
+---
+
 ## Key Files Reference
 
+- **Selector cache**: `test/agent-tests/selector-cache.json` — pre-built selectors, URL maps, component patterns (READ FIRST)
+- **Helpers library**: `test/agent-tests/helpers.js` — reusable browser interaction patterns (INJECT INTO browser_run_code)
+- **Knowledge base**: `test/agent-tests/AGENTS.md` — gotchas, known issues, execution order
 - **Cases directory**: `test/agent-tests/cases/`
 - **Reports directory**: `test/agent-tests/reports/`
-- **Vue router**: `src/dashboard-front/src/router/index.ts`
-- **Vue views**: `src/dashboard-front/src/views/`
+- **Vue router**: `src/dashboard-front/src/router/index.ts` (fallback only — prefer selector cache)
+- **Vue views**: `src/dashboard-front/src/views/` (fallback only — prefer selector cache)
 - **Test case format contract**: `specs/001-agent-test-suite/contracts/test-case-format.md`
 - **Report format contract**: `specs/001-agent-test-suite/contracts/test-report-format.md`
