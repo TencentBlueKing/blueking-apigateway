@@ -167,6 +167,7 @@ def get_default_feature_flags(
     enable_bk_notice: bool,
     enable_multi_tenant_mode: bool,
     ai_open_api_base_url: str,
+    enable_gateway_operation_status: bool,
 ) -> dict:
     return {
         # 是否展示"监控告警"子菜单
@@ -204,7 +205,7 @@ def get_default_feature_flags(
             enable_multi_tenant_mode or env.bool("FEATURE_FLAG_ENABLE_DISPLAY_NAME_RENDER", True)
         ),
         # 是否展示网关运营状态
-        "ENABLE_GATEWAY_OPERATION_STATUS": env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATION_STATUS", False),
+        "ENABLE_GATEWAY_OPERATION_STATUS": enable_gateway_operation_status,
         # 是否启用 MCP Prompt 功能
         "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
         # 是否启用健康检查

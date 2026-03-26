@@ -603,6 +603,9 @@ DEFAULT_USER_AUTH_TYPE = "default"
 
 APIGW_MANAGERS = env.list("APIGW_MANAGERS", default=["admin"])
 
+# 不活跃网关通知灰度用户列表，非空时仅通知列表中的用户
+INACTIVE_GATEWAY_NOTIFY_GRAY_USER_LIST = env.list("INACTIVE_GATEWAY_NOTIFY_GRAY_USER_LIST", default=[])
+
 # 网关 jwt 签发者，必须与 apigateway 后端服务保持一致，
 # apigw-manager sdk 利用 issuer 支持获取不同网关实例同名网关的公钥，以支持同一后端服务接入不同网关实例
 JWT_ISSUER = env.str("BK_APIGW_JWT_ISSUER", "APIGW")
@@ -823,11 +826,14 @@ BK_PLUGINS_DATA_PLANE_GRAY_STAGE = env.str("BK_PLUGINS_DATA_PLANE_GRAY_STAGE", d
 # ==============================================================================
 # 全局功能开关，用于控制站点全局性的一些功能，将与 DEFAULT_USER_FEATURE_FLAG、Model UserFeatureFlag 中数据合并
 # 优先级：Model UserFeatureFlag > DEFAULT_USER_FEATURE_FLAG > DEFAULT_FEATURE_FLAG
+ENABLE_GATEWAY_OPERATION_STATUS = env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATION_STATUS", False)
+
 DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     env,
     enable_bk_notice=ENABLE_BK_NOTICE,
     enable_multi_tenant_mode=ENABLE_MULTI_TENANT_MODE,
     ai_open_api_base_url=AI_OPEN_API_BASE_URL,
+    enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
 )
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
@@ -835,6 +841,17 @@ DEFAULT_USER_FEATURE_FLAG = {}
 
 # 网关功能开关
 # GLOBAL_GATEWAY_FEATURE_FLAG = {}
+
+# NOTE: only enable the task when not in multi-tenant mode
+if ENABLE_GATEWAY_OPERATION_STATUS and not ENABLE_MULTI_TENANT_MODE:
+    CELERY_BEAT_SCHEDULE.update(  # noqa: F405
+        {
+            "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers": {
+                "task": "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers",
+                "schedule": crontab(minute=0, hour=10, day_of_month=1),  # noqa: F405
+            },
+        }
+    )
 
 # ==============================================================================
 # 提供给前端的环境变量值
