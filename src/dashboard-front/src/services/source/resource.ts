@@ -278,3 +278,19 @@ export const updateResourceDocs = (apigwId: number, resourceId: number, data: an
  */
 export const deleteResourceDocs = (apigwId: number, resourceId: number, docId: number) =>
   http.delete(`${path}/${apigwId}/resources/${resourceId}/docs/${docId}/`);
+
+/**
+ * 删除资源版本
+ * @param apigwId 网关id
+ * @param id 资源版本id
+ */
+export const deleteResourceVersion = (apigwId: number, id: number) =>
+  http.delete(`${path}/${apigwId}/resource-versions/${id}/`);
+
+/**
+ * 批量删除资源版本
+ * @param apigwId 网关id
+ * @param params 资源版本id列表
+ */
+export const batchDeleteResourceVersions = (apigwId: number, params: { ids: number[] }) =>
+  http.delete(`${path}/${apigwId}/resource-versions/batch/`, params);
