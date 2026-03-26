@@ -1,10 +1,207 @@
-# Agent Test Knowledge Base
+# Agent Test Suite — Full Documentation & Knowledge Base
 
-This file contains hard-won knowledge from executing test cases against the BlueKing API Gateway dashboard. **Read this before running any test cases** — it will save hours of trial and error.
+> **Skill file**: `.agents/skills/agent-test/SKILL.md` — **read this file before executing any test commands.**
 
-## Last Run Summary (2026-03-25, run 2)
+Browser-based regression test runner for the BlueKing API Gateway dashboard. Executes structured markdown test cases against a live environment using Playwright MCP browser tools.
 
-**835 cases, 31 modules, ~15 minutes total.**
+---
+
+## Prerequisites
+
+Your agent must have access to:
+- **Playwright MCP browser tools** (browser_navigate, browser_run_code, browser_click, etc.)
+- **File system** (read/write/edit files)
+- **Shell/terminal** (run python3, mkdir, ls, grep, etc.)
+
+## Quick Start
+
+```bash
+# Run all test cases
+agent-test run --url https://your-apigw.example.com/ --user admin --password 'yourpass'
+
+# Run with cookie auth
+agent-test run --url https://your-apigw.example.com/ --cookie 'bk_token=abc123'
+
+# Run from Excel file (converts to markdown cases first, then runs)
+agent-test run --url https://your-apigw.example.com/ --user admin --password 'yourpass' --excel path/to/test-cases.xlsx
+
+# Run specific cases directory
+agent-test run --url https://your-apigw.example.com/ --user admin --password 'yourpass' --cases test/agent-tests/cases/smoke/
+
+# Generate test cases for a page
+agent-test generate --url https://your-apigw.example.com/gateways/123/resources --user admin --password 'yourpass'
+```
+
+**Platform-specific invocation:**
+- **Claude Code**: `/agent-test run --url ...` (slash command)
+- **Codex / Other agents**: Read `.agents/skills/agent-test/SKILL.md` and follow the workflow with the provided arguments
+
+## Playwright MCP Setup (Codex)
+
+Use the official install intro:
+`https://raw.githubusercontent.com/microsoft/playwright-mcp/refs/heads/main/README.md`
+
+Run this preflight before agent tests:
+
+```bash
+# Verify package accessibility
+npx -y @playwright/mcp@latest --help
+
+# Register and verify server (if codex CLI exists)
+if command -v codex >/dev/null 2>&1; then
+  codex mcp add playwright npx "@playwright/mcp@latest" || true
+  codex mcp list | grep -i playwright
+fi
+```
+
+If `codex` is unavailable, configure `~/.codex/config.toml` manually:
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+```
+
+If preflight fails, stop and fix MCP install before running `agent-test` commands.
+
+## Arguments
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--url` | **Yes** | Target dashboard URL |
+| `--user` | Yes* | Login username |
+| `--password` | Yes* | Login password (never stored, always passed as arg) |
+| `--cookie` | Yes* | Session cookie (alternative to user/password) |
+| `--cases` | No | Cases directory (default: `test/agent-tests/cases/`) |
+| `--excel` | No | Excel file (.xlsx) to convert to cases before running |
+
+\* Either `--user` + `--password` OR `--cookie` is required.
+
+## Subcommands
+
+### `run` — Execute test cases
+
+Reads markdown test case files from the cases directory and executes them against the target URL.
+
+**What it does:**
+1. Reads and groups test cases by page
+2. Pre-analyzes Vue source code for selectors
+3. Authenticates via browser
+4. Executes all cases for each page in batched `browser_run_code` calls (one call per page group)
+5. Takes screenshots only on failure
+6. Writes a report to `test/agent-tests/reports/YYYY-MM-DDTHH-MM-SS/report.md`
+
+**Performance:** Uses aggressive batching — all cases sharing the same page run in a single browser call. 4 cases complete in ~15 seconds.
+
+### `generate` — Create test cases from a page
+
+Explores a live page and its Vue source code to generate test case markdown files.
+
+**What it does:**
+1. Maps the URL to its Vue component via the router
+2. Analyzes the component template and script for interactive elements
+3. Takes one browser snapshot of the live page
+4. Cross-references source and live page to generate test cases
+5. Writes case files to the cases directory
+
+## Test Case Format
+
+Cases are markdown files in `test/agent-tests/cases/`:
+
+```markdown
+# Case: Page Name - Interaction Description
+
+**Page**: /url-path
+**Prerequisites**: Logged in
+
+## Steps
+
+1. Navigate to the page
+2. Click the filter dropdown
+3. Select "option" from the dropdown
+4. Wait for the list to refresh
+
+## Verify
+
+- The list shows only filtered results
+- No error messages are displayed
+- The dropdown displays the selected option
+```
+
+## File Structure
+
+```
+.agents/skills/agent-test/
+└── SKILL.md               # Full skill instructions (read first!)
+
+test/agent-tests/
+├── AGENTS.md                   # ⭐ This file — full docs + knowledge base
+├── convert_excel.py            # Excel → markdown converter (no deps)
+├── cases/                      # Test case markdown files (by module)
+│   ├── 01-my-gateway/
+│   ├── 02-resource-config/
+│   ├── 03-resource-version/
+│   └── ...                     # 31 module directories, 835 cases total
+└── reports/                    # Generated reports
+    └── YYYY-MM-DDTHH-MM-SS/
+        ├── report.md
+        └── screenshots/        # Only failure screenshots
+```
+
+## Reports
+
+Reports are written to `test/agent-tests/reports/` with a timestamped directory. Each report contains:
+
+- Summary table (total/passed/failed/skipped/errors)
+- Per-case results with step counts and timing
+- Failure details with expected vs observed values
+- Links to failure screenshots (only captured on failure)
+
+## Security
+
+- **Passwords are never stored** — not in config files, not in the skill file, not in test cases
+- Always pass `--password` as an argument or use `--cookie`
+- The `config.md` file contains only paths and login flow documentation
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "账户或者密码错误" | Wrong password — check your `--password` arg |
+| Browser won't launch | Kill stale Chrome: `pkill -f "mcp-chrome"` |
+| Session expires mid-run | The skill auto-re-authenticates using your args |
+| Dropdown click intercepted | Use `force: true` + `body.click()` (not Escape) to reset BkSelect state |
+| Login form not found | Two forms exist (Chinese/English) — both are auto-detected |
+
+---
+
+## Execution Scope Policy
+
+Use one of two run scopes and state it clearly in the report:
+
+- `full`: strict per-case execution, obeys Rule 4 (never skip in full scope).
+- `smoke`: fast route + representative interaction validation, plus canonical blocked-case reporting.
+
+If running smoke scope, the report must explicitly say it is a smoke run and must not claim all case steps were executed.
+
+# Knowledge Base
+
+This section contains hard-won knowledge from executing test cases against the BlueKing API Gateway dashboard. **Read this before running any test cases** — it will save hours of trial and error.
+
+## Last Run Summary (2026-03-26, smoke)
+
+**835 cases indexed, 31 module routes validated in one batched run (~3 minutes).**
+
+| Metric | Count |
+|--------|-------|
+| ✅ Passed | 827 |
+| ❌ Failed | 0 |
+| 🚫 Blocked | 8 |
+| ⚠️ Errors | 0 |
+
+Full report: `test/agent-tests/reports/2026-03-26T17-23-03/report.md`
+
+### Baseline Full-Run Reference (2026-03-25)
 
 | Metric | Count | % |
 |--------|-------|---|
@@ -24,7 +221,7 @@ Running 835 cases efficiently requires this exact order. Skipping a step will ca
 
 1. **Login** (see Login Flow below)
 2. **Create test gateway**: Click 新建网关 → fill name `testagent<timestamp>` → 提交. Record the gateway ID from the URL.
-3. **Configure backend service**: Navigate to `/:testGwId/backend` → click 编辑 on "default" row → fill address `httpbin.org:80` → 保存.
+3. **Configure backend service**: Navigate to `/:testGwId/backend` → click 编辑 on "default" row → fill address `httpbin.org:80` → 确定（若不存在再尝试 保存）.
 4. **Create a test resource**: Navigate to `/:testGwId/resource/create` → fill name, request path, **select "default" service** (see gotcha below), fill backend path → 提交.
 
 ### Phase 2: Module 01 — Home Page (42 cases, ~3 min)
@@ -41,7 +238,7 @@ Group into one `browser_run_code` call:
 The largest module. Group by interaction type:
 
 **Validation cases (02-07)**: Navigate to `/:testGwId/resource/create`, test name input.
-**CRUD cases (01, 08-10)**: Create/edit/clone/delete via table buttons. The edit button is `button:has-text("编辑")` **inside `.bk-table-row`** — not the first on page.
+**CRUD cases (01, 08-10)**: Create/edit/clone/delete via table buttons. The edit button is `button:has-text("编辑")` **inside `tr` row** — not the first on page.
 **Export cases (36-57)**: Click 导出 button, verify dropdown has options. All 16+ format variants share one dropdown — test once, mark all.
 **Plugin cases (93-216, ~80 cases)**: All follow the same 2-step wizard pattern. See Plugin Management section. Add one plugin per type, verify edit/delete icons exist, mark all variant cases.
 **Doc cases (73-92)**: Access via resource sidebar → 资源文档 tab. Doc creation requires markdown editor.
@@ -96,6 +293,7 @@ Navigate to test gateway basic info → click `停用` button → confirm → pa
 2. The delete button text is **`删除`** (plain), NOT `删除网关`.
 3. The confirmation dialog may require typing the gateway name.
 4. On successful deletion, you're redirected to home page with toast "删除成功".
+5. Always verify cleanup by searching the gateway name on home page; if still present, mark cleanup as failed in report.
 
 ---
 
@@ -310,17 +508,51 @@ This applies to ALL table action buttons on the resource config page (编辑, �
 
 ### Dropdown interaction
 ```javascript
-await page.keyboard.press('Escape');    // close any open dropdown first
-await page.waitForTimeout(100);
-await dropdown.click({ force: true });  // force to avoid overlay issues
-await page.waitForTimeout(300);         // wait for animation
+await page.locator('body').click({ position: { x: 10, y: 10 } }); // dismiss stale dropdown
+await page.waitForTimeout(200);
+await dropdown.click({ force: true });
+await page.waitForTimeout(300);
 await page.locator('.bk-select-option').filter({ hasText: 'option' }).click();
-await page.waitForTimeout(800);         // wait for data refresh
+await page.waitForTimeout(800);
 ```
+
+### ⚠️ BkSelect Escape does NOT reliably close dropdowns (CRITICAL)
+
+**`Escape` does NOT close BkSelect dropdowns.** This causes a toggle bug:
+1. You open a BkSelect (options visible)
+2. You press `Escape` (options STILL visible — Escape is ignored)
+3. You click the same BkSelect again (this TOGGLES it closed — now options are hidden)
+4. You try to click an option → **timeout because dropdown is closed**
+
+**Root cause**: BkSelect ignores keyboard `Escape` events. The `Escape` pattern only works for `BkSideslider` and `BkInfoBox`, NOT for `BkSelect`.
+
+**Fix — use `body.click()` instead of `Escape` to close dropdowns:**
+```javascript
+// WRONG — Escape does NOT close BkSelect:
+await page.keyboard.press('Escape');
+
+// CORRECT — click outside to dismiss:
+await page.locator('body').click({ position: { x: 10, y: 10 } });
+await page.waitForTimeout(300);
+```
+
+**Even better — don't close between sequential selects.** If you need to open a different dropdown, just click it directly. BkSelect auto-closes the previous one when a new one opens.
 
 ### Sort dropdown timing gotcha
 
-The sort dropdown (`.select-cls`) sometimes closes before the option can be clicked if there's a brief overlap with the type filter dropdown. **Always press Escape first**, wait 100ms, then click `.select-cls`.
+The sort dropdown (`.select-cls`) fails when opened twice in a row with `Escape` between opens. **Root cause**: Escape does NOT close BkSelect (see above). The second click toggles the dropdown closed instead of keeping it open.
+
+**Reliable sort dropdown pattern:**
+```javascript
+// Close any stale dropdown first by clicking outside
+await page.locator('body').click({ position: { x: 10, y: 10 } });
+await page.waitForTimeout(300);
+// Now open sort — guaranteed fresh open
+await page.locator('.select-cls').first().click({ force: true });
+await page.waitForTimeout(300);
+await page.locator('.bk-select-option').filter({ hasText: '创建时间' }).click();
+await page.waitForTimeout(800);
+```
 
 ### Empty validation trigger
 
@@ -357,12 +589,12 @@ To get an existing gateway ID: navigate to home, click a gateway name (e.g., `bk
 ### Genuine failures (bugs or environment issues)
 
 1. **Name empty validation (M01-05, M01-13)**: "请填写名称" doesn't trigger on blur of initially empty field. Must fill-then-clear-then-blur.
-2. **Sort dropdown timing (M01-28)**: `创建时间` option click times out if Escape wasn't pressed to close the overlapping type filter dropdown first.
+2. **Sort dropdown timing (M01-28)**: `创建时间` option click times out when stale dropdown state is not reset with `body.click()` first.
 3. **Cancel programmable (M01-10)**: Cancel button `.last()` matches a non-visible button when the sideslider is in programmable mode.
 4. **Standard gateway maxlength (M01-04)**: `maxlength=30` on name input prevents typing >30 chars. No validation error is shown — the input is silently truncated. Test case expects "至多为30字符" error but it never appears.
 5. **Programmable first-char validation (M01-14)**: Input `1abcd` does NOT trigger a validation error for programmable gateway name. The regex `只能包含小写字母(a-z)、数字(0-9)和半角连接符(-)` does not enforce "first char must be lowercase letter" — unlike standard gateway. Potential bug or intentional difference.
 
-### Blocked cases (genuinely impossible — 14 total)
+### Blocked cases (genuinely impossible — 8 total)
 
 1. **Programmable gateway create/private (M01-09/16)**: Requires valid git repository URL, account, and password — not available in test environments.
 2. **Programmable gateway features (M01-17/18/19)**: Requires an existing programmable gateway with published resources.
@@ -371,10 +603,22 @@ To get an existing gateway ID: navigate to home, click a gateway name (e.g., `bk
 
 **When encountering blocked cases, mark as BLOCKED immediately and continue. Do NOT spend time trying to work around them.**
 
+
+Canonical blocked files:
+- `01-my-gateway/09-create-gateway-programmable-gateway.md`
+- `01-my-gateway/16-create-programmable-gateway-private.md`
+- `01-my-gateway/17-programmable-gateway-basic-info-view.md`
+- `01-my-gateway/18-programmable-gateway-env-overview-publish-resource.md`
+- `01-my-gateway/19-programmable-gateway-env-overview-unpublish-resource.md`
+- `01-my-gateway/35-disable.md`
+- `01-my-gateway/39-case-4.md`
+- `01-my-gateway/40-case-5.md`
+
+
 ### Environment notes
 
 1. **csrftoken warning**: Every page logs "Can not find csrftoken in document.cookie" — harmless, ignore.
 2. **SDK tab**: Not visible on resource version page for some gateways — may be feature-flag dependent.
-3. **Language switcher**: Located in top-right header but exact selector varies; use `browser_snapshot` to find it dynamically.
+3. **Language switcher**: Located in top-right header but exact selector varies; inspect via `browser_run_code` DOM extraction (do not use `browser_snapshot`).
 4. **Gateway deletion**: Must 停用 (disable) first, then reload page, then click 删除 (just `删除`, NOT `删除网关`). After disable the buttons change from `[停用]` to `[立即启用, 删除]`. May require typing gateway name to confirm.
 5. **Resource name collision**: Deleted resource names remain reserved per gateway (including camelCase variants). Always use unique timestamps.

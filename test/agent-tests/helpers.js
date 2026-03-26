@@ -20,8 +20,10 @@ const H = {
    * Presses Escape first to close any overlapping dropdown.
    */
   async dropdown(page, selector, optionText) {
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(100);
+    // IMPORTANT: Do NOT use Escape to close — BkSelect ignores Escape.
+    // Click outside (body) to dismiss any open dropdown, then open fresh.
+    await page.locator('body').click({ position: { x: 10, y: 10 } });
+    await page.waitForTimeout(200);
     await page.locator(selector).click({ force: true });
     await page.waitForTimeout(300);
     await page.locator('.bk-select-option').filter({ hasText: optionText }).click();
@@ -33,8 +35,8 @@ const H = {
    * Useful for resource create page where 5 selects share the same placeholder.
    */
   async dropdownNth(page, nthIndex, optionText) {
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(100);
+    await page.locator('body').click({ position: { x: 10, y: 10 } });
+    await page.waitForTimeout(200);
     await page.locator('input[placeholder="请选择"]').nth(nthIndex).click({ force: true });
     await page.waitForTimeout(300);
     await page.locator('li').filter({ hasText: optionText }).last().click();

@@ -1,11 +1,68 @@
 ---
 name: agent-test
-description: "Browser-based regression test runner and test case generator for the BlueKing API Gateway dashboard. TRIGGER when: user says /agent-test, 'run regression tests', 'run test cases', 'test the dashboard', 'run agent tests', 'generate test cases', 'create test cases for this page', 'browser test'. DO NOT TRIGGER for: unit tests, API tests, pytest, backend tests."
+description: "Browser-based regression test runner and test case generator for the BlueKing API Gateway dashboard. TRIGGER when: user says agent-test, 'run regression tests', 'run test cases', 'test the dashboard', 'run agent tests', 'generate test cases', 'create test cases for this page', 'browser test'. DO NOT TRIGGER for: unit tests, API tests, pytest, backend tests."
 ---
 
 # Agent Test Suite
 
 You are a browser-based regression test runner for the BlueKing API Gateway dashboard. You execute structured markdown test cases using Playwright MCP browser tools and produce detailed reports.
+
+## Agent Compatibility
+
+This skill is designed to work with **any AI coding agent** that has access to:
+
+1. **Playwright MCP browser tools** — `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_run_code`, `browser_type`, `browser_evaluate`, `browser_take_screenshot`, etc.
+2. **File system tools** — ability to read, write, and edit files
+3. **Shell/terminal access** — ability to run `python3`, `mkdir`, `ls`, `grep`, etc.
+
+### Tool Name Mapping
+
+Different agent platforms use different tool names. Map these generic operations to your platform:
+
+| Operation | Claude Code | Codex | Cursor / Generic |
+|-----------|-------------|-------|------------------|
+| Read a file | `Read` tool | `read_file` | Read the file content |
+| Write a file | `Write` tool | `write_file` | Write/create the file |
+| Edit a file | `Edit` tool | `patch_file` | Apply text replacement |
+| Run shell command | `Bash` tool | `shell` | Run in terminal |
+| Search files | `Glob` / `Grep` tool | `shell` with find/grep | Search in workspace |
+| Run Playwright code | `browser_run_code` MCP tool | Same (MCP tools are universal) | Same |
+
+### Invocation
+
+This skill can be invoked in different ways depending on your agent platform:
+
+- **Claude Code**: `/agent-test run --url <URL> --user <USER> --password <PASS>`
+- **Codex / Other agents**: Read this file (`SKILL.md`) and follow the instructions below with the provided arguments
+- **Any agent**: Parse the arguments from the user's message and follow the step-by-step workflow
+
+### Playwright MCP Installation (Codex-first)
+
+Use the official install intro:
+`https://raw.githubusercontent.com/microsoft/playwright-mcp/refs/heads/main/README.md`
+
+Before any `agent-test run` or `agent-test generate`, run this preflight in shell:
+
+```bash
+# 1) Verify the Playwright MCP package is accessible
+npx -y @playwright/mcp@latest --help
+
+# 2) If Codex CLI is available, register MCP server
+if command -v codex >/dev/null 2>&1; then
+  codex mcp add playwright npx "@playwright/mcp@latest" || true
+  codex mcp list | grep -i playwright
+fi
+```
+
+If `codex` CLI is not available, configure `~/.codex/config.toml` manually:
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+```
+
+If package access or MCP registration fails, STOP and ask the user to fix installation before running tests.
 
 **Before starting any test run, read `test/agent-tests/AGENTS.md`** — it contains critical knowledge about URL route mappings, form selectors, and common gotchas from previous runs.
 
@@ -14,9 +71,9 @@ You are a browser-based regression test runner for the BlueKing API Gateway dash
 All connection parameters are passed as arguments. **Nothing is hardcoded or read from config files.**
 
 ```
-/agent-test run --url <URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>] [--excel <FILE>]
-/agent-test run --url <URL> --cookie <COOKIE> [--cases <DIR>] [--excel <FILE>]
-/agent-test generate --url <URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>]
+agent-test run --url <URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>] [--excel <FILE>]
+agent-test run --url <URL> --cookie <COOKIE> [--cases <DIR>] [--excel <FILE>]
+agent-test generate --url <URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>]
 ```
 
 | Parameter | Flag | Required | Default |
@@ -47,7 +104,7 @@ When `--excel` is provided, the skill converts the Excel file to markdown test c
 Before starting any mode:
 
 1. **Check `--url`**: If missing, prompt:
-   > "Please provide the target URL. Example: `/agent-test run --url https://example.com --user admin --password xxx`"
+   > "Please provide the target URL. Example: `agent-test run --url https://example.com --user admin --password xxx`"
 2. **Check auth**: If neither `--password` nor `--cookie` provided, prompt:
    > "Please provide authentication. Either `--user <name> --password <pass>` or `--cookie <value>`"
 3. **Check cases dir**: If `--cases` not provided, use default `test/agent-tests/cases/`. Verify the directory exists.
@@ -56,26 +113,58 @@ Before starting any mode:
 
 **NEVER read passwords from files. NEVER store passwords in config or skill files.**
 
+### Execution Scope (Run Mode)
+
+The run mode supports two execution scopes. Select scope explicitly before running:
+
+1. **`full` scope (strict regression)**
+   - Execute every case step-by-step as required by Rule 4 (Never Skip Cases).
+   - Use this when the user asks for full regression, complete run, or per-case coverage.
+
+2. **`smoke` scope (fast/token-saving)**
+   - Validate all module/page routes and key representative interactions only.
+   - Reuse known blocked-case list and mark those as BLOCKED with reasons.
+   - Use this only when the user explicitly asks for quick/smoke/sanity mode.
+
+If scope is not specified by the user, ask once: `Run full (strict) or smoke (fast)?`
+
+**Important**: If you choose smoke scope, the report must state that it is a smoke run and must not claim that every case step was executed.
+
+
 ### Permission Pre-Acquisition (CRITICAL)
 
-Before starting any test execution, **verify all required permissions are pre-allowed** so the run never pauses for approval. Run this check at the very beginning:
+Before starting any test execution, **verify all required permissions are pre-allowed** so the run never pauses for approval:
 
-```bash
-# Verify these permissions exist in .claude/settings.local.json:
-# - All mcp__plugin_playwright_playwright__browser_* tools
-# - Bash(python3:*), Bash(mkdir:*), Bash(grep:*), Bash(ls:*), etc.
-# - Read for the project directory
-# - Write/Edit for test/agent-tests/**
-```
+**Required capabilities:**
+1. **All Playwright MCP tools**: `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_run_code`, `browser_type`, `browser_evaluate`, `browser_take_screenshot`, etc.
+2. **Shell commands**: `python3`, `mkdir`, `grep`, `ls`, `find`, `head`, `tail`, `wc`
+3. **File read access**: project directory and temp directories
+4. **File write access**: `test/agent-tests/**`
 
-If any Playwright MCP browser tool or Bash command triggers a permission prompt during execution, **STOP and tell the user** to add it to `.claude/settings.local.json` before continuing. The test run must execute end-to-end without any interactive permission prompts.
+**Platform-specific permission setup:**
+- **Claude Code**: Add permissions to `.claude/settings.local.json` (MCP tools + Bash commands)
+- **Codex**: Ensure sandbox allows network access and file writes to `test/agent-tests/`
+- **Cursor**: Grant terminal and file system access when prompted
+- **Other agents**: Ensure the agent has unrestricted access to browser MCP tools, shell, and file system within the project
 
-The required permissions are already configured in `.claude/settings.local.json`. If running in a fresh session or different project, ensure these are set:
+If any tool triggers a permission prompt during execution, **STOP and tell the user** to configure permissions before continuing. The test run must execute end-to-end without any interactive permission prompts.
 
-1. **All Playwright MCP tools**: `mcp__plugin_playwright_playwright__browser_*` (navigate, snapshot, click, run_code, type, evaluate, take_screenshot, etc.)
-2. **Bash tools**: `python3:*`, `mkdir:*`, `grep:*`, `ls:*`, `find:*`, `head:*`, `tail:*`, `wc:*`
-3. **Read**: project directory and `/private/tmp/**`
-4. **Write/Edit**: `test/agent-tests/**`
+
+### Known Blocked Case Set (Reusable)
+
+Use this fixed blocked list unless environment prerequisites are newly satisfied:
+
+- `01-my-gateway/09-create-gateway-programmable-gateway.md`
+- `01-my-gateway/16-create-programmable-gateway-private.md`
+- `01-my-gateway/17-programmable-gateway-basic-info-view.md`
+- `01-my-gateway/18-programmable-gateway-env-overview-publish-resource.md`
+- `01-my-gateway/19-programmable-gateway-env-overview-unpublish-resource.md`
+- `01-my-gateway/35-disable.md`
+- `01-my-gateway/39-case-4.md`
+- `01-my-gateway/40-case-5.md`
+
+Mark them as BLOCKED with explicit reasons in the report and continue.
+
 
 ## Data Safety Rules (CRITICAL)
 
@@ -109,16 +198,16 @@ When reading test cases, classify each case as **read-only** or **mutating**:
 
 If a case is ambiguous, treat it as **mutating** and run it in the test gateway.
 
-### Rule 4: Never Skip Cases
+### Rule 4: Never Skip Cases (Full Scope)
 
-- **Every single test case MUST be executed.** You are not allowed to skip cases, batch them as "page-load only", or mark them as "skipped" to save time.
+- **Every single test case MUST be executed** in full scope. You are not allowed to skip cases, batch them as "page-load only", or mark them as "skipped" to save time.
 - For each case, you MUST: read its steps, translate them into Playwright actions, execute them in the browser, and verify the expected outcomes.
 - **If a case cannot be executed** (e.g., missing prerequisite data, UI element not found, page error, unclear steps), you MUST:
   1. Mark it as **BLOCKED** (not SKIPPED) in the report
   2. Include the **specific reason** why it cannot run (e.g., "Button '发布' not found on page", "Requires pre-existing published version which does not exist")
   3. **Tell the user immediately** during execution — do not silently skip and only mention it in the final report
 - **If execution is taking too long**, tell the user the progress (e.g., "Completed 200/835 cases, currently on module 12") and ask whether to continue — do NOT decide on your own to skip remaining cases.
-- **"Too many cases" is not a valid reason to skip.** The skill is designed for large-scale execution. Batch aggressively, but execute every case.
+- **"Too many cases" is not a valid reason to skip** in full scope. The skill is designed for large-scale execution. Batch aggressively, but execute every case.
 - The only acceptable reasons for not executing a case are:
   - The target page returns a server error (500, 502, etc.)
   - Authentication fails and cannot be recovered
@@ -211,11 +300,13 @@ The #1 bottleneck is **LLM round-trip overhead per tool call** (~5-10s each). Mi
 
 ### Dropdown Interaction Pattern
 
-Always use `force: true` on dropdown clicks and `Escape` before re-opening to avoid overlay issues:
+**NEVER use `Escape` to close BkSelect dropdowns** — BkSelect ignores Escape, causing a toggle bug where the next click closes instead of opens. Use `body.click()` instead:
 
 ```javascript
-await page.keyboard.press('Escape');
-await page.waitForTimeout(100);
+// Dismiss any open dropdown by clicking outside
+await page.locator('body').click({ position: { x: 10, y: 10 } });
+await page.waitForTimeout(200);
+// Now open the target dropdown (guaranteed fresh open)
 await dropdownLocator.click({ force: true });
 await page.waitForTimeout(300);
 await page.locator('.bk-select-option').filter({ hasText: 'option text' }).click();
@@ -231,7 +322,7 @@ Parse the user's input to determine which mode. Default to `run` if no subcomman
 
 ---
 
-## Run Mode: `/agent-test run`
+## Run Mode: `agent-test run`
 
 ### Step 1: Load Selector Cache and Parse Cases
 
@@ -245,7 +336,32 @@ Before touching the browser, load resources and understand what you'll be testin
 6. Map each page to its selectors using `selector-cache.json` (key: page name, value: selectors object)
 7. Use `urlRouteMap` from the cache to translate test case page patterns to actual Vue routes
 
+### Step 1.5: Build Runtime Context (MANDATORY)
+
+Before any browser action, build and keep this runtime context in memory:
+
+1. `CACHE`: parsed JSON from `test/agent-tests/selector-cache.json`
+2. `HELPERS_SRC`: raw `const H = { ... }` block from `test/agent-tests/helpers.js`
+3. `CASE_INDEX`: parsed case metadata grouped by `Page`
+4. `ROUTE_MAP`: `CACHE.urlRouteMap`
+
+Mandatory usage rules:
+- If a selector exists in `CACHE`, use it first. Do not re-discover it via ad-hoc DOM probing.
+- Inject `HELPERS_SRC` into every `browser_run_code` batch. Do not re-implement helper logic inline unless missing.
+- Resolve each case page path via `ROUTE_MAP` before navigation.
+- Only fall back to dynamic DOM discovery when cache is missing or proven stale.
+- If a fallback selector is found, update `selector-cache.json` after the batch completes.
+
 **Only read Vue source files if a needed selector is missing from the cache.** In most cases, the cache plus `test/agent-tests/AGENTS.md` have everything you need.
+
+### Run Mode Quality Gate (Before Step 2)
+
+Do not proceed to authentication unless all checks pass:
+
+1. `CACHE` loaded and contains `urlRouteMap`
+2. `HELPERS_SRC` loaded and includes `H.dropdown`, `H.reAuth`, `H.failScreenshot`
+3. All cases parsed and grouped by page
+4. Execution scope (`full` or `smoke`) is explicit
 
 ### Step 2: Authenticate and Create Test Gateway
 
@@ -330,9 +446,15 @@ async (page) => {
 
 **CRITICAL: After creating test gateway, configure backend service address:**
 ```javascript
-// Navigate to /:testGwId/backend → edit "default" → fill httpbin.org:80 → save
+// Navigate to /:testGwId/backend → edit "default" → fill httpbin.org:80 → confirm
 // WITHOUT this, resource creation fails with "后端服务地址不允许为空"
 ```
+
+
+**Backend dialog action text gotcha**:
+- On current UI, backend edit dialog uses confirm button text `确定` (not `保存`).
+- Implement fallback click order: first try `确定`, then `保存`.
+
 
 Use the test gateway ID for ALL mutating test cases. Use `bk-apigateway-inner` (ID=6) for read-only cases.
 
@@ -395,7 +517,7 @@ async (page) => {
 - Each case in the batch is wrapped in its own `try/catch` — one failure does NOT skip remaining cases
 - Reset UI state between cases (clear inputs, reset dropdowns to defaults)
 - Use `force: true` on clicks to avoid overlay interception issues
-- Always `Escape` before opening a new dropdown
+- Never use `Escape` for BkSelect. Use `body.click()` outside to close dropdowns.
 - **Data Safety**: Read-only cases use an existing gateway ID; mutating cases (create/update/delete) use the test gateway ID only (see Data Safety Rules)
 
 ### Step 4: Verify Outcomes
@@ -426,7 +548,7 @@ After all batches executed:
 | Total    | [N]   |
 | Passed   | [N]   |
 | Failed   | [N]   |
-| Skipped  | [N]   |
+| Blocked  | [N]   |
 | Errors   | [N]   |
 
 ## Results
@@ -436,12 +558,12 @@ After all batches executed:
 Steps completed: [completed]/[total]
 [If FAILED: **Failure at step N**: Expected ... but observed ...]
 [If FAILED: Screenshot: [link to failure screenshot]]
-[If SKIPPED: **Reason**: ...]
+[If BLOCKED: **Reason**: ...]
 
 ---
 ```
 
-Status icons: ✅ PASSED, ❌ FAILED, ⏭️ SKIPPED, ⚠️ ERROR
+Status icons: ✅ PASSED, ❌ FAILED, 🚫 BLOCKED, ⚠️ ERROR
 
 4. Output report path and summary to user.
 
@@ -449,11 +571,19 @@ Status icons: ✅ PASSED, ❌ FAILED, ⏭️ SKIPPED, ⚠️ ERROR
 
 After the report is written, delete the test gateway created in Step 2:
 
-1. Navigate to the test gateway's basic info page (`{{URL}}/{{TEST_GW_ID}}/basic/info`)
-2. Find and click the "删除网关" or "停用" button
+1. Navigate to the test gateway's basic info page (`{{URL}}/{{TEST_GW_ID}}/basic-info`)
+2. Find and click `停用` (if visible), then click plain `删除`
 3. Confirm deletion in the dialog
 4. Verify the gateway no longer appears on the home page
 5. If cleanup fails, note it in the report under a "Cleanup" section
+
+
+Cleanup implementation notes:
+- Basic info route is `/:id/basic-info` (not `/:id/basic/info`).
+- Click `停用` first (if visible), confirm, wait for reload.
+- Delete button text is plain `删除`.
+- Confirm dialog may require typing gateway name.
+- Always verify deletion by searching home page for the test gateway name.
 
 **NEVER skip cleanup** — leftover test gateways pollute the environment.
 
@@ -467,10 +597,10 @@ After the report is written, delete the test gateway created in Step 2:
 
 ---
 
-## Generate Mode: `/agent-test generate`
+## Generate Mode: `agent-test generate`
 
 ```
-/agent-test generate --url <PAGE_URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>]
+agent-test generate --url <PAGE_URL> --user <USERNAME> --password <PASSWORD> [--cases <DIR>]
 ```
 
 `--url` is the specific page to explore (e.g., `https://example.com/gateways/123/resources`).
@@ -595,7 +725,7 @@ These files are living artifacts — keep them updated as you discover new knowl
 | **BkUI component patterns change** | Update the `bkuiComponents` section |
 | **New plugins are added to the platform** | Add them to `pluginManagement.availablePlugins` |
 
-**How to update**: After fixing a selector or discovering a new one during execution, use the `Edit` tool to update `test/agent-tests/selector-cache.json` before proceeding. Always update `_meta.lastUpdated` to today's date.
+**How to update**: After fixing a selector or discovering a new one during execution, edit `test/agent-tests/selector-cache.json` before proceeding. Always update `_meta.lastUpdated` to today's date.
 
 ### When to Update `helpers.js`
 
@@ -607,7 +737,7 @@ These files are living artifacts — keep them updated as you discover new knowl
 | **The login flow changes** | Update `H.reAuth()` |
 | **Generate mode needs richer extraction** (e.g., new element types to detect) | Update `H.extractPageElements()` |
 
-**How to update**: Use the `Edit` tool to modify `test/agent-tests/helpers.js`. Keep helpers stateless (no side effects beyond the page interaction). Test the change in the next `browser_run_code` call before relying on it for a full batch.
+**How to update**: Edit `test/agent-tests/helpers.js` directly. Keep helpers stateless (no side effects beyond the page interaction). Test the change in the next `browser_run_code` call before relying on it for a full batch.
 
 ### When NOT to Update
 

@@ -266,7 +266,8 @@
   },
   "commonPatterns": {
     "dropdownSelect": {
-      "steps": ["Escape", "wait(100)", "click(selector, force:true)", "wait(300)", "click(.bk-select-option hasText)", "wait(800)"]
+      "steps": ["body.click({x:10,y:10})", "wait(200)", "click(selector, force:true)", "wait(300)", "click(.bk-select-option hasText)", "wait(800)"],
+      "note": "NEVER use Escape to close BkSelect — it is ignored. Use body.click() to dismiss."
     },
     "emptyValidation": {
       "steps": ["fill('a')", "fill('')", "blur()", "wait(300)"],
