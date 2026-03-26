@@ -141,6 +141,7 @@
                 :key="server.id"
                 :server="server"
                 :show-actions="false"
+                :show-public="false"
                 :oauth2-tooltip="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
                 @click="() => handleCardClick(server.id)"
               >
