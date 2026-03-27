@@ -315,7 +315,7 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
         user_tenant_id = get_user_tenant_id(request)
         check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
 
-        configs = MCPServerHandler.build_agent_client_configs(instance)
+        configs = MCPServerHandler.build_agent_client_configs(instance, user_tenant_id=user_tenant_id)
         return OKJsonResponse(data={"configs": configs})
 
 

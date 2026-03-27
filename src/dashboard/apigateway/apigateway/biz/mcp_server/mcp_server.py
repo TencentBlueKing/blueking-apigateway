@@ -575,7 +575,9 @@ class MCPServerHandler:
         return extend.content
 
     @staticmethod
-    def _build_cursor_install_url(name: str, mcp_url: str, oauth2_public_client_enabled: bool = False) -> str:
+    def _build_cursor_install_url(
+        name: str, mcp_url: str, oauth2_public_client_enabled: bool = False, user_tenant_id: str = ""
+    ) -> str:
         """
         生成 Cursor 一键配置 URL
 
@@ -584,33 +586,39 @@ class MCPServerHandler:
         config: Dict[str, Any] = {
             "url": mcp_url,
         }
+        headers: Dict[str, str] = {}
         if not oauth2_public_client_enabled:
-            config["headers"] = {
-                "X-Bkapi-Authorization": json.dumps(
-                    {
-                        "bk_app_code": "your_app_code",
-                        "bk_app_secret": "your_app_secret",
-                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
-                    }
-                )
-            }
+            headers["X-Bkapi-Authorization"] = json.dumps(
+                {
+                    "bk_app_code": "your_app_code",
+                    "bk_app_secret": "your_app_secret",
+                    settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                }
+            )
+        if settings.ENABLE_MULTI_TENANT_MODE and user_tenant_id:
+            headers["X-Bk-Tenant-Id"] = user_tenant_id
+            headers["X-Bkapi-Allowed-Headers"] = "X-Bk-Tenant-Id"
+        if headers:
+            config["headers"] = headers
         config_json = json.dumps(config)
         config_base64 = base64.b64encode(config_json.encode()).decode()
         return f"cursor://anysphere.cursor-deeplink/mcp/install?name={quote(name)}&config={quote(config_base64)}"
 
     @staticmethod
-    def build_agent_client_configs(instance: MCPServer) -> List[Dict[str, Any]]:
+    def build_agent_client_configs(instance: MCPServer, user_tenant_id: str = "") -> List[Dict[str, Any]]:
         """
         构建 MCPServer 的 Agent 客户端配置列表
 
         Args:
             instance: MCPServer 实例
+            user_tenant_id: 用户租户 ID（多租户模式下使用）
 
         Returns:
             配置列表，每个配置包含 name, display_name, content, install_url
         """
         language_code = get_current_language_code()
         mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
+        enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
         configs = []
 
         for client in settings.MCP_CONFIG_AGENT_CLIENTS:
@@ -630,6 +638,8 @@ class MCPServerHandler:
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
                 "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
+                "enable_multi_tenant_mode": enable_multi_tenant_mode,
+                "user_tenant_id": user_tenant_id,
             }
 
             # AIDev 需要额外的创建链接
@@ -642,7 +652,7 @@ class MCPServerHandler:
             install_url = ""
             if client["name"] == "cursor":
                 install_url = MCPServerHandler._build_cursor_install_url(
-                    instance.name, mcp_url, instance.oauth2_public_client_enabled
+                    instance.name, mcp_url, instance.oauth2_public_client_enabled, user_tenant_id
                 )
 
             configs.append(

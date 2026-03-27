@@ -502,7 +502,8 @@ class MCPServerConfigListApi(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        configs = MCPServerHandler.build_agent_client_configs(instance)
+        user_tenant_id = get_user_tenant_id(request)
+        configs = MCPServerHandler.build_agent_client_configs(instance, user_tenant_id=user_tenant_id)
         return OKJsonResponse(data={"configs": configs})
 
 
