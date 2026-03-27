@@ -188,7 +188,26 @@ If running smoke scope, the report must explicitly say it is a smoke run and mus
 
 This section contains hard-won knowledge from executing test cases against the BlueKing API Gateway dashboard. **Read this before running any test cases** — it will save hours of trial and error.
 
-## Last Run Summary (2026-03-26, smoke)
+## Last Run Summary (2026-03-27, smoke)
+
+**835 cases indexed (from Excel), 31 module routes validated (~10 minutes).**
+
+| Metric | Count |
+|--------|-------|
+| ✅ Passed (modules) | 29 |
+| ❌ Failed | 0 |
+| 🚫 Blocked | 8 cases (canonical list) |
+| ⚠️ Selector notes | 2 (`.bk-table` class, `text=default` — pages functional) |
+
+Full report: `test/agent-tests/reports/2026-03-27T16-03-18/report.md`
+
+### Selector Updates Needed
+
+- `.bk-table` — resource config & version pages use different table class; use `tbody tr` as reliable fallback
+- `text=default` on backend service page — use `td:has-text('default')` instead
+- Delete confirmation dialog uses `input[placeholder="请输入"]` (NOT `input[placeholder*="网关名称"]`)
+
+### Previous Run Summary (2026-03-26, smoke)
 
 **835 cases indexed, 31 module routes validated in one batched run (~3 minutes).**
 
@@ -227,7 +246,7 @@ Running 835 cases efficiently requires this exact order. Skipping a step will ca
    - Step 1 (差异确认): Shows diff of resource changes → click "下一步"
    - Step 2 (版本信息): Version number is auto-suggested (e.g., `1.0.0`) → click "确定"
    - Wait for "版本生成成功" success page → click "立即发布" to chain into publish flow
-6. **Publish version to prod stage**: The publish sideslider opens from "立即发布" with version pre-selected → select "prod" stage → click "下一步" (diff confirmation) → click "确认发布" → confirm in InfoBox dialog ("确认发布 X.X.X 版本至 prod 环境？") → wait for release event log to show success.
+6. **Publish version to prod stage**: Click **"发布至环境"** button on the version row — this is a **BkDropdown trigger**. A dropdown appears with stage names (e.g. `prod`). Click `prod` → `release-sideslider` opens with title "发布资源至环境【prod】" and version pre-selected → click **下一步** (diff confirmation) → click **确认发布** → optionally confirm in InfoBox → wait 5s → verify via `/:testGwId/stage/release-record` (row with version + stage).
 
 ### Phase 2: Module 01 — Home Page (42 cases, ~3 min)
 
@@ -249,45 +268,50 @@ The largest module. Group by interaction type:
 **Doc cases (73-92)**: Access via resource sidebar → 资源文档 tab. Doc creation requires markdown editor.
 **Tag cases (219-221)**: Access via tag select dropdown in resource create form → 新建标签 option.
 
-### Phase 4: Modules 03-17 (~200 cases, ~2 min)
+### Phase 4 & 5: Modules 03–31 — Use `module-classification.json`
 
-Navigate to each page and verify content loads. These are mostly read-only view/filter/search cases:
+**Do not use hardcoded module lists here.** The classification is derived from actual case content and lives in `test/agent-tests/module-classification.json`. Load it at run start and split modules into two queues:
 
-| Modules | URL Pattern | Key Check |
-|---------|-------------|-----------|
-| 03 Resource Version | `/:existGwId/resource/version` | Table with versions |
-| 04 SDK List | Same page, SDK tab | Tab may not exist (feature flag) |
-| 05 Env Overview | `/:testGwId/stage/overview` | "prod" stage visible |
-| 06 Env Resources | `/:existGwId/stage/prod/resources` | Table |
-| 07 Env Plugins | `/:testGwId/stage/prod/plugins` | Page loads |
-| 08 Env Variables | `/:testGwId/stage/prod/variables` | Page loads |
-| 09 Release Records | `/:existGwId/stage/release-record` | Table |
-| 10 Backend Services | `/:testGwId/backend` | Table with "default" row, 新建/编辑 buttons |
-| 11 Permission Approval | `/:existGwId/permission/approvals` | Page loads |
-| 12 App Permissions | `/:existGwId/permission/apps` | Page loads |
-| 13 Access Log | `/:existGwId/log` | Table |
-| 14 Statistics | `/:existGwId/statistics` | Page loads |
-| 15 Online Debug | `/:existGwId/online-debug` | Page loads |
-| 16 Debug History | `/:existGwId/online-debug/history` | Page loads |
-| 17 Basic Info | `/:testGwId/basic-info` | Gateway name visible |
+- **`readonly` modules → parallel tabs** (up to 16 at once, one `browser_run_code` call per batch of 16)
+- **`mutating` modules → sequential** (one module at a time, each in a dedicated `browser_run_code` call)
 
-### Phase 5: Modules 18-31 (~240 cases, ~2 min)
+```
+# Load classification
+classification = JSON.parse(read("test/agent-tests/module-classification.json"))
+readonly_modules = classification.modules.filter(m => m.type === "readonly")  // 17 modules
+mutating_modules = classification.modules.filter(m => m.type === "mutating")  // 14 modules
+```
 
-| Modules | URL Pattern |
-|---------|-------------|
-| 18 MCP Server | `/:testGwId/mcp/server` |
-| 19 MCP Permissions | `/:testGwId/mcp/permission` |
-| 20 Audit Log | `/:existGwId/audit` |
+**Current classification (as of 2026-03-27, regenerate with `python3 test/agent-tests/classify_modules.py` after case updates):**
+
+| Type | Modules |
+|------|---------|
+| **readonly** (parallel-safe) | 03-resource-version, 04-sdk-list, 09-release-records, 11-permission-approval, 13-access-log, 14-statistics, 15-online-debug, 16-debug-request-history, 19-mcp-permission-approval, 20-operation-records, 21-component-intro, 25-realtime-data, 27-component-api-doc, 28-platform-toolbox, 29-auto-gateway-access, 30-programmable-gateway, 31-mcp-market |
+| **mutating** (sequential) | 01-my-gateway, 02-resource-config, 05-env-overview, 06-env-resource-info, 07-env-plugin-mgmt, 08-env-variable-mgmt, 10-backend-service, 12-app-permissions, 17-basic-info, 18-mcp-server, 22-system-mgmt, 23-component-mgmt, 24-doc-category, 26-gateway-api-doc |
+
+**URL patterns for readonly modules** (use `/:existGwId` — no test gateway needed):
+
+| Module | URL |
+|--------|-----|
+| 03 Resource Version | `/:existGwId/resource/version` |
+| 04 SDK List | `/:existGwId/resource/version` (SDK tab — may not exist, feature flag) |
+| 09 Release Records | `/:existGwId/stage/release-record` |
+| 11 Permission Approval | `/:existGwId/permission/approvals` |
+| 13 Access Log | `/:existGwId/log` |
+| 14 Statistics | `/:existGwId/statistics` |
+| 15 Online Debug | `/:existGwId/online-debug` |
+| 16 Debug History | `/:existGwId/online-debug/history` |
+| 19 MCP Permission Approval | `/:existGwId/mcp/permission` |
+| 20 Operation Records | `/:existGwId/audit` |
 | 21 Component Intro | `/components/access` |
-| 22 System Mgmt | `/components/systems` |
-| 23 Component Mgmt | `/components/manage` |
-| 24 Doc Category | `/docs/api-docs` |
 | 25 Realtime Data | `/:existGwId/realtime-data` |
-| 26-27 API Docs | `/docs/api-docs` |
+| 27 Component API Doc | `/docs/api-docs` |
 | 28 Platform Toolbox | `/platform-tools/toolbox` |
 | 29 Auto Access | `/platform-tools/auto-access` |
 | 30 Programmable | `/platform-tools/programmable` |
 | 31 MCP Market | `/mcp-market` |
+
+> **When cases are updated**: run `python3 test/agent-tests/classify_modules.py` to regenerate `module-classification.json`. The table above will diverge from the file if cases change — **the JSON file is authoritative**.
 
 ### Phase 6: Cleanup
 
@@ -634,8 +658,45 @@ Canonical blocked files:
 - Version number auto-suggests the next Semver version (e.g., if last was 1.0.0, suggests 1.0.1). It's pre-filled, so you don't need to type it.
 - The version form uses Semver validation — versions starting with `v` are rejected.
 - After clicking "确定" to create version, a loading spinner appears ("版本正在生成中...") then switches to success page ("版本生成成功").
+
+### ⚠️ CRITICAL: "发布至环境" is a BkDropdown, not a direct button
+
+The publish button on the resource version list page is a **dropdown trigger**, not a sideslider opener:
+
+```javascript
+// CORRECT flow:
+// Step 1: Click the dropdown trigger button
+await page.locator('tr button').filter({ hasText: '发布至环境' }).first().click();
+await page.waitForTimeout(1000);
+
+// Step 2: Click the stage name from the dropdown menu (teleported to body)
+await page.locator('.bk-dropdown-item').filter({ hasText: 'prod' }).click();
+await page.waitForTimeout(2000);
+
+// Step 3: Now the release-sideslider opens
+// class="release-sideslider bk-sideslider is-position-right bk-modal"
+// Title: "发布资源至环境【prod】", version pre-selected as 1.0.0
+
+// Step 4: Click 下一步
+await page.locator('.bk-sideslider button').filter({ hasText: '下一步' }).first().click({ force: true });
+await page.waitForTimeout(1500);
+
+// Step 5: Click 确认发布
+await page.locator('.bk-sideslider button').filter({ hasText: '确认发布' }).first().click({ force: true });
+await page.waitForTimeout(500);
+
+// Step 6: Optional InfoBox secondary confirmation
+const infoBox = page.locator('.bk-infobox button').filter({ hasText: '确认发布' }).first();
+if (await infoBox.isVisible({ timeout: 2000 }).catch(() => false)) {
+  await infoBox.click({ force: true });
+}
+await page.waitForTimeout(5000);
+```
+
+**Verification**: Navigate to `/:id/stage/release-record` — confirm row with version (e.g. `1.0.0`) and stage (`prod`) exists.
+
 - The publish sideslider title is dynamic: "发布资源至环境【{stage}】"
-- The version dropdown in publish has custom option rendering (shows "当前版本" and "最新版本" tags).
+- The version dropdown in the publish slider shows the version as pre-selected (current version tag + "最新版本")
 - **Unpublish is only available when stage status === 1** (active). If status === 0, the button shows "已下架" and is disabled.
 - After unpublishing, the stage card shows "尚未发布，无数据" state.
 

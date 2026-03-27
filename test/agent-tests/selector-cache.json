@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Pre-built selector cache for agent-test skill. Avoids reading Vue source files at runtime.",
     "source": "Extracted from test/agent-tests/AGENTS.md knowledge base",
-    "lastUpdated": "2026-03-26"
+    "lastUpdated": "2026-03-27"
   },
   "login": {
     "chineseForm": {
@@ -48,15 +48,15 @@
   "resourceConfig": {
     "url": "/:id/resource/setting",
     "selectors": {
-      "table": ".bk-table",
-      "tableRows": ".bk-table-row",
+      "tableRows": "tbody tr",
       "editBtn": "tr button:has-text('编辑')",
       "cloneBtn": "tr button:has-text('克隆')",
       "deleteBtn": "tr button:has-text('删除')",
       "exportBtn": "button:has-text('导出')",
       "importBtn": "button:has-text('导入')",
       "searchInput": "input[placeholder*='搜索']",
-      "resourceNameLink": "[cursor=pointer]"
+      "resourceNameLink": "[cursor=pointer]",
+      "generateVersionBtn": "button:has-text('生成版本')"
     },
     "sidebar": {
       "tabs": ["资源配置", "插件管理", "资源文档"],
@@ -89,12 +89,29 @@
   "resourceVersion": {
     "url": "/:id/resource/version",
     "selectors": {
-      "table": ".bk-table",
-      "versionRows": ".bk-table-row",
-      "sdkTab": "text=SDK"
+      "tableRows": "tbody tr",
+      "versionBtn": "tbody tr button:first-child",
+      "generateSdkBtn": "tr button:has-text('生成 SDK')",
+      "publishDropdownBtn": "tr button:has-text('发布至环境')",
+      "publishStageItem": ".bk-dropdown-item",
+      "exportBtn": "tr button:has-text('导出')",
+      "deleteBtn": "tr button:has-text('删除')",
+      "sdkTab": "text=SDK",
+      "releaseSideslider": ".release-sideslider"
+    },
+    "publishFlow": {
+      "step1_trigger": "Click '发布至环境' button — this is a BkDropdown, NOT a direct button",
+      "step2_selectStage": "Click '.bk-dropdown-item' with stage name (e.g. 'prod') — dropdown is teleported to body",
+      "step3_sliderOpens": "release-sideslider opens: class='release-sideslider bk-sideslider is-position-right bk-modal'",
+      "step4_next": "Click 下一步 in sideslider",
+      "step5_confirm": "Click 确认发布 in sideslider",
+      "step6_infobox": "Optional BkInfoBox confirmation — click 确认发布",
+      "verification": "Check stage/release-record for row with version and stage name"
     },
     "notes": {
-      "sdkTab": "May not be visible — feature flag dependent"
+      "sdkTab": "May not be visible — feature flag dependent",
+      "tableClass": "Uses t-table (Tencent UI), not .bk-table. Use 'tbody tr' for rows.",
+      "publishButton": "CRITICAL: '发布至环境' is a bk-dropdown trigger, not a sideslider opener. Must click the stage from the dropdown menu first."
     }
   },
   "stageOverview": {
@@ -126,8 +143,8 @@
   "backendService": {
     "url": "/:id/backend",
     "selectors": {
-      "table": ".bk-table",
-      "defaultRow": "text=default",
+      "tableRows": "tbody tr",
+      "defaultRow": "td:has-text('default')",
       "editBtn": "tr button:has-text('编辑')",
       "createBtn": "text=新建",
       "addressInput": "input[placeholder*='host:port']"

@@ -234,55 +234,119 @@ if (currentUrl.includes('/login/')) {
 
 ## Performance Rules (CRITICAL)
 
-The #1 bottleneck is **LLM round-trip overhead per tool call** (~5-10s each). Minimizing the number of `browser_run_code` calls is the single most important optimization.
+Two bottlenecks exist. Address both:
 
-### Batching Strategy
+1. **LLM round-trip overhead** (~5-10s per `browser_run_code` call) — minimize total calls via batching
+2. **Sequential page navigation** (~1.6s per page) — eliminate via parallel tabs for read-only cases
 
-**Batch ALL cases that share the same page into ONE `browser_run_code` call.** This is the core optimization.
+### Optimization 1: Parallel Tabs for Read-Only Cases (PRIMARY)
+
+**Benchmarked speedup: 15x on 28 pages (2.9s vs 44s sequential).**
+
+Read-only cases (view, filter, search, sort, navigate) have **no shared state** and can run simultaneously in multiple browser tabs within a single `browser_run_code` call.
+
+**Classify every page group before batching:**
+
+| Type | Examples | Strategy |
+|------|----------|----------|
+| **Read-only** | View list, filter, search, sort, check UI elements | **Parallel tabs** — up to 16 at once |
+| **Mutating** | Create, edit, delete, publish, toggle settings | **Sequential** — ordered, single tab |
+
+**Parallel tab template:**
+
+```javascript
+async (page) => {
+  const ctx = page.context();
+  const BASE = '{{URL}}';
+  const HELPERS_SRC = /* injected */;
+  const REPORT_DIR = '{{REPORT_DIR}}';
+  const results = {};
+
+  // Group: all read-only pages in this batch
+  const tasks = [
+    { key: 'case-name-1', url: `${BASE}/path/1`, cases: [ /* case steps */ ] },
+    { key: 'case-name-2', url: `${BASE}/path/2`, cases: [ /* case steps */ ] },
+    // ... up to 16 tasks
+  ];
+
+  // Open all tabs in parallel
+  const pages = await Promise.all(tasks.map(() => ctx.newPage()));
+
+  // Run all tasks concurrently
+  await Promise.all(tasks.map(async (task, i) => {
+    const p = pages[i];
+    try {
+      // Inject helpers into each tab's scope via evaluate
+      const H = new Function(`${HELPERS_SRC}; return H;`)();
+      await p.goto(task.url);
+      await p.waitForTimeout(800);
+
+      for (const c of task.cases) {
+        try {
+          // Execute case steps
+          // ...
+          results[c.name] = { pass: true };
+        } catch(e) {
+          await p.screenshot({ path: `${REPORT_DIR}/screenshots/${c.name}-fail.png` }).catch(()=>{});
+          results[c.name] = { pass: false, error: e.message };
+        }
+      }
+    } catch(e) {
+      results[task.key] = { pass: false, error: e.message };
+    }
+  }));
+
+  // Close all extra tabs
+  await Promise.all(pages.map(p => p.close()));
+  return results;
+}
+```
+
+**Parallel batch size limit**: Max **16 tabs per call**. Above 16, split into multiple calls — server handles 16 tabs in ~2s, same as 8.
+
+**Parallel tab rules:**
+- Each tab gets its own `page` reference — never share a tab between tasks
+- Inject helpers via `new Function(HELPERS_SRC + '; return H;')()` inside each tab's async closure
+- Each case's `try/catch` is independent — one tab failure does NOT affect others
+- Close all tabs with `Promise.all(pages.map(p => p.close()))` before returning
+- Session cookies are shared across tabs in the same context — no re-login needed
+
+### Optimization 2: Batching (SECONDARY)
+
+**Batch cases that share the same page into one tab's work block.** Within a parallel task, all cases for that page run sequentially inside the same tab.
 
 ```
-# BAD: 1 call per case step = N*M tool calls for N cases with M steps
-# Each tool call adds ~5-10s LLM overhead regardless of browser execution time
-
-# GOOD: 1 call per page batch = drastically fewer tool calls
-# All cases for the same page run in one browser_run_code block
+# GOOD: 16 read-only pages × N cases each, all tabs running at once
+# Each tab handles all cases for its assigned page
 ```
 
-**How to batch:**
-1. After parsing all cases, group them by their **Page** field
-2. For each page group, generate ONE `browser_run_code` call that:
-   - Navigates to the page once
-   - Executes ALL cases for that page sequentially within the same function
-   - Collects results for each case in a structured object
-   - Takes screenshots ONLY on failure
-   - Returns all results at once
+**Batch size limit**: If a single page has more than ~15 cases, split into sub-batches of 10–15 cases per call. Set `timeout: 120000` for large batches.
 
-**Batch size limit**: If a page group has more than ~15 cases, split into sub-batches of 10-15 cases per `browser_run_code` call to avoid timeouts. Set `timeout: 120000` (2 minutes) for large batches.
+### Optimization 3: Wait Times
+
+- Use `waitForTimeout(800)` as standard wait after UI interactions
+- Use `waitForTimeout(300)` for dropdown animation
+- **Prefer `waitForSelector` / `waitForResponse`** over fixed waits — eliminates unnecessary delay
+- **NEVER use `waitForTimeout(1500)`** or higher unless waiting for a confirmed slow API
+- For parallel tabs, use `waitForTimeout(800)` on navigate (not 1500) — pages load in ~235ms with concurrency
 
 ### Screenshot Rules
 
 - **NEVER take screenshots for passing cases** — they waste ~10s per call
-- **ONLY take screenshots on failure** — capture the failure state for debugging
-- Take failure screenshots INSIDE the `browser_run_code` call using `await page.screenshot({ path: '...' })` to avoid an extra tool call
+- **ONLY take screenshots on failure** — inside each tab's `catch` block
+- Use `await p.screenshot({ path: '...' })` (not `page`, but the tab's `p` reference)
 - For the final report, note which cases have failure screenshots
-
-### Wait Time Rules
-
-- Use `waitForTimeout(800)` as the standard wait after UI interactions (dropdown select, search submit, sort change)
-- Use `waitForTimeout(300)` for dropdown animation open/close
-- Use `waitForSelector` or `waitForResponse` instead of fixed waits when possible
-- NEVER use `waitForTimeout(1500)` or higher unless waiting for a known slow API
 
 ### Token Efficiency
 
 **NEVER use `browser_snapshot` in ANY mode.** Use `browser_run_code` for everything.
 
-- In **run mode**: Use `browser_run_code` with batched cases (as described above).
-- In **generate mode**: Use `H.extractPageElements(page)` inside `browser_run_code` instead of `browser_snapshot`. This returns a compact summary (~500-1000 tokens) instead of the full accessibility tree (~20,000-90,000 tokens).
+- In **run mode**: parallel tabs for read-only, sequential batches for mutating.
+- In **generate mode**: Use `H.extractPageElements(page)` inside `browser_run_code` instead of `browser_snapshot`. Returns ~500–1000 tokens vs 20,000–90,000 tokens from snapshot.
 
-**Use the selector cache** (`test/agent-tests/selector-cache.json`) instead of reading Vue source files at runtime. Read the JSON once at the start of a run to get all selectors, URL mappings, and component patterns. Only fall back to Vue source analysis if a selector is missing from the cache.
+**Use the selector cache** (`test/agent-tests/selector-cache.json`) instead of reading Vue source files at runtime. Read the JSON once at the start of a run. Only fall back to Vue source analysis if a selector is missing from the cache.
 
-**Use the helpers library** (`test/agent-tests/helpers.js`). Read this file once and inject its content (the `const H = { ... };` block) at the top of every `browser_run_code` call. This reduces generated code size and LLM reasoning overhead. Available helpers:
+**Use the helpers library** (`test/agent-tests/helpers.js`). Read this file once and inject its content (the `const H = { ... };` block) at the top of every `browser_run_code` call. Available helpers:
 - `H.dropdown(page, selector, optionText)` — open select + pick option
 - `H.dropdownNth(page, nthIndex, optionText)` — select by nth placeholder index
 - `H.fillAndBlur(page, selector, value)` — fill input + blur for validation
@@ -330,11 +394,21 @@ Before touching the browser, load resources and understand what you'll be testin
 
 1. **Read the selector cache**: `test/agent-tests/selector-cache.json` — contains all selectors, URL mappings, component patterns
 2. **Read the helpers library**: `test/agent-tests/helpers.js` — will be injected into `browser_run_code` calls
-3. Read all test case files from the cases directory
-4. Extract the **Page** field from each case (e.g., `/`, `/gateways/123/resources`)
-5. **Group cases by Page** — this determines your batching
-6. Map each page to its selectors using `selector-cache.json` (key: page name, value: selectors object)
-7. Use `urlRouteMap` from the cache to translate test case page patterns to actual Vue routes
+3. **Read the module classification**: `test/agent-tests/module-classification.json` — pre-computed read-only vs mutating classification per module. Use this to decide which modules run in parallel tabs vs sequential.
+4. Read all test case files from the cases directory
+5. Extract the **Page** field from each case (e.g., `/`, `/gateways/123/resources`)
+6. **Group cases by Page** — this determines your batching
+7. Map each page to its selectors using `selector-cache.json` (key: page name, value: selectors object)
+8. Use `urlRouteMap` from the cache to translate test case page patterns to actual Vue routes
+
+**Split modules into two queues from `module-classification.json`:**
+- `readonly` modules → parallel tabs batch (up to 16 tabs per `browser_run_code` call)
+- `mutating` modules → sequential execution (one module at a time)
+
+**If `module-classification.json` is missing or stale** (its `lastUpdated` is older than the newest case file), regenerate it before running:
+```bash
+python3 test/agent-tests/classify_modules.py
+```
 
 ### Step 1.5: Build Runtime Context (MANDATORY)
 
@@ -342,13 +416,17 @@ Before any browser action, build and keep this runtime context in memory:
 
 1. `CACHE`: parsed JSON from `test/agent-tests/selector-cache.json`
 2. `HELPERS_SRC`: raw `const H = { ... }` block from `test/agent-tests/helpers.js`
-3. `CASE_INDEX`: parsed case metadata grouped by `Page`
-4. `ROUTE_MAP`: `CACHE.urlRouteMap`
+3. `CLASSIFICATION`: parsed JSON from `test/agent-tests/module-classification.json`
+4. `CASE_INDEX`: parsed case metadata grouped by `Page`
+5. `ROUTE_MAP`: `CACHE.urlRouteMap`
+6. `READONLY_MODULES`: `Object.entries(CLASSIFICATION.modules).filter(([,v]) => v.type === 'readonly').map(([k]) => k)`
+7. `MUTATING_MODULES`: `Object.entries(CLASSIFICATION.modules).filter(([,v]) => v.type === 'mutating').map(([k]) => k)`
 
 Mandatory usage rules:
 - If a selector exists in `CACHE`, use it first. Do not re-discover it via ad-hoc DOM probing.
 - Inject `HELPERS_SRC` into every `browser_run_code` batch. Do not re-implement helper logic inline unless missing.
 - Resolve each case page path via `ROUTE_MAP` before navigation.
+- Use `READONLY_MODULES` and `MUTATING_MODULES` queues — never hardcode which modules are parallel-safe.
 - Only fall back to dynamic DOM discovery when cache is missing or proven stale.
 - If a fallback selector is found, update `selector-cache.json` after the batch completes.
 
@@ -360,8 +438,9 @@ Do not proceed to authentication unless all checks pass:
 
 1. `CACHE` loaded and contains `urlRouteMap`
 2. `HELPERS_SRC` loaded and includes `H.dropdown`, `H.reAuth`, `H.failScreenshot`
-3. All cases parsed and grouped by page
-4. Execution scope (`full` or `smoke`) is explicit
+3. `CLASSIFICATION` loaded — `READONLY_MODULES` and `MUTATING_MODULES` queues built
+4. All cases parsed and grouped by page
+5. Execution scope (`full` or `smoke`) is explicit
 
 ### Step 2: Authenticate and Create Test Gateway
 
@@ -778,9 +857,22 @@ For each interactive element group found in BOTH source analysis AND live page:
 
 ---
 
-## Maintaining selector-cache.json and helpers.js
+## Maintaining selector-cache.json, helpers.js, and module-classification.json
 
 These files are living artifacts — keep them updated as you discover new knowledge during test runs.
+
+### When to Update `module-classification.json`
+
+| Trigger | Action |
+|---------|--------|
+| **New Excel imported (`--excel`)** | Run `python3 test/agent-tests/classify_modules.py` after conversion — new modules will be auto-classified |
+| **Cases directory edited manually** (new cases added, steps changed) | Run `python3 test/agent-tests/classify_modules.py` before the next test run |
+| **New module directory added** | Same — script auto-discovers new directories |
+| **A module's classification seems wrong** | Check `test/agent-tests/module-classification.json` — read the `reason` field. If wrong, fix the script patterns or manually override the `type` and `reason` in the JSON |
+
+**The JSON file is the authoritative source.** AGENTS.md contains a convenience copy of the current classification table, but it may lag behind. Always load `module-classification.json` at runtime, not the AGENTS.md table.
+
+**Never hardcode module lists** in `browser_run_code` calls. Always derive `readonly`/`mutating` queues from the JSON at the start of every run.
 
 ### When to Update `selector-cache.json`
 
@@ -819,6 +911,8 @@ These files are living artifacts — keep them updated as you discover new knowl
 
 - **Selector cache**: `test/agent-tests/selector-cache.json` — pre-built selectors, URL maps, component patterns (READ FIRST)
 - **Helpers library**: `test/agent-tests/helpers.js` — reusable browser interaction patterns (INJECT INTO browser_run_code)
+- **Module classification**: `test/agent-tests/module-classification.json` — readonly vs mutating per module (READ FIRST, regenerate with `classify_modules.py` after case updates)
+- **Classifier script**: `test/agent-tests/classify_modules.py` — regenerates module-classification.json from case files
 - **Knowledge base**: `test/agent-tests/AGENTS.md` — gotchas, known issues, execution order
 - **Cases directory**: `test/agent-tests/cases/`
 - **Reports directory**: `test/agent-tests/reports/`
