@@ -300,9 +300,12 @@ ignore_imports = [
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
     "apigateway.controller.tasks.release -> apigateway.biz.resource_version",
+    "apigateway.controller.tasks.syncing -> apigateway.biz.release",
     "apigateway.apps.support.task -> apigateway.biz.ai.constant",
     "apigateway.apps.support.task -> apigateway.biz.ai.ai",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.release",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.biz.*",
     "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
@@ -346,6 +349,8 @@ ignore_imports = [
     "apigateway.apps.support.task -> apigateway.biz.ai.constant",
     "apigateway.apps.support.task -> apigateway.biz.ai.ai",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.release",
     # -- django commands
     "apigateway.apps.*.management.commands.* -> apigateway.core.models",
     "apigateway.apps.*.management.commands.* -> apigateway.core.constants",
