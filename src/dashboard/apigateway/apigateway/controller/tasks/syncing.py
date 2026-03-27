@@ -16,22 +16,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-import time
 import uuid
-from datetime import datetime
 
 from celery import shared_task
 
+from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import (
     PublishSourceEnum,
-    ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import Release, ReleaseHistory
 from apigateway.service.event.event import PublishEventReporter
 from apigateway.utils.time import now_datetime
 
@@ -154,9 +152,8 @@ def revoke_release(release_id: int, publish_id: int):
 
 
 def wait_another_release_done(release_history: ReleaseHistory):
-    """这里主要是为了避免并发发布过程中，如果同时发布导致 operator 事件收敛导致事件丢失，需要等待上一个最近的发布任务执行完成"""
+    """等待上一个最近的发布任务执行完成，避免并发发布导致 operator 事件收敛丢失"""
 
-    # 获取最近的一个发布历史
     other_latest_release = (
         ReleaseHistory.objects.filter(
             gateway_id=release_history.gateway_id, stage_id=release_history.stage_id, id__lt=release_history.id
@@ -168,32 +165,11 @@ def wait_another_release_done(release_history: ReleaseHistory):
     if other_latest_release is None:
         return
 
-    # 获取其发布状态
+    release_interval = (release_history.created_time - other_latest_release.created_time).total_seconds()
+    if release_interval >= RELEASE_GATEWAY_INTERVAL_SECOND:
+        return
 
-    # 查询发布历史对应的最新发布事件
-    has_another_release_doing = True
-    start_time = datetime.now().timestamp()
-    wait_times = 0
-    while has_another_release_doing:
-        # 如果等待时间超过 10*RELEASE_GATEWAY_INTERVAL_SECOND 就退出等待
-        now = datetime.now().timestamp()
-        if now - start_time > 10 * RELEASE_GATEWAY_INTERVAL_SECOND:
-            break
-
-        time.sleep(1 * wait_times)
-
-        wait_times += 1
-        other_latest_release_event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
-            [other_latest_release.id]
-        )
-        latest_event = other_latest_release_event_map.get(other_latest_release.id, None)
-        if latest_event:
-            has_another_release_doing = (
-                latest_event.get_release_history_status() == ReleaseHistoryStatusEnum.DOING.value
-            )
-            continue
-        # 如果还没生成事件，就判断之间的时间间隔
-        release_interval = release_history.created_time - other_latest_release.created_time
-        # 获取时间间隔的总秒数
-        release_interval_in_seconds = release_interval.total_seconds()
-        has_another_release_doing = release_interval_in_seconds < RELEASE_GATEWAY_INTERVAL_SECOND
+    ReleaseHandler.wait_release_done(
+        other_latest_release.id,
+        timeout=10 * RELEASE_GATEWAY_INTERVAL_SECOND,
+    )

@@ -31,7 +31,7 @@ from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
@@ -44,6 +44,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
@@ -55,6 +56,7 @@ from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
+from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.exception import LockTimeout
@@ -66,7 +68,6 @@ from .serializers import (
     DocImportByArchiveInputSLZ,
     GatewayResourceVersionLatestRetrieveOutputSLZ,
     GatewaySyncOutputSLZ,
-    MCPServerSLZ,
     ReleaseInputSLZ,
     ReleaseOutputSLZ,
     ResourceImportInputSLZ,
@@ -674,7 +675,6 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
     def post(self, request, *args, **kwargs):
-        # 验证输入数据
         stage_name = kwargs.get("stage_name")
         if not stage_name:
             raise error_codes.INTERNAL.format(_("stage_name is required"), replace=True)
@@ -683,7 +683,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             raise error_codes.NOT_FOUND.format(
                 _("stage: {stage_name} not found").format(stage_name=stage_name), replace=True
             )
-        # 查询stage发布的资源版本
+
         resource_version_id = Release.objects.get_released_resource_version_id(
             gateway_id=request.gateway.id, stage_name=stage_name
         )
@@ -692,9 +692,20 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
                 _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
             )
 
-        # 查询资源 schema 数据
+        # 检查当前环境是否正在发布
+        stage_release_status = ReleaseHandler.batch_get_stage_release_status([stage.id])
+        stage_status_info = stage_release_status.get(stage.id)
+        is_releasing = stage_status_info and stage_status_info.get("status") in (
+            ReleaseHistoryStatusEnum.DOING.value,
+            ReleaseStatusEnum.PENDING.value,
+        )
+
+        # 如果正在发布，使用正在发布的版本做校验；否则使用已发布的稳定版本
+        validate_resource_version_id = (
+            stage_status_info["resource_version_id"] if is_releasing else resource_version_id
+        )
         resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
-            resource_version_id
+            validate_resource_version_id
         )
 
         context = {
@@ -706,22 +717,37 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
 
         serializer = self.get_serializer(data=request.data, context=context)
         serializer.is_valid(raise_exception=True)
-        results = []
-        for mcp_data in serializer.validated_data["mcp_servers"]:
-            mcp_data["stage_id"] = stage.id
-            name = mcp_data["name"]
-            mcp_data["name"] = MCPServerHandler().get_mcp_server_name(
-                gateway_name=request.gateway.name, stage_name=stage.name, name=name
+
+        mcp_servers_data = serializer.validated_data["mcp_servers"]
+
+        if is_releasing:
+            sync_mcp_server_after_release.delay(
+                gateway_id=request.gateway.id,
+                gateway_name=request.gateway.name,
+                stage_id=stage.id,
+                stage_name=stage.name,
+                release_history_id=stage_status_info["publish_id"],
+                mcp_servers_data=mcp_servers_data,
             )
-            # 查询是否存在
-            instance = MCPServer.objects.filter(
-                name=mcp_data["name"], stage__name=stage.name, gateway_id=request.gateway.id
-            ).first()
-            action = "updated" if instance else "created"
-            mcp_slz = MCPServerSLZ(instance=instance, data=mcp_data, context=context)
-            mcp_slz.is_valid(raise_exception=True)
-            instance = mcp_slz.save()
-            results.append({"name": instance.name, "action": action, "id": instance.id})
+
+            results = [
+                {
+                    "name": MCPServerHandler.get_mcp_server_name(
+                        gateway_name=request.gateway.name, stage_name=stage.name, name=mcp_data["name"]
+                    ),
+                    "action": "pending",
+                    "id": 0,
+                }
+                for mcp_data in mcp_servers_data
+            ]
+        else:
+            results = MCPServerHandler.save_mcp_servers(
+                gateway_id=request.gateway.id,
+                gateway_name=request.gateway.name,
+                stage_id=stage.id,
+                stage_name=stage.name,
+                mcp_servers_data=mcp_servers_data,
+            )
 
         output_slz = StageMcpServersSyncOutputSLZ(results, many=True)
         return OKJsonResponse(data=output_slz.data)
