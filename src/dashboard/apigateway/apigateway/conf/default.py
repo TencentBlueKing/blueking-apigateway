@@ -444,7 +444,7 @@ else:
         CELERY_BROKER_URL = broker_url
         CELERY_RESULT_BACKEND = broker_url
 
-if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
+if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", False):
     CELERY_BEAT_SCHEDULE.update(
         {
             "apigateway.apps.metrics.tasks.statistics_request_by_day": {
