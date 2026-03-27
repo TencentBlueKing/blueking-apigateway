@@ -204,7 +204,7 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
         least_privileges = MCPServerHandler.get_least_privileges([instance])
         least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
 
-        configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege)
+        configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege, user_tenant_id=user_tenant_id)
         return OKJsonResponse(data={"configs": configs})
 
 
