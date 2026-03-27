@@ -21,8 +21,11 @@ from unittest.mock import patch
 import pytest
 from ddf import G
 
-from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum, MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerExtend
+from apigateway.apps.mcp_server.constants import (
+    MCPServerExtendTypeEnum,
+    MCPServerStatusEnum,
+)
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory, MCPServerExtend
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
@@ -713,3 +716,167 @@ class TestMCPServerHandler:
         assert mcp_oauth2_on.id in result
         assert "tool_x" in result[mcp_oauth2_on.id]
         assert mcp_oauth2_off.id not in result
+
+    # ========== save_mcp_servers 测试 ==========
+
+    def test_save_mcp_servers_create(self, fake_gateway, fake_stage):
+        """创建新的 MCP Server"""
+        with patch.object(MCPServerHandler, "sync_permissions"):
+            results = MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "test server",
+                        "resource_names": ["res1"],
+                        "tool_names": ["res1"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                    }
+                ],
+            )
+
+        assert len(results) == 1
+        assert results[0]["action"] == "created"
+        assert results[0]["name"] == f"{fake_gateway.name}-{fake_stage.name}-server1"
+
+        instance = MCPServer.objects.get(id=results[0]["id"])
+        assert instance.description == "test server"
+        assert instance.resource_names == ["res1"]
+
+    def test_save_mcp_servers_update(self, fake_gateway, fake_stage):
+        """更新已有的 MCP Server"""
+        full_name = MCPServerHandler.get_mcp_server_name(
+            gateway_name=fake_gateway.name, stage_name=fake_stage.name, name="server1"
+        )
+        existing = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name=full_name,
+            description="old",
+            status=MCPServerStatusEnum.INACTIVE.value,
+        )
+
+        with patch.object(MCPServerHandler, "sync_permissions"):
+            results = MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "updated",
+                        "resource_names": ["res1"],
+                        "tool_names": ["res1"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                    }
+                ],
+            )
+
+        assert len(results) == 1
+        assert results[0]["action"] == "updated"
+        assert results[0]["id"] == existing.id
+
+        existing.refresh_from_db()
+        assert existing.description == "updated"
+        assert existing.status == MCPServerStatusEnum.ACTIVE.value
+
+    def test_save_mcp_servers_with_permissions(self, fake_gateway, fake_stage):
+        """创建时同步权限"""
+        with patch.object(MCPServerHandler, "sync_permissions") as mock_sync:
+            results = MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "test",
+                        "resource_names": ["res1"],
+                        "tool_names": ["res1"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                        "target_app_codes": ["app1", "app2"],
+                    }
+                ],
+            )
+
+        mcp_server_id = results[0]["id"]
+        assert MCPServerAppPermission.objects.filter(mcp_server_id=mcp_server_id).count() == 2
+        mock_sync.assert_called_once_with(mcp_server_id)
+
+    def test_save_mcp_servers_with_categories(self, fake_gateway, fake_stage):
+        """创建时同步分类"""
+        MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
+
+        with patch.object(MCPServerHandler, "sync_permissions"):
+            results = MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "test",
+                        "resource_names": ["res1"],
+                        "tool_names": ["res1"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                        "category_names": ["Official"],
+                    }
+                ],
+            )
+
+        instance = MCPServer.objects.get(id=results[0]["id"])
+        assert list(instance.categories.values_list("name", flat=True)) == ["Official"]
+
+    # ========== _sync_mcp_server_permissions 测试 ==========
+
+    def test_sync_mcp_server_permissions(self, fake_gateway, fake_stage):
+        """调用权限同步"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with patch.object(MCPServerHandler, "sync_permissions") as mock_sync:
+            MCPServerHandler._sync_mcp_server_permissions(mcp_server.id, ["app1", "app2"])
+
+        assert MCPServerAppPermission.objects.filter(mcp_server_id=mcp_server.id).count() == 2
+        mock_sync.assert_called_once_with(mcp_server.id)
+
+    # ========== _sync_mcp_server_categories 测试 ==========
+
+    def test_sync_mcp_server_categories_set(self, fake_gateway, fake_stage):
+        """设置分类"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        MCPServerCategory.objects.get_or_create(name="Featured", defaults={"display_name": "精选"})
+
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, ["Featured"])
+
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Featured"]
+
+    def test_sync_mcp_server_categories_clear(self, fake_gateway, fake_stage):
+        """传空列表清除分类"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        cat, _ = MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
+        mcp_server.categories.add(cat)
+
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, [])
+
+        assert mcp_server.categories.count() == 0
+
+    def test_sync_mcp_server_categories_none_noop(self, fake_gateway, fake_stage):
+        """传 None 不操作"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        cat, _ = MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
+        mcp_server.categories.add(cat)
+
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, None)
+
+        assert mcp_server.categories.count() == 1
