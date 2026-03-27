@@ -223,6 +223,11 @@ Running 835 cases efficiently requires this exact order. Skipping a step will ca
 2. **Create test gateway**: Click 新建网关 → fill name `testagent<timestamp>` → 提交. Record the gateway ID from the URL.
 3. **Configure backend service**: Navigate to `/:testGwId/backend` → click 编辑 on "default" row → fill address `httpbin.org:80` → 确定（若不存在再尝试 保存）.
 4. **Create a test resource**: Navigate to `/:testGwId/resource/create` → fill name, request path, **select "default" service** (see gotcha below), fill backend path → 提交.
+5. **Generate a resource version**: Navigate to `/:testGwId/resource/setting` → click "生成版本" button (has badge dot when resources changed) → sideslider opens with 2 steps:
+   - Step 1 (差异确认): Shows diff of resource changes → click "下一步"
+   - Step 2 (版本信息): Version number is auto-suggested (e.g., `1.0.0`) → click "确定"
+   - Wait for "版本生成成功" success page → click "立即发布" to chain into publish flow
+6. **Publish version to prod stage**: The publish sideslider opens from "立即发布" with version pre-selected → select "prod" stage → click "下一步" (diff confirmation) → click "确认发布" → confirm in InfoBox dialog ("确认发布 X.X.X 版本至 prod 环境？") → wait for release event log to show success.
 
 ### Phase 2: Module 01 — Home Page (42 cases, ~3 min)
 
@@ -622,3 +627,30 @@ Canonical blocked files:
 3. **Language switcher**: Located in top-right header but exact selector varies; inspect via `browser_run_code` DOM extraction (do not use `browser_snapshot`).
 4. **Gateway deletion**: Must 停用 (disable) first, then reload page, then click 删除 (just `删除`, NOT `删除网关`). After disable the buttons change from `[停用]` to `[立即启用, 删除]`. May require typing gateway name to confirm.
 5. **Resource name collision**: Deleted resource names remain reserved per gateway (including camelCase variants). Always use unique timestamps.
+
+## Resource Version & Publish Gotchas
+
+- The "生成版本" button is **disabled** (greyed out with tooltip "资源无更新，无需生成版本") when no resources have been changed since the last version. You MUST create/edit a resource first.
+- Version number auto-suggests the next Semver version (e.g., if last was 1.0.0, suggests 1.0.1). It's pre-filled, so you don't need to type it.
+- The version form uses Semver validation — versions starting with `v` are rejected.
+- After clicking "确定" to create version, a loading spinner appears ("版本正在生成中...") then switches to success page ("版本生成成功").
+- The publish sideslider title is dynamic: "发布资源至环境【{stage}】"
+- The version dropdown in publish has custom option rendering (shows "当前版本" and "最新版本" tags).
+- **Unpublish is only available when stage status === 1** (active). If status === 0, the button shows "已下架" and is disabled.
+- After unpublishing, the stage card shows "尚未发布，无数据" state.
+
+## Unpublish/Offline Flow (下架)
+
+To unpublish/offline a stage:
+
+1. Navigate to `/:testGwId/stage/overview`
+2. **Card mode**: Click "下架" button on the stage card
+3. **Detail mode**: Click "下架" in the actions area (only enabled when status === 1)
+4. Confirmation dialog appears: "确认下架环境？" → click "确认下架"
+5. API: `PUT /gateways/{id}/stages/{stageId}/status/` with `{status: 0}`
+6. Toast: "下架成功"
+
+**Notes:**
+- The "下架" button is only visible/enabled when the stage has an active release (status === 1).
+- After unpublishing, the stage card switches to a "尚未发布，无数据" empty state.
+- Unpublished stages do NOT block gateway deletion during cleanup.

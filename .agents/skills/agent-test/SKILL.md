@@ -456,6 +456,74 @@ async (page) => {
 - Implement fallback click order: first try `确定`, then `保存`.
 
 
+**After creating the test gateway and configuring backend service, create a test resource, then generate a resource version and publish it to prod stage:**
+
+**Create a test resource** (required before version generation):
+```javascript
+// Navigate to /:testGwId/resource/create → fill name, request path, select "default" service, fill backend path → 提交
+// See "Resource Config Page" section in AGENTS.md for detailed selectors and gotchas
+```
+
+**Generate resource version:**
+```javascript
+async (page) => {
+  // Navigate to resource settings
+  await page.goto('{{URL}}/{{TEST_GW_ID}}/resource/setting');
+  await page.waitForTimeout(2000);
+  // Click "生成版本" button
+  const genBtn = page.locator('button').filter({ hasText: '生成版本' }).first();
+  await genBtn.click({ force: true });
+  await page.waitForTimeout(1500);
+  // Step 1: diff confirmation → click 下一步
+  await page.locator('button').filter({ hasText: '下一步' }).first().click({ force: true });
+  await page.waitForTimeout(1500);
+  // Step 2: version info — version is auto-suggested → click 确定
+  await page.locator('.bk-sideslider button').filter({ hasText: '确定' }).first().click({ force: true });
+  await page.waitForTimeout(3000);
+  // Wait for success: "版本生成成功"
+  const success = await page.locator('text=版本生成成功').isVisible({ timeout: 10000 }).catch(() => false);
+  if (!success) return { error: 'Version creation failed' };
+  // Click "立即发布" to chain into publish flow
+  await page.locator('button').filter({ hasText: '立即发布' }).click({ force: true });
+  await page.waitForTimeout(2000);
+  return { versionCreated: true };
+}
+```
+
+**Publish to prod stage:**
+```javascript
+async (page) => {
+  // The publish sideslider should already be open from "立即发布"
+  // Select "prod" stage
+  const stageSelect = page.locator('.release-sideslider .bk-select').first();
+  await stageSelect.click({ force: true });
+  await page.waitForTimeout(300);
+  await page.locator('.bk-select-option').filter({ hasText: 'prod' }).click();
+  await page.waitForTimeout(1000);
+  // The version should be pre-selected; click 下一步
+  await page.locator('.release-sideslider button').filter({ hasText: '下一步' }).first().click({ force: true });
+  await page.waitForTimeout(1500);
+  // Click 确认发布
+  await page.locator('.release-sideslider button').filter({ hasText: '确认发布' }).first().click({ force: true });
+  await page.waitForTimeout(500);
+  // Confirm in InfoBox dialog
+  const confirmBtn = page.locator('.bk-infobox button').filter({ hasText: '确认发布' }).first();
+  if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await confirmBtn.click({ force: true });
+  }
+  await page.waitForTimeout(5000);
+  // Wait for release event log to show success
+  return { published: true };
+}
+```
+
+**Version + publish gotchas:**
+- The "生成版本" button is disabled when no resources have changed since the last version — you MUST create/edit a resource first.
+- Version number is auto-suggested (Semver). Versions starting with `v` are rejected.
+- After creating a version, a loading spinner ("版本正在生成中...") appears before the success page.
+- If the publish sideslider doesn't open from "立即发布", navigate to `/:testGwId/resource/version` and click "发布" on the version row.
+
+
 Use the test gateway ID for ALL mutating test cases. Use `bk-apigateway-inner` (ID=6) for read-only cases.
 
 ### Step 3: Execute Test Cases (BATCHED)
