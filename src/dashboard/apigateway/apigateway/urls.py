@@ -37,6 +37,7 @@ from django.urls import include, path, re_path
 from django.views.i18n import set_language
 
 from apigateway.apis.web.access_log.views import LogDetailInfoApi
+from apigateway.apis.web.mcp_server_log.views import MCPServerLogQueryApi
 from apigateway.common.swagger import schema_view
 
 urlpatterns = [
@@ -76,6 +77,14 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/audits/", include("apigateway.apis.web.audit.urls")),
     path("backend/gateways/<int:gateway_id>/ai/", include("apigateway.apis.web.ai_completion.urls")),
     path("backend/gateways/<int:gateway_id>/mcp-servers/", include("apigateway.apis.web.mcp_server.urls")),
+    path(
+        "backend/gateways/<int:gateway_id>/mcp-server-metrics/",
+        include("apigateway.apis.web.mcp_server_metrics.urls"),
+    ),
+    path(
+        "backend/gateways/<int:gateway_id>/mcp-server-logs/",
+        include("apigateway.apis.web.mcp_server_log.urls"),
+    ),
     # mcp server marketplace
     path("backend/mcp-marketplace/", include("apigateway.apis.web.mcp_marketplace.urls")),
     # todo 不应该放在顶层，后续要想办法挪到下层
@@ -86,6 +95,11 @@ urlpatterns = [
     #     name="monitors.alarm_records.summary",
     # ),
     path("backend/gateways/logs/query/<slug:request_id>/", LogDetailInfoApi.as_view(), name="access_log.logs.query"),
+    path(
+        "backend/gateways/mcp-server-logs/query/<slug:request_id>/",
+        MCPServerLogQueryApi.as_view(),
+        name="mcp_server_log.logs.query",
+    ),
     # notice
     path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
 ]

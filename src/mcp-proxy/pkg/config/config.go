@@ -163,6 +163,13 @@ type McpServer struct {
 	InnerJwtExpireTime          time.Duration
 	EncryptKey                  string
 	CryptoNonce                 string
+
+	// MetricNamePrefix is the prefix for all metric names.
+	// This should be aligned with the dashboard's PROMETHEUS_METRIC_NAME_PREFIX
+	// so that PromQL queries from the dashboard can match these metrics.
+	// Can be overridden by the PROMETHEUS_METRIC_NAME_PREFIX environment variable.
+	// Default: "bk_apigateway_"
+	MetricNamePrefix string
 }
 
 // Pprof is the config for pprof
@@ -235,6 +242,12 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.CryptoNonce == "" {
 		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
+	}
+	if cfg.McpServer.MetricNamePrefix == "" {
+		cfg.McpServer.MetricNamePrefix = os.Getenv("PROMETHEUS_METRIC_NAME_PREFIX")
+	}
+	if cfg.McpServer.MetricNamePrefix == "" {
+		cfg.McpServer.MetricNamePrefix = "bk_apigateway_"
 	}
 
 	if cfg.PProf.Username == "" {
