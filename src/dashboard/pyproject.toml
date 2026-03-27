@@ -296,6 +296,8 @@ ignore_imports = [
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
+    "apigateway.apps.gateway.tasks -> apigateway.components.*",
+    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway.gateway",
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
@@ -340,6 +342,8 @@ ignore_imports = [
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
+    "apigateway.apps.gateway.tasks -> apigateway.components.*",
+    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway.gateway",
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",

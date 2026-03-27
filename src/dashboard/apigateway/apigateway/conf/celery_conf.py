@@ -34,6 +34,7 @@ CELERY_IMPORTS = [
     "apigateway.apps.monitor.tasks",
     "apigateway.apps.metrics.tasks",
     "apigateway.apps.permission.tasks",
+    "apigateway.apps.gateway.tasks",
     "apigateway.apps.mcp_server.tasks",
     "apigateway.controller.tasks",
 ]
