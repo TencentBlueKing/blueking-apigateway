@@ -63,6 +63,43 @@ var sensitiveHeaderKeys = map[string]struct{}{
 	constant.BkGatewayJWTHeaderKey:       {},
 }
 
+// sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
+// 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
+var sharedTransport *http.Transport
+
+// InitSharedTransport initializes the shared HTTP Transport from config.
+// It MUST be called once during startup (before any tool calls).
+// nolint:gosec
+func InitSharedTransport(cfg config.Transport) {
+	sharedTransport = &http.Transport{
+		// NOTE: InsecureSkipVerify 跳过 TLS 证书验证，仅在内部网络环境下使用。
+		// 公网环境请在 config.yaml 中设置 mcpServer.transport.insecureSkipVerify: false。
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify},
+		MaxIdleConns:        cfg.MaxIdleConns,
+		MaxIdleConnsPerHost: cfg.MaxIdleConnsPerHost,
+		IdleConnTimeout:     time.Duration(cfg.IdleConnTimeoutSecond) * time.Second,
+	}
+}
+
+// truncateJSON 将任意对象序列化为 JSON 并截断到指定长度。
+// 当 json.Marshal 失败时，回退为 fmt.Sprintf 转成 string 后再截断。
+func truncateJSON(v any, maxLen int) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	var s string
+	if err != nil {
+		s = fmt.Sprintf("%v", v)
+	} else {
+		s = string(b)
+	}
+	if len(s) > maxLen {
+		return s[:maxLen] + "...(truncated)"
+	}
+	return s
+}
+
 // maskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.
 func maskSensitiveHeaders(headerInfo map[string]string) map[string]string {
 	masked := make(map[string]string, len(headerInfo))
@@ -158,85 +195,20 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-func hasObjectSchemaType(schemaType any) bool {
-	switch value := schemaType.(type) {
-	case string:
-		return value == "object"
-	case []string:
-		for _, item := range value {
-			if item == "object" {
-				return true
-			}
-		}
-	case []any:
-		for _, item := range value {
-			if itemStr, ok := item.(string); ok && itemStr == "object" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func normalizeToolOutputSchema(outputSchema map[string]any) map[string]any {
-	schemaType, hasType := outputSchema["type"]
-	_, hasProperties := outputSchema["properties"]
-	if hasObjectSchemaType(schemaType) || (!hasType && hasProperties) {
-		if !hasType {
-			outputSchema["type"] = "object"
-		}
-		if !hasProperties {
-			outputSchema["properties"] = map[string]any{}
-		}
-	}
-	return outputSchema
-}
-
-func buildToolOutputSchema(toolConfig *ToolConfig, serverName string) any {
-	if len(toolConfig.OutputSchema) == 0 {
-		return nil
-	}
-
-	// go-sdk 的低层 AddTool 要求 OutputSchema 顶层是 object，且 handler 返回的 structuredContent 也必须是 object。
-	// 当前 proxy 统一返回带元信息的 response envelope，因此这里期望 OutputSchema 已经是该 envelope 对象。
-	var outputSchema map[string]any
-	if err := json.Unmarshal(toolConfig.OutputSchema, &outputSchema); err != nil {
-		logging.GetLogger().Error("failed to unmarshal tool output schema",
-			zap.Error(err),
-			zap.String("tool_name", toolConfig.Name),
-			zap.String("mcp_server", serverName),
-		)
-		return nil
-	}
-	outputSchema = normalizeToolOutputSchema(outputSchema)
-	if !hasObjectSchemaType(outputSchema["type"]) {
-		logging.GetLogger().Warn("skip unsupported tool output schema",
-			zap.String("tool_name", toolConfig.Name),
-			zap.String("mcp_server", serverName),
-			zap.Any("output_schema_type", outputSchema["type"]),
-		)
-		return nil
-	}
-	return outputSchema
-}
-
 func buildToolResponseEnvelope(statusCode int, requestID, traceID string, responseBody any) map[string]any {
 	responseResult := map[string]any{
 		toolResponseStatusCodeField: statusCode,
 		toolResponseRequestIDField:  requestID,
 		toolResponseTraceIDField:    traceID,
-	}
-	if responseBody != nil {
-		responseResult[toolResponseBodyField] = responseBody
+		// Always include response_body to keep consistency with the outputSchema definition.
+		// When responseBody is nil, the field will be JSON null, which matches the schema expectation.
+		toolResponseBodyField: responseBody,
 	}
 	return responseResult
 }
 
 func buildToolResult(output any) *mcp.CallToolResult {
 	result := &mcp.CallToolResult{}
-	if structuredContent, ok := output.(map[string]any); ok {
-		result.StructuredContent = structuredContent
-	}
 	text := cast.ToString(output)
 	if rawOutput, err := json.Marshal(output); err == nil {
 		text = string(rawOutput)
@@ -252,9 +224,6 @@ func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
 		Name:        toolConfig.Name,
 		Description: toolConfig.Description,
 		InputSchema: buildToolInputSchema(toolConfig, serverName),
-	}
-	if outputSchema := buildToolOutputSchema(toolConfig, serverName); outputSchema != nil {
-		tool.OutputSchema = outputSchema
 	}
 	return tool
 }
@@ -392,6 +361,40 @@ func (m *MCPProxy) Run(ctx context.Context) {
 		mcpServer.Run(ctx)
 		m.activeMCPServers[mcpServer.name] = struct{}{}
 	}
+}
+
+// CleanupAll deletes all MCP servers and returns their names.
+// It acquires the write lock once to avoid repeated lock/unlock per server.
+func (m *MCPProxy) CleanupAll() []string {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
+	var names []string
+	for name, svr := range m.mcpServers {
+		names = append(names, name)
+		svr.Shutdown(context.Background())
+	}
+	m.mcpServers = make(map[string]*MCPServer)
+	m.activeMCPServers = make(map[string]struct{})
+	return names
+}
+
+// CleanupStale deletes MCP servers not in the activeSet and returns deleted names.
+// It acquires the write lock once to avoid repeated lock/unlock per server.
+func (m *MCPProxy) CleanupStale(activeSet map[string]struct{}) []string {
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
+
+	var deleted []string
+	for name, svr := range m.mcpServers {
+		if _, ok := activeSet[name]; !ok {
+			svr.Shutdown(context.Background())
+			delete(m.mcpServers, name)
+			delete(m.activeMCPServers, name)
+			deleted = append(deleted, name)
+		}
+	}
+	return deleted
 }
 
 // DeleteMCPServer delete and shutdown mcp server
@@ -666,7 +669,9 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			auditLog.Error("sign inner jwt err", zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, fmt.Errorf("sign inner jwt failed: %w", err))
 		}
-		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
+		logTruncate := config.G.McpServer.LogTruncate
+		auditLog.Info("call tool", zap.String("request",
+			truncateJSON(req.Params.Arguments, logTruncate.GetMaxBodySize())))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
@@ -679,15 +684,10 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				string(argsBytes)), zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
-		// 创建带日志的 Transport
-		// TODO: 1) 将 http.Transport 提升到 MCPProxy/MCPServer 级别复用，避免每次 tool call 创建新连接池
-		// TODO: 2) InsecureSkipVerify 应通过配置项控制，而非硬编码为 true
-		baseTransport := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+		// 使用共享的 HTTP Transport 连接池，避免每次 tool call 创建新连接
 		logTransport := buildLoggingTransport(
 			ctx,
-			baseTransport,
+			sharedTransport,
 			toolApiConfig,
 			appCode,
 			username,
@@ -695,7 +695,6 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			xRequestID,
 		)
 		client := &http.Client{Transport: logTransport}
-		defer client.CloseIdleConnections()
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
@@ -776,7 +775,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			zap.Any("header", maskSensitiveHeaders(headerInfo)),
 			zap.Any("query", handlerRequest.QueryParam),
 			zap.Any("path", handlerRequest.PathParam),
-			zap.Any("body", handlerRequest.BodyParam),
+			zap.String("body", truncateJSON(handlerRequest.BodyParam, logTruncate.GetMaxBodySize())),
 		)
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
@@ -787,25 +786,31 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 				span.SetStatus(codes.Error, msg)
 				span.RecordError(err)
 			}
-			// Append trace_id to the error message for traceability
-			// Skip if err is APIError, since responseResult already contains trace_id
-			if _, ok := err.(*runtime.APIError); !ok {
-				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
-					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
-				}
-			}
-			// nolint:nilerr
-			return &mcp.CallToolResult{
+			result := &mcp.CallToolResult{
 				Content: []mcp.Content{
 					&mcp.TextContent{
 						Text: msg,
 					},
 				},
 				IsError: true,
-			}, nil
+			}
+			if _, ok := err.(*runtime.APIError); !ok {
+				// For non-APIError, append trace_id to the error message for traceability
+				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+					result.Content = []mcp.Content{
+						&mcp.TextContent{
+							Text: msg,
+						},
+					}
+				}
+			}
+			// nolint:nilerr
+			return result, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
-			zap.Any("response", submit), zap.Any("header", maskSensitiveHeaders(headerInfo)))
+			zap.String("response", truncateJSON(submit, logTruncate.GetMaxResponseSize())),
+			zap.Any("header", maskSensitiveHeaders(headerInfo)))
 		return buildToolResult(submit), nil
 	}
 	return handler

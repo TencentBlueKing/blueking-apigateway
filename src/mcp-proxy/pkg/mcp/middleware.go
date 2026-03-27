@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.uber.org/zap"
 
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/infra/trace"
@@ -74,26 +75,30 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 			hasError := err != nil
 
+			// Resolve truncation limits from config
+			logTruncate := config.G.McpServer.LogTruncate
+
 			// Serialize request params and calculate body sizes
 			var params string
 			var requestBodySize int64
 			if req != nil {
 				if paramsBytes, marshalErr := json.Marshal(req.GetParams()); marshalErr == nil {
 					requestBodySize = int64(len(paramsBytes))
-					params = stringx.Truncate(string(paramsBytes), 2048)
+					params = stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
 				}
 			}
 
-			// Serialize response result
+			// Serialize response result with truncation
+			// 正常响应截断到 APILogResponseSize，错误响应截断到 APILogErrorResponseSize（保留更多诊断信息）
 			var response string
 			var responseBodySize int64
 			if result != nil {
 				if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 					responseBodySize = int64(len(resultBytes))
 					if hasError {
-						response = string(resultBytes)
+						response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
 					} else {
-						response = stringx.Truncate(string(resultBytes), 1024)
+						response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
 					}
 				}
 			}
@@ -166,13 +171,34 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 			if hasError {
 				fields = append(fields, zap.Error(err))
-				// Report error to sentry
-				sentry.ReportToSentry(
-					fmt.Sprintf("MCP %s %s", serverName, method),
-					map[string]interface{}{
-						"fields": fields,
-					},
-				)
+				// Only report server-side errors to Sentry, skip client errors
+				// (parse_error, invalid_request, method_not_found, invalid_params)
+				if shouldReportToSentry(err) {
+					sentry.ReportToSentry(
+						fmt.Sprintf("MCP %s %s", serverName, method),
+						map[string]string{
+							"mcp_server_name": serverName,
+							"mcp_method":      method,
+							"gateway_name":    gatewayName,
+							"app_code":        appCode,
+						},
+						map[string]interface{}{
+							"request_id":    requestID,
+							"x_request_id":  xRequestID,
+							"session_id":    sessionID,
+							"gateway_id":    gatewayID,
+							"mcp_server_id": mcpServerID,
+							"client_ip":     clientIP,
+							"client_id":     clientID,
+							"bk_username":   username,
+							"tool_name":     toolName,
+							"params":        params,
+							"response":      response,
+							"latency":       duration.String(),
+							"error":         err.Error(),
+						},
+					)
+				}
 			}
 
 			logger.Info("-", fields...)
@@ -244,6 +270,31 @@ func AddMetricMiddleware(server *mcp.Server, serverName string) {
 	server.AddReceivingMiddleware(MetricMiddleware(serverName))
 }
 
+// clientErrorCodes are JSON-RPC error codes that indicate client-side issues
+// and should NOT be reported to Sentry to avoid noise.
+var clientErrorCodes = map[int64]struct{}{
+	-32700: {}, // parse_error
+	-32600: {}, // invalid_request
+	-32601: {}, // method_not_found
+	-32602: {}, // invalid_params
+}
+
+// shouldReportToSentry determines whether an MCP error should be reported to Sentry.
+// Client errors (parse_error, invalid_request, method_not_found, invalid_params) are
+// filtered out; only internal errors (-32603) and unknown errors are reported.
+func shouldReportToSentry(err error) bool {
+	if err == nil {
+		return false
+	}
+	var jsonrpcErr *jsonrpc.Error
+	if errors.As(err, &jsonrpcErr) {
+		if _, isClient := clientErrorCodes[jsonrpcErr.Code]; isClient {
+			return false
+		}
+	}
+	return true
+}
+
 // extractToolName extracts the tool name from a tools/call request.
 func extractToolName(req mcp.Request) string {
 	if req == nil {
@@ -261,9 +312,14 @@ func extractToolName(req mcp.Request) string {
 
 // SessionMetricMiddleware returns a middleware that tracks active MCP sessions.
 // It decrements the session gauge when a session ends (notifications/cancelled).
-// NOTE: notifications/cancelled is an approximation; clients that crash or lose network
-// will not send this notification. A future improvement could use HTTP-layer disconnect
-// detection for more accurate tracking.
+//
+// KNOWN LIMITATION: notifications/cancelled is an approximation. Clients that crash
+// or lose network connectivity will NOT send this notification, causing the gauge to
+// drift upward over time. When interpreting MCPSessionTotal in Grafana, treat it as a
+// best-effort approximation rather than an exact count.
+//
+// TODO: A future improvement could use HTTP-layer disconnect detection (e.g., SSE
+// connection close callback) for more accurate tracking of active sessions.
 func SessionMetricMiddleware(serverName string) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
