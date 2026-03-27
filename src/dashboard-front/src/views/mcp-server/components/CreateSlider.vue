@@ -458,7 +458,9 @@ const { initSidebarFormData, isSidebarClosed } = useSidebar();
 
 const { t } = i18n.global;
 
-let loadingTimer: NodeJS.Timeout | null = null;
+let loadingTimer: ReturnType<typeof setTimeout> | null = null;
+let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
+
 // 持久化实例，仅创建一次
 const resourceNameToIndexMap = new Map<string, number>();
 const authorizedPromptIds = new Set<number>();
@@ -1279,12 +1281,27 @@ const updateAllSelections = () => {
   }, 200);
 };
 
+// 兼容旧版浏览器无法识别requestIdleCallback
+const scheduleIdle = (callback: () => void, timeout = 3000): void => {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(callback, { timeout });
+  }
+  else {
+    setTimeout(callback, 0);
+  }
+};
+
 /**
  * 工具资源渲染（分片处理，不阻塞主线程）
  * @param resource_names 资源名称列表
  * @param tool_names 工具名称列表
  */
 const renderToolResource = (resource_names: string[], tool_names: string[]) => {
+  if (clearMapTimer) {
+    clearTimeout(clearMapTimer);
+    clearMapTimer = null;
+  }
+
   try {
     if (!resource_names?.length) {
       return;
@@ -1294,6 +1311,7 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
     resourceNameToIndexMap.clear();
     const chunkSize = 50;
     let currentIndex = 0;
+    const hasToolNames = tool_names?.length > 0;
 
     const processChunk = () => {
       const endIndex = Math.min(currentIndex + chunkSize, resource_names.length);
@@ -1302,55 +1320,56 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
       }
       currentIndex = endIndex;
 
-      // 未处理完则继续分片（利用浏览器空闲时间）
+      // 未处理完则继续分片
       if (currentIndex < resource_names.length) {
-        requestIdleCallback(processChunk);
+        // 兼容旧版浏览器无法识别requestIdleCallback
+        scheduleIdle(processChunk);
+        return;
       }
-      else {
-        const hasToolNames = tool_names?.length > 0;
-        // 轻量遍历，避免修改原数组
-        const updatedResourceList = resourceList.value.map((item) => {
-          const nameIndex = resourceNameToIndexMap.get(item.name);
-          if (hasToolNames && nameIndex !== undefined && nameIndex > -1) {
-            return {
-              ...item,
-              tool_name: tool_names[nameIndex] || item.name,
-            };
-          }
-          return item;
-        });
 
-        const resourceToolData = updatedResourceList.filter(item =>
-          resourceNameToIndexMap.has(item.name),
-        );
+      // 给 resourceList 追加 tool_name
+      const updatedResourceList = resourceList.value.map((item) => {
+        const nameIndex = resourceNameToIndexMap.get(item.name);
+        return {
+          ...item,
+          tool_name: hasToolNames && nameIndex !== undefined ? (tool_names[nameIndex] || item.name) : item.name,
+        };
+      });
+      resourceList.value = updatedResourceList;
 
+      // 过滤出匹配的资源项
+      const resourceToolData = updatedResourceList.filter(item =>
+        resourceNameToIndexMap.has(item.name),
+      );
         // 分片更新：先更20条，快速渲染
-        toolSelections.value = resourceToolData.slice(0, 20).map(({ name, id, contexts }) => ({
+      toolSelections.value = resourceToolData.slice(0, 20).map(({ name, tool_name, id, contexts }) => {
+        return {
           name,
           id,
           mode_type: 'tool',
-          tool_name: hasToolNames && resourceNameToIndexMap.get(name) !== undefined
-            ? tool_names[resourceNameToIndexMap.get(name)] || ''
-            : '',
+          tool_name: tool_name || name,
           contexts,
-        }));
+        };
+      });
 
-        // 剩余数据异步更新，确保DOM挂载
-        setTimeout(() => {
-          toolSelections.value = resourceToolData.map(({ name, id, contexts }) => ({
+      // 剩余数据异步更新，确保DOM挂载
+      setTimeout(() => {
+        toolSelections.value = resourceToolData.map(({ name, tool_name, id, contexts }) => {
+          return {
             name,
             id,
             mode_type: 'tool',
-            tool_name: hasToolNames && resourceNameToIndexMap.get(name) !== undefined
-              ? tool_names[resourceNameToIndexMap.get(name)] || ''
-              : '',
+            tool_name: tool_name || name,
             contexts,
-          }));
-          toolTableRef.value?.setSelectionData(toolSelections.value);
-          // 延迟清空Map，确保数据使用完成
-          setTimeout(() => resourceNameToIndexMap.clear(), 500);
-        }, 0);
-      }
+          };
+        });
+        toolTableRef.value?.setSelectionData(toolSelections.value);
+        // 延迟清空Map，确保数据使用完成
+        clearMapTimer = setTimeout(() => {
+          resourceNameToIndexMap.clear();
+          clearMapTimer = null;
+        }, 500);
+      }, 0);
     };
 
     // 启动分片处理
@@ -1384,7 +1403,8 @@ const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
       currentIndex = endIndex;
 
       if (currentIndex < promptTableData.value.length) {
-        requestIdleCallback(processPromptChunk);
+        // 兼容旧版浏览器无法识别requestIdleCallback
+        scheduleIdle(processPromptChunk);
       }
       else {
         // 处理无权限数据
