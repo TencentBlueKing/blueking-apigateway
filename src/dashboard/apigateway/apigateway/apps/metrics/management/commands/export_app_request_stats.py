@@ -83,7 +83,6 @@ class Command(BaseCommand):
             .values("bk_app_code", "resource_id")
             .annotate(
                 total=Sum("total_count"),
-                failed=Sum("failed_count"),
             )
             .order_by("-total")
         )
@@ -95,7 +94,7 @@ class Command(BaseCommand):
         count = 0
         with open(output, "w", newline="", encoding="utf-8-sig") as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["bk_app_code", "resource_name", "total_count", "failed_count"])
+            writer.writerow(["bk_app_code", "resource_name", "total_count"])
 
             for row in queryset.iterator(chunk_size=self.BATCH_SIZE):
                 resource_name = resource_name_map.get(row["resource_id"], f"unknown({row['resource_id']})")
@@ -103,7 +102,6 @@ class Command(BaseCommand):
                     row["bk_app_code"],
                     resource_name,
                     row["total"],
-                    row["failed"],
                 ])
                 count += 1
                 if count % 5000 == 0:
