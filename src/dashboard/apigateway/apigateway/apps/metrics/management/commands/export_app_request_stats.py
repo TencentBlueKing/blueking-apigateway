@@ -24,7 +24,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
-from apigateway.core.models import Resource
+from apigateway.core.models import Gateway, Resource
 
 
 class Command(BaseCommand):
@@ -34,10 +34,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--gateway-id",
-            type=int,
+            "--gateway-name",
+            type=str,
             required=True,
-            help="网关 ID（即 api_id）",
+            help="网关名称",
         )
         parser.add_argument(
             "--days",
@@ -53,16 +53,25 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        gateway_id = options["gateway_id"]
+        gateway_name = options["gateway_name"]
         days = options["days"]
         output = options["output"]
+
+        try:
+            gateway = Gateway.objects.get(name=gateway_name)
+        except Gateway.DoesNotExist:
+            self.stderr.write(self.style.ERROR(f"网关 '{gateway_name}' 不存在"))
+            return
+
+        gateway_id = gateway.id
+        self.stdout.write(f"网关: {gateway_name} (ID: {gateway_id})")
 
         start_time = timezone.now() - datetime.timedelta(days=days)
 
         resource_name_map = dict(
             Resource.objects.filter(gateway_id=gateway_id).values_list("id", "name")
         )
-        self.stdout.write(f"网关 {gateway_id} 共有 {len(resource_name_map)} 个资源")
+        self.stdout.write(f"共有 {len(resource_name_map)} 个资源")
 
         self.stdout.write("正在聚合统计数据，数据量较大请耐心等待...")
 
@@ -81,7 +90,7 @@ class Command(BaseCommand):
 
         if not output:
             now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            output = f"app_request_stats_gw{gateway_id}_{days}d_{now}.csv"
+            output = f"app_request_stats_{gateway_name}_{days}d_{now}.csv"
 
         count = 0
         with open(output, "w", newline="", encoding="utf-8-sig") as csvfile:
