@@ -389,9 +389,9 @@ const setResizeMainStyle = computed(() => {
   return { height: `calc(100vh - ${offsetH}px)` };
 });
 
-watch(() => server?.id, () => {
+watch(() => [server?.id, server?.name], () => {
   fetchToolList();
-}, { deep: true });
+});
 
 // 分类列表变化时更新 collapse 展开状态
 watch(toolGroupList, () => {
