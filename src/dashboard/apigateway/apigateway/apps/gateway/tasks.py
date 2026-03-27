@@ -162,7 +162,6 @@ class InactiveGatewayNotifier:
     ):
         gray_user_list = getattr(settings, "INACTIVE_GATEWAY_NOTIFY_GRAY_USER_LIST", [])
         apigw_domain = getattr(settings, "DASHBOARD_FE_URL", "").rstrip("/")
-        gateway_map = {gw.id: gw for gw in all_gateways}
 
         for gateway_id_set, users in mail_groups.items():
             receivers = [u for u in users if u in gray_user_list] if gray_user_list else users

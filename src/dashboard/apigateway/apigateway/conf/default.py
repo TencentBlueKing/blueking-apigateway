@@ -444,20 +444,6 @@ else:
         CELERY_BROKER_URL = broker_url
         CELERY_RESULT_BACKEND = broker_url
 
-if env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True):
-    CELERY_BEAT_SCHEDULE.update(
-        {
-            "apigateway.apps.metrics.tasks.statistics_request_by_day": {
-                "task": "apigateway.apps.metrics.tasks.statistics_request_by_day",
-                "schedule": crontab(minute=30, hour=8),  # noqa: F405
-            },
-            "apigateway.apps.permission.tasks.renew_app_resource_permission": {
-                "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
-                "schedule": crontab(minute=50, hour=10),
-            },
-        }
-    )
-
 # 清理任务相关配置
 CLEAN_TABLE_INTERVAL_DAYS = env.int("CLEAN_TABLE_INTERVAL_DAYS", 365)
 
@@ -826,6 +812,8 @@ BK_PLUGINS_DATA_PLANE_GRAY_STAGE = env.str("BK_PLUGINS_DATA_PLANE_GRAY_STAGE", d
 # ==============================================================================
 # 全局功能开关，用于控制站点全局性的一些功能，将与 DEFAULT_USER_FEATURE_FLAG、Model UserFeatureFlag 中数据合并
 # 优先级：Model UserFeatureFlag > DEFAULT_USER_FEATURE_FLAG > DEFAULT_FEATURE_FLAG
+
+ENABLE_RUN_DATA_METRICS = env.bool("FEATURE_FLAG_ENABLE_RUN_DATA_METRICS", True)
 ENABLE_GATEWAY_OPERATION_STATUS = env.bool("FEATURE_FLAG_ENABLE_GATEWAY_OPERATION_STATUS", False)
 
 DEFAULT_FEATURE_FLAG = get_default_feature_flags(
@@ -834,6 +822,7 @@ DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     enable_multi_tenant_mode=ENABLE_MULTI_TENANT_MODE,
     ai_open_api_base_url=AI_OPEN_API_BASE_URL,
     enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
+    enable_run_data_metrics=ENABLE_RUN_DATA_METRICS,
 )
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
@@ -842,16 +831,30 @@ DEFAULT_USER_FEATURE_FLAG = {}
 # 网关功能开关
 # GLOBAL_GATEWAY_FEATURE_FLAG = {}
 
-# NOTE: only enable the task when not in multi-tenant mode
-if ENABLE_GATEWAY_OPERATION_STATUS and not ENABLE_MULTI_TENANT_MODE:
-    CELERY_BEAT_SCHEDULE.update(  # noqa: F405
+if ENABLE_RUN_DATA_METRICS:
+    CELERY_BEAT_SCHEDULE.update(
         {
-            "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers": {
-                "task": "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers",
-                "schedule": crontab(minute=0, hour=10, day_of_month=1),  # noqa: F405
+            "apigateway.apps.metrics.tasks.statistics_request_by_day": {
+                "task": "apigateway.apps.metrics.tasks.statistics_request_by_day",
+                "schedule": crontab(minute=30, hour=8),  # noqa: F405
+            },
+            "apigateway.apps.permission.tasks.renew_app_resource_permission": {
+                "task": "apigateway.apps.permission.tasks.renew_app_resource_permission",
+                "schedule": crontab(minute=50, hour=10),
             },
         }
     )
+
+    # NOTE: only enable the task when not in multi-tenant mode
+    if ENABLE_GATEWAY_OPERATION_STATUS and not ENABLE_MULTI_TENANT_MODE:
+        CELERY_BEAT_SCHEDULE.update(  # noqa: F405
+            {
+                "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers": {
+                    "task": "apigateway.apps.gateway.tasks.notify_inactive_gateway_maintainers",
+                    "schedule": crontab(minute=0, hour=10, day_of_month=1),  # noqa: F405
+                },
+            }
+        )
 
 # ==============================================================================
 # 提供给前端的环境变量值
