@@ -1,0 +1,324 @@
+{
+  "_meta": {
+    "description": "Pre-built selector cache for agent-test skill. Avoids reading Vue source files at runtime.",
+    "source": "Extracted from test/agent-tests/AGENTS.md knowledge base",
+    "lastUpdated": "2026-03-27"
+  },
+  "login": {
+    "chineseForm": {
+      "username": "#user",
+      "password": "#password",
+      "submitBtn": ".login-btn"
+    },
+    "englishForm": {
+      "username": "role=textbox[name='Please enter your username']",
+      "password": "role=textbox[name='Please enter your password']",
+      "submitBtn": "role=button[name='Log in']"
+    },
+    "detection": "#user",
+    "successIndicator": "text=新建网关"
+  },
+  "home": {
+    "url": "/",
+    "selectors": {
+      "searchInput": "input[placeholder='请输入网关名称']",
+      "sortDropdown": ".select-cls",
+      "typeFilter": ".title-container .bk-select:first-child",
+      "createGatewayBtn": "text=新建网关",
+      "gatewayItems": ".table-item",
+      "gatewayName": ".table-item .name",
+      "resourceCount": ".table-item .pl-4",
+      "actionButtons": ".table-item button",
+      "footer": ".footer-container",
+      "footerLinks": ".footer-container a"
+    },
+    "createGatewayForm": {
+      "nameInput_standard": "input[placeholder*='请输入小写字母、数字、连字符']",
+      "nameInput_programmable": "input[placeholder*='只能包含小写字母']",
+      "typeRadio_standard": ".bk-radio-button:has-text('普通网关')",
+      "typeRadio_programmable": ".bk-radio-button:has-text('可编程网关')",
+      "submitBtn": "text=提交",
+      "closeBtn": ".bk-sideslider-close",
+      "formError": ".bk-form-error",
+      "confirmLeaveBtn": ".bk-infobox button"
+    },
+    "sortOptions": ["更新时间", "创建时间", "字母 A-Z"],
+    "filterOptions": ["全部", "普通网关", "可编程网关"]
+  },
+  "resourceConfig": {
+    "url": "/:id/resource/setting",
+    "selectors": {
+      "tableRows": "tbody tr",
+      "editBtn": "tr button:has-text('编辑')",
+      "cloneBtn": "tr button:has-text('克隆')",
+      "deleteBtn": "tr button:has-text('删除')",
+      "exportBtn": "button:has-text('导出')",
+      "importBtn": "button:has-text('导入')",
+      "searchInput": "input[placeholder*='搜索']",
+      "resourceNameLink": "[cursor=pointer]",
+      "generateVersionBtn": "button:has-text('生成版本')"
+    },
+    "sidebar": {
+      "tabs": ["资源配置", "插件管理", "资源文档"],
+      "editBtn": "button:has-text('编辑')",
+      "deleteBtn": "button:has-text('删除')",
+      "addPluginBtn": "text=添加插件",
+      "pluginEditIcon": ".icon-ag-edit-line",
+      "pluginDeleteIcon": ".icon-ag-delet"
+    }
+  },
+  "resourceCreate": {
+    "url": "/:id/resource/create",
+    "selectors": {
+      "nameInput": "input[placeholder*='由字母、数字、下划线']",
+      "descInput": "input[placeholder='请输入描述']",
+      "tagSelect": "nth=1 >> input[placeholder='请选择']",
+      "requestMethodSelect": "nth=2 >> input[placeholder='请选择']",
+      "requestPathInput": "nth=0 >> input[placeholder*='斜线']",
+      "serviceSelect": "nth=3 >> input[placeholder='请选择']",
+      "backendMethodSelect": "nth=4 >> input[placeholder='请选择']",
+      "backendPathInput": "nth=1 >> input[placeholder*='斜线']",
+      "submitBtn": "text=提交",
+      "formError": ".bk-form-error"
+    },
+    "notes": {
+      "serviceSelect": "CRITICAL: 5 selects on page with placeholder='请选择'. Index: 0=gateway, 1=tag, 2=request method, 3=SERVICE, 4=backend method. Must select 'default' service or submit fails.",
+      "nameUniqueness": "Names are globally unique per gateway including camelCase. Always use timestamp suffix."
+    }
+  },
+  "resourceVersion": {
+    "url": "/:id/resource/version",
+    "selectors": {
+      "tableRows": "tbody tr",
+      "versionBtn": "tbody tr button:first-child",
+      "generateSdkBtn": "tr button:has-text('生成 SDK')",
+      "publishDropdownBtn": "tr button:has-text('发布至环境')",
+      "publishStageItem": ".bk-dropdown-item",
+      "exportBtn": "tr button:has-text('导出')",
+      "deleteBtn": "tr button:has-text('删除')",
+      "sdkTab": "text=SDK",
+      "releaseSideslider": ".release-sideslider"
+    },
+    "publishFlow": {
+      "step1_trigger": "Click '发布至环境' button — this is a BkDropdown, NOT a direct button",
+      "step2_selectStage": "Click '.bk-dropdown-item' with stage name (e.g. 'prod') — dropdown is teleported to body",
+      "step3_sliderOpens": "release-sideslider opens: class='release-sideslider bk-sideslider is-position-right bk-modal'",
+      "step4_next": "Click 下一步 in sideslider",
+      "step5_confirm": "Click 确认发布 in sideslider",
+      "step6_infobox": "Optional BkInfoBox confirmation — click 确认发布",
+      "verification": "Check stage/release-record for row with version and stage name"
+    },
+    "notes": {
+      "sdkTab": "May not be visible — feature flag dependent",
+      "tableClass": "Uses t-table (Tencent UI), not .bk-table. Use 'tbody tr' for rows.",
+      "publishButton": "CRITICAL: '发布至环境' is a bk-dropdown trigger, not a sideslider opener. Must click the stage from the dropdown menu first."
+    }
+  },
+  "stageOverview": {
+    "url": "/:id/stage/overview",
+    "selectors": {
+      "prodStage": "text=prod"
+    }
+  },
+  "stageResources": {
+    "url": "/:id/stage/:stage/resources",
+    "selectors": {
+      "table": ".bk-table"
+    }
+  },
+  "stagePlugins": {
+    "url": "/:id/stage/:stage/plugins",
+    "selectors": {}
+  },
+  "stageVariables": {
+    "url": "/:id/stage/:stage/variables",
+    "selectors": {}
+  },
+  "releaseRecord": {
+    "url": "/:id/stage/release-record",
+    "selectors": {
+      "table": ".bk-table"
+    }
+  },
+  "backendService": {
+    "url": "/:id/backend",
+    "selectors": {
+      "tableRows": "tbody tr",
+      "defaultRow": "td:has-text('default')",
+      "editBtn": "tr button:has-text('编辑')",
+      "createBtn": "text=新建",
+      "addressInput": "input[placeholder*='host:port']"
+    }
+  },
+  "permissionApprovals": {
+    "url": "/:id/permission/approvals",
+    "selectors": {}
+  },
+  "permissionApps": {
+    "url": "/:id/permission/apps",
+    "selectors": {}
+  },
+  "accessLog": {
+    "url": "/:id/log",
+    "selectors": {
+      "table": ".bk-table"
+    }
+  },
+  "statistics": {
+    "url": "/:id/statistics",
+    "selectors": {}
+  },
+  "onlineDebug": {
+    "url": "/:id/online-debug",
+    "selectors": {}
+  },
+  "onlineDebugHistory": {
+    "url": "/:id/online-debug/history",
+    "selectors": {}
+  },
+  "basicInfo": {
+    "url": "/:id/basic-info",
+    "selectors": {
+      "gatewayName": "text=",
+      "disableBtn": "button:has-text('停用')",
+      "enableBtn": "button:has-text('立即启用')",
+      "deleteBtn": "button:has-text(/^删除$/)"
+    }
+  },
+  "mcpServer": {
+    "url": "/:id/mcp/server",
+    "selectors": {}
+  },
+  "mcpPermission": {
+    "url": "/:id/mcp/permission",
+    "selectors": {}
+  },
+  "audit": {
+    "url": "/:id/audit",
+    "selectors": {}
+  },
+  "componentAccess": {
+    "url": "/components/access",
+    "selectors": {}
+  },
+  "componentSystems": {
+    "url": "/components/systems",
+    "selectors": {}
+  },
+  "componentManage": {
+    "url": "/components/manage",
+    "selectors": {}
+  },
+  "apiDocs": {
+    "url": "/docs/api-docs",
+    "selectors": {}
+  },
+  "realtimeData": {
+    "url": "/:id/realtime-data",
+    "selectors": {}
+  },
+  "platformToolbox": {
+    "url": "/platform-tools/toolbox",
+    "selectors": {}
+  },
+  "autoAccess": {
+    "url": "/platform-tools/auto-access",
+    "selectors": {}
+  },
+  "programmable": {
+    "url": "/platform-tools/programmable",
+    "selectors": {}
+  },
+  "mcpMarket": {
+    "url": "/mcp-market",
+    "selectors": {}
+  },
+  "urlRouteMap": {
+    "/gateways/:id/resources": "/:id/resource/setting",
+    "/gateways/:id/resources/create": "/:id/resource/create",
+    "/gateways/:id/resources/edit/:resourceId": "/:id/resource/edit/:resourceId",
+    "/gateways/:id/resources/clone/:resourceId": "/:id/resource/clone/:resourceId",
+    "/gateways/:id/resource-versions": "/:id/resource/version",
+    "/gateways/:id/stages": "/:id/stage/overview",
+    "/gateways/:id/stages/:stage/resources": "/:id/stage/:stage/resources",
+    "/gateways/:id/stages/:stage/plugins": "/:id/stage/:stage/plugins",
+    "/gateways/:id/stages/:stage/variables": "/:id/stage/:stage/variables",
+    "/gateways/:id/releases": "/:id/stage/release-record",
+    "/gateways/:id/backend-services": "/:id/backend",
+    "/gateways/:id/permissions/approvals": "/:id/permission/approvals",
+    "/gateways/:id/permissions/apps": "/:id/permission/apps",
+    "/gateways/:id/logs": "/:id/log",
+    "/gateways/:id/statistics": "/:id/statistics",
+    "/gateways/:id/online-debug": "/:id/online-debug",
+    "/gateways/:id/online-debug/history": "/:id/online-debug/history",
+    "/gateways/:id/basic": "/:id/basic-info",
+    "/gateways/:id/mcp": "/:id/mcp/server",
+    "/gateways/:id/mcp/approvals": "/:id/mcp/permission",
+    "/gateways/:id/audit": "/:id/audit",
+    "/components/intro": "/components/access",
+    "/components/systems": "/components/systems",
+    "/components/manage": "/components/manage",
+    "/docs/categories": "/docs/api-docs",
+    "/platform-tools/toolbox": "/platform-tools/toolbox",
+    "/mcp-market": "/mcp-market"
+  },
+  "pluginManagement": {
+    "wizardStep1": {
+      "description": "Select plugin from card list",
+      "categories": ["安全", "转换", "流量", "AI", "通用", "认证", "校验", "缓存"],
+      "nextBtn": "text=下一步",
+      "note": "Must scroll down to see all plugins"
+    },
+    "wizardStep2": {
+      "description": "Configure plugin form",
+      "submitBtn": "text=确定"
+    },
+    "availablePlugins": [
+      "access_token来源", "强制X-Bk-Username", "CORS", "限制请求体大小",
+      "用户访问限制", "IP访问保护", "频率控制", "流量染色",
+      "Header转换", "mocking", "故障注入", "请求校验",
+      "代理缓存", "熔断", "重定向", "Response转换"
+    ],
+    "notes": "Once added, plugin disappears from select list. Edit/delete via icon-ag-edit-line and icon-ag-delet icons."
+  },
+  "commonPatterns": {
+    "dropdownSelect": {
+      "steps": ["body.click({x:10,y:10})", "wait(200)", "click(selector, force:true)", "wait(300)", "click(.bk-select-option hasText)", "wait(800)"],
+      "note": "NEVER use Escape to close BkSelect — it is ignored. Use body.click() to dismiss."
+    },
+    "emptyValidation": {
+      "steps": ["fill('a')", "fill('')", "blur()", "wait(300)"],
+      "note": "Empty field validation requires fill-then-clear-then-blur"
+    },
+    "closeSlider": {
+      "steps": ["click(.bk-sideslider-close, force:true)", "wait(300)", "click(.bk-infobox button hasText(确定|确认|离开))"]
+    }
+  },
+  "bkuiComponents": {
+    "BkSelect": {
+      "options": ".bk-select-option",
+      "trigger": "input[placeholder='请选择']"
+    },
+    "BkSwitcher": {
+      "toggle": ".bk-switcher",
+      "checkedClass": "is-checked"
+    },
+    "BkTable": {
+      "rows": "tr",
+      "header": "thead tr",
+      "rowButtons": "tr button"
+    },
+    "BkSideslider": {
+      "content": ".bk-sideslider-content",
+      "footer": ".bk-sideslider-footer",
+      "close": ".bk-sideslider-close"
+    },
+    "BkInfoBox": {
+      "container": ".bk-infobox",
+      "buttons": ".bk-infobox button"
+    },
+    "BkMessage": {
+      "container": ".bk-message"
+    }
+  }
+}
