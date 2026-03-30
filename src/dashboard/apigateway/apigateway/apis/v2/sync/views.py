@@ -687,10 +687,6 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
         resource_version_id = Release.objects.get_released_resource_version_id(
             gateway_id=request.gateway.id, stage_name=stage_name
         )
-        if not resource_version_id:
-            raise error_codes.NOT_FOUND.format(
-                _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
-            )
 
         # 检查当前环境是否正在发布
         stage_release_status = ReleaseHandler.batch_get_stage_release_status([stage.id])
@@ -700,10 +696,14 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             ReleaseStatusEnum.PENDING.value,
         )
 
-        # 如果正在发布，使用正在发布的版本做校验；否则使用已发布的稳定版本
-        validate_resource_version_id = (
-            stage_status_info["resource_version_id"] if is_releasing else resource_version_id
-        )
+        if is_releasing:
+            validate_resource_version_id = stage_status_info["resource_version_id"]
+        elif resource_version_id:
+            validate_resource_version_id = resource_version_id
+        else:
+            raise error_codes.NOT_FOUND.format(
+                _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
+            )
         resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
             validate_resource_version_id
         )
