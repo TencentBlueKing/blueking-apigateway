@@ -597,7 +597,13 @@ class MCPServerValidator(GetGatewayFromContextMixin):
         """资源名称多规则校验"""
         resource_names = attrs.get("resource_names", [])
         self._validate_resource_names_not_empty(resource_names)
-        valid_names = self._get_valid_resource_names(gateway, stage)
+
+        resource_name_to_schema = context.get("resource_name_to_schema")
+        if resource_name_to_schema is not None:
+            valid_names = set(resource_name_to_schema.keys())
+        else:
+            valid_names = self._get_valid_resource_names(gateway, stage)
+
         self._check_all_resources_valid(resource_names, valid_names)
         if source == CallSourceTypeEnum.OpenAPI:
             self._check_resource_schemas_confirmed(context, resource_names)
