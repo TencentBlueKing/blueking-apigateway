@@ -618,7 +618,6 @@ class MCPServerHandler:
         """
         language_code = get_current_language_code()
         mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
-        enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
         configs = []
 
         for client in settings.MCP_CONFIG_AGENT_CLIENTS:
@@ -638,7 +637,7 @@ class MCPServerHandler:
                 "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
                 "transport_type": transport_type,
                 "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
-                "enable_multi_tenant_mode": enable_multi_tenant_mode,
+                "enable_multi_tenant_mode": settings.ENABLE_MULTI_TENANT_MODE,
                 "user_tenant_id": user_tenant_id,
             }
 
