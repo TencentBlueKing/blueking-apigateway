@@ -29,6 +29,7 @@ from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
 from apigateway.biz.mcp_server_log.log_search import MCPServerLogSearchClient
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+from apigateway.utils.time import SmartTimeRange
 
 from .serializers import (
     MCPServerLogChainOutputSLZ,
@@ -136,8 +137,15 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
 
         gateway = request.gateway
 
-        time_start_dt = datetime.fromtimestamp(int(data.get("time_start")))
-        time_end_dt = datetime.fromtimestamp(int(data.get("time_end")))
+        # Handle both time_start+time_end and time_range scenarios
+        smart_time_range = SmartTimeRange(
+            time_start=data.get("time_start"),
+            time_end=data.get("time_end"),
+            time_range=data.get("time_range"),
+        )
+        time_start, time_end = smart_time_range.get_head_and_tail()
+        time_start_dt = datetime.fromtimestamp(time_start)
+        time_end_dt = datetime.fromtimestamp(time_end)
 
         formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
@@ -170,8 +178,8 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
 class MCPServerLogDetailApi(generics.RetrieveAPIView):
     """根据 request_id 获取 MCP Server 日志详情
 
-    支持通过 request_id 查询完整的 MCP 请求日志，
-    也支持通过 x_request_id 关联查询全链路日志。
+    支持通过 request_id 查询完整的 MCP 请求日志。
+    如需通过 x_request_id 关联查询全链路日志，请使用 MCPServerLogTraceApi。
     """
 
     def retrieve(self, request, request_id, *args, **kwargs):
