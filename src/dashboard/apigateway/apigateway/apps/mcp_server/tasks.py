@@ -229,8 +229,10 @@ def sync_mcp_server_after_release(
     3. 发布失败/超时：跳过写入，记录日志
     """
     logger.info(
-        "sync_mcp_server_after_release: waiting for release, gateway_id=%d, stage_id=%d, release_history_id=%d",
+        "sync_mcp_server_after_release: waiting for release, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
+        gateway_name,
         gateway_id,
+        stage_name,
         stage_id,
         release_history_id,
     )
@@ -240,17 +242,21 @@ def sync_mcp_server_after_release(
     if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
         logger.warning(
             "sync_mcp_server_after_release: release failed (status=%s), "
-            "skip mcp server sync, gateway_id=%d, stage_id=%d, release_history_id=%d",
+            "skip mcp server sync, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
             final_status,
+            gateway_name,
             gateway_id,
+            stage_name,
             stage_id,
             release_history_id,
         )
         return
 
     logger.info(
-        "sync_mcp_server_after_release: release succeeded, writing mcp servers, gateway_id=%d, stage_id=%d",
+        "sync_mcp_server_after_release: release succeeded, writing mcp servers, gateway=%s(%d), stage=%s(%d)",
+        gateway_name,
         gateway_id,
+        stage_name,
         stage_id,
     )
 
@@ -263,16 +269,20 @@ def sync_mcp_server_after_release(
             mcp_servers_data=mcp_servers_data,
         )
         logger.info(
-            "sync_mcp_server_after_release: completed, %d mcp servers synced, gateway_id=%d, stage_id=%d",
+            "sync_mcp_server_after_release: completed, %d mcp servers synced, gateway=%s(%d), stage=%s(%d)",
             len(results),
+            gateway_name,
             gateway_id,
+            stage_name,
             stage_id,
         )
     except Exception:
         logger.exception(
             "sync_mcp_server_after_release: failed to save mcp servers, "
-            "gateway_id=%d, stage_id=%d, release_history_id=%d",
+            "gateway=%s(%d), stage=%s(%d), release_history_id=%d",
+            gateway_name,
             gateway_id,
+            stage_name,
             stage_id,
             release_history_id,
         )
