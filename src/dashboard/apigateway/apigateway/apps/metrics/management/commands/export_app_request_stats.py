@@ -68,9 +68,7 @@ class Command(BaseCommand):
 
         start_time = timezone.now() - datetime.timedelta(days=days)
 
-        resource_name_map = dict(
-            Resource.objects.filter(gateway_id=gateway_id).values_list("id", "name")
-        )
+        resource_name_map = dict(Resource.objects.filter(gateway_id=gateway_id).values_list("id", "name"))
         self.stdout.write(f"共有 {len(resource_name_map)} 个资源")
 
         self.stdout.write("正在聚合统计数据，数据量较大请耐心等待...")
@@ -98,11 +96,13 @@ class Command(BaseCommand):
 
             for row in queryset.iterator(chunk_size=self.BATCH_SIZE):
                 resource_name = resource_name_map.get(row["resource_id"], f"unknown({row['resource_id']})")
-                writer.writerow([
-                    row["bk_app_code"],
-                    resource_name,
-                    row["total"],
-                ])
+                writer.writerow(
+                    [
+                        row["bk_app_code"],
+                        resource_name,
+                        row["total"],
+                    ]
+                )
                 count += 1
                 if count % 5000 == 0:
                     self.stdout.write(f"  已写入 {count} 行...")
