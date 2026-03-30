@@ -1,33 +1,18 @@
-# vue-project
+# 蓝鲸 API Gateway
 
-This template should help get you started developing with Vue 3 in Vite.
 
-## Recommended IDE Setup
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## 推荐的包管理器
 
-## Type Support for `.vue` Imports in TS
+`pnpm`
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## 如何让`.agents`可被 codybuddy 使用
 
-## Customize configuration
+- 如果你是初次部署本项目，那么在安装完依赖后，`.agents`会被自动创建一个名为`.codebuddy`的软链接，里面的配置可被 codybuddy 使用
 
-See [Vite Configuration Reference](https://vite.dev/config/).
 
-## Project Setup
+- 如果要手动创建软链接，那么你需要执行`symlink-dot-agents:codebuddy`脚本：
 
-```sh
-bun install
-```
+```pnpm symlink-dot-agents:codebuddy```
 
-### Compile and Hot-Reload for Development
 
-```sh
-bun dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-bun run build
-```

@@ -12,7 +12,9 @@
     "type-check": "vue-tsc --build",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
-    "lint": "run-s lint:*"
+    "lint": "run-s lint:*",
+    "symlink-dot-agents:codebuddy": "node create-codebuddy-symlink.js",
+    "postinstall": "node create-codebuddy-symlink.js"
   },
   "dependencies": {
     "@blueking/bk-user-display-name": "1.0.3-beta.7",
@@ -90,6 +92,7 @@
     "stylelint": "^16.22.0",
     "stylelint-config-standard-scss": "^15.0.1",
     "stylelint-order": "^7.0.0",
+    "symlink-dir": "^10.0.1",
     "typescript": "~5.8.3",
     "unocss": "^66.3.3",
     "unplugin-auto-import": "^19.3.0",
