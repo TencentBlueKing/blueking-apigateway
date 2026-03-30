@@ -19,6 +19,9 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"mcp_proxy/pkg/constant"
 )
 
@@ -26,6 +29,25 @@ import (
 var SensitiveHeaderKeys = map[string]struct{}{
 	constant.BkApiAuthorizationHeaderKey: {},
 	constant.BkGatewayJWTHeaderKey:       {},
+}
+
+// TruncateJSON 将任意对象序列化为 JSON 并截断到指定长度。
+// 当 json.Marshal 失败时，回退为 fmt.Sprintf 转成 string 后再截断。
+func TruncateJSON(v any, maxLen int) string {
+	if v == nil {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	var s string
+	if err != nil {
+		s = fmt.Sprintf("%v", v)
+	} else {
+		s = string(b)
+	}
+	if len(s) > maxLen {
+		return s[:maxLen] + "...(truncated)"
+	}
+	return s
 }
 
 // MaskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.

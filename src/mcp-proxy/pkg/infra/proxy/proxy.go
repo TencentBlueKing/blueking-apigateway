@@ -80,25 +80,6 @@ func InitSharedTransport(cfg config.Transport) {
 	})
 }
 
-// truncateJSON 将任意对象序列化为 JSON 并截断到指定长度。
-// 当 json.Marshal 失败时，回退为 fmt.Sprintf 转成 string 后再截断。
-func truncateJSON(v any, maxLen int) string {
-	if v == nil {
-		return ""
-	}
-	b, err := json.Marshal(v)
-	var s string
-	if err != nil {
-		s = fmt.Sprintf("%v", v)
-	} else {
-		s = string(b)
-	}
-	if len(s) > maxLen {
-		return s[:maxLen] + "...(truncated)"
-	}
-	return s
-}
-
 // MCPProxy ...
 type MCPProxy struct {
 	mcpServers map[string]*MCPServer
@@ -653,7 +634,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		}
 		logTruncate := config.G.McpServer.LogTruncate
 		auditLog.Info("call tool", zap.String("request",
-			truncateJSON(req.Params.Arguments, logTruncate.GetAuditLogMaxBodySize())))
+			util.TruncateJSON(req.Params.Arguments, logTruncate.GetAuditLogMaxBodySize())))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
@@ -757,7 +738,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
 			zap.Any("query", handlerRequest.QueryParam),
 			zap.Any("path", handlerRequest.PathParam),
-			zap.String("body", truncateJSON(handlerRequest.BodyParam, logTruncate.GetAuditLogMaxBodySize())),
+			zap.String("body", util.TruncateJSON(handlerRequest.BodyParam, logTruncate.GetAuditLogMaxBodySize())),
 		)
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
@@ -791,7 +772,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			return result, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
-			zap.String("response", truncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())),
+			zap.String("response", util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())),
 			zap.Any("header", util.MaskSensitiveHeaders(headerInfo)))
 		return buildToolResult(submit), nil
 	}
