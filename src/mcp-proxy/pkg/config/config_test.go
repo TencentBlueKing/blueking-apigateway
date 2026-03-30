@@ -460,37 +460,37 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("LogTruncate", func() {
-		Describe("GetMaxBodySize", func() {
+		Describe("GetAuditLogMaxBodySize", func() {
 			It("should return configured value when set", func() {
-				lt := config.LogTruncate{MaxBodySize: 8192}
-				Expect(lt.GetMaxBodySize()).To(Equal(8192))
+				lt := config.LogTruncate{AuditLogMaxBodySize: 8192}
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(8192))
 			})
 
 			It("should return default value when zero", func() {
 				lt := config.LogTruncate{}
-				Expect(lt.GetMaxBodySize()).To(Equal(4096))
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(4096))
 			})
 
 			It("should return default value when negative", func() {
-				lt := config.LogTruncate{MaxBodySize: -1}
-				Expect(lt.GetMaxBodySize()).To(Equal(4096))
+				lt := config.LogTruncate{AuditLogMaxBodySize: -1}
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(4096))
 			})
 		})
 
-		Describe("GetMaxResponseSize", func() {
+		Describe("GetAuditLogMaxResponseSize", func() {
 			It("should return configured value when set", func() {
-				lt := config.LogTruncate{MaxResponseSize: 8192}
-				Expect(lt.GetMaxResponseSize()).To(Equal(8192))
+				lt := config.LogTruncate{AuditLogMaxResponseSize: 8192}
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(8192))
 			})
 
 			It("should return default value when zero", func() {
 				lt := config.LogTruncate{}
-				Expect(lt.GetMaxResponseSize()).To(Equal(4096))
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(4096))
 			})
 
 			It("should return default value when negative", func() {
-				lt := config.LogTruncate{MaxResponseSize: -1}
-				Expect(lt.GetMaxResponseSize()).To(Equal(4096))
+				lt := config.LogTruncate{AuditLogMaxResponseSize: -1}
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(4096))
 			})
 		})
 
@@ -576,8 +576,8 @@ var _ = Describe("Config", func() {
 			cfg, err := config.Load(v)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(cfg.McpServer.LogTruncate.MaxBodySize).To(Equal(4096))
-			Expect(cfg.McpServer.LogTruncate.MaxResponseSize).To(Equal(4096))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxBodySize).To(Equal(4096))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxResponseSize).To(Equal(4096))
 			Expect(cfg.McpServer.LogTruncate.APILogRequestSize).To(Equal(2048))
 			Expect(cfg.McpServer.LogTruncate.APILogResponseSize).To(Equal(1024))
 			Expect(cfg.McpServer.LogTruncate.APILogErrorResponseSize).To(Equal(4096))
@@ -626,14 +626,14 @@ var _ = Describe("Config", func() {
 					"user": "root", "password": "password", "name": "testdb",
 				},
 			})
-			v.Set("mcpServer.logTruncate.maxBodySize", 8192)
-			v.Set("mcpServer.logTruncate.maxResponseSize", 8192)
+			v.Set("mcpServer.logTruncate.auditLogMaxBodySize", 8192)
+			v.Set("mcpServer.logTruncate.auditLogMaxResponseSize", 8192)
 
 			cfg, err := config.Load(v)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(cfg.McpServer.LogTruncate.MaxBodySize).To(Equal(8192))
-			Expect(cfg.McpServer.LogTruncate.MaxResponseSize).To(Equal(8192))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxBodySize).To(Equal(8192))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxResponseSize).To(Equal(8192))
 		})
 	})
 })

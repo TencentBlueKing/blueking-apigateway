@@ -600,6 +600,12 @@ var _ = Describe("MCPProxy", func() {
 	})
 
 	Describe("InitSharedTransport", func() {
+		BeforeEach(func() {
+			// Reset sync.Once so each test starts fresh
+			sharedTransportOnce = sync.Once{}
+			sharedTransport = nil
+		})
+
 		It("should initialize shared transport with config values", func() {
 			cfg := config.Transport{
 				InsecureSkipVerify:    true,
@@ -617,12 +623,13 @@ var _ = Describe("MCPProxy", func() {
 			Expect(sharedTransport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
 		})
 
-		It("should overwrite previous transport", func() {
+		It("should only initialize once and ignore subsequent calls", func() {
 			InitSharedTransport(config.Transport{MaxIdleConns: 50})
 			Expect(sharedTransport.MaxIdleConns).To(Equal(50))
 
+			// Second call should be a no-op
 			InitSharedTransport(config.Transport{MaxIdleConns: 200})
-			Expect(sharedTransport.MaxIdleConns).To(Equal(200))
+			Expect(sharedTransport.MaxIdleConns).To(Equal(50))
 		})
 	})
 

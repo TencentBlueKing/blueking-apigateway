@@ -25,6 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/util"
 )
 
 var _ = Describe("Helper Functions", func() {
@@ -86,7 +87,7 @@ var _ = Describe("Helper Functions", func() {
 				constant.BkApiAuthorizationHeaderKey: "abcdefghijk",
 				"Content-Type":                       "application/json",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("abc***ijk"))
 			Expect(masked["Content-Type"]).To(Equal("application/json"))
@@ -96,7 +97,7 @@ var _ = Describe("Helper Functions", func() {
 			headers := map[string]string{
 				constant.BkGatewayJWTHeaderKey: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked[constant.BkGatewayJWTHeaderKey]).To(Equal("eyJ***CJ9"))
 		})
@@ -105,7 +106,7 @@ var _ = Describe("Helper Functions", func() {
 			headers := map[string]string{
 				constant.BkApiAuthorizationHeaderKey: "short",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("***"))
 		})
@@ -114,7 +115,7 @@ var _ = Describe("Helper Functions", func() {
 			headers := map[string]string{
 				constant.BkApiAuthorizationHeaderKey: "abcdef",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("***"))
 		})
@@ -123,7 +124,7 @@ var _ = Describe("Helper Functions", func() {
 			headers := map[string]string{
 				constant.BkApiAuthorizationHeaderKey: "abcdefg",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).To(Equal("abc***efg"))
 		})
@@ -133,14 +134,14 @@ var _ = Describe("Helper Functions", func() {
 				"Content-Type": "application/json",
 				"Accept":       "text/html",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(masked["Content-Type"]).To(Equal("application/json"))
 			Expect(masked["Accept"]).To(Equal("text/html"))
 		})
 
 		It("should handle empty headers map", func() {
-			masked := maskSensitiveHeaders(map[string]string{})
+			masked := util.MaskSensitiveHeaders(map[string]string{})
 			Expect(masked).To(BeEmpty())
 		})
 
@@ -148,7 +149,7 @@ var _ = Describe("Helper Functions", func() {
 			headers := map[string]string{
 				constant.BkApiAuthorizationHeaderKey: "original_value",
 			}
-			masked := maskSensitiveHeaders(headers)
+			masked := util.MaskSensitiveHeaders(headers)
 
 			Expect(headers[constant.BkApiAuthorizationHeaderKey]).To(Equal("original_value"))
 			Expect(masked[constant.BkApiAuthorizationHeaderKey]).NotTo(Equal("original_value"))

@@ -164,11 +164,11 @@ type Transport struct {
 
 // LogTruncate default values.
 const (
-	defaultMaxBodySize         = 4096
-	defaultMaxResponseSize     = 4096
-	defaultAPILogRequestSize   = 2048
-	defaultAPILogResponseSize  = 1024
-	defaultAPILogErrorRespSize = 4096
+	defaultAuditLogMaxBodySize     = 4096
+	defaultAuditLogMaxResponseSize = 4096
+	defaultAPILogRequestSize       = 2048
+	defaultAPILogResponseSize      = 1024
+	defaultAPILogErrorRespSize     = 4096
 )
 
 // LogTruncate is the config for log truncation limits.
@@ -176,12 +176,12 @@ const (
 // For ASCII content this equals the byte count, but for multi-byte characters (e.g. CJK)
 // the actual byte size may be larger.
 type LogTruncate struct {
-	// MaxBodySize limits the audit log body size for tool call requests and body params (string length).
+	// AuditLogMaxBodySize limits the audit log body size for tool call requests and body params (string length).
 	// Defaults to 4096 if not set.
-	MaxBodySize int
-	// MaxResponseSize limits the audit log response size for tool call responses (string length).
+	AuditLogMaxBodySize int
+	// AuditLogMaxResponseSize limits the audit log response size for tool call responses (string length).
 	// Defaults to 4096 if not set.
-	MaxResponseSize int
+	AuditLogMaxResponseSize int
 	// APILogRequestSize limits the MCP API log request params size (string length).
 	// Defaults to 2048 if not set.
 	APILogRequestSize int
@@ -193,20 +193,20 @@ type LogTruncate struct {
 	APILogErrorResponseSize int
 }
 
-// GetMaxBodySize returns MaxBodySize with a safe default fallback.
-func (l LogTruncate) GetMaxBodySize() int {
-	if l.MaxBodySize <= 0 {
-		return defaultMaxBodySize
+// GetAuditLogMaxBodySize returns AuditLogMaxBodySize with a safe default fallback.
+func (l LogTruncate) GetAuditLogMaxBodySize() int {
+	if l.AuditLogMaxBodySize <= 0 {
+		return defaultAuditLogMaxBodySize
 	}
-	return l.MaxBodySize
+	return l.AuditLogMaxBodySize
 }
 
-// GetMaxResponseSize returns MaxResponseSize with a safe default fallback.
-func (l LogTruncate) GetMaxResponseSize() int {
-	if l.MaxResponseSize <= 0 {
-		return defaultMaxResponseSize
+// GetAuditLogMaxResponseSize returns AuditLogMaxResponseSize with a safe default fallback.
+func (l LogTruncate) GetAuditLogMaxResponseSize() int {
+	if l.AuditLogMaxResponseSize <= 0 {
+		return defaultAuditLogMaxResponseSize
 	}
-	return l.MaxResponseSize
+	return l.AuditLogMaxResponseSize
 }
 
 // GetAPILogRequestSize returns APILogRequestSize with a safe default fallback.
@@ -333,25 +333,28 @@ func Load(v *viper.Viper) (*Config, error) {
 	if cfg.McpServer.Transport.IdleConnTimeoutSecond == 0 {
 		cfg.McpServer.Transport.IdleConnTimeoutSecond = 90
 	}
-	// MaxConcurrentPrefetch defaults to 20
+	// MaxConcurrentPrefetch defaults to 20, capped at 100
 	if cfg.McpServer.MaxConcurrentPrefetch == 0 {
 		cfg.McpServer.MaxConcurrentPrefetch = 20
 	}
-	// LogTruncate defaults
-	if cfg.McpServer.LogTruncate.MaxBodySize == 0 {
-		cfg.McpServer.LogTruncate.MaxBodySize = 4096
+	if cfg.McpServer.MaxConcurrentPrefetch > 100 {
+		cfg.McpServer.MaxConcurrentPrefetch = 100
 	}
-	if cfg.McpServer.LogTruncate.MaxResponseSize == 0 {
-		cfg.McpServer.LogTruncate.MaxResponseSize = 4096
+	// LogTruncate defaults
+	if cfg.McpServer.LogTruncate.AuditLogMaxBodySize == 0 {
+		cfg.McpServer.LogTruncate.AuditLogMaxBodySize = defaultAuditLogMaxBodySize
+	}
+	if cfg.McpServer.LogTruncate.AuditLogMaxResponseSize == 0 {
+		cfg.McpServer.LogTruncate.AuditLogMaxResponseSize = defaultAuditLogMaxResponseSize
 	}
 	if cfg.McpServer.LogTruncate.APILogRequestSize == 0 {
-		cfg.McpServer.LogTruncate.APILogRequestSize = 2048
+		cfg.McpServer.LogTruncate.APILogRequestSize = defaultAPILogRequestSize
 	}
 	if cfg.McpServer.LogTruncate.APILogResponseSize == 0 {
-		cfg.McpServer.LogTruncate.APILogResponseSize = 1024
+		cfg.McpServer.LogTruncate.APILogResponseSize = defaultAPILogResponseSize
 	}
 	if cfg.McpServer.LogTruncate.APILogErrorResponseSize == 0 {
-		cfg.McpServer.LogTruncate.APILogErrorResponseSize = 4096
+		cfg.McpServer.LogTruncate.APILogErrorResponseSize = defaultAPILogErrorRespSize
 	}
 
 	if cfg.PProf.Username == "" {

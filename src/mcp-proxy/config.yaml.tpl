@@ -93,12 +93,12 @@ mcpServer:
     maxIdleConns: 200
     maxIdleConnsPerHost: 20
     idleConnTimeoutSecond: 90
-  # Log truncation limits (bytes)
+  # Log truncation limits (string length, not bytes)
   logTruncate:
     # Audit log body size limit for tool call requests and body params
-    maxBodySize: 4096
+    auditLogMaxBodySize: 4096
     # Audit log response size limit for tool call responses
-    maxResponseSize: 4096
+    auditLogMaxResponseSize: 4096
     # MCP API log request params size limit
     apiLogRequestSize: 2048
     # MCP API log response size limit (normal responses)

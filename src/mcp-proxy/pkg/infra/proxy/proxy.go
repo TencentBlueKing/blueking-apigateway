@@ -57,28 +57,27 @@ const (
 	toolResponseBodyField       = "response_body"
 )
 
-// sensitiveHeaderKeys lists header keys whose values must be masked in logs.
-var sensitiveHeaderKeys = map[string]struct{}{
-	constant.BkApiAuthorizationHeaderKey: {},
-	constant.BkGatewayJWTHeaderKey:       {},
-}
-
 // sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
 // 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
-var sharedTransport *http.Transport
+var (
+	sharedTransport     *http.Transport
+	sharedTransportOnce sync.Once
+)
 
 // InitSharedTransport initializes the shared HTTP Transport from config.
-// It MUST be called once during startup (before any tool calls).
+// It is safe for concurrent use: only the first call takes effect, subsequent calls are no-ops.
 // nolint:gosec
 func InitSharedTransport(cfg config.Transport) {
-	sharedTransport = &http.Transport{
-		// NOTE: InsecureSkipVerify 跳过 TLS 证书验证，仅在内部网络环境下使用。
-		// 公网环境请在 config.yaml 中设置 mcpServer.transport.insecureSkipVerify: false。
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify},
-		MaxIdleConns:        cfg.MaxIdleConns,
-		MaxIdleConnsPerHost: cfg.MaxIdleConnsPerHost,
-		IdleConnTimeout:     time.Duration(cfg.IdleConnTimeoutSecond) * time.Second,
-	}
+	sharedTransportOnce.Do(func() {
+		sharedTransport = &http.Transport{
+			// NOTE: InsecureSkipVerify 跳过 TLS 证书验证，仅在内部网络环境下使用。
+			// 公网环境请在 config.yaml 中设置 mcpServer.transport.insecureSkipVerify: false。
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: cfg.InsecureSkipVerify},
+			MaxIdleConns:        cfg.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.IdleConnTimeoutSecond) * time.Second,
+		}
+	})
 }
 
 // truncateJSON 将任意对象序列化为 JSON 并截断到指定长度。
@@ -98,23 +97,6 @@ func truncateJSON(v any, maxLen int) string {
 		return s[:maxLen] + "...(truncated)"
 	}
 	return s
-}
-
-// maskSensitiveHeaders returns a copy of headerInfo with sensitive values masked.
-func maskSensitiveHeaders(headerInfo map[string]string) map[string]string {
-	masked := make(map[string]string, len(headerInfo))
-	for k, v := range headerInfo {
-		if _, ok := sensitiveHeaderKeys[k]; ok {
-			if len(v) > 6 {
-				masked[k] = v[:3] + "***" + v[len(v)-3:]
-			} else {
-				masked[k] = "***"
-			}
-		} else {
-			masked[k] = v
-		}
-	}
-	return masked
 }
 
 // MCPProxy ...
@@ -671,7 +653,7 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 		}
 		logTruncate := config.G.McpServer.LogTruncate
 		auditLog.Info("call tool", zap.String("request",
-			truncateJSON(req.Params.Arguments, logTruncate.GetMaxBodySize())))
+			truncateJSON(req.Params.Arguments, logTruncate.GetAuditLogMaxBodySize())))
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
@@ -772,16 +754,16 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			),
 		}
 		auditLog.Info("call tool request params",
-			zap.Any("header", maskSensitiveHeaders(headerInfo)),
+			zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
 			zap.Any("query", handlerRequest.QueryParam),
 			zap.Any("path", handlerRequest.PathParam),
-			zap.String("body", truncateJSON(handlerRequest.BodyParam, logTruncate.GetMaxBodySize())),
+			zap.String("body", truncateJSON(handlerRequest.BodyParam, logTruncate.GetAuditLogMaxBodySize())),
 		)
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
-			auditLog.Error("call tool err", zap.Any("header", maskSensitiveHeaders(headerInfo)), zap.Error(err))
+			auditLog.Error("call tool err", zap.Any("header", util.MaskSensitiveHeaders(headerInfo)), zap.Error(err))
 			if span != nil {
 				span.SetStatus(codes.Error, msg)
 				span.RecordError(err)
@@ -809,8 +791,8 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 			return result, nil
 		}
 		auditLog.Info("call tool success", zap.String("tool", toolApiConfig.String()),
-			zap.String("response", truncateJSON(submit, logTruncate.GetMaxResponseSize())),
-			zap.Any("header", maskSensitiveHeaders(headerInfo)))
+			zap.String("response", truncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())),
+			zap.Any("header", util.MaskSensitiveHeaders(headerInfo)))
 		return buildToolResult(submit), nil
 	}
 	return handler
