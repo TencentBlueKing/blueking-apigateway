@@ -18,6 +18,7 @@
 #
 import json
 import logging
+import time
 
 from django.conf import settings
 from django.db import transaction
@@ -696,13 +697,24 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             gateway_id=request.gateway.id, stage_name=stage_name
         )
 
-        # 检查当前环境是否正在发布
-        stage_release_status = ReleaseHandler.batch_get_stage_release_status([stage.id])
-        stage_status_info = stage_release_status.get(stage.id)
-        is_releasing = stage_status_info and stage_status_info.get("status") in (
-            ReleaseHistoryStatusEnum.DOING.value,
-            ReleaseStatusEnum.PENDING.value,
-        )
+        # 检查当前环境是否正在发布，带重试等待机制
+        # 场景：create_version_and_release 刚执行完，发布任务可能还未完全就绪
+        is_releasing = False
+        stage_status_info = None
+        for _attempt in range(3):
+            stage_release_status = ReleaseHandler.batch_get_stage_release_status([stage.id])
+            stage_status_info = stage_release_status.get(stage.id)
+            is_releasing = bool(
+                stage_status_info
+                and stage_status_info.get("status")
+                in (
+                    ReleaseHistoryStatusEnum.DOING.value,
+                    ReleaseStatusEnum.PENDING.value,
+                )
+            )
+            if is_releasing or resource_version_id:
+                break
+            time.sleep(5)
 
         if is_releasing:
             validate_resource_version_id = stage_status_info["resource_version_id"]
