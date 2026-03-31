@@ -78,11 +78,11 @@ urlpatterns = [
     path("backend/gateways/<int:gateway_id>/ai/", include("apigateway.apis.web.ai_completion.urls")),
     path("backend/gateways/<int:gateway_id>/mcp-servers/", include("apigateway.apis.web.mcp_server.urls")),
     path(
-        "backend/gateways/<int:gateway_id>/mcp-servers/-/metrics/",
+        "backend/gateways/<int:gateway_id>/mcp-server-metrics/",
         include("apigateway.apis.web.mcp_server_metrics.urls"),
     ),
     path(
-        "backend/gateways/<int:gateway_id>/mcp-servers/-/logs/",
+        "backend/gateways/<int:gateway_id>/mcp-server-logs/",
         include("apigateway.apis.web.mcp_server_log.urls"),
     ),
     # mcp server marketplace
@@ -96,7 +96,7 @@ urlpatterns = [
     # ),
     path("backend/gateways/logs/query/<slug:request_id>/", LogDetailInfoApi.as_view(), name="access_log.logs.query"),
     path(
-        "backend/gateways/mcp-servers/-/logs/query/<slug:request_id>/",
+        "backend/gateways/mcp-server-logs/query/<slug:request_id>/",
         MCPServerLogQueryApi.as_view(),
         name="mcp_server_log.logs.query",
     ),

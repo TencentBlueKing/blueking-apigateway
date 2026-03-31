@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
 from collections import OrderedDict
 
 from ruamel.yaml import YAML
@@ -129,27 +128,3 @@ def multiline_str_presenter(dumper, data):
     if len(text_list) > 1:
         return dumper.represent_scalar("tag:yaml.org,2002:str", fix_data, style="|")
     return dumper.represent_scalar("tag:yaml.org,2002:str", fix_data)
-
-
-# 匹配 \uXXXX 和 \UXXXXXXXX 格式的 Unicode 转义序列
-_UNICODE_ESCAPE_RE = re.compile(r"\\u([0-9a-fA-F]{4})|\\U([0-9a-fA-F]{8})")
-
-
-def _replace_unicode_escape(match: re.Match) -> str:
-    """将匹配到的 \\uXXXX 或 \\UXXXXXXXX 转换为对应的 Unicode 字符"""
-    if match.group(1):
-        return chr(int(match.group(1), 16))
-    return chr(int(match.group(2), 16))
-
-
-def decode_unicode_escape_safe(s: str) -> str:
-    """安全的 Unicode 转义解码。
-
-    仅处理 \\uXXXX 和 \\UXXXXXXXX 格式的 Unicode 转义序列，
-    不会影响其他反斜杠转义（如 \\" \\n \\\\ 等），避免破坏 YAML 嵌套字符串的引号结构。
-
-    这是 `str.encode().decode("unicode_escape")` 的安全替代：
-    - unicode_escape 会将 \\" 转为 "，导致内层 YAML 解析失败
-    - 本函数只转换 Unicode 码点转义，保留其他转义序列不变
-    """
-    return _UNICODE_ESCAPE_RE.sub(_replace_unicode_escape, s)

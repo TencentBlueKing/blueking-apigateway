@@ -60,12 +60,9 @@ logger:
 mcpServer:
   interval: 60
   bkApiUrlTmpl: ""
-
-## config for metric
-metric:
   ## Metric name prefix, should be aligned with the dashboard's PROMETHEUS_METRIC_NAME_PREFIX.
   ## Can also be overridden by the PROMETHEUS_METRIC_NAME_PREFIX environment variable.
-  namePrefix: "bk_apigateway_"
+  metricNamePrefix: "bk_apigateway_"
 
 ## config for trace
 tracing:

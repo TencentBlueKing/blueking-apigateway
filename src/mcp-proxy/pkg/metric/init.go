@@ -54,7 +54,7 @@ var (
 )
 
 // InitMetrics creates and registers all metric collectors.
-// metricNamePrefix comes from config (Metric.NamePrefix), aligned with
+// metricNamePrefix comes from config (McpServer.MetricNamePrefix), aligned with
 // the dashboard's PROMETHEUS_METRIC_NAME_PREFIX so that PromQL queries match.
 func InitMetrics(metricNamePrefix string) {
 	RequestCount = prometheus.NewCounterVec(

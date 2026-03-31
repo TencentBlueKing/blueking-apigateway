@@ -32,7 +32,6 @@ from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.service.plugin.validator import PluginConfigYamlValidator
 from apigateway.utils.list import get_duplicate_items
-from apigateway.utils.yaml import decode_unicode_escape_safe
 
 
 class ResourceImportValidator:
@@ -406,7 +405,7 @@ class ResourceImportValidator:
                 try:
                     yaml_validator.validate(
                         plugin_type.code,
-                        decode_unicode_escape_safe(plugin_config_data.yaml),
+                        plugin_config_data.yaml.encode().decode("unicode_escape"),
                         plugin_type.schema and plugin_type.schema.schema,
                     )
                 except Exception as err:  # pylint: disable=broad-except
