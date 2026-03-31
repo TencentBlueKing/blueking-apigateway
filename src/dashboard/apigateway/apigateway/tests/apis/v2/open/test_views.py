@@ -324,6 +324,75 @@ class TestParseDatetimeStrToTimestampApi:
         assert "error" in result or "message" in result
 
 
+class TestLogSearchByRequestIdApi:
+    def test_search_logs_returns_log_fields(self, request_view):
+        """测试根据 request_id 查询日志时，返回的日志字段正确（非全 null）"""
+        fake_logs = [
+            {
+                "request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e",
+                "stage": "prod",
+                "resource_id": 1,
+                "resource_name": "get_user",
+                "app_code": "test-app",
+                "client_ip": "127.0.0.1",
+                "method": "GET",
+                "http_host": "bkapi.example.com",
+                "http_path": "/api/v1/users/",
+                "params": "",
+                "body": "",
+                "backend_scheme": "http",
+                "backend_method": "GET",
+                "backend_host": "backend.example.com",
+                "backend_path": "/users/",
+                "response_body": '{"result": true}',
+                "status": 200,
+                "request_duration": 100,
+                "backend_duration": 50,
+                "code_name": "",
+                "error": "",
+                "response_desc": "",
+                "timestamp": 1704628245,
+            }
+        ]
+        with mock.patch(
+            "apigateway.apis.v2.open.views.LogHandler.search_logs_by_request_id",
+            return_value=(1, fake_logs),
+        ):
+            resp = request_view(
+                method="GET",
+                view_name="openapi.v2.open.tools.log.query_by_request_id",
+                app=mock.MagicMock(app_code="test"),
+                data={"request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"},
+            )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert "data" in result
+        logs = result["data"]
+        assert len(logs) == 1
+        assert logs[0]["request_id"] == "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"
+        assert logs[0]["status"] == 200
+        assert logs[0]["method"] == "GET"
+        assert logs[0]["client_ip"] == "127.0.0.1"
+
+    def test_search_logs_empty_result(self, request_view):
+        """测试没有日志时返回空列表"""
+        with mock.patch(
+            "apigateway.apis.v2.open.views.LogHandler.search_logs_by_request_id",
+            return_value=(0, []),
+        ):
+            resp = request_view(
+                method="GET",
+                view_name="openapi.v2.open.tools.log.query_by_request_id",
+                app=mock.MagicMock(app_code="test"),
+                data={"request_id": "00000000-0000-0000-0000-000000000000"},
+            )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"] == []
+
+
 class TestMCPServerListApiOAuth2:
     """测试 MCPServer 列表接口返回 oauth2_public_client_enabled 字段"""
 
