@@ -18,7 +18,4 @@ pre-*-bkcodeai
 bkcodeai.json
 .worktrees
 
-# Agent test suite reports and screenshots (generated output)
-test/agent-tests/reports/
-# ignore the generated cases from excel or local files
-test/agent-tests/cases/
+*.png
