@@ -380,7 +380,7 @@
                   theme="primary"
                   :loading="isLoading"
                   :disabled="isLoading"
-                  @click="handleSend"
+                  @click="(e) => handleSend(e, curResource?.name)"
                 >
                   {{ t('发送') }}
                 </BkButton>
@@ -694,6 +694,7 @@ const handleResourceClose = (type: string) => {
       curComponentName.value = '';
       activeName.value = [];
       autoSelectFirstResource.value = false;
+      isLoading.value = false;
       break;
     case 'close_current':
       if (curResource.value?.id) {
@@ -709,6 +710,7 @@ const handleResourceClose = (type: string) => {
           else {
             curResource.value = {};
             curComponentName.value = '';
+            isLoading.value = false;
           }
         }
       }
@@ -814,6 +816,7 @@ const resourceGroup = computed(() => {
         curResource.value = firstResource;
         curComponentName.value = firstResource?.name;
         resourceTabs.value = [firstResource];
+        isLoading.value = false;
         getResourceParams();
         autoSelectFirstResource.value = false; // 若选中成功则禁用自动选中
       }
@@ -1155,6 +1158,7 @@ const handleDebuggingCacheData = (resource, save = true) => {
   // 将切换资源的调试数据读取到当前界面
   curResource.value = resource;
   curComponentName.value = resource?.name;
+  isLoading.value = false;
   const settings = resourceDebuggingStore.getResourceSettings(resource.name);
   if (settings && JSON.stringify(settings) !== '{}') {
     const {
@@ -1230,6 +1234,7 @@ const handleCloseTab = (resource) => {
     curResource.value = {};
     curComponentName.value = '';
     response.value = {};
+    isLoading.value = false;
   }
 };
 
@@ -1399,7 +1404,7 @@ const formatPayload = () => {
   return false;
 };
 
-const handleSend = async (e: Event) => {
+const handleSend = async (e: Event, name: string) => {
   e?.stopPropagation();
   const isValidate = await requestPayloadRef.value?.validate();
   if (!isValidate) return;
@@ -1409,9 +1414,18 @@ const handleSend = async (e: Event) => {
   try {
     isLoading.value = true;
     const res = await postAPITest(apigwId.value, data);
-    response.value = res;
 
-    handleResponseUnfold();
+    if (name === curResource.value?.name) {
+      response.value = res;
+      handleResponseUnfold();
+    }
+    else {
+      const cache = resourceDebuggingStore.getResourceSettings(name);
+      if (cache && JSON.stringify(cache) !== '{}') {
+        cache.response = res;
+        resourceDebuggingStore.setResourceSettings(name, cache);
+      }
+    }
   }
   catch (e) {
     console.log(e);
@@ -1463,6 +1477,7 @@ const handleRetry = (row: Record<string, any>) => {
       activeName.value = key;
       curResource.value = match;
       curComponentName.value = curResource.value?.name;
+      isLoading.value = false;
 
       // 如果未在 tabs 中，则添加
       if (!resourceTabs.value.some(tab => tab.id === match.id)) {
@@ -1925,6 +1940,7 @@ init();
       display: flex;
       align-items: center;
       overflow: hidden;
+      margin-left: 0px;
 
       .tab-text {
         flex: 1 1 0;
@@ -1964,6 +1980,7 @@ init();
         border-top: 2px solid #3A84FF;
         margin-bottom: -1px;
         border-bottom: 1px solid #FFFFFF;
+        margin-left: -1px;
         &:hover {
           .icon-close {
             display: block;
