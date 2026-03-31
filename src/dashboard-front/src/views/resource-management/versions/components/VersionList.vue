@@ -464,6 +464,7 @@ const handleShowDiff = () => {
 
   diffSliderConf.isShow = true;
   selections.value = [];
+  tableRef.value!.handleResetSelection();
 };
 
 // 版本导出
@@ -587,6 +588,7 @@ const handleDelete = (
         theme: 'success',
       });
       selections.value = [];
+      tableRef.value!.handleResetSelection();
       refresh();
     },
   });
@@ -627,6 +629,7 @@ const handleBatchDelete = () => {
         theme: 'success',
       });
       selections.value = [];
+      tableRef.value!.handleResetSelection();
       refresh();
     },
   });
