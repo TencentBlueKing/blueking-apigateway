@@ -55,7 +55,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, ReleaseHistory, Resource
+from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -104,22 +104,11 @@ class MCPServerHandler:
             stage_id=stage_id,
             stage__status=StageStatusEnum.ACTIVE.value,
         ).first()
-        if release:
-            return ResourceVersionHandler.get_resource_names_set(release.resource_version.id)
-
-        # 没有已发布版本时，检查是否有正在发布的版本（首次发布或发布进行中）
-        latest_release_history = (
-            ReleaseHistory.objects.filter(gateway_id=gateway_id, stage_id=stage_id)
-            .order_by("-id")
-            .only("resource_version_id")
-            .first()
-        )
-        if latest_release_history:
-            return ResourceVersionHandler.get_resource_names_set(latest_release_history.resource_version_id)
-
-        raise error_codes.FAILED_PRECONDITION.format(
-            _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
-        )
+        if not release:
+            raise error_codes.FAILED_PRECONDITION.format(
+                _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
+            )
+        return ResourceVersionHandler.get_resource_names_set(release.resource_version.id)
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
