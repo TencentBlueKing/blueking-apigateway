@@ -467,7 +467,7 @@ paths:
         pluginConfigs:
         - type: bk-mock
           yaml: |-
-            response_example: "{\"hello\": \"world\"}"
+            response_example: '{\"hello\": \"world\"}'
             response_headers:
               - key: foo
                 value: bar
