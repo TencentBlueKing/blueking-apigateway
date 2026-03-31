@@ -1,84 +1,214 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<table class="template-table" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; min-width: auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #fff; background: #fff;">
-    <tbody>
-        <tr>
-            <td align="center" valign="top" width="100%" style="padding: 16px;">
-                <table class="template-table" border="0" cellpadding="0" cellspacing="0" width="1056" style="font-size: 14px; min-width: auto; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                    <tbody>
-                        <tr>
-                            <td valign="top" align="center">
-                                <table cellpadding="0" cellspacing="0" border="0" bgcolor="#f9f8f6" class="layout layout-table root-table" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                                    <tbody>
-                                        <tr style="height: 64px; background: #555;">
-                                            <td style="padding-left: 30px;">
-                                                <img src="cid:api_gateway.png" width="176" style="display: block">
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td valign="top" align="center" style="padding: 24px;" bgcolor="#f9f8f6">
-                                <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid #e6e6e6;">
-                                    <tr>
-                                        <td class="email-title" style="padding: 20px 36px; line-height: 1.5; border-bottom: 1px solid #e6e6e6; background: #fff; font-size: 22px;">{{ title }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="email-content" style="padding: 0 36px; background: #fff;">
-                                            <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
-                                                <tr>
-                                                    <td class="email-source" style="padding: 14px 0; color: #bebebe;">来自蓝鲸API网关</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding-top: 36px; padding-bottom: 14px; color: #707070;">以下网关在过去 180 天内无任何请求流量，建议及时清理或下架不再使用的网关</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <table cellpadding="0" cellspacing="0" width="100%" style="font-size: 14px; mso-table-lspace: 0pt; mso-table-rspace: 0pt; border: 1px solid #e6e6e6; border-collapse: collapse;">
-                                                            <thead style="background: #f6f8f8;">
-                                                                <tr style="color: #333C48;">
-                                                                    <th width="20%" style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">网关名称</th>
-                                                                    <th width="15%" style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">创建者</th>
-                                                                    <th width="25%" style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">环境</th>
-                                                                    <th width="15%" style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">资源数量</th>
-                                                                    <th width="25%" style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">过去180天调用量</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody style="color: #707070;">
-                                                                {% for gw in gateways %}
-                                                                <tr>
-                                                                    <td style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">{{ gw.name }}</td>
-                                                                    <td style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">{{ gw.created_by }}</td>
-                                                                    <td style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">{{ gw.stage_names }}</td>
-                                                                    <td style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">{{ gw.resource_count }}</td>
-                                                                    <td style="padding: 16px; border: 1px solid #e6e6e6; text-align: center; font-weight: normal;">{{ gw.request_count }}</td>
-                                                                </tr>
-                                                                {% endfor %}
-                                                            </tbody>
-                                                        </table>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding: 16px; text-align: left; font-weight: normal;"><a href="{{ dashboard_link }}" style="color: #3c96ff">去查看</a></td>
-                                                </tr>
-                                                <tr class="info-remark">
-                                                    <td style="padding: 20px 0; text-align: right; line-height: 24px; color: #707070;">
-                                                        <div>{% now "Y-m-d H:i:s" %}</div>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <tr class="email-footer">
-                                        <td style="padding: 20px 0 20px 36px; border-top: 1px solid #e6e6e6; background: #fff; color: #c7c7c7;">你收到此邮件，是因为你是以上网关的负责人</td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-    </tbody>
-</table>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: #333;
+  background-color: #f5f7fa;
+}
+.container {
+  width: 900px;
+  margin: 0 auto;
+}
+.header {
+  height: 148px;
+  background: #2e3959;
+  color: #fff;
+  padding: 30px 40px 0;
+  border-radius: 4px 4px 0 0;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-left .logo {
+  width: 44px;
+  height: 44px;
+  background: #17a0e9;
+  border-radius: 4px;
+}
+.logo img {
+  width: 100%;
+  display: block;
+  border-radius: 4px;
+}
+.header-title {
+  color: #ffffff;
+  font-weight: Bold;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.header-subtitle {
+  font-size: 14px;
+  color: #c4c6cc;
+}
+
+.content {
+  margin: -44px 40px 24px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px 0 #6b779533;
+  padding: 20px 24px;
+}
+.alert {
+  margin-bottom: 22px;
+  color: #394567;
+  font-weight: Bold;
+  font-size: 18px;
+}
+.action-btn {
+  color: #3a84ff;
+  border-radius: 2px;
+  padding: 5px 16px;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid #3a84ff;
+}
+.table-title {
+  color: #2e3959;
+  font-size: 14px;
+  font-weight: Bold;
+  margin-bottom: 16px;
+}
+.table-title::before {
+  content: " ";
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: #3A84FF;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.data-table th,
+.data-table td {
+  padding: 12px 0px 12px 16px;
+  font-size: 12px;
+  text-align: left;
+  color: #4d4f56;
+}
+.data-table th {
+  background: #fafbfd;
+  color: #313238;
+}
+.data-table tr {
+  border: 1px solid #e8ebf1;
+}
+.cell-stage {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+.stage-dev {
+  color: #4d4f56;
+  background: #F0F1F5;
+}
+.stage-stag {
+  background: #E1ECFF;
+  color: #1768ef;
+}
+.stage-prod {
+  background: #DAF6E5;
+  color: #299e56;
+}
+.bottom-action {
+  display: block;
+  width: 176px;
+  height: 40px;
+  margin: 0 auto 24px;
+  color: #ffffff;
+  font-size: 16px;
+  text-decoration: none;
+  text-align: center;
+  line-height: 40px;
+  border-radius: 20px;
+  background: #3A84FF;
+  box-shadow: 0 4px 6px 0 #3265c240;
+}
+
+.footer {
+  padding: 16px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #c4c6cc;
+  background: #2E3959;
+  border-radius: 0 0 4px 4px;
+}
+.links {
+  color: #3A84FF;
+  text-decoration: none;
+}
+.primary-color {
+  color: #3A84FF;
+}
+</style>
+
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="cid:api_gateway.png">
+      </div>
+      <div>
+        <div class="header-title">{{ title }}</div>
+        <div class="header-subtitle">来自蓝鲸API网关</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="alert">
+      你当前有 <span class="primary-color">{{ total }}</span> 个网关近 180 天无任何调用，请及时停用网关或下架相关应用！
+      <a class="action-btn" href="{{ dashboard_link }}">去处理</a>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-title">闲置网关</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>网关名称</th>
+            <th>创建者</th>
+            <th>环境列表</th>
+            <th>资源数量</th>
+            <th>调⽤量 (30d)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gw in gateways %}
+            <tr>
+              <td>{{ gw.name }}</td>
+              <td>{{ gw.created_by }}</td>
+              <td>
+                {{ gw.stage_names }}
+                <!-- <span class="cell-stage stage-dev">dev</span>
+                <span class="cell-stage stage-stag">stag</span>
+                <span class="cell-stage stage-prod">prod</span> -->
+              </td>
+              <td>{{ gw.resource_count }}</td>
+              <td>{{ gw.request_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <a class="bottom-action" href="{{ dashboard_link }}">去处理</a>
+
+  <div class="footer">
+    <div>此邮件由蓝鲸 API 网关系统自动发送，请勿直接回复</div>
+    <div>如有疑问，请联系 BK 助手</div>
+  </div>
+</div>
