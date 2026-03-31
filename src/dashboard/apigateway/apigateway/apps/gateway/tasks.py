@@ -180,6 +180,7 @@ class InactiveGatewayNotifier:
                 "gateway/inactive_gateway_notify_template.html",
                 context={
                     "title": title,
+                    "total": len(gw_data_list),
                     "gateways": gw_data_list,
                     "dashboard_link": apigw_domain,
                 },
