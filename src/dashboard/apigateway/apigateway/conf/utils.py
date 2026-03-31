@@ -213,6 +213,8 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True
         ),
+        # 是否启用 MCP Server 可观测功能（日志、指标监控）
+        "ENABLE_MCP_SERVER_OBSERVABLE": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OBSERVABLE", False),
     }
 
 
