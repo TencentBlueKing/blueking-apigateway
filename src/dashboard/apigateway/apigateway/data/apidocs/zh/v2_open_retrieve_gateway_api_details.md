@@ -76,7 +76,7 @@
             "updated_time": "2025-01-10T15:30:00Z"
         },
         "auth_config": {
-            "auth_verified_required": true,
+            "user_verified_required": true,
             "app_verified_required": true,
             "resource_perm_required": true
         }

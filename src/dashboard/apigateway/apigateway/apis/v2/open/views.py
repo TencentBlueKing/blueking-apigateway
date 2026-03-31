@@ -67,7 +67,6 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
-from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -812,12 +811,8 @@ class LogSearchByRequestIdApi(generics.RetrieveAPIView):
         request_id = slz.validated_data.get("request_id")
 
         total_count, logs = LogHandler.search_logs_by_request_id(request_id)
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
 
-        # 将字段信息添加到结果中，便于前端展示
-        results = paginator.get_paginated_data(logs)
-
-        output_slz = LogSearchByRequestIdOutputSLZ(results, many=True)
+        output_slz = LogSearchByRequestIdOutputSLZ(logs, many=True)
         return OKJsonResponse(data=output_slz.data)
 
 
