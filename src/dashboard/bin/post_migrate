@@ -24,8 +24,6 @@ sync_bk_apigateway() {
     python manage.py grant_apigw_permissions --gateway-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     python manage.py fetch_apigw_public_key --gateway-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend
     python manage.py create_version_and_release_apigw --generate-sdks --gateway-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
-    # 等待发布任务开始处理，避免 mcp server 同步时发布状态尚未就绪
-    sleep 10
     python manage.py sync_apigw_stage_mcp_servers --gateway-name=bk-apigateway --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-definition.yaml"
     echo "API gateway bk-apigateway sync definition end"
 }
