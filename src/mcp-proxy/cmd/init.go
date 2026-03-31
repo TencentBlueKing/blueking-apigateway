@@ -76,7 +76,7 @@ func initSentry() {
 }
 
 func initMetrics() {
-	metric.InitMetrics(globalConfig.McpServer.MetricNamePrefix)
+	metric.InitMetrics(globalConfig.Metric.NamePrefix)
 	logging.GetLogger().Info("init Metrics success")
 }
 
