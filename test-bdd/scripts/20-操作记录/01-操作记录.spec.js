@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 操作记录 - 操作审计记录', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '操作记录', '/audit');
+    await navigateToGatewayPage(page, getGatewayId(), '操作记录', '/audit');
   });
 
   test('场景: 查看操作记录', async ({ page }) => {

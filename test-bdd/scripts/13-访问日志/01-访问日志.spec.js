@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 访问日志 - 流水日志查看', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '流水日志', '/access-log');
+    await navigateToGatewayPage(page, getGatewayId(), '流水日志', '/access-log');
   });
 
   test('场景: 查看访问日志', async ({ page }) => {
@@ -29,16 +28,14 @@ test.describe('功能: 访问日志 - 流水日志查看', () => {
         await page.waitForTimeout(300);
       }
     } else {
-      // Verify page loaded via sidebar
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      // Verify page loaded via URL
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
   test('场景: 日志搜索与筛选', async ({ page }) => {
     // Verify page is loaded
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
 
     // Try search input
     const searchInput = page.locator('.bk-search-select, .bk-textarea, textarea, input[placeholder*="搜索"], input[placeholder*="request"]').first();

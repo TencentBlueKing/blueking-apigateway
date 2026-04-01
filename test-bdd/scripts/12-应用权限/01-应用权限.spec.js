@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 应用权限 - 应用权限管理', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '应用权限', '/permission/apps');
+    await navigateToGatewayPage(page, getGatewayId(), '应用权限', '/permission/apps');
   });
 
   test('场景: 查看应用权限列表', async ({ page }) => {
@@ -31,8 +30,7 @@ test.describe('功能: 应用权限 - 应用权限管理', () => {
         await expect(exportBtn).toBeVisible();
       }
     } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
@@ -51,8 +49,7 @@ test.describe('功能: 应用权限 - 应用权限管理', () => {
         await expect(deleteBtn).toBeVisible();
       }
     } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
@@ -65,7 +62,6 @@ test.describe('功能: 应用权限 - 应用权限管理', () => {
     }
 
     // Verify page loaded
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
   });
 });

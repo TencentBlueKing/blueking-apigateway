@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: MCP权限审批 - MCP权限审批管理', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', 'MCP 权限审批', '/mcp/permission');
+    await navigateToGatewayPage(page, getGatewayId(), 'MCP 权限审批', '/mcp/permission');
   });
 
   test('场景: MCP权限审批通过 (read-only verification)', async ({ page }) => {

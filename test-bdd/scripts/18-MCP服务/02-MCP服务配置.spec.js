@@ -4,7 +4,6 @@
 const { test, expect } = require('@playwright/test');
 const { waitForPageReady, reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: MCP服务 - MCP Server配置', () => {
   test.beforeEach(async ({ page }) => {

@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 在线调试 - API在线调试', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '在线调试', '/online-debug');
+    await navigateToGatewayPage(page, getGatewayId(), '在线调试', '/online-debug');
   });
 
   test('场景: 发送调试请求', async ({ page }) => {
@@ -31,15 +30,13 @@ test.describe('功能: 在线调试 - API在线调试', () => {
         await expect(tabArea).toBeVisible();
       }
     } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
   test('场景: 设置请求参数', async ({ page }) => {
     // Verify page loaded
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
 
     // 支持"自定义应用"选项
     const customAppOption = page.locator('label, span, .bk-radio, .bk-checkbox').filter({ hasText: /自定义应用/ }).first();
@@ -56,8 +53,7 @@ test.describe('功能: 在线调试 - API在线调试', () => {
 
   test('场景: 查看调试响应', async ({ page }) => {
     // Verify page loaded
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
 
     // 验证响应区域存在
     const responseArea = page.locator('[class*="response"], [class*="result"], [class*="output"]').first();

@@ -5,8 +5,7 @@ const { test, expect } = require('@playwright/test');
 const { waitForPageReady, reAuth, getToastMessage, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
 
-// Read-only gateway for list/filter operations
-const READONLY_GATEWAY_ID = 6;
+// Read-only gateway removed — now uses test gateway from setup
 
 test.describe('功能: 环境插件管理 - 环境插件管理', () => {
   test('场景: 添加环境插件', async ({ page }) => {
@@ -178,8 +177,7 @@ test.describe('功能: 环境插件管理 - 环境插件管理', () => {
   });
 
   test('场景: 查看插件列表', async ({ page }) => {
-    // Read-only: viewing plugin list uses gateway ID 6
-    await navigateToGatewayPage(page, '6', '环境概览', '/stage/overview');
+    await navigateToGatewayPage(page, getGatewayId(), '环境概览', '/stage/overview');
 
     // 切换到详情模式
     const detailTab = page.locator('button, .bk-tab, [class*="tab"], [class*="mode"]').filter({ hasText: /详情|列表/ }).first();

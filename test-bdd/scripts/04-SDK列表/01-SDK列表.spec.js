@@ -5,9 +5,6 @@ const { test, expect } = require('@playwright/test');
 const { waitForPageReady, reAuth, selectDropdown, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
 
-// Read-only tests use gateway ID 6
-const READONLY_GATEWAY_ID = 6;
-
 test.describe('功能: SDK列表 - SDK列表', () => {
   test('场景: 查看SDK列表', async ({ page }) => {
     // Mutating: generate SDK uses TEST_GATEWAY_ID
@@ -62,7 +59,7 @@ test.describe('功能: SDK列表 - SDK列表', () => {
 
   test('场景: SDK筛选', async ({ page }) => {
     // Read-only: SDK list filtering uses gateway ID 6
-    await navigateToGatewayPage(page, '6', '资源版本', '/resource/version');
+    await navigateToGatewayPage(page, getGatewayId(), '资源版本', '/resource/version');
 
     // Now navigate to SDK sub-page
     const baseUrl = BASE_URL.replace(/\/$/, '');

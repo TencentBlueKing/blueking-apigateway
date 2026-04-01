@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 调试历史 - 请求记录管理', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '在线调试', '/online-debug/history');
+    await navigateToGatewayPage(page, getGatewayId(), '在线调试', '/online-debug/history');
   });
 
   test('场景: 查看调试历史', async ({ page }) => {
@@ -28,15 +27,13 @@ test.describe('功能: 调试历史 - 请求记录管理', () => {
         await expect(settingBtn).toBeVisible();
       }
     } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
   test('场景: 历史记录筛选', async ({ page }) => {
     // Verify page loaded
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
 
     // Try search input
     const searchInput = page.locator('.bk-search-select, .bk-input input, input[placeholder*="搜索"], input[placeholder*="资源"]').first();

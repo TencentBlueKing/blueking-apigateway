@@ -107,42 +107,90 @@ async function waitForPageReady(page) {
 }
 
 /**
+ * Known parent-menu → sub-menu mappings for collapsed sidebar groups.
+ * When a target menuText is a sub-item, we must first expand its parent group.
+ */
+const SUB_MENU_PARENTS = {
+  '权限审批': '权限管理',
+  '应用权限': '权限管理',
+  '流水日志': '运行数据',
+  '统计报表': '运行数据',
+  '发布记录': '发布',
+  '操作记录': '审计信息',
+  'MCP权限审批': '权限管理',
+};
+
+/**
  * Navigate to a gateway sub-page by first loading the overview (to initialize Vue SPA context),
- * then clicking the sidebar menu item. This is required because direct URL navigation
- * in this SPA often results in empty content.
+ * then navigating to the target page. The SPA requires the overview to be loaded first for
+ * many pages — direct URL navigation often results in empty content.
+ *
+ * Strategy: Load overview → wait for sidebar → navigate via sidebar click or direct URL.
  *
  * @param {Page} page - Playwright page
- * @param {string} gatewayId - Gateway ID (e.g., '6' or process.env.TEST_GATEWAY_ID)
+ * @param {string} gatewayId - Gateway ID (e.g., process.env.TEST_GATEWAY_ID)
  * @param {string} menuText - Sidebar menu item text (e.g., '资源配置', '后端服务')
  * @param {string} [fallbackPath] - Direct URL path as fallback (e.g., '/resource/setting')
  */
 async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
   const baseUrl = BASE_URL.replace(/\/$/, '');
+  const overviewUrl = `${baseUrl}/${gatewayId}/stage/overview`;
 
-  // Step 1: Load gateway overview to initialize SPA context
-  await page.goto(`${baseUrl}/${gatewayId}/stage/overview`);
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForTimeout(3000);
+  // Step 1: Load gateway overview to initialize SPA context.
+  // Retry up to 3 times if sidebar doesn't appear.
+  let sidebarVisible = false;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.goto(overviewUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(2000);
 
-  // Handle auth redirect
-  if (page.url().includes('/login/')) {
-    await reAuth(page);
-    await page.goto(`${baseUrl}/${gatewayId}/stage/overview`);
-    await page.waitForTimeout(3000);
+    // Handle auth redirect
+    if (page.url().includes('/login/')) {
+      await reAuth(page);
+      await page.goto(overviewUrl, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await page.waitForTimeout(2000);
+    }
+
+    // Wait for sidebar to appear — check for gateway selector or menu items
+    sidebarVisible = await page.locator('textbox[value], .bk-menu-item, [class*="menu-item"]').first()
+      .waitFor({ timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (sidebarVisible) break;
   }
 
-  // Wait for sidebar to appear
-  await page.locator('.bk-menu-item').first().waitFor({ timeout: 15000 }).catch(() => {});
+  if (!sidebarVisible && fallbackPath) {
+    // Last resort: try direct navigation
+    await page.goto(`${baseUrl}/${gatewayId}${fallbackPath}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(2000);
+    return;
+  }
 
-  // Step 2: Click sidebar menu item to navigate
-  const menuItem = page.locator('.bk-menu-item').filter({ hasText: menuText }).first();
-  if (await menuItem.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await menuItem.click();
-    await page.waitForTimeout(3000);
-  } else if (fallbackPath) {
-    // Sidebar item not found — try direct navigation
-    await page.goto(`${baseUrl}/${gatewayId}${fallbackPath}`);
-    await page.waitForTimeout(3000);
+  // Step 2: Navigate to target page
+  if (fallbackPath) {
+    // Use direct URL navigation after SPA is initialized — more reliable than sidebar clicks
+    await page.goto(`${baseUrl}/${gatewayId}${fallbackPath}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForTimeout(2000);
+  } else {
+    // No fallbackPath — use sidebar navigation
+    const parentMenu = SUB_MENU_PARENTS[menuText];
+    if (parentMenu) {
+      const parentItem = page.locator('.bk-menu-item, .bk-submenu, [class*="submenu"], [class*="menu-group"]').filter({ hasText: parentMenu }).first();
+      if (await parentItem.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await parentItem.click();
+        await page.waitForTimeout(800);
+      }
+    }
+
+    const menuItem = page.locator('.bk-menu-item').filter({ hasText: menuText }).first();
+    if (await menuItem.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await menuItem.click();
+      await page.waitForTimeout(3000);
+    }
   }
 }
 

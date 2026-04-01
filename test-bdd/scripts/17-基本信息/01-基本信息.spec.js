@@ -4,11 +4,10 @@
 const { test, expect } = require('@playwright/test');
 const { waitForPageReady, reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only for viewing
 
 test.describe('功能: 基本信息 - 网关基本信息管理', () => {
   test('场景: 查看基本信息', async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '基本信息', '/basic-info');
+    await navigateToGatewayPage(page, getGatewayId(), '基本信息', '/basic-info');
 
     // 页面应展示网关名称、描述、维护人员、是否公开等基础信息
     const basicInfoSection = page.locator('[class*="basic"], [class*="info"], .bk-form, .detail-info').first();

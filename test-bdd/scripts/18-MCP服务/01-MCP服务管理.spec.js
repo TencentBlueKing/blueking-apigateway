@@ -4,7 +4,6 @@
 const { test, expect } = require('@playwright/test');
 const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only for list/view
 
 test.describe('功能: MCP服务 - MCP Server管理', () => {
   test('场景: 创建MCP Server (read-only verification)', async ({ page }) => {
@@ -51,7 +50,7 @@ test.describe('功能: MCP服务 - MCP Server管理', () => {
   });
 
   test('场景: 查看MCP列表', async ({ page }) => {
-    await navigateToGatewayPage(page, '6', 'MCP Server', '/mcp');
+    await navigateToGatewayPage(page, getGatewayId(), 'MCP Server', '/mcp');
 
     // 页面应展示所有MCP Server及其状态信息 — use broad selectors
     const contentArea = page.locator('.bk-table, [class*="mcp"], [class*="card"], [class*="list"], [class*="empty"], .bk-exception').first();

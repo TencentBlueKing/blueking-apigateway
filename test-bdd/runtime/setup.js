@@ -128,124 +128,229 @@ module.exports = async () => {
 
     console.log(`[setup] Created test gateway: ${testName} (ID: ${gatewayId})`);
 
-    // === Step 3: Configure backend service ===
-    await page.goto(`${BASE_URL}/${gatewayId}/backends`);
-    await page.waitForTimeout(2000);
+    // === Step 3: Configure backend service via API ===
+    // First, navigate to the gateway page to get cookies/context
+    await page.goto(`${BASE_URL}/${gatewayId}/stage/overview`);
+    await page.waitForTimeout(3000);
 
-    // Edit the default backend service
-    const editBtn = page.locator('button, a').filter({ hasText: /编辑/ }).first();
-    if (await editBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await editBtn.click({ force: true });
-      await page.waitForTimeout(1500);
+    // Backend update requires stage_id for each config entry, and the name must
+    // pass unique validation. We use the detail endpoint to get current state,
+    // then update with correct format.
+    const backendResult = await page.evaluate(async (gwId) => {
+      try {
+        const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+        const csrfToken = csrfMatch ? csrfMatch[1] : '';
 
-      // Fill backend address
-      const addrInput = page.locator('input[placeholder*="地址"], input[placeholder*="host"]').first();
-      if (await addrInput.isVisible().catch(() => false)) {
-        await addrInput.fill('httpbin.org:80');
-        await page.waitForTimeout(300);
+        // Get stages
+        const stageResp = await fetch(`/backend/gateways/${gwId}/stages/`);
+        const stageData = await stageResp.json();
+        const stages = stageData.data || [];
+
+        // Get existing backends
+        const listResp = await fetch(`/backend/gateways/${gwId}/backends/`);
+        const listData = await listResp.json();
+        const backends = listData.data?.results || listData.data || [];
+        const defaultBackend = backends.find(b => b.name === 'default') || backends[0];
+
+        if (!defaultBackend || stages.length === 0) {
+          return { error: 'No backend or stages found', backends: backends.length, stages: stages.length };
+        }
+
+        // Get backend detail to see current config
+        const detailResp = await fetch(`/backend/gateways/${gwId}/backends/${defaultBackend.id}/`);
+        const detailData = await detailResp.json();
+        const detail = detailData.data || detailData;
+
+        // Build configs array — one entry per stage with httpbin.org address
+        const configs = stages.map(stage => ({
+          stage_id: stage.id,
+          type: 'node',
+          timeout: 30,
+          loadbalance: 'roundrobin',
+          hosts: [{ scheme: 'http', host: 'httpbin.org', weight: 100 }],
+        }));
+
+        const updateResp = await fetch(`/backend/gateways/${gwId}/backends/${defaultBackend.id}/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          body: JSON.stringify({
+            name: defaultBackend.name,
+            description: defaultBackend.description || '',
+            type: 'http',
+            configs: configs,
+          }),
+        });
+        const respText = await updateResp.text();
+        let respData;
+        try { respData = JSON.parse(respText); } catch(e) { respData = respText; }
+        return { ok: updateResp.ok, status: updateResp.status, backendId: defaultBackend.id, detail: respData };
+      } catch(e) {
+        return { error: e.message };
       }
+    }, gatewayId);
 
-      // Confirm
-      const confirmBtn = page.locator('button').filter({ hasText: /确定|保存/ }).first();
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click({ force: true });
-        await page.waitForTimeout(2000);
-      }
+    console.log(`[setup] Backend service result: ${JSON.stringify(backendResult).substring(0, 800)}`);
+
+    if (!backendResult.ok) {
+      console.error(`[setup] CRITICAL: Backend update failed — resource edit will show 'please configure backend address'`);
     }
 
-    console.log('[setup] Backend service configured');
+    // === Step 4: Create a test resource via API ===
+    const resName = 'test_resource_' + Date.now().toString().slice(-4);
+    const resourceResult = await page.evaluate(async ({ gwId, name }) => {
+      try {
+        const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+        const csrfToken = csrfMatch ? csrfMatch[1] : '';
 
-    // === Step 4: Create a test resource ===
-    await page.goto(`${BASE_URL}/${gatewayId}/resource/create`);
-    await page.waitForTimeout(2000);
+        // Get default backend id
+        const backendResp = await fetch(`/backend/gateways/${gwId}/backends/`);
+        const backendData = await backendResp.json();
+        const backends = backendData.data?.results || backendData.data || [];
+        const defaultBackend = backends.find(b => b.name === 'default') || backends[0];
+        const backendId = defaultBackend ? defaultBackend.id : null;
 
-    // Fill resource name
-    const resNameInput = page.locator('input[placeholder*="资源名称"], input[name*="name"]').first();
-    if (await resNameInput.isVisible().catch(() => false)) {
-      const resName = 'test_resource_' + Date.now().toString().slice(-4);
-      await resNameInput.fill(resName);
-      await page.waitForTimeout(300);
-
-      // Fill request path
-      const pathInput = page.locator('input[placeholder*="请求路径"], input[placeholder*="/"]').first();
-      if (await pathInput.isVisible().catch(() => false)) {
-        await pathInput.fill('/test/' + resName);
-        await page.waitForTimeout(300);
+        // API expects: backend: {id, config: {method, path}}
+        const resp = await fetch(`/backend/gateways/${gwId}/resources/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          body: JSON.stringify({
+            name: name,
+            description: 'Auto-created by BDD test setup',
+            method: 'GET',
+            path: `/test/${name}/`,
+            match_subpath: false,
+            is_public: true,
+            allow_apply_permission: true,
+            backend: {
+              id: backendId,
+              config: {
+                method: 'GET',
+                path: '/get',
+                timeout: 30,
+              },
+            },
+            auth_config: {
+              app_verified_required: true,
+              auth_verified_required: true,
+              resource_perm_required: false,
+            },
+            label_ids: [],
+          }),
+        });
+        const data = await resp.json();
+        return { ok: resp.ok, status: resp.status, data };
+      } catch(e) {
+        return { error: e.message };
       }
+    }, { gwId: gatewayId, name: resName });
 
-      // Fill backend path
-      const backendPath = page.locator('input[placeholder*="后端"]').first();
-      if (await backendPath.isVisible().catch(() => false)) {
-        await backendPath.fill('/get');
-        await page.waitForTimeout(300);
-      }
+    console.log(`[setup] Test resource created: ${JSON.stringify(resourceResult).substring(0, 200)}`);
 
-      // Submit
-      await page.locator('button').filter({ hasText: '提交' }).click({ force: true });
-      await page.waitForTimeout(3000);
+    if (!resourceResult.ok) {
+      console.error(`[setup] WARNING: Resource creation failed: ${JSON.stringify(resourceResult).substring(0, 500)}`);
     }
 
-    console.log('[setup] Test resource created');
+    // === Step 5: Generate resource version via API ===
+    const versionResult = await page.evaluate(async (gwId) => {
+      try {
+        const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+        const csrfToken = csrfMatch ? csrfMatch[1] : '';
 
-    // === Step 5: Generate resource version ===
-    await page.goto(`${BASE_URL}/${gatewayId}/resource/setting`);
-    await page.waitForTimeout(2000);
+        // Get suggested next version first
+        let version = '1.0.0';
+        try {
+          const nextResp = await fetch(`/backend/gateways/${gwId}/resource-versions/next-version/`);
+          const nextData = await nextResp.json();
+          if (nextData.data?.version) {
+            version = nextData.data.version;
+          }
+        } catch(e) { /* use default */ }
 
-    const genBtn = page.locator('button').filter({ hasText: '生成版本' }).first();
-    if (await genBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await genBtn.click({ force: true });
-      await page.waitForTimeout(2000);
-
-      // Step 1: diff confirmation → 下一步
-      const nextBtn = page.locator('button').filter({ hasText: '下一步' }).first();
-      if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await nextBtn.click({ force: true });
-        await page.waitForTimeout(2000);
+        const resp = await fetch(`/backend/gateways/${gwId}/resource-versions/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          body: JSON.stringify({
+            version: version,
+            comment: 'BDD test version',
+          }),
+        });
+        const data = await resp.json();
+        return { ok: resp.ok, status: resp.status, data };
+      } catch(e) {
+        return { error: e.message };
       }
+    }, gatewayId);
 
-      // Step 2: confirm → 确定
-      const okBtn = page.locator('.bk-sideslider button').filter({ hasText: '确定' }).first();
-      if (await okBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await okBtn.click({ force: true });
-        await page.waitForTimeout(5000);
+    console.log(`[setup] Resource version generated: ${JSON.stringify(versionResult).substring(0, 200)}`);
+
+    if (!versionResult.ok) {
+      console.error(`[setup] WARNING: Version generation failed: ${JSON.stringify(versionResult).substring(0, 500)}`);
+    }
+
+    // Get version ID for publishing — the create API returns no data,
+    // so we must list versions to find the one we just created
+    let versionId = null;
+    if (versionResult.ok) {
+      const versionListResult = await page.evaluate(async (gwId) => {
+        try {
+          const resp = await fetch(`/backend/gateways/${gwId}/resource-versions/?limit=1&offset=0`);
+          const data = await resp.json();
+          const versions = data.data?.results || data.data || [];
+          return versions.length > 0 ? { id: versions[0].id } : null;
+        } catch(e) { return null; }
+      }, gatewayId);
+
+      if (versionListResult?.id) {
+        versionId = versionListResult.id;
       }
+      console.log(`[setup] Version ID resolved: ${versionId}`);
+    }
 
-      // Click 立即发布 if visible
-      const publishNow = page.locator('button').filter({ hasText: '立即发布' }).first();
-      if (await publishNow.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await publishNow.click({ force: true });
-        await page.waitForTimeout(2000);
+    // === Step 6: Get stage ID and publish ===
+    if (versionId) {
+      const publishResult = await page.evaluate(async ({ gwId, versnId }) => {
+        try {
+          const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+          const csrfToken = csrfMatch ? csrfMatch[1] : '';
 
-        // Select prod stage
-        const stageSelect = page.locator('.bk-select').first();
-        if (await stageSelect.isVisible().catch(() => false)) {
-          await stageSelect.click({ force: true });
-          await page.waitForTimeout(300);
-          await page.locator('.bk-select-option').filter({ hasText: 'prod' }).click();
-          await page.waitForTimeout(1000);
+          // Get stages
+          const stageResp = await fetch(`/backend/gateways/${gwId}/stages/`);
+          const stageData = await stageResp.json();
+          const stages = stageData.data || [];
+          const prodStage = stages.find(s => s.name === 'prod') || stages[0];
+
+          if (!prodStage) return { error: 'No stage found' };
+
+          // Publish
+          const resp = await fetch(`/backend/gateways/${gwId}/releases/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({
+              stage_id: prodStage.id,
+              resource_version_id: versnId,
+              comment: 'BDD test publish',
+            }),
+          });
+          const data = await resp.json();
+          return { ok: resp.ok, status: resp.status, data };
+        } catch(e) {
+          return { error: e.message };
         }
+      }, { gwId: gatewayId, versnId: versionId });
 
-        // 下一步
-        const nextBtn2 = page.locator('button').filter({ hasText: '下一步' }).first();
-        if (await nextBtn2.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await nextBtn2.click({ force: true });
-          await page.waitForTimeout(2000);
-        }
-
-        // 确认发布
-        const confirmPublish = page.locator('button').filter({ hasText: '确认发布' }).first();
-        if (await confirmPublish.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await confirmPublish.click({ force: true });
-          await page.waitForTimeout(1000);
-        }
-
-        // InfoBox confirmation
-        const infoConfirm = page.locator('.bk-infobox button').filter({ hasText: /确认|确定/ }).first();
-        if (await infoConfirm.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await infoConfirm.click({ force: true });
-          await page.waitForTimeout(5000);
-        }
-      }
+      console.log(`[setup] Resource version published: ${JSON.stringify(publishResult).substring(0, 200)}`);
     }
 
     console.log('[setup] Resource version generated and published');

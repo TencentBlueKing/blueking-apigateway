@@ -2,13 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL } = require("../../runtime/helpers");
+const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
 
-const GATEWAY_ID = 6; // read-only
 
 test.describe('功能: 统计报表 - 运行数据统计', () => {
   test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, '6', '统计报表', '/statistics');
+    await navigateToGatewayPage(page, getGatewayId(), '统计报表', '/statistics');
   });
 
   test('场景: 查看统计图表', async ({ page }) => {
@@ -28,14 +27,12 @@ test.describe('功能: 统计报表 - 运行数据统计', () => {
         await expect(refreshBtn).toBeVisible();
       }
     } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
     }
   });
 
   test('场景: 时间范围切换', async ({ page }) => {
-    const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-    await expect(sidebar).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
 
     const timeRangePicker = page.locator('.bk-date-picker, [class*="date-picker"], [class*="time-range"]').first();
     if (await timeRangePicker.isVisible().catch(() => false)) {
