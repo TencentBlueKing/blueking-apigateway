@@ -22,7 +22,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from celery import shared_task
 
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
+from apigateway.biz.release import ReleaseHandler
+from apigateway.core.constants import ReleaseHistoryStatusEnum
 
 logger = logging.getLogger(__name__)
 
@@ -207,3 +210,79 @@ def sync_mcp_server_prompts():
     update_count = _batch_update_mcp_server_prompts(mcp_server_prompts_to_update)
 
     logger.info("sync_mcp_server_prompts task completed, updated %d MCPServers", update_count)
+
+
+@shared_task(name="apigateway.apps.mcp_server.tasks.sync_mcp_server_after_release", ignore_result=True)
+def sync_mcp_server_after_release(
+    gateway_id: int,
+    gateway_name: str,
+    stage_id: int,
+    stage_name: str,
+    release_history_id: int,
+    mcp_servers_data: List[Dict[str, Any]],
+):
+    """等待发布完成后同步 MCP Server 数据到 DB
+
+    当同步 MCP Server 时检测到环境正在发布，将写入操作投递到此异步任务：
+    1. 等待 release_history_id 对应的发布完成
+    2. 发布成功：使用发布后的资源版本写入 MCP Server
+    3. 发布失败/超时：跳过写入，记录日志
+    """
+    logger.info(
+        "sync_mcp_server_after_release: waiting for release, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
+        gateway_name,
+        gateway_id,
+        stage_name,
+        stage_id,
+        release_history_id,
+    )
+
+    final_status = ReleaseHandler.wait_release_done(release_history_id)
+
+    if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
+        logger.warning(
+            "sync_mcp_server_after_release: release failed (status=%s), "
+            "skip mcp server sync, gateway=%s(%d), stage=%s(%d), release_history_id=%d",
+            final_status,
+            gateway_name,
+            gateway_id,
+            stage_name,
+            stage_id,
+            release_history_id,
+        )
+        return
+
+    logger.info(
+        "sync_mcp_server_after_release: release succeeded, writing mcp servers, gateway=%s(%d), stage=%s(%d)",
+        gateway_name,
+        gateway_id,
+        stage_name,
+        stage_id,
+    )
+
+    try:
+        results = MCPServerHandler.save_mcp_servers(
+            gateway_id=gateway_id,
+            gateway_name=gateway_name,
+            stage_id=stage_id,
+            stage_name=stage_name,
+            mcp_servers_data=mcp_servers_data,
+        )
+        logger.info(
+            "sync_mcp_server_after_release: completed, %d mcp servers synced, gateway=%s(%d), stage=%s(%d)",
+            len(results),
+            gateway_name,
+            gateway_id,
+            stage_name,
+            stage_id,
+        )
+    except Exception:
+        logger.exception(
+            "sync_mcp_server_after_release: failed to save mcp servers, "
+            "gateway=%s(%d), stage=%s(%d), release_history_id=%d",
+            gateway_name,
+            gateway_id,
+            stage_name,
+            stage_id,
+            release_history_id,
+        )
