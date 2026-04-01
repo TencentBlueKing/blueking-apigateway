@@ -71,9 +71,10 @@ type DesensitizationFiled struct {
 
 // Logger is the config for all logger, including default logger and api
 type Logger struct {
-	Default LogConfig
-	API     LogConfig
-	Audit   LogConfig
+	Default  LogConfig
+	API      LogConfig
+	Audit    LogConfig
+	Database LogConfig
 }
 
 // TLS is the config for tls
@@ -153,6 +154,85 @@ type Instrument struct {
 	McpAPI bool
 }
 
+// Transport is the config for the shared HTTP transport used by tool calls.
+type Transport struct {
+	InsecureSkipVerify    bool
+	MaxIdleConns          int
+	MaxIdleConnsPerHost   int
+	IdleConnTimeoutSecond int
+}
+
+// LogTruncate default values.
+const (
+	defaultAuditLogMaxBodySize     = 4096
+	defaultAuditLogMaxResponseSize = 4096
+	defaultAPILogRequestSize       = 2048
+	defaultAPILogResponseSize      = 1024
+	defaultAPILogErrorRespSize     = 4096
+)
+
+// LogTruncate is the config for log truncation limits.
+// NOTE: All size limits are measured in string length (number of characters), not bytes.
+// For ASCII content this equals the byte count, but for multi-byte characters (e.g. CJK)
+// the actual byte size may be larger.
+type LogTruncate struct {
+	// AuditLogMaxBodySize limits the audit log body size for tool call requests and body params (string length).
+	// Defaults to 4096 if not set.
+	AuditLogMaxBodySize int
+	// AuditLogMaxResponseSize limits the audit log response size for tool call responses (string length).
+	// Defaults to 4096 if not set.
+	AuditLogMaxResponseSize int
+	// APILogRequestSize limits the MCP API log request params size (string length).
+	// Defaults to 2048 if not set.
+	APILogRequestSize int
+	// APILogResponseSize limits the MCP API log response size for normal responses (string length).
+	// Defaults to 1024 if not set.
+	APILogResponseSize int
+	// APILogErrorResponseSize limits the MCP API log response size for error responses (string length).
+	// Defaults to 4096 if not set.
+	APILogErrorResponseSize int
+}
+
+// GetAuditLogMaxBodySize returns AuditLogMaxBodySize with a safe default fallback.
+func (l LogTruncate) GetAuditLogMaxBodySize() int {
+	if l.AuditLogMaxBodySize <= 0 {
+		return defaultAuditLogMaxBodySize
+	}
+	return l.AuditLogMaxBodySize
+}
+
+// GetAuditLogMaxResponseSize returns AuditLogMaxResponseSize with a safe default fallback.
+func (l LogTruncate) GetAuditLogMaxResponseSize() int {
+	if l.AuditLogMaxResponseSize <= 0 {
+		return defaultAuditLogMaxResponseSize
+	}
+	return l.AuditLogMaxResponseSize
+}
+
+// GetAPILogRequestSize returns APILogRequestSize with a safe default fallback.
+func (l LogTruncate) GetAPILogRequestSize() int {
+	if l.APILogRequestSize <= 0 {
+		return defaultAPILogRequestSize
+	}
+	return l.APILogRequestSize
+}
+
+// GetAPILogResponseSize returns APILogResponseSize with a safe default fallback.
+func (l LogTruncate) GetAPILogResponseSize() int {
+	if l.APILogResponseSize <= 0 {
+		return defaultAPILogResponseSize
+	}
+	return l.APILogResponseSize
+}
+
+// GetAPILogErrorResponseSize returns APILogErrorResponseSize with a safe default fallback.
+func (l LogTruncate) GetAPILogErrorResponseSize() int {
+	if l.APILogErrorResponseSize <= 0 {
+		return defaultAPILogErrorRespSize
+	}
+	return l.APILogErrorResponseSize
+}
+
 // McpServer ...
 type McpServer struct {
 	// the interval of mcp server reload
@@ -163,6 +243,13 @@ type McpServer struct {
 	InnerJwtExpireTime          time.Duration
 	EncryptKey                  string
 	CryptoNonce                 string
+	// MaxConcurrentPrefetch limits the number of concurrent goroutines when prefetching server configs.
+	// Defaults to 20 if not set.
+	MaxConcurrentPrefetch int
+	// Transport is the config for the shared HTTP transport used by upstream tool calls.
+	Transport Transport
+	// LogTruncate configures log truncation limits for audit and API logs.
+	LogTruncate LogTruncate
 }
 
 // Pprof is the config for pprof
@@ -235,6 +322,39 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.CryptoNonce == "" {
 		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
+	}
+	// Transport defaults for upstream tool calls
+	if cfg.McpServer.Transport.MaxIdleConns == 0 {
+		cfg.McpServer.Transport.MaxIdleConns = 200
+	}
+	if cfg.McpServer.Transport.MaxIdleConnsPerHost == 0 {
+		cfg.McpServer.Transport.MaxIdleConnsPerHost = 20
+	}
+	if cfg.McpServer.Transport.IdleConnTimeoutSecond == 0 {
+		cfg.McpServer.Transport.IdleConnTimeoutSecond = 90
+	}
+	// MaxConcurrentPrefetch defaults to 20, capped at 100
+	if cfg.McpServer.MaxConcurrentPrefetch == 0 {
+		cfg.McpServer.MaxConcurrentPrefetch = 20
+	}
+	if cfg.McpServer.MaxConcurrentPrefetch > 100 {
+		cfg.McpServer.MaxConcurrentPrefetch = 100
+	}
+	// LogTruncate defaults
+	if cfg.McpServer.LogTruncate.AuditLogMaxBodySize == 0 {
+		cfg.McpServer.LogTruncate.AuditLogMaxBodySize = defaultAuditLogMaxBodySize
+	}
+	if cfg.McpServer.LogTruncate.AuditLogMaxResponseSize == 0 {
+		cfg.McpServer.LogTruncate.AuditLogMaxResponseSize = defaultAuditLogMaxResponseSize
+	}
+	if cfg.McpServer.LogTruncate.APILogRequestSize == 0 {
+		cfg.McpServer.LogTruncate.APILogRequestSize = defaultAPILogRequestSize
+	}
+	if cfg.McpServer.LogTruncate.APILogResponseSize == 0 {
+		cfg.McpServer.LogTruncate.APILogResponseSize = defaultAPILogResponseSize
+	}
+	if cfg.McpServer.LogTruncate.APILogErrorResponseSize == 0 {
+		cfg.McpServer.LogTruncate.APILogErrorResponseSize = defaultAPILogErrorRespSize
 	}
 
 	if cfg.PProf.Username == "" {

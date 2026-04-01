@@ -21,11 +21,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/server"
 )
 
@@ -72,6 +74,7 @@ func init() {
 
 // Start the server, do init then run http server
 func Start() {
+	startTime := time.Now()
 	fmt.Println("It's mcp-proxy, start it now")
 
 	// 0. init config
@@ -88,6 +91,8 @@ func Start() {
 	initTracing()
 	initSentry()
 	initMetrics()
+
+	logging.GetLogger().Infof("all components initialized, total startup duration=%s", time.Since(startTime))
 
 	server.Run(globalConfig)
 }
