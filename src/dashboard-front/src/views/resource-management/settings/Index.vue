@@ -1438,9 +1438,8 @@ const handleBatchConfirm = async () => {
     theme: 'success',
     width: 'auto',
   });
+  handleClearSelection();
   tableRef.value!.fetchData(tableQueries.value);
-  selectedRowKeys.value = [];
-  selectedRows.value = [];
 };
 
 const handleBatchCancel = () => {
