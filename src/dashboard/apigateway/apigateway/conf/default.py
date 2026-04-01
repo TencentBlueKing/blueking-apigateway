@@ -759,6 +759,11 @@ BK_ESB_ACCESS_LOG_CONFIG = {
     "es_index": env.str("BK_ESB_API_LOG_ES_INDEX", "2_bklog_bkapigateway_esb_container*"),
 }
 
+MCP_SERVER_ACCESS_LOG_CONFIG = {
+    "es_time_field_name": "dtEventTimeStamp",
+    "es_index": env.str("BK_APIGW_MCP_SERVER_LOG_ES_INDEX", "2_bklog_bkapigateway_mcp_proxy_container*"),
+}
+
 
 # ==============================================================================
 # prometheus 配置

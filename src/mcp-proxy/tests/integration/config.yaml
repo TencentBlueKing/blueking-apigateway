@@ -34,5 +34,8 @@ mcpServer:
   bkApiUrlTmpl: ""
   interval: 60
 
+metric:
+  namePrefix: "bk_apigateway_"
+
 tracing:
   enable: false
