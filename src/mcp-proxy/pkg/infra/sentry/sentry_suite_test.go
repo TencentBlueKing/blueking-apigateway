@@ -16,26 +16,16 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package mcp_test
+package sentry_test
 
 import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"mcp_proxy/pkg/config"
-	"mcp_proxy/pkg/infra/logging"
 )
 
-var _ = BeforeSuite(func() {
-	// Initialize config.G to avoid nil pointer dereference when middleware accesses config fields.
-	config.G = &config.Config{}
-	// Initialize logger for tests
-	logging.InitLogger(config.G)
-})
-
-func TestMcp(t *testing.T) {
+func TestSentry(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mcp Suite")
+	RunSpecs(t, "Sentry Suite")
 }

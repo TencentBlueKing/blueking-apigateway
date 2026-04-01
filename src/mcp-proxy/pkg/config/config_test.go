@@ -458,4 +458,182 @@ var _ = Describe("Config", func() {
 			Expect(pprof.Password).To(Equal("secret"))
 		})
 	})
+
+	Describe("LogTruncate", func() {
+		Describe("GetAuditLogMaxBodySize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{AuditLogMaxBodySize: 8192}
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(8192))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(4096))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{AuditLogMaxBodySize: -1}
+				Expect(lt.GetAuditLogMaxBodySize()).To(Equal(4096))
+			})
+		})
+
+		Describe("GetAuditLogMaxResponseSize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{AuditLogMaxResponseSize: 8192}
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(8192))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(4096))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{AuditLogMaxResponseSize: -1}
+				Expect(lt.GetAuditLogMaxResponseSize()).To(Equal(4096))
+			})
+		})
+
+		Describe("GetAPILogRequestSize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{APILogRequestSize: 4096}
+				Expect(lt.GetAPILogRequestSize()).To(Equal(4096))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAPILogRequestSize()).To(Equal(2048))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{APILogRequestSize: -100}
+				Expect(lt.GetAPILogRequestSize()).To(Equal(2048))
+			})
+		})
+
+		Describe("GetAPILogResponseSize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{APILogResponseSize: 2048}
+				Expect(lt.GetAPILogResponseSize()).To(Equal(2048))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAPILogResponseSize()).To(Equal(1024))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{APILogResponseSize: -1}
+				Expect(lt.GetAPILogResponseSize()).To(Equal(1024))
+			})
+		})
+
+		Describe("GetAPILogErrorResponseSize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{APILogErrorResponseSize: 8192}
+				Expect(lt.GetAPILogErrorResponseSize()).To(Equal(8192))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAPILogErrorResponseSize()).To(Equal(4096))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{APILogErrorResponseSize: -1}
+				Expect(lt.GetAPILogErrorResponseSize()).To(Equal(4096))
+			})
+		})
+	})
+
+	Describe("Load defaults", func() {
+		It("should set Transport defaults", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.McpServer.Transport.MaxIdleConns).To(Equal(200))
+			Expect(cfg.McpServer.Transport.MaxIdleConnsPerHost).To(Equal(20))
+			Expect(cfg.McpServer.Transport.IdleConnTimeoutSecond).To(Equal(90))
+		})
+
+		It("should set LogTruncate defaults", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxBodySize).To(Equal(4096))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxResponseSize).To(Equal(4096))
+			Expect(cfg.McpServer.LogTruncate.APILogRequestSize).To(Equal(2048))
+			Expect(cfg.McpServer.LogTruncate.APILogResponseSize).To(Equal(1024))
+			Expect(cfg.McpServer.LogTruncate.APILogErrorResponseSize).To(Equal(4096))
+		})
+
+		It("should set MaxConcurrentPrefetch default", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.McpServer.MaxConcurrentPrefetch).To(Equal(20))
+		})
+
+		It("should preserve custom Transport values", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+			v.Set("mcpServer.transport.maxIdleConns", 500)
+			v.Set("mcpServer.transport.maxIdleConnsPerHost", 50)
+			v.Set("mcpServer.transport.idleConnTimeoutSecond", 120)
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.McpServer.Transport.MaxIdleConns).To(Equal(500))
+			Expect(cfg.McpServer.Transport.MaxIdleConnsPerHost).To(Equal(50))
+			Expect(cfg.McpServer.Transport.IdleConnTimeoutSecond).To(Equal(120))
+		})
+
+		It("should preserve custom LogTruncate values", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+			v.Set("mcpServer.logTruncate.auditLogMaxBodySize", 8192)
+			v.Set("mcpServer.logTruncate.auditLogMaxResponseSize", 8192)
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxBodySize).To(Equal(8192))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxResponseSize).To(Equal(8192))
+		})
+	})
 })

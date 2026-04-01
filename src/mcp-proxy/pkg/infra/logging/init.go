@@ -43,6 +43,8 @@ var (
 	apiLogger *zap.Logger
 	// for audit logger
 	auditLogger *zap.Logger
+	// for database logger
+	databaseLogger *zap.Logger
 )
 
 // InitLogger ...
@@ -65,6 +67,7 @@ func InitLogger(config *config.Config) {
 		defaultLogger = newZapJSONLogger(&config.Logger.Default, options).Sugar()
 		apiLogger = newZapJSONLogger(&config.Logger.API, options)
 		auditLogger = newZapJSONLogger(&config.Logger.Audit, options)
+		databaseLogger = newZapJSONLogger(&config.Logger.Database, options)
 	})
 }
 
@@ -91,6 +94,11 @@ func GetLoggerWithContext(ctx context.Context) *zap.SugaredLogger {
 // GetAPILogger will return the api logger
 func GetAPILogger() *zap.Logger {
 	return apiLogger
+}
+
+// GetDatabaseLogger will return the database logger
+func GetDatabaseLogger() *zap.Logger {
+	return databaseLogger
 }
 
 // GetAuditLoggerWithContext ...

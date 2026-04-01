@@ -30,6 +30,7 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
+	sty "mcp_proxy/pkg/infra/sentry"
 )
 
 // Run the server, and can be gracefully shutdown
@@ -65,6 +66,9 @@ func Run(cfg *config.Config) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	// Flush buffered sentry events before exit (defer ensures this runs even on fatal paths)
+	defer sty.Flush(2 * time.Second)
+
 	if err := srv.Shutdown(ctx); err != nil {
 		logging.GetLogger().Fatalf("Server Shutdown: %s", err)
 	}

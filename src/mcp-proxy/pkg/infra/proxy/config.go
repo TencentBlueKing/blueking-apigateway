@@ -19,7 +19,6 @@
 package proxy
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -37,15 +36,14 @@ type MCPServerConfig struct {
 
 // ToolConfig ...
 type ToolConfig struct {
-	Name         string            `json:"name"`
-	Description  string            `json:"description"`
-	Method       string            `json:"method"`
-	Host         string            `json:"host"`
-	BasePath     string            `json:"base_path"`
-	Schema       string            `json:"schema"`
-	Url          string            `json:"url"`
-	ParamSchema  jsonschema.Schema `json:"param_schema"`
-	OutputSchema json.RawMessage   `json:"output_schema"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Method      string            `json:"method"`
+	Host        string            `json:"host"`
+	BasePath    string            `json:"base_path"`
+	Schema      string            `json:"schema"`
+	Url         string            `json:"url"`
+	ParamSchema jsonschema.Schema `json:"param_schema"`
 }
 
 // String ...

@@ -45,6 +45,12 @@ Run a single test file/package:
   to render OpenAPI server URLs with `{api_name}` and `{stage}` placeholders.
 - `ENCRYPT_KEY` and `BK_APIGW_CRYPTO_NONCE` are used to decrypt stored gateway JWT private keys (inner JWT signing).
 - `PPROF_USERNAME` / `PPROF_PASSWORD` override pprof credentials (change from defaults in production).
+- `mcpServer.logTruncate` configures log size limits (string length, not bytes). Fields use prefix naming:
+  `auditLogMaxBodySize` / `auditLogMaxResponseSize` for audit logs, `apiLogRequestSize` / `apiLogResponseSize` /
+  `apiLogErrorResponseSize` for API logs. All have safe defaults (see constants in `config.go`).
+- `mcpServer.transport` configures the shared HTTP transport for backend calls (TLS, connection pool).
+  Initialized once via `sync.Once`; only the first call to `InitSharedTransport` takes effect.
+- `mcpServer.maxConcurrentPrefetch` defaults to **20**, capped at **100**.
 
 ## Architecture
 
@@ -71,6 +77,7 @@ Header extraction.
 - **`pkg/config/`**: Viper config (`config.G` global)
 - **`pkg/metric/`**: Prometheus metrics setup
 - **`pkg/constant/`**: Header names, protocol constants, context keys
+- **`pkg/util/`**: Shared utilities: string truncation, sensitive header masking, goroutine recovery, request ID
 - **`pkg/repo/`**: GORM Gen DAO code (`*.gen.go`); regenerate with `./bk-apigateway-mcp-proxy gen -c config.yaml`
 
 ### Data Flow: OpenAPI -> MCP Tools

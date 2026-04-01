@@ -20,10 +20,9 @@ package server
 
 import (
 	"context"
+	"time"
 
-	raven "github.com/getsentry/raven-go"
 	"github.com/gin-contrib/pprof"
-	"github.com/gin-gonic/contrib/sentry"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -31,6 +30,7 @@ import (
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
+	sty "mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/mcp"
 	"mcp_proxy/pkg/middleware"
 	"mcp_proxy/pkg/util"
@@ -44,7 +44,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// metrics
 	router.Use(middleware.Metrics())
 	// recovery sentry
-	router.Use(sentry.Recovery(raven.DefaultClient, false))
+	router.Use(sty.Recovery())
 	// trace - otelgin middleware must be placed before route groups to cover all routes
 	if cfg.Tracing.GinAPIEnabled() {
 		router.Use(otelgin.Middleware(cfg.Tracing.ServiceName))
@@ -90,17 +90,22 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 
 	ctx := context.Background()
 
-	// mcp 用户态mcp proxy
+	// mcp proxy: 用户态和应用态共享同一个 MCPProxy 实例
+	// 两者加载相同的 MCP Server 数据，仅路由前缀不同
+	mcpInitStart := time.Now()
+	proxy.InitSharedTransport(cfg.McpServer.Transport)
 	mcpProxy := proxy.NewMCPProxy()
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
-		logging.GetLogger().Panic("mcp user proxy init failed: %v", err)
+		logging.GetLogger().Panicf("mcp proxy init failed: %v", err)
 		return nil
 	}
 	util.GoroutineWithRecovery(ctx, func() {
 		mcpSvc.Run(ctx)
 	})
+	logging.GetLogger().Infof("mcp proxy init complete, duration=%s", time.Since(mcpInitStart))
 
+	// 用户态路由
 	seeRouter := router.Group("/:name")
 	seeRouter.Use(middleware.APILogger())
 	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
@@ -113,28 +118,18 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.GET("/mcp", mcpProxy.StreamableHTTPHandler())
 	seeRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 
-	// mcp application 应用态mcp proxy
-	mcpApplicationProxy := proxy.NewMCPProxy()
-	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
-	if err != nil {
-		logging.GetLogger().Panic("mcp application proxy init failed: %v", err)
-		return nil
-	}
-	util.GoroutineWithRecovery(ctx, func() {
-		mcpApplicationSvc.Run(ctx)
-	})
-
+	// 应用态路由（共享 MCPProxy 实例）
 	seeAppRouter := router.Group("/:name/application")
 	seeAppRouter.Use(middleware.APILogger())
 	seeAppRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
 	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
-	seeAppRouter.GET("/sse", mcpApplicationProxy.SseHandler())
-	seeAppRouter.POST("/sse", mcpApplicationProxy.SseHandler())
+	seeAppRouter.GET("/sse", mcpProxy.SseHandler())
+	seeAppRouter.POST("/sse", mcpProxy.SseHandler())
 	// Streamable HTTP 协议路由
-	seeAppRouter.GET("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
-	seeAppRouter.POST("/mcp", mcpApplicationProxy.StreamableHTTPHandler())
+	seeAppRouter.GET("/mcp", mcpProxy.StreamableHTTPHandler())
+	seeAppRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 
 	return router
 }

@@ -26,6 +26,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -177,6 +178,136 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
+	Describe("CleanupAll", func() {
+		// newTestMCPServer creates a minimal MCPServer suitable for testing.
+		newTestMCPServer := func(name string) *MCPServer {
+			return &MCPServer{
+				Server:  mcp.NewServer(&mcp.Implementation{Name: name}, nil),
+				name:    name,
+				rwLock:  &sync.RWMutex{},
+				tools:   make(map[string]struct{}),
+				prompts: make(map[string]struct{}),
+			}
+		}
+
+		It("should return empty list when no servers exist", func() {
+			proxy := NewMCPProxy()
+			names := proxy.CleanupAll()
+			Expect(names).To(BeEmpty())
+			Expect(proxy.GetActiveMCPServerNames()).To(BeEmpty())
+		})
+
+		It("should remove all servers and return their names", func() {
+			proxy := NewMCPProxy()
+			// Manually add servers and mark them as active
+			proxy.rwLock.Lock()
+			proxy.mcpServers["server1"] = newTestMCPServer("server1")
+			proxy.mcpServers["server2"] = newTestMCPServer("server2")
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.activeMCPServers["server2"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			Expect(proxy.IsMCPServerExist("server1")).To(BeTrue())
+			Expect(proxy.IsMCPServerExist("server2")).To(BeTrue())
+
+			names := proxy.CleanupAll()
+			Expect(names).To(HaveLen(2))
+			Expect(names).To(ContainElements("server1", "server2"))
+
+			// Verify all servers are cleaned up
+			Expect(proxy.IsMCPServerExist("server1")).To(BeFalse())
+			Expect(proxy.IsMCPServerExist("server2")).To(BeFalse())
+			Expect(proxy.GetActiveMCPServerNames()).To(BeEmpty())
+		})
+
+		It("should be safe to call multiple times", func() {
+			proxy := NewMCPProxy()
+			proxy.rwLock.Lock()
+			proxy.mcpServers["server1"] = newTestMCPServer("server1")
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			names := proxy.CleanupAll()
+			Expect(names).To(HaveLen(1))
+
+			// Second call should return empty
+			names = proxy.CleanupAll()
+			Expect(names).To(BeEmpty())
+		})
+	})
+
+	Describe("CleanupStale", func() {
+		newTestMCPServer := func(name string) *MCPServer {
+			return &MCPServer{
+				Server:  mcp.NewServer(&mcp.Implementation{Name: name}, nil),
+				name:    name,
+				rwLock:  &sync.RWMutex{},
+				tools:   make(map[string]struct{}),
+				prompts: make(map[string]struct{}),
+			}
+		}
+
+		It("should return empty when no servers exist", func() {
+			proxy := NewMCPProxy()
+			deleted := proxy.CleanupStale(map[string]struct{}{})
+			Expect(deleted).To(BeEmpty())
+		})
+
+		It("should delete servers not in active set", func() {
+			proxy := NewMCPProxy()
+			proxy.rwLock.Lock()
+			proxy.mcpServers["server1"] = newTestMCPServer("server1")
+			proxy.mcpServers["server2"] = newTestMCPServer("server2")
+			proxy.mcpServers["server3"] = newTestMCPServer("server3")
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.activeMCPServers["server2"] = struct{}{}
+			proxy.activeMCPServers["server3"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			activeSet := map[string]struct{}{
+				"server1": {},
+				"server3": {},
+			}
+			deleted := proxy.CleanupStale(activeSet)
+
+			Expect(deleted).To(HaveLen(1))
+			Expect(deleted).To(ContainElement("server2"))
+			Expect(proxy.IsMCPServerExist("server1")).To(BeTrue())
+			Expect(proxy.IsMCPServerExist("server2")).To(BeFalse())
+			Expect(proxy.IsMCPServerExist("server3")).To(BeTrue())
+		})
+
+		It("should return empty when all servers are active", func() {
+			proxy := NewMCPProxy()
+			proxy.rwLock.Lock()
+			proxy.mcpServers["server1"] = newTestMCPServer("server1")
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			activeSet := map[string]struct{}{
+				"server1": {},
+			}
+			deleted := proxy.CleanupStale(activeSet)
+			Expect(deleted).To(BeEmpty())
+			Expect(proxy.IsMCPServerExist("server1")).To(BeTrue())
+		})
+
+		It("should delete all servers when active set is empty", func() {
+			proxy := NewMCPProxy()
+			proxy.rwLock.Lock()
+			proxy.mcpServers["server1"] = newTestMCPServer("server1")
+			proxy.mcpServers["server2"] = newTestMCPServer("server2")
+			proxy.activeMCPServers["server1"] = struct{}{}
+			proxy.activeMCPServers["server2"] = struct{}{}
+			proxy.rwLock.Unlock()
+
+			deleted := proxy.CleanupStale(map[string]struct{}{})
+			Expect(deleted).To(HaveLen(2))
+			Expect(deleted).To(ContainElements("server1", "server2"))
+			Expect(proxy.GetActiveMCPServerNames()).To(BeEmpty())
+		})
+	})
+
 	Describe("Run", func() {
 		It("should not panic with no servers", func() {
 			proxy := NewMCPProxy()
@@ -298,7 +429,7 @@ var _ = Describe("MCPProxy", func() {
 	})
 
 	Describe("buildMCPTool", func() {
-		It("should omit output schema when config output schema is empty", func() {
+		It("should build tool without output schema", func() {
 			tool := buildMCPTool(&ToolConfig{
 				Name:        "getUsers",
 				Description: "Get users",
@@ -308,58 +439,23 @@ var _ = Describe("MCPProxy", func() {
 			Expect(tool.InputSchema).NotTo(BeNil())
 			Expect(tool.OutputSchema).To(BeNil())
 		})
-
-		It("should add properties for object output schema", func() {
-			tool := buildMCPTool(&ToolConfig{
-				Name:         "getUsers",
-				Description:  "Get users",
-				OutputSchema: json.RawMessage(`{"type":"object"}`),
-			}, "test-server")
-
-			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeAssignableToTypeOf(map[string]any{}))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKeyWithValue("type", "object"))
-			Expect(tool.OutputSchema.(map[string]any)).To(HaveKey("properties"))
-		})
-
-		It("should omit unsupported array output schema", func() {
-			tool := buildMCPTool(&ToolConfig{
-				Name:         "listUsers",
-				Description:  "List users",
-				OutputSchema: json.RawMessage(`{"type":"array","items":{"type":"string"}}`),
-			}, "test-server")
-
-			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeNil())
-		})
-
-		It("should omit unsupported ref-only output schema", func() {
-			tool := buildMCPTool(&ToolConfig{
-				Name:         "listUsers",
-				Description:  "List users",
-				OutputSchema: json.RawMessage(`{"$ref":"#/components/schemas/UserList"}`),
-			}, "test-server")
-
-			Expect(tool).NotTo(BeNil())
-			Expect(tool.OutputSchema).To(BeNil())
-		})
 	})
 
 	Describe("buildToolResponseEnvelope", func() {
-		It("should omit response_body when body is nil", func() {
+		It("should include response_body as nil when body is nil", func() {
 			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
 
 			Expect(envelope).To(Equal(map[string]any{
 				toolResponseStatusCodeField: 204,
 				toolResponseRequestIDField:  "req-1",
 				toolResponseTraceIDField:    "trace-1",
+				toolResponseBodyField:       nil,
 			}))
 		})
 	})
 
 	Describe("buildToolResult", func() {
-		It("should populate structured content for envelope with object body", func() {
+		It("should populate text content for envelope with object body", func() {
 			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", map[string]any{
 				"timezone": "Asia/Shanghai",
 				"datetime": "2026-03-19T15:04:05+08:00",
@@ -367,7 +463,7 @@ var _ = Describe("MCPProxy", func() {
 			result := buildToolResult(envelope)
 
 			Expect(result).NotTo(BeNil())
-			Expect(result.StructuredContent).To(Equal(envelope))
+			Expect(result.StructuredContent).To(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
 			Expect(
@@ -375,12 +471,12 @@ var _ = Describe("MCPProxy", func() {
 			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","response_body":{"datetime":"2026-03-19T15:04:05+08:00","timezone":"Asia/Shanghai"}}`))
 		})
 
-		It("should populate structured content for envelope with array body", func() {
+		It("should populate text content for envelope with array body", func() {
 			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", []any{"a", "b"})
 			result := buildToolResult(envelope)
 
 			Expect(result).NotTo(BeNil())
-			Expect(result.StructuredContent).To(Equal(envelope))
+			Expect(result.StructuredContent).To(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
 			Expect(
@@ -500,6 +596,40 @@ var _ = Describe("MCPProxy", func() {
 			result, err := handler(ctx, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Messages).To(HaveLen(1))
+		})
+	})
+
+	Describe("InitSharedTransport", func() {
+		BeforeEach(func() {
+			// Reset sync.Once so each test starts fresh
+			sharedTransportOnce = sync.Once{}
+			sharedTransport = nil
+		})
+
+		It("should initialize shared transport with config values", func() {
+			cfg := config.Transport{
+				InsecureSkipVerify:    true,
+				MaxIdleConns:          100,
+				MaxIdleConnsPerHost:   10,
+				IdleConnTimeoutSecond: 60,
+			}
+			InitSharedTransport(cfg)
+
+			Expect(sharedTransport).NotTo(BeNil())
+			Expect(sharedTransport.MaxIdleConns).To(Equal(100))
+			Expect(sharedTransport.MaxIdleConnsPerHost).To(Equal(10))
+			Expect(sharedTransport.IdleConnTimeout).To(Equal(60 * time.Second))
+			Expect(sharedTransport.TLSClientConfig).NotTo(BeNil())
+			Expect(sharedTransport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
+		})
+
+		It("should only initialize once and ignore subsequent calls", func() {
+			InitSharedTransport(config.Transport{MaxIdleConns: 50})
+			Expect(sharedTransport.MaxIdleConns).To(Equal(50))
+
+			// Second call should be a no-op
+			InitSharedTransport(config.Transport{MaxIdleConns: 200})
+			Expect(sharedTransport.MaxIdleConns).To(Equal(50))
 		})
 	})
 

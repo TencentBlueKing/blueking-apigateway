@@ -5,10 +5,8 @@ go 1.24.4
 require (
 	github.com/TencentBlueKing/gopkg v1.3.0
 	github.com/getkin/kin-openapi v0.132.0
-	github.com/getsentry/raven-go v0.2.0
 	github.com/getsentry/sentry-go v0.34.1
 	github.com/gin-contrib/pprof v1.5.3
-	github.com/gin-gonic/contrib v0.0.0-20250521004450-2b1292699c15
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-openapi/runtime v0.28.0
 	github.com/go-openapi/strfmt v0.23.0
@@ -55,7 +53,6 @@ require (
 	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
-	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
