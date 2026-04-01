@@ -26,17 +26,15 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apps.mcp_server.constants import (
-    MCPServerAppPermissionGrantTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
-from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import (
@@ -904,6 +902,17 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         return tool_names
 
+    def validate_category_names(self, category_names):
+        if not category_names:
+            return category_names
+
+        existing_names = set(MCPServerCategory.objects.filter(name__in=category_names).values_list("name", flat=True))
+        invalid_names = set(category_names) - existing_names
+        if invalid_names:
+            raise serializers.ValidationError(f"分类不存在: {', '.join(invalid_names)}")
+
+        return category_names
+
     def validate(self, data):
         """验证 tool_names 和 resource_names 的长度一致性"""
         tool_names = data.get("tool_names")
@@ -913,79 +922,6 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             raise serializers.ValidationError("工具名称列表长度与资源名称列表长度不一致")
 
         return data
-
-    def _fill_data(self, data):
-        data["gateway_id"] = self.context["gateway"].id
-        data["stage_id"] = self.context["stage"].id
-
-    def _sync_permission(self, mcp_server_id: int, app_codes: List[str]):
-        # sync permission
-        for app_code in app_codes:
-            MCPServerAppPermission.objects.save_permission(
-                mcp_server_id=mcp_server_id,
-                bk_app_code=app_code,
-                grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
-                expire_days=None,
-            )
-        MCPServerHandler.sync_permissions(mcp_server_id)
-
-    def _sync_categories(self, instance: MCPServer, category_names: List[str]):
-        """同步 MCPServer 的分类"""
-        if category_names is None:
-            return
-
-        # 校验分类是否存在
-        existing_categories = MCPServerCategory.objects.filter(name__in=category_names)
-        existing_names = set(existing_categories.values_list("name", flat=True))
-
-        invalid_names = set(category_names) - existing_names
-        if invalid_names:
-            raise serializers.ValidationError(f"分类不存在: {', '.join(invalid_names)}")
-
-        # 设置分类（替换原有分类）
-        instance.categories.set(existing_categories)
-
-    def create(self, validated_data):
-        self._fill_data(validated_data)
-
-        resource_names = validated_data.pop("resource_names", None)
-        tool_names = validated_data.pop("tool_names", None)
-        if not tool_names:
-            tool_names = resource_names
-
-        target_app_codes = validated_data.pop("target_app_codes", [])
-        category_names = validated_data.pop("category_names", [])
-
-        instance = MCPServer(**validated_data)
-        if resource_names is not None:
-            instance.update_resource_names(resource_names, tool_names)
-        instance.save()
-
-        self._sync_permission(instance.id, target_app_codes)
-        self._sync_categories(instance, category_names)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        self._fill_data(validated_data)
-
-        resource_names = validated_data.pop("resource_names", None)
-        tool_names = validated_data.pop("tool_names", None)
-        if not tool_names:
-            tool_names = resource_names
-
-        target_app_codes = validated_data.pop("target_app_codes", None)
-        category_names = validated_data.pop("category_names", None)
-
-        instance = super().update(instance, validated_data)
-        instance.update_resource_names(resource_names, tool_names)
-        instance.save()
-
-        if target_app_codes is not None:
-            self._sync_permission(instance.id, target_app_codes)
-        self._sync_categories(instance, category_names)
-
-        return instance
 
 
 class StageMcpServersSyncInputSLZ(serializers.Serializer):

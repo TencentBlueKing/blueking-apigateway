@@ -38,6 +38,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermission,
+    MCPServerCategory,
     MCPServerExtend,
 )
 from apigateway.apps.permission.constants import GrantTypeEnum
@@ -156,6 +157,89 @@ class MCPServerHandler:
     @staticmethod
     def get_mcp_server_name(gateway_name: str, stage_name: str, name: str) -> str:
         return f"{gateway_name}-{stage_name}-{name}"
+
+    @staticmethod
+    def save_mcp_servers(
+        gateway_id: int,
+        gateway_name: str,
+        stage_id: int,
+        stage_name: str,
+        mcp_servers_data: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """批量创建或更新 MCP Server
+
+        Args:
+            gateway_id: 网关 ID
+            gateway_name: 网关名称
+            stage_id: 环境 ID
+            stage_name: 环境名称
+            mcp_servers_data: MCP Server 配置列表，每项包含 name, description, resource_names 等字段
+
+        Returns:
+            操作结果列表，每项包含 name, action, id
+        """
+        results = []
+        for mcp_data in mcp_servers_data:
+            mcp_data["gateway_id"] = gateway_id
+            mcp_data["stage_id"] = stage_id
+
+            name = mcp_data["name"]
+            full_name = MCPServerHandler.get_mcp_server_name(
+                gateway_name=gateway_name, stage_name=stage_name, name=name
+            )
+            mcp_data["name"] = full_name
+
+            resource_names = mcp_data.pop("resource_names", [])
+            tool_names = mcp_data.pop("tool_names", None) or resource_names
+            target_app_codes = mcp_data.pop("target_app_codes", [])
+            category_names = mcp_data.pop("category_names", None)
+
+            instance = MCPServer.objects.filter(name=full_name, stage__name=stage_name, gateway_id=gateway_id).first()
+
+            if instance:
+                action = "updated"
+                for field, value in mcp_data.items():
+                    if hasattr(instance, field):
+                        setattr(instance, field, value)
+                instance.update_resource_names(resource_names, tool_names)
+                instance.save()
+            else:
+                action = "created"
+                instance = MCPServer(**mcp_data)
+                instance.update_resource_names(resource_names, tool_names)
+                instance.save()
+
+            MCPServerHandler._sync_mcp_server_permissions(instance.id, target_app_codes)
+            MCPServerHandler._sync_mcp_server_categories(instance, category_names)
+
+            results.append({"name": instance.name, "action": action, "id": instance.id})
+
+        return results
+
+    @staticmethod
+    def _sync_mcp_server_permissions(mcp_server_id: int, app_codes: List[str]):
+        """同步 MCP Server 权限"""
+        for app_code in app_codes:
+            MCPServerAppPermission.objects.save_permission(
+                mcp_server_id=mcp_server_id,
+                bk_app_code=app_code,
+                grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+                expire_days=None,
+            )
+        MCPServerHandler.sync_permissions(mcp_server_id)
+
+    @staticmethod
+    def _sync_mcp_server_categories(instance: MCPServer, category_names: Optional[List[str]]):
+        """同步 MCP Server 分类，None 表示不操作，空列表表示清空"""
+        if category_names is None:
+            return
+
+        if not category_names:
+            instance.categories.clear()
+            return
+
+        existing_categories = MCPServerCategory.objects.filter(name__in=category_names)
+        instance.categories.set(existing_categories)
 
     @staticmethod
     def _virtual_app_code(mcp_server_id: int, app_code: str) -> str:

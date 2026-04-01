@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from unittest.mock import patch
+
 from ddf import G
 
 from apigateway.biz.release import ReleaseHandler
@@ -22,6 +24,7 @@ from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
     PublishEventStatusTypeEnum,
+    ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, Stage
@@ -96,3 +99,38 @@ class TestReleaseHandler:
             ReleaseHandler.batch_get_stage_release_status([fake_stage.id])[fake_stage.id]["status"]
             == PublishEventStatusTypeEnum.SUCCESS.value
         )
+
+    def test_wait_release_done_success(self, fake_release_history):
+        """发布成功时返回 SUCCESS"""
+        G(
+            PublishEvent,
+            publish=fake_release_history,
+            name=PublishEventNameTypeEnum.LOAD_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.SUCCESS.value,
+        )
+
+        with patch("apigateway.biz.release.release.time.sleep"):
+            result = ReleaseHandler.wait_release_done(fake_release_history.id)
+
+        assert result == ReleaseHistoryStatusEnum.SUCCESS.value
+
+    def test_wait_release_done_failure(self, fake_release_history):
+        """发布失败时返回 FAILURE"""
+        G(
+            PublishEvent,
+            publish=fake_release_history,
+            name=PublishEventNameTypeEnum.LOAD_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+        )
+
+        with patch("apigateway.biz.release.release.time.sleep"):
+            result = ReleaseHandler.wait_release_done(fake_release_history.id)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
+
+    def test_wait_release_done_timeout(self, fake_release_history):
+        """超时返回 FAILURE"""
+        with patch("apigateway.biz.release.release.time.sleep"):
+            result = ReleaseHandler.wait_release_done(fake_release_history.id, timeout=0)
+
+        assert result == ReleaseHistoryStatusEnum.FAILURE.value
