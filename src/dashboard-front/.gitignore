@@ -29,3 +29,7 @@ coverage
 
 *.tsbuildinfo
 index.html.backup
+
+.claude
+.codebuddy
+.codebuddy.backup
