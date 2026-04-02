@@ -70,18 +70,7 @@
           required
           property="language"
         >
-          <BkRadioGroup
-            v-model="formData.language"
-            type="card"
-          >
-            <BkRadioButton
-              v-for="option in languageOptions"
-              :key="option.label"
-              :label="option.label"
-            >
-              {{ option.text }}
-            </BkRadioButton>
-          </BkRadioGroup>
+          <SdkLanguageSelector v-model="formData.language" />
         </BkFormItem>
       </BkForm>
     </BkDialog>
@@ -96,6 +85,7 @@ import {
   getVersionList,
 } from '@/services/source/resource';
 import { Message } from 'bkui-vue';
+import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 
 interface CreateDialog {
   resource_version_id: string
@@ -124,20 +114,6 @@ const apigwId = computed(() => +route.params.id);
 const baseInfoRef = ref();
 // 版本列表
 const versionOpts = ref<IVersionItem[]>([]);
-const languageOptions = ref([
-  {
-    label: 'python',
-    text: 'Python',
-  },
-  {
-    label: 'golang',
-    text: 'Golang',
-  },
-  {
-    label: 'java',
-    text: 'Java',
-  },
-]);
 
 // 导出dialog
 const dialogConfig: IDialog = reactive({
@@ -210,7 +186,7 @@ watch(
         formData.resource_version_id = '';
         formData.version = '';
         formData.language = 'python';
-      }, 1000);
+      }, 500);
     }
   },
   { immediate: true },
@@ -245,3 +221,11 @@ const showCreateSdk = () => {
 
 defineExpose({ showCreateSdk });
 </script>
+
+<style lang="scss" scoped>
+
+:deep(.bk-button-group) {
+  display: flex;
+}
+
+</style>

@@ -57,6 +57,7 @@ export function getFeatureFlags(params: {
     GATEWAY_APP_BINDING_ENABLED: boolean
     MENU_ITEM_ESB_API: boolean
     MENU_ITEM_ESB_API_DOC: boolean
+    SDK_LANGUAGE: string[]
     SYNC_ESB_TO_APIGW_ENABLED: boolean
   }>(`${path}/settings/feature-flags/`, params);
 }

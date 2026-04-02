@@ -39,10 +39,7 @@ declare interface Window {
 }
 
 declare global {
-  var runtimeEnv: RuntimeEnv;
   var BK_DASHBOARD_URL: string;
   var BK_SITE_PATH: string;
   var BK_STATIC_URL: string;
 }
-
-export type RuntimeEnv = { BK_DASHBOARD_URL: string };

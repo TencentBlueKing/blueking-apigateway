@@ -134,7 +134,7 @@
             <header class="content-title">
               {{ t('网关 SDK') }}
             </header>
-            <LangSelector
+            <SdkLanguageSelector
               v-model="language"
               :sdk-languages="sdks.map(item => item.language)"
               :width="90"
@@ -209,10 +209,9 @@ import type {
   IApiGatewaySdkDoc,
   IComponentSdk,
   ISystemBasics,
-  LanguageType,
   TabType,
 } from '../types.d.ts';
-import LangSelector from './LangSelector.vue';
+import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useBkUserDisplayName } from '@/hooks';
 import { useFeatureFlag, useUserInfo } from '@/stores';
@@ -235,7 +234,7 @@ const { configure: configureDisplayName } = useBkUserDisplayName();
 // 注入当前的总 tab 变量
 const curTab = inject<Ref<TabType>>('curTab');
 
-const language = ref<LanguageType>('python');
+const language = ref('python');
 
 const curUser = computed(() => userStore?.info);
 const userList = computed(() => {

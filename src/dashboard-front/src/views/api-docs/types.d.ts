@@ -17,7 +17,6 @@
  */
 
 type TabType = 'gateway' | 'component';
-type LanguageType = 'python' | 'java' | 'golang';
 
 interface INavItem {
   id: string
@@ -49,7 +48,7 @@ interface IApiGatewayBasics {
 }
 
 interface IApiGatewaySdkDoc {
-  language: LanguageType
+  language: string
   resource_version: IResourceVersion
   sdk: IApiGatewaySdk
   stage: {
@@ -59,7 +58,7 @@ interface IApiGatewaySdkDoc {
 }
 
 interface IApiGatewaySdk {
-  language: LanguageType
+  language: string
   name: string
   version: string
   url: string
@@ -137,7 +136,7 @@ interface IComponentSdk {
   sdk_version_number: string
   sdk_download_url: string
   sdk_install_command: string
-  language: LanguageType
+  language: string
 }
 
 // 其他
@@ -159,6 +158,5 @@ export {
   IStage,
   ISystem,
   ISystemBasics,
-  LanguageType,
   TabType,
 };
