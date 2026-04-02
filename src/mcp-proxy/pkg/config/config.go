@@ -165,8 +165,15 @@ type McpServer struct {
 	CryptoNonce                 string
 }
 
-// DerivePublicPathPrefix extracts the path prefix from a message URL format string.
-// e.g. "/prod/api/v2/mcp-servers/%s/sse/message" → "/prod/api/v2/mcp-servers"
+// DerivePublicPathPrefix extracts the client-visible path prefix from a message URL format string
+// by taking the segment before the first "%" placeholder and trimming the trailing slash.
+//
+// Examples:
+//
+//	"/prod/api/v2/mcp-servers/%s/sse/message"             → "/prod/api/v2/mcp-servers"
+//	"/prod/api/v2/mcp-servers/%s/application/sse/message"  → "/prod/api/v2/mcp-servers"
+//	"/%s/sse"                                              → ""  (no meaningful prefix)
+//	""                                                     → ""
 func DerivePublicPathPrefix(messageURLFormat string) string {
 	messageURLFormat = strings.TrimSpace(messageURLFormat)
 	if messageURLFormat == "" {
