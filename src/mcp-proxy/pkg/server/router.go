@@ -87,7 +87,7 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	ctx := context.Background()
 
 	// mcp 用户态mcp proxy
-	mcpProxy := proxy.NewMCPProxy()
+	mcpProxy := proxy.NewMCPProxy(config.DerivePublicPathPrefix(cfg.McpServer.MessageUrlFormat))
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
 		logging.GetLogger().Panic("mcp user proxy init failed: %v", err)
@@ -110,7 +110,9 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 
 	// mcp application 应用态mcp proxy
-	mcpApplicationProxy := proxy.NewMCPProxy()
+	mcpApplicationProxy := proxy.NewMCPProxy(
+		config.DerivePublicPathPrefix(cfg.McpServer.MessageApplicationUrlFormat),
+	)
 	mcpApplicationSvc, err := mcp.Init(ctx, mcpApplicationProxy)
 	if err != nil {
 		logging.GetLogger().Panic("mcp application proxy init failed: %v", err)

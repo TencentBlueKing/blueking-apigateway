@@ -53,15 +53,19 @@ type MCPProxy struct {
 	mcpServers map[string]*MCPServer
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
-	activeMCPServers map[string]struct{}
+	activeMCPServers    map[string]struct{}
+	ssePublicPathPrefix string
 }
 
-// NewMCPProxy ...
-func NewMCPProxy() *MCPProxy {
+// NewMCPProxy creates a proxy with the given SSE public path prefix.
+// The prefix is prepended to req.URL.Path before passing to SSEHandler so the
+// endpoint event matches the client-visible URL behind a reverse proxy.
+func NewMCPProxy(ssePublicPathPrefix string) *MCPProxy {
 	return &MCPProxy{
-		mcpServers:       map[string]*MCPServer{},
-		rwLock:           &sync.RWMutex{},
-		activeMCPServers: map[string]struct{}{},
+		mcpServers:          map[string]*MCPServer{},
+		rwLock:              &sync.RWMutex{},
+		activeMCPServers:    map[string]struct{}{},
+		ssePublicPathPrefix: ssePublicPathPrefix,
 	}
 }
 
@@ -328,7 +332,7 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server %s does not support SSE protocol", name))
 			return
 		}
-		handler.ServeHTTP(c.Writer, c.Request)
+		handler.ServeHTTP(c.Writer, util.RequestWithPublicPathPrefix(c.Request, m.ssePublicPathPrefix))
 	}
 }
 
