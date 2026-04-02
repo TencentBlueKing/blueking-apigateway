@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -162,6 +163,34 @@ type McpServer struct {
 	InnerJwtExpireTime          time.Duration
 	EncryptKey                  string
 	CryptoNonce                 string
+}
+
+// DerivePublicPathPrefix extracts the client-visible path prefix from a message URL format string
+// by taking the segment before the first "%" placeholder and trimming the trailing slash.
+//
+// Examples:
+//
+//	"/prod/api/v2/mcp-servers/%s/sse/message"             → "/prod/api/v2/mcp-servers"
+//	"/prod/api/v2/mcp-servers/%s/application/sse/message"  → "/prod/api/v2/mcp-servers"
+//	"/%s/sse"                                              → ""  (no meaningful prefix)
+//	""                                                     → ""
+func DerivePublicPathPrefix(messageURLFormat string) string {
+	messageURLFormat = strings.TrimSpace(messageURLFormat)
+	if messageURLFormat == "" {
+		return ""
+	}
+	i := strings.Index(messageURLFormat, "%")
+	if i <= 0 {
+		return ""
+	}
+	prefix := strings.TrimSuffix(messageURLFormat[:i], "/")
+	if prefix == "" {
+		return ""
+	}
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+	return prefix
 }
 
 // Pprof is the config for pprof

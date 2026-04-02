@@ -33,6 +33,8 @@ mcpServer:
   innerJwtExpireTime: 5m
   bkApiUrlTmpl: ""
   interval: 60
+  messageUrlFormat: "/%s/sse"
+  messageApplicationUrlFormat: "/%s/application/sse"
 
 tracing:
   enable: false

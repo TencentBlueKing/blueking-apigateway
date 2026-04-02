@@ -355,6 +355,9 @@ var _ = Describe("Config", func() {
 			Expect(cfg.McpServer.MessageUrlFormat).NotTo(BeEmpty())
 			Expect(cfg.McpServer.MessageApplicationUrlFormat).NotTo(BeEmpty())
 			Expect(cfg.McpServer.InnerJwtExpireTime).NotTo(BeZero())
+			Expect(config.DerivePublicPathPrefix(cfg.McpServer.MessageUrlFormat)).To(
+				Equal("/api/bk-apigateway/prod/api/v2/mcp-servers"),
+			)
 		})
 
 		It("should fail with invalid TLS config", func() {
@@ -450,6 +453,26 @@ var _ = Describe("Config", func() {
 			}
 			Expect(mcpServer.BkApiUrlTmpl).To(Equal("https://api.example.com"))
 			Expect(mcpServer.MessageUrlFormat).To(Equal("/mcp/%s/message"))
+		})
+
+		It("DerivePublicPathPrefix derives from messageUrlFormat", func() {
+			Expect(config.DerivePublicPathPrefix("/prod/api/v2/mcp-servers/%s/sse/message")).To(
+				Equal("/prod/api/v2/mcp-servers"),
+			)
+		})
+
+		It("DerivePublicPathPrefix derives from messageApplicationUrlFormat", func() {
+			Expect(config.DerivePublicPathPrefix("/prod/api/v2/mcp-servers/%s/application/sse/message")).To(
+				Equal("/prod/api/v2/mcp-servers"),
+			)
+		})
+
+		It("DerivePublicPathPrefix returns empty for no placeholder", func() {
+			Expect(config.DerivePublicPathPrefix("/no-placeholder")).To(BeEmpty())
+		})
+
+		It("DerivePublicPathPrefix returns empty for empty string", func() {
+			Expect(config.DerivePublicPathPrefix("")).To(BeEmpty())
 		})
 
 		It("Pprof should have correct fields", func() {
