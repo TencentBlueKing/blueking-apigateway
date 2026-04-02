@@ -27,7 +27,7 @@
   >
     <main class="dialog-content">
       <div class="dialog-main">
-        <LangSelector
+        <SdkLanguageSelector
           v-model="language"
           :sdk-languages="sdks.map(item => item.language)"
           :lang-list="languages"
@@ -44,18 +44,15 @@
 </template>
 
 <script setup lang="ts">
-import LangSelector from './LangSelector.vue';
-import type {
-  ISdk,
-  LanguageType,
-} from '../types.d.ts';
+import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
+import type { ISdk } from '../types.d.ts';
 import SdkDetail from './SDKDetail.vue';
 import { useI18n } from 'vue-i18n';
 
 interface IProps {
   sdks?: ISdk[]
   targetName?: string
-  languages: LanguageType[] | undefined
+  languages: string[] | undefined
   maintainers?: string[]
 }
 
@@ -72,7 +69,7 @@ const {
 
 const { t } = useI18n();
 
-const language = ref<LanguageType>('python');
+const language = ref('python');
 
 const curSdk = computed(() => {
   return sdks.find(item => item.language === language.value) ?? null;

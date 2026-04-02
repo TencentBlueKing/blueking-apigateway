@@ -44,6 +44,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_RUN_DATA_METRICS: false,
       ENABLE_SDK: false,
       GATEWAY_APP_BINDING_ENABLED: false,
+      SDK_LANGUAGE: [],
       MENU_ITEM_ESB_API: false,
       MENU_ITEM_ESB_API_DOC: false,
       SYNC_ESB_TO_APIGW_ENABLED: false,
@@ -70,6 +71,11 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
         limit: 10000,
         offset: 0,
       });
+      // TODO 临时处理，待后端接口返回后删除
+      this.flags.SDK_LANGUAGE = [
+        'python',
+        'java',
+      ];
     },
     setNoticeAlert(isShow: boolean) {
       this.showNoticeAlert = isShow;

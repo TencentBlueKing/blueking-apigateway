@@ -19,12 +19,11 @@
 <template>
   <!--  SDK使用说明 Slider 的内容  -->
   <div class="sdk-wrapper">
-    <LangSelector
+    <SdkLanguageSelector
       v-if="curTab === 'gateway'"
       v-model="language"
       :margin-bottom="0"
       :sdk-languages="['python', 'java', 'golang']"
-      :lang-list="['python', 'java', 'golang']"
       @select="handleLangSelect"
     />
     <div
@@ -61,18 +60,15 @@ import hljs from 'highlight.js';
 import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs-esb';
 import { getGatewaySDKDoc } from '@/services/source/sdks';
-import type {
-  LanguageType,
-  TabType,
-} from '../types.d.ts';
-import LangSelector from './LangSelector.vue';
+import type { TabType } from '../types.d.ts';
+import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 import 'highlight.js/styles/github.css';
 
 const { t } = useI18n();
 
 const curTab = inject<Ref<TabType>>('curTab');
 
-const language = ref<LanguageType>('python');
+const language = ref('python');
 const board = ref('default');
 const sdkDoc = ref('');
 const markdownHtml = ref('');
@@ -166,7 +162,7 @@ const getSDKDoc = async () => {
   }
 };
 
-const handleLangSelect = (lang: LanguageType) => {
+const handleLangSelect = (lang: string) => {
   if (lang === language.value) return;
   init();
 };
