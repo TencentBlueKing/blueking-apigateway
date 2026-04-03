@@ -32,7 +32,7 @@ var _ = Describe("MCP", func() {
 		var mcpProxy *proxy.MCPProxy
 
 		BeforeEach(func() {
-			mcpProxy = proxy.NewMCPProxy()
+			mcpProxy = proxy.NewMCPProxy("", "")
 		})
 
 		Describe("Basic Operations", func() {

@@ -83,7 +83,7 @@ func operationIDs(n int) []string {
 // setupProxyWithServers pre-populates an MCPProxy with `count` MCP servers,
 // each having `toolsPerServer` tools and the given resource version.
 func setupProxyWithServers(count, toolsPerServer, resourceVersion int) *proxy.MCPProxy {
-	p := proxy.NewMCPProxy()
+	p := proxy.NewMCPProxy("", "")
 	spec := buildOpenAPISpec(toolsPerServer)
 	ops := operationIDs(toolsPerServer)
 	for i := 0; i < count; i++ {
@@ -166,7 +166,7 @@ func BenchmarkCheckNeedLoad_NewTool(b *testing.B) {
 
 // BenchmarkCheckNeedLoad_NewServer benchmarks checkNeedLoad for a new server (doesn't exist yet).
 func BenchmarkCheckNeedLoad_NewServer(b *testing.B) {
-	p := proxy.NewMCPProxy()
+	p := proxy.NewMCPProxy("", "")
 	server := &model.MCPServer{Name: "nonexistent"}
 	release := &model.Release{ResourceVersionID: 1}
 
@@ -187,7 +187,7 @@ func BenchmarkAddMCPServerFromOpenAPISpec(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p := proxy.NewMCPProxy()
+				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
 				)
@@ -205,7 +205,7 @@ func BenchmarkAddMCPServerFromOpenAPISpec_StreamableHTTP(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p := proxy.NewMCPProxy()
+				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, nil, constant.MCPServerProtocolTypeStreamableHTTP,
 				)
@@ -254,7 +254,7 @@ func BenchmarkApplyServerChanges_AllError(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p := proxy.NewMCPProxy()
+				p := proxy.NewMCPProxy("", "")
 				mcppkg.ApplyServerChangesForTest(ctx, p, results)
 			}
 		})
@@ -382,7 +382,7 @@ func BenchmarkAddMultipleServers(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p := proxy.NewMCPProxy()
+				p := proxy.NewMCPProxy("", "")
 				for j := 0; j < numServers; j++ {
 					_ = p.AddMCPServerFromOpenAPISpec(
 						fmt.Sprintf("server_%d", j), 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
@@ -408,7 +408,7 @@ func BenchmarkAddMCPServerWithToolNameMap(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				p := proxy.NewMCPProxy()
+				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, toolNameMap, constant.MCPServerProtocolTypeSSE,
 				)
