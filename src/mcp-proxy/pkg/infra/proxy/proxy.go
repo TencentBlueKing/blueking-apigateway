@@ -249,10 +249,12 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		}, nil)
 
 		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
-			// 创建 Streamable HTTP Handler
+			// 创建 Streamable HTTP Handler，启用 Stateless 模式避免 session not found 错误
 			httpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 				return server
-			}, nil)
+			}, &mcp.StreamableHTTPOptions{
+				Stateless: true,
+			})
 			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID)
 		} else {
 			// 默认使用 SSE Handler
