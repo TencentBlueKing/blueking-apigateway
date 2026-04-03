@@ -86,14 +86,22 @@ type MCPProxy struct {
 	rwLock     *sync.RWMutex
 	// 运行的mcp server
 	activeMCPServers map[string]struct{}
+	// sseUserPublicPathPrefix / sseAppPublicPathPrefix: gateway-facing path prefixes prepended to
+	// req.URL.Path before SSEHandler so the endpoint event matches clients behind a strip-prefix proxy.
+	sseUserPublicPathPrefix string
+	sseAppPublicPathPrefix  string
 }
 
-// NewMCPProxy ...
-func NewMCPProxy() *MCPProxy {
+// NewMCPProxy creates a proxy. sseUserPublicPathPrefix and sseAppPublicPathPrefix are derived from
+// mcpServer.messageUrlFormat and mcpServer.messageApplicationUrlFormat (see config.DerivePublicPathPrefix).
+// Use empty strings when there is no gateway prefix (e.g. local tests).
+func NewMCPProxy(sseUserPublicPathPrefix, sseAppPublicPathPrefix string) *MCPProxy {
 	return &MCPProxy{
-		mcpServers:       map[string]*MCPServer{},
-		rwLock:           &sync.RWMutex{},
-		activeMCPServers: map[string]struct{}{},
+		mcpServers:              map[string]*MCPServer{},
+		rwLock:                  &sync.RWMutex{},
+		activeMCPServers:        map[string]struct{}{},
+		sseUserPublicPathPrefix: sseUserPublicPathPrefix,
+		sseAppPublicPathPrefix:  sseAppPublicPathPrefix,
 	}
 }
 
@@ -204,10 +212,12 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		}, nil)
 
 		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
-			// 创建 Streamable HTTP Handler
+			// 创建 Streamable HTTP Handler，启用 Stateless 模式避免 session not found 错误
 			httpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 				return server
-			}, nil)
+			}, &mcp.StreamableHTTPOptions{
+				Stateless: true,
+			})
 			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID)
 		} else {
 			// 默认使用 SSE Handler
@@ -272,8 +282,17 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	return nil
 }
 
-// SseHandler ...
+// SseHandler 用户态 SSE（/:name/sse）。
 func (m *MCPProxy) SseHandler() gin.HandlerFunc {
+	return m.sseHandlerWithPrefix(m.sseUserPublicPathPrefix)
+}
+
+// SseHandlerApplication 应用态 SSE（/:name/application/sse）。
+func (m *MCPProxy) SseHandlerApplication() gin.HandlerFunc {
+	return m.sseHandlerWithPrefix(m.sseAppPublicPathPrefix)
+}
+
+func (m *MCPProxy) sseHandlerWithPrefix(publicPathPrefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		name := c.Param("name")
 		mcpServer := m.GetMCPServer(name)
@@ -287,7 +306,8 @@ func (m *MCPProxy) SseHandler() gin.HandlerFunc {
 			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server %s does not support SSE protocol", name))
 			return
 		}
-		handler.ServeHTTP(c.Writer, c.Request)
+		req := util.RequestWithPublicPathPrefix(c.Request, publicPathPrefix)
+		handler.ServeHTTP(c.Writer, req)
 	}
 }
 
