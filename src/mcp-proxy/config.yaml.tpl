@@ -84,6 +84,9 @@ pprof:
 
 ## config for mcp server
 mcpServer:
+  # messageUrlFormat / messageApplicationUrlFormat：蓝鲸网关资源路径模板；第一个 % 之前的段用于推导 SSE 对外前缀（网关剥前缀时与官方 SDK 的 endpoint 一致）
+  # messageUrlFormat: "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
+  # messageApplicationUrlFormat: "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/application/sse/message"
   # Maximum concurrent goroutines for prefetching server configs (default: 20)
   maxConcurrentPrefetch: 20
   # Shared HTTP transport config for upstream tool calls

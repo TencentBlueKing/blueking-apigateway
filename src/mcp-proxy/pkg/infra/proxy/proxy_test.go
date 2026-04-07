@@ -47,7 +47,7 @@ import (
 var _ = Describe("MCPProxy", func() {
 	Describe("NewMCPProxy", func() {
 		It("should create a new MCPProxy instance", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 
 			Expect(proxy).NotTo(BeNil())
 			Expect(proxy.mcpServers).NotTo(BeNil())
@@ -62,7 +62,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should return false for non-existent server", func() {
@@ -82,7 +82,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should return nil for non-existent server", func() {
@@ -103,7 +103,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("AddMCPServer", func() {
 		It("should add server to proxy", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			mockServer := &MCPServer{name: "test-server"}
 
 			proxy.AddMCPServer("test-server", mockServer)
@@ -113,7 +113,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should add multiple servers", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			server1 := &MCPServer{name: "server1"}
 			server2 := &MCPServer{name: "server2"}
 
@@ -129,7 +129,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should return empty list initially", func() {
@@ -161,14 +161,14 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("DeleteMCPServer", func() {
 		It("should not panic when deleting non-existent server", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			Expect(func() {
 				proxy.DeleteMCPServer("non-existent")
 			}).NotTo(Panic())
 		})
 
 		It("should mark server as existing before deletion", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			proxy.rwLock.Lock()
 			proxy.mcpServers["test-server"] = &MCPServer{name: "test-server"}
 			proxy.activeMCPServers["test-server"] = struct{}{}
@@ -191,14 +191,14 @@ var _ = Describe("MCPProxy", func() {
 		}
 
 		It("should return empty list when no servers exist", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			names := proxy.CleanupAll()
 			Expect(names).To(BeEmpty())
 			Expect(proxy.GetActiveMCPServerNames()).To(BeEmpty())
 		})
 
 		It("should remove all servers and return their names", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			// Manually add servers and mark them as active
 			proxy.rwLock.Lock()
 			proxy.mcpServers["server1"] = newTestMCPServer("server1")
@@ -221,7 +221,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should be safe to call multiple times", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			proxy.rwLock.Lock()
 			proxy.mcpServers["server1"] = newTestMCPServer("server1")
 			proxy.activeMCPServers["server1"] = struct{}{}
@@ -248,13 +248,13 @@ var _ = Describe("MCPProxy", func() {
 		}
 
 		It("should return empty when no servers exist", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			deleted := proxy.CleanupStale(map[string]struct{}{})
 			Expect(deleted).To(BeEmpty())
 		})
 
 		It("should delete servers not in active set", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			proxy.rwLock.Lock()
 			proxy.mcpServers["server1"] = newTestMCPServer("server1")
 			proxy.mcpServers["server2"] = newTestMCPServer("server2")
@@ -278,7 +278,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should return empty when all servers are active", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			proxy.rwLock.Lock()
 			proxy.mcpServers["server1"] = newTestMCPServer("server1")
 			proxy.activeMCPServers["server1"] = struct{}{}
@@ -293,7 +293,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should delete all servers when active set is empty", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			proxy.rwLock.Lock()
 			proxy.mcpServers["server1"] = newTestMCPServer("server1")
 			proxy.mcpServers["server2"] = newTestMCPServer("server2")
@@ -310,7 +310,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("Run", func() {
 		It("should not panic with no servers", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			ctx := context.Background()
 
 			Expect(func() {
@@ -320,7 +320,7 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should skip already active servers", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 			ctx := context.Background()
 
 			// Mark server as active without adding it
@@ -339,7 +339,7 @@ var _ = Describe("MCPProxy", func() {
 
 		BeforeEach(func() {
 			gin.SetMode(gin.TestMode)
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should return error for non-existent server", func() {
@@ -362,7 +362,7 @@ var _ = Describe("MCPProxy", func() {
 
 		BeforeEach(func() {
 			gin.SetMode(gin.TestMode)
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should return error for non-existent server", func() {
@@ -407,7 +407,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("Concurrent Access", func() {
 		It("should handle concurrent reads and writes", func() {
-			proxy := NewMCPProxy()
+			proxy := NewMCPProxy("", "")
 
 			var wg sync.WaitGroup
 			for i := 0; i < 100; i++ {
@@ -517,7 +517,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should not panic when server does not exist", func() {
@@ -534,7 +534,7 @@ var _ = Describe("MCPProxy", func() {
 		var proxy *MCPProxy
 
 		BeforeEach(func() {
-			proxy = NewMCPProxy()
+			proxy = NewMCPProxy("", "")
 		})
 
 		It("should not panic when server does not exist", func() {

@@ -33,6 +33,9 @@ mcpServer:
   innerJwtExpireTime: 5m
   bkApiUrlTmpl: ""
   interval: 60
+  # 直连集成环境无网关剥前缀：格式取 % 前为空，避免 SSE endpoint 带默认长前缀导致 POST 404
+  messageUrlFormat: "/%s/sse"
+  messageApplicationUrlFormat: "/%s/application/sse"
 
 tracing:
   enable: false

@@ -91,10 +91,13 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	ctx := context.Background()
 
 	// mcp proxy: 用户态和应用态共享同一个 MCPProxy 实例
-	// 两者加载相同的 MCP Server 数据，仅路由前缀不同
+	// 两者加载相同的 MCP Server 数据；SSE 对外路径前缀从 messageUrlFormat 推导（网关剥前缀场景）
 	mcpInitStart := time.Now()
 	proxy.InitSharedTransport(cfg.McpServer.Transport)
-	mcpProxy := proxy.NewMCPProxy()
+	mcpProxy := proxy.NewMCPProxy(
+		config.DerivePublicPathPrefix(cfg.McpServer.MessageUrlFormat),
+		config.DerivePublicPathPrefix(cfg.McpServer.MessageApplicationUrlFormat),
+	)
 	mcpSvc, err := mcp.Init(ctx, mcpProxy)
 	if err != nil {
 		logging.GetLogger().Panicf("mcp proxy init failed: %v", err)
@@ -125,8 +128,8 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
 	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
-	seeAppRouter.GET("/sse", mcpProxy.SseHandler())
-	seeAppRouter.POST("/sse", mcpProxy.SseHandler())
+	seeAppRouter.GET("/sse", mcpProxy.SseHandlerApplication())
+	seeAppRouter.POST("/sse", mcpProxy.SseHandlerApplication())
 	// Streamable HTTP 协议路由
 	seeAppRouter.GET("/mcp", mcpProxy.StreamableHTTPHandler())
 	seeAppRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
