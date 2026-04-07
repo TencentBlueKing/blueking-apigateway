@@ -475,6 +475,34 @@ var _ = Describe("Config", func() {
 			Expect(config.DerivePublicPathPrefix("")).To(BeEmpty())
 		})
 
+		It("DerivePublicPathPrefix handles malformed format with %%", func() {
+			// Double percent should be treated as literal, not placeholder
+			Expect(config.DerivePublicPathPrefix("/api/%%s/message")).To(Equal("/api"))
+		})
+
+		It("DerivePublicPathPrefix handles format with only %", func() {
+			// Single % at the end
+			Expect(config.DerivePublicPathPrefix("/api/%")).To(Equal("/api"))
+		})
+
+		It("DerivePublicPathPrefix handles placeholder at start", func() {
+			// %s at the beginning should return empty prefix
+			Expect(config.DerivePublicPathPrefix("%s/message")).To(BeEmpty())
+		})
+
+		It("DerivePublicPathPrefix handles format without leading slash", func() {
+			// Should add leading slash
+			Expect(config.DerivePublicPathPrefix("api/%s/message")).To(Equal("/api"))
+		})
+
+		It("DerivePublicPathPrefix handles whitespace trimming", func() {
+			Expect(config.DerivePublicPathPrefix("  /api/%s/message  ")).To(Equal("/api"))
+		})
+
+		It("DerivePublicPathPrefix handles trailing slash before placeholder", func() {
+			Expect(config.DerivePublicPathPrefix("/api/%s/message")).To(Equal("/api"))
+		})
+
 		It("Pprof should have correct fields", func() {
 			pprof := config.Pprof{Username: "admin", Password: "secret"}
 			Expect(pprof.Username).To(Equal("admin"))
