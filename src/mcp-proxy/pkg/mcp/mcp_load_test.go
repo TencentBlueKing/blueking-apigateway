@@ -40,7 +40,7 @@ var _ = Describe("MCP Load Functions", func() {
 	)
 
 	BeforeEach(func() {
-		mcpProxy = proxy.NewMCPProxy()
+		mcpProxy = proxy.NewMCPProxy("", "")
 		ctx = context.Background()
 		openapiSpec = &openapi3.T{
 			OpenAPI: "3.0.0",
