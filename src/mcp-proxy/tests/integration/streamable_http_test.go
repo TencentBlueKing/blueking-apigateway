@@ -406,4 +406,91 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+
+	Describe("Stateless Mode", func() {
+		It("should handle multiple requests without session not found error", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 连续发送多个请求，验证 Stateless 模式下不会出现 session not found
+			for i := 0; i < 5; i++ {
+				err = session.Ping(ctx, nil)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// 多次列出工具
+			for i := 0; i < 3; i++ {
+				result, err := session.ListTools(ctx, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+			}
+		})
+
+		It("should handle concurrent requests without session not found error", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 并发发送多个请求
+			done := make(chan bool, 5)
+			for i := 0; i < 5; i++ {
+				go func() {
+					defer GinkgoRecover()
+					_, err := session.ListTools(ctx, nil)
+					Expect(err).NotTo(HaveOccurred())
+					done <- true
+				}()
+			}
+
+			// 等待所有并发请求完成
+			for i := 0; i < 5; i++ {
+				select {
+				case <-done:
+				case <-ctx.Done():
+					Fail("timeout waiting for concurrent requests")
+				}
+			}
+		})
+	})
 })
