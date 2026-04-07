@@ -24,7 +24,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -637,12 +639,26 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 					if response.Body() != nil {
 						defer response.Body().Close()
 					}
+
 					var res any
 					if response.Body() != nil {
-						if e := consumer.Consume(response.Body(), &res); e != nil {
-							return nil, e
+						contentType := strings.ToLower(response.GetHeader("Content-Type"))
+						// 根据 Content-Type 决定如何解析响应体
+						if strings.Contains(contentType, "application/json") {
+							// JSON 响应：使用 consumer 解析
+							if e := consumer.Consume(response.Body(), &res); e != nil {
+								return nil, e
+							}
+						} else {
+							// 非 JSON 响应（text/plain, text/html 等）：读取为字符串
+							bodyBytes, e := io.ReadAll(response.Body())
+							if e != nil {
+								return nil, e
+							}
+							res = string(bodyBytes)
 						}
 					}
+
 					responseResult := buildToolResponseEnvelope(
 						response.Code(),
 						response.GetHeader(constant.BkGatewayRequestIDKey),
