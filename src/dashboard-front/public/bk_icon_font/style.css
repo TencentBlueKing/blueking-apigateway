@@ -215,6 +215,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-bukeyulan:before {
 	content: "\e143";
 }
+.icon-ag-settings:before {
+	content: "\e206";
+}
 .icon-ag-debug:before {
 	content: "\e132";
 }
@@ -673,4 +676,22 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-filter:before {
 	content: "\e1ff";
+}
+.icon-ag-sousuo--1:before {
+	content: "\e200";
+}
+.icon-ag-mcp-2:before {
+	content: "\e203";
+}
+.icon-ag-http:before {
+	content: "\e204";
+}
+.icon-ag-tool:before {
+	content: "\e201";
+}
+.icon-ag-request:before {
+	content: "\e202";
+}
+.icon-ag-link-2:before {
+	content: "\e205";
 }

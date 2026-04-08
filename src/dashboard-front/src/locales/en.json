@@ -2334,5 +2334,7 @@
   "已发布到环境【{stage}】或生成了 SDK，无法删除": "Published to stage [{stage}] or SDK has been generated, cannot be deleted.",
   "每个网关最多可创建 100 个资源版本，当前已创建 {n} 个。": "Each gateway can create up to 100 resource versions. Currently {n} have been created.",
   "当前已创建 {n} 个资源版本，接近上限 100 个。建议删除不再使用的旧版本以释放配额。": "Currently {n} resource versions have been created, approaching the limit of 100. It is recommended to delete unused old versions to free up quota.",
-  "当前已创建 {n} 个资源版本，已达到上限 100 个，无法创建新版本。请删除不再使用的旧版本以释放配额。": "Currently {n} resource versions have been created, reaching the limit of 100. New versions cannot be created. Please delete unused old versions to free up quota."
+  "当前已创建 {n} 个资源版本，已达到上限 100 个，无法创建新版本。请删除不再使用的旧版本以释放配额。": "Currently {n} resource versions have been created, reaching the limit of 100. New versions cannot be created. Please delete unused old versions to free up quota.",
+  "枚举值": "Enum",
+  "输入枚举值并按 Enter 添加": "Enter enum value and press Enter"
 }

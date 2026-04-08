@@ -130,22 +130,30 @@
           >
             {{ typeList.find(item => item.value === row.type)?.label || '--' }}
           </div>
-          <BkSelect
+          <div
             v-else
-            v-model="row.type"
-            :clearable="false"
-            :filterable="false"
-            class="edit-select"
-            @change="() => handleTypeChange(row)"
+            class="h-full flex items-center"
           >
-            <BkOption
-              v-for="item in typeList"
-              :id="item.value"
-              :key="item.value"
-              :disabled="isTypeDisabled(row.in, item.value)"
-              :name="item.label"
+            <BkSelect
+              v-model="row.type"
+              :clearable="false"
+              :filterable="false"
+              class="edit-select"
+              @change="() => handleTypeChange(row)"
+            >
+              <BkOption
+                v-for="item in typeList"
+                :id="item.value"
+                :key="item.value"
+                :disabled="isTypeDisabled(row.in, item.value)"
+                :name="item.label"
+              />
+            </BkSelect>
+            <ParamsRowConfig
+              :row="row"
+              @change="(config) => handleConfigChange(row, config)"
             />
-          </BkSelect>
+          </div>
         </template>
       </TableColumn>
       <TableColumn
@@ -277,12 +285,14 @@ import toJsonSchema from 'to-json-schema';
 import JsonEditorSlider from '../JsonEditorSlider.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 import { TableColumn } from '@blueking/tdesign-ui';
+import ParamsRowConfig, { type IConfig } from '../ParamsRowConfig.vue';
 
 interface ITableRow {
   id: string
   name: string
   in: string
   type: JSONSchema7TypeName
+  enum?: any[]
   required?: boolean
   default?: string
   description: string
@@ -293,6 +303,7 @@ interface IBodyRow {
   id: string
   name: string
   type: JSONSchema7TypeName
+  enum?: any[]
   required?: boolean
   default?: string
   description: string
@@ -427,6 +438,11 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
         default: property.default ?? '',
         description: property.description ?? '',
       };
+      // 处理枚举值
+      if (property.enum?.length) {
+        row.enum = property.enum;
+      }
+      // 处理嵌套的属性
       if (Object.keys(property.properties || {}).length) {
         row.body = convertSchemaToBodyRow(property);
       }
@@ -476,8 +492,8 @@ watch(() => detail, () => {
     const resourceSchema = detail.schema || detail.openapi_schema;
     tableData.value = [];
     if (resourceSchema.parameters?.length) {
-      tableData.value = resourceSchema.parameters.map(parameter => (
-        {
+      tableData.value = resourceSchema.parameters.map((parameter) => {
+        const row = {
           id: uniqueId(),
           name: parameter.name,
           in: parameter.in,
@@ -485,8 +501,13 @@ watch(() => detail, () => {
           required: parameter.required ?? false,
           default: parameter.schema?.default ?? '',
           description: parameter.description ?? '',
+        };
+        // 处理 enum
+        if (parameter.schema?.enum?.length) {
+          Object.assign(row, { enum: parameter.schema.enum });
         }
-      ));
+        return row;
+      });
     }
     if (resourceSchema.requestBody) {
       const body = resourceSchema.requestBody;
@@ -568,6 +589,7 @@ const handleTypeChange = (row: ITableRow) => {
     if (_row.type === 'object' || _row.type === 'array') {
       _row.body = [genBodyRow()];
     }
+    delete _row.enum;
   }
 };
 
@@ -625,6 +647,12 @@ const genParameterFromRow = (row: ITableRow) => {
       Object.assign(parameter, { required: true });
     }
     const schema = { type: row.type };
+
+    // 处理 enum
+    if (row.enum?.length) {
+      Object.assign(schema, { enum: row.enum });
+    }
+
     if (row.default !== undefined && row.default !== null && row.default !== '') {
       Object.assign(schema, { default: row.type === 'number' ? Number(row.default) : row.default });
     }
@@ -652,6 +680,10 @@ const genBody = () => {
 
 const genSchemaFromBodyRow = (row: IBodyRow) => {
   const schema: JSONSchema7 = { type: row.type };
+
+  if (row.enum?.length) {
+    schema.enum = row.enum;
+  }
 
   if (row.description) {
     schema.description = row.description;
@@ -728,6 +760,19 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
       theme: 'error',
       message: t('生成 JSON Schema 失败'),
     });
+  }
+};
+
+const handleConfigChange = (row: ITableRow, config: IConfig) => {
+  const { enums } = config;
+  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  if (bodyRow) {
+    if (enums?.enabled && enums.values?.length) {
+      bodyRow.enum = enums.values;
+    }
+    else {
+      delete bodyRow.enum;
+    }
   }
 };
 
