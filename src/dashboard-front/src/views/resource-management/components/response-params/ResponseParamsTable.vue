@@ -142,20 +142,28 @@
                     >
                       {{ typeList.find(item => item.value === row.type)?.label || '--' }}
                     </div>
-                    <BkSelect
+                    <div
                       v-else
-                      v-model="row.type"
-                      :clearable="false"
-                      :filterable="false"
-                      @change="handleTypeChange"
+                      class="h-full flex items-center"
                     >
-                      <BkOption
-                        v-for="item in typeList"
-                        :id="item.value"
-                        :key="item.value"
-                        :name="item.label"
+                      <BkSelect
+                        v-model="row.type"
+                        :clearable="false"
+                        :filterable="false"
+                        @change="handleTypeChange"
+                      >
+                        <BkOption
+                          v-for="item in typeList"
+                          :id="item.value"
+                          :key="item.value"
+                          :name="item.label"
+                        />
+                      </BkSelect>
+                      <ParamsRowConfig
+                        :row="row"
+                        @change="(config) => handleConfigChange(row, config)"
                       />
-                    </BkSelect>
+                    </div>
                   </td>
                   <!-- 字段备注 -->
                   <td
@@ -235,11 +243,13 @@ import { AngleUpFill } from 'bkui-vue/lib/icon';
 import ResponseParamsSubTable from './ResponseParamsSubTable.vue';
 import toJsonSchema from 'to-json-schema';
 import JsonEditorSlider from '../JsonEditorSlider.vue';
+import ParamsRowConfig, { type IConfig } from '../ParamsRowConfig.vue';
 
 interface ITableRow {
   id: string
   name: string
   type: JSONSchema7TypeName
+  enum?: any[]
   description: string
   properties?: ITableRow[]
 }
@@ -334,6 +344,11 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
         type: convertPropertyType(property.type),
         description: property.description ?? '',
       };
+
+      if (property.enum?.length) {
+        Object.assign(row, { enum: property.enum });
+      }
+
       if (Object.keys(property.properties || {}).length) {
         row.properties = convertSchemaToBodyRow(property);
       }
@@ -370,6 +385,9 @@ const initTableData = (schema?: Record<string, any>) => {
     }
     else {
       row.type = type || 'object';
+      if ((schema || body.content['application/json'].schema)?.enum?.length) {
+        Object.assign(row, { enum: (schema || body.content['application/json'].schema).enum });
+      }
     }
   }
   tableData.value.push(row);
@@ -428,6 +446,8 @@ const handleTypeChange = () => {
   else {
     rootRow.properties = [];
   }
+
+  delete rootRow?.enum;
 };
 
 const genBody = () => {
@@ -446,6 +466,10 @@ const genSchema = (row: ITableRow) => {
 
   if (row.description) {
     schema.description = row.description;
+  }
+
+  if (row.enum?.length) {
+    schema.enum = row.enum;
   }
 
   // 处理 type 为 array 和拥有 items 字段的情况
@@ -531,6 +555,19 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
       theme: 'error',
       message: t('生成 JSON Schema 失败'),
     });
+  }
+};
+
+const handleConfigChange = (row: ITableRow, config: IConfig) => {
+  const { enums } = config;
+  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  if (bodyRow) {
+    if (enums?.enabled && enums.values?.length) {
+      bodyRow.enum = enums.values;
+    }
+    else {
+      delete bodyRow.enum;
+    }
   }
 };
 

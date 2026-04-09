@@ -82,20 +82,28 @@
             >
               {{ typeList.find(item => item.value === row.type)?.label || '--' }}
             </div>
-            <BkSelect
+            <div
               v-else
-              v-model="row.type"
-              :clearable="false"
-              :filterable="false"
-              @change="() => handleTypeChange(row)"
+              class="h-full flex items-center"
             >
-              <BkOption
-                v-for="item in typeList"
-                :id="item.value"
-                :key="item.value"
-                :name="item.label"
+              <BkSelect
+                v-model="row.type"
+                :clearable="false"
+                :filterable="false"
+                @change="() => handleTypeChange(row)"
+              >
+                <BkOption
+                  v-for="item in typeList"
+                  :id="item.value"
+                  :key="item.value"
+                  :name="item.label"
+                />
+              </BkSelect>
+              <ParamsRowConfig
+                :row="row"
+                @change="(config) => handleConfigChange(row, config)"
               />
-            </BkSelect>
+            </div>
           </td>
           <!-- 字段备注 -->
           <td
@@ -157,11 +165,13 @@
 <script lang="ts" setup>
 import { uniqueId } from 'lodash-es';
 import { type JSONSchema7TypeName } from 'json-schema';
+import ParamsRowConfig, { type IConfig } from '../ParamsRowConfig.vue';
 
 interface ITableRow {
   id: string
   name: string
   type: JSONSchema7TypeName
+  enum?: any[]
   description: string
   properties?: ITableRow[]
 }
@@ -288,6 +298,19 @@ const setInvalidRowId = () => {
 
 const handleNameInput = (rowId: string) => {
   delete invalidRowIdMap.value[rowId];
+};
+
+const handleConfigChange = (row: ITableRow, config: IConfig) => {
+  const { enums } = config;
+  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  if (bodyRow) {
+    if (enums?.enabled && enums.values?.length) {
+      bodyRow.enum = enums.values;
+    }
+    else {
+      delete bodyRow.enum;
+    }
+  }
 };
 
 onMounted(() => {
