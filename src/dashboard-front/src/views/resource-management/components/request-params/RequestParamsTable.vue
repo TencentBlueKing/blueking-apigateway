@@ -83,20 +83,28 @@
             >
               {{ typeList.find(item => item.value === row.type)?.label || '--' }}
             </div>
-            <BkSelect
+            <div
               v-else
-              v-model="row.type"
-              :clearable="false"
-              :filterable="false"
-              @change="() => handleTypeChange(row)"
+              class="h-full flex items-center"
             >
-              <BkOption
-                v-for="item in typeList"
-                :id="item.value"
-                :key="item.value"
-                :name="item.label"
+              <BkSelect
+                v-model="row.type"
+                :clearable="false"
+                :filterable="false"
+                @change="() => handleTypeChange(row)"
+              >
+                <BkOption
+                  v-for="item in typeList"
+                  :id="item.value"
+                  :key="item.value"
+                  :name="item.label"
+                />
+              </BkSelect>
+              <ParamsRowConfig
+                :row="row"
+                @change="(config) => handleConfigChange(row, config)"
               />
-            </BkSelect>
+            </div>
           </td>
           <!-- 字段必填 -->
           <td class="table-body-row-cell required">
@@ -190,11 +198,13 @@
 
 <script lang="ts" setup>
 import { uniqueId } from 'lodash-es';
+import ParamsRowConfig, { type IConfig } from '../ParamsRowConfig.vue';
 
-interface IBodyRow {
+export interface IBodyRow {
   id: string
   name: string
   type: string
+  enum?: any[]
   required: boolean
   default: string
   description: string
@@ -282,6 +292,7 @@ const handleTypeChange = (row: IBodyRow) => {
     else {
       _row.body = [genBodyRow()];
     }
+    delete _row.enum;
   }
 };
 
@@ -311,6 +322,19 @@ const removeField = (row: IBodyRow) => {
   const index = tableData.value!.findIndex(data => data.id === row.id);
   if (index !== -1) {
     tableData.value!.splice(index, 1);
+  }
+};
+
+const handleConfigChange = (row: IBodyRow, config: IConfig) => {
+  const { enums } = config;
+  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  if (bodyRow) {
+    if (enums?.enabled && enums.values?.length) {
+      bodyRow.enum = enums.values;
+    }
+    else {
+      delete bodyRow.enum;
+    }
   }
 };
 
