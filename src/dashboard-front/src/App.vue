@@ -417,7 +417,8 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
 
   &.show-notice-wrapper {
 
-    .Home-navigation-content {
+    .Home-navigation-content,
+    .McpMarketDetails-navigation-content {
 
       :deep(.bk-navigation-wrapper) {
 
