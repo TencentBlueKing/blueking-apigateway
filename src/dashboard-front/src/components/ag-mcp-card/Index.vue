@@ -35,7 +35,7 @@
             </template>
           </AgDescription>
           <div
-            v-if="server?.oauth2_public_client_enabled"
+            v-if="isEnabledOAuth"
             v-bk-tooltips="oauth2Tooltip"
             class="external-oauth-tag bg-#e1ecff ml-8px"
           >
@@ -262,6 +262,9 @@ const emit = defineEmits<IEmits>();
 const featureFlagStore = useFeatureFlag();
 
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0);
+const isEnabledOAuth = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server?.oauth2_public_client_enabled,
+);
 const categoriesFilter = computed(() => server?.categories?.filter(cg => !['Official', 'Featured'].includes(cg.name)));
 
 const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
