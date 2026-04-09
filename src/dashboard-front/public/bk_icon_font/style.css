@@ -65,14 +65,23 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-delet:before {
 	content: "\e15d";
 }
+.icon-ag-up-fill:before {
+	content: "\e1fb";
+}
 .icon-ag-audit1-fill:before {
 	content: "\e1af";
 }
 .icon-ag-time:before {
 	content: "\e1ed";
 }
+.icon-ag-remind:before {
+	content: "\e211";
+}
 .icon-ag-danger-fill:before {
 	content: "\e181";
+}
+.icon-ag-down-fill:before {
+	content: "\e1fc";
 }
 .icon-ag-down:before {
 	content: "\e114";
@@ -208,6 +217,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-bukeyulan:before {
 	content: "\e143";
+}
+.icon-ag-settings:before {
+	content: "\e206";
 }
 .icon-ag-debug:before {
 	content: "\e132";
@@ -449,6 +461,9 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-jibenxinxi:before {
 	content: "\e177";
 }
+.icon-ag-user-circle:before {
+	content: "\e1fa";
+}
 .icon-ag-upload:before {
 	content: "\e186";
 }
@@ -655,4 +670,58 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-oauth2:before {
 	content: "\e1f9";
+}
+.icon-ag-plugin-bk-traffic-label:before {
+	content: "\e1fd";
+}
+.icon-ag-jiantou:before {
+	content: "\e1fe";
+}
+.icon-ag-filter:before {
+	content: "\e1ff";
+}
+.icon-ag-sousuo--1:before {
+	content: "\e200";
+}
+.icon-ag-mcp-2:before {
+	content: "\e203";
+}
+.icon-ag-http:before {
+	content: "\e204";
+}
+.icon-ag-tool:before {
+	content: "\e201";
+}
+.icon-ag-request:before {
+	content: "\e202";
+}
+.icon-ag-link-2:before {
+	content: "\e205";
+}
+.icon-ag-star:before {
+	content: "\e210";
+}
+.icon-ag-feedback-fankui:before {
+	content: "\e20a";
+}
+.icon-ag-log-rizhi:before {
+	content: "\e207";
+}
+.icon-ag-roboto:before {
+	content: "\e20b";
+}
+.icon-ag-kuawangguan:before {
+	content: "\e20c";
+}
+.icon-ag-cli:before {
+	content: "\e20e";
+}
+.icon-ag-cli-o:before {
+	content: "\e20f";
+}
+.icon-ag-lightning:before {
+	content: "\e208";
+}
+.icon-ag-tongbu:before {
+	content: "\e212";
 }
