@@ -50,11 +50,16 @@ export interface IMarketplaceItem {
   name: string
   description: string
   is_public: boolean
+  is_official: boolean
+  is_featured: boolean
   labels: string[]
   resource_names: string[]
+  tool_names: string[]
   status: number
   tools_count: number
+  prompts_count: number
   url: string
+  protocol_type: string
   stage: {
     id: number
     name: string
@@ -82,9 +87,24 @@ export interface ITool {
   }[]
 }
 
+export interface IPrompts {
+  id: number
+  name: string
+  code: string
+  content: string
+  updated_time: string
+  updated_by: string
+  labels: string[]
+  space_code: string
+  space_name: string
+  is_public: boolean
+}
+
 export interface IMarketplaceDetails extends IMarketplaceItem {
   guideline: string
+  oauth2_public_client_enabled: boolean
   tools: ITool[]
+  prompts?: IPrompts[]
   maintainers: string[]
 }
 

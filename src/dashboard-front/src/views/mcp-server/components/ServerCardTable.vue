@@ -94,7 +94,21 @@ const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('ta
 const tableData = ref<IMCPServer[]>([]);
 
 const apigwId = computed(() => gatewayStore.apigwId);
-const hiddenColumn = computed(() => (!featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT ? ['prompts_count'] : []));
+const isEnabledOAuth = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
+);
+
+// 需要隐藏的列
+const hiddenColumn = computed(() => {
+  const hidePromptsCount = featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
+  const hideOAuthClient = !isEnabledOAuth.value;
+
+  const hiddenColumns = [];
+  if (hidePromptsCount) hiddenColumns.push('prompts_count');
+  if (hideOAuthClient) hiddenColumns.push('oauth2_public_client_enabled');
+
+  return hiddenColumns;
+});
 
 const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
@@ -141,7 +155,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
           >
             {row.name}
           </div>
-          { row?.app_permission_risk?.has_risk
+          { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
             && (
               <Tag
                 theme="danger"

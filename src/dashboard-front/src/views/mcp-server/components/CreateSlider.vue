@@ -962,7 +962,9 @@ const noValidStage = computed(() => stageList.value.every(stage => stage.status 
 const isCurrentStageValid = computed(() =>
   stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
 // 处理工具oauth态
-const isEnabledOAuth = computed(() => formData.value.oauth2_public_client_enabled);
+const isEnabledOAuth = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && formData.value.oauth2_public_client_enabled,
+);
 // 选中的应用态工具数据
 const appAuthStatusList = computed(() => {
   if (!isEnabledOAuth.value) return [];

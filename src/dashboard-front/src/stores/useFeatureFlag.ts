@@ -43,6 +43,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ENABLE_RUN_DATA: false,
       ENABLE_RUN_DATA_METRICS: false,
       ENABLE_SDK: false,
+      ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT: false,
       GATEWAY_APP_BINDING_ENABLED: false,
       MENU_ITEM_ESB_API: false,
       MENU_ITEM_ESB_API_DOC: false,

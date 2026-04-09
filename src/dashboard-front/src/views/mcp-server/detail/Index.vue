@@ -26,7 +26,7 @@
       >
         <div class="flex status-tag">
           <div
-            v-if="server?.oauth2_public_client_enabled"
+            v-if="isEnabledOAuth"
             v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
             class="external-oauth-tag bg-#3a84ff cursor-pointer"
           >
@@ -303,6 +303,7 @@ const server = ref<MCPServerType>({
   name: '',
   description: '',
   is_public: false,
+  oauth2_public_client_enabled: false,
   labels: [],
   resource_names: [],
   tools_count: 0,
@@ -323,6 +324,9 @@ const editingServerId = ref<number>();
 
 const isShowConfig = computed(() => ['guide'].includes(active.value) && mcpConfigList.value.length > 0);
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
+const isEnabledOAuth = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server.value?.oauth2_public_client_enabled,
+);
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
     panels.value = panels.value.filter(item => !['prompts'].includes(item.name));

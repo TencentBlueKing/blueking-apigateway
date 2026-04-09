@@ -17,7 +17,10 @@
  */
 
 <template>
-  <div class="flex items-center justify-between oauth-switch-wrapper">
+  <div
+    v-show="featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT"
+    class="flex items-center justify-between oauth-switch-wrapper"
+  >
     <div class="flex items-center">
       <AgIcon
         name="oauth2"
@@ -43,6 +46,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
+import { useFeatureFlag } from '@/stores';
 import type { IMCPFormData } from '@/services/source/mcp-server';
 
 const formData = defineModel<IMCPFormData>('formData', {
@@ -51,6 +55,8 @@ const formData = defineModel<IMCPFormData>('formData', {
 });
 
 const emit = defineEmits<{ oauthChange: [value: boolean] }>();
+
+const featureFlagStore = useFeatureFlag();
 
 const handleOAuthChange = (value: boolean) => {
   emit('oauthChange', value);
