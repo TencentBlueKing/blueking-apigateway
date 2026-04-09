@@ -124,7 +124,7 @@
           </template>
           <template v-else>
             <AgMcpCard
-              v-for="server in mcpList"
+              v-for="server of mcpList"
               :key="server.id"
               :server="server"
               :oauth2-tooltip="t('OAuth2 公开客户端已开启')"
@@ -148,7 +148,7 @@
                 </div>
               </template>
               <template
-                v-if="server?.oauth2_public_client_enabled"
+                v-if="server?.oauth2_public_client_enabled && isEnabledOAuth"
                 #externalTag
               >
                 <div
@@ -315,6 +315,9 @@ const mcpViewList = shallowRef([
 ]);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
+const isEnabledOAuth = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
+);
 const isTableView = computed(() => activeViewTab.value.includes('table'));
 
 const renderRiskToolToolTip = (row: IMCPServer) => {
