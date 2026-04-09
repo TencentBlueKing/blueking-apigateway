@@ -41,6 +41,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: 'cli',
+    name: 'PlatformToolsCLI',
+    component: () => import('@/views/platform-tools/cli/Index.vue'),
+    meta: {
+      title: t('CLI 工具'),
+      matchRoute: 'PlatformToolsCLI',
+      topMenu: 'PlatformTools',
+    },
+  },
+  {
     path: 'programmable-gateway',
     name: 'PlatformToolsProgrammableGateway',
     component: () => import('@/views/platform-tools/programmable-gateway/Index.vue'),
