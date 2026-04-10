@@ -157,8 +157,8 @@ def _http_request(
         # record for /metrics
         latency = int((time.time() - st) * 1000)
 
-        # greater than 100ms
-        if latency > 100:
+        # greater than 200ms
+        if latency > 200:
             logger.warning(
                 "http slow request! %s %s, request_id: %s, latency: %dms",
                 method,
