@@ -82,6 +82,9 @@ const tableComponentMap: { [key: string]: Component } = {
   'bk-ip-restriction': ConfigDisplayTableIpRestriction,
   'bk-status-rewrite': ConfigDisplayTableStatusRewrite,
   'bk-username-required': ConfigDisplayTableStatusRewrite,
+  'bk-oauth2-verify': ConfigDisplayTableStatusRewrite,
+  'bk-oauth2-protected-resource': ConfigDisplayTableStatusRewrite,
+  'bk-oauth2-audience-validate': ConfigDisplayTableStatusRewrite,
   'bk-traffic-label': ConfigDisplayTableBkTrafficLabel,
 };
 
