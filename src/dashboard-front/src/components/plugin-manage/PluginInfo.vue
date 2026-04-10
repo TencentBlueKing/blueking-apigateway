@@ -502,6 +502,9 @@ const handleAdd = async () => {
       'bk-status-rewrite',
       'bk-username-required',
       'bk-legacy-invalid-params',
+      'bk-oauth2-verify',
+      'bk-oauth2-protected-resource',
+      'bk-oauth2-audience-validate',
     ].includes(choosePlugin.value)) {
       Object.assign(data, { yaml: '{}' });
     }

@@ -84,7 +84,10 @@
               >
                 {{ t('权限申请') }}
               </span>：
-              {{ (api.allow_apply_permission || api.component_permission_required) ? t('是') : t('否') }}
+              {{ api.verified_app_required ?
+                ((api.allow_apply_permission || api.component_permission_required) ? t('是') : t('否'))
+                : t('否')
+              }}
             </span>
           </section>
           <section class="basic-cell">
