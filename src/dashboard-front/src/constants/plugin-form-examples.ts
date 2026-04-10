@@ -22,6 +22,9 @@ export const PLUGIN_FORM_EXAMPLE_MAP: { [pluginCode: string]: string } = {
   'bk-status-rewrite': '',
   'bk-legacy-invalid-params': '',
   'bk-username-required': '',
+  'bk-oauth2-verify': '',
+  'bk-oauth2-protected-resource': '',
+  'bk-oauth2-audience-validate': '',
 };
 
 export default PLUGIN_FORM_EXAMPLE_MAP;
