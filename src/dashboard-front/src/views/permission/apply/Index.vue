@@ -17,6 +17,7 @@
  */
 <template>
   <CustomHeader />
+
   <div class="permission-apply-container page-wrapper-padding">
     <div class="flex justify-between header">
       <BkButton
