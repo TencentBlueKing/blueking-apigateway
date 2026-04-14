@@ -232,6 +232,7 @@ def get_frontend_env_vars(
     bk_apigateway_version: str,
     bk_docs_url_prefix: str,
     bk_login_url: str,
+    bk_sdk_languages: list,
 ) -> dict:
     return {
         "EDITION": edition,
@@ -261,6 +262,7 @@ def get_frontend_env_vars(
             "href": env.str("HELPER_HREF", default=""),
         },
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
+        "BK_SDK_LANGUAGES": bk_sdk_languages,
     }
 
 
