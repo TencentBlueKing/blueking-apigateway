@@ -863,8 +863,8 @@ if ENABLE_RUN_DATA_METRICS:
 BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs")
 BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 
-# SDK 支持的语言列表，先隐藏 Go SDK 生成
-BK_SDK_LANGUAGES = env.list("BK_SDK_LANGUAGES", default=["python", "java"])
+# SDK 支持的语言列表
+BK_SDK_LANGUAGES = env.list("BK_SDK_LANGUAGES", default=["python", "golang", "java"])
 
 ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     env,
