@@ -862,6 +862,10 @@ if ENABLE_RUN_DATA_METRICS:
 # 后续前端环境变量尽量走这个接口，而不是通过 src/dashboard-front/index.html + src/constant/config.ts 传入
 BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.com/docs")
 BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
+
+# SDK 支持的语言列表
+BK_SDK_LANGUAGES = env.list("BK_SDK_LANGUAGES", default=["python", "golang", "java"])
+
 ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     env,
     edition=EDITION,
@@ -876,6 +880,7 @@ ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     bk_apigateway_version=BK_APIGATEWAY_VERSION,
     bk_docs_url_prefix=BK_DOCS_URL_PREFIX,
     bk_login_url=BK_LOGIN_URL,
+    bk_sdk_languages=BK_SDK_LANGUAGES,
 )
 
 
