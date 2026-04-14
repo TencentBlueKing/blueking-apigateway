@@ -114,7 +114,7 @@ func GetAuditLoggerWithContext(ctx context.Context) *zap.Logger {
 		ctxLogger = ctxLogger.With(zap.String("trace_id", traceID))
 	}
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
-		ctxLogger = ctxLogger.With(zap.String("bk_app_code", appCode))
+		ctxLogger = ctxLogger.With(zap.String("app_code", appCode))
 	}
 	if username, ok := ctx.Value(constant.BkUsername).(string); ok && username != "" {
 		ctxLogger = ctxLogger.With(zap.String("bk_username", username))

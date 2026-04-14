@@ -19,6 +19,7 @@
 from django.urls import include, path
 
 from .views import (
+    MCPServerAppPermissionAppCodeListApi,
     MCPServerAppPermissionApplyApplicantListApi,
     MCPServerAppPermissionApplyListApi,
     MCPServerAppPermissionApplyUpdateStatusApi,
@@ -44,6 +45,12 @@ urlpatterns = [
     path("", MCPServerListCreateApi.as_view(), name="mcp_server.list_create"),
     path("-/categories/", MCPServerCategoriesListApi.as_view(), name="mcp_server.categories_list"),
     path("-/filter-options/", MCPServerFilterOptionsApi.as_view(), name="mcp_server.filter_options"),
+    # 有权限的 bk_app_code 列表（网关级别）
+    path(
+        "-/app-permission-app-codes/",
+        MCPServerAppPermissionAppCodeListApi.as_view(),
+        name="mcp_server.app-permission.app_code_list",
+    ),
     # 授权审批列表（网关级别，支持按 mcp_server_id 筛选）
     path(
         "-/app-permission-apply/",

@@ -55,6 +55,8 @@ from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from .serializers import (
+    MCPServerAppPermissionAppCodeListInputSLZ,
+    MCPServerAppPermissionAppCodeListOutputSLZ,
     MCPServerAppPermissionApplyListInputSLZ,
     MCPServerAppPermissionApplyListOutputSLZ,
     MCPServerAppPermissionApplyUpdateInputSLZ,
@@ -979,3 +981,34 @@ class MCPServerFilterOptionsApi(generics.ListAPIView):
                 "categories": categories,
             }
         )
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取有 MCPServer 调用权限的 bk_app_code 列表（网关级别），用于前端下拉列表",
+        query_serializer=MCPServerAppPermissionAppCodeListInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerAppPermissionAppCodeListOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
+    """获取有 MCPServer 调用权限的 bk_app_code 列表（网关级别）"""
+
+    def list(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionAppCodeListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        mcp_server_id = slz.validated_data.get("mcp_server_id")
+
+        # 构建查询条件
+        queryset = MCPServerAppPermission.objects.filter(mcp_server__gateway=request.gateway)
+
+        # 如果传入了 mcp_server_id，则只查询该 MCPServer 的授权应用
+        if mcp_server_id:
+            queryset = queryset.filter(mcp_server_id=mcp_server_id)
+
+        # 获取唯一的 bk_app_code 列表
+        bk_app_codes = queryset.values_list("bk_app_code", flat=True).distinct().order_by("bk_app_code")
+
+        return OKJsonResponse(data={"bk_app_codes": list(bk_app_codes)})

@@ -28,11 +28,16 @@ import (
 var _ = Describe("Metric", func() {
 	Describe("InitMetrics", func() {
 		It("should initialize metrics without panic", func() {
-			metric.InitMetrics()
+			metric.InitMetrics("bk_apigateway_")
 		})
 	})
 
 	Describe("MCP Protocol Metrics", func() {
+		BeforeEach(func() {
+			// Metrics are already initialized by the test above via MustRegister,
+			// just verify they are not nil.
+		})
+
 		It("MCPRequestTotal should be valid", func() {
 			Expect(metric.MCPRequestTotal).NotTo(BeNil())
 		})

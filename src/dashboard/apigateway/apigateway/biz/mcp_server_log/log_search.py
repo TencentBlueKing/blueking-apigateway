@@ -26,34 +26,49 @@ from apigateway.service.es.clients import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
-from .constants import ES_OUTPUT_FIELDS
+from .constants import MCP_SERVER_LOG_OUTPUT_FIELDS
 
 logger = logging.getLogger(__name__)
 
 
-class LogSearchClient:
-    _es_index: str = settings.ACCESS_LOG_CONFIG["es_index"]
-    _es_time_field_name: str = settings.ACCESS_LOG_CONFIG["es_time_field_name"]
+class MCPServerLogSearchClient:
+    """MCP Server 日志搜索客户端
+
+    查询 mcp-proxy LoggingMiddleware 输出到 ES 的访问日志。
+    """
+
+    _es_index: str = settings.MCP_SERVER_ACCESS_LOG_CONFIG["es_index"]
+    _es_time_field_name: str = settings.MCP_SERVER_ACCESS_LOG_CONFIG["es_time_field_name"]
 
     def __init__(
         self,
-        gateway_id: Optional[int] = None,
-        stage_name: Optional[str] = None,
-        resource_id: Optional[int] = None,
+        gateway_name: Optional[str] = None,
+        mcp_server_name: Optional[str] = None,
+        mcp_method: Optional[str] = None,
+        tool_name: Optional[str] = None,
+        prompt_name: Optional[str] = None,
+        app_code: Optional[str] = None,
         request_id: Optional[str] = None,
+        x_request_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        status: Optional[str] = None,
         query: Optional[str] = None,
-        backend_name: Optional[str] = None,
         include_conditions: Optional[List[Tuple[str, str]]] = None,
         exclude_conditions: Optional[List[Tuple[str, str]]] = None,
         time_start: Optional[int] = None,
         time_end: Optional[int] = None,
         time_range: Optional[int] = None,
     ):
-        self._gateway_id = gateway_id
-        self._stage_name = stage_name
-        self._backend_name = backend_name
-        self._resource_id = resource_id
+        self._gateway_name = gateway_name
+        self._mcp_server_name = mcp_server_name
+        self._mcp_method = mcp_method
+        self._tool_name = tool_name
+        self._prompt_name = prompt_name
+        self._app_code = app_code
         self._request_id = request_id
+        self._x_request_id = x_request_id
+        self._session_id = session_id
+        self._status = status
         self._query_string = query
         self._include_conditions = include_conditions
         self._exclude_conditions = exclude_conditions
@@ -70,49 +85,58 @@ class LogSearchClient:
         self._es_client = BKLogESClient(self._es_index)
 
     def search_logs(self, offset: int = 0, limit: Optional[int] = None) -> Tuple[int, List[Dict]]:
-        """
-        查询日志列表
-
-        :param offset: 偏移量
-        :param limit: 查询数据量，limit 为 None 表示 offset 偏移量后的全部数据
-        """
+        """查询 MCP Server 日志列表"""
         s = self._build_logs_search(offset=offset, limit=limit, order=True)
         data = self._es_client.execute_search(s.to_dict())
         hits = data["hits"]
         return hits["total"], [self._to_log_display(hit) for hit in hits["hits"]]
 
     def get_time_chart(self) -> Dict:
-        """
-        查询请求量图例
-
-        :return: series 为时间点对应的数据个数，timeline 为时间点对应的时间戳
-            {
-                "series": [3, 5, 20],
-                "timeline": [1690330800, 1690330860, 1690330920]
-            }
-        """
+        """查询请求量时间分布图"""
         s = self._build_date_histogram_search()
         data = self._es_client.execute_search(s.to_dict())
         return self._convert_histogram_buckets(data.get("aggregations", {}))
 
-    def _build_base_search(self, order: Optional[bool] = None) -> Search:  # noqa
+    def _build_base_search(self, order: Optional[bool] = None) -> Search:
         s = Search()
 
-        if self._gateway_id:
-            s = s.filter("term", api_id=self._gateway_id)
+        # mcp-proxy 的 HTTP 层日志和 MCP 协议层日志共用同一个 ES index，
+        # 通过 exists 过滤只查询 MCP 协议层日志（仅该层包含 mcp_method 字段）
+        s = s.filter("exists", field="mcp_method")
 
-        if self._stage_name:
-            s = s.filter("term", stage=self._stage_name)
+        s = self._apply_term_filters(s)
+        s = self._apply_conditions(s)
+        s = self._apply_time_range(s)
 
-        if self._backend_name:
-            s = s.filter("term", backend_name=self._backend_name)
+        if order:
+            s = s.sort({self._es_time_field_name: {"order": "desc"}})
 
-        if self._resource_id:
-            s = s.filter("term", resource_id=self._resource_id)
+        if self._query_string:
+            s = s.query("query_string", query=self._query_string)
 
-        if self._request_id:
-            s = s.filter("term", request_id=self._request_id)
+        return s
 
+    def _apply_term_filters(self, s: Search) -> Search:
+        """Apply term filters for MCP-specific fields."""
+        term_fields = {
+            "gateway_name": self._gateway_name,
+            "mcp_server_name": self._mcp_server_name,
+            "mcp_method": self._mcp_method,
+            "tool_name": self._tool_name,
+            "prompt_name": self._prompt_name,
+            "app_code": self._app_code,
+            "request_id": self._request_id,
+            "x_request_id": self._x_request_id,
+            "session_id": self._session_id,
+            "status": self._status,
+        }
+        for field, value in term_fields.items():
+            if value:
+                s = s.filter("term", **{field: value})
+        return s
+
+    def _apply_conditions(self, s: Search) -> Search:
+        """Apply include/exclude conditions."""
         if self._include_conditions:
             for key, val in self._include_conditions:
                 s = s.filter("term", **{key: val})
@@ -121,7 +145,10 @@ class LogSearchClient:
             for key, val in self._exclude_conditions:
                 s = s.exclude("term", **{key: val})
 
-        # time range
+        return s
+
+    def _apply_time_range(self, s: Search) -> Search:
+        """Apply time range filter."""
         if self._smart_time_range:
             time_start, time_end = self._smart_time_range.get_head_and_tail()
             s = s.filter(
@@ -133,19 +160,11 @@ class LogSearchClient:
                     }
                 },
             )
-
-        if order:
-            s = s.sort({self._es_time_field_name: {"order": "desc"}})
-
-        if self._query_string:
-            # 不能添加 fields 参数，如果 fields 中包含整数字段，查询会失败
-            s = s.query("query_string", query=self._query_string)
-
         return s
 
     def _build_logs_search(self, offset: int = 0, limit: Optional[int] = None, order: Optional[bool] = None) -> Search:
         s = self._build_base_search(order=order)
-        s = s.source(fields=ES_OUTPUT_FIELDS)
+        s = s.source(fields=MCP_SERVER_LOG_OUTPUT_FIELDS)
         if limit is None:
             return s[offset:]
         return s[offset : offset + limit]
@@ -159,7 +178,6 @@ class LogSearchClient:
             "date_histogram",
             field=self._es_time_field_name,
             fixed_interval=self._smart_time_range.get_interval(),
-            # min_doc_count=0，extended_bounds 强制返回空数据，时间间隔内缺少数据时，则自动补充 0，使存在空数据时，图例时间范围完整
             min_doc_count=0,
             extended_bounds={
                 "min": time_utils.convert_second_to_epoch_millisecond(start),
@@ -186,19 +204,5 @@ class LogSearchClient:
 
     def _to_log_display(self, hit: Dict) -> Dict:
         log = hit["_source"]
-        # 从 ES 排序结果获取时间戳（排序字段为 dtEventTimeStamp）
-        # hit["sort"] 在 order=True 时总是存在
-        sort = hit.get("sort")
-        logger.info(
-            "LogSearchClient._to_log_display: hit_id=%s, sort=%s, is_list=%s, len=%s",
-            hit.get("_id"),
-            sort,
-            isinstance(sort, list),
-            len(sort) if isinstance(sort, list) else "N/A",
-        )
-        if sort and len(sort) > 0:
-            log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(sort[0])
-            logger.info("LogSearchClient._to_log_display: added timestamp=%s to log", log.get("timestamp"))
-        else:
-            logger.warning("LogSearchClient._to_log_display: sort field is missing or empty!")
+        log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
         return log

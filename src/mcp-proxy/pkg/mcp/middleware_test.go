@@ -97,6 +97,23 @@ var _ = Describe("Middleware", func() {
 			Expect(result).NotTo(BeNil())
 		})
 
+		It("should recover from panic and return error", func() {
+			middleware := mcppkg.LoggingMiddleware(serverName)
+
+			panicHandler := middleware(
+				func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+					panic("intentional test panic")
+				},
+			)
+
+			// The handler should not panic, but return an error instead
+			// Note: Using "tools/list" instead of "tools/call" because "tools/call" is skipped
+			result, err := panicHandler(ctx, "tools/list", nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("panic: intentional test panic"))
+			Expect(result).To(BeNil())
+		})
+
 		It("should enrich client_id from session's InitializeParams.ClientInfo", func() {
 			// Create an MCP server with a tool and our LoggingMiddleware
 			server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test-server", Version: "1.0.0"}, nil)
@@ -156,7 +173,7 @@ var _ = Describe("Middleware", func() {
 		It("should record MCPRequestTotal on successful call", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "0", "0")
+			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "", "0", "0")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return successResult, nil
@@ -165,29 +182,45 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "initialize", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "0", "0")
+			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "initialize", "", "0", "0")
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
 		It("should record MCPRequestTotal with error status on failure", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "unknown", "1")
+			before := getCounterValue(
+				metric.MCPRequestTotal,
+				gatewayName,
+				serverName,
+				"resources/list",
+				"",
+				"unknown",
+				"1",
+			)
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return nil, errors.New("test error")
 			})
 
-			_, _ = handler(ctx, "tools/call", nil)
+			_, _ = handler(ctx, "resources/list", nil)
 
-			after := getCounterValue(metric.MCPRequestTotal, gatewayName, serverName, "tools/call", "unknown", "1")
+			after := getCounterValue(
+				metric.MCPRequestTotal,
+				gatewayName,
+				serverName,
+				"resources/list",
+				"",
+				"unknown",
+				"1",
+			)
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
 		It("should record MCPRequestDuration", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getHistogramCount(metric.MCPRequestDuration, gatewayName, serverName, "tools/list")
+			before := getHistogramCount(metric.MCPRequestDuration, gatewayName, serverName, "tools/list", "")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return successResult, nil
@@ -196,14 +229,14 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "tools/list", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getHistogramCount(metric.MCPRequestDuration, gatewayName, serverName, "tools/list")
+			after := getHistogramCount(metric.MCPRequestDuration, gatewayName, serverName, "tools/list", "")
 			Expect(after - before).To(Equal(uint64(1)))
 		})
 
 		It("should record MCPSessionTotal on successful initialize", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return successResult, nil
@@ -212,7 +245,7 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "initialize", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
@@ -234,7 +267,14 @@ var _ = Describe("Middleware", func() {
 		It("should record MCPErrorTotal with normalized jsonrpc error code", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "tools/call", "method_not_found")
+			before := getCounterValue(
+				metric.MCPErrorTotal,
+				gatewayName,
+				serverName,
+				"resources/list",
+				"",
+				"method_not_found",
+			)
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return nil, &jsonrpc.Error{
@@ -243,24 +283,31 @@ var _ = Describe("Middleware", func() {
 				}
 			})
 
-			_, _ = handler(ctx, "tools/call", nil)
+			_, _ = handler(ctx, "resources/list", nil)
 
-			after := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "tools/call", "method_not_found")
+			after := getCounterValue(
+				metric.MCPErrorTotal,
+				gatewayName,
+				serverName,
+				"resources/list",
+				"",
+				"method_not_found",
+			)
 			Expect(after - before).To(Equal(float64(1)))
 		})
 
 		It("should record MCPErrorTotal with unknown error code for non-jsonrpc error", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "tools/call", "unknown")
+			before := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "resources/list", "", "unknown")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return nil, errors.New("some error")
 			})
 
-			_, _ = handler(ctx, "tools/call", nil)
+			_, _ = handler(ctx, "resources/list", nil)
 
-			after := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "tools/call", "unknown")
+			after := getCounterValue(metric.MCPErrorTotal, gatewayName, serverName, "resources/list", "", "unknown")
 			Expect(after - before).To(Equal(float64(1)))
 		})
 	})
@@ -268,8 +315,8 @@ var _ = Describe("Middleware", func() {
 	Describe("SessionMetricMiddleware", func() {
 		It("should decrement MCPSessionTotal on notifications/cancelled", func() {
 			// First, set an initial value
-			metric.MCPSessionTotal.WithLabelValues(gatewayName, serverName).Inc()
-			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			metric.MCPSessionTotal.WithLabelValues(gatewayName, serverName, "").Inc()
+			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 
 			middleware := mcppkg.SessionMetricMiddleware(serverName)
 
@@ -280,12 +327,12 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "notifications/cancelled", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 			Expect(before - after).To(Equal(float64(1)))
 		})
 
 		It("should not decrement MCPSessionTotal for other methods", func() {
-			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 
 			middleware := mcppkg.SessionMetricMiddleware(serverName)
 
@@ -296,7 +343,7 @@ var _ = Describe("Middleware", func() {
 			_, err := handler(ctx, "tools/list", nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 			Expect(after).To(Equal(before))
 		})
 	})
