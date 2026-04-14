@@ -507,6 +507,7 @@ const toolFilterData = ref({});
 const promptLabels = ref([]);
 const filterPromptValues = ref([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
+const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
 
 const customMethodsList = computed(() => {
   const methods = HTTP_METHODS.map(item => ({
@@ -635,7 +636,6 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                       e?.stopPropagation();
                       handleEditToolName(row);
                     }}
-                    v-clickOutSide={(e: MouseEvent) => handleClickOutSide(e)}
                   />
                 ),
                 content: () => (
@@ -958,7 +958,7 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
 const escapedCodeContent = computed(() => {
   return escape(curPromptData.value?.content ?? '');
 });
-const noValidStage = computed(() => stageList.value.every(stage => stage.status === 0));
+const noValidStage = computed(() => stageList.value.length > 0 && stageList.value.every(stage => stage.status === 0));
 const isCurrentStageValid = computed(() =>
   stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
 // 处理工具oauth态
@@ -1001,7 +1001,7 @@ const renderPreviewViewWidth = () => {
  */
 const fetchCommonData = async (isEnablePrompt: boolean) => {
   // 定义基础请求列表
-  const requestList = isEditMode.value ? [fetchCategoryList()] : [fetchStageList(), fetchCategoryList()];
+  const requestList = isEditMode.value ? [] : [fetchStageList(), fetchCategoryList()];
   // 启用 Prompt 时，追加 Prompt 资源请求
   if (isEnablePrompt) {
     requestList.push(fetchPromptResources());
@@ -1012,16 +1012,18 @@ const fetchCommonData = async (isEnablePrompt: boolean) => {
       item => !['prompt'].includes(item.value),
     );
   }
-  const results = await Promise.allSettled(requestList);
-  // 处理单个请求的失败情况
-  results.forEach((result) => {
-    if (result.status === 'rejected') {
-      Message({
-        theme: 'error',
-        message: JSON.stringify(result?.reason?.stack),
-      });
-    }
-  });
+  if (requestList.length) {
+    const results = await Promise.allSettled(requestList);
+    // 处理单个请求的失败情况
+    results.forEach((result) => {
+      if (result.status === 'rejected') {
+        Message({
+          theme: 'error',
+          message: JSON.stringify(result?.reason?.stack),
+        });
+      }
+    });
+  }
 };
 
 // 获取常用环境列表 分类列表数据，设置默认初始化表单
@@ -1045,6 +1047,8 @@ const handleIsShowChange = async (isShowVal: boolean) => {
 
   clearValidate();
   if (isEditMode.value) {
+    // 需要优先获取分类列表，再从列表筛选不需要展示的分类
+    await fetchCategoryList();
     await fetchServer();
   }
   getCommonListData();
@@ -1211,13 +1215,17 @@ const handleSubmit = async () => {
 
   try {
     submitLoading.value = true;
+    let categoryIds = categoriesList.value
+      .filter(cg => formData.value.categories.includes(cg.name))
+      .map(cname => cname.id);
+    if (hiddenCategoriesList.value.length) {
+      categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map(item => item.id)];
+    }
     let params = {
       resource_names: toolSelections.value.map(item => item.name),
       tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
-      category_ids: categoriesList.value.filter(cg =>
-        formData.value.categories.includes(cg.name))
-        .map(cname => cname.id),
+      category_ids: categoryIds,
     };
     if (isEditMode.value) {
       const {
@@ -1484,6 +1492,8 @@ const fetchServer = async () => {
       protocol_type,
       categories: categories.map(item => item.name || ''),
     };
+    // 获取已存在但不需要显示在页面上的分类
+    hiddenCategoriesList.value = categories.filter(item => !categoriesList.value.map(v => v.name).includes(item.name));
 
     try {
       await fetchStageList();
@@ -1682,13 +1692,6 @@ const handleCancelToolName = () => {
   toolNameRowData.value = {};
 };
 
-const handleClickOutSide = (e: MouseEvent) => {
-  const cell = (e.target as HTMLElement).closest('.tool-name-edit-icon');
-  if (!cell) {
-    handleCancelToolName();
-  }
-};
-
 /**
  * 设置搜索loading状态
  * @param isLoading - 是否显示loading
@@ -1818,6 +1821,8 @@ const resetSliderData = () => {
   promptSelections.value = [];
   allSelections.value = [];
   noPermPrompt.value = [];
+  categoriesList.value = [];
+  hiddenCategoriesList.value = [];
   filterKeyword.value = '';
   activeTab.value = 'tool';
   curPromptData.value = {};
