@@ -71,6 +71,9 @@ class BaseMetrics(BasePrometheusMetrics):
             gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
 
+        if not promql:
+            return {"series": []}
+
         # request prometheus http api to get metrics data
         return query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
@@ -96,6 +99,10 @@ class BaseMetrics(BasePrometheusMetrics):
         promql = self._get_query_promql(
             gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
+
+        if not promql:
+            return {"instant": 0}
+
         result: Dict[str, Any] = {}
         data = query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
@@ -333,7 +340,10 @@ class IngressMetrics(BaseMetrics):
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         # 查询 backend_id
-        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
+        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
+        if not backend:
+            return ""
+
         label_list = [
             *self.default_labels,
             ("type", "=", "ingress"),
@@ -365,7 +375,10 @@ class EgressMetrics(BaseMetrics):
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         # 查询 backend_id
-        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
+        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
+        if not backend:
+            return ""
+
         label_list = [
             *self.default_labels,
             ("type", "=", "egress"),
