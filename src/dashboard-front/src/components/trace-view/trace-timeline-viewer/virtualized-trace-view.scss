@@ -1,0 +1,31 @@
+$trace-row-border-color: #dcdee5;
+
+.virtualized-trace-view-spans {
+  position: relative;
+  padding-top: 32px;
+}
+
+.virtualized-trace-view-rows-wrapper {
+  width: 100%;
+}
+
+.virtualized-trace-view-row {
+  width: 100%;
+  box-sizing: content-box !important;
+
+  // 右侧竖线
+  &::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    content: '';
+    width: 1px;
+    height: calc(100% + 1px);
+    background-color: $trace-row-border-color;
+  }
+
+  // 最后一行底部横线
+  &:last-child {
+    border-bottom: 1px solid $trace-row-border-color;
+  }
+}

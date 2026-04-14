@@ -1,0 +1,10 @@
+.span-tree-offset {
+  color: #313238;
+  position: relative;
+
+
+  &.is-parent {
+    cursor: pointer;
+  }
+}
+

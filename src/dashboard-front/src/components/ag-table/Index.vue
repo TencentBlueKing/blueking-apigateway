@@ -37,7 +37,7 @@
       :hover="false"
       :bordered="bordered"
       :table-layout="tableLayout"
-      :row-key="tableRowKey"
+      :row-key="isExistUniqueKey ? tableRowKey : 'tempUniqueId'"
       :max-height="clientHeight"
       :bk-ui-settings="tableSetting"
       v-bind="$attrs"
@@ -84,6 +84,15 @@
       >
         <slot
           name="expandedRow"
+          v-bind="slotProps"
+        />
+      </template>
+      <template
+        v-if="slots.cellEmptyContent"
+        #cellEmptyContent="slotProps"
+      >
+        <slot
+          name="cellEmptyContent"
           v-bind="slotProps"
         />
       </template>
@@ -137,6 +146,7 @@ interface IProps {
   showSelection?: boolean
   showSettings?: boolean
   showPagination?: boolean
+  isExistUniqueKey?: boolean
   bordered?: string | boolean
   tableLayout?: string
   tableEmptyType?: 'empty' | 'search-empty'
@@ -176,6 +186,8 @@ const {
   showPagination = true,
   // 展示外边框
   bordered = false,
+  // 表格是否存在唯一标识
+  isExistUniqueKey = true,
   // 默认不显示的表格列
   hiddenColumn = [],
 } = defineProps<IProps>();
@@ -314,10 +326,11 @@ const selectionColumns = computed(() => [{
   },
   cell: (h, { row }) => {
     const isDisabled = disabledSelected.value || disabledCheckSelection?.(row);
-    row.isCustomCheck = selections.value.map(item => item[tableRowKey]).includes(row[tableRowKey]);
+    const isChecked = selections.value.map(item => item[tableRowKey]).includes(row[tableRowKey]);
+
     return (
       <Checkbox
-        v-model={row.isCustomCheck}
+        modelValue={isChecked}
         v-bk-tooltips={{
           content: row.selectionTip ?? '',
           disabled: typeof disabledCheckSelection === 'undefined' ? true : !disabledCheckSelection?.(row),
@@ -340,15 +353,7 @@ const selectionColumns = computed(() => [{
             selectionTable.some(item => item[tableRowKey] === id),
           );
           isAllSelection.value = checkedIds.length > 0 && checkedIds.length === selectionTable.length;
-          tableData.value = tableData.value.map((item) => {
-            if (!disabledCheckSelection?.(item) && item[tableRowKey] === row[tableRowKey]) {
-              return {
-                ...item,
-                isCustomCheck: isCheck,
-              };
-            }
-            return item;
-          });
+
           emit('selection-change', {
             selectionsRowKeys: checkedIds,
             selections: selections.value,
@@ -394,7 +399,16 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
     results: any[]
     count: number
   }) => {
-    const results = response?.results ?? [];
+    let results = response?.results ?? [];
+    // 如果表格不存在唯一标识，自动生成随机rowKey
+    if (!isExistUniqueKey && results.length > 0) {
+      results = results.map((item, index) => {
+        return {
+          ...item,
+          tempUniqueId: `row_${item[tableRowKey]}_${index}_${Math.random().toString(36).slice(2)}`,
+        };
+      });
+    }
     paramsData.value = { ...params.value?.[0] };
     pagination.value!.total = response?.count ?? 0;
     tableData.value = cloneDeep(results);
@@ -490,13 +504,7 @@ const renderSelectionData = (selectList?: any[]) => {
     const checkedIds = selectionTable
       .filter(item => checkTableData.includes(item[tableRowKey]))
       .map(check => check[tableRowKey]);
-    isAllSelection.value
-      = selectionTable.filter(item => checkedIds.includes(item[tableRowKey])).length === selectionTable.length;
-    tableData.value.forEach((item) => {
-      if (!disabledCheckSelection?.(item)) {
-        item.isCustomCheck = checkedIds.includes(item[tableRowKey]);
-      }
-    });
+    isAllSelection.value = checkedIds.length === selectionTable.length;
   }
   else {
     isAllSelection.value = false;
@@ -680,9 +688,6 @@ const resetPaginationTheme = () => {
 
 const handleResetSelection = () => {
   isAllSelection.value = false;
-  localTableData.value.forEach((item) => {
-    item.isCustomCheck = false;
-  });
   resetSelections();
   selectedRowKeys.value = [];
   emit('clear-selection');

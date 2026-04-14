@@ -52,15 +52,17 @@ import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 
 interface IProps {
-  emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'refresh'
+  emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'error'
   error?: Record<string, any> | null
   queryListParams?: any[]
   background?: string
+  description?: string
 }
 
 const {
   emptyType = 'empty',
   background = '#ffffff',
+  description = '',
   error = null,
   queryListParams = [],
 } = defineProps<IProps>();
@@ -90,12 +92,14 @@ const exceptionAttrs = computed(() => {
     return {
       type: 'search-empty',
       title: t('搜索结果为空'),
+      description,
     };
   }
 
   return {
     type: 'empty',
     title: t('暂无数据'),
+    description,
   };
 });
 

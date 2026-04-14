@@ -174,7 +174,7 @@
                     <TableEmpty
                       :keyword="tableEmptyConf.keyword"
                       :abnormal="tableEmptyConf.isAbnormal"
-                      @reacquire="getSearchData"
+                      @refresh="getSearchData"
                       @clear-filter="handleClearFilterKey"
                     />
                   </slot>
@@ -638,7 +638,7 @@ const renderChart = (data: Record<string, any>) => {
       padding: [6, 10],
       extraCssText: 'box-shadow: 0 0 12px 4px #31323826;',
       formatter(params: any) {
-        return `${params.name}<br />请求数: ${formatterValue(params)}`;
+        return `${params.name}<br />${t('请求数')}: ${formatterValue(params)}`;
       },
     },
     toolbox: {

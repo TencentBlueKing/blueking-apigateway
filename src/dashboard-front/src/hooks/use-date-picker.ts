@@ -34,49 +34,83 @@ export const useDatePicker = (filterData?: any) => {
   const route = useRoute();
   const accessLogStore = useAccessLog();
 
-  const initShortcutSelectedIndex = shallowRef(['AccessLog'].includes(route.name as string) ? 1 : -1);
+  const isObservabilityRoute = computed(() => ['MCPServerObservability'].includes(route.name as string));
+
+  const initShortcutSelectedIndex = computed(() => {
+    const routeName = route.name as string;
+    if (['AccessLog'].includes(routeName)) {
+      return 1;
+    }
+
+    if (isObservabilityRoute.value) {
+      return 0;
+    }
+
+    return -1;
+  });
+
   const shortcutSelectedIndex = shallowRef(cloneDeep(initShortcutSelectedIndex.value));
   const isAccessLog = ref(!['StageReleaseRecord'].includes(route.name as string));
+
   // 不同页面存在多种日期快捷选项
-  const shortcutsRange = reactive(isAccessLog.value
-    ? accessLogStore.datepickerShortcuts
-    : [
-      {
-        text: t('今天'), // 今天的快捷选项
-        value() {
-          const end = new Date();
-          const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-          return [start, end];
+  const shortcutsRange = computed(() => {
+    const isExistToday = accessLogStore.datepickerShortcuts.find(item => item.text === t('今天'));
+    if (isObservabilityRoute && !isExistToday) {
+      return [
+        ...[
+          {
+            text: t('今天'),
+            value() {
+              const end = new Date();
+              const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+              return [start, end];
+            },
+          },
+        ],
+        ...accessLogStore.datepickerShortcuts,
+      ];
+    }
+
+    return isAccessLog.value
+      ? accessLogStore.datepickerShortcuts
+      : [
+        {
+          text: t('今天'), // 今天的快捷选项
+          value() {
+            const end = new Date();
+            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            return [start, end];
+          },
         },
-      },
-      {
-        text: t('近7天'), // 近7天的快捷选项
-        value() {
-          const end = new Date();
-          const start = new Date();
-          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
-          return [start, end];
+        {
+          text: t('近7天'), // 近7天的快捷选项
+          value() {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+            return [start, end];
+          },
         },
-      },
-      {
-        text: t('近15天'), // 近15天的快捷选项
-        value() {
-          const end = new Date();
-          const start = new Date();
-          start.setTime(start.getTime() - 3600 * 1000 * 24 * 15);
-          return [start, end];
+        {
+          text: t('近15天'), // 近15天的快捷选项
+          value() {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 15);
+            return [start, end];
+          },
         },
-      },
-      {
-        text: t('近30天'), // 近30天的快捷选项
-        value() {
-          const end = new Date();
-          const start = new Date();
-          start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
-          return [start, end];
+        {
+          text: t('近30天'), // 近30天的快捷选项
+          value() {
+            const end = new Date();
+            const start = new Date();
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+            return [start, end];
+          },
         },
-      },
-    ]);
+      ];
+  });
 
   const dateValue = ref<string[]>([]); // 日期值
   // 面板默认切换值
@@ -153,7 +187,7 @@ export const useDatePicker = (filterData?: any) => {
    * @param {any[]} date - 日期数组
    */
   const setFilterDate = (date: any[]) => {
-    if (date[0] && date[1]) {
+    if (date?.[0] && date?.[1]) {
       // @ts-expect-error ignore
       filterData.value.time_start = parseInt((+new Date(date[0])) / 1000, 10);
       // @ts-expect-error ignore

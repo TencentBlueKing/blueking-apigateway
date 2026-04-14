@@ -305,7 +305,7 @@ const handleInput = (field: ISchema, value: string | number) => {
   if (isArrayDataType(field)) {
     return;
   }
-  if (typeof formData.value[field?.name] !== undefined) {
+  if (typeof formData.value[field?.name] !== 'undefined') {
     formData.value[field?.name] = value;
   }
 };
