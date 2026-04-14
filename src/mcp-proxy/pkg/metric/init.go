@@ -83,8 +83,9 @@ func InitMetrics(metricNamePrefix string) {
 
 	MCPRequestTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name:        metricNamePrefix + "mcp_proxy_mcp_requests_total",
-			Help:        "Total number of MCP method calls, partitioned by gateway, server, method, app_code, error_code and error.",
+			Name: metricNamePrefix + "mcp_proxy_mcp_requests_total",
+			Help: "Total number of MCP method calls, partitioned by gateway, " +
+				"server, method, app_code, error_code and error.",
 			ConstLabels: prometheus.Labels{"service": serviceName},
 		},
 		[]string{"gateway_name", "mcp_server_name", "method", "app_code", "error_code", "error"},

@@ -617,36 +617,145 @@ func setHandlerRequestParams(
 	return nil
 }
 
+// setupToolCallSpan creates a trace span for tool call if tracing is enabled.
+func setupToolCallSpan(
+	ctx context.Context, toolName, toolMethod, toolURL, toolHost string,
+) (context.Context, oteltrace.Span) {
+	if config.G == nil || !config.G.Tracing.McpAPIEnabled() {
+		return ctx, nil
+	}
+	ctx, span := trace.StartTrace(ctx, fmt.Sprintf("mcp.tool.%s", toolName))
+	if span != nil {
+		span.SetAttributes(
+			attribute.String("mcp.tool_name", toolName),
+			attribute.String("mcp.tool_method", toolMethod),
+			attribute.String("mcp.tool_url", toolURL),
+			attribute.String("mcp.tool_host", toolHost),
+		)
+	}
+	return ctx, span
+}
+
+// prepareToolCallAuditLog prepares audit logger with request context information.
+func prepareToolCallAuditLog(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	toolName, toolConfig string,
+) (*zap.Logger, string, string, string, string, string) {
+	requestID := util.GetRequestIDFromContext(ctx)
+	xRequestID := util.GetXRequestIDFromContext(ctx)
+	appCode := util.GetAppCodeFromContext(ctx)
+	username := util.GetUsernameFromContext(ctx)
+	clientIP := util.GetClientIPFromContext(ctx)
+
+	// Extract request_id and x_request_id from request header if not found in context
+	if req != nil {
+		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
+			if requestID == "" {
+				requestID = extra.Header.Get(constant.BkGatewayRequestIDKey)
+			}
+			if xRequestID == "" {
+				xRequestID = extra.Header.Get(constant.RequestIDHeaderKey)
+			}
+		}
+	}
+
+	auditLog := logging.GetAuditLoggerWithContext(ctx).With(
+		zap.String("request_id", requestID),
+		zap.String("x_request_id", xRequestID),
+		zap.String("mcp_method", "tools/call"),
+		zap.String("tool_name", toolName),
+		zap.String("tool", toolConfig),
+		zap.String("app_code", appCode),
+		zap.String("bk_username", username),
+		zap.String("client_ip", clientIP),
+	)
+
+	return auditLog, requestID, xRequestID, appCode, username, clientIP
+}
+
+// buildToolCallClient creates HTTP client with shared transport and logging.
+func buildToolCallClient(
+	ctx context.Context,
+	toolApiConfig *ToolConfig,
+	appCode, username, requestID, xRequestID string,
+) *http.Client {
+	logTransport := buildLoggingTransport(
+		ctx,
+		sharedTransport,
+		toolApiConfig,
+		appCode,
+		username,
+		requestID,
+		xRequestID,
+	)
+	return &http.Client{Transport: logTransport}
+}
+
+// handleToolCallError handles errors from tool calls and returns appropriate result.
+func handleToolCallError(
+	ctx context.Context,
+	err error,
+	toolApiConfig *ToolConfig,
+	auditLog *zap.Logger,
+	headerInfo map[string]string,
+	span oteltrace.Span,
+	start time.Time,
+) *mcp.CallToolResult {
+	msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
+	duration := time.Since(start)
+
+	auditLog.Error("call tool err",
+		zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
+		zap.Error(err),
+		zap.String("latency", duration.String()),
+		zap.String("status", "failed"),
+		zap.Int64("response_body_size", 0),
+	)
+
+	if span != nil {
+		span.SetStatus(codes.Error, msg)
+		span.RecordError(err)
+	}
+
+	result := &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{
+				Text: msg,
+			},
+		},
+		IsError: true,
+	}
+
+	if _, ok := err.(*runtime.APIError); !ok {
+		// For non-APIError, append trace_id to the error message for traceability
+		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
+			msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
+			result.Content = []mcp.Content{
+				&mcp.TextContent{
+					Text: msg,
+				},
+			}
+		}
+	}
+
+	return result
+}
+
 func genToolHandler(toolApiConfig *ToolConfig, serverName string) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
 		start := time.Now()
 
-		// Start a trace span for the actual upstream tool invocation (only when MCP tracing is enabled).
-		// NOTE: This is intentionally separate from TracingMiddleware's "mcp.tools/call" span:
-		//   - TracingMiddleware spans cover the MCP protocol layer (request/response lifecycle).
-		//   - This span covers the actual upstream HTTP call to the backend API, providing
-		//     tool-specific attributes (method, url, host) for fine-grained observability.
-		var span oteltrace.Span
-		if config.G != nil && config.G.Tracing.McpAPIEnabled() {
-			ctx, span = trace.StartTrace(ctx, fmt.Sprintf("mcp.tool.%s", toolApiConfig.Name))
-		}
+		// Start a trace span for the actual upstream tool invocation
+		ctx, span := setupToolCallSpan(ctx, toolApiConfig.Name, toolApiConfig.Method, toolApiConfig.Url, toolApiConfig.Host)
 		if span != nil {
 			defer span.End()
-			span.SetAttributes(
-				attribute.String("mcp.tool_name", toolApiConfig.Name),
-				attribute.String("mcp.tool_method", toolApiConfig.Method),
-				attribute.String("mcp.tool_url", toolApiConfig.Url),
-				attribute.String("mcp.tool_host", toolApiConfig.Host),
-			)
 		}
 
 		// MCP protocol-level logging and metrics
-		// NOTE: tools/call handler is invoked inside callTool(), which does not go through
-		// the MCP middleware chain. Therefore, we need to manually log and record metrics here.
 		defer func() {
 			if r := recover(); r != nil {
-				// Log panic and convert to error
 				logging.GetAPILogger().Error("panic in tool handler",
 					zap.String("mcp_method", "tools/call"),
 					zap.String("tool_name", toolApiConfig.Name),
@@ -657,43 +766,13 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string) ToolHandler {
 					err = fmt.Errorf("panic: %v", r)
 				}
 			}
-			// Record MCP protocol-level metrics
 			recordToolCallMetrics(ctx, serverName, toolApiConfig.Name, req, result, err, start)
-			// Log MCP protocol-level request/response
 			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, err, start)
 		}()
 
-		auditLog := logging.GetAuditLoggerWithContext(ctx)
-		requestID := util.GetRequestIDFromContext(ctx)
-		xRequestID := util.GetXRequestIDFromContext(ctx)
-		appCode := util.GetAppCodeFromContext(ctx)
-		username := util.GetUsernameFromContext(ctx)
-		clientIP := util.GetClientIPFromContext(ctx)
-
-		// Extract request_id and x_request_id from request header if not found in context
-		// This is needed because the context passed by MCP SDK does not contain HTTP request info
-		if req != nil {
-			if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-				if requestID == "" {
-					requestID = extra.Header.Get(constant.BkGatewayRequestIDKey)
-				}
-				if xRequestID == "" {
-					xRequestID = extra.Header.Get(constant.RequestIDHeaderKey)
-				}
-			}
-		}
-
-		// 在所有日志中添加 request_id, x_request_id, app_code, username 和 client_ip
-		auditLog = auditLog.With(
-			zap.String("request_id", requestID),
-			zap.String("x_request_id", xRequestID),
-			zap.String("mcp_method", "tools/call"),
-			zap.String("tool_name", toolApiConfig.Name),
-			zap.String("tool", toolApiConfig.String()),
-			zap.String("app_code", appCode),
-			zap.String("bk_username", username),
-			zap.String("client_ip", clientIP),
-		)
+		// Prepare audit log with request context
+		auditLog, requestID, xRequestID, appCode, username, _ := prepareToolCallAuditLog(
+			ctx, req, toolApiConfig.Name, toolApiConfig.String())
 		// 延迟签发 inner JWT - 只有在调用外部 API 时才签发
 		innerJwt, err := util.SignInnerJWTFromContext(ctx)
 		if err != nil {
@@ -749,17 +828,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string) ToolHandler {
 				string(argsBytes)), zap.Error(err))
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
-		// 使用共享的 HTTP Transport 连接池，避免每次 tool call 创建新连接
-		logTransport := buildLoggingTransport(
-			ctx,
-			sharedTransport,
-			toolApiConfig,
-			appCode,
-			username,
-			requestID,
-			xRequestID,
-		)
-		client := &http.Client{Transport: logTransport}
+		// Build HTTP client with shared transport
+		client := buildToolCallClient(ctx, toolApiConfig, appCode, username, requestID, xRequestID)
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
@@ -860,45 +930,13 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string) ToolHandler {
 		openAPIClient := cli.New(toolApiConfig.Host, toolApiConfig.BasePath, []string{toolApiConfig.Schema})
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
-			msg := fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
 			duration := time.Since(start)
-			// 设置 audit log 变量，供 defer 中的 "call tool complete" 使用
-			auditResponse = msg
+			auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
 			auditResponseSize = 0
 			auditLatency = duration
 			auditStatus = "failed"
-			auditLog.Error("call tool err",
-				zap.Any("header", util.MaskSensitiveHeaders(headerInfo)),
-				zap.Error(err),
-				zap.String("latency", duration.String()),
-				zap.String("status", "failed"),
-				zap.Int64("response_body_size", 0),
-			)
-			if span != nil {
-				span.SetStatus(codes.Error, msg)
-				span.RecordError(err)
-			}
-			result := &mcp.CallToolResult{
-				Content: []mcp.Content{
-					&mcp.TextContent{
-						Text: msg,
-					},
-				},
-				IsError: true,
-			}
-			if _, ok := err.(*runtime.APIError); !ok {
-				// For non-APIError, append trace_id to the error message for traceability
-				if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
-					msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
-					result.Content = []mcp.Content{
-						&mcp.TextContent{
-							Text: msg,
-						},
-					}
-				}
-			}
 			// nolint:nilerr
-			return result, nil
+			return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start), nil
 		}
 		duration := time.Since(start)
 		responseBody := util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())
@@ -1144,10 +1182,12 @@ func extractUpstreamRequestID(result *mcp.CallToolResult) string {
 	for i, content := range result.Content {
 		if text, ok := content.(*mcp.TextContent); ok && text != nil {
 			textContent = text.Text
-			logging.GetLogger().Debug("extractUpstreamRequestID: found TextContent", zap.Int("index", i), zap.Int("text_length", len(textContent)))
+			logging.GetLogger().Debug("extractUpstreamRequestID: found TextContent",
+				zap.Int("index", i), zap.Int("text_length", len(textContent)))
 			break
 		} else {
-			logging.GetLogger().Debug("extractUpstreamRequestID: content type mismatch", zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", content)))
+			logging.GetLogger().Debug("extractUpstreamRequestID: content type mismatch",
+				zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", content)))
 		}
 	}
 	if textContent == "" {
@@ -1158,7 +1198,12 @@ func extractUpstreamRequestID(result *mcp.CallToolResult) string {
 	// Parse JSON to extract request_id
 	var envelope map[string]any
 	if err := json.Unmarshal([]byte(textContent), &envelope); err != nil {
-		logging.GetLogger().Debug("extractUpstreamRequestID: failed to unmarshal textContent", zap.Error(err), zap.String("text_content_preview", textContent[:min(len(textContent), 200)]))
+		preview := textContent
+		if len(textContent) > 200 {
+			preview = textContent[:200]
+		}
+		logging.GetLogger().Debug("extractUpstreamRequestID: failed to unmarshal textContent",
+			zap.Error(err), zap.String("text_content_preview", preview))
 		return ""
 	}
 
