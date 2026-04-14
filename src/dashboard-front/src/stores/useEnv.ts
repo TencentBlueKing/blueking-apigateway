@@ -42,6 +42,7 @@ export const useEnv = defineStore('useEnv', {
       BK_USER_WEB_API_URL: '',
       CREATE_CHAT_API: '',
       EDITION: '',
+      BK_SDK_LANGUAGES: [] as string[],
       SEND_CHAT_API: '',
       HELPER: {
         name: '',

@@ -1,6 +1,6 @@
 {
   "name": "blueking-api-gateway",
-  "version": "1.17.1",
+  "version": "1.22.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -62,7 +62,6 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@rolldown/pluginutils": "1.0.0-beta.29",
-    "@runtime-env/cli": "^0.7.3",
     "@stylistic/eslint-plugin": "^5.2.2",
     "@tsconfig/node22": "^22.0.2",
     "@types/js-cookie": "^3.0.6",
