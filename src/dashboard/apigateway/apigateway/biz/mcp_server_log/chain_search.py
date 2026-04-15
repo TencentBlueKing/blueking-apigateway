@@ -23,78 +23,14 @@ from django.conf import settings
 from elasticsearch_dsl import Search
 
 from apigateway.biz.access_log.log_search import LogSearchClient
+from apigateway.biz.mcp_server_log.constants import CHAIN_OUTPUT_FIELDS
+from apigateway.biz.mcp_server_log.utils import calc_max_end_time, parse_latency_ms
 from apigateway.common.error_codes import error_codes
 from apigateway.service.es.clients import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
 logger = logging.getLogger(__name__)
-
-# latency 字符串(如 "37.36ms", "1.2s", "500µs") 转换为毫秒
-_LATENCY_PATTERN = re.compile(r"^([\d.]+)(µs|us|ms|s|m|h)$")
-
-_UNIT_TO_MS = {
-    "µs": 0.001,
-    "us": 0.001,
-    "ms": 1.0,
-    "s": 1000.0,
-    "m": 60_000.0,
-    "h": 3_600_000.0,
-}
-
-
-def _parse_latency_ms(latency_str: str) -> Optional[float]:
-    """将 Go 的 duration 字符串转换为毫秒数值"""
-    if not latency_str:
-        return None
-    m = _LATENCY_PATTERN.match(latency_str.strip())
-    if not m:
-        return None
-    value = float(m.group(1))
-    unit = m.group(2)
-    return round(value * _UNIT_TO_MS.get(unit, 1.0), 3)
-
-
-# MCP Proxy 的 ES 日志中，所有层共有的字段
-_CHAIN_OUTPUT_FIELDS = [
-    # 链路标识
-    "request_id",
-    "x_request_id",
-    "session_id",
-    # 网关信息
-    "gateway_id",
-    "gateway_name",
-    "mcp_server_name",
-    "mcp_server_id",
-    # HTTP 层字段（注意：ES 中 method/path/status 在 __ext_json 中）
-    "method",
-    "path",
-    "status",
-    # Filebeat 提取的字段
-    "__ext_json",
-    # MCP 协议层字段
-    "mcp_method",
-    "tool_name",
-    "prompt_name",  # prompt 名称
-    "tool",  # audit 日志中的原始 tool 配置字符串
-    "params",
-    "request",  # audit 日志使用 request 字段存储请求参数
-    "response",
-    "request_body_size",
-    "response_body_size",
-    "upstream_request_id",  # 上游 API 返回的 request_id
-    # 调用方信息
-    "app_code",
-    "bk_username",
-    "client_ip",
-    "client_id",
-    # 性能
-    "latency",
-    # trace
-    "trace_id",
-    # 错误
-    "error",
-]
 
 
 class MCPServerLogChainSearchClient:
@@ -187,17 +123,6 @@ class MCPServerLogChainSearchClient:
                 break
 
         # 5.1 计算总耗时：所有 span 的最大结束时间
-        # 结束时间 = start_offset_ms + latency_ms
-        def calc_max_end_time(span_list, max_end=0):
-            for span in span_list:
-                start = span.get("start_offset_ms", 0) or 0
-                latency = span.get("latency_ms", 0) or 0
-                end_time = start + latency
-                max_end = max(max_end, end_time)
-                # 递归计算子 span
-                max_end = calc_max_end_time(span.get("children", []), max_end)
-            return max_end
-
         total_latency_ms = calc_max_end_time(spans)
 
         # 5.2 提取产生时间（从 HTTP 层日志或第一条日志）
@@ -213,7 +138,7 @@ class MCPServerLogChainSearchClient:
             if log.get("upstream_request_id"):
                 upstream_request_id = log["upstream_request_id"]
                 break
-        logger.info(
+        logger.debug(
             "extracted upstream_request_id=%s from mcp_logs, self._request_id=%s",
             upstream_request_id,
             self._request_id,
@@ -224,7 +149,7 @@ class MCPServerLogChainSearchClient:
         upstream_gateway_log = (
             self._search_gateway_log(self._request_id, gateway_type="upstream") if self._request_id else None
         )
-        logger.info(
+        logger.debug(
             "upstream_gateway_log search result: request_id=%s, found=%s",
             self._request_id,
             upstream_gateway_log is not None,
@@ -236,7 +161,7 @@ class MCPServerLogChainSearchClient:
         downstream_gateway_log = (
             self._search_gateway_log(upstream_request_id, gateway_type="downstream") if upstream_request_id else None
         )
-        logger.info(
+        logger.debug(
             "downstream_gateway_log search result: upstream_request_id=%s, found=%s",
             upstream_request_id,
             downstream_gateway_log is not None,
@@ -292,16 +217,7 @@ class MCPServerLogChainSearchClient:
                 break
 
         # 5.1 计算总耗时：所有 span 的最大结束时间
-        def calc_max_end_time_x(span_list, max_end=0):
-            for span in span_list:
-                start = span.get("start_offset_ms", 0) or 0
-                latency = span.get("latency_ms", 0) or 0
-                end_time = start + latency
-                max_end = max(max_end, end_time)
-                max_end = calc_max_end_time_x(span.get("children", []), max_end)
-            return max_end
-
-        total_latency_ms = calc_max_end_time_x(spans)
+        total_latency_ms = calc_max_end_time(spans)
 
         # 5.2 提取产生时间（从 HTTP 层日志或第一条日志）
         timestamp = None
@@ -316,7 +232,7 @@ class MCPServerLogChainSearchClient:
             if log.get("upstream_request_id"):
                 upstream_request_id = log["upstream_request_id"]
                 break
-        logger.info(
+        logger.debug(
             "[x_request_id] extracted upstream_request_id=%s from mcp_logs, request_id=%s",
             upstream_request_id,
             request_id,
@@ -325,7 +241,7 @@ class MCPServerLogChainSearchClient:
         # 7. 查询上游网关 (bk-apigateway) 的日志
         # 使用 request_id 查询，因为 bk-apigateway 的 request_id 对应 mcp-proxy 的 request_id
         upstream_gateway_log = self._search_gateway_log(request_id, gateway_type="upstream") if request_id else None
-        logger.info(
+        logger.debug(
             "[x_request_id] upstream_gateway_log search result: request_id=%s, found=%s",
             request_id,
             upstream_gateway_log is not None,
@@ -337,7 +253,7 @@ class MCPServerLogChainSearchClient:
         downstream_gateway_log = (
             self._search_gateway_log(upstream_request_id, gateway_type="downstream") if upstream_request_id else None
         )
-        logger.info(
+        logger.debug(
             "[x_request_id] downstream_gateway_log search result: upstream_request_id=%s, found=%s",
             upstream_request_id,
             downstream_gateway_log is not None,
@@ -413,16 +329,7 @@ class MCPServerLogChainSearchClient:
                 break
 
         # 计算总耗时：所有 span 的最大结束时间
-        def calc_max_end_time_upstream(span_list, max_end=0):
-            for span in span_list:
-                start = span.get("start_offset_ms", 0) or 0
-                latency = span.get("latency_ms", 0) or 0
-                end_time = start + latency
-                max_end = max(max_end, end_time)
-                max_end = calc_max_end_time_upstream(span.get("children", []), max_end)
-            return max_end
-
-        total_latency_ms = calc_max_end_time_upstream(spans)
+        total_latency_ms = calc_max_end_time(spans)
 
         timestamp = None
         if mcp_logs and mcp_logs[0].get("timestamp"):
@@ -464,7 +371,7 @@ class MCPServerLogChainSearchClient:
             },
         )
 
-        s = s.source(fields=_CHAIN_OUTPUT_FIELDS)
+        s = s.source(fields=CHAIN_OUTPUT_FIELDS)
         s = s.sort({self._es_time_field_name: {"order": "asc"}})
         s = s[:100]  # 限制最多 100 条
 
@@ -480,7 +387,7 @@ class MCPServerLogChainSearchClient:
             raise error_codes.INTERNAL.format(message=f"ES query failed: {str(e)}")
 
         hits = data.get("hits", {}).get("hits", [])
-        logger.info(
+        logger.debug(
             "search mcp server chain logs success, request_id=%s, x_request_id=%s, hits=%s",
             self._request_id,
             self._x_request_id,
@@ -489,7 +396,7 @@ class MCPServerLogChainSearchClient:
         # 调试：记录每个 hit 的关键字段
         for i, hit in enumerate(hits):
             src = hit.get("_source", {})
-            logger.info(
+            logger.debug(
                 "hit[%s]: request_id=%s, mcp_method=%s, has_latency=%s, latency=%s, "
                 "has_params=%s, has_response=%s, has_tool=%s",
                 i,
@@ -506,7 +413,7 @@ class MCPServerLogChainSearchClient:
             log = hit["_source"]
             # 调试日志：检查 sort 字段
             sort = hit.get("sort")
-            logger.info(
+            logger.debug(
                 "hit sort field: hit_id=%s, sort=%s, is_list=%s, len=%s",
                 hit.get("_id"),
                 sort,
@@ -516,7 +423,7 @@ class MCPServerLogChainSearchClient:
             if sort and len(sort) > 0:
                 log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(sort[0])
                 log["timestamp_ms"] = sort[0]
-                logger.info("added timestamp=%s to log", log.get("timestamp"))
+                logger.debug("added timestamp=%s to log", log.get("timestamp"))
             else:
                 logger.warning("sort field is missing or empty for hit_id=%s", hit.get("_id"))
 
@@ -575,7 +482,7 @@ class MCPServerLogChainSearchClient:
             },
         )
 
-        s = s.source(fields=_CHAIN_OUTPUT_FIELDS)
+        s = s.source(fields=CHAIN_OUTPUT_FIELDS)
         s = s.sort({self._es_time_field_name: {"order": "asc"}})
         s = s[:100]  # 同一 upstream_request_id 可能关联多条日志
 
@@ -589,7 +496,7 @@ class MCPServerLogChainSearchClient:
             return []
 
         hits = data.get("hits", {}).get("hits", [])
-        logger.info(
+        logger.debug(
             "search mcp server logs by upstream_request_id=%s, hits=%s",
             self._upstream_request_id,
             len(hits),
@@ -599,7 +506,7 @@ class MCPServerLogChainSearchClient:
             log = hit["_source"]
             # 调试日志：检查 sort 字段
             sort = hit.get("sort")
-            logger.info(
+            logger.debug(
                 "[upstream_request_id] hit sort field: hit_id=%s, sort=%s, is_list=%s, len=%s",
                 hit.get("_id"),
                 sort,
@@ -609,7 +516,7 @@ class MCPServerLogChainSearchClient:
             if sort and len(sort) > 0:
                 log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(sort[0])
                 log["timestamp_ms"] = sort[0]
-                logger.info("[upstream_request_id] added timestamp=%s to log", log.get("timestamp"))
+                logger.debug("[upstream_request_id] added timestamp=%s to log", log.get("timestamp"))
             else:
                 logger.warning("[upstream_request_id] sort field is missing or empty for hit_id=%s", hit.get("_id"))
 
@@ -644,7 +551,7 @@ class MCPServerLogChainSearchClient:
         http_entry = None
         if http_logs:
             log = http_logs[0]
-            latency_ms = _parse_latency_ms(log.get("latency", ""))
+            latency_ms = parse_latency_ms(log.get("latency", ""))
             http_entry = {
                 "span_id": "http_entry",
                 "parent_span_id": None,
@@ -684,7 +591,7 @@ class MCPServerLogChainSearchClient:
             base_ts_ms = mcp_logs[0]["timestamp_ms"]
 
         for i, log in enumerate(mcp_logs):
-            latency_ms = _parse_latency_ms(log.get("latency", ""))
+            latency_ms = parse_latency_ms(log.get("latency", ""))
             mcp_method = log.get("mcp_method", "")
 
             # Audit 日志中 tool 字段存储工具配置字符串，需要提取工具名
@@ -788,7 +695,7 @@ class MCPServerLogChainSearchClient:
                 mcp_method,
                 tool_name,
             )
-            logger.info(
+            logger.debug(
                 "_merge_mcp_logs: log[%s] key=%s, has_latency=%s, has_params=%s, has_response=%s",
                 idx,
                 key,
@@ -800,12 +707,12 @@ class MCPServerLogChainSearchClient:
                 log_groups[key] = []
             log_groups[key].append(log)
 
-        logger.info("_merge_mcp_logs: total groups=%s, group_keys=%s", len(log_groups), list(log_groups.keys()))
+        logger.debug("_merge_mcp_logs: total groups=%s, group_keys=%s", len(log_groups), list(log_groups.keys()))
 
         # 合并每组日志：优先使用有 latency 的日志（"call tool complete"）
         merged_logs = []
         for key, logs in log_groups.items():
-            logger.info(
+            logger.debug(
                 "merging group %s: log_count=%s",
                 key,
                 len(logs),
@@ -835,7 +742,7 @@ class MCPServerLogChainSearchClient:
                         ):
                             merged[field_name] = value
                 merged_logs.append(merged)
-                logger.info(
+                logger.debug(
                     "merged with complete_log: has_latency=%s, has_params=%s, has_response=%s",
                     bool(merged.get("latency")),
                     bool(merged.get("params")),
@@ -853,7 +760,7 @@ class MCPServerLogChainSearchClient:
                         ):
                             merged[field_name] = value
                 merged_logs.append(merged)
-                logger.info("merged without complete_log")
+                logger.debug("merged without complete_log")
 
         return merged_logs
 
@@ -876,14 +783,14 @@ class MCPServerLogChainSearchClient:
             # 注意：这里查询的是 bk-apigateway 的日志索引
             # 对于 upstream（bk-apigateway），request_id 是直接对应的
             # 对于 downstream（biz-gateway），如果它的日志也在同一个 ES 索引中，才能查询到
-            logger.info(
+            logger.debug(
                 "searching %s gateway log with request_id=%s",
                 gateway_type,
                 request_id,
             )
             client = LogSearchClient(request_id=request_id, time_range=7 * 24 * 60 * 60)  # 7天
             total_count, logs = client.search_logs(offset=0, limit=1)
-            logger.info(
+            logger.debug(
                 "%s gateway log search result: request_id=%s, total_count=%s, has_logs=%s",
                 gateway_type,
                 request_id,

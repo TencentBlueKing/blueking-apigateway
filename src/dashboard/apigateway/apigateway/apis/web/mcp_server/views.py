@@ -1011,4 +1011,6 @@ class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
         # 获取唯一的 bk_app_code 列表
         bk_app_codes = queryset.values_list("bk_app_code", flat=True).distinct().order_by("bk_app_code")
 
-        return OKJsonResponse(data={"bk_app_codes": list(bk_app_codes)})
+        output_slz = MCPServerAppPermissionAppCodeListOutputSLZ(data={"bk_app_codes": list(bk_app_codes)})
+        output_slz.is_valid(raise_exception=True)
+        return OKJsonResponse(data=output_slz.data)

@@ -88,10 +88,10 @@ class MCPServerLogSearchClient:
         """查询 MCP Server 日志列表"""
         s = self._build_logs_search(offset=offset, limit=limit, order=True)
         query_dict = s.to_dict()
-        logger.info("MCPServerLogSearchClient search_logs query: %s", query_dict)
+        logger.debug("MCPServerLogSearchClient search_logs query: %s", query_dict)
         data = self._es_client.execute_search(query_dict)
         hits = data["hits"]
-        logger.info(
+        logger.debug(
             "MCPServerLogSearchClient search_logs result: total=%s, hits_count=%s", hits["total"], len(hits["hits"])
         )
         return hits["total"], [self._to_log_display(hit) for hit in hits["hits"]]
@@ -145,7 +145,7 @@ class MCPServerLogSearchClient:
                 s = s.filter("match", **{field: value})
                 applied_filters[field] = value
         if applied_filters:
-            logger.info("MCPServerLogSearchClient applied term filters: %s", applied_filters)
+            logger.debug("MCPServerLogSearchClient applied term filters: %s", applied_filters)
         return s
 
     def _apply_conditions(self, s: Search) -> Search:

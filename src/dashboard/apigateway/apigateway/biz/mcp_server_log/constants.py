@@ -138,3 +138,44 @@ MCP_SERVER_LOG_FIELDS = [
 ]
 
 MCP_SERVER_LOG_OUTPUT_FIELDS = [field["field"] for field in MCP_SERVER_LOG_FIELDS]
+
+# MCP Proxy 的 ES 日志中，所有层共有的字段
+CHAIN_OUTPUT_FIELDS = [
+    # 链路标识
+    "request_id",
+    "x_request_id",
+    "session_id",
+    # 网关信息
+    "gateway_id",
+    "gateway_name",
+    "mcp_server_name",
+    "mcp_server_id",
+    # HTTP 层字段（注意：ES 中 method/path/status 在 __ext_json 中）
+    "method",
+    "path",
+    "status",
+    # Filebeat 提取的字段
+    "__ext_json",
+    # MCP 协议层字段
+    "mcp_method",
+    "tool_name",
+    "prompt_name",  # prompt 名称
+    "tool",  # audit 日志中的原始 tool 配置字符串
+    "params",
+    "request",  # audit 日志使用 request 字段存储请求参数
+    "response",
+    "request_body_size",
+    "response_body_size",
+    "upstream_request_id",  # 上游 API 返回的 request_id
+    # 调用方信息
+    "app_code",
+    "bk_username",
+    "client_ip",
+    "client_id",
+    # 性能
+    "latency",
+    # trace
+    "trace_id",
+    # 错误
+    "error",
+]

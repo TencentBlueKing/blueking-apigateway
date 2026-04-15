@@ -826,6 +826,8 @@ DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     enable_bk_notice=ENABLE_BK_NOTICE,
     enable_multi_tenant_mode=ENABLE_MULTI_TENANT_MODE,
     ai_open_api_base_url=AI_OPEN_API_BASE_URL,
+    enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
+    enable_run_data_metrics=ENABLE_RUN_DATA_METRICS,
 )
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
