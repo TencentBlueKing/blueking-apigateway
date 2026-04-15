@@ -387,6 +387,12 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_AI_RATE_LIMITING": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ai-rate-limiting.md",
         # uri-blocker
         "PLUGIN_URI_BLOCKER": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/uri-blocker.md",
+        # bk-oauth2-protected-resource
+        "PLUGIN_BK_OAUTH2_PROTECTED_RESOURCE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-protected-resource.md",
+        # bk-oauth2-verify
+        "PLUGIN_BK_OAUTH2_VERIFY": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-verify.md",
+        # bk-oauth2-audience-validate
+        "PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-audience-validate.md",
     }
 
 
