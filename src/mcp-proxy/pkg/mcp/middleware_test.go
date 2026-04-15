@@ -252,7 +252,7 @@ var _ = Describe("Middleware", func() {
 		It("should not increment MCPSessionTotal on failed initialize", func() {
 			middleware := mcppkg.MetricMiddleware(serverName)
 
-			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			before := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 
 			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
 				return nil, errors.New("init failed")
@@ -260,7 +260,7 @@ var _ = Describe("Middleware", func() {
 
 			_, _ = handler(ctx, "initialize", nil)
 
-			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName)
+			after := getGaugeValue(metric.MCPSessionTotal, gatewayName, serverName, "")
 			Expect(after - before).To(Equal(float64(0)))
 		})
 
