@@ -106,9 +106,10 @@
                 :dynamic-max-height="500"
               >
                 <template #description>
-                  <code class="color-#4d4f56 break-all whitespace-pre-line font-unset">
-                    {{ escapedCodeContent }}
-                  </code>
+                  <code
+                    v-bk-xss-html="curPromptData?.content"
+                    class="color-#4d4f56 break-all whitespace-pre-line font-unset"
+                  />
                 </template>
               </AgDescription>
               <div
@@ -132,7 +133,6 @@
 </template>
 
 <script lang="ts" setup>
-import { escape } from 'lodash-es';
 import { useFeatureFlag } from '@/stores';
 import {
   type IMCPServerPrompt,
@@ -174,9 +174,6 @@ const promptList = computed<IMCPServerPrompt[]>(() => {
     emit('update-count', results.length);
   }
   return results;
-});
-const escapedCodeContent = computed(() => {
-  return escape(curPromptData.value?.content ?? '');
 });
 
 const handlePromptCollapseChange = (isCollapse: boolean) => {
