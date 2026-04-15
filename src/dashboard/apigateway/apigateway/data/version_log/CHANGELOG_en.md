@@ -1,3 +1,13 @@
+<!-- 2026-04-18 -->
+# V1.21.8 Release Log
+
+### Features
+
+- Add bk-cli command line tool
+- MCP Server supports response wrapping switch, configurable to return original response body
+
+---
+
 <!-- 2026-03-10 -->
 # V1.21.0 Release Log
 
