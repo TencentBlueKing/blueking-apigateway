@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
@@ -36,6 +37,8 @@ from apigateway.components.bkmonitor import query_range
 from apigateway.core.models import Backend
 
 from .base import BasePrometheusMetrics
+
+logger = logging.getLogger(__name__)
 
 
 class BaseMetrics(BasePrometheusMetrics):
@@ -342,6 +345,9 @@ class IngressMetrics(BaseMetrics):
         # 查询 backend_id
         backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
         if not backend:
+            logger.warning(
+                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
+            )
             return ""
 
         label_list = [
@@ -377,6 +383,9 @@ class EgressMetrics(BaseMetrics):
         # 查询 backend_id
         backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
         if not backend:
+            logger.warning(
+                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
+            )
             return ""
 
         label_list = [
