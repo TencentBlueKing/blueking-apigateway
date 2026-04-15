@@ -100,6 +100,12 @@ const platformToolsMenu: IMenu[] = [
     enabled: true,
   },
   {
+    name: 'PlatformToolsCLI',
+    title: t('CLI 工具'),
+    icon: 'cli',
+    enabled: true,
+  },
+  {
     name: 'PlatformToolsAutomatedGateway',
     title: t('自动化接入网关'),
     icon: 'zidongjieru',
@@ -311,10 +317,11 @@ const handleBack = () => {
       .default-header-view {
         height: calc(100vh - 105px);
         overflow: auto;
+        scrollbar-gutter: stable;
 
         &.custom-header-view {
-          margin-top: 52px;
           height: 100%;
+          margin-top: 52px;
           overflow: auto;
         }
 
