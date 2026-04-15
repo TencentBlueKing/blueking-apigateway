@@ -367,6 +367,24 @@ class TestResponseTime99thMetrics:
 
 
 class TestIngressMetrics:
+    def test_get_query_promql_backend_not_found(self, mocker):
+        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.service.prometheus.dimension.Backend.objects.filter"
+        ).return_value.first.return_value = None
+
+        metrics = dimension.IngressMetrics()
+        result = metrics._get_query_promql(
+            gateway_name="not_exist",
+            stage_name="prod",
+            backend_name="not_exist",
+            step="1m",
+            stage_id=1,
+            resource_id=1,
+            resource_name="get_foo",
+        )
+        assert result == ""
+
     def test_get_query_promql(self, mocker, fake_default_backend):
         mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 
@@ -413,6 +431,24 @@ class TestIngressMetrics:
 
 
 class TestEgressMetrics:
+    def test_get_query_promql_backend_not_found(self, mocker):
+        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch(
+            "apigateway.service.prometheus.dimension.Backend.objects.filter"
+        ).return_value.first.return_value = None
+
+        metrics = dimension.EgressMetrics()
+        result = metrics._get_query_promql(
+            gateway_name="not_exist",
+            stage_name="prod",
+            backend_name="not_exist",
+            step="1m",
+            stage_id=1,
+            resource_id=1,
+            resource_name="get_foo",
+        )
+        assert result == ""
+
     def test_get_query_promql(self, mocker, fake_default_backend):
         mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
 

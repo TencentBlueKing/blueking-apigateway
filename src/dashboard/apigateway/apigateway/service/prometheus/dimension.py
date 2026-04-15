@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type
 
@@ -37,6 +38,8 @@ from apigateway.core.models import Backend
 
 from .base import BasePrometheusMetrics
 
+logger = logging.getLogger(__name__)
+
 
 class BaseMetrics(BasePrometheusMetrics):
     metrics: ClassVar[str]
@@ -52,6 +55,7 @@ class BaseMetrics(BasePrometheusMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
+        # 返回空字符串表示 backend 不存在，无需查询
         pass
 
     def query_range(
@@ -70,6 +74,9 @@ class BaseMetrics(BasePrometheusMetrics):
         promql = self._get_query_promql(
             gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
+
+        if not promql:
+            return {"series": []}
 
         # request prometheus http api to get metrics data
         return query_range(
@@ -96,6 +103,10 @@ class BaseMetrics(BasePrometheusMetrics):
         promql = self._get_query_promql(
             gateway_name, stage_name, backend_name, step, stage_id, resource_id, resource_name
         )
+
+        if not promql:
+            return {"instant": 0}
+
         result: Dict[str, Any] = {}
         data = query_range(
             bk_biz_id=getattr(settings, "BCS_CLUSTER_BK_BIZ_ID", ""),
@@ -333,7 +344,14 @@ class IngressMetrics(BaseMetrics):
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         # 查询 backend_id
-        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
+        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
+        if not backend:
+            logger.warning(
+                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
+            )
+            # backend 不存在，无需查询
+            return ""
+
         label_list = [
             *self.default_labels,
             ("type", "=", "ingress"),
@@ -365,7 +383,14 @@ class EgressMetrics(BaseMetrics):
     ) -> str:
         # 因为 route 的参数结果不能使用 self._get_labels_expression 方法去去除空参数
         # 查询 backend_id
-        backend = Backend.objects.get(gateway__name=gateway_name, name=backend_name)
+        backend = Backend.objects.filter(gateway__name=gateway_name, name=backend_name).first()
+        if not backend:
+            logger.warning(
+                "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
+            )
+            # backend 不存在，无需查询
+            return ""
+
         label_list = [
             *self.default_labels,
             ("type", "=", "egress"),
