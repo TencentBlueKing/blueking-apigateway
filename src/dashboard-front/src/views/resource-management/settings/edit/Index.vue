@@ -228,9 +228,9 @@ const handleSubmit = async () => {
   catch {
     // 校验失败，获取非法表单项的 #id
     const invalidFormElementIds = [
-      ...baseInfoRef.value?.invalidFormElementIds,
-      ...frontConfigRef.value?.invalidFormElementIds,
-      ...backConfigRef.value?.invalidFormElementIds,
+      ...(baseInfoRef.value?.invalidFormElementIds ?? []),
+      ...(frontConfigRef.value?.invalidFormElementIds ?? []),
+      ...(backConfigRef.value?.invalidFormElementIds ?? []),
     ];
     if (invalidFormElementIds.length) {
       // 根据表单项 #id 获取元素，滚动到视图中间，并 focus

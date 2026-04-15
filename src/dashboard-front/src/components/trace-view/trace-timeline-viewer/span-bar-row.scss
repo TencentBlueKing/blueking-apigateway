@@ -57,7 +57,7 @@
     background-color: #fafbfd;
 
     .span-bar-wrapper,
-    .span-duration.inside {
+    .span-duration {
       background-color: #fafbfd;
     }
   }
@@ -116,11 +116,12 @@
   }
 
   .span-name-wrapper {
+    position: relative;
     display: flex;
     height: 28px;
     overflow: visible !important;
+    border-right: 1px solid #e8e8e8;
     line-height: 28px;
-    border-right: 1px solid #dcdee5;
     align-items: center;
     flex: 0 0 auto;
   }

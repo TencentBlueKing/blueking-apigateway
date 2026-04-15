@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { CSSProperties } from 'vue';
+import { type CSSProperties, getCurrentInstance } from 'vue';
 import { useTrace } from '@/stores/useTrace';
 import type { ISpan, TNil } from '@/components/trace-view/typings';
 import { PEER_SERVICE } from '@/components/trace-view/constants/tag-keys';
@@ -107,7 +107,7 @@ export default defineComponent({
 
     const yPositions = new Positions(200);
     const internalInstance = getCurrentInstance() as any;
-    const forceUpdate = internalInstance?.ctx.$forceUpdate;
+    const forceUpdate = internalInstance?.proxy?.$forceUpdate;
 
     const spans = computed(() => spanGroupTree);
     const getRowStates = computed<RowState[]>(() => {
@@ -237,7 +237,7 @@ export default defineComponent({
           ? endIndex.value + props.viewBufferMin
           : props.dataLength - 1;
       if (maxStart < startIndexDrawn.value || minEnd > endIndexDrawn.value) {
-        forceUpdate();
+        forceUpdate?.();
       }
     };
 
@@ -331,12 +331,12 @@ export default defineComponent({
         const imin = getIndexFromKey?.(lowDirtyKey);
         const imax = highDirtyKey === lowDirtyKey ? imin : getIndexFromKey?.(highDirtyKey);
         yPositions.calcHeights(imax as number, getHeight, imin);
-        forceUpdate();
+        forceUpdate?.();
       }
     };
 
     const getClippingCssClasses = () => {
-      const [zoomStart, zoomEnd] = spanBarCurrentStore?.current.value as [number, number];
+      const [zoomStart = 0, zoomEnd = 0] = (spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
 
       return {
         'clipping-left': zoomStart > 0,
@@ -345,7 +345,7 @@ export default defineComponent({
     };
 
     const getViewedBounds = (): ViewedBoundsFunctionType => {
-      const [zoomStart, zoomEnd] = spanBarCurrentStore?.current.value as [number, number];
+      const [zoomStart, zoomEnd] = (spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
 
       const viewedBoundsFunc = createViewedBoundsFunc({
         min: trace?.startTime || 0,

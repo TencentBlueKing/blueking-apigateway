@@ -145,7 +145,7 @@ export default defineComponent({
     };
 
     const handleReframeMouseMove = ({ value }: DraggingUpdate) => {
-      const [viewStart, viewEnd] = spanBarCurrentStore?.current.value as [number, number];
+      const [viewStart = 0, viewEnd = 0] = (spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
       const cursor = mapFromViewSubRange(viewStart, viewEnd, value);
       const newTime = {
         ...viewRangeStore?.viewRange.value.time,
@@ -173,11 +173,11 @@ export default defineComponent({
 
     const getAnchorAndShift = (value: number) => {
       // const { current, reframe } = props.viewRangeTime;
-      const { reframe } = viewRangeStore?.viewRange.value.time as IViewRangeTime;
+      const { reframe } = (viewRangeStore?.viewRange.value.time ?? {}) as IViewRangeTime;
       // const [viewStart, viewEnd] = current;
-      const [viewStart, viewEnd] = spanBarCurrentStore?.current.value as [number, number];
+      const [viewStart = 0, viewEnd = 0] = (spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
       const shift = mapFromViewSubRange(viewStart, viewEnd, value);
-      const anchor = reframe ? reframe.anchor : shift;
+      const anchor = reframe?.anchor ?? shift;
       return {
         anchor,
         shift,
@@ -238,8 +238,13 @@ export default defineComponent({
   },
 
   render() {
-    const { cursor, reframe, shiftEnd, shiftStart } = this.viewRangeStore?.viewRange?.value.time as IViewRangeTime;
-    const [viewStart, viewEnd] = this.spanBarCurrentStore?.current.value as [number, number];
+    const {
+      cursor,
+      reframe,
+      shiftEnd,
+      shiftStart,
+    } = (this.viewRangeStore?.viewRange?.value.time ?? {}) as IViewRangeTime;
+    const [viewStart = 0, viewEnd = 0] = (this.spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
 
     const haveNextTimeRange = reframe != null || shiftEnd != null || shiftStart != null;
     let cusrorPosition: string | TNil;

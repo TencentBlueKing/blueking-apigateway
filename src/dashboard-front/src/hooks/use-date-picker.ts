@@ -57,16 +57,14 @@ export const useDatePicker = (filterData?: any) => {
     const isExistToday = accessLogStore.datepickerShortcuts.find(item => item.text === t('今天'));
     if (isObservabilityRoute && !isExistToday) {
       return [
-        ...[
-          {
-            text: t('今天'),
-            value() {
-              const end = new Date();
-              const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-              return [start, end];
-            },
+        {
+          text: t('今天'),
+          value() {
+            const end = new Date();
+            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            return [start, end];
           },
-        ],
+        },
         ...accessLogStore.datepickerShortcuts,
       ];
     }
