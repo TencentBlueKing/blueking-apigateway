@@ -24,13 +24,12 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.mcp_server_log.chain_helpers import (
-    build_chain_summary,
-    build_latency_distribution,
-    enrich_chain_data,
-    flatten_spans_to_logs,
+from apigateway.biz.mcp_server_log.chain_query import (
+    search_chain_logs_by_any_id,
+    search_chain_logs_with_gateway_by_any_id,
+    search_chain_summary_by_any_id,
+    search_chain_with_summary_by_any_id,
 )
-from apigateway.biz.mcp_server_log.chain_search import MCPServerLogChainSearchClient
 from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
 from apigateway.biz.mcp_server_log.utils import build_mcp_server_log_client
 from apigateway.utils.paginator import LimitOffsetPaginator
@@ -173,32 +172,8 @@ class MCPServerLogDetailApi(generics.RetrieveAPIView):
     """
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        # 使用 MCPServerLogChainSearchClient 查询所有层级的日志
-        # 因为它不强制过滤 mcp_method，可以查到 HTTP 层和审计日志
-        client = MCPServerLogChainSearchClient(request_id=request_id)
-        chain_data = client.search_chain()
-
-        # 如果没找到数据，尝试作为 x_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(x_request_id=request_id)
-            chain_data = client.search_chain_by_x_request_id()
-
-        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
-        # upstream_request_id 是上游 API 返回的 request_id，存储在 MCP 层日志中
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
-            chain_data = client.search_chain_by_upstream_request_id()
-
-        # 将 spans 扁平化为日志列表
-        logs = flatten_spans_to_logs(chain_data)
-
-        total_count = len(logs)
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = MCP_SERVER_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
+        result = search_chain_logs_by_any_id(request_id)
+        return OKJsonResponse(data=result)
 
 
 @method_decorator(
@@ -220,32 +195,8 @@ class MCPServerLogTraceApi(generics.RetrieveAPIView):
     """
 
     def retrieve(self, request, x_request_id, *args, **kwargs):
-        # 使用 MCPServerLogChainSearchClient 查询所有层级的日志
-        # 因为它不强制过滤 mcp_method，可以查到 HTTP 层和审计日志
-        client = MCPServerLogChainSearchClient(request_id="", x_request_id=x_request_id)
-        chain_data = client.search_chain_by_x_request_id()
-
-        # 将 spans 扁平化为日志列表
-        logs = flatten_spans_to_logs(chain_data)
-
-        # 添加网关日志到列表开头（如果有）
-        if chain_data.get("upstream_gateway_log"):
-            upstream_log = chain_data["upstream_gateway_log"]
-            upstream_log["layer"] = "gateway_upstream"
-            logs.insert(0, upstream_log)
-
-        if chain_data.get("downstream_gateway_log"):
-            downstream_log = chain_data["downstream_gateway_log"]
-            downstream_log["layer"] = "gateway_downstream"
-            logs.insert(0, downstream_log)
-
-        total_count = len(logs)
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = MCP_SERVER_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
+        result = search_chain_logs_with_gateway_by_any_id(x_request_id)
+        return OKJsonResponse(data=result)
 
 
 @method_decorator(
@@ -274,22 +225,7 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
     """
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        client = MCPServerLogChainSearchClient(request_id=request_id)
-        chain_data = client.search_chain()
-
-        # 如果没找到数据，尝试作为 x_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(x_request_id=request_id)
-            chain_data = client.search_chain_by_x_request_id()
-
-        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
-            chain_data = client.search_chain_by_upstream_request_id()
-
-        # 添加汇总统计信息
-        chain_data = enrich_chain_data(chain_data)
-
+        chain_data = search_chain_with_summary_by_any_id(request_id)
         slz = MCPServerLogChainOutputSLZ(instance=chain_data)
         return OKJsonResponse(data=slz.data)
 
@@ -318,46 +254,8 @@ class MCPServerLogQueryApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        # 使用 MCPServerLogChainSearchClient 查询所有层级的日志
-        # 因为它不强制过滤 mcp_method，可以查到 HTTP 层和审计日志
-
-        # 尝试作为 request_id 查询
-        client = MCPServerLogChainSearchClient(request_id=request_id)
-        chain_data = client.search_chain()
-
-        # 如果没找到数据，尝试作为 x_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(x_request_id=request_id)
-            chain_data = client.search_chain_by_x_request_id()
-
-        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
-        # upstream_request_id 是上游 API 返回的 request_id，存储在 MCP 层日志中
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
-            chain_data = client.search_chain_by_upstream_request_id()
-
-        # 将 spans 扁平化为日志列表
-        logs = flatten_spans_to_logs(chain_data)
-
-        # 添加网关日志到列表开头（如果有）
-        # 注意：不同查询方式返回的网关日志字段名可能不同
-        if chain_data.get("upstream_gateway_log"):
-            upstream_log = chain_data["upstream_gateway_log"]
-            upstream_log["layer"] = "gateway_upstream"
-            logs.insert(0, upstream_log)
-
-        if chain_data.get("downstream_gateway_log"):
-            downstream_log = chain_data["downstream_gateway_log"]
-            downstream_log["layer"] = "gateway_downstream"
-            logs.insert(0, downstream_log)
-
-        total_count = len(logs)
-        paginator = LimitOffsetPaginator(total_count, 0, total_count)
-
-        results = paginator.get_paginated_data(logs)
-        results["fields"] = MCP_SERVER_LOG_FIELDS
-
-        return OKJsonResponse(data=results)
+        result = search_chain_logs_with_gateway_by_any_id(request_id)
+        return OKJsonResponse(data=result)
 
 
 @method_decorator(
@@ -381,24 +279,7 @@ class MCPServerLogQuerySummaryApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        # 尝试作为 request_id 查询
-        client = MCPServerLogChainSearchClient(request_id=request_id)
-        chain_data = client.search_chain()
-
-        # 如果没找到数据，尝试作为 x_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(x_request_id=request_id)
-            chain_data = client.search_chain_by_x_request_id()
-
-        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
-            chain_data = client.search_chain_by_upstream_request_id()
-
-        # 构建汇总信息
-        summary = build_chain_summary(chain_data)
-        summary["latency_distribution"] = build_latency_distribution(chain_data)
-
+        summary = search_chain_summary_by_any_id(request_id)
         slz = MCPServerLogQuerySummaryOutputSLZ(instance=summary)
         return OKJsonResponse(data=slz.data)
 
@@ -430,22 +311,6 @@ class MCPServerLogQueryChainApi(generics.RetrieveAPIView):
     gateway_permission_exempt = True
 
     def retrieve(self, request, request_id, *args, **kwargs):
-        # 尝试作为 request_id 查询
-        client = MCPServerLogChainSearchClient(request_id=request_id)
-        chain_data = client.search_chain()
-
-        # 如果没找到数据，尝试作为 x_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(x_request_id=request_id)
-            chain_data = client.search_chain_by_x_request_id()
-
-        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
-        if not chain_data.get("spans"):
-            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
-            chain_data = client.search_chain_by_upstream_request_id()
-
-        # 添加汇总统计信息
-        chain_data = enrich_chain_data(chain_data)
-
+        chain_data = search_chain_with_summary_by_any_id(request_id)
         slz = MCPServerLogChainOutputSLZ(instance=chain_data)
         return OKJsonResponse(data=slz.data)

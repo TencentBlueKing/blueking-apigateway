@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
 
@@ -34,23 +34,68 @@ def span_to_log(span: dict) -> dict:
     }
 
 
+def _count_spans(span_list: List[Dict]) -> int:
+    """递归统计 span 数量"""
+    count = 0
+    for span in span_list:
+        count += 1
+        count += _count_spans(span.get("children", []))
+    return count
+
+
+def _collect_services(span_list: List[Dict], services: Set[str]) -> None:
+    """递归收集所有 service 名称"""
+    for span in span_list:
+        if span.get("service"):
+            services.add(span["service"])
+        _collect_services(span.get("children", []), services)
+
+
+def _find_first_mcp_span(span_list: List[Dict]) -> Optional[Dict]:
+    """递归查找第一个 MCP 层 span（含 mcp_method / tool_name）"""
+    for span in span_list:
+        if span.get("layer") == "mcp":
+            return span
+        result = _find_first_mcp_span(span.get("children", []))
+        if result:
+            return result
+    return None
+
+
+def _collect_latencies(span_list: List[Dict], total_latency_ms: float, latency_distribution: list) -> None:
+    """递归收集各服务的耗时信息"""
+    for span in span_list:
+        service = span.get("service", "")
+        latency_ms = span.get("latency_ms", 0) or 0
+        start_offset_ms = span.get("start_offset_ms", 0) or 0
+        layer = span.get("layer", "")
+        operation = span.get("operation", "")
+
+        if service:
+            percentage = (latency_ms / total_latency_ms * 100) if total_latency_ms > 0 else 0
+            latency_distribution.append(
+                {
+                    "service": service,
+                    "upstream": span.get("upstream", ""),
+                    "layer": layer,
+                    "operation": operation,
+                    "latency_ms": round(latency_ms, 2),
+                    "start_offset_ms": round(start_offset_ms, 2),
+                    "percentage": round(percentage, 1),
+                }
+            )
+
+        _collect_latencies(span.get("children", []), total_latency_ms, latency_distribution)
+
+
 def build_chain_summary(chain_data: dict) -> dict:
     """从调用链数据构建汇总信息"""
     spans = chain_data.get("spans", [])
 
-    # 计算服务数（去重）
-    services = set()
-    span_count = 0
-
-    def count_spans(span_list: List[Dict]) -> None:
-        nonlocal span_count
-        for span in span_list:
-            span_count += 1
-            if span.get("service"):
-                services.add(span["service"])
-            count_spans(span.get("children", []))
-
-    count_spans(spans)
+    # 计算服务数（去重）和 span 总数
+    services: Set[str] = set()
+    _collect_services(spans, services)
+    span_count = _count_spans(spans)
 
     # 计算状态：如果有任何 error 则为 failed
     status = "success"
@@ -63,17 +108,7 @@ def build_chain_summary(chain_data: dict) -> dict:
     first_span = spans[0] if spans else {}
     first_detail = first_span.get("detail", {})
 
-    # 递归查找第一个 MCP 层 span（含 mcp_method / tool_name）
-    def find_first_mcp_span(span_list: List[Dict]) -> Optional[Dict]:
-        for span in span_list:
-            if span.get("layer") == "mcp":
-                return span
-            result = find_first_mcp_span(span.get("children", []))
-            if result:
-                return result
-        return None
-
-    mcp_span = find_first_mcp_span(spans)
+    mcp_span = _find_first_mcp_span(spans)
     mcp_detail = mcp_span.get("detail", {}) if mcp_span else {}
 
     # 获取 timestamp（从 chain_data 中获取）
@@ -101,35 +136,10 @@ def build_latency_distribution(chain_data: dict) -> list:
 
     返回各服务的耗时统计列表，按 start_offset_ms 排序
     """
-    spans = chain_data.get("spans", [])
     total_latency_ms = chain_data.get("total_latency_ms", 0) or 0
-    latency_distribution = []
+    latency_distribution: list[dict] = []
 
-    def collect_latencies(span_list: List[Dict]) -> None:
-        for span in span_list:
-            service = span.get("service", "")
-            latency_ms = span.get("latency_ms", 0) or 0
-            start_offset_ms = span.get("start_offset_ms", 0) or 0
-            layer = span.get("layer", "")
-            operation = span.get("operation", "")
-
-            if service:
-                percentage = (latency_ms / total_latency_ms * 100) if total_latency_ms > 0 else 0
-                latency_distribution.append(
-                    {
-                        "service": service,
-                        "upstream": span.get("upstream", ""),
-                        "layer": layer,
-                        "operation": operation,
-                        "latency_ms": round(latency_ms, 2),
-                        "start_offset_ms": round(start_offset_ms, 2),
-                        "percentage": round(percentage, 1),
-                    }
-                )
-
-            collect_latencies(span.get("children", []))
-
-    collect_latencies(spans)
+    _collect_latencies(chain_data.get("spans", []), total_latency_ms, latency_distribution)
 
     # 按 start_offset_ms 排序
     latency_distribution.sort(key=lambda x: x.get("start_offset_ms", 0))
