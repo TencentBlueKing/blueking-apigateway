@@ -55,6 +55,7 @@ class BaseMetrics(BasePrometheusMetrics):
         resource_id: Optional[int],
         resource_name: Optional[str],
     ) -> str:
+        # 返回空字符串表示 backend 不存在，无需查询
         pass
 
     def query_range(
@@ -348,6 +349,7 @@ class IngressMetrics(BaseMetrics):
             logger.warning(
                 "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
             )
+            # backend 不存在，无需查询
             return ""
 
         label_list = [
@@ -386,6 +388,7 @@ class EgressMetrics(BaseMetrics):
             logger.warning(
                 "backend (gateway_name=%s, name=%s) does not exist, skip query.", gateway_name, backend_name
             )
+            # backend 不存在，无需查询
             return ""
 
         label_list = [
