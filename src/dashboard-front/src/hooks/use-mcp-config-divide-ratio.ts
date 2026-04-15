@@ -13,14 +13,14 @@ interface IWidthDivideConfig {
  * @returns 响应式的分割比例值
  */
 export const useMcpConfigDivideRatio = (
-  customConfig?: WidthDivideConfig[],
+  customConfig?: IWidthDivideConfig[],
   debounceDelay = 150,
 ) => {
   // 分割比例
   const divideRatio = ref('34%');
 
   // 预设的宽度-比例配置
-  const DEFAULT_CONFIG: WidthDivideConfig[] = [
+  const DEFAULT_CONFIG: IWidthDivideConfig[] = [
     {
       maxWidth: 1440,
       divide: '46%',

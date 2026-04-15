@@ -54,7 +54,7 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
   } = props;
 
   const viewRange = useViewRangeInject();
-  const [viewStart, viewEnd] = viewRange?.viewRange.value.time.current as [number, number];
+  const [viewStart = 0, viewEnd = 0] = (viewRange?.viewRange.value.time.current ?? [0, 0]) as [number, number];
 
   return (
     <TimelineRow className="timeline-header-row">

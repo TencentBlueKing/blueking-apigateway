@@ -171,7 +171,7 @@ const renderHtmlIndex = ref(0);
 const curUser = computed(() => userStore.info);
 const userList = computed(() => {
   // 去重
-  const set = new Set([curUser.value?.username, ...curApigw.value?.maintainers]);
+  const set = new Set([curUser.value?.username, ...(curApigw.value?.maintainers ?? [])]);
   return [...set];
 });
 const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);

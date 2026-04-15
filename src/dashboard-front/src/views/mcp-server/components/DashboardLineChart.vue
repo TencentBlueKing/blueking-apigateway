@@ -203,6 +203,8 @@ const getChartOption = () => {
   const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
   // 需要转换为毫秒的metrics
   const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
+  // 需要转换为字节的metrics
+  const displayBytesList = ['request_body_size', 'response_body_size'];
   const seriesData = (chartData as { series: ISeriesItemType[] }).series || [];
 
   // 处理业务数据，生成系列配置
@@ -286,6 +288,13 @@ const getChartOption = () => {
     };
   }
 
+  if (displayBytesList.includes(instanceId)) {
+    chartOption.yAxis.axisLabel = {
+      ...chartOption.yAxis.axisLabel,
+      formatter: '{value} bytes',
+    };
+  }
+
   // 合并所有配置
   return merge(baseOption, chartOption, moreOption);
 };
@@ -335,6 +344,7 @@ const setChartTooltip = (
       const value = p.data[1] !== null ? p.data[1].toLocaleString() : '0';
       let unit = t('次');
       if (displayMSList.includes(instanceId)) unit = 'ms';
+      if (displayBytesList.includes(instanceId)) unit = 'bytes';
       if (['requests'].includes(instanceId)) {
         p.seriesName = t('总请求数');
       }

@@ -30,7 +30,6 @@ import {
 } from '@/components/trace-view/hooks';
 import SpanBar from '@/components/trace-view/trace-timeline-viewer/span-bar';
 import SpanTreeOffset from '@/components/trace-view/trace-timeline-viewer/span-tree-offset';
-import Ticks from '@/components/trace-view/trace-timeline-viewer/ticks';
 import TimelineRow from '@/components/trace-view/trace-timeline-viewer/timeline-row';
 import TimelineRowCell from '@/components/trace-view/trace-timeline-viewer/timeline-row-cell';
 import type { ISpan } from '@/components/trace-view/typings';
@@ -142,7 +141,7 @@ export default defineComponent({
     };
 
     const getViewedBounds = (): ViewedBoundsFunctionType => {
-      const [zoomStart, zoomEnd] = spanBarCurrentStore?.current.value as [number, number];
+      const [zoomStart, zoomEnd] = (spanBarCurrentStore?.current.value ?? [0, 0]) as [number, number];
 
       return createViewedBoundsFunc({
         min: traceStore?.traceTree?.startTime || 0,
@@ -275,14 +274,6 @@ export default defineComponent({
         : spanDuration;
     const label = this.showDuration ? formatDuration(realDuration) : '';
 
-    const spanStartTime = this.getSpanStartTime(span as ISpan);
-    const viewBounds = this.getViewedBounds?.()(
-      spanStartTime,
-      spanStartTime + realDuration,
-    );
-
-    const viewStart = viewBounds?.start;
-    const viewEnd = viewBounds?.end;
     const isOddRow = (bgColorIndex as number) % 2 !== 0;
 
     const displayServiceName
@@ -307,16 +298,8 @@ export default defineComponent({
       errorDescription = item?.value || '';
     }
 
-    let longLabel: string;
-    let hintSide: string;
-    if (viewStart != null && viewEnd != null && viewStart > 1 - viewEnd) {
-      longLabel = `${labelDetail}${label ? ` | ${label}` : ''}`;
-      hintSide = 'right';
-    }
-    else {
-      longLabel = `${label ? `${label} | ` : ''}${labelDetail}`;
-      hintSide = 'left';
-    }
+    const longLabel = `${label ? `${label} | ` : ''}${labelDetail}`;
+
     const kindIcons: Record<KindType, string> = {
       1: 'icon-nei',
       2: 'icon-bei',
@@ -621,14 +604,13 @@ export default defineComponent({
                 width={1 - columnDivision}
                 className="cursor-pointer span-view"
               >
-                <Ticks numTicks={numTicks} />
                 <SpanBar
                   color={color}
-                  hintSide={hintSide}
                   longLabel={longLabel}
                   rpc={rpc}
                   shortLabel={label}
                   span={span}
+                  numTicks={numTicks}
                   totalTraceDuration={this.totalTraceDuration}
                 />
               </TimelineRowCell>

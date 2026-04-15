@@ -16,7 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { ISpanReference } from '@/components/trace-view/typings';
 import http from '../http';
 import type { IPagination } from '@/types/common';
 

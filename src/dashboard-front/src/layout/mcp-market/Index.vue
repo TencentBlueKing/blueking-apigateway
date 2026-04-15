@@ -276,6 +276,15 @@ const getFilterParams = computed(() => {
   return params;
 });
 
+const handleBannerLoad = () => {
+  bannerLoaded.value = true;
+  // 图片加载完成后重新计算分页limit
+  if (!isBannerLoadedInit.value) {
+    isBannerLoadedInit.value = true;
+    resetPagination();
+  }
+};
+
 // 获取banner高度的方法，增加图片加载监听
 const getBannerHeight = () => {
   if (!bannerRef.value) return 0;
@@ -286,14 +295,7 @@ const getBannerHeight = () => {
   }
 
   // 监听图片加载事件
-  bannerRef.value.addEventListener('load', () => {
-    bannerLoaded.value = true;
-    // 图片加载完成后重新计算分页limit
-    if (!isBannerLoadedInit.value) {
-      isBannerLoadedInit.value = true;
-      resetPagination();
-    }
-  }, { once: true });
+  bannerRef.value.addEventListener('load', handleBannerLoad, { once: true });
 
   // 加载中先返回默认高度（或图片的固有高度）
   return bannerRef.value.naturalHeight || 0;
@@ -492,10 +494,8 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   handleResize?.cancel();
-  if (bannerRef.value) {
-    bannerRef.value.removeEventListener('load', () => {
-    });
-  }
+  bannerRef.value?.removeEventListener('load', handleBannerLoad);
+  bannerRef.value = null;
 });
 </script>
 

@@ -63,12 +63,11 @@ const handleInstall = () => {
  * 复制按钮点击处理函数
  */
 function handleCopy(this: CopyBtnElement) {
-  const copyBtn = this;
-  const copySpan = copyBtn.querySelector('span');
+  const copySpan = this.querySelector('span');
   if (!copySpan) return;
 
   // 从缓存获取代码内容
-  const copyContent = codeContentMap.value.get(copyBtn) || '';
+  const copyContent = codeContentMap.value.get(this) || '';
   copy(copyContent);
 };
 

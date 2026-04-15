@@ -241,7 +241,7 @@ const userList = computed(() => {
   // 去重
   const set = new Set([
     curUser.value?.username,
-    ...basics?.maintainers,
+    ...(basics?.maintainers ?? []),
   ]);
   return [...set];
 });
