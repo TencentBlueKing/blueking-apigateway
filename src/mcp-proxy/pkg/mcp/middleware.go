@@ -286,17 +286,12 @@ func AddLoggingMiddleware(server *mcp.Server, serverName string) {
 
 // MetricMiddleware returns a middleware that records MCP protocol-level Prometheus metrics.
 // It tracks request counts, durations, tool calls, and error codes.
-// Note: tools/call is skipped here because metrics are recorded separately in the tool handler
-// (see genToolHandler in proxy.go), to avoid duplicate metrics and capture tool-specific breakdown.
+// Note: tools/call is only partially skipped here - if the tool does not exist,
+// we still need to record metrics since the tool handler won't be invoked.
+// For successful tool calls, metrics are recorded in the tool handler (see genToolHandler in proxy.go).
 func MetricMiddleware(serverName string) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
-			// Skip metrics for tools/call - they are recorded separately in the tool handler
-			// to avoid duplicate metrics and to capture tool-specific breakdown
-			if method == "tools/call" {
-				return next(ctx, method, req)
-			}
-
 			start := time.Now()
 
 			// Ensure metrics are recorded even if handler panics
@@ -307,6 +302,13 @@ func MetricMiddleware(serverName string) mcp.Middleware {
 						err = fmt.Errorf("panic: %v", r)
 					}
 				}
+
+				// For tools/call: only record metrics if there's an error (tool not found, etc.)
+				// Successful tool calls are recorded in the tool handler to capture tool-specific breakdown
+				if method == "tools/call" && err == nil {
+					return
+				}
+
 				// Record metrics after handler completes (including panic case)
 				recordMCPMetrics(ctx, serverName, method, req, result, err, start)
 			}()

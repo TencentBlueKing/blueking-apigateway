@@ -208,6 +208,17 @@ class MCPServerLogDetailApi(generics.RetrieveAPIView):
         client = MCPServerLogChainSearchClient(request_id=request_id)
         chain_data = client.search_chain()
 
+        # 如果没找到数据，尝试作为 x_request_id 查询
+        if not chain_data.get("spans"):
+            client = MCPServerLogChainSearchClient(x_request_id=request_id)
+            chain_data = client.search_chain_by_x_request_id()
+
+        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
+        # upstream_request_id 是上游 API 返回的 request_id，存储在 MCP 层日志中
+        if not chain_data.get("spans"):
+            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
+            chain_data = client.search_chain_by_upstream_request_id()
+
         # 将 spans 扁平化为日志列表
         logs = []
         for span in chain_data.get("spans", []):
@@ -301,6 +312,16 @@ class MCPServerLogChainApi(generics.RetrieveAPIView):
     def retrieve(self, request, request_id, *args, **kwargs):
         client = MCPServerLogChainSearchClient(request_id=request_id)
         chain_data = client.search_chain()
+
+        # 如果没找到数据，尝试作为 x_request_id 查询
+        if not chain_data.get("spans"):
+            client = MCPServerLogChainSearchClient(x_request_id=request_id)
+            chain_data = client.search_chain_by_x_request_id()
+
+        # 如果还是没找到数据，尝试作为 upstream_request_id 查询
+        if not chain_data.get("spans"):
+            client = MCPServerLogChainSearchClient(upstream_request_id=request_id)
+            chain_data = client.search_chain_by_upstream_request_id()
 
         # 添加汇总统计信息
         chain_data = _enrich_chain_data(chain_data)

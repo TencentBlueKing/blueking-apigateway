@@ -984,6 +984,7 @@ func recordToolCallMetrics(
 	}
 
 	// Record metrics
+	metric.MCPRequestTotal.WithLabelValues(gatewayName, serverName, "tools/call", appCode, errorCode, errorLabel).Inc()
 	metric.MCPToolCallTotal.WithLabelValues(gatewayName, serverName, toolName, appCode, errorCode, errorLabel).Inc()
 	metric.MCPRequestDuration.WithLabelValues(gatewayName, serverName, "tools/call", appCode).
 		Observe(duration.Seconds() * 1000)
