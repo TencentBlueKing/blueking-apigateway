@@ -956,6 +956,8 @@ DEFAULT_FEATURE_FLAG = {
     "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
     # 是否开启 MCP Server OAuth2 公开客户端模式
     "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True),
+    # 是否开启 BK CLI 展示
+    "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
 }
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并
@@ -1001,6 +1003,18 @@ ENV_VARS_FOR_FRONTEND = {
         "href": env.str("HELPER_HREF", default=""),
     },
     "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
+    "CLI": {
+        "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
+        "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),
+        "USER_KEY_EXPIRE_DAYS": env.int("CLI_USER_KEY_EXPIRE_DAYS", default=1),
+        "ACCESS_TOKEN_EXPIRE_DAYS": env.int("CLI_ACCESS_TOKEN_EXPIRE_DAYS", default=1),
+        "BK_API_URL_TMPL": BK_API_URL_TMPL.replace("{api_name}", "{gateway_name}"),
+        "GIT_REPO_URL": env.str("CLI_GIT_REPO_URL", default="https://github.com/TencentBlueKing/bk-cli.git"),
+        "NPM_INSTALL_CMD": env.str("CLI_NPM_INSTALL_CMD", default="npm install -g @blueking/bk-cli"),
+        "SKILL_NPM_INSTALL_CMD": env.str(
+            "CLI_SKILL_NPM_INSTALL_CMD", default="npx skills add TencentBlueKing/bk-cli -y -g"
+        ),
+    },
 }
 
 
