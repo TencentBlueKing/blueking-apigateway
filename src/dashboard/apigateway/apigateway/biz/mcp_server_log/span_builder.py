@@ -198,7 +198,7 @@ def _calc_base_timestamp_ms(
     return None
 
 
-def _calc_start_offset_ms(base_ts_ms: Optional[float], log: Dict, latency_ms: float) -> float:
+def _calc_start_offset_ms(base_ts_ms: Optional[float], log: Dict, latency_ms: Optional[float]) -> float:
     """计算 span 的 start_offset_ms"""
     if base_ts_ms is not None and log.get("timestamp_ms"):
         log_start_ms = log["timestamp_ms"] - (latency_ms or 0)
