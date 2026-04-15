@@ -222,11 +222,6 @@
                                           @mouseleave="handleMouseleave"
                                         >
                                           {{ curPromptData?.name ?? '--' }}
-                                          <span
-                                            class="ml-8px"
-                                          >
-                                            ({{ curPromptData?.code ?? '--' }})
-                                          </span>
                                         </div>
                                       </div>
                                       <div class="flex items-center">
@@ -246,11 +241,9 @@
                                     <template v-if="!curPromptData.is_no_perm">
                                       <div class="mt-12px lh-22px text-14px">
                                         <code
-                                          v-if="curPromptData?.content?.length"
+                                          v-bk-xss-html="curPromptData?.content"
                                           class="color-#4d4f56 break-all whitespace-pre-line font-unset"
-                                        >
-                                          {{ escapedCodeContent }}
-                                        </code>
+                                        />
                                       </div>
                                       <div
                                         v-if="curPromptData?.labels?.length"
@@ -405,7 +398,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { cloneDeep, escape, uniq } from 'lodash-es';
+import { cloneDeep, uniq } from 'lodash-es';
 import {
   Divider,
   Form,
@@ -955,9 +948,6 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
     placeholder: t('请输入修改人'),
   },
 ]);
-const escapedCodeContent = computed(() => {
-  return escape(curPromptData.value?.content ?? '');
-});
 const noValidStage = computed(() => stageList.value.length > 0 && stageList.value.every(stage => stage.status === 0));
 const isCurrentStageValid = computed(() =>
   stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
