@@ -857,7 +857,6 @@ class MCPServerAppPermissionAppCodeListOutputSLZ(serializers.Serializer):
 
     bk_app_codes = serializers.ListField(
         child=serializers.CharField(),
-        read_only=True,
         help_text="有权限的应用 bk_app_code 列表",
     )
 

@@ -64,17 +64,19 @@ def calc_max_end_time(span_list: List[Dict], max_end: float = 0) -> float:
     return max_end
 
 
-def build_mcp_server_log_client(gateway_name: str, data: dict) -> "MCPServerLogSearchClient":
+def build_mcp_server_log_client(gateway_name: str, data: dict, gateway_id: int = 0) -> "MCPServerLogSearchClient":
     """根据网关名称和查询参数构建 MCP Server 日志搜索客户端
 
     Args:
         gateway_name: 网关名称
         data: 查询参数字典
+        gateway_id: 网关 ID，用于 ES 精确过滤（优先使用，比 gateway_name 更可靠）
     """
     from .log_search import MCPServerLogSearchClient  # noqa: PLC0415
 
     return MCPServerLogSearchClient(
         gateway_name=gateway_name,
+        gateway_id=gateway_id,
         mcp_server_name=data.get("mcp_server_name"),
         mcp_method=data.get("mcp_method"),
         tool_name=data.get("tool_name"),

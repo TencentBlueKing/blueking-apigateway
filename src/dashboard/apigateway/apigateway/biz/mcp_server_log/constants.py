@@ -36,6 +36,16 @@ MCP_SERVER_LOG_FIELDS = [
         "is_filter": False,
     },
     {
+        "label": _("HTTP 方法"),
+        "field": "method",
+        "is_filter": True,
+    },
+    {
+        "label": _("请求路径"),
+        "field": "path",
+        "is_filter": True,
+    },
+    {
         "label": _("网关ID"),
         "field": "gateway_id",
         "is_filter": True,

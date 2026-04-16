@@ -65,7 +65,7 @@ class MCPServerLogTimeChartRetrieveApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        client = build_mcp_server_log_client(request.gateway.name, data)
+        client = build_mcp_server_log_client(request.gateway.name, data, gateway_id=request.gateway.id)
         slz = MCPServerLogTimeChartOutputSLZ(instance=client.get_time_chart())
         return OKJsonResponse(data=slz.data)
 
@@ -86,7 +86,7 @@ class MCPServerSearchLogListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        client = build_mcp_server_log_client(request.gateway.name, data)
+        client = build_mcp_server_log_client(request.gateway.name, data, gateway_id=request.gateway.id)
         total_count, logs = client.search_logs(
             offset=data["offset"],
             limit=data["limit"],
@@ -118,7 +118,7 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        client = build_mcp_server_log_client(request.gateway.name, data)
+        client = build_mcp_server_log_client(request.gateway.name, data, gateway_id=request.gateway.id)
         total_count, logs = client.search_logs(
             offset=0,
             limit=limit,
@@ -127,7 +127,9 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
         if total_count > limit:
             logger.warning(
                 "MCP log export truncated: total_count=%s exceeds limit=%s, gateway=%s",
-                total_count, limit, request.gateway.name,
+                total_count,
+                limit,
+                request.gateway.name,
             )
 
         gateway = request.gateway
