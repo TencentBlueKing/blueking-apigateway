@@ -26,28 +26,30 @@ import (
 var _ = Describe("Helper Functions", func() {
 	Describe("buildToolResponseEnvelope", func() {
 		It("should include all fields when body is provided", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "body-content")
+			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", "body-content")
 
 			Expect(envelope[toolResponseStatusCodeField]).To(Equal(200))
 			Expect(envelope[toolResponseRequestIDField]).To(Equal("req-1"))
 			Expect(envelope[toolResponseTraceIDField]).To(Equal("trace-1"))
+			Expect(envelope[toolResponseXRequestIDField]).To(Equal("x-req-1"))
 			Expect(envelope[toolResponseBodyField]).To(Equal("body-content"))
 		})
 
 		It("should include response_body as nil when body is nil", func() {
-			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
+			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", "x-req-1", nil)
 
-			Expect(envelope).To(HaveLen(4))
+			Expect(envelope).To(HaveLen(5))
 			Expect(envelope).To(HaveKey(toolResponseBodyField))
 			Expect(envelope[toolResponseBodyField]).To(BeNil())
 		})
 
 		It("should handle zero status code", func() {
-			envelope := buildToolResponseEnvelope(0, "", "", nil)
+			envelope := buildToolResponseEnvelope(0, "", "", "", nil)
 
 			Expect(envelope[toolResponseStatusCodeField]).To(Equal(0))
 			Expect(envelope[toolResponseRequestIDField]).To(Equal(""))
 			Expect(envelope[toolResponseTraceIDField]).To(Equal(""))
+			Expect(envelope[toolResponseXRequestIDField]).To(Equal(""))
 		})
 	})
 

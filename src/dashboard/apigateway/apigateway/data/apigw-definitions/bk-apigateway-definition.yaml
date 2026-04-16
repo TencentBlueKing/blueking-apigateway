@@ -66,10 +66,10 @@ stages:
           - v2_open_tools_time_parse_datetime_str_to_timestamp
           - v2_open_tools_log_query_by_request_id
         tool_names:
-          - tools_time_get_datetime
-          - tools_time_get_current_unix_timestamp
-          - tools_time_parse_datetime_str_to_timestamp
-          - tools_log_query_by_request_id
+          - get_datetime
+          - get_current_unix_timestamp
+          - parse_datetime_str_to_timestamp
+          - log_query_by_request_id
         is_public: true
         status: 1
         protocol_type: "streamable_http"

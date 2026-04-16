@@ -253,6 +253,16 @@ type McpServer struct {
 	LogTruncate LogTruncate
 }
 
+// Metric is the config for metric/prometheus
+type Metric struct {
+	// NamePrefix is the prefix for all metric names.
+	// This should be aligned with the dashboard's PROMETHEUS_METRIC_NAME_PREFIX
+	// so that PromQL queries from the dashboard can match these metrics.
+	// Can be overridden by the PROMETHEUS_METRIC_NAME_PREFIX environment variable.
+	// Default: "bk_apigateway_"
+	NamePrefix string
+}
+
 // DerivePublicPathPrefix extracts the client-visible path prefix from a message URL format string
 // by taking the segment before the first "%" placeholder and trimming the trailing slash.
 //
@@ -298,6 +308,7 @@ type Config struct {
 
 	Logger  Logger
 	Tracing Tracing
+	Metric  Metric
 
 	McpServer McpServer
 	PProf     Pprof
@@ -383,6 +394,12 @@ func Load(v *viper.Viper) (*Config, error) {
 	}
 	if cfg.McpServer.LogTruncate.APILogErrorResponseSize == 0 {
 		cfg.McpServer.LogTruncate.APILogErrorResponseSize = defaultAPILogErrorRespSize
+	}
+	if cfg.Metric.NamePrefix == "" {
+		cfg.Metric.NamePrefix = os.Getenv("PROMETHEUS_METRIC_NAME_PREFIX")
+		if cfg.Metric.NamePrefix == "" {
+			cfg.Metric.NamePrefix = "bk_apigateway_"
+		}
 	}
 
 	if cfg.PProf.Username == "" {

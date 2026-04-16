@@ -23,7 +23,14 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"mcp_proxy/pkg/metric"
 )
+
+var _ = BeforeSuite(func() {
+	// Initialize metrics so that metric.RequestCount etc. are not nil
+	metric.InitMetrics("")
+})
 
 func TestMiddleware(t *testing.T) {
 	RegisterFailHandler(Fail)

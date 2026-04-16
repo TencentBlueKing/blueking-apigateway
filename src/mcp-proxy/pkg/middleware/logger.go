@@ -81,20 +81,42 @@ func APILogger() gin.HandlerFunc {
 
 		status := c.Writer.Status()
 
+		// 输出与 MCP 协议层日志（middleware.go）相同的字段集合，
+		// 确保 ES 中两层日志结构一致，前端展示不会出现大量 null。
+		// HTTP 层没有的 MCP 特有字段（mcp_method、params、response 等）输出零值。
 		fields := []zap.Field{
+			// 链路标识
+			zap.String("request_id", c.GetString(util.RequestIDKey)),
+			zap.String("x_request_id", c.GetString(util.XRequestIDKey)),
+			zap.String("session_id", ""), // HTTP 层无 MCP session
+			// 网关信息
 			zap.Int("gateway_id", util.GetGatewayID(c)),
 			zap.String("gateway_name", util.GetGatewayName(c)),
 			zap.String("mcp_server_name", mcpName),
 			zap.Int("mcp_server_id", util.GetMCPServerID(c)),
+			// HTTP 请求信息
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),
 			zap.Int("status", status),
-			zap.String("latency", duration.String()),
-			zap.String("request_id", c.GetString(util.RequestIDKey)),
-			zap.String("x_request_id", c.GetString(util.XRequestIDKey)),
-			zap.String("instance_id", c.GetString(util.InstanceIDKey)),
-			zap.String("client_ip", c.ClientIP()),
+			// MCP 协议层字段（HTTP 层输出零值，保持字段一致）
+			zap.String("mcp_method", ""),
+			zap.String("tool_name", ""),
+			zap.String("prompt_name", ""),
+			zap.String("params", ""),
+			zap.String("response", ""),
+			zap.Int64("request_body_size", 0),
+			zap.Int64("response_body_size", 0),
+			// 调用方信息
 			zap.String("app_code", util.GetAppCode(c)),
+			zap.String("bk_username", util.GetBkUsername(c)),
+			zap.String("client_ip", c.ClientIP()),
+			zap.String("client_id", util.GetClientID(c)),
+			// 性能
+			zap.String("latency", duration.String()),
+			// trace
+			zap.String("trace_id", util.GetTraceID(c)),
+			// 其他
+			zap.String("instance_id", c.GetString(util.InstanceIDKey)),
 		}
 
 		// only send 5xx err to sentry

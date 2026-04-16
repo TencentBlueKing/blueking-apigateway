@@ -29,6 +29,9 @@ logger:
     buffered: false
     settings: {name: stdout}
 
+metric:
+  namePrefix: "bk_apigateway_"
+
 mcpServer:
   innerJwtExpireTime: 5m
   bkApiUrlTmpl: ""
