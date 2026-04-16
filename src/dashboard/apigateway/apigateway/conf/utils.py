@@ -174,7 +174,7 @@ def get_default_feature_flags(
         # 是否展示"监控告警"子菜单
         "ENABLE_MONITOR": env.bool("FEATURE_FLAG_ENABLE_MONITOR", False),
         # 是否展示"运行数据"子菜单
-        "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", True),
+        "ENABLE_RUN_DATA": env.bool("FEATURE_FLAG_ENABLE_RUN_DATA", False),
         # 是否展示 "运行数据" => 仪表盘 子菜单
         "ENABLE_RUN_DATA_METRICS": enable_run_data_metrics,
         # 是否展示"组件管理"菜单项，企业版展示，上云版不展示
