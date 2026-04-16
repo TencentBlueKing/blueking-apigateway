@@ -19,14 +19,18 @@
   z-index: 1;
   pointer-events: none;
 
-  &:first-child{
+  &:first-child {
     width: 0;
+  }
+
+  &.is-last {
+    width: 0;
+    background-color: transparent;
   }
 }
 
 .span-bar {
   position: absolute;
-  min-width: 2px;
   height: 12px;
   border-radius: 2px;
   z-index: 3;
@@ -64,9 +68,10 @@
       flex-direction: row-reverse;
     }
 
-    /* 铺满宽度：文字自适应 */
+    /* 铺满宽度：文字自适应位于线条内 */
     &.inside {
       padding: 0 4px;
+      color: #313238;
       flex-direction: row-reverse;
     }
   }

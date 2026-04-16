@@ -31,7 +31,7 @@
       <div class="color-#313238 lh-20px mb-8px font-700">
         {{ traceChainDetail?.request_id }}
       </div>
-      <div class="ag-trace-chain-traceChainDetail-form">
+      <div class="flex flex-wrap ag-trace-chain-traceChainDetail-form">
         <div class="item">
           <div class="label">
             {{ t('产生时间') }}:
@@ -102,11 +102,16 @@ interface IProps { traceChainDetail?: ITraceDetail }
 
 const { traceChainDetail = {} } = defineProps<IProps>();
 
+const isSuccessStatus = computed(() => {
+  return traceChainDetail?.status
+    && ((Number(traceChainDetail.status) >= 200
+      && Number(traceChainDetail.status) < 300) || ['success'].includes(traceChainDetail.status));
+});
+
 const renderStatusDot = () => {
-  const isSuccess = (traceChainDetail?.status >= 200 && traceChainDetail?.status < 300) || ['success'].includes(traceChainDetail?.status);
   return {
-    type: isSuccess ? 'success' : 'error',
-    text: t(isSuccess ? '成功' : '失败'),
+    type: isSuccessStatus.value ? 'success' : 'error',
+    text: t(isSuccessStatus.value ? '成功' : '失败'),
   };
 };
 
@@ -128,11 +133,11 @@ const renderLatencyDistribution = () => {
   box-sizing: border-box;
 
   &-form {
-    display: flex;
 
     .item {
       display: flex;
       color: #313238;
+      margin-right: 24px;
       line-height: 20px;
 
       .label {
@@ -141,10 +146,6 @@ const renderLatencyDistribution = () => {
 
       .value {
         margin-left: 8px;
-      }
-
-      &:not(&:first-child) {
-        margin-left: 24px;
       }
     }
   }

@@ -105,7 +105,7 @@ const searchParams = ref<IObservabilitySearchParams>({
 });
 
 /**
- * 可观测性监控 Hook
+ * 可观测监控 Hook
  */
 export function useObservabilityDashboard() {
   const gatewayStore = useGateway();

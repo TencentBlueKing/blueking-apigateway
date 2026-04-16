@@ -22,8 +22,10 @@
     v-bind="$attrs"
   >
     <BkTab
-      v-model:active="activeTab"
+      :key="tabKey"
+      v-model:active="traceStore.logActiveTab"
       type="unborder-card"
+      @change="handleTabChange"
     >
       <BkTabPanel
         v-for="tab of logPanels"
@@ -51,18 +53,17 @@ import type {
   IFlowLogTable,
   ITraceDetail,
 } from '@/services/source/observability';
+import { useTrace } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
-const activeTab = defineModel('activeTab', {
-  type: String,
-  required: true,
-});
-
 const { traceChainDetail = {} } = defineProps<IProps>();
 
-const logPanels = ref([
+const traceStore = useTrace();
+
+let tabKey = -1;
+const logPanels = [
   {
     name: 'proxy_log',
     label: t('MCP Proxy 日志'),
@@ -75,18 +76,18 @@ const logPanels = ref([
     name: 'gateway_downstream',
     label: t('下游网关日志'),
   },
-]);
+];
 
 const tableData = computed(() => {
-  if (['proxy_log'].includes(activeTab.value)) {
+  if (['proxy_log'].includes(traceStore.logActiveTab)) {
     return traceChainDetail?.logList?.filter(item => ['http', 'mcp'].includes(item.layer));
   }
 
-  if (['gateway_upstream'].includes(activeTab.value)) {
+  if (['gateway_upstream'].includes(traceStore.logActiveTab)) {
     return traceChainDetail?.logList?.filter(item => ['gateway_upstream'].includes(item.layer));
   }
 
-  if (['gateway_downstream'].includes(activeTab.value)) {
+  if (['gateway_downstream'].includes(traceStore.logActiveTab)) {
     return traceChainDetail?.logList?.filter(item => ['gateway_downstream'].includes(item.layer));
   }
 
@@ -146,10 +147,22 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'latency',
     ellipsis: true,
     cell: (_, { row }: { row?: IFlowLogTable }) => {
-      return row?.latency || row?.request_duration;
+      const duration = row?.latency || row?.request_duration;
+      if (!duration) {
+        return '--';
+      }
+      return String(duration).replace(/(\d+\.\d{2})\d*/, '$1');
     },
   },
 ]);
+
+const handleTabChange = (tab: string) => {
+  traceStore.setTraceLogTab(tab);
+};
+
+onMounted(() => {
+  tabKey = traceChainDetail?.request_id;
+});
 </script>
 
 <style lang="scss" scoped>

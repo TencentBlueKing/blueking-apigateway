@@ -375,7 +375,7 @@ const menuList = computed<IMenu[]>(() => [
       },
       {
         name: 'MCPServerObservability',
-        title: t('可观测性'),
+        title: t('可观测'),
         enabled: true,
       },
     ],

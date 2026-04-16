@@ -5,24 +5,25 @@
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://opensource.org/licenses/MIT.
+ *     http://opensource.org/licenses/MIT
  *
  * Unless required by applicable law or agreed to in writing, software distributed under
- * the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
  */
 
 import _groupBy from 'lodash-es/groupBy';
-import type { ISpan } from '@/components/trace-view/typings';
+import type { ISpan, ITimeTick } from '@/components/trace-view/typings';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 import './span-bar.scss';
 
 const SpanBarProps = {
   color: { type: String },
-  hintSide: { type: String },
   rpc: { type: Object },
   span: { type: Object as PropType<ISpan> },
   label: {
@@ -45,17 +46,9 @@ const SpanBarProps = {
     type: Number,
     default: 0,
   },
-  level: {
-    type: Number,
-    default: 0,
-  },
   totalTraceDuration: {
     type: Number,
     default: 0,
-  },
-  containerWidth: {
-    type: Number,
-    default: 1000,
   },
   numTicks: {
     type: Number,
@@ -71,14 +64,21 @@ export default defineComponent({
     const label = ref(props.shortLabel);
 
     // 百分比格式化
-    function toPercent(value: number) {
-      return `${(value * 100).toFixed(3)}%`;
+    function toPercent(value: number): string {
+      const percent = value * 100;
+
+      if (percent >= 99 && !['inside'].includes(labelPosition.value)) return '99%';
+
+      const decimalLen = (String(percent).split('.')[1] || '').length;
+      const formatted = decimalLen > 2 ? percent.toFixed(3) : percent;
+
+      return `${formatted}%`;
     }
 
     // 生成时间刻度
-    function generateTimeTicks(totalDuration: number) {
+    function generateTimeTicks(totalDuration: number): ITimeTick[] {
       if (!totalDuration || totalDuration <= 0) return [];
-      const ticks = [];
+      const ticks: ITimeTick[] = [];
       const step = Math.ceil(totalDuration / props.numTicks / 100) * 100;
       let current = 0;
 
@@ -98,6 +98,12 @@ export default defineComponent({
           label: `${totalDuration}ms`,
         });
       }
+
+      // 给最后一个刻度加 is-last 标记
+      if (ticks.length > 0) {
+        ticks[ticks.length - 1].isLast = true;
+      }
+
       return ticks;
     }
 
@@ -128,7 +134,13 @@ export default defineComponent({
     const barStyle = computed(() => {
       const total = props.totalTraceDuration || 1;
       const left = isFullWidth.value ? 0 : viewStart.value / total;
-      const width = isFullWidth.value ? 1 : (viewEnd.value - viewStart.value) / total;
+      let width = isFullWidth.value ? 1 : (viewEnd.value - viewStart.value) / total;
+
+      // 极短跨度（0.002ms）强制设置最小宽度
+      const minWidthPercent = 0.002;
+      if (width > 0 && width < minWidthPercent) {
+        width = minWidthPercent;
+      }
 
       return {
         backgroundColor: props.color,
@@ -165,7 +177,7 @@ export default defineComponent({
         {this.timeTicks.map(tick => (
           <div
             key={tick.time}
-            class="time-tick"
+            class={['time-tick', { 'is-last': tick.isLast }]}
             style={{ left: this.toPercent(tick.percent) }}
           />
         ))}

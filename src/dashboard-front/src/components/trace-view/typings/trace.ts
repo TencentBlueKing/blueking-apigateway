@@ -471,3 +471,11 @@ interface IOriginData {
     message: string
   }
 }
+
+// 定义时间刻度类型
+export interface ITimeTick {
+  time: number
+  percent: number
+  label: string
+  isLast?: boolean
+}
