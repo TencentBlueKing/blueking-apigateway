@@ -56,37 +56,16 @@ logger:
 
 
 
-## config for mcpServer
-mcpServer:
-  interval: 60
-  bkApiUrlTmpl: ""
+## config for metric/prometheus
+metric:
   ## Metric name prefix, should be aligned with the dashboard's PROMETHEUS_METRIC_NAME_PREFIX.
   ## Can also be overridden by the PROMETHEUS_METRIC_NAME_PREFIX environment variable.
-  metricNamePrefix: "bk_apigateway_"
-
-## config for trace
-tracing:
-  enable: true
-  endpoint: "127.0.0.1:4318"
-  ## report type: grpc/http
-  type: "http"
-  ## support: "always_on"/"always_off"/"trace_id_ratio"/"parentbased_always_on",if not config,default: "trace_id_ratio"
-  sampler: "trace_id_ratio"
-  samplerRatio: 0.001
-  token: "blueking"
-  serviceName: "apigateway-mcp-proxy"
-  instrument:
-    ginAPI: true
-    dbAPI: true
-    mcpAPI: true
-
-## config for pprof
-pprof:
-  username: "bk-apigateway"  # 可通过环境变量 PPROF_USERNAME 覆盖
-  password: "xxxxx"  # 可通过环境变量 PPROF_PASSWORD 覆盖，生产环境请使用强密码
+  namePrefix: "bk_apigateway_"
 
 ## config for mcp server
 mcpServer:
+  interval: 60
+  bkApiUrlTmpl: ""
   # messageUrlFormat / messageApplicationUrlFormat：蓝鲸网关资源路径模板；第一个 % 之前的段用于推导 SSE 对外前缀（网关剥前缀时与官方 SDK 的 endpoint 一致）
   # messageUrlFormat: "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
   # messageApplicationUrlFormat: "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/application/sse/message"
@@ -111,3 +90,24 @@ mcpServer:
     apiLogResponseSize: 1024
     # MCP API log response size limit (error responses, keeps more diagnostic info)
     apiLogErrorResponseSize: 4096
+
+## config for trace
+tracing:
+  enable: true
+  endpoint: "127.0.0.1:4318"
+  ## report type: grpc/http
+  type: "http"
+  ## support: "always_on"/"always_off"/"trace_id_ratio"/"parentbased_always_on",if not config,default: "trace_id_ratio"
+  sampler: "trace_id_ratio"
+  samplerRatio: 0.001
+  token: "blueking"
+  serviceName: "apigateway-mcp-proxy"
+  instrument:
+    ginAPI: true
+    dbAPI: true
+    mcpAPI: true
+
+## config for pprof
+pprof:
+  username: "bk-apigateway"  # 可通过环境变量 PPROF_USERNAME 覆盖
+  password: "xxxxx"  # 可通过环境变量 PPROF_PASSWORD 覆盖，生产环境请使用强密码

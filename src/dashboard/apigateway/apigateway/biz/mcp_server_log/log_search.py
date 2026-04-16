@@ -147,14 +147,16 @@ class MCPServerLogSearchClient:
         }
         # mcp_server_name 可能在顶层（MCP 协议层）或 __ext_json 中（HTTP 层），
         # 需要用 should 同时搜索两个位置
+        # 注意：必须用 term 精确匹配，match 会分词导致 "bk-apigateway-prod-context"
+        # 被拆成 bk/apigateway/prod/context 多个 token，筛选失效
         if self._mcp_server_name:
             from elasticsearch_dsl import Q  # noqa: PLC0415
 
             s = s.filter(
                 "bool",
                 should=[
-                    Q("match", mcp_server_name=self._mcp_server_name),
-                    Q("match", **{"__ext_json.mcp_server_name": self._mcp_server_name}),
+                    Q("term", mcp_server_name=self._mcp_server_name),
+                    Q("term", **{"__ext_json.mcp_server_name": self._mcp_server_name}),
                 ],
                 minimum_should_match=1,
             )
@@ -162,7 +164,7 @@ class MCPServerLogSearchClient:
         applied_filters = {}
         for field, value in term_fields.items():
             if value:
-                s = s.filter("match", **{field: value})
+                s = s.filter("term", **{field: value})
                 applied_filters[field] = value
         if applied_filters:
             logger.debug("MCPServerLogSearchClient applied term filters: %s", applied_filters)

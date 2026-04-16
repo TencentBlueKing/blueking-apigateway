@@ -167,6 +167,11 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
         # 合并 __ext_json 中的字段到顶层（Filebeat 提取的字段）
         log = _merge_ext_json(log)
 
+        # 清理 Filebeat 注入的日志文件路径：MCP 协议层日志（旧版本）可能没有输出 path 字段，
+        # 导致顶层 path 保留了 Filebeat 写入的日志文件物理路径（如 /app/logs/mcp_proxy_api.log）。
+        # 这类路径对用户无意义，应清空。
+        log = _sanitize_filebeat_path(log)
+
         # 排除文件访问日志：如果 __ext_json.method 为空，说明是文件访问日志
         # 真正的 HTTP 请求日志有 __ext_json.method 字段
         # 但 MCP 协议层日志（audit 日志）没有 __ext_json，通过 mcp_method 字段识别
@@ -208,4 +213,20 @@ def _merge_ext_json(log: Dict) -> Dict:
             # 优先覆盖字段：__ext_json 中的值始终优先
             if key in _EXT_JSON_OVERRIDE_FIELDS or key not in log or log.get(key) is None:
                 log[key] = value
+    return log
+
+
+def _sanitize_filebeat_path(log: Dict) -> Dict:
+    """清理 Filebeat 注入的日志文件物理路径
+
+    Filebeat 在采集日志时会在顶层写入 path 字段，值为日志文件的物理路径
+    （如 /app/logs/mcp_proxy_api.log）。对于 HTTP 层日志，__ext_json.path 会覆盖
+    该值（通过 _EXT_JSON_OVERRIDE_FIELDS）；但对于 MCP 协议层日志（旧版本未输出 path），
+    Filebeat 的文件路径会残留在顶层，对用户展示无意义。
+
+    判断逻辑：如果 path 以 .log 结尾，认为是 Filebeat 的文件路径，清空为空字符串。
+    """
+    path = log.get("path", "")
+    if path and isinstance(path, str) and path.endswith(".log"):
+        log["path"] = ""
     return log

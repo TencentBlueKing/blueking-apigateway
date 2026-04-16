@@ -231,6 +231,9 @@ func logMCPRequest(
 		zap.String("mcp_server_name", serverName),
 		zap.Int("mcp_server_id", mcpServerID),
 		zap.String("mcp_method", method),
+		// HTTP 请求信息：MCP 协议层不需要展示 HTTP path/method，置空保持字段一致
+		zap.String("method", ""),
+		zap.String("path", ""),
 		// 调用方信息
 		zap.String("app_code", appCode),
 		zap.String("bk_username", username),

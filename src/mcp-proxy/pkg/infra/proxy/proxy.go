@@ -1078,6 +1078,9 @@ func logToolCall(
 		zap.String("mcp_server_name", serverName),
 		zap.Int("mcp_server_id", ctxInfo.mcpServerID),
 		zap.String("mcp_method", "tools/call"),
+		// HTTP request info: MCP 协议层不需要展示 HTTP path/method，置空保持字段一致
+		zap.String("method", ""),
+		zap.String("path", ""),
 		// Caller info
 		zap.String("app_code", ctxInfo.appCode),
 		zap.String("bk_username", ctxInfo.username),
