@@ -239,21 +239,30 @@ class MCPServerLogSearchClient:
             "timeline": timeline,
         }
 
+    # __ext_json 中的业务字段应优先覆盖顶层同名字段。
+    # 原因：Filebeat 在顶层写入的 path 是日志文件路径（如 /app/logs/mcp_proxy_api.log），
+    # 而 __ext_json.path 才是真正的 HTTP 请求路径（如 /bk-apigateway-prod-context/mcp）。
+    # 类似的字段还有 method、gateway_name 等。
+    _EXT_JSON_OVERRIDE_FIELDS = frozenset({"path", "method", "gateway_name", "mcp_server_name"})
+
     def _to_log_display(self, hit: Dict) -> Dict:
         log = hit["_source"]
         log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
 
         # 合并 __ext_json 中的字段到顶层
-        # HTTP 层日志的 gateway_name、method、path 等字段存储在 __ext_json 中，
-        # 需要合并到顶层才能正常展示
+        # Go logger 输出的完整字段存储在 __ext_json 中，需要合并到顶层才能正常展示。
+        # 合并策略：
+        #   1. __ext_json 中的 None 值跳过（无意义）
+        #   2. _EXT_JSON_OVERRIDE_FIELDS 中的字段始终覆盖（顶层可能是 Filebeat 写入的无关数据）
+        #   3. 其他字段：顶层为 None 时用 __ext_json 的值填充（包括空字符串和零值，
+        #      因为它们表示"字段存在但无值"，比 null 更有意义）
         ext_json = log.get("__ext_json", {}) or {}
         if ext_json:
             for key, value in ext_json.items():
-                if (
-                    value is not None
-                    and value != ""
-                    and (key not in log or log.get(key) is None or log.get(key) == "")
-                ):
+                if value is None:
+                    continue
+                # 优先覆盖字段：__ext_json 中的值始终优先（顶层值可能是 Filebeat 写入的无关数据）
+                if key in self._EXT_JSON_OVERRIDE_FIELDS or key not in log or log.get(key) is None:
                     log[key] = value
 
         return log

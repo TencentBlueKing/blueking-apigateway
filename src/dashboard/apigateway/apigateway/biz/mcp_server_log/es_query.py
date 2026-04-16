@@ -183,15 +183,29 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
     return result
 
 
+# __ext_json 中的业务字段应优先覆盖顶层同名字段。
+# 原因：Filebeat 在顶层写入的 path 是日志文件路径（如 /app/logs/mcp_proxy_api.log），
+# 而 __ext_json.path 才是真正的 HTTP 请求路径（如 /bk-apigateway-prod-context/mcp）。
+# 类似的字段还有 method、gateway_name 等。
+_EXT_JSON_OVERRIDE_FIELDS = frozenset({"path", "method", "gateway_name", "mcp_server_name"})
+
+
 def _merge_ext_json(log: Dict) -> Dict:
     """合并 __ext_json 中的字段到顶层（Filebeat 提取的字段）
 
-    Filebeat 可能将某些字段提取到 __ext_json 中，需要合并到顶层。
-    只在顶层字段为空或不存在时，才用 __ext_json 中的值覆盖。
+    Go logger 输出的完整字段存储在 __ext_json 中，需要合并到顶层才能正常展示。
+    合并策略：
+      1. __ext_json 中的 None 值跳过（无意义）
+      2. _EXT_JSON_OVERRIDE_FIELDS 中的字段始终覆盖（顶层可能是 Filebeat 写入的无关数据）
+      3. 其他字段：顶层为 None 时用 __ext_json 的值填充（包括空字符串和零值，
+         因为它们表示"字段存在但无值"，比 null 更有意义）
     """
     ext_json = log.get("__ext_json", {}) or {}
     if ext_json:
         for key, value in ext_json.items():
-            if value is not None and value != "" and (key not in log or log.get(key) is None or log.get(key) == ""):
+            if value is None:
+                continue
+            # 优先覆盖字段：__ext_json 中的值始终优先
+            if key in _EXT_JSON_OVERRIDE_FIELDS or key not in log or log.get(key) is None:
                 log[key] = value
     return log

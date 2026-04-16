@@ -748,7 +748,13 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string) ToolHandler {
 		start := time.Now()
 
 		// Start a trace span for the actual upstream tool invocation
-		ctx, span := setupToolCallSpan(ctx, toolApiConfig.Name, toolApiConfig.Method, toolApiConfig.Url, toolApiConfig.Host)
+		ctx, span := setupToolCallSpan(
+			ctx,
+			toolApiConfig.Name,
+			toolApiConfig.Method,
+			toolApiConfig.Url,
+			toolApiConfig.Host,
+		)
 		if span != nil {
 			defer span.End()
 		}
