@@ -44,6 +44,7 @@ export function getFeatureFlags(params: {
     ALLOW_CREATE_APPCHAT: boolean
     ALLOW_UPLOAD_SDK_TO_REPOSITORY: boolean
     ENABLE_AI_COMPLETION: boolean
+    ENABLE_BK_CLI: boolean
     ENABLE_BK_NOTICE: boolean
     ENABLE_DISPLAY_NAME_RENDER: boolean
     ENABLE_GATEWAY_OPERATION_STATUS: boolean
@@ -88,6 +89,16 @@ export function getEnv() {
     CREATE_CHAT_API: string
     EDITION: string
     SEND_CHAT_API: string
+    CLI: {
+      DETAIL_URL: string
+      USER_KEY: string
+      USER_KEY_EXPIRE_DAYS: number
+      ACCESS_TOKEN_EXPIRE_DAYS: number
+      BK_API_URL_TMPL: string
+      GIT_REPO_URL: string
+      NPM_INSTALL_CMD: string
+      SKILL_NPM_INSTALL_CMD: string
+    }
     HELPER: {
       name: string
       href: string
