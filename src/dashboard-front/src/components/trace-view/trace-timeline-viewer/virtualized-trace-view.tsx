@@ -45,6 +45,17 @@ const VirtualizedTraceViewProps = {
   handleShowSpanDetail: Function as PropType<(span: ISpan) => void>,
 };
 
+/**
+ * 0 1 0 1 循环，无视层级
+ */
+export function handleSetBgColorIndex(list: RowState[]): RowState[] {
+  return list.map((item, index) => ({
+    ...item,
+    bgColorIndex: index % 2,
+  }));
+}
+
+// 同步修改 generateRowStates，传入完整 spans 数组
 export function generateRowStates(
   spans: ISpan[] | TNil,
   childrenHiddenIDs: Set<unknown>,
@@ -88,29 +99,11 @@ export function generateRowStates(
       });
     }
   }
+
+  // 纯 0 1 交替
   rowStates = handleSetBgColorIndex(rowStates);
 
   return rowStates;
-}
-
-/** 设置背景色层级 */
-function handleSetBgColorIndex(list: RowState[]) {
-  let bgColorIndex = 0;
-  return list.map((item: RowState, index: number) => {
-    if (index) {
-      const curDepth = item.span.depth;
-      const prevDepth = list[index - 1]?.span.depth;
-      if (curDepth !== prevDepth) {
-        // 与上一层层级不同则说明为间隔新区间
-        bgColorIndex += 1;
-      }
-    }
-
-    return {
-      ...item,
-      bgColorIndex,
-    };
-  });
 }
 
 export const DEFAULT_HEIGHTS = {

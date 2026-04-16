@@ -92,7 +92,7 @@ const toolList = shallowRef([
   },
   {
     id: 2,
-    name: t('调用链查询'),
+    name: t('MCP Server 调用链查询'),
     desc: t('根据 request_id 或 x_request_id 查询请求调用链'),
     comp: 'queryTraceChain',
   },

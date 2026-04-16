@@ -122,10 +122,7 @@
       </template>
       <!--  中间栏，当前 API 文档内容  -->
       <template #main>
-        <div
-          class="main-content-wrap"
-          :style="setResizeMainStyle"
-        >
+        <div class="main-content-wrap">
           <template v-if="selectedTool">
             <header class="tool-name">
               <div
@@ -380,13 +377,6 @@ const setSideMaxH = computed(() => {
   }
   const offsetH = isShowNoticeAlert.value ? 530 : 490;
   return `calc(100vh - ${offsetH}px)`;
-});
-const setResizeMainStyle = computed(() => {
-  if (page === 'market') {
-    return { height: '100%' };
-  }
-  const offsetH = isShowNoticeAlert.value ? 410 : 370;
-  return { height: `calc(100vh - ${offsetH}px)` };
 });
 
 // 这里初始化、或者修改别名的时候触发监听

@@ -133,8 +133,9 @@ export function formatDatetime(duration: number): string {
  * @return {string} formatted duration
  */
 export function formatDuration(duration: number, split: string = '', precision?: number | null): string {
-  if (precision) {
-    return `${duration.toFixed(precision)}${split}ms`;
+  const decimalLen = (String(duration).split('.')[1] || '').length;
+  if (precision && duration > 0) {
+    return decimalLen > precision ? `${duration.toFixed(precision)}${split}ms` : `${duration}${split}ms`;
   }
 
   // 直接以 ms 输出，完全不换算、不四舍五入

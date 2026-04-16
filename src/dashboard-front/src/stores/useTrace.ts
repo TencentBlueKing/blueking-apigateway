@@ -76,6 +76,7 @@ export const useTrace = defineStore('useTrace', () => {
   const compareTraceOriginalData = ref([]); // 对比 baseline 原始数据 用于查看 span详情原始数据
   const serviceSpanList = shallowRef<ISpan[]>([]);
   const activeSpan = ref(''); // 全局唯一的 activeSpan
+  const logActiveTab = ref('proxy_log');
 
   /** 更新页面 loading */
   function setPageLoading(v: boolean) {
@@ -105,6 +106,11 @@ export const useTrace = defineStore('useTrace', () => {
       status: item.root_status_code?.type,
       type: item.root_category,
     })) || [];
+  }
+
+  /** 更新 trace调用链 日志tab选项 */
+  function setTraceLogTab(tab: string) {
+    logActiveTab.value = tab;
   }
 
   function setTraceType(v: never[]) {
@@ -181,6 +187,44 @@ export const useTrace = defineStore('useTrace', () => {
     compareTraceOriginalData.value = list;
   }
 
+  /**
+ * 标准化处理网关日志项，统一添加 layer 标识
+ * @param log 原始日志数据
+ * @param layer 层级标识 (如 'gateway_upstream')
+ */
+  function createLogItem<
+    T extends Record<string, any>,
+  >(
+    log: T | null | undefined,
+    layer: string,
+  ): (T & { layer: string }) | null {
+    if (!log) {
+      return null;
+    }
+    return {
+      ...log,
+      layer,
+    };
+  }
+
+  /**
+ * 解析 TraceChain 数据并标准化上下游日志格式
+ * @param traceChain 原始链路数据
+ */
+  function parseTraceChainLogs(traceChain: ITraceLog | null | undefined) {
+    if (!traceChain) return {
+      upstream_log: null,
+      downstream_log: null,
+    };
+
+    const { upstream_gateway_log, downstream_gateway_log } = traceChain;
+
+    return {
+      upstream_log: createLogItem(upstream_gateway_log, 'gateway_upstream'),
+      downstream_log: createLogItem(downstream_gateway_log, 'gateway_downstream'),
+    };
+  }
+
   return {
     loading,
     traceLoading,
@@ -224,6 +268,9 @@ export const useTrace = defineStore('useTrace', () => {
     updateCompareTraceOriginalData,
     isTraceLoading,
     activeSpan,
+    logActiveTab,
     setActiveSpan,
+    setTraceLogTab,
+    parseTraceChainLogs,
   };
 });

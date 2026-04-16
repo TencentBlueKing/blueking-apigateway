@@ -57,7 +57,8 @@
     background-color: #fafbfd;
 
     .span-bar-wrapper,
-    .span-duration {
+    .span-duration,
+    .inside {
       background-color: #fafbfd;
     }
   }
@@ -84,8 +85,9 @@
 
     .span-view,
     .span-bar-wrapper,
-    .span-duration.inside {
-      background: #e1ecff;
+    .span-duration,
+    .inside {
+      background-color: #e1ecff;
     }
   }
 

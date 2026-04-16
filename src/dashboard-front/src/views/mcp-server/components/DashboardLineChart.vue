@@ -578,7 +578,7 @@ defineExpose({
     }
 
     &::-webkit-scrollbar-track {
-      background: transparent;
+      background-color: transparent;
     }
   }
 }

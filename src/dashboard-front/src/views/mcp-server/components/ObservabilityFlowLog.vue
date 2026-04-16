@@ -233,13 +233,34 @@ const getObservabilityLogList = async () => {
   const detailInstance = componentRefs.get('Detail');
   if (!detailInstance) return;
 
-  detailEmptyConf.value.emptyType = 'searchEmpty';
+  // 初始空状态
+  detailEmptyConf.value = {
+    emptyType: 'searchEmpty',
+    isAbnormal: false,
+  };
 
   try {
     const { params, path } = getSearchParams();
-    await detailInstance?.getList(params, path);
+
+    let pathParams = new URLSearchParams();
+    if (path && typeof path === 'string' && path.trim() !== '') {
+      pathParams = new URLSearchParams(path);
+    }
+
+    // 获取第一个参数
+    const pathEntries = Array.from(pathParams.entries());
+    const [pathKey, pathValue = ''] = pathEntries[0] || [];
+
+    const requestParams = { ...params };
+    if (pathKey) {
+      requestParams[pathKey] = pathValue;
+    }
+
+    // 调用实例获取列表
+    await detailInstance.getList(requestParams);
   }
   catch {
+    // 异常空状态
     detailEmptyConf.value = {
       emptyType: 'error',
       isAbnormal: true,
