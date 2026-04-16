@@ -142,6 +142,9 @@ export function getEnv() {
       PLUGIN_REQUEST_VALIDATION: string
       PLUGIN_RESPONSE_REWRITE: string
       PLUGIN_URI_BLOCKER: string
+      PLUGIN_BK_OAUTH2_PROTECTED_RESOURCE: string
+      PLUGIN_BK_OAUTH2_VERIFY: string
+      PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE: string
     }
   }>(`${path}/settings/env-vars/`);
 }
