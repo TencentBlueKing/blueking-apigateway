@@ -249,10 +249,10 @@ class MCPServerRequestBodySizeMetrics(BaseMCPServerMetrics):
     def _get_query_promql(self, gateway_name, mcp_server_name, app_code, step):
         # body size 指标不包含 app_code label，忽略 app_code 参数
         labels = self._get_mcp_labels_expression(gateway_name, mcp_server_name, app_code=None)
-        # 使用 sum(increase()) / count() 来计算平均值
+        # 使用 sum(increase()) / count() 来计算平均值，clamp_min 保护分母为0
         return (
             f"sum(increase({self.metric_name_prefix}mcp_proxy_mcp_request_body_size_bytes_sum{{{labels}}}[{step}])) / "
-            f"sum(increase({self.metric_name_prefix}mcp_proxy_mcp_request_body_size_bytes_count{{{labels}}}[{step}]))"
+            f"clamp_min(sum(increase({self.metric_name_prefix}mcp_proxy_mcp_request_body_size_bytes_count{{{labels}}}[{step}])), 1)"
         )
 
 
@@ -267,10 +267,10 @@ class MCPServerResponseBodySizeMetrics(BaseMCPServerMetrics):
     def _get_query_promql(self, gateway_name, mcp_server_name, app_code, step):
         # body size 指标不包含 app_code label，忽略 app_code 参数
         labels = self._get_mcp_labels_expression(gateway_name, mcp_server_name, app_code=None)
-        # 使用 sum(increase()) / count() 来计算平均值
+        # 使用 sum(increase()) / count() 来计算平均值，clamp_min 保护分母为0
         return (
             f"sum(increase({self.metric_name_prefix}mcp_proxy_mcp_response_body_size_bytes_sum{{{labels}}}[{step}])) / "
-            f"sum(increase({self.metric_name_prefix}mcp_proxy_mcp_response_body_size_bytes_count{{{labels}}}[{step}]))"
+            f"clamp_min(sum(increase({self.metric_name_prefix}mcp_proxy_mcp_response_body_size_bytes_count{{{labels}}}[{step}])), 1)"
         )
 
 

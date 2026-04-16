@@ -70,10 +70,22 @@ func LoggingMiddleware(serverName string) mcp.Middleware {
 
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
-			// Skip logging for tools/call - it is logged separately in the tool handler
-			// to avoid duplicate logs and to capture more detailed tool-specific information
+			// Skip logging for tools/call when successful - it is logged separately in the tool handler
+			// to avoid duplicate logs and to capture more detailed tool-specific information.
+			// However, if the call fails before reaching the tool handler (e.g., tool not found,
+			// framework validation error, routing error), we still need to log it for observability.
 			if method == "tools/call" {
-				return next(ctx, method, req)
+				result, err = next(ctx, method, req)
+				if err != nil {
+					start := time.Now()
+					logger.Error("tools/call failed before reaching tool handler",
+						zap.String("mcp_method", method),
+						zap.String("server_name", serverName),
+						zap.Error(err),
+					)
+					logMCPRequest(ctx, logger, serverName, method, req, result, err, start)
+				}
+				return result, err
 			}
 
 			start := time.Now()

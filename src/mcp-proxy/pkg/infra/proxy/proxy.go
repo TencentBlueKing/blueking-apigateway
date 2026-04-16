@@ -968,7 +968,9 @@ func recordToolCallMetrics(
 	}
 
 	duration := time.Since(start)
-	hasError := err != nil
+	// Check both err and result.IsError: MCP framework-level failures (e.g., upstream API errors)
+	// are often returned as CallToolResult{IsError: true} with err == nil
+	hasError := err != nil || (result != nil && result.IsError)
 	gatewayName := util.GetGatewayNameFromContext(ctx)
 	appCode := util.GetAppCodeFromContext(ctx)
 
@@ -1032,7 +1034,9 @@ func logToolCall(
 ) {
 	logger := logging.GetAPILogger()
 	duration := time.Since(start)
-	hasError := err != nil
+	// Check both err and result.IsError: MCP framework-level failures (e.g., upstream API errors)
+	// are often returned as CallToolResult{IsError: true} with err == nil
+	hasError := err != nil || (result != nil && result.IsError)
 
 	// Resolve truncation limits from config
 	logTruncate := config.G.McpServer.LogTruncate

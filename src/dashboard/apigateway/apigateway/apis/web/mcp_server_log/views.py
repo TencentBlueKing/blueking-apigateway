@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+import logging
 from datetime import datetime
 from io import StringIO
 
@@ -34,6 +35,8 @@ from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
 from apigateway.biz.mcp_server_log.utils import build_mcp_server_log_client
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
+
+logger = logging.getLogger(__name__)
 from apigateway.utils.time import SmartTimeRange
 
 from .serializers import (
@@ -120,6 +123,12 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
             offset=0,
             limit=limit,
         )
+
+        if total_count > limit:
+            logger.warning(
+                "MCP log export truncated: total_count=%s exceeds limit=%s, gateway=%s",
+                total_count, limit, request.gateway.name,
+            )
 
         gateway = request.gateway
 

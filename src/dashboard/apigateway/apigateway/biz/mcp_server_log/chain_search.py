@@ -94,9 +94,11 @@ class MCPServerLogChainSearchClient:
             return {
                 "request_id": self._request_id,
                 "x_request_id": "",
+                "timestamp": None,
                 "total_latency_ms": 0,
                 "spans": [],
-                "gateway_log": None,
+                "upstream_gateway_log": None,
+                "downstream_gateway_log": None,
             }
 
         # 2. 分类：HTTP 层 vs MCP 协议层
@@ -171,9 +173,11 @@ class MCPServerLogChainSearchClient:
             return {
                 "request_id": "",
                 "x_request_id": self._x_request_id,
+                "timestamp": None,
                 "total_latency_ms": 0,
                 "spans": [],
-                "gateway_log": None,
+                "upstream_gateway_log": None,
+                "downstream_gateway_log": None,
             }
 
         # 2. 分类：HTTP 层 vs MCP 协议层
