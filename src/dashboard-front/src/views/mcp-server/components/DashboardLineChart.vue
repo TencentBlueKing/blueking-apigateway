@@ -98,8 +98,14 @@ const {
   title = '响应耗时', // 图表 title
   chartData = {}, // 图表数据
 } = defineProps<IProps>();
-
 const emit = defineEmits<IEmits>();
+
+// 需要横向超过两个grid布局
+const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
+// 需要转换为毫秒的metrics
+const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
+// 需要转换为字节的metrics
+const displayBytesList = ['request_body_size', 'response_body_size'];
 
 const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
@@ -138,8 +144,11 @@ const getChartOption = () => {
   // 基础配置
   const baseOption: echarts.EChartOption = {
     grid: {
-      left: '36px',
-      right: '24px',
+      top: '15%',
+      left: '2%',
+      right: '1%',
+      bottom: '12%',
+      containLabel: true,
     },
     xAxis: {
       type: 'time',
@@ -199,12 +208,6 @@ const getChartOption = () => {
   };
 
   let moreOption: any = {};
-  // 需要横向超过两个grid布局
-  const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
-  // 需要转换为毫秒的metrics
-  const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
-  // 需要转换为字节的metrics
-  const displayBytesList = ['request_body_size', 'response_body_size'];
   const seriesData = (chartData as { series: ISeriesItemType[] }).series || [];
 
   // 处理业务数据，生成系列配置
