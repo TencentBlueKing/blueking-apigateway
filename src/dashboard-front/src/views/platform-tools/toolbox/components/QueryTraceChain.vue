@@ -50,6 +50,7 @@
       <BkLoading
         :loading="queryLoading"
         color="#ffffff"
+        :z-index="99"
       >
         <!-- 空状态 -->
         <div
