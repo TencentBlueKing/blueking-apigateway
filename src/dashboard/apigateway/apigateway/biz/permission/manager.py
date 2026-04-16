@@ -95,7 +95,9 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         """资源审批时，获取审批拒绝的资源名称列表"""
 
     @abstractmethod
-    def allow_apply_permission(self, gateway_id: int, bk_app_code: str) -> Tuple[bool, str]:
+    def allow_apply_permission(
+        self, gateway_id: int, bk_app_code: str, resource_ids: Optional[List[int]] = None
+    ) -> Tuple[bool, str]:
         """判断是否允许申请权限"""
 
     def create_apply_record(
@@ -219,7 +221,9 @@ class GatewayPermissionDimensionManager(PermissionDimensionManager):
         # 因此，按网关申请时，同意、拒绝，均删除申请状态记录
         AppPermissionApplyStatus.objects.filter(apply=apply).delete()
 
-    def allow_apply_permission(self, gateway_id: int, bk_app_code: str) -> Tuple[bool, str]:
+    def allow_apply_permission(
+        self, gateway_id: int, bk_app_code: str, resource_ids: Optional[List[int]] = None
+    ) -> Tuple[bool, str]:
         is_pending = AppPermissionApplyStatus.objects.is_permission_pending_by_gateway(gateway_id, bk_app_code)
         if is_pending:
             return False, _("权限申请中，请联系网关负责人审批。")
@@ -348,7 +352,41 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
 
         raise ValueError("unsupported apply status: {status}")
 
-    def allow_apply_permission(self, gateway_id: int, bk_app_code: str) -> Tuple[bool, str]:
-        return False, _("授权维度 grant_dimension 暂不支持 {grant_dimension}。").format(
+    def allow_apply_permission(
+        self, gateway_id: int, bk_app_code: str, resource_ids: Optional[List[int]] = None
+    ) -> Tuple[bool, str]:
+        # 检查待审批
+        qs = AppPermissionApplyStatus.objects.filter(
+            bk_app_code=bk_app_code,
+            gateway_id=gateway_id,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.PENDING.value,
         )
+        if resource_ids is not None:
+            qs = qs.filter(resource_id__in=resource_ids)
+
+        pending_resource_names = list(qs.values_list("resource__name", flat=True))
+        if pending_resource_names:
+            return False, _("[{names}] 资源权限申请中，请联系网关负责人审批。").format(
+                names=", ".join(pending_resource_names)
+            )
+
+        # 检查已拥有且未过期的权限（兼容旧接口，不检查是否传入 resource_ids）
+        existing_perms = AppResourcePermission.objects.filter(
+            gateway_id=gateway_id,
+            bk_app_code=bk_app_code,
+            resource_id__in=resource_ids,
+        )
+        unexpired_resource_ids = [perm.resource_id for perm in existing_perms if not perm.allow_apply_permission]
+        if unexpired_resource_ids:
+            unexpired_resource_names = list(
+                Resource.objects.filter(gateway_id=gateway_id, id__in=unexpired_resource_ids).values_list(
+                    "name", flat=True
+                )
+            )
+            if unexpired_resource_names:
+                return False, _("[{names}] 资源权限已存在且未过期，无需重复申请。").format(
+                    names=", ".join(unexpired_resource_names)
+                )
+
+        return True, ""

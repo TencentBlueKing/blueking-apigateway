@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
@@ -32,6 +32,7 @@ from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionA
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.models import Resource
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_application_url,
     build_mcp_server_detail_url,
@@ -100,7 +101,14 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         choices=PermissionApplyExpireDaysEnum.get_choices(),
         required=False,
     )
-    grant_dimension = serializers.ChoiceField(choices=[GrantDimensionEnum.API.value])
+    grant_dimension = serializers.ChoiceField(
+        choices=[GrantDimensionEnum.API.value, GrantDimensionEnum.RESOURCE.value]
+    )
+    resource_names = serializers.ListField(
+        child=serializers.CharField(required=True),
+        allow_empty=True,
+        required=False,
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyInputSLZ"
@@ -117,10 +125,34 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         return value
 
     def validate(self, data):
-        self._validate_allow_apply(data["target_app_code"], data["grant_dimension"])
+        data["resource_ids"] = []
+        if data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value:
+            data["resource_ids"] = self._validate_resource_names(data.get("resource_names"))
+
+        self._validate_allow_apply(data["target_app_code"], data["grant_dimension"], data["resource_ids"])
         return data
 
-    def _validate_allow_apply(self, bk_app_code: str, grant_dimension: str):
+    def _validate_resource_names(self, resource_names) -> List[int]:
+        """
+        校验 resource_names 参数
+        - resource_names 不能为空
+        - resource_names 中的资源名必须存在
+        - 返回校验通过的 resource_ids
+        """
+        if not resource_names:
+            raise serializers.ValidationError(_("按资源申请权限时，参数 resource_names 不能为空。"))
+
+        gateway = self.context["request"].gateway
+        resource_qs = Resource.objects.filter(gateway=gateway, name__in=resource_names).values_list("id", "name")
+        existing = dict(resource_qs)
+        invalid_names = set(resource_names) - set(existing.values())
+        if invalid_names:
+            raise serializers.ValidationError(
+                _("资源不存在：{names}。").format(names=", ".join(sorted(invalid_names)))
+            )
+        return list(existing.keys())
+
+    def _validate_allow_apply(self, bk_app_code: str, grant_dimension: str, resource_ids: Optional[List[int]] = None):
         """
         校验是否允许申请权限
         - 已拥有权限，且未过期，不能申请
@@ -129,6 +161,7 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         allow, reason = PermissionDimensionManager.get_manager(grant_dimension).allow_apply_permission(
             self.context["request"].gateway.id,
             bk_app_code,
+            resource_ids=resource_ids,
         )
         if not allow:
             raise serializers.ValidationError(reason)
