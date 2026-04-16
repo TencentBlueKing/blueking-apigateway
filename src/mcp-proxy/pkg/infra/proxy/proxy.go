@@ -1041,82 +1041,20 @@ func logToolCall(
 	// Resolve truncation limits from config
 	logTruncate := config.G.McpServer.LogTruncate
 
-	// Serialize request params
-	var params string
-	var requestBodySize int64
-	if req != nil && req.Params != nil && req.Params.Arguments != nil {
-		if paramsBytes, marshalErr := json.Marshal(req.Params.Arguments); marshalErr == nil {
-			requestBodySize = int64(len(paramsBytes))
-			params = stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
-		}
-	}
-
-	// Serialize response result
-	var response string
-	var responseBodySize int64
-	var upstreamRequestID string
-	if result != nil {
-		if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
-			responseBodySize = int64(len(resultBytes))
-			if hasError {
-				response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
-			} else {
-				response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
-			}
-			// Extract upstream request_id from result for traceability
-			upstreamRequestID = extractUpstreamRequestID(result)
-		}
-	}
+	// Serialize request params and response
+	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
+	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(result, hasError, logTruncate)
 
 	// Retrieve extra info from context
-	gatewayID := util.GetGatewayIDFromContext(ctx)
-	gatewayName := util.GetGatewayNameFromContext(ctx)
-	mcpServerID := util.GetMCPServerIDFromContext(ctx)
-	requestID := util.GetRequestIDFromContext(ctx)
-	xRequestID := util.GetXRequestIDFromContext(ctx)
-	appCode := util.GetAppCodeFromContext(ctx)
-	username := util.GetUsernameFromContext(ctx)
-	clientIP := util.GetClientIPFromContext(ctx)
-	clientID := util.GetClientIDFromContext(ctx)
+	ctxInfo := extractToolCallContextInfo(ctx, req)
 
-	// Extract X-Request-ID from request header if not found in context
-	if xRequestID == "" && req != nil {
-		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-			xRequestID = extra.Header.Get(constant.RequestIDHeaderKey)
-		}
-	}
-
-	// Extract X-Bkapi-Request-ID from request header if not found in context
-	// This is the request_id for the MCP request
-	if requestID == "" && req != nil {
-		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-			requestID = extra.Header.Get(constant.BkGatewayRequestIDKey)
-		}
-	}
-
-	// Try to get gateway_name from cache if not found in context
-	if gatewayName == "" && gatewayID > 0 {
-		if gateway, err := cacheimpls.GetGatewayByID(ctx, gatewayID); err == nil && gateway != nil {
-			gatewayName = gateway.Name
-		}
-	}
-
-	// Get session ID and client_id from session's InitializeParams
-	var sessionID string
-	if req != nil {
-		if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
-			sessionID = ss.ID()
-			// Enrich client_id with clientInfo from initialize handshake
-			if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
-				clientID = initParams.ClientInfo.Name
-			}
-		}
-	}
+	// Get session info
+	sessionID, clientID := extractToolCallSessionInfo(req, ctxInfo.clientID)
 
 	// trace_id from HTTP layer
 	traceID := trace.GetTraceIDFromContext(ctx)
 
-	// Status: success or failed
+	// Build log fields
 	status := "success"
 	if hasError {
 		status = "failed"
@@ -1124,20 +1062,20 @@ func logToolCall(
 
 	fields := []zap.Field{
 		// Trace identifiers
-		zap.String("request_id", requestID),
-		zap.String("x_request_id", xRequestID),
+		zap.String("request_id", ctxInfo.requestID),
+		zap.String("x_request_id", ctxInfo.xRequestID),
 		zap.String("session_id", sessionID),
 		// Gateway info
-		zap.Int("gateway_id", gatewayID),
-		zap.String("gateway_name", gatewayName),
+		zap.Int("gateway_id", ctxInfo.gatewayID),
+		zap.String("gateway_name", ctxInfo.gatewayName),
 		// MCP request info
 		zap.String("mcp_server_name", serverName),
-		zap.Int("mcp_server_id", mcpServerID),
+		zap.Int("mcp_server_id", ctxInfo.mcpServerID),
 		zap.String("mcp_method", "tools/call"),
 		// Caller info
-		zap.String("app_code", appCode),
-		zap.String("bk_username", username),
-		zap.String("client_ip", clientIP),
+		zap.String("app_code", ctxInfo.appCode),
+		zap.String("bk_username", ctxInfo.username),
+		zap.String("client_ip", ctxInfo.clientIP),
 		zap.String("client_id", clientID),
 		// Tool specific fields
 		zap.String("tool_name", toolName),
@@ -1169,6 +1107,111 @@ func logToolCall(
 	}
 
 	logger.Info("-", fields...)
+}
+
+// serializeToolCallRequest serializes the tool call request params.
+func serializeToolCallRequest(req *mcp.CallToolRequest, logTruncate config.LogTruncate) (string, int64) {
+	if req == nil || req.Params == nil || req.Params.Arguments == nil {
+		return "", 0
+	}
+	paramsBytes, marshalErr := json.Marshal(req.Params.Arguments)
+	if marshalErr != nil {
+		return "", 0
+	}
+	requestBodySize := int64(len(paramsBytes))
+	params := stringx.Truncate(string(paramsBytes), logTruncate.GetAPILogRequestSize())
+	return params, requestBodySize
+}
+
+// serializeToolCallResponse serializes the tool call response result.
+func serializeToolCallResponse(
+	result *mcp.CallToolResult,
+	hasError bool,
+	logTruncate config.LogTruncate,
+) (string, int64, string) {
+	if result == nil {
+		return "", 0, ""
+	}
+	resultBytes, marshalErr := json.Marshal(result)
+	if marshalErr != nil {
+		return "", 0, ""
+	}
+	responseBodySize := int64(len(resultBytes))
+	var response string
+	if hasError {
+		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
+	} else {
+		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
+	}
+	upstreamRequestID := extractUpstreamRequestID(result)
+	return response, responseBodySize, upstreamRequestID
+}
+
+// toolCallContextInfo holds context-derived info for tool call logging.
+type toolCallContextInfo struct {
+	requestID   string
+	xRequestID  string
+	gatewayID   int
+	gatewayName string
+	mcpServerID int
+	appCode     string
+	username    string
+	clientIP    string
+	clientID    string
+}
+
+// extractToolCallContextInfo extracts gateway, request, and caller info from context and request headers.
+func extractToolCallContextInfo(ctx context.Context, req *mcp.CallToolRequest) toolCallContextInfo {
+	info := toolCallContextInfo{
+		gatewayID:   util.GetGatewayIDFromContext(ctx),
+		gatewayName: util.GetGatewayNameFromContext(ctx),
+		mcpServerID: util.GetMCPServerIDFromContext(ctx),
+		requestID:   util.GetRequestIDFromContext(ctx),
+		xRequestID:  util.GetXRequestIDFromContext(ctx),
+		appCode:     util.GetAppCodeFromContext(ctx),
+		username:    util.GetUsernameFromContext(ctx),
+		clientIP:    util.GetClientIPFromContext(ctx),
+		clientID:    util.GetClientIDFromContext(ctx),
+	}
+
+	// Extract X-Request-ID from request header if not found in context
+	if info.xRequestID == "" && req != nil {
+		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
+			info.xRequestID = extra.Header.Get(constant.RequestIDHeaderKey)
+		}
+	}
+
+	// Extract X-Bkapi-Request-ID from request header if not found in context
+	if info.requestID == "" && req != nil {
+		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
+			info.requestID = extra.Header.Get(constant.BkGatewayRequestIDKey)
+		}
+	}
+
+	// Try to get gateway_name from cache if not found in context
+	if info.gatewayName == "" && info.gatewayID > 0 {
+		if gw, err := cacheimpls.GetGatewayByID(ctx, info.gatewayID); err == nil && gw != nil {
+			info.gatewayName = gw.Name
+		}
+	}
+
+	return info
+}
+
+// extractToolCallSessionInfo extracts session ID and client_id from the MCP session.
+func extractToolCallSessionInfo(req *mcp.CallToolRequest, clientID string) (string, string) {
+	if req == nil {
+		return "", clientID
+	}
+	var sessionID string
+	if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+		sessionID = ss.ID()
+		// Enrich client_id with clientInfo from initialize handshake
+		if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
+			clientID = initParams.ClientInfo.Name
+		}
+	}
+	return sessionID, clientID
 }
 
 // extractUpstreamRequestID extracts the upstream API request_id from tool call result.
