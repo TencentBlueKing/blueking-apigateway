@@ -35,8 +35,6 @@ from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
 from apigateway.biz.mcp_server_log.utils import build_mcp_server_log_client
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
-
-logger = logging.getLogger(__name__)
 from apigateway.utils.time import SmartTimeRange
 
 from .serializers import (
@@ -46,6 +44,8 @@ from .serializers import (
     MCPServerLogQuerySummaryOutputSLZ,
     MCPServerLogTimeChartOutputSLZ,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(
