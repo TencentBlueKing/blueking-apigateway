@@ -41,7 +41,7 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: 'cli',
+    path: 'bk-cli',
     name: 'PlatformToolsCLI',
     component: () => import('@/views/platform-tools/cli/Index.vue'),
     meta: {

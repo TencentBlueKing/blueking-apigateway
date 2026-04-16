@@ -33,6 +33,7 @@ export const useFeatureFlag = defineStore('useFeatureFlag', {
       ALLOW_CREATE_APPCHAT: false,
       ALLOW_UPLOAD_SDK_TO_REPOSITORY: false,
       ENABLE_AI_COMPLETION: false,
+      ENABLE_BK_CLI: false,
       ENABLE_BK_NOTICE: false,
       ENABLE_DISPLAY_NAME_RENDER: false,
       ENABLE_GATEWAY_OPERATION_STATUS: false,
