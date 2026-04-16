@@ -57,32 +57,100 @@
         </BkAlert>
         <CodeBlock :code="dryRunCode" />
       </div>
+
+      <!-- 更多用法 -->
+      <div class="step-section">
+        <div class="step-header">
+          <!--          <div class="header-icon-wrapper"> -->
+          <!--            <AgIcon -->
+          <!--              name="insights" -->
+          <!--              size="16" -->
+          <!--              color="#3A84FF" -->
+          <!--            /> -->
+          <!--          </div> -->
+          <span class="step-title">{{ t('更多用法') }}</span>
+          <span class="step-sub-title">{{ t('通过查看帮助信息探索所有支持的系统及操作') }}</span>
+        </div>
+        <CodeBlock :code="moreUsageCode" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import CodeBlock from './CodeBlock.vue';
+import { useEnv } from '@/stores';
 
 const { t } = useI18n();
+const envStore = useEnv();
 
-// 代码内容留空，由用户自行填写
-const multiContextCode = `# 创建不同环境的上下文
+const multiContextCode = computed(() => `# ${t('创建不同环境的上下文')}
 $ bk-cli context create clouds \\
-  --bk_api_url_tmpl"https://bkapi.clouds.example.com/api/{gateway_name}/"
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"
 
-# 在上下文之间切换
+# ${t('在上下文之间切换')}
 $ bk-cli context use clouds
 
-# 列出所有上下文
+# ${t('列出所有上下文')}
 $ bk-cli context list
 
-# 单个命令覆盖上下文
-$ bk-cli api bk-iam GET /api/v2/systems/ --context devops`;
-const dryRunCode = `# 预览请求而不实际执行
+# ${t('单个命令覆盖上下文')}
+$ bk-cli api bk-iam GET /api/v2/systems/ --context devops`);
+
+const dryRunCode = computed(() => `# ${t('预览请求而不实际执行')}
 $ bk-cli api bk-demo POST /api/v2/resources/ \\
   --body '{"name": "test"}' \\
-  --dry-run`;
+  --dry-run`);
+
+const moreUsageCode = computed(() => `# ${t('查看帮助')}
+$ bk-cli -h
+
+Available Commands:
+  api         [root] Make raw API calls to BlueKing API gateways
+  apigateway  [system] BlueKing API Gateway management - discover gateways and APIs
+  auth        [root] Manage authentication credentials
+  cmdb        [system] BlueKing CMDB system commands
+  completion  [root] Generate the autocompletion script for the specified shell
+  context     [root] Manage CLI contexts (BlueKing deployments)
+  devops      [system] BlueKing CI/CD (DevOps) pipeline commands
+  gse         [system] BlueKing GSE agent management commands
+  help        [root] Help about any command
+  job         [system] BlueKing Job platform (BK-JOB) commands
+  nodeman     [system] BlueKing Node Management commands
+  sops        [system] BlueKing Standard OPS (SOPS) commands
+  update      [root] Update bk-cli to the latest version
+  version     [root] Show version and context information
+
+# ${t('查看子命令帮助')} bk-cli {subcommand} -h
+$ bk-cli  apigateway -h
+
+Available Commands:
+  demo_action                  Example Go-implemented orchestration action
+  list_gateway_apis            List APIs of a specific gateway
+  list_gateways                List all API gateways
+  retrieve_gateway_api_details Get detailed API schema for a specific resource
+
+# ${t('查看子命令action的帮助')} bk-cli {subcommand} {action} -h
+$ bk-cli apigateway list_gateways -h
+
+Usage:
+  bk-cli apigateway list_gateways [flags]
+
+Examples:
+  bk-cli apigateway list_gateways --name bk-iam
+  bk-cli apigateway list_gateways --name iam --fuzzy
+  bk-cli apigateway list_gateways --keyword monitor
+
+Flags:
+      --body string          [Optional] JSON request body
+      --fuzzy                Enable fuzzy name matching
+      --header stringArray   [Optional] Additional headers (key:value, repeatable; auth/tenant overrides allowed)
+  -h, --help                 help for list_gateways
+      --keyword string       Search keyword in description
+      --name string          Gateway name filter
+      --stage string         [Optional] API gateway stage (default "prod")
+`);
+
 </script>
 
 <style scoped lang="scss">
@@ -161,6 +229,11 @@ $ bk-cli api bk-demo POST /api/v2/resources/ \\
           font-weight: 700;
           line-height: 22px;
           color: #313238;
+        }
+
+        .step-sub-title {
+          line-height: 22px;
+          color: #979ba5;
         }
       }
 
