@@ -26,7 +26,7 @@ from apigateway.service.es.clients import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
-from .constants import MCP_SERVER_LOG_OUTPUT_FIELDS
+from .constants import MCP_SERVER_LOG_OUTPUT_FIELDS, STATUS_HTTP_CODES
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +90,10 @@ class MCPServerLogSearchClient:
         """查询 MCP Server 日志列表"""
         s = self._build_logs_search(offset=offset, limit=limit, order=True)
         query_dict = s.to_dict()
-        logger.debug("MCPServerLogSearchClient search_logs query: %s", query_dict)
+        logger.info("MCPServerLogSearchClient search_logs query: %s", query_dict)
         data = self._es_client.execute_search(query_dict)
         hits = data["hits"]
-        logger.debug(
+        logger.info(
             "MCPServerLogSearchClient search_logs result: total=%s, hits_count=%s", hits["total"], len(hits["hits"])
         )
         return hits["total"], [self._to_log_display(hit) for hit in hits["hits"]]
@@ -110,9 +110,20 @@ class MCPServerLogSearchClient:
         # mcp-proxy 的 HTTP 层日志和 MCP 协议层日志共用同一个 ES index，
         # 同时展示 HTTP 层和 MCP 协议层日志，不再强制要求 mcp_method 字段存在
 
-        # 使用 gateway_id 做精确过滤（与普通网关日志 LogSearchClient 对齐，使用整数 term 查询）
+        # BKLog 中 Go logger 输出的字段存储在 __ext_json 中，gateway_id 需要同时搜顶层和 __ext_json
+        # 注意：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
+        # 把 __ext_json 前缀的 __ 去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict
         if self._gateway_id:
-            s = s.filter("term", gateway_id=self._gateway_id)
+            from elasticsearch_dsl import Q  # noqa: PLC0415
+
+            s = s.filter(
+                "bool",
+                should=[
+                    Q("term", gateway_id=self._gateway_id),
+                    Q({"term": {"__ext_json.gateway_id": self._gateway_id}}),
+                ],
+                minimum_should_match=1,
+            )
 
         s = self._apply_term_filters(s)
         s = self._apply_conditions(s)
@@ -129,46 +140,85 @@ class MCPServerLogSearchClient:
     def _apply_term_filters(self, s: Search) -> Search:
         """Apply term filters for MCP-specific fields.
 
-        注意：HTTP 层日志的部分字段（如 gateway_name, mcp_server_name, method, path 等）
+        注意：HTTP 层日志的部分字段（如 mcp_server_name, app_code, request_id 等）
         存储在 __ext_json 中而非顶层。对于这些字段，需要同时搜索顶层和 __ext_json 嵌套路径。
+        BKLog 中 __ext_json 是 flattened 类型，支持 term 查询。
 
         gateway_name 不在此处过滤，因为已通过 gateway_id（整数，总在顶层）做精确过滤。
+        mcp_method/tool_name/prompt_name 仅存在于 MCP 协议层日志的顶层，无需搜 __ext_json。
+
+        重要：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
+        把 __ext_json 的 __ 前缀去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict。
         """
-        # 只过滤 MCP 协议层字段（这些字段在 MCP 层日志中位于顶层）
-        term_fields = {
+        from elasticsearch_dsl import Q  # noqa: PLC0415
+
+        # MCP 协议层专属字段，仅存在于顶层
+        top_level_only_fields = {
             "mcp_method": self._mcp_method,
             "tool_name": self._tool_name,
             "prompt_name": self._prompt_name,
+        }
+        for field, value in top_level_only_fields.items():
+            if value:
+                s = s.filter("term", **{field: value})
+
+        # 同时搜索顶层和 __ext_json 的字段（HTTP 层日志这些字段在 __ext_json 中）
+        both_level_fields = {
+            "mcp_server_name": self._mcp_server_name,
             "app_code": self._app_code,
             "request_id": self._request_id,
             "x_request_id": self._x_request_id,
             "session_id": self._session_id,
-            "status": self._status,
         }
-        # mcp_server_name 可能在顶层（MCP 协议层）或 __ext_json 中（HTTP 层），
-        # 需要用 should 同时搜索两个位置
-        # 注意：必须用 term 精确匹配，match 会分词导致 "bk-apigateway-prod-context"
-        # 被拆成 bk/apigateway/prod/context 多个 token，筛选失效
-        if self._mcp_server_name:
-            from elasticsearch_dsl import Q  # noqa: PLC0415
-
-            s = s.filter(
-                "bool",
-                should=[
-                    Q("term", mcp_server_name=self._mcp_server_name),
-                    Q("term", **{"__ext_json.mcp_server_name": self._mcp_server_name}),
-                ],
-                minimum_should_match=1,
-            )
-
-        applied_filters = {}
-        for field, value in term_fields.items():
+        for field, value in both_level_fields.items():
             if value:
-                s = s.filter("term", **{field: value})
-                applied_filters[field] = value
-        if applied_filters:
-            logger.debug("MCPServerLogSearchClient applied term filters: %s", applied_filters)
+                s = s.filter(
+                    "bool",
+                    should=[
+                        Q("term", **{field: value}),
+                        Q({"term": {f"__ext_json.{field}": value}}),
+                    ],
+                    minimum_should_match=1,
+                )
+
+        # status 字段需要特殊处理：HTTP 层 status 是整数（如 200、500），
+        # MCP 协议层 status 是字符串（"success"/"failed"），需要同时兼容两种格式。
+        if self._status:
+            s = self._filter_status(s)
         return s
+
+    def _filter_status(self, s: Search) -> Search:
+        """过滤 status 字段，同时兼容 MCP 层字符串和 HTTP 层整数格式。
+
+        MCP 协议层: status 是字符串 "success"/"failed"，在顶层。
+        HTTP 层: status 是整数 HTTP 状态码（如 200），存储在 __ext_json 中，
+                 但 __ext_json 是 flattened 类型（所有值为字符串），且顶层 status
+                 的 mapping 类型不确定（可能是 keyword 或 integer）。
+
+        策略：用 terms 枚举具体状态码值（同时包含 int 和 str 两种形式），
+        避免 range 查询在 keyword/flattened 类型上的不确定行为。
+        """
+        from elasticsearch_dsl import Q  # noqa: PLC0415
+
+        status_value = self._status
+        http_codes = STATUS_HTTP_CODES.get(status_value or "", [])
+
+        should_clauses = [
+            # MCP 协议层：status 是字符串 "success"/"failed"
+            Q("term", status=status_value),
+            Q({"term": {"__ext_json.status": status_value}}),
+        ]
+
+        if http_codes:
+            # HTTP 层：status 是 HTTP 状态码，用 terms 同时匹配 int 和 str 形式
+            should_clauses.append(Q("terms", status=http_codes))
+            should_clauses.append(Q({"terms": {"__ext_json.status": http_codes}}))
+
+        return s.filter(
+            "bool",
+            should=should_clauses,
+            minimum_should_match=1,
+        )
 
     def _apply_conditions(self, s: Search) -> Search:
         """Apply include/exclude conditions."""
@@ -247,9 +297,26 @@ class MCPServerLogSearchClient:
     # 类似的字段还有 method、gateway_name 等。
     _EXT_JSON_OVERRIDE_FIELDS = frozenset({"path", "method", "gateway_name", "mcp_server_name"})
 
+    def _normalize_status(self, status_value) -> str:
+        """将 status 字段统一为 "success"/"failed" 字符串格式。
+
+        HTTP 层日志的 status 是整数（如 200、500），
+        MCP 协议层日志的 status 是字符串（"success"/"failed"）。
+        前端统一展示为字符串格式。
+        """
+        if isinstance(status_value, int):
+            return "success" if 200 <= status_value < 400 else "failed"
+        if isinstance(status_value, str):
+            return status_value
+        return str(status_value) if status_value is not None else ""
+
     def _to_log_display(self, hit: Dict) -> Dict:
         log = hit["_source"]
         log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
+
+        # 判断是否是 MCP 协议层日志（有 mcp_method 字段）
+        # MCP 层日志不需要展示 HTTP path/method，置空
+        is_mcp_layer = bool(log.get("mcp_method"))
 
         # 合并 __ext_json 中的字段到顶层
         # Go logger 输出的完整字段存储在 __ext_json 中，需要合并到顶层才能正常展示。
@@ -258,13 +325,21 @@ class MCPServerLogSearchClient:
         #   2. _EXT_JSON_OVERRIDE_FIELDS 中的字段始终覆盖（顶层可能是 Filebeat 写入的无关数据）
         #   3. 其他字段：顶层为 None 时用 __ext_json 的值填充（包括空字符串和零值，
         #      因为它们表示"字段存在但无值"，比 null 更有意义）
+        #   4. MCP 层日志的 path/method 保持为空，不从 __ext_json 覆盖
         ext_json = log.get("__ext_json", {}) or {}
         if ext_json:
             for key, value in ext_json.items():
                 if value is None:
                     continue
+                # MCP 层日志：path 和 method 保持为空（Go 层已置空）
+                if is_mcp_layer and key in ("path", "method"):
+                    continue
                 # 优先覆盖字段：__ext_json 中的值始终优先（顶层值可能是 Filebeat 写入的无关数据）
                 if key in self._EXT_JSON_OVERRIDE_FIELDS or key not in log or log.get(key) is None:
                     log[key] = value
+
+        # 统一 status 展示格式：HTTP 层整数状态码映射为 "success"/"failed"
+        if "status" in log and log["status"] is not None:
+            log["status"] = self._normalize_status(log["status"])
 
         return log

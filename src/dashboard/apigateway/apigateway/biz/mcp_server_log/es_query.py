@@ -42,10 +42,29 @@ def search_all_layers(
     s = Search()
 
     # 根据传入的参数决定查询条件
+    # BKLog 中 __ext_json 是 flattened 类型，request_id/x_request_id 同时搜索顶层和 __ext_json
+    # 注意：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
+    # 把 __ext_json 前缀的 __ 去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict
+    from elasticsearch_dsl import Q  # noqa: PLC0415
+
     if request_id:
-        s = s.filter("term", request_id=request_id)
+        s = s.filter(
+            "bool",
+            should=[
+                Q("term", request_id=request_id),
+                Q({"term": {"__ext_json.request_id": request_id}}),
+            ],
+            minimum_should_match=1,
+        )
     elif x_request_id:
-        s = s.filter("term", x_request_id=x_request_id)
+        s = s.filter(
+            "bool",
+            should=[
+                Q("term", x_request_id=x_request_id),
+                Q({"term": {"__ext_json.x_request_id": x_request_id}}),
+            ],
+            minimum_should_match=1,
+        )
     else:
         return []
 
@@ -104,7 +123,16 @@ def search_by_upstream_request_id(
         return []
 
     s = Search()
-    s = s.filter("term", upstream_request_id=upstream_request_id)
+    from elasticsearch_dsl import Q  # noqa: PLC0415
+
+    s = s.filter(
+        "bool",
+        should=[
+            Q("term", upstream_request_id=upstream_request_id),
+            Q({"term": {"__ext_json.upstream_request_id": upstream_request_id}}),
+        ],
+        minimum_should_match=1,
+    )
 
     # 添加默认时间范围（最近7天）
     time_range = SmartTimeRange(time_range=_DEFAULT_TIME_RANGE_SECONDS)
@@ -204,11 +232,18 @@ def _merge_ext_json(log: Dict) -> Dict:
       2. _EXT_JSON_OVERRIDE_FIELDS 中的字段始终覆盖（顶层可能是 Filebeat 写入的无关数据）
       3. 其他字段：顶层为 None 时用 __ext_json 的值填充（包括空字符串和零值，
          因为它们表示"字段存在但无值"，比 null 更有意义）
+      4. MCP 层日志（有 mcp_method）的 path/method 保持为空，不从 __ext_json 覆盖
     """
+    # 判断是否是 MCP 协议层日志
+    is_mcp_layer = bool(log.get("mcp_method"))
+
     ext_json = log.get("__ext_json", {}) or {}
     if ext_json:
         for key, value in ext_json.items():
             if value is None:
+                continue
+            # MCP 层日志：path 和 method 保持为空（Go 层已置空）
+            if is_mcp_layer and key in ("path", "method"):
                 continue
             # 优先覆盖字段：__ext_json 中的值始终优先
             if key in _EXT_JSON_OVERRIDE_FIELDS or key not in log or log.get(key) is None:

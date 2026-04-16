@@ -76,9 +76,12 @@ def search_gateway_log(request_id: str, gateway_type: str = "upstream") -> Optio
 
 def _format_gateway_log(log: Dict, gateway_type: str) -> Dict:
     """格式化网关日志"""
+    # 下游网关使用实际的 backend_name 字段作为 service 名称
+    service = log.get("backend_name") or "biz-gateway" if gateway_type == "downstream" else "bk-apigateway"
+
     return {
         "layer": "gateway",
-        "service": "bk-apigateway" if gateway_type == "upstream" else "biz-gateway",
+        "service": service,
         "timestamp": log.get("timestamp"),
         "request_id": log.get("request_id"),
         "method": log.get("method"),

@@ -149,6 +149,56 @@ MCP_SERVER_LOG_FIELDS = [
 
 MCP_SERVER_LOG_OUTPUT_FIELDS = [field["field"] for field in MCP_SERVER_LOG_FIELDS]
 
+# 前端 status 参数到 HTTP 状态码的映射
+# MCP 协议层 status 是字符串 "success"/"failed"
+# HTTP 层 status 是整数（如 200、500），但 ES 中 status 字段可能是 keyword 类型
+# （由第一条写入的日志决定 mapping），且 __ext_json 是 flattened 类型（所有值为字符串）。
+# 因此必须同时用 整数值 和 字符串值 匹配，且不能依赖 range 查询（keyword 上 range 行为不确定）。
+STATUS_HTTP_CODES = {
+    "success": [
+        # 整数形式（适用于 integer/long 类型 mapping）
+        200,
+        201,
+        202,
+        204,
+        301,
+        302,
+        304,
+        # 字符串形式（适用于 keyword/flattened 类型 mapping）
+        "200",
+        "201",
+        "202",
+        "204",
+        "301",
+        "302",
+        "304",
+    ],
+    "failed": [
+        400,
+        401,
+        403,
+        404,
+        405,
+        408,
+        429,
+        500,
+        502,
+        503,
+        504,
+        "400",
+        "401",
+        "403",
+        "404",
+        "405",
+        "408",
+        "429",
+        "500",
+        "502",
+        "503",
+        "504",
+    ],
+}
+
 # MCP Proxy 的 ES 日志中，所有层共有的字段
 CHAIN_OUTPUT_FIELDS = [
     # 链路标识
