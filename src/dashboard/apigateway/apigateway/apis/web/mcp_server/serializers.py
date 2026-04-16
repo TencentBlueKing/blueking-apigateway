@@ -838,3 +838,27 @@ class MCPServerConfigListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigListOutputSLZ"
+
+
+class MCPServerAppPermissionAppCodeListInputSLZ(serializers.Serializer):
+    """MCPServer 已授权应用 bk_app_code 列表输入序列化器"""
+
+    mcp_server_id = serializers.IntegerField(
+        required=False,
+        help_text="MCPServer ID，传入则只查询该 MCPServer 的授权应用",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionAppCodeListInputSLZ"
+
+
+class MCPServerAppPermissionAppCodeListOutputSLZ(serializers.Serializer):
+    """MCPServer 已授权应用 bk_app_code 列表输出序列化器"""
+
+    bk_app_codes = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="有权限的应用 bk_app_code 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionAppCodeListOutputSLZ"

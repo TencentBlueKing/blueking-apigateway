@@ -186,5 +186,19 @@ class LogSearchClient:
 
     def _to_log_display(self, hit: Dict) -> Dict:
         log = hit["_source"]
-        log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
+        # 从 ES 排序结果获取时间戳（排序字段为 dtEventTimeStamp）
+        # hit["sort"] 在 order=True 时总是存在
+        sort = hit.get("sort")
+        logger.info(
+            "LogSearchClient._to_log_display: hit_id=%s, sort=%s, is_list=%s, len=%s",
+            hit.get("_id"),
+            sort,
+            isinstance(sort, list),
+            len(sort) if isinstance(sort, list) else "N/A",
+        )
+        if sort and len(sort) > 0:
+            log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(sort[0])
+            logger.info("LogSearchClient._to_log_display: added timestamp=%s to log", log.get("timestamp"))
+        else:
+            logger.warning("LogSearchClient._to_log_display: sort field is missing or empty!")
         return log

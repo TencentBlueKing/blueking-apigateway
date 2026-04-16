@@ -20,7 +20,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/viper"
 
@@ -54,7 +53,6 @@ func initConfig() {
 }
 
 func initDatabase() {
-	start := time.Now()
 	defaultDBConfig, ok := globalConfig.DatabaseMap["apigateway"]
 	if !ok {
 		panic("database config apigateway not found")
@@ -62,7 +60,6 @@ func initDatabase() {
 	database.InitDBClient(&defaultDBConfig)
 	// 设置repo db
 	repo.SetDefault(database.Client())
-	logging.GetLogger().Infof("init database success, duration=%s", time.Since(start))
 }
 
 func initLogger() {
@@ -70,19 +67,17 @@ func initLogger() {
 }
 
 func initSentry() {
-	start := time.Now()
 	err := sty.Init(globalConfig.Sentry)
 	if err != nil {
 		logging.GetLogger().Errorf("init Sentry fail: %s", err)
 	} else {
-		logging.GetLogger().Infof("init Sentry success, duration=%s", time.Since(start))
+		logging.GetLogger().Info("init Sentry success")
 	}
 }
 
 func initMetrics() {
-	start := time.Now()
-	metric.InitMetrics()
-	logging.GetLogger().Infof("init Metrics success, duration=%s", time.Since(start))
+	metric.InitMetrics(globalConfig.Metric.NamePrefix)
+	logging.GetLogger().Info("init Metrics success")
 }
 
 func initTracing() {
@@ -90,12 +85,11 @@ func initTracing() {
 		logging.GetLogger().Info("tracing is not enabled, will not init it")
 		return
 	}
-	start := time.Now()
 	logging.GetLogger().Info("enabling tracing")
 	err := trace.InitTrace(globalConfig.Tracing)
 	if err != nil {
 		logging.GetLogger().Errorf("init tracing fail: %+v", err)
 		return
 	}
-	logging.GetLogger().Infof("init tracing success, duration=%s", time.Since(start))
+	logging.GetLogger().Info("init tracing success")
 }

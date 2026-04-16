@@ -60,6 +60,16 @@ func GetAppCode(c *gin.Context) string {
 	return GetBkAppCode(c)
 }
 
+// GetBkUsername gets username from gin context.
+func GetBkUsername(c *gin.Context) string {
+	return c.GetString(string(constant.BkUsername))
+}
+
+// GetTraceID gets trace ID from gin context.
+func GetTraceID(c *gin.Context) string {
+	return c.GetString(string(constant.TraceID))
+}
+
 // GetAppCodeFromContext gets app code from context
 func GetAppCodeFromContext(ctx context.Context) string {
 	if appCode, ok := ctx.Value(constant.BkAppCode).(string); ok {
@@ -225,6 +235,11 @@ func GetClientIPFromContext(ctx context.Context) string {
 	return ""
 }
 
+// GetClientID gets the client ID from gin context.
+func GetClientID(c *gin.Context) string {
+	return c.GetString(string(constant.ClientID))
+}
+
 // SetClientID stores the client ID into both gin context and request context.
 func SetClientID(c *gin.Context, clientID string) {
 	c.Set(string(constant.ClientID), clientID)
@@ -316,3 +331,5 @@ func GetPrivateKeyFromContext(ctx context.Context) []byte {
 	}
 	return nil
 }
+
+
