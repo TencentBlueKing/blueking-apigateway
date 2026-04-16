@@ -47,6 +47,7 @@ from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
+from apigateway.utils.time import NeverExpiresTime
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,23 @@ class AppPermissionExpiringSoonAlerter:
 
         # 按资源的权限
         permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+
+        # 过滤掉已拥有永久网关维度权限的应用，网关维度权限可以覆盖资源维度权限，无需告警
+        forever_gateway_perm_app_codes = set(
+            AppGatewayPermission.objects.filter(
+                gateway_id__in=list(permissions_by_resource.values_list("gateway_id", flat=True)),
+                bk_app_code__in=list(permissions_by_resource.values_list("bk_app_code", flat=True)),
+                expires=NeverExpiresTime.time,
+            ).values_list("bk_app_code", "gateway_id")
+        )
+        if forever_gateway_perm_app_codes:
+            permissions_by_resource = permissions_by_resource.exclude(
+                id__in=[
+                    perm.id
+                    for perm in permissions_by_resource
+                    if (perm.bk_app_code, perm.gateway_id) in forever_gateway_perm_app_codes
+                ]
+            )
 
         contexts = Context.objects.filter(
             scope_id__in=list(permissions_by_resource.values_list("resource_id", flat=True)),
