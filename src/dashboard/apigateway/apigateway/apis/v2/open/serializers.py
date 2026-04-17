@@ -28,7 +28,11 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
+from apigateway.apps.permission.constants import (
+    FormattedGrantDimensionEnum,
+    GrantDimensionEnum,
+    PermissionApplyExpireDaysEnum,
+)
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -91,7 +95,7 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
     普通应用直接申请访问网关API的权限
     - 提供给普通应用的接口
     - 开源版申请权限，为保障权限有效性，可申请永久有效的权限
-    - 暂支持按网关申请，不支持按资源申请
+    - 支持按网关申请和按资源申请
     """
 
     # target_app_code 与发送请求的应用账号一致，此 app_code 必定已存在，不需要重复校验
@@ -101,9 +105,13 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         choices=PermissionApplyExpireDaysEnum.get_choices(),
         required=False,
     )
-    grant_dimension = serializers.ChoiceField(
-        choices=[GrantDimensionEnum.API.value, GrantDimensionEnum.RESOURCE.value]
-    )
+    GRANT_DIMENSION_CHOICES = [
+        (FormattedGrantDimensionEnum.GATEWAY.value, "网关"),
+        (FormattedGrantDimensionEnum.RESOURCE.value, "资源"),
+        (GrantDimensionEnum.API.value, "按网关(兼容旧值)"),
+    ]
+
+    grant_dimension = serializers.ChoiceField(choices=GRANT_DIMENSION_CHOICES)
     resource_names = serializers.ListField(
         child=serializers.CharField(required=True),
         allow_empty=True,
@@ -112,6 +120,12 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyInputSLZ"
+
+    def validate_grant_dimension(self, value: str) -> str:
+        """将 gateway 映射为 api（PermissionDimensionManager 使用 GrantDimensionEnum 值）"""
+        if value == FormattedGrantDimensionEnum.GATEWAY.value:
+            return GrantDimensionEnum.API.value
+        return value
 
     def validate_target_app_code(self, value):
         request = self.context["request"]

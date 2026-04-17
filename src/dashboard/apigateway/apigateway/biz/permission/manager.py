@@ -355,15 +355,18 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
     def allow_apply_permission(
         self, gateway_id: int, bk_app_code: str, resource_ids: Optional[List[int]] = None
     ) -> Tuple[bool, str]:
+        # 按资源申请时，resource_ids 必须传入
+        if not resource_ids:
+            return True, ""
+
         # 检查待审批
         qs = AppPermissionApplyStatus.objects.filter(
             bk_app_code=bk_app_code,
             gateway_id=gateway_id,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
             status=ApplyStatusEnum.PENDING.value,
+            resource_id__in=resource_ids,
         )
-        if resource_ids is not None:
-            qs = qs.filter(resource_id__in=resource_ids)
 
         pending_resource_names = list(qs.values_list("resource__name", flat=True))
         if pending_resource_names:
@@ -371,7 +374,7 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
                 names=", ".join(pending_resource_names)
             )
 
-        # 检查已拥有且未过期的权限（兼容旧接口，不检查是否传入 resource_ids）
+        # 检查已拥有且未过期的权限
         existing_perms = AppResourcePermission.objects.filter(
             gateway_id=gateway_id,
             bk_app_code=bk_app_code,

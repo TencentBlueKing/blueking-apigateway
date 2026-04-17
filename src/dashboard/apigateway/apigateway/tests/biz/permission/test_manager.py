@@ -332,8 +332,8 @@ class TestResourcePermissionDimensionManager:
 
     def test_allow_apply_permission(self, fake_gateway):
         manager = ResourcePermissionDimensionManager()
-        result, _ = manager.allow_apply_permission(fake_gateway.id, "test")
-        assert not result
+        result, _ = manager.allow_apply_permission(fake_gateway.id, "test", [])
+        assert result
 
     def test_create_apply_record(self, fake_gateway, fake_resource):
         manager = ResourcePermissionDimensionManager()
