@@ -331,8 +331,10 @@ func addMCPServer(
 	addStart := time.Now()
 	resourceNames := svr.GetResourceNames()
 
-	err := mcpProxy.AddMCPServerFromOpenAPISpec(svr.Name,
-		conf.resourceVersion, conf.openapiFileData, resourceNames, svr.GetToolNameMap(), svr.GetProtocolType(), svr.RawResponse)
+	err := mcpProxy.AddMCPServerFromOpenAPISpec(
+		svr.Name, conf.resourceVersion, conf.openapiFileData,
+		resourceNames, svr.GetToolNameMap(), svr.GetProtocolType(), svr.RawResponse,
+	)
 	if err != nil {
 		logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", svr.Name, err)
 		return false
