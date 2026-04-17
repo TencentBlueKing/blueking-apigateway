@@ -12,7 +12,7 @@
 | -------- | -------- | ---- | ----------------------------------------------------------------------- |
 | ids      | array    | 否   | MCPServer ID 列表（ids 和 names 至少提供一个）                           |
 | names    | array    | 否   | MCPServer 名称列表（ids 和 names 至少提供一个）                           |
-| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,title`；不传默认返回 `id` 和 `name` |
+| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,title`；不传默认返回 `id` 和 `name`。可选字段包括：id, name, title, description, categories, raw_response |
 
 ### 请求示例
 
@@ -73,6 +73,7 @@
 | name        | string   | MCPServer 名称             |
 | title       | string   | MCPServer 中文名/显示名称  |
 | description | string   | MCPServer 描述             |
+| raw_response     | boolean | 是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息         |
 | categories  | array    | MCPServer 分类列表         |
 
 #### data[].categories[]

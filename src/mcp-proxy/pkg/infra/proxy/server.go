@@ -43,6 +43,7 @@ type MCPServer struct {
 	name                  string
 	// 生效的资源版本号
 	resourceVersionID int
+	rawResponse       bool // 是否返回原始响应，开启后直接返回 API 响应结果，不添加 request_id 等额外信息
 	tools             map[string]struct{}
 	prompts           map[string]struct{}
 	rwLock            *sync.RWMutex
@@ -54,6 +55,7 @@ func NewMCPServer(
 	handler *mcp.SSEHandler,
 	name string,
 	resourceVersion int,
+	rawResponse bool,
 ) *MCPServer {
 	return &MCPServer{
 		Server:            server,
@@ -64,6 +66,7 @@ func NewMCPServer(
 		rwLock:            &sync.RWMutex{},
 		name:              name,
 		resourceVersionID: resourceVersion,
+		rawResponse:       rawResponse,
 	}
 }
 
@@ -73,6 +76,7 @@ func NewStreamableHTTPMCPServer(
 	handler *mcp.StreamableHTTPHandler,
 	name string,
 	resourceVersion int,
+	rawResponse bool,
 ) *MCPServer {
 	return &MCPServer{
 		Server:                server,
@@ -83,6 +87,7 @@ func NewStreamableHTTPMCPServer(
 		rwLock:                &sync.RWMutex{},
 		name:                  name,
 		resourceVersionID:     resourceVersion,
+		rawResponse:           rawResponse,
 	}
 }
 
@@ -94,6 +99,20 @@ func (s *MCPServer) GetProtocolType() string {
 // IsStreamableHTTP 判断是否为 Streamable HTTP 协议
 func (s *MCPServer) IsStreamableHTTP() bool {
 	return s.protocolType == constant.MCPServerProtocolTypeStreamableHTTP
+}
+
+// IsRawResponse 是否返回原始响应
+func (s *MCPServer) IsRawResponse() bool {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	return s.rawResponse
+}
+
+// SetRawResponse 设置是否返回原始响应
+func (s *MCPServer) SetRawResponse(rawResponse bool) {
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	s.rawResponse = rawResponse
 }
 
 // HandleSSE 返回 SSE 连接 Handler

@@ -24,15 +24,14 @@
 
 import logging
 
-from celery import shared_task
-from rest_framework.serializers import ValidationError
-
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.helpers import get_release_lock
 from apigateway.apps.esb.component.release import ComponentReleaser
 from apigateway.apps.esb.component.sync import ComponentSynchronizer
 from apigateway.common.exception_handler import one_line_error
 from apigateway.core.models import Gateway
+from celery import shared_task
+from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-
 from apigateway.apps.esb.component.config_fields import ConfigField, FieldTypeEnum, enrich_config_fields
 
 

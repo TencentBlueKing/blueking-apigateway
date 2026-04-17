@@ -83,6 +83,7 @@ var _ = Describe("Config", func() {
 			config := proxy.MCPServerConfig{
 				Name:              "test-server",
 				ResourceVersionID: 123,
+				RawResponse:       true,
 				Tools: []*proxy.ToolConfig{
 					{
 						Name: "tool1", Description: "Test tool 1",
@@ -94,8 +95,18 @@ var _ = Describe("Config", func() {
 
 			Expect(config.Name).To(Equal("test-server"))
 			Expect(config.ResourceVersionID).To(Equal(123))
+			Expect(config.RawResponse).To(BeTrue())
 			Expect(config.Tools).To(HaveLen(1))
 			Expect(config.Tools[0].Name).To(Equal("tool1"))
+		})
+
+		It("should default RawResponse to false", func() {
+			config := proxy.MCPServerConfig{
+				Name:              "test-server",
+				ResourceVersionID: 1,
+			}
+
+			Expect(config.RawResponse).To(BeFalse())
 		})
 	})
 

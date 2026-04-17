@@ -261,6 +261,14 @@ func checkNeedLoad(mcpProxy *proxy.MCPProxy, s *model.MCPServer, release *model.
 		}
 	}
 
+	// raw_response 变化，需要重建 tool handler
+	if mcpServer.IsRawResponse() != s.RawResponse {
+		logging.GetLogger().Infof(
+			"mcp server[%s] raw_response changed from %v to %v, will reload",
+			s.Name, mcpServer.IsRawResponse(), s.RawResponse)
+		return true
+	}
+
 	logging.GetLogger().Debugf("mcp server[%s] version unchanged, skip reload", s.Name)
 	return false
 }
@@ -331,8 +339,10 @@ func addMCPServer(
 	addStart := time.Now()
 	resourceNames := svr.GetResourceNames()
 
-	err := mcpProxy.AddMCPServerFromOpenAPISpec(svr.Name,
-		conf.resourceVersion, conf.openapiFileData, resourceNames, svr.GetToolNameMap(), svr.GetProtocolType())
+	err := mcpProxy.AddMCPServerFromOpenAPISpec(
+		svr.Name, conf.resourceVersion, conf.openapiFileData,
+		resourceNames, svr.GetToolNameMap(), svr.GetProtocolType(), svr.RawResponse,
+	)
 	if err != nil {
 		logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", svr.Name, err)
 		return false
@@ -385,8 +395,11 @@ func updateMCPServer(
 
 	var resourceVersionUpdated bool
 	if conf != nil {
-		err := mcpProxy.UpdateMCPServerFromOpenApiSpec(mcpServer, svr.Name, conf.resourceVersion,
-			conf.openapiFileData, svr.GetResourceNames(), svr.GetToolNameMap())
+		err := mcpProxy.UpdateMCPServerFromOpenApiSpec(
+			mcpServer, svr.Name, conf.resourceVersion,
+			conf.openapiFileData, svr.GetResourceNames(),
+			svr.GetToolNameMap(), svr.RawResponse,
+		)
 		if err != nil {
 			logging.GetLogger().Errorf("update mcp server[%s] from openapi spec error: %v", svr.Name, err)
 			return false

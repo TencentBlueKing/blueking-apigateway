@@ -22,10 +22,9 @@
 
 import logging
 
-from django.core.management.base import BaseCommand
-
 from apigateway.apps.esb.bkcore.models import FunctionController
 from apigateway.utils.crypto import KeyGenerator
+from django.core.management.base import BaseCommand
 
 logger = logging.getLogger(__name__)
 

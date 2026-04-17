@@ -17,9 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from rest_framework import serializers
-
 from apigateway.apps.esb.mixins import OfficialWriteFields
+from rest_framework import serializers
 
 
 class TestOfficialWriteFields:

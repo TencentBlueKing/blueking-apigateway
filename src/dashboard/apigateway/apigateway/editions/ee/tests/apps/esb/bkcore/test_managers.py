@@ -15,10 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from ddf import G
-
 from apigateway.apps.esb.bkcore.models import AppComponentPermission
 from apigateway.utils.time import to_datetime_from_now
+from ddf import G
 
 
 class TestAppComponentPermissionManager:

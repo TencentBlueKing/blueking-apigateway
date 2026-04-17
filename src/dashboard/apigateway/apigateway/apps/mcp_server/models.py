@@ -107,6 +107,11 @@ class MCPServer(TimestampedModelMixin, OperatorModelMixin):
         help_text=_("是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"),
     )
 
+    raw_response = models.BooleanField(
+        default=False,
+        help_text=_("是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息"),
+    )
+
     # 分类关联（多对多关系）
     categories = models.ManyToManyField(
         MCPServerCategory,

@@ -76,6 +76,7 @@ var _ = Describe("MCP Load Functions", func() {
 			// Add an existing server with version 1
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"test-server", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -92,6 +93,7 @@ var _ = Describe("MCP Load Functions", func() {
 		It("should return false when version unchanged and all tools present", func() {
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"test-server", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -109,6 +111,7 @@ var _ = Describe("MCP Load Functions", func() {
 		It("should return true when new tool is added (resource_names changed)", func() {
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"test-server", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -126,12 +129,31 @@ var _ = Describe("MCP Load Functions", func() {
 		It("should return true when protocol type changed", func() {
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"test-server", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 
 			server := &model.MCPServer{
 				Name:         "test-server",
 				ProtocolType: constant.MCPServerProtocolTypeStreamableHTTP, // Changed protocol
+			}
+			release := &model.Release{ResourceVersionID: 1}
+
+			needLoad := mcppkg.CheckNeedLoadForTest(mcpProxy, server, release)
+			Expect(needLoad).To(BeTrue())
+		})
+
+		It("should return true when raw_response changed", func() {
+			err := mcpProxy.AddMCPServerFromOpenAPISpec(
+				"test-server", 1, openapiSpec, []string{"getUsers"}, nil,
+				constant.MCPServerProtocolTypeSSE, false,
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			server := &model.MCPServer{
+				Name:         "test-server",
+				ProtocolType: constant.MCPServerProtocolTypeSSE,
+				RawResponse:  true, // Changed raw_response
 			}
 			release := &model.Release{ResourceVersionID: 1}
 
@@ -145,10 +167,12 @@ var _ = Describe("MCP Load Functions", func() {
 			// Add two servers
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"server-1", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(
 				"server-2", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			mcpProxy.Run(ctx)
@@ -172,10 +196,12 @@ var _ = Describe("MCP Load Functions", func() {
 		It("should delete servers not in active set", func() {
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"server-1", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(
 				"server-2", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			mcpProxy.Run(ctx)
@@ -195,6 +221,7 @@ var _ = Describe("MCP Load Functions", func() {
 		It("should return 0 when all servers are active", func() {
 			err := mcpProxy.AddMCPServerFromOpenAPISpec(
 				"server-1", 1, openapiSpec, []string{"getUsers"}, nil, constant.MCPServerProtocolTypeSSE,
+				false,
 			)
 			Expect(err).NotTo(HaveOccurred())
 			mcpProxy.Run(ctx)

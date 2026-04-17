@@ -18,14 +18,6 @@
 #
 import logging
 
-from blue_krill.async_utils.django_utils import apply_async_on_commit
-from django.conf import settings
-from django.db import transaction
-from django.utils.translation import gettext as _
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status, viewsets
-from rest_framework.permissions import IsAuthenticated
-
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory, ESBChannel
 from apigateway.apps.esb.component import serializers
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
@@ -43,6 +35,13 @@ from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.django import get_object_or_None
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+from blue_krill.async_utils.django_utils import apply_async_on_commit
+from django.conf import settings
+from django.db import transaction
+from django.utils.translation import gettext as _
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 

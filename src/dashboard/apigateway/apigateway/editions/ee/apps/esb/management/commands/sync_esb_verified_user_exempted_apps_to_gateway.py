@@ -25,9 +25,6 @@ import logging
 import re
 from typing import List, Optional
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
 from apigateway.apps.esb.bkcore.models import FunctionController
 from apigateway.apps.esb.constants import FunctionControllerCodeEnum
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
@@ -37,6 +34,8 @@ from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginTyp
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.django import get_object_or_None
 from apigateway.utils.yaml import yaml_dumps
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 

@@ -18,13 +18,12 @@
 #
 import time
 
-from django.conf import settings
-from rest_framework.views import APIView
-
 from apigateway.apps.esb.bkcore.models import RealTimelineEvent
 from apigateway.apps.esb.status.es_client import get_search_es_client
 from apigateway.apps.esb.status.utils import get_system_basic_info, str_percentage, str_to_seconds
 from apigateway.utils.responses import OKJsonResponse
+from django.conf import settings
+from rest_framework.views import APIView
 
 
 class SysAllSummaryView(APIView):

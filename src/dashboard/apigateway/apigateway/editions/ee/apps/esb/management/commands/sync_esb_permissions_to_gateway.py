@@ -23,9 +23,6 @@
 import logging
 from typing import Any, Dict, List
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
 from apigateway.apps.esb.bkcore.models import AppComponentPermission, ComponentResourceBinding, ESBChannel
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
@@ -33,6 +30,8 @@ from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.common.time import calculate_expires
 from apigateway.core.models import Gateway
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 

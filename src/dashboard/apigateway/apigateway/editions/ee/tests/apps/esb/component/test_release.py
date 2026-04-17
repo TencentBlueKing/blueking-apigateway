@@ -17,12 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
-
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.release import ComponentReleaser
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import ResourceVersion
+from ddf import G
 
 pytestmark = pytest.mark.django_db
 

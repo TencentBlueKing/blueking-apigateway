@@ -19,9 +19,6 @@
 import datetime
 
 import pytest
-from ddf import G
-from rest_framework.exceptions import ValidationError
-
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel, ESBChannelExtend
 from apigateway.apps.esb.component.serializers import (
     ComponentReleaseHistorySLZ,
@@ -29,6 +26,8 @@ from apigateway.apps.esb.component.serializers import (
     ESBChannelDetailSLZ,
     ESBChannelSLZ,
 )
+from ddf import G
+from rest_framework.exceptions import ValidationError
 
 pytestmark = [pytest.mark.django_db]
 

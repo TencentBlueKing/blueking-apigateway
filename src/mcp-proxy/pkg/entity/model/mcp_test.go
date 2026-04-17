@@ -53,6 +53,7 @@ var _ = Describe("MCP Models", func() {
 				IsPublic: true, Labels: model.ArrayString{"label1", "label2"},
 				ResourceNames: model.ArrayString{"resource1", "resource2"},
 				Status:        model.McpServerStatusActive, GatewayID: 100, StageID: 200,
+				RawResponse: true,
 			}
 			Expect(server.ID).To(Equal(1))
 			Expect(server.Name).To(Equal("test-server"))
@@ -63,6 +64,12 @@ var _ = Describe("MCP Models", func() {
 			Expect(server.Status).To(Equal(model.McpServerStatusActive))
 			Expect(server.GatewayID).To(Equal(100))
 			Expect(server.StageID).To(Equal(200))
+			Expect(server.RawResponse).To(BeTrue())
+		})
+
+		It("should default RawResponse to false", func() {
+			server := &model.MCPServer{}
+			Expect(server.RawResponse).To(BeFalse())
 		})
 
 		Describe("GetProtocolType", func() {

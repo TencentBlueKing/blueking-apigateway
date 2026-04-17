@@ -19,15 +19,14 @@
 import datetime
 
 import pytest
-from dateutil.tz import tzutc
-from ddf import G
-
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory, ComponentSystem, ESBChannel
 from apigateway.apps.esb.component import views
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.core.models import Gateway
 from apigateway.tests.utils.testing import get_response_json
+from dateutil.tz import tzutc
+from ddf import G
 
 pytestmark = pytest.mark.django_db(transaction=True, databases=["default", "bkcore"])
 

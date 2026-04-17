@@ -25,10 +25,9 @@ import logging
 import re
 from typing import List
 
-from django.core.management.base import BaseCommand
-
 from apigateway.apps.esb.bkcore.models import FunctionController
 from apigateway.apps.esb.constants import FunctionControllerCodeEnum
+from django.core.management.base import BaseCommand
 
 logger = logging.getLogger(__name__)
 

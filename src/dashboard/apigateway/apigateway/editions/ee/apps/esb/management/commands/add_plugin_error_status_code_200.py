@@ -22,15 +22,14 @@
 
 import logging
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.yaml import yaml_dumps
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 

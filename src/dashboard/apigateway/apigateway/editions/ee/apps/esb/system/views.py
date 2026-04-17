@@ -18,17 +18,16 @@
 #
 import logging
 
-from django.db import transaction
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel, SystemDocCategory
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.apps.esb.system import serializers
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
+from django.db import transaction
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
