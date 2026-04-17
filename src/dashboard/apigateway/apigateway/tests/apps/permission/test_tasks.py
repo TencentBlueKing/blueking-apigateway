@@ -236,14 +236,11 @@ class TestAppPermissionExpiringSoonAlerter:
         assert permissions[unique_id][0]["gateway_name"] == fake_gateway.name
 
     def test_get_permissions_expiring_soon_skip_when_gateway_perm_is_forever(self, fake_resource_ctx, unique_id):
-        """应用同时拥有永久网关维度权限时，对应的资源维度权限过期告警应被忽略"""
+        """应用拥有永久网关维度权限时，对应的资源维度权限过期告警应被忽略"""
         now = timezone.now()
         fake_gateway = fake_resource_ctx[0].gateway
-
         resource1 = fake_resource_ctx[0]
-        resource2 = fake_resource_ctx[1]
 
-        # 应用 unique_id：拥有永久网关维度权限，同时资源维度权限即将到期
         G(
             AppGatewayPermission,
             gateway=fake_gateway,
@@ -258,19 +255,26 @@ class TestAppPermissionExpiringSoonAlerter:
             bk_app_code=unique_id,
         )
 
-        # 应用 test_no_forever：没有永久网关维度权限，资源维度权限即将到期，应正常告警
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        result = alerter._get_permissions_expiring_soon()
+
+        assert len(result[unique_id]) == 0
+
+    def test_get_permissions_expiring_soon_alert_when_no_forever_gateway_perm(self, fake_resource_ctx, unique_id):
+        """应用没有永久网关维度权限时，资源维度权限过期告警应正常触发"""
+        now = timezone.now()
+        fake_gateway = fake_resource_ctx[0].gateway
+        resource1 = fake_resource_ctx[0]
+
         G(
             AppResourcePermission,
             gateway=fake_gateway,
-            resource_id=resource2.id,
+            resource_id=resource1.id,
             expires=now + datetime.timedelta(days=10),
-            bk_app_code="test_no_forever",
+            bk_app_code=unique_id,
         )
 
         alerter = AppPermissionExpiringSoonAlerter(30, [])
         result = alerter._get_permissions_expiring_soon()
 
-        # unique_id 已有永久网关权限，资源维度告警应被过滤掉
-        assert len(result[unique_id]) == 0
-        # test_no_forever 无永久网关权限，应正常告警
-        assert len(result["test_no_forever"]) == 1
+        assert len(result[unique_id]) == 1

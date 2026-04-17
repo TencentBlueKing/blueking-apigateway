@@ -25,6 +25,7 @@ from typing import Any, Dict, List
 
 from celery import shared_task
 from django.conf import settings
+from django.db.models import Exists, OuterRef
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -246,25 +247,18 @@ class AppPermissionExpiringSoonAlerter:
                 }
             )
 
-        # 按资源的权限
-        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
-
         # 过滤掉已拥有永久网关维度权限的应用，网关维度权限可以覆盖资源维度权限，无需告警
-        forever_gateway_perm_app_codes = set(
-            AppGatewayPermission.objects.filter(
-                gateway_id__in=list(permissions_by_resource.values_list("gateway_id", flat=True)),
-                bk_app_code__in=list(permissions_by_resource.values_list("bk_app_code", flat=True)),
-                expires=NeverExpiresTime.time,
-            ).values_list("bk_app_code", "gateway_id")
-        )
-        if forever_gateway_perm_app_codes:
-            permissions_by_resource = permissions_by_resource.exclude(
-                id__in=[
-                    perm.id
-                    for perm in permissions_by_resource
-                    if (perm.bk_app_code, perm.gateway_id) in forever_gateway_perm_app_codes
-                ]
+        permissions_by_resource = AppResourcePermission.objects.filter(
+            expires__range=(now, expire_end_time)
+        ).filter(
+            ~Exists(
+                AppGatewayPermission.objects.filter(
+                    gateway_id=OuterRef("gateway_id"),
+                    bk_app_code=OuterRef("bk_app_code"),
+                    expires__gte=NeverExpiresTime.time,
+                )
             )
+        )
 
         contexts = Context.objects.filter(
             scope_id__in=list(permissions_by_resource.values_list("resource_id", flat=True)),
