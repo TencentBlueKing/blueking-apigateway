@@ -1,0 +1,13 @@
+{
+  "name": "bdd-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BlueKing API Gateway BDD test scripts",
+  "scripts": {
+    "test": "playwright test",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0"
+  }
+}
