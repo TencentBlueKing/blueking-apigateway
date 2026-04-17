@@ -91,6 +91,18 @@
           class="mb-16px"
           @sort-change="handleSortChange"
         >
+          <template #mcpServeBtn>
+            <BkButton
+              :disabled="selections?.size < 1"
+              @click="handleBatchCopy"
+            >
+              <AgIcon
+                name="copy"
+                class="mr-4px"
+              />
+              {{ t("批量复制") }}
+            </BkButton>
+          </template>
           <template #mcpServerTab>
             <div class="flex mcp-server-tab">
               <div
@@ -143,7 +155,10 @@
                 :show-actions="false"
                 :show-public="false"
                 :oauth2-tooltip="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-                @click="() => handleCardClick(server.id)"
+                @copy-config="handleCopyConfig"
+                @selection-change="handleSelectionChange"
+                @checked="(isChecked: boolean) => handleChecked(isChecked, server)"
+                @click.stop="() => handleView(server.id)"
               >
                 <template #externalTag>
                   <BkTag
@@ -181,6 +196,7 @@ import { debounce } from 'lodash-es';
 import {
   type IMCPMarketCategory,
   type IMarketplaceItem,
+  getMcpAIConfigList,
   getMcpMarketplace,
   getMcpMarketplaceCategories,
 } from '@/services/source/mcp-market';
@@ -208,6 +224,8 @@ const isFirstLoad = ref(true);
 const isBannerLoadedInit = ref(false);
 // 标记是否正在切换分类（用于冻结计数显示）
 const isSwitchingCategory = ref(false);
+// 显示复制 MCP Server 接入配置
+const isShowConfig = ref(false);
 const mcpCategorizeWidth = ref(0);
 const cachedViewportHeight = ref(0);
 const activeStatusTab = ref('all');
@@ -225,6 +243,10 @@ const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
   count: 0,
   hasNoMore: false,
 });
+// 批量复制内容
+const selections = ref<Map<number, IMarketplaceItem>>(new Map());
+// MCP Server 接入配置
+const mcpConfigList = ref<IMarketplaceConfig[]>([]);
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const bannerImg = computed(() => {
@@ -275,6 +297,12 @@ const getFilterParams = computed(() => {
 
   return params;
 });
+
+// 获取mcpServer接入配置
+const fetchMcpAIConfigList = async (id) => {
+  const res = await getMcpAIConfigList(gatewayId, id);
+  mcpConfigList.value = res?.configs ?? [];
+};
 
 const handleBannerLoad = () => {
   bannerLoaded.value = true;
@@ -428,6 +456,10 @@ const handleSortChange = (sort: string) => {
   resetPagination();
 };
 
+const handleBatchCopy = () => {
+  isShowConfig.value = true;
+};
+
 const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceItem) => {
   const cell = e.target.closest('.truncate');
   if (cell) {
@@ -439,7 +471,7 @@ const handleMouseleave = (_: MouseEvent, row: IMarketplaceItem) => {
   row.isOverflow = false;
 };
 
-const handleCardClick = (id: number) => {
+const handleView = (id: number) => {
   router.push({
     name: 'McpMarketDetails',
     params: { id },
@@ -462,6 +494,26 @@ const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
   if (entry?.isIntersecting && !isFirstLoad.value) {
     getList();
   }
+};
+
+const handleChecked = (isChecked: boolean, row: IMarketplaceItem) => {
+  row.is_checked = isChecked;
+  if (isChecked) {
+    selections.value.set(row.id, row);
+  }
+  else {
+    selections.value.delete(row.id);
+  }
+};
+
+const handleCopyConfig = async (id: number) => {
+  isShowConfig.value = true;
+  await fetchMcpAIConfigList(id);
+};
+
+const handleSelectionChange = (selection: IMarketplaceItem) => {
+  selections.value.clear();
+  selection.forEach(item => selections.value.set(item.id, item));
 };
 
 const handleResize = debounce(() => {

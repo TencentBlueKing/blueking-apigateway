@@ -26,6 +26,7 @@ export interface IMCPServer {
   name: string
   description: string
   is_public: boolean
+  is_checked: boolean
   labels: string[]
   resource_names: string[]
   tools_count: number

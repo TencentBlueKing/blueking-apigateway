@@ -2469,5 +2469,8 @@
   "通过查看帮助信息探索所有支持的系统及操作": "Explore all supported systems and operations by viewing help information",
   "查看帮助": "View Help",
   "查看子命令帮助": "View Subcommand Help",
-  "查看子命令action的帮助": "View Subcommand Action Help"
+  "查看子命令action的帮助": "View Subcommand Action Help",
+  "复制配置": "Copy Configuration",
+  "批量复制": "Batch copy",
+  "复制 MCP Server 接入配置": "Copy MCP Server Access Configuration"
 }
