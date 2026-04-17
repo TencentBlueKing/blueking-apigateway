@@ -33,7 +33,6 @@
     />
     <!-- trace日志表格 -->
     <AgMcpTraceChainTable
-      v-model:active-tab="activeTab"
       :trace-chain-detail="traceChainDetail"
       class="ag-trace-chain-table"
     />
@@ -47,8 +46,6 @@ import AgMcpTraceChainChart from '@/components/trace-view';
 import AgMcpTraceChainTable from '@/components/ag-mcp-trace-chain/table/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
-
-const activeTab = defineModel('activeTab', { type: String });
 
 const { traceChainDetail = {} } = defineProps<IProps>();
 

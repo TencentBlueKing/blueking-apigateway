@@ -380,6 +380,7 @@ const handleTagClose = (tag: string) => {
       includeQuery.value?.splice(index, 1);
     }
   }
+  fetchSearchData();
 };
 
 const handleClearFilter = () => {
@@ -392,6 +393,8 @@ const handleClearFilter = () => {
   });
   [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[0]];
   dateValue.value = [];
+  includeQuery.value = [];
+  excludeQuery.value = [];
   shortcutSelectedIndex.value = 0;
   dateKey.value = String(+new Date());
   fetchSearchData();
