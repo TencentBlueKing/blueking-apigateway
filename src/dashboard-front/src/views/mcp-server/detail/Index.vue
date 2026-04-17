@@ -193,7 +193,7 @@
           #aside
         >
           <!-- 配置 -->
-          <ServerConfig
+          <AgMcpAgentConfig
             :list="mcpConfigList"
             class="h-full bg-white mcp-detail-config"
           />
@@ -282,7 +282,7 @@ import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
-import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
+import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServer>>;
 

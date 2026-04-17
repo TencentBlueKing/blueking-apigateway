@@ -22,6 +22,7 @@
       ref="tableRef"
       v-model:table-data="tableData"
       show-settings
+      show-selection
       resizable
       :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign' }"
       :immediate="false"
@@ -33,6 +34,7 @@
       @clear-filter="handleClearFilter"
       @filter-change="handleFilterChange"
       @sort-change="handleSortChange"
+      @selection-change="handleSelectionChange"
     />
   </div>
 </template>
@@ -58,6 +60,7 @@ interface IEmits {
   'suspend': [id: number]
   'enable': [id: number]
   'delete': [id: number]
+  'selection-change': [selection: IMCPServer]
   'clear-filter': [void]
 };
 
@@ -97,7 +100,6 @@ const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
 );
-
 // 需要隐藏的列
 const hiddenColumn = computed(() => {
   const hidePromptsCount = featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
@@ -447,6 +449,11 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
     searchParams: searchValue,
   });
   getList();
+};
+
+// 处理复选框
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
+  emit('selection-change', selections);
 };
 
 const handleClearFilter = () => {

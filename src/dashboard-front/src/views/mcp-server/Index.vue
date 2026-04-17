@@ -28,13 +28,23 @@
         :is-show-publish-time="!isTableView"
         @sort-change="handleSortChange"
       >
-        <template #mcpServerAdd>
+        <template #mcpServeBtn>
           <BkButton
             theme="primary"
             @click="handleAddServerClick"
           >
             <Plus class="text-22px" />
             {{ t("新建") }}
+          </BkButton>
+          <BkButton
+            :disabled="selections.size < 1"
+            @click="handleBatchCopy"
+          >
+            <AgIcon
+              name="copy"
+              class="mr-4px"
+            />
+            {{ t("批量复制") }}
           </BkButton>
         </template>
         <template #mcpServerTab>
@@ -106,6 +116,7 @@
             @enable="handleEnable"
             @suspend="handleSuspend"
             @clear-filter="handleClearFilter"
+            @selection-change="handleSelectionChange"
             @updated="handleServerUpdated"
           />
         </template>
@@ -127,11 +138,15 @@
               v-for="server of mcpList"
               :key="server.id"
               :server="server"
+              :checked="server.is_checked"
               :oauth2-tooltip="t('OAuth2 公开客户端已开启')"
               @delete="handleDelete"
               @edit="handleEdit"
               @enable="handleEnable"
               @suspend="handleSuspend"
+              @copy-config="handleCopyConfig"
+              @selection-change="handleSelectionChange"
+              @checked="(isChecked: boolean) => handleChecked(isChecked, server)"
               @click.stop="() => handleView(server.id)"
             >
               <template #mcpStatus>
@@ -158,7 +173,7 @@
                 >
                   <AgIcon
                     name="zhiming"
-                    size="14"
+                    size="20"
                     color="#e71818"
                   />
                 </div>
@@ -166,7 +181,7 @@
             </AgMcpCard>
             <div
               class="flex items-center justify-center add-server-card"
-              @click="handleAddServerClick"
+              @click.stop="handleAddServerClick"
             >
               <AgIcon
                 name="add-small"
@@ -182,6 +197,11 @@
         :category-list="mcpFilterOptions.categories"
         @updated="handleServerUpdated"
       />
+      <!-- 复制 MCP 配置 -->
+      <AgMcpCopyConfigDialog
+        v-model:is-show="isShowConfig"
+        :list="mcpConfigList"
+      />
     </div>
     <div
       v-intersection-observer="onIntersectionObserver"
@@ -196,9 +216,11 @@ import { Message } from 'bkui-vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import { vIntersectionObserver } from '@vueuse/components';
 import {
+  type IMCPAIConfig,
   type IMCPServer,
   type IMCPServerFilterOptions,
   deleteServer,
+  getMcpAIConfigList,
   getMcpServerFilterOptions,
   getServers,
   patchServerStatus,
@@ -210,6 +232,7 @@ import CreateSlider from './components/CreateSlider.vue';
 import ServerCardTable from './components/ServerCardTable.vue';
 import AgMcpTopBar from '@/components/ag-mcp-search-bar/Index.vue';
 import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
+import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
@@ -231,6 +254,7 @@ const activeStatusTab = ref('all');
 const activeViewTab = ref('card');
 const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error'>('');
 const isLoading = ref(true);
+const isShowConfig = ref(false);
 const pagination = ref({
   current: 1,
   limit: 0,
@@ -247,6 +271,10 @@ const mcpFilterOptions = ref<IMCPServerFilterOptions>({
   categories: [],
 });
 const searchValue = ref([]);
+// 批量复制内容
+const selections = ref<Map<number, IMCPServer>>(new Map());
+// MCP Server 接入配置
+const mcpConfigList = ref<IMCPAIConfig[]>([]);
 
 const searchData = computed(() => [
   {
@@ -438,6 +466,12 @@ const fetchMcpServerFilterOptions = async () => {
   mcpFilterOptions.value = res ?? {};
 };
 
+// 获取mcpServer接入配置
+const fetchMcpAIConfigList = async (id) => {
+  const res = await getMcpAIConfigList(gatewayId, id);
+  mcpConfigList.value = res?.configs ?? [];
+};
+
 const handleStatusTabChange = ({ id }: { id: string }) => {
   if (activeStatusTab.value === id) return;
   activeStatusTab.value = id;
@@ -449,6 +483,7 @@ const handlePreviewTabChange = ({ id }: { id: string }) => {
   if (activeViewTab.value === id) return;
   const oldViewType = activeViewTab.value;
   activeViewTab.value = id;
+  selections.value.clear();
   // 仅当视图从卡片→表格 或 表格→卡片 时，才重置分页（避免重复请求）
   if (oldViewType.includes('card') !== id.includes('card')) {
     nextTick(() => {
@@ -465,6 +500,11 @@ const handlePreviewTabChange = ({ id }: { id: string }) => {
 const handleAddServerClick = () => {
   editingServerId.value = undefined;
   createSliderRef.value?.show();
+};
+
+const handleBatchCopy = () => {
+  // Array.from(selections.value.values())
+  isShowConfig.value = true;
 };
 
 // 卡片模式下发布时间或字母排序
@@ -528,6 +568,26 @@ const handleDelete = async (id: number) => {
       },
     });
   }
+};
+
+const handleCopyConfig = async (id: number) => {
+  isShowConfig.value = true;
+  await fetchMcpAIConfigList(id);
+};
+
+const handleChecked = (isChecked: boolean, row: IMCPServer) => {
+  row.is_checked = isChecked;
+  if (isChecked) {
+    selections.value.set(row.id, row);
+  }
+  else {
+    selections.value.delete(row.id);
+  }
+};
+
+const handleSelectionChange = (selection: IMCPServer[]) => {
+  selections.value.clear();
+  selection.forEach(item => selections.value.set(item.id, item));
 };
 
 const handleServerUpdated = () => {

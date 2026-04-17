@@ -19,7 +19,7 @@
 <template>
   <div class="w-full flex items-center gap-12px mcp-server-top-bar">
     <!-- 新建按钮模板 -->
-    <slot name="mcpServerAdd" />
+    <slot name="mcpServeBtn" />
     <!-- tab选项模板 -->
     <slot name="mcpServerTab" />
     <!-- 搜索组件 -->
