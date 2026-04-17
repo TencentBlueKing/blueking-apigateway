@@ -509,7 +509,7 @@ var _ = Describe("MCPProxy", func() {
 			Expect(result).NotTo(BeNil())
 			Expect(result.Content).To(HaveLen(1))
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
-			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal("plain text response"))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal(`"plain text response"`))
 		})
 	})
 
