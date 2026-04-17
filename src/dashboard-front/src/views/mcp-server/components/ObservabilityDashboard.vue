@@ -25,7 +25,7 @@
     >
       <Component
         :is="dashboardFormCompMap[com.name as keyof typeof dashboardFormCompMap]"
-        :ref="(el: any) => setComponentRef(el, com.name)"
+        :ref="(el: HTMLElement) => setComponentRef(el, com.name)"
         v-model:search-params="searchParams"
         mode="Dashboard"
         :api-gateway-id="apigwId"

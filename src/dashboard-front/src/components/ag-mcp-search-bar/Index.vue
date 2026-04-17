@@ -19,7 +19,17 @@
 <template>
   <div class="w-full flex items-center gap-12px mcp-server-top-bar">
     <!-- 新建按钮模板 -->
-    <slot name="mcpServerAdd" />
+    <slot name="mcpServerBtn" />
+    <BkButton
+      :disabled="selections?.size < 1"
+      @click="handleBatchCopy"
+    >
+      <AgIcon
+        name="copy"
+        class="mr-4px"
+      />
+      {{ t("批量复制") }}
+    </BkButton>
     <!-- tab选项模板 -->
     <slot name="mcpServerTab" />
     <!-- 搜索组件 -->
@@ -88,9 +98,13 @@ interface IProps {
   placeholder?: string
   isShowPublishTime?: boolean
   searchData?: ISearchSelectData[]
+  selections: Map<string | number, string>
 }
 
-interface IEmits { 'sort-change': [sort: string] }
+interface IEmits {
+  'sort-change': [sort: string]
+  'batch-copy': [void]
+}
 
 const searchValue = defineModel('searchValue', {
   required: false,
@@ -135,6 +149,10 @@ const handleSortChange = (value: string) => {
   publishTime.value = value;
   isOpen.value = false;
   emit('sort-change', value);
+};
+
+const handleBatchCopy = () => {
+  emit('batch-copy');
 };
 </script>
 
