@@ -13,6 +13,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="mcpserver",
             name="raw_response",
-            field=models.BooleanField(default=False, verbose_name="是否返回原始响应"),
+            field=models.BooleanField(
+                default=False,
+                help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+            ),
         ),
     ]

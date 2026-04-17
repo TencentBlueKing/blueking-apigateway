@@ -208,7 +208,7 @@ var _ = Describe("MCP", func() {
 				newOpenapiSpec.Paths.Set("/users", newPathItem)
 
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"}, nil,
+					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"}, nil, false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(server.GetResourceVersionID()).To(Equal(2))
@@ -513,7 +513,7 @@ var _ = Describe("MCP", func() {
 
 				// 使用相同的 resourceVersionID 更新（模拟 resource_names 变化但版本不变的场景）
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 1, openapiSpec, newResourceNames, nil,
+					server, "test-server", 1, openapiSpec, newResourceNames, nil, false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -776,7 +776,7 @@ var _ = Describe("MCP", func() {
 				}
 
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 2, openapiSpec, []string{"getUsers", "createUser"}, toolNameMap,
+					server, "test-server", 2, openapiSpec, []string{"getUsers", "createUser"}, toolNameMap, false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 

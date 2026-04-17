@@ -230,7 +230,7 @@ func BenchmarkUpdateMCPServerFromOpenApiSpec(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				_ = p.UpdateMCPServerFromOpenApiSpec(
-					server, "server_0", i+2, newSpec, newOps, nil,
+					server, "server_0", i+2, newSpec, newOps, nil, false,
 				)
 			}
 		})

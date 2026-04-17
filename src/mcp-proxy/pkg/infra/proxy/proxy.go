@@ -272,7 +272,7 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 // toolNameMap: 资源名到工具名的映射，如果为 nil 则使用资源名作为工具名
 func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	mcpServer *MCPServer, name string, resourceVersionID int, openAPISpec *openapi3.T,
-	operationIDList []string, toolNameMap map[string]string,
+	operationIDList []string, toolNameMap map[string]string, rawResponse bool,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
@@ -281,15 +281,17 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	mcpServerConfig := &MCPServerConfig{
 		Name:        name,
 		Tools:       OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
-		RawResponse: mcpServer.IsRawResponse(),
+		RawResponse: rawResponse,
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		toolHandler := genToolHandler(toolConfig, name, mcpServer.IsRawResponse())
+		toolHandler := genToolHandler(toolConfig, name, rawResponse)
 		mcpServer.AddTool(buildMCPTool(toolConfig, name), toolHandler)
 	}
 	// 更新资源版本号
 	mcpServer.SetResourceVersionID(resourceVersionID)
+	// 更新 rawResponse 状态
+	mcpServer.SetRawResponse(rawResponse)
 	return nil
 }
 
