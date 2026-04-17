@@ -265,6 +265,15 @@ export interface IMcpSpanDetail {
   error: string | null
 }
 
+export interface ISearchParamsType {
+  [key: string]: string | number | boolean | null | undefined
+}
+
+export interface IDataPoint {
+  0: number | null
+  1: number
+}
+
 // trace瀑布图详情组装数据
 export type ITraceDetail = IGatewayLog & IHttpSpanDetail & IMcpSpanDetail & ITraceLog;
 

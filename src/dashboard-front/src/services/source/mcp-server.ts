@@ -46,6 +46,8 @@ import type {
   IMCPServerUpdateInputSLZ,
   IMCPServerUpdateStatusInputSLZ,
 } from '@/services/types/body/patch/gateways.ts';
+import type { IMcpBatchConfigQuery } from '@/services/types/query/mcp-marketplace.ts';
+import type { IMcpClientConfig } from '@/services/types/responses/mcp-marketplace.ts';
 
 const path = '/gateways';
 
@@ -116,27 +118,13 @@ export interface IMCPServerPrompt {
   labels: string[]
 }
 
-// MCP列表搜索框
-export interface IMCPServerFilterOptions {
-  labels?: string[]
-  stages?: {
-    id: number
-    name: string
-  }[]
-  categories?: {
-    id: number
-    name: string
-    display_name: string
-  }[]
-}
-
 // MCP分类
 export interface IMCPServerCategory {
   name: string
   display_name: string
-  description: string
+  description?: string
   id: number
-  sort_order: number
+  sort_order?: number
 }
 
 // MCP配置
@@ -161,6 +149,36 @@ export interface IMCPFormData {
   protocol_type: string
   url?: string
 }
+
+// 列表接口筛选泛型
+export interface IMCPFilterParams {
+  order_by: string
+  status?: string
+  keyword?: string
+  stage_id?: string
+  categories?: string[] | string
+  label?: string
+  [key: string]: any
+}
+
+// tool工具勾选项
+export interface IMCPToolSelections {
+  name: string
+  tool_name: string
+  id: number
+  contexts: {
+    [key: string]: string | null
+  }
+}
+
+//  UI 扩展类型
+export type IMCPServerWithUIState = IMCPServer & { is_checked?: boolean };
+
+// 重命名tool_name
+export type ToolNameRowType = IMCPServerTool & {
+  tool_name: string
+  isShow: boolean
+};
 
 // 列表
 export const getServers = (apigwId: number, data: IGatewaysMcpServersListQuery) =>
@@ -280,3 +298,15 @@ export const getMcpCategoryList = (apigwId: number, query: IGatewaysMcpServersCa
  */
 export const getMcpAIConfigList = (apigwId: number, mcp_server_id: number): Promise<{ configs: IMCPAIConfig[] }> =>
   http.get<IMCPServerConfigListOutput>(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/configs/`);
+
+/**
+ * 批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）
+ * @param {Number} apigwId 网关id
+ * @param {String} data.client_type 客户端类型
+ * @param {Number[]} data.mcp_server_ids  McpServerID组
+ */
+export const getMcpBatchCopyConfigList = (
+  apigwId: number,
+  data: IMcpBatchConfigQuery,
+): Promise<{ data: IMcpClientConfig }> =>
+  http.post(`${path}/${apigwId}/mcp-servers/-/batch-configs/`, data);

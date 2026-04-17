@@ -61,15 +61,19 @@
             <div class="label">
               {{ t('访问地址') }}:
             </div>
-            <div class="value url">
-              <p
-                v-bk-tooltips="server.url"
-                class="truncate"
+            <div class="value flex items-center">
+              <BkOverflowTitle
+                type="tips"
+                :popover-options="{
+                  extCls: 'break-all'
+                }"
+                class="max-w-95%"
               >
-                {{ server.url || '--' }}
-              </p>
-              <i
-                class="apigateway-icon icon-ag-copy-info"
+                {{ server?.url || '--' }}
+              </BkOverflowTitle>
+              <AgIcon
+                name="copy"
+                class="ml-4px text-12px color-#3a84ff cursor-pointer"
                 @click.self.stop="copy(server.url)"
               />
             </div>
@@ -96,19 +100,15 @@
             <div class="label">
               {{ t('描述') }}:
             </div>
-            <div
-              class="value description max-w-256px!"
-            >
-              <p
-                v-bk-tooltips="{
-                  content: server?.description,
-                  disabled: server?.description?.length < 1,
-                  extCls: 'max-w-480px'
+            <div class="value">
+              <BkOverflowTitle
+                type="tips"
+                :popover-options="{
+                  extCls: 'break-all'
                 }"
-                class="truncate"
               >
                 {{ server?.description || '--' }}
-              </p>
+              </BkOverflowTitle>
             </div>
           </div>
           <div class="apigw-form-item">
@@ -125,6 +125,37 @@
                   {{ category.display_name }}
                 </BkTag>
               </template>
+              <template v-else>
+                --
+              </template>
+            </div>
+          </div>
+          <div class="apigw-form-item">
+            <div class="label">
+              {{ t('标签') }}:
+            </div>
+            <div class="value lh-22px">
+              <div
+                v-if="server?.labels?.length"
+                class="flex flex-wrap gap-8px"
+              >
+                <template
+                  v-for="label of server.labels"
+                  :key="label"
+                >
+                  <BkOverflowTitle
+                    type="tips"
+                    class="max-w-full break-all"
+                    :popover-options="{
+                      extCls: 'break-all',
+                    }"
+                  >
+                    <BkTag class="w-full truncate">
+                      {{ label }}
+                    </BkTag>
+                  </BkOverflowTitle>
+                </template>
+              </div>
               <template v-else>
                 --
               </template>
@@ -193,7 +224,7 @@
           #aside
         >
           <!-- 配置 -->
-          <ServerConfig
+          <AgMcpAgentConfig
             :list="mcpConfigList"
             class="h-full bg-white mcp-detail-config"
           />
@@ -261,6 +292,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Message } from 'bkui-vue';
 import { copy } from '@/utils';
 import {
   type IMCPAIConfig,
@@ -271,7 +303,6 @@ import {
   getServerGuideDoc,
   patchServerStatus,
 } from '@/services/source/mcp-server';
-import { Message } from 'bkui-vue';
 import { useMcpConfigDivideRatio, usePopInfoBox } from '@/hooks';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { MCP_TAB_LIST } from '@/constants';
@@ -282,9 +313,11 @@ import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
-import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
+import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
-type MCPServerType = Awaited<ReturnType<typeof getServer>>;
+type ExtendedMCPServer = Awaited<ReturnType<typeof getServer>> & {
+  [key: string]: any
+};
 
 interface IProps { gatewayId?: number }
 
@@ -298,10 +331,7 @@ const { divideRatio } = useMcpConfigDivideRatio();
 
 const createSliderRef = ref();
 const serverId = ref(0);
-const server = ref<MCPServerType & {
-  oauth2_public_client_enabled?: boolean
-  [key: string]: any
-}>({
+const server = ref<ExtendedMCPServer>({
   id: 0,
   name: '',
   description: '',
@@ -316,7 +346,7 @@ const server = ref<MCPServerType & {
     id: 0,
     name: '',
   },
-} as any);
+});
 const showDropdown = ref(false);
 const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
@@ -540,7 +570,7 @@ const updateCount = (count?: number, panelName?: string) => {
   align-items: center;
   padding: 24px;
   margin-bottom: 16px;
-  background: #fff;
+  background-color: #fff;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .server-name {
@@ -553,6 +583,7 @@ const updateCount = (count?: number, panelName?: string) => {
     padding-inline: 24px;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 
     .status-tag {
       position: absolute;
@@ -574,7 +605,7 @@ const updateCount = (count?: number, panelName?: string) => {
       width: 8px;
       height: 8px;
       margin-right: 2px;
-      background: #f0f1f5;
+      background-color: #f0f1f5;
       border: 1px solid #c4c6cc;
       border-radius: 50%;
     }
@@ -611,6 +642,15 @@ const updateCount = (count?: number, panelName?: string) => {
 
   .info {
     display: flex;
+    flex: 1;
+    min-width: 0;
+
+    .column {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     .apigw-form-item {
       display: flex;
@@ -618,27 +658,16 @@ const updateCount = (count?: number, panelName?: string) => {
       line-height: 32px;
       color: #4d4f56;
       align-items: baseline;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+
+      .label {
+        flex-shrink: 0;
+      }
 
       .value {
         margin-left: 8px;
-        color: #313238;
-        flex: 1;
-
-        &.url,
-        &.description {
-          display: flex;
-          max-width: 230px;
-          align-items: baseline;
-
-          i {
-            padding: 3px;
-            margin-left: 3px;
-            font-size: 12px;
-            color: #3a84ff;
-            cursor: pointer;
-          }
-        }
+        min-width: 0;
+        word-break: break-all;
       }
 
       .unrelease {
@@ -653,13 +682,15 @@ const updateCount = (count?: number, panelName?: string) => {
 
   .operate {
     display: flex;
+    align-items: center;
+    flex-shrink: 0;
     margin-left: 40px;
 
     .line {
       width: 1px;
       height: 32px;
       margin-right: 20px;
-      background: #dcdee5;
+      background-color: #dcdee5;
     }
   }
 }
@@ -696,7 +727,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
   &.on {
     color: #3a84ff;
-    background: #e1ecff;
+    background-color: #e1ecff;
   }
 
   &.off {

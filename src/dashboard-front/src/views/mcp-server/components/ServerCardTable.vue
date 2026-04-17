@@ -22,9 +22,12 @@
       ref="tableRef"
       v-model:table-data="tableData"
       show-settings
+      show-selection
       resizable
       :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign' }"
       :immediate="false"
+      :show-first-full-row="mcpSelections.size > 0"
+      :disabled-check-selection="disabledSelection"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -33,22 +36,25 @@
       @clear-filter="handleClearFilter"
       @filter-change="handleFilterChange"
       @sort-change="handleSortChange"
+      @selection-change="handleSelectionChange"
     />
   </div>
 </template>
 
 <script lang="tsx" setup>
 import { Button, Tag } from 'bkui-vue';
+import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
 import { locale, t } from '@/locales';
 import type { ITableMethod } from '@/types/common';
-import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
-import { type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-server';
+import type { FilterValue, PrimaryTableProps, TableColumnProps } from '@blueking/tdesign-ui';
+import { type IMCPServerCategory, type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-server';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
-type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number];
+type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number] & { is_checked: boolean };
+type TableColumn = TableColumnProps<MCPServerItem>;
 
 interface IProps { filterCondition?: IMCPServerFilterOptions }
 
@@ -58,6 +64,8 @@ interface IEmits {
   'suspend': [id: number]
   'enable': [id: number]
   'delete': [id: number]
+  'copy-config': [row: Partial<IMCPServer>]
+  'selection-change': [selection: Partial<IMCPServer[]>]
   'clear-filter': [void]
 };
 
@@ -69,6 +77,11 @@ const searchData = defineModel('searchData', {
 const searchValue = defineModel('searchValue', {
   required: true,
   type: Array,
+});
+
+const mcpSelections = defineModel('mcpSelections', {
+  required: true,
+  type: [Map, Array],
 });
 
 const filterData = defineModel<Partial<IMCPServer>>('filterData', {
@@ -97,7 +110,6 @@ const apigwId = computed(() => gatewayStore.apigwId);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT,
 );
-
 // 需要隐藏的列
 const hiddenColumn = computed(() => {
   const hidePromptsCount = featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT;
@@ -110,13 +122,13 @@ const hiddenColumn = computed(() => {
   return hiddenColumns;
 });
 
-const tableColumns = shallowRef<any[]>([
+const tableColumns = shallowRef<TableColumn[]>([
   {
     title: t('名称'),
     colKey: 'name',
     width: 300,
     ellipsis: true,
-    cell: (_: any, { row }: { row: IMCPServer }) => {
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
       return (
         <div class="flex items-baseline">
           <div
@@ -128,9 +140,9 @@ const tableColumns = shallowRef<any[]>([
           />
           <div
             v-bk-tooltips={{
-              content: row.name,
+              content: row?.name,
               placement: 'top',
-              disabled: !(row as any).isOverflow,
+              disabled: !row?.isOverflow,
               extCls: 'max-w-480px',
             }}
             class={[
@@ -142,20 +154,26 @@ const tableColumns = shallowRef<any[]>([
               e?.stopPropagation();
               handleView(row.id);
             }}
-            onMouseenter={(e: any) =>
+            onMouseenter={(e: MouseEvent) =>
               tableRef.value?.handleCellEnter({
                 e,
                 row,
-              } as any)}
-            onMouseleave={(e: any) =>
+              } as {
+                e: MouseEvent
+                row: IMCPServer
+              })}
+            onMouseleave={(e: MouseEvent) =>
               tableRef.value?.handleCellLeave({
                 e,
                 row,
-              } as any)}
+              } as {
+                e: MouseEvent
+                row: IMCPServer
+              })}
           >
             {row.name}
           </div>
-          { isEnabledOAuth.value && (row as any)?.app_permission_risk?.has_risk
+          { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
             && (
               <Tag
                 theme="danger"
@@ -170,8 +188,8 @@ const tableColumns = shallowRef<any[]>([
                     <div class="break-all">
                       { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
                         {
-                          count: (row as any)?.app_permission_risk?.risk_tools?.length,
-                          content: (row as any)?.app_permission_risk?.risk_tools?.join('、'),
+                          count: row?.app_permission_risk?.risk_tools?.length,
+                          content: row?.app_permission_risk?.risk_tools?.join('、'),
                         })}
                       <div class="h-24px" />
                       { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
@@ -199,7 +217,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'stage_id',
     ellipsis: true,
     width: 130,
-    cell: (_: any, { row }: { row: IMCPServer }) => {
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class={[
@@ -215,7 +233,10 @@ const tableColumns = shallowRef<any[]>([
       type: 'single',
       showConfirmAndReset: true,
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: (filterCondition.stages ?? []).map((item: any) => {
+      list: (filterCondition.stages ?? []).map((item: {
+        name: string
+        id: number
+      }) => {
         return {
           label: item.name,
           value: item.id,
@@ -231,19 +252,19 @@ const tableColumns = shallowRef<any[]>([
       type: 'multiple',
       showConfirmAndReset: true,
       resetValue: [],
-      list: (filterCondition.categories ?? []).map((item: any) => {
+      list: (filterCondition.categories ?? []).map((item: IMCPServerCategory) => {
         return {
           label: item.display_name,
           value: item.name,
         };
       }),
     },
-    cell: (_: any, { row }: { row: IMCPServer }) => (
-      (row as any).categories?.length
+    cell: (_: VNode, { row }: { row: IMCPServer }) => (
+      row?.categories?.length
         ? (
           <div class="w-160px">
             <RenderTagOverflow
-              data={(row as any).categories.map((cg: any) => cg.display_name)}
+              data={row.categories.map((cg: IMCPServerCategory) => cg.display_name)}
             />
           </div>
         )
@@ -262,7 +283,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'is_public',
     width: 110,
     ellipsis: true,
-    cell: (_: any, { row }: { row: IMCPServer }) => {
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class="border-transparent"
@@ -283,17 +304,17 @@ const tableColumns = shallowRef<any[]>([
     title: t('OAuth2 公开客户端'),
     colKey: 'oauth2_public_client_enabled',
     ellipsis: true,
-    cell: (_: any, { row }: { row: IMCPServer }) => {
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
       return (
         <Tag
           class={
             [
               'border-transparent',
-              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': (row as any).oauth2_public_client_enabled },
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
             ]
           }
         >
-          {t((row as any)?.oauth2_public_client_enabled ? '已开启' : '未开启')}
+          {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
         </Tag>
       );
     },
@@ -310,7 +331,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'description',
     ellipsis: true,
     width: 200,
-    cell: (_: any, { row }: { row: IMCPServer }) => {
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
       return row?.description || '--';
     },
   },
@@ -319,7 +340,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'operate',
     fixed: 'right',
     width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
-    cell: (_: any, { row }: { row: IMCPServer }) => (
+    cell: (_: VNode, { row }: { row: IMCPServer }) => (
       <div class="flex">
         <Button
           text
@@ -332,7 +353,13 @@ const tableColumns = shallowRef<any[]>([
           class="ml-12px"
           onClick={(e: MouseEvent) => e?.preventDefault()}
         >
-          <bk-dropdown trigger="click">
+          <bk-dropdown
+            trigger="click"
+            popoverOptions={{
+              clickContentAutoHide: true,
+              hideIgnoreReference: true,
+            }}
+          >
             {{
               default: () => (
                 <ag-icon
@@ -344,23 +371,36 @@ const tableColumns = shallowRef<any[]>([
               content: () => (
                 <bk-dropdown-menu>
                   {row?.status === 1 && (
-                    <bk-dropdown-item
-
-                      onClick={() => handleSuspendClick(row)}
-                    >
-                      <Button
-                        size="small"
-                        text
-                      >
-                        { t('停用') }
-                      </Button>
-                    </bk-dropdown-item>
+                    <div>
+                      <bk-dropdown-item onClick={() => handleSuspendClick(row)}>
+                        <Button
+                          size="small"
+                          text
+                        >
+                          { t('停用') }
+                        </Button>
+                      </bk-dropdown-item>
+                      <bk-dropdown-item onClick={() => handleCopyConfig(row)}>
+                        <Button
+                          size="small"
+                          text
+                        >
+                          { t('复制配置') }
+                        </Button>
+                      </bk-dropdown-item>
+                    </div>
                   )}
-                  <bk-dropdown-item onClick={() => handleDeleteClick(row)}>
+                  <bk-dropdown-item
+                    class={{ 'cursor-not-allowed!': row?.status }}
+                    onClick={(e: MouseEvent) => {
+                      e?.stopPropagation();
+                      handleDeleteClick(row);
+                    }}
+                  >
                     <Button
                       v-bk-tooltips={{
                         content: t('请先停用再删除'),
-                        disabled: row?.status === 0,
+                        disabled: !row?.status,
                       }}
                       disabled={row?.status === 1}
                       text
@@ -394,8 +434,16 @@ const getTableData = async (params: Record<string, any> = {}): Promise<any[]> =>
     }
   });
 
-  const res = await getServers(apigwId.value, requestParams);
-  return res as any;
+  const res: IMCPServer = await getServers(apigwId.value, requestParams);
+  return res;
+};
+
+const disabledSelection = (row: IMCPServer) => {
+  if (!row.status) {
+    row.selectionTip = t('已停用的MCP无法批量操作');
+  }
+
+  return !row.status;
 };
 
 const handleView = (id: number) => {
@@ -427,9 +475,12 @@ const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
   return '';
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
+const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: {
+  sortBy: string
+  descending: boolean
+} | null) => {
   if (sort) {
-    const { sortBy: colKey, descending } = sort as any;
+    const { sortBy: colKey, descending } = sort;
     filterData.value!.order_by = descending ? `-${colKey}` : colKey;
   }
   else {
@@ -442,16 +493,27 @@ const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   handleTableFilterChange({
     filterItem,
-    filterData: filterData as any,
-    searchOptions: searchData as any,
-    searchParams: searchValue as any,
+    filterData: filterData as Partial<IMCPServer>,
+    searchOptions: searchData as ISearchItem[],
+    searchParams: searchValue as ISearchValue[],
   });
   getList();
+};
+
+// 复制配置
+const handleCopyConfig = (row: IMCPServer) => {
+  emit('copy-config', row);
+};
+
+// 处理复选框
+const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }: Partial<IMCPServer[]>) => {
+  emit('selection-change', selections);
 };
 
 const handleClearFilter = () => {
   emit('clear-filter');
 };
+
 defineExpose({ getList });
 </script>
 

@@ -70,48 +70,41 @@ import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { ISeriesItemType } from '@/services/source/observability';
+import type { ILegendItem, ISearchParamsType, ISeriesItemType } from '@/services/source/observability';
 import TableEmpty from '@/components/table-empty/Index.vue';
-
-// 补充图例项类型定义
-interface ILegendItem {
-  color: string
-  name: string
-  selected: string
-}
-// 补充搜索参数类型定义
-interface ISearchParamsType { [key: string]: any }
 
 interface IProps {
   instanceId?: string
   title?: string
-  chartData?: Record<string, any>
+  chartData?: {
+    series?: ISeriesItemType[]
+  }
 }
 
 interface IEmits {
-  'clear-params': [void]
-  'report-init': [void]
+  'clear-params': []
+  'report-init': []
 }
 
+// 组件配置
 const {
-  instanceId = '', // 生成图表的元素id
-  title = '响应耗时', // 图表 title
-  chartData = {}, // 图表数据
+  instanceId = '',
+  title = '响应耗时',
+  chartData = {},
 } = defineProps<IProps>();
 const emit = defineEmits<IEmits>();
 
-// 需要横向超过两个grid布局
-const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
-// 需要转换为毫秒的metrics
-const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
-// 需要转换为字节的metrics
-const displayBytesList = ['request_body_size', 'response_body_size'];
+// 常量配置
+const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'] as const;
+const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'] as const;
+const displayBytesList = ['request_body_size', 'response_body_size'] as const;
 
+// 组合式API
 const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
 
-const myChart = shallowRef<echarts.ECharts>();
-const chartLegend = ref<Record<string, any>>({});
+const myChart = shallowRef<echarts.ECharts | undefined>();
+const chartLegend = ref<Record<string, ILegendItem[] | null>>({});
 const tableEmptyConf = ref<{
   emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
   isAbnormal: boolean
@@ -120,16 +113,16 @@ const tableEmptyConf = ref<{
   isAbnormal: false,
 });
 
-// 判断数据是否为空
+// 计算属性
 const isEmpty = computed(() => {
-  const seriesList = Reflect.get(chartData, 'series');
-  return !Array.isArray(seriesList) || seriesList?.length == 0;
+  const seriesList = chartData.series;
+  return !Array.isArray(seriesList) || seriesList.length === 0;
 });
 
-// 更新空状态配置
+// 更新空状态置
 const updateTableEmptyConfig = () => {
-  const list = Object.values(searchParams.value).filter(item => !!item);
-  tableEmptyConf.value.emptyType = list.length > 0 ? 'searchEmpty' : 'empty';
+  const hasFilter = Object.values(searchParams.value).some(item => !!item);
+  tableEmptyConf.value.emptyType = hasFilter ? 'searchEmpty' : 'empty';
 };
 
 // 图表自适应
@@ -139,8 +132,84 @@ const chartResize = () => {
   });
 };
 
+// 计算x轴时间间隔配置
+const getChartMoreOption = (seriesList: IDataPoint[]) => {
+  const xAxisData = seriesList.map(item => Math.round(item[1]));
+  xAxisData.sort((a, b) => a - b);
+
+  if (xAxisData.length < 2) return { xAxis: {} };
+
+  const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
+  return getChartIntervalOption(timeDuration, 'time', 'xAxis');
+};
+
+// 生成图表配色
+const generateChartColor = (seriesList: ISeriesItemType[]): string[] => {
+  let baseColor = ['#3a84ff', '#5ad8a6', '#5d7092', '#f6bd16', '#ff5656', '#6dc8ec', '#ffb43d', '#4bc7ad', '#ff7756', '#b5e0ab'];
+  let angle = 30;
+
+  if (instanceId.includes('failed_')) {
+    baseColor = ['#ff5656', '#5ad8a6'];
+    angle = 10;
+  }
+
+  const colors: string[] = [];
+  const interval = Math.ceil(seriesList.length / baseColor.length);
+
+  baseColor.forEach((color) => {
+    let i = 0;
+    while (i < interval) {
+      const co = getColorHue(color, i * angle);
+      colors.push(co);
+      i += 1;
+    }
+  });
+
+  return colors;
+};
+
+// 设置Tooltip格式化
+const setChartTooltip = (
+  chartOption: echarts.EChartsOption,
+  multipleList: readonly string[],
+  displayMSList: readonly string[],
+  displayBytesList: readonly string[],
+) => {
+  type TooltipParam = {
+    data: [number, number]
+    seriesName: string
+    color: string
+  };
+
+  chartOption.tooltip = {
+    trigger: 'axis',
+    formatter: (params: TooltipParam | TooltipParam[]) => {
+      const paramList = Array.isArray(params) ? params : [params];
+      if (paramList.length === 0) return '';
+
+      let res = `<p>${dayjs(paramList[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`;
+
+      paramList.forEach((p) => {
+        const value = p.data[1]?.toLocaleString() || '0';
+        let unit = t('次');
+
+        if (displayMSList.includes(instanceId)) unit = 'ms';
+        if (displayBytesList.includes(instanceId)) unit = 'bytes';
+        if (instanceId === 'requests') p.seriesName = t('总请求数');
+
+        res += `<p>
+          <span style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${p.color};margin-right:6px;vertical-align:middle;"></span>
+          ${p.seriesName}: <span>${value} ${unit}</span>
+        </p>`;
+      });
+
+      return res;
+    },
+  };
+};
+
 // 获取图表核心配置
-const getChartOption = () => {
+const getChartOption = (): echarts.EChartsOption => {
   // 基础配置
   const baseOption: echarts.EChartsOption = {
     grid: {
@@ -152,8 +221,6 @@ const getChartOption = () => {
     },
     xAxis: {
       type: 'time',
-      // 不强制包含零刻度
-      // @ts-expect-error scale 属性在 echarts time 轴上有效但类型定义缺失
       scale: true,
       boundaryGap: false,
       axisLabel: {
@@ -184,19 +251,18 @@ const getChartOption = () => {
     series: [{
       data: [],
       type: 'line',
-      connectNulls: true, // 连接空数据
-      symbol: 'circle', // 拐点形状
-      symbolSize: 5, // 拐点大小
+      connectNulls: true,
+      symbol: 'circle',
+      symbolSize: 5,
       itemStyle: {
         borderColor: 'rgba(0,0,0,0)',
         borderWidth: 0,
       },
-      // 隐藏拐点边框
       lineStyle: { width: 1 },
       markPoint: { symbolSize: 12 },
     }],
-    legend: { show: false }, // 关闭内置图例，使用自定义图例
-    tooltip: { trigger: 'axis' }, // 轴触发tooltip
+    legend: { show: false },
+    tooltip: { trigger: 'axis' },
   };
 
   const chartOption: echarts.EChartsOption = {
@@ -208,221 +274,141 @@ const getChartOption = () => {
     grid: {},
   };
 
-  let moreOption: any = {};
-  const seriesData = (chartData as { series: ISeriesItemType[] }).series || [];
+  const seriesData = chartData.series || [];
 
-  // 处理业务数据，生成系列配置
-  seriesData.forEach((item: ISeriesItemType) => {
-    // 过滤无效数据：空值、时间戳无效的项
-    const dataPoints = (item?.datapoints || (item as any).dataPoints || [])
-      .filter((value: Array<number | null>) => !isNaN(Math.round(value[1] as number)) && value[0] !== null);
+  // 处理业务数据
+  seriesData.forEach((item) => {
+    const IDataPoints = (item.IDataPoints || [])
+      .filter((value): value is IDataPoint =>
+        !isNaN(Math.round(value[1])) && value[0] !== null,
+      );
 
-    // 格式化数据：[时间戳, 数值]，保留2位小数，适配不同instanceId的单位转换
-    const formatData = dataPoints.map((point) => {
-      const value = Number((point[0] as number).toFixed(2));
-      const time = point[1] as number;
+    const formatData = IDataPoints.map(point => [
+      point[1],
+      Number((point[0] as number).toFixed(2)),
+    ] as [number, number]);
 
-      return [time, value];
-    });
-
-    // 生成系列项，合并基础配置
-    (chartOption.series as any[]).push(merge({}, (baseOption.series as any[])[0], {
-      // 优先使用dimensions中的资源名
-      name: item.dimensions?.resource_name || (item.target?.split('=')[1])?.replace(/"/g, ''),
+    const baseSeries = (baseOption.series as echarts.LineSeries[])[0];
+    (chartOption.series as echarts.LineSeries[]).push(merge({}, baseSeries, {
+      name: item.dimensions?.resource_name || item.target?.split('=')[1]?.replace(/"/g, ''),
       data: formatData,
     }));
 
-    // 计算时间间隔配置
-    moreOption = getChartMoreOption(dataPoints as Array<Array<number>>);
+    const moreOption = getChartMoreOption(IDataPoints);
+    const dataLength = IDataPoints.length;
 
     // 动态调整x轴刻度
-    if (!displayMSList.includes(instanceId)) {
-      const dataLength = dataPoints?.length || 0;
+    if (!displayMSList.includes(instanceId) && moreOption.xAxis) {
       if (multipleList.includes(instanceId)) {
-        moreOption.xAxis.axisLabel = dataLength <= 20
-          ? {
-            interval: 0,
+        (moreOption.xAxis as echarts.XAXisOption).axisLabel = dataLength <= 20
+          ? { interval: 0,
             rotate: 0,
-            fontSize: 12,
-          }
-          : {
-            interval: Math.floor(dataLength / 10),
+            fontSize: 12 }
+          : { interval: Math.floor(dataLength / 10),
             rotate: 45,
             margin: 10,
-            fontSize: 10,
-          };
+            fontSize: 10 };
       }
       else {
-        moreOption.xAxis.axisLabel = dataLength <= 30
-          ? {
-            interval: 0,
+        (moreOption.xAxis as echarts.XAXisOption).axisLabel = dataLength <= 30
+          ? { interval: 0,
             rotate: 0,
-            fontSize: 12,
-          }
-          : {
-            interval: Math.floor(dataLength / 10),
+            fontSize: 12 }
+          : { interval: Math.floor(dataLength / 10),
             rotate: 25,
             margin: 10,
-            fontSize: 10,
-          };
+            fontSize: 10 };
       }
     }
+
+    merge(chartOption, moreOption);
   });
 
-  // 设置图表配色
+  // 设置颜色
   chartOption.color = generateChartColor(seriesData);
 
-  // 自定义Tooltip（适配业务数据，显示资源名+单位，优化多系列展示）
-  setChartTooltip(chartOption, multipleList, displayMSList);
+  // 设置Tooltip
+  setChartTooltip(chartOption, multipleList, displayMSList, displayBytesList);
 
-  // 实例ID专属配置
-  if (multipleList.includes(instanceId)) {
-    if (document.body.clientWidth < 1550) {
-      (chartOption.xAxis as any).axisLabel = {
-        ...(chartOption.xAxis as any).axisLabel,
-        rotate: 35,
-      };
-    }
+  // 响应式处理
+  if (multipleList.includes(instanceId) && document.body.clientWidth < 1550) {
+    (chartOption.xAxis as echarts.XAXisOption).axisLabel = {
+      ...(chartOption.xAxis as echarts.XAXisOption).axisLabel,
+      rotate: 35,
+    };
   }
 
+  // 单位配置
   if (displayMSList.includes(instanceId)) {
-    (chartOption.yAxis as any).axisLabel = {
-      ...(chartOption.yAxis as any).axisLabel,
+    (chartOption.yAxis as echarts.YAXisOption).axisLabel = {
+      ...(chartOption.yAxis as echarts.YAXisOption).axisLabel,
       formatter: '{value} ms',
     };
   }
 
   if (displayBytesList.includes(instanceId)) {
-    (chartOption.yAxis as any).axisLabel = {
-      ...(chartOption.yAxis as any).axisLabel,
+    (chartOption.yAxis as echarts.YAXisOption).axisLabel = {
+      ...(chartOption.yAxis as echarts.YAXisOption).axisLabel,
       formatter: '{value} bytes',
     };
   }
 
-  // 合并所有配置
-  return merge(baseOption, chartOption, moreOption);
-};
-
-// 计算x轴时间间隔配置
-const getChartMoreOption = (seriesList: Array<Array<number>>) => {
-  const xAxisData = seriesList.map((item: Array<number>) => Math.round(item[1]));
-  xAxisData.sort((a: number, b: number) => a - b);
-  const timeDuration = Math.round((xAxisData[xAxisData.length - 1] - xAxisData[0]) / 1000);
-  return getChartIntervalOption(timeDuration, 'time', 'xAxis');
-};
-
-// 生成图表配色
-const generateChartColor = (seriesList: ISeriesItemType[]) => {
-  let baseColor = ['#3A84FF', '#5AD8A6', '#5D7092', '#F6BD16', '#FF5656', '#6DC8EC', '#FFB43D', '#4BC7AD', '#FF7756', '#B5E0AB'];
-  let angle = 30;
-  if (instanceId.indexOf('failed_') !== -1) {
-    baseColor = ['#FF5656', '#5AD8A6'];
-    angle = 10;
-  }
-  const colors: string[] = [];
-  const interval = Math.ceil(seriesList.length / baseColor.length);
-  baseColor.forEach((color) => {
-    let i = 0;
-    while (i < interval) {
-      const co = getColorHue(color, i * angle);
-      colors.push(co);
-      i += 1;
-    }
-  });
-  return colors;
-};
-
-// 设置Tooltip格式化（适配业务数据，优化多系列展示）
-const setChartTooltip = (
-  chartOption: echarts.EChartsOption,
-  multipleList: string[],
-  displayMSList: string[],
-) => {
-  // 统一Tooltip格式化逻辑，适配所有instanceId
-  // @ts-expect-error echarts tooltip formatter 类型兼容
-  chartOption.tooltip.formatter = (params: any) => {
-    if (!Array.isArray(params)) params = [params];
-    // 时间标题（所有系列共用一个时间）
-    let res = `<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`;
-    // 遍历所有系列，显示颜色标记+资源名+数值+单位
-    params.forEach((p: any) => {
-      const value = p.data[1] !== null ? p.data[1].toLocaleString() : '0';
-      let unit = t('次');
-      if (displayMSList.includes(instanceId)) unit = 'ms';
-      if (displayBytesList.includes(instanceId)) unit = 'bytes';
-      if (['requests'].includes(instanceId)) {
-        p.seriesName = t('总请求数');
-      }
-      res += `<p>
-        <span style="display:inline-block;width:16px;height:4px;border-radius:2px;background:${p.color};margin-right:6px;vertical-align:middle;"></span>
-        ${p.seriesName}: <span>${value} ${unit}</span>
-      </p>`;
-    });
-    return res;
-  };
+  return merge(baseOption, chartOption);
 };
 
 // 生成自定义图例
 const generateChartLegend = () => {
   const option = myChart.value?.getOption();
-  if (option && (option.series as any[]).length > 1) {
-    chartLegend.value[instanceId] = (option?.series as any[])?.map((ser: any, index: number) => ({
-      color: (option.color as string[])[index],
-      name: ser.name,
-      selected: 'all',
-    }));
-  }
-  else {
+  if (!option || !option.series || option.series.length <= 1) {
     chartLegend.value[instanceId] = null;
+    return;
   }
+
+  const seriesList = option.series as echarts.LineSeries[];
+  const colors = option.color as string[] || [];
+
+  chartLegend.value[instanceId] = seriesList.map((ser, index) => ({
+    color: colors[index] || '#999',
+    name: ser.name || '',
+    selected: 'all' as const,
+  }));
 };
 
 // 处理图例点击
 const handleClickLegend = (index: number) => {
   const legend = chartLegend.value[instanceId];
   if (!legend) return;
-  const currentLegend = legend[index];
-  const { selected } = currentLegend;
 
-  if (selected !== 'selected') {
-    // 仅显示选中项
-    myChart.value?.dispatchAction({
-      type: 'legendUnSelect',
-      batch: legend.map(({ name }: ILegendItem) => ({ name })),
-    });
-    myChart.value?.dispatchAction({
-      type: 'legendSelect',
-      name: currentLegend.name,
-    });
-    // 更新选中状态
-    legend.forEach((item: ILegendItem, i: number) => {
+  const currentLegend = legend[index];
+  if (currentLegend.selected !== 'selected') {
+    myChart.value?.dispatchAction({ type: 'legendUnSelect',
+      batch: legend.map(({ name }) => ({ name })) });
+    myChart.value?.dispatchAction({ type: 'legendSelect',
+      name: currentLegend.name });
+
+    legend.forEach((item, i) => {
       item.selected = index === i ? 'selected' : 'unselected';
     });
   }
   else {
-    // 显示所有项
-    myChart.value?.dispatchAction({
-      type: 'legendSelect',
-      batch: legend.map(({ name }: ILegendItem) => ({ name })),
-    });
-    legend.forEach((item: ILegendItem) => (item.selected = 'all'));
+    myChart.value?.dispatchAction({ type: 'legendSelect',
+      batch: legend.map(({ name }) => ({ name })) });
+    legend.forEach(item => item.selected = 'all');
   }
 
-  chartLegend.value = {
-    ...chartLegend.value,
-    [instanceId]: legend,
-  };
+  chartLegend.value = { ...chartLegend.value };
 };
 
-// 渲染图表主方法
+// 渲染图表
 const renderChart = () => {
   if (!myChart.value) return;
+
   nextTick(() => {
     const option = getChartOption();
     myChart.value!.setOption(option, {
       notMerge: true,
       animation: { duration: 300 },
-    } as any);
+    });
     chartResize();
     generateChartLegend();
   });
@@ -433,66 +419,53 @@ const syncParams = (params: ISearchParamsType) => {
   searchParams.value = params;
 };
 
-// 清空筛选参数
+// 清空筛选
 const handleClearFilterKey = () => {
   emit('clear-params');
 };
 
-// 初始化图表
+// 初始化
 const handleInit = () => {
   emit('report-init');
 };
 
-// 监听数据变化重绘图表
+// 监听数据变化
 watch(() => chartData, () => {
   if (isEmpty.value) {
     updateTableEmptyConfig();
     return;
   }
-
   renderChart();
-},
-{
-  deep: true,
-  immediate: true,
-},
-);
+}, { deep: true,
+  immediate: true });
 
+// 生命周期
 onMounted(() => {
   const initChart = () => {
     const chartDom = document.getElementById(instanceId);
     if (!chartDom) return;
 
-    // 检查宽高是否为0
     if (chartDom.clientWidth === 0 || chartDom.clientHeight === 0) {
-      // 延时16ms重试（≈60fps），兼容旧浏览器
-      setTimeout(() => initChart(), 16);
+      setTimeout(initChart, 16);
       return;
     }
 
-    if (myChart.value) {
-      myChart.value.dispose();
-    }
-
+    myChart.value?.dispose();
     myChart.value = echarts.init(chartDom);
-
     renderChart();
   };
 
-  // 启动初始化（0ms延时，让出主线程）
-  setTimeout(() => initChart(), 0);
-
+  setTimeout(initChart, 0);
   window.addEventListener('resize', chartResize);
 });
 
 onUnmounted(() => {
-  if (myChart.value) {
-    myChart.value.dispose();
-    myChart.value = undefined;
-  }
+  myChart.value?.dispose();
+  myChart.value = undefined;
   window.removeEventListener('resize', chartResize);
 });
 
+// 暴露方法
 defineExpose({
   syncParams,
   renderChart,
@@ -567,7 +540,6 @@ defineExpose({
   }
 
   .custom-scroll-bar {
-
     &::-webkit-scrollbar {
       width: 4px;
       background-color: color.scale(#C4C6CC, $lightness: 80%);

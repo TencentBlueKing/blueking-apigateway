@@ -77,7 +77,7 @@
               >
                 <AgIcon
                   name="deqiu"
-                  size="14"
+                  size="20"
                   color="#3a84ff"
                 />
               </div>
@@ -221,7 +221,7 @@
             #aside
           >
             <!-- 配置 -->
-            <ServerConfig
+            <AgMcpAgentConfig
               :list="mcpConfigList"
               class="h-full bg-white mcp-detail-config"
             />
@@ -341,11 +341,11 @@ import {
 } from '@/services/source/mcp-market';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
-import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
 import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import DefaultMdGuideSlider from '@/views/mcp-market/components/DefaultMdGuideSlider.vue';
+import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
 interface IMarketplaceDetailsWithOverflow extends IMarketplaceDetails {
   isOverflow?: boolean

@@ -341,7 +341,10 @@ export interface IMCPServerListOutput {
   url: string
   status: number
   protocol_type: string
-  stage: any
+  stage: {
+    id: number
+    name: string
+  }
   updated_time: string
   created_time: string
   categories: string
@@ -376,21 +379,20 @@ export interface IMCPServerCategoryOutput {
   id: number
   name: string
   display_name: string
-  description: string
-  sort_order: number
+  description?: string
+  sort_order?: number
 }
 
 /**
  * GET /gateways/{gateway_id}/mcp-servers/-/filter-options/
  */
 export interface IMCPServerFilterOptionsOutput {
-  stages: {
-    [key: string]: string | number | null
+  labels?: string[]
+  stages?: {
+    id: number
+    name: string
   }[]
-  labels: string[]
-  categories: {
-    [key: string]: string | number | null
-  }[]
+  categories?: IMCPServerCategoryOutput[]
 }
 
 /**
@@ -454,6 +456,10 @@ export interface IMCPServerRetrieveOutput {
   title: string
   description: string
   is_public: boolean
+  is_official: boolean
+  is_featured: boolean
+  oauth2_public_client_enabled: boolean
+  raw_response_enabled: boolean
   labels: (string | null)[]
   resource_names: string[]
   tool_names: string[]
@@ -461,14 +467,14 @@ export interface IMCPServerRetrieveOutput {
   url: string
   status: number
   protocol_type: string
-  stage: any
+  stage: {
+    id: number
+    name: string
+  }
   updated_time: string
   created_time: string
   categories: string | any[]
-  is_official: boolean
-  is_featured: boolean
   prompts: string | any[]
-  oauth2_public_client_enabled?: boolean
   tools?: any[]
   gateway?: {
     id: number

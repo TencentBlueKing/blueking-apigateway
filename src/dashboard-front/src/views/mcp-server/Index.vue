@@ -26,9 +26,11 @@
         :placeholder="t('搜索 MCP 名称、展示名、描述、环境、分类、标签')"
         :search-data="searchData"
         :is-show-publish-time="!isTableView"
+        :selections="selections"
+        @batch-copy="handleBatchCopy"
         @sort-change="handleSortChange"
       >
-        <template #mcpServerAdd>
+        <template #mcpServerBtn>
           <BkButton
             theme="primary"
             @click="handleAddServerClick"
@@ -99,13 +101,16 @@
             v-model:search-value="searchValue"
             v-model:filter-data="filterData"
             v-model:search-data="searchData"
+            v-model:mcp-selections="selections"
             :filter-condition="mcpFilterOptions"
             @view="handleView"
             @delete="handleDelete"
             @edit="handleEdit"
             @enable="handleEnable"
             @suspend="handleSuspend"
+            @copy-config="handleCopyConfig"
             @clear-filter="handleClearFilter"
+            @selection-change="handleSelectionChange"
             @updated="handleServerUpdated"
           />
         </template>
@@ -132,6 +137,9 @@
               @edit="handleEdit"
               @enable="handleEnable"
               @suspend="handleSuspend"
+              @copy-config="handleCopyConfig"
+              @selection-change="handleSelectionChange"
+              @checked="(isChecked: boolean) => handleChecked(isChecked, server)"
               @click.stop="() => handleView(server.id)"
             >
               <template #mcpStatus>
@@ -158,7 +166,7 @@
                 >
                   <AgIcon
                     name="zhiming"
-                    size="14"
+                    size="20"
                     color="#e71818"
                   />
                 </div>
@@ -166,7 +174,7 @@
             </AgMcpCard>
             <div
               class="flex items-center justify-center add-server-card"
-              @click="handleAddServerClick"
+              @click.stop="handleAddServerClick"
             >
               <AgIcon
                 name="add-small"
@@ -182,6 +190,12 @@
         :category-list="mcpFilterOptions.categories"
         @updated="handleServerUpdated"
       />
+      <!-- 复制 MCP 配置 -->
+      <AgMcpCopyConfigDialog
+        v-model:is-show="isShowConfig"
+        :loading="copyConfigLoading"
+        :list="mcpConfigList"
+      />
     </div>
     <div
       v-intersection-observer="onIntersectionObserver"
@@ -196,20 +210,25 @@ import { Message } from 'bkui-vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import { vIntersectionObserver } from '@vueuse/components';
 import {
-  type IMCPServer,
+  type IMCPFilterParams,
+  type IMCPServerCategory,
   type IMCPServerFilterOptions,
+  type IMCPServerWithUIState,
   deleteServer,
+  getMcpBatchCopyConfigList,
   getMcpServerFilterOptions,
   getServers,
   patchServerStatus,
 } from '@/services/source/mcp-server';
+import type { ISearchSelect, ISearchSelectData } from '@/types/common.ts';
 import { useFeatureFlag } from '@/stores';
-import { usePopInfoBox } from '@/hooks';
+import { useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import CreateSlider from './components/CreateSlider.vue';
-import ServerCardTable from './components/ServerCardTable.vue';
+import CreateSlider from '@/views/mcp-server/components/CreateSlider.vue';
+import ServerCardTable from '@/views/mcp-server/components/ServerCardTable.vue';
 import AgMcpTopBar from '@/components/ag-mcp-search-bar/Index.vue';
 import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
+import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
@@ -231,13 +250,14 @@ const activeStatusTab = ref('all');
 const activeViewTab = ref('card');
 const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error' | undefined>(undefined);
 const isLoading = ref(true);
+const isShowConfig = ref(false);
 const pagination = ref({
   current: 1,
   limit: 0,
   count: 0,
   hasNoMore: false,
 });
-const filterData = ref<Record<string, any>>({
+const filterData = ref<IMCPFilterParams>({
   order_by: '-updated_time',
   status: activeStatusTab.value,
 });
@@ -247,20 +267,30 @@ const mcpFilterOptions = ref<IMCPServerFilterOptions & Record<string, any>>({
   categories: [],
 });
 const searchValue = ref([]);
+// 批量复制内容
+const selections = ref<Map<number, IMCPServerWithUIState>>(new Map());
 
-const searchData = computed<any[]>(() => [
+// 批量复制配置hooks
+const {
+  copyConfigLoading,
+  mcpConfigList,
+  fetchMcpBatchCopyConfigList,
+} = useMcpBatchCopyConfig({
+  fetchApi: getMcpBatchCopyConfigList,
+  gatewayId,
+});
+
+const searchData = computed<ISearchSelectData[]>(() => [
   {
     name: t('模糊搜索'),
     id: 'keyword',
     placeholder: t('请输入MCP 名称，展示名，描述'),
-    aa: 'aaa',
     children: [],
   },
   {
     name: t('环境'),
     id: 'stage_id',
     placeholder: t('请选择环境'),
-    aa: 'aaa',
     children: mcpFilterOptions.value.stages,
     multiple: false,
   },
@@ -268,7 +298,7 @@ const searchData = computed<any[]>(() => [
     name: t('分类'),
     id: 'categories',
     placeholder: t('请选择分类'),
-    children: (mcpFilterOptions.value.categories ?? []).map((cg: any) => {
+    children: (mcpFilterOptions.value.categories ?? []).map((cg: IMCPServerCategory) => {
       return {
         name: cg.display_name,
         id: cg.name,
@@ -280,7 +310,7 @@ const searchData = computed<any[]>(() => [
     name: t('标签'),
     id: 'label',
     placeholder: t('请选择标签'),
-    children: (mcpFilterOptions.value.labels ?? []).map((label: any) => {
+    children: (mcpFilterOptions.value.labels ?? []).map((label: string) => {
       return {
         name: label,
         id: label,
@@ -320,7 +350,7 @@ const isEnabledOAuth = computed(() =>
 );
 const isTableView = computed(() => activeViewTab.value.includes('table'));
 
-const renderRiskToolToolTip = (row: IMCPServer & { app_permission_risk?: any }) => {
+const renderRiskToolToolTip = (row: IMCPServerWithUIState & { app_permission_risk?: boolean }) => {
   return {
     content: () => (
       <div class="break-all">
@@ -400,7 +430,7 @@ const fetchMcpServerList = async () => {
         ? filterData.value.categories.join()
         : filterData.value?.categories,
     };
-    const res = await getServers(gatewayId, params as any);
+    const res = await getServers(gatewayId, params as IGatewaysMcpServersListQuery);
     const { results = [], count = 0 } = res ?? {};
     mcpList.value = current === 1 ? results : [...mcpList.value, ...results];
     pagination.value = {
@@ -422,26 +452,29 @@ const fetchMcpServerList = async () => {
 
 // 获取 MCPServer 搜索过滤选项（环境、标签、分类）
 const fetchMcpServerFilterOptions = async () => {
-  const res = await getMcpServerFilterOptions(gatewayId);
+  const res: IMCPServerFilterOptionsOutput = await getMcpServerFilterOptions(gatewayId);
   if (res?.categories?.length) {
     // MCPServer筛选掉官方和精选分类
-    res.categories = res?.categories.filter((cg: any) => !['Official', 'Featured'].includes(cg.name));
+    res.categories = res?.categories.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
   }
   if (res?.stages?.length) {
-    (res as any).stages = res?.stages.map((stage: any) => {
+    res.stages = res?.stages.map((stage: {
+      name: string
+      id: number
+    }) => {
       return {
         ...stage,
         id: String(stage.id),
       };
     });
   }
-  mcpFilterOptions.value = (res ?? {}) as any;
+  mcpFilterOptions.value = res ?? {};
 };
 
 const handleStatusTabChange = ({ id }: { id: string }) => {
   if (activeStatusTab.value === id) return;
   activeStatusTab.value = id;
-  (filterData.value as any).status = id;
+  filterData.value.status = id;
   resetPagination();
 };
 
@@ -467,6 +500,11 @@ const handleAddServerClick = () => {
   createSliderRef.value?.show();
 };
 
+const handleBatchCopy = () => {
+  isShowConfig.value = true;
+  fetchMcpBatchCopyConfigList({ selections: selections.value });
+};
+
 // 卡片模式下发布时间或字母排序
 const handleSortChange = (sort: string) => {
   filterData.value.order_by = sort;
@@ -479,7 +517,7 @@ const handleEdit = (id: number) => {
 };
 
 const handleSuspend = async (id: number) => {
-  const server = mcpList.value.find((server: any) => server.id === id);
+  const server = mcpList.value.find((server: IMCPServerWithUIState) => server.id === id);
   usePopInfoBox({
     isShow: true,
     type: 'warning',
@@ -508,7 +546,7 @@ const handleEnable = async (id: number) => {
 };
 
 const handleDelete = async (id: number) => {
-  const server = mcpList.value.find((server: any) => server.id === id);
+  const server = mcpList.value.find((server: IMCPServerWithUIState) => server.id === id);
   if (server) {
     usePopInfoBox({
       isShow: true,
@@ -528,6 +566,26 @@ const handleDelete = async (id: number) => {
       },
     });
   }
+};
+
+const handleCopyConfig = async (row: IMCPServerWithUIState) => {
+  isShowConfig.value = true;
+  await fetchMcpBatchCopyConfigList({ row });
+};
+
+const handleChecked = (isChecked: boolean, row: IMCPServerWithUIState) => {
+  row.is_checked = isChecked;
+  if (isChecked) {
+    selections.value.set(row.id, row);
+  }
+  else {
+    selections.value.delete(row.id);
+  }
+};
+
+const handleSelectionChange = (selection: IMCPServerWithUIState[]) => {
+  selections.value.clear();
+  selection.forEach(item => selections.value.set(item.id, item));
 };
 
 const handleServerUpdated = () => {
@@ -567,6 +625,7 @@ const resetPagination = () => {
   if (activeStatusTab.value.includes('all')) {
     delete filterData.value.status;
   }
+  selections.value.clear();
   // 如果是表格视图, 且不是首次加载
   if (isTableView.value) {
     nextTick(() => {
@@ -589,15 +648,18 @@ const resetPagination = () => {
 };
 
 const handleSearch = () => {
-  const params: Record<string, any> = { order_by: filterData.value.order_by || '-updated_time' };
-  searchValue.value.forEach((option: any) => {
+  const params: IMCPFilterParams = { order_by: filterData.value.order_by || '-updated_time' };
+  searchValue.value.forEach((option: ISearchSelect) => {
     if (option.values) {
-      (params as Record<string, any>)[option.id] = !['categories'].includes(option.id)
+      params[option.id] = !['categories'].includes(option.id)
         ? option.values?.[0]?.id
-        : option.values.map((item: any) => item.id);
+        : option.values.map((item: {
+          name: string
+          id: number | string
+        }) => item.id);
     };
   });
-  filterData.value = params as any;
+  filterData.value = params;
   cardEmptyType.value = Object.keys(params).length > 0 ? 'searchEmpty' : undefined;
   resetPagination();
 };
@@ -606,7 +668,10 @@ const handleClearFilter = () => {
   filterData.value = {
     order_by: '-updated_time',
     status: activeStatusTab.value,
-  } as any;
+  } as {
+    order_by: string
+    status: number
+  };
   searchValue.value = [];
   cardEmptyType.value = undefined;
 };

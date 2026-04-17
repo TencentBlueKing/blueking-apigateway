@@ -50,3 +50,5 @@ export * from './use-operation-lock';
 export * from './use-mcp-config-divide-ratio';
 // Mcp 可观测仪表盘
 export * from './use-observability-dashboard';
+// Mcp 批量复制配置
+export * from './use-mcp-batch-copy-config';
