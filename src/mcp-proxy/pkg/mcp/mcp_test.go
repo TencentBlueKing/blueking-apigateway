@@ -178,7 +178,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -231,7 +231,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -256,7 +256,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -282,7 +282,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -301,7 +301,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -328,7 +328,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeStreamableHTTP,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -347,7 +347,7 @@ var _ = Describe("MCP", func() {
 					[]string{},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -384,7 +384,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -424,7 +424,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers", "createUser"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -477,7 +477,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -554,7 +554,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers", "createUser"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -613,7 +613,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -680,7 +680,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers", "createUser"},
 					toolNameMap,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -719,7 +719,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -761,7 +761,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers"},
 					nil,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -821,7 +821,7 @@ var _ = Describe("MCP", func() {
 					[]string{"getUsers", "createUser"},
 					toolNameMap,
 					constant.MCPServerProtocolTypeSSE,
-				false,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 

@@ -23,13 +23,12 @@
 import logging
 from enum import Enum
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
-
 from apigateway.apps.esb.exceptions import EsbGatewayNotFound
 from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayTypeEnum
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 logger = logging.getLogger(__name__)
 

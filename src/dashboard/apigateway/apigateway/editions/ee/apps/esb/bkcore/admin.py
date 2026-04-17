@@ -15,10 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.esb.bkcore import models
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
-
-from apigateway.apps.esb.bkcore import models
 
 
 class ComponentSystemAdmin(DjangoQLSearchMixin, admin.ModelAdmin):

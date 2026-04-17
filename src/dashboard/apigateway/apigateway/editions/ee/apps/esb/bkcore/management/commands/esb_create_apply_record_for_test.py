@@ -22,10 +22,9 @@
 
 import random
 
-from django.core.management.base import BaseCommand
-
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
 from apigateway.apps.permission.constants import ApplyStatusEnum, PermissionApplyExpireDaysEnum
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

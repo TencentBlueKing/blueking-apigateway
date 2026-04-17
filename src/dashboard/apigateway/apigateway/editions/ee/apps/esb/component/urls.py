@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.urls import path
-
 from apigateway.apps.esb.component.views import (
     ComponentReleaseHistoryStatusViewSet,
     ComponentReleaseHistoryViewSet,
@@ -25,6 +23,7 @@ from apigateway.apps.esb.component.views import (
     ESBChannelBatchViewSet,
     ESBChannelViewSet,
 )
+from django.urls import path
 
 urlpatterns = [
     path("", ESBChannelViewSet.as_view({"get": "list", "post": "create"}), name="apigateway.apps.esb.components"),

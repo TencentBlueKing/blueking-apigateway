@@ -16,17 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
-from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
-
 from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory
 from apigateway.apps.esb.constants import SYSTEM_NAME_PATTERN
 from apigateway.apps.esb.mixins import OfficialWriteFields
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
+from django.conf import settings
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
+from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class SystemSLZ(ExtensibleFieldMixin, OfficialWriteFields, serializers.ModelSerializer):

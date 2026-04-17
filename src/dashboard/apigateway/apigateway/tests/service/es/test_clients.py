@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-
 from apigateway.common.error_codes import APIError, error_codes
 from apigateway.service.es.clients import (
     BKLogESClient,

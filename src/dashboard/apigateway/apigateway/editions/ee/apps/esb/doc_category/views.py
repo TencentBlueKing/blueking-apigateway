@@ -16,18 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.db import transaction
-from django.db.models import Count
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-
 from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory, SystemDocCategory
 from apigateway.apps.esb.constants import DataTypeEnum
 from apigateway.apps.esb.doc_category import serializers
 from apigateway.apps.esb.permissions import UserAccessESBPermission
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
+from django.db import transaction
+from django.db.models import Count
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 
 
 class DocCategoryViewSet(viewsets.ModelViewSet):

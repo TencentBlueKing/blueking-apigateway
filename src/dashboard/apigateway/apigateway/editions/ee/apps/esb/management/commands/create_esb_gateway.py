@@ -22,11 +22,6 @@
 
 import logging
 
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from pydantic import TypeAdapter
-
 from apigateway.biz.gateway import GatewayData, GatewaySaver
 from apigateway.common.tenant.constants import (
     SELF_HOST_GATEWAY_DEFAULT_TENANT_ID,
@@ -35,6 +30,10 @@ from apigateway.common.tenant.constants import (
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.utils.django import get_object_or_None
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from pydantic import TypeAdapter
 
 logger = logging.getLogger(__name__)
 

@@ -19,13 +19,12 @@
 import uuid
 
 import pytest
+from apigateway.core.models import Gateway
+from apigateway.service.contexts import GatewayAuthContext
 from ddf import G
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory as DRFAPIRequestFactory
-
-from apigateway.core.models import Gateway
-from apigateway.service.contexts import GatewayAuthContext
 
 UserModel = get_user_model()
 

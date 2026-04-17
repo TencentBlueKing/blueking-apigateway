@@ -23,15 +23,14 @@ import operator
 import re
 from typing import Any, Dict, List, Optional
 
-from django.conf import settings
-from django.utils.translation import gettext as _
-from pydantic import BaseModel, Field, ValidationError
-
 from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
 from apigateway.apps.permission.constants import PermissionLevelEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.esb_components import get_client_by_username
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY
+from django.conf import settings
+from django.utils.translation import gettext as _
+from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger(__name__)
 

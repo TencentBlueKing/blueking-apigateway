@@ -17,10 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
-
 from apigateway.apps.esb.bkcore.models import ComponentSystem, DocCategory
 from apigateway.apps.esb.system.serializers import SystemSLZ
+from ddf import G
 
 pytestmark = [pytest.mark.django_db]
 

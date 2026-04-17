@@ -19,7 +19,6 @@
 import copy
 
 import pytest
-
 from apigateway.apps.esb.component.convertor import Component, ComponentConvertor
 from apigateway.common.error_codes import APIError
 

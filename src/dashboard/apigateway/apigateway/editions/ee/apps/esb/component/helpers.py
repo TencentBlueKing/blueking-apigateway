@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import redis_lock
-
 from apigateway.apps.esb.component.constants import ESB_RELEASE_LOCK_KEY, ESB_RELEASE_LOCK_TIMEOUT
 from apigateway.utils.redis_utils import get_default_redis_client
 

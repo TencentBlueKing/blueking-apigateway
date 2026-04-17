@@ -17,12 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
-from ddf import G
-from django.core.management.base import CommandError
-
 from apigateway.apps.esb.management.commands.update_esb_gateway_config import Command
 from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway
+from ddf import G
+from django.core.management.base import CommandError
 
 pytestmark = pytest.mark.django_db
 

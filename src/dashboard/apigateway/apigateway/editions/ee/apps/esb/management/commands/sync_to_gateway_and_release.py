@@ -19,10 +19,6 @@
 import logging
 from typing import Optional
 
-from blue_krill.async_utils.django_utils import apply_async_on_commit
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
-
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
 from apigateway.apps.esb.component.tasks import sync_and_release_esb_components
@@ -31,6 +27,9 @@ from apigateway.apps.esb.utils import get_esb_gateway
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, Release
 from apigateway.utils.conv import str_bool
+from blue_krill.async_utils.django_utils import apply_async_on_commit
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 logger = logging.getLogger(__name__)
 

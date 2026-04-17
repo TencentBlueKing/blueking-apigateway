@@ -20,10 +20,9 @@ import copy
 import itertools
 import operator
 
+from apigateway.apps.esb.bkcore.models import AppComponentPermission, ESBChannel
 from django.core.management.base import BaseCommand
 from django.db import transaction
-
-from apigateway.apps.esb.bkcore.models import AppComponentPermission, ESBChannel
 
 
 class Command(BaseCommand):

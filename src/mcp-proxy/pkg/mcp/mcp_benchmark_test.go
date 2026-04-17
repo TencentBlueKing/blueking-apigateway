@@ -88,7 +88,15 @@ func setupProxyWithServers(count, toolsPerServer, resourceVersion int) *proxy.MC
 	ops := operationIDs(toolsPerServer)
 	for i := 0; i < count; i++ {
 		name := fmt.Sprintf("server_%d", i)
-		_ = p.AddMCPServerFromOpenAPISpec(name, resourceVersion, spec, ops, nil, constant.MCPServerProtocolTypeSSE, false)
+		_ = p.AddMCPServerFromOpenAPISpec(
+			name,
+			resourceVersion,
+			spec,
+			ops,
+			nil,
+			constant.MCPServerProtocolTypeSSE,
+			false,
+		)
 	}
 	return p
 }
@@ -388,7 +396,7 @@ func BenchmarkAddMultipleServers(b *testing.B) {
 				for j := 0; j < numServers; j++ {
 					_ = p.AddMCPServerFromOpenAPISpec(
 						fmt.Sprintf("server_%d", j), 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
-					false,
+						false,
 					)
 				}
 			}

@@ -921,7 +921,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponse bo
 
 					var responseResult any
 					if rawResponse {
-						// raw_response 模式：直接返回 API 响应结果，不添加 request_id 等额外信息
+						// raw_response 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
+						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
+						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
 						responseResult = res
 					} else {
 						responseResult = buildToolResponseEnvelope(
