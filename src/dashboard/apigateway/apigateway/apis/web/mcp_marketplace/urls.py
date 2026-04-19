@@ -20,6 +20,7 @@ from django.urls import include, path
 
 from .views import (
     MCPMarketplaceCategoryListApi,
+    MCPMarketplaceServerBatchConfigsApi,
     MCPMarketplaceServerConfigListApi,
     MCPMarketplaceServerListApi,
     MCPMarketplaceServerRetrieveApi,
@@ -35,6 +36,12 @@ urlpatterns = [
             [
                 # list or create gateway mcp server
                 path("", MCPMarketplaceServerListApi.as_view(), name="mcp_marketplace.server.list"),
+                # 批量根据 Agent 类型获取 MCPServer 配置
+                path(
+                    "batch-configs/",
+                    MCPMarketplaceServerBatchConfigsApi.as_view(),
+                    name="mcp_marketplace.server.batch_configs",
+                ),
                 path(
                     "<int:mcp_server_id>/",
                     include(

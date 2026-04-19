@@ -1031,3 +1031,101 @@ class MCPServerHandler:
             )
 
         return configs
+
+    @staticmethod
+    def build_batch_agent_client_configs(
+        mcp_server_ids: List[int],
+        agent_type: str,
+        user_tenant_id: str = "",
+    ) -> List[Dict[str, Any]]:
+        """
+        批量根据 Agent 类型获取 MCPServer 配置列表
+
+        Args:
+            mcp_server_ids: MCPServer ID 列表
+            agent_type: Agent 类型，如 cursor, codebuddy, claude, aidev 等
+            user_tenant_id: 用户租户 ID（多租户模式下使用）
+
+        Returns:
+            配置列表，每个配置包含 mcp_server_id, name, title, config, install_url
+        """
+        # 查询 MCPServer 列表
+        queryset = MCPServer.objects.filter(
+            id__in=mcp_server_ids,
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).select_related("gateway", "stage")
+
+        # 获取最低权限信息
+        instances = list(queryset)
+        least_privileges = MCPServerHandler.get_least_privileges(instances)
+
+        # 查找指定的 agent 客户端配置
+        target_client = None
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            if client["name"] == agent_type:
+                target_client = client
+                break
+
+        if not target_client:
+            return []
+
+        language_code = get_current_language_code()
+        template_name = f"mcp_server/{language_code}/config/{agent_type}.md"
+
+        # 多租户模式
+        enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
+
+        configs = []
+        for instance in instances:
+            mcp_url = build_mcp_server_url(instance.name, instance.protocol_type)
+
+            # 根据 protocol_type 和客户端类型确定 transport_type
+            if instance.protocol_type == "streamable_http":
+                transport_type = "streamable-http" if agent_type == "codebuddy" else "http"
+            else:
+                transport_type = "sse"
+
+            # 获取最低权限
+            least_privilege = least_privileges.get((instance.gateway.id, instance.stage.id), "")
+            if least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value:
+                mcp_url = build_mcp_server_application_url(instance.name, instance.protocol_type)
+
+            # 构建模板上下文
+            context = {
+                "name": instance.name,
+                "url": mcp_url,
+                "description": instance.description,
+                "bk_login_ticket_key": settings.BK_LOGIN_TICKET_KEY,
+                "transport_type": transport_type,
+                "oauth2_public_client_enabled": instance.oauth2_public_client_enabled,
+                "enable_multi_tenant_mode": enable_multi_tenant_mode,
+                "user_tenant_id": user_tenant_id,
+            }
+
+            # AIDev 需要额外的创建链接
+            if agent_type == "aidev":
+                context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
+
+            content = render_to_string(template_name, context=context)
+
+            # 生成一键配置 URL（目前只有 Cursor 支持）
+            install_url = ""
+            if agent_type == "cursor":
+                install_url = MCPServerHandler._build_cursor_install_url(
+                    instance.name, mcp_url, instance.oauth2_public_client_enabled, user_tenant_id
+                )
+
+            configs.append(
+                {
+                    "mcp_server_id": instance.id,
+                    "name": instance.name,
+                    "title": instance.title if instance.title else instance.name,
+                    "config": content,
+                    "install_url": install_url,
+                }
+            )
+
+        return configs

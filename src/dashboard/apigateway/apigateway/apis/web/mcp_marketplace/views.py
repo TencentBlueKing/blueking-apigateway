@@ -36,6 +36,8 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPServerBatchConfigsInputSLZ,
+    MCPServerBatchConfigsOutputSLZ,
     MCPServerCategoryOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
@@ -206,6 +208,40 @@ class MCPMarketplaceServerConfigListApi(generics.RetrieveAPIView):
 
         configs = MCPServerHandler.build_agent_client_configs(instance, least_privilege, user_tenant_id=user_tenant_id)
         return OKJsonResponse(data={"configs": configs})
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="批量根据 Agent 类型获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        request_body=MCPServerBatchConfigsInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerBatchConfigsOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceServerBatchConfigsApi(generics.GenericAPIView):
+    """批量根据 Agent 类型获取 MCPServer 配置列表"""
+
+    serializer_class = MCPServerBatchConfigsOutputSLZ
+
+    def post(self, request, *args, **kwargs):
+        slz = MCPServerBatchConfigsInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        agent_type = slz.validated_data["agent_type"]
+        mcp_server_ids = slz.validated_data["mcp_server_ids"]
+
+        # 获取用户租户 ID
+        user_tenant_id = get_user_tenant_id(request)
+
+        # 批量获取配置
+        configs = MCPServerHandler.build_batch_agent_client_configs(
+            mcp_server_ids=mcp_server_ids,
+            agent_type=agent_type,
+            user_tenant_id=user_tenant_id,
+        )
+
+        return OKJsonResponse(data={"agent_type": agent_type, "configs": configs})
 
 
 @method_decorator(

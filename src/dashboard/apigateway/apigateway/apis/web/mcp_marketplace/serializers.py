@@ -265,3 +265,50 @@ class MCPServerToolDocOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerToolDocOutputSLZ"
+
+
+class MCPServerBatchConfigsInputSLZ(serializers.Serializer):
+    """批量获取 MCPServer 配置输入序列化器"""
+
+    agent_type = serializers.CharField(
+        required=True,
+        help_text="Agent 类型，如 cursor, codebuddy, claude, aidev 等",
+    )
+    mcp_server_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True,
+        allow_empty=False,
+        help_text="MCPServer ID 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigsInputSLZ"
+
+
+class MCPServerBatchConfigItemOutputSLZ(serializers.Serializer):
+    """单个 MCPServer 配置项输出序列化器"""
+
+    mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
+    title = serializers.CharField(read_only=True, help_text="MCPServer 显示名称")
+    config = serializers.CharField(read_only=True, help_text="配置内容（markdown 格式）")
+    install_url = serializers.CharField(
+        read_only=True, allow_blank=True, required=False, help_text="一键配置 URL（如果支持）"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigItemOutputSLZ"
+
+
+class MCPServerBatchConfigsOutputSLZ(serializers.Serializer):
+    """批量获取 MCPServer 配置输出序列化器"""
+
+    agent_type = serializers.CharField(read_only=True, help_text="Agent 类型")
+    configs = serializers.ListField(
+        child=MCPServerBatchConfigItemOutputSLZ(),
+        read_only=True,
+        help_text="配置列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigsOutputSLZ"
