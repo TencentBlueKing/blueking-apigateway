@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory, MCPServerExtend
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 
 pytestmark = pytest.mark.django_db
@@ -1025,3 +1026,237 @@ class TestMCPServerCategoryModel:
         )
         fake_public_mcp_server.categories.add(featured_category)
         assert fake_public_mcp_server.is_featured() is True
+
+
+class TestMCPMarketplaceServerBatchConfigsApi:
+    """测试批量获取 MCPServer 配置 API"""
+
+    def test_batch_configs_success(self, request_view, fake_public_mcp_server, settings, mocker):
+        """成功批量获取配置"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[
+                {
+                    "mcp_server_id": fake_public_mcp_server.id,
+                    "name": fake_public_mcp_server.name,
+                    "title": fake_public_mcp_server.title or fake_public_mcp_server.name,
+                    "config": "# Config Content",
+                    "install_url": "cursor://install?config=xxx",
+                }
+            ],
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "cursor",
+                "mcp_server_ids": [fake_public_mcp_server.id],
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["agent_type"] == "cursor"
+        assert len(result["data"]["configs"]) == 1
+        assert result["data"]["configs"][0]["mcp_server_id"] == fake_public_mcp_server.id
+
+    def test_batch_configs_multiple_servers(self, request_view, fake_public_mcp_server, settings, mocker):
+        """批量获取多个 server 配置"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "codebuddy", "display_name": "CodeBuddy"},
+        ]
+
+        # 创建第二个 server
+        server2 = G(
+            MCPServer,
+            name="second-server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[
+                {
+                    "mcp_server_id": fake_public_mcp_server.id,
+                    "name": fake_public_mcp_server.name,
+                    "title": fake_public_mcp_server.name,
+                    "config": "# Config 1",
+                    "install_url": "",
+                },
+                {
+                    "mcp_server_id": server2.id,
+                    "name": "second-server",
+                    "title": "second-server",
+                    "config": "# Config 2",
+                    "install_url": "",
+                },
+            ],
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "codebuddy",
+                "mcp_server_ids": [fake_public_mcp_server.id, server2.id],
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["agent_type"] == "codebuddy"
+        assert len(result["data"]["configs"]) == 2
+
+    def test_batch_configs_empty_list(self, request_view, settings, mocker):
+        """空列表返回空配置"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[],
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "cursor",
+                "mcp_server_ids": [],
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["configs"] == []
+
+    def test_batch_configs_missing_agent_type(self, request_view):
+        """缺少 agent_type 参数返回错误"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "mcp_server_ids": [1, 2, 3],
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_batch_configs_missing_mcp_server_ids(self, request_view):
+        """缺少 mcp_server_ids 参数返回错误"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "cursor",
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_batch_configs_invalid_agent_type(self, request_view, fake_public_mcp_server, settings, mocker):
+        """无效的 agent_type 返回空配置"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[],  # 无效 agent_type 返回空
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "invalid_agent",
+                "mcp_server_ids": [fake_public_mcp_server.id],
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["configs"] == []
+
+    def test_batch_configs_with_different_agent_types(self, request_view, fake_public_mcp_server, settings, mocker):
+        """测试不同 agent 类型的配置获取"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "claude", "display_name": "Claude"},
+            {"name": "aidev", "display_name": "AIDev"},
+        ]
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[
+                {
+                    "mcp_server_id": fake_public_mcp_server.id,
+                    "name": fake_public_mcp_server.name,
+                    "title": fake_public_mcp_server.name,
+                    "config": "# Claude Config",
+                    "install_url": "",
+                }
+            ],
+        )
+
+        # 测试 Claude
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "claude",
+                "mcp_server_ids": [fake_public_mcp_server.id],
+            },
+        )
+        result = resp.json()
+        assert resp.status_code == 200
+        assert result["data"]["agent_type"] == "claude"
+
+    def test_batch_configs_returns_expected_fields(self, request_view, fake_public_mcp_server, settings, mocker):
+        """验证返回字段完整"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        mocker.patch.object(
+            MCPServerHandler,
+            "build_batch_agent_client_configs",
+            return_value=[
+                {
+                    "mcp_server_id": fake_public_mcp_server.id,
+                    "name": "test-name",
+                    "title": "Test Title",
+                    "config": "# Markdown Config",
+                    "install_url": "cursor://install",
+                }
+            ],
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.batch_configs",
+            data={
+                "agent_type": "cursor",
+                "mcp_server_ids": [fake_public_mcp_server.id],
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        config = result["data"]["configs"][0]
+        assert "mcp_server_id" in config
+        assert "name" in config
+        assert "title" in config
+        assert "config" in config
+        assert "install_url" in config

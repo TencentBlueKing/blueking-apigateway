@@ -1624,3 +1624,239 @@ class TestMCPServerHandler:
         MCPServerHandler._sync_mcp_server_categories(mcp_server, None)
 
         assert mcp_server.categories.count() == 1
+
+    # ========== build_batch_agent_client_configs 测试 ==========
+
+    def test_build_batch_agent_client_configs_empty_ids(self, fake_gateway, fake_stage, settings):
+        """空 ID 列表返回空结果"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        result = MCPServerHandler.build_batch_agent_client_configs([], "cursor")
+        assert result == []
+
+    def test_build_batch_agent_client_configs_invalid_agent_type(self, fake_gateway, fake_stage, settings):
+        """无效的 agent_type 返回空结果"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([mcp_server.id], "invalid_agent")
+        assert result == []
+
+    def test_build_batch_agent_client_configs_filters_inactive(self, fake_gateway, fake_stage, settings):
+        """过滤未启用的 MCPServer"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        inactive_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            is_public=True,
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([inactive_server.id], "cursor")
+        assert result == []
+
+    def test_build_batch_agent_client_configs_filters_non_public(self, fake_gateway, fake_stage, settings):
+        """过滤非公开的 MCPServer"""
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+
+        private_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=False,
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([private_server.id], "cursor")
+        assert result == []
+
+    def test_build_batch_agent_client_configs_success(self, fake_gateway, fake_stage, settings, mocker):
+        """成功获取批量配置"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+        settings.BK_LOGIN_TICKET_KEY = "bk_ticket"
+        settings.ENABLE_MULTI_TENANT_MODE = False
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            name="test-mcp-server",
+            title="Test MCP Server",
+            description="A test server",
+            protocol_type="streamable_http",
+            oauth2_public_client_enabled=False,
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# MCP Server Config",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.build_mcp_server_url",
+            return_value="https://example.com/mcp/test-mcp-server",
+        )
+        mocker.patch.object(
+            MCPServerHandler,
+            "_build_cursor_install_url",
+            return_value="cursor://install?config=xxx",
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([mcp_server.id], "cursor")
+
+        assert len(result) == 1
+        assert result[0]["mcp_server_id"] == mcp_server.id
+        assert result[0]["name"] == "test-mcp-server"
+        assert result[0]["title"] == "Test MCP Server"
+        assert result[0]["config"] == "# MCP Server Config"
+        assert result[0]["install_url"] == "cursor://install?config=xxx"
+
+    def test_build_batch_agent_client_configs_multiple_servers(self, fake_gateway, fake_stage, settings, mocker):
+        """批量获取多个 MCPServer 配置"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "codebuddy", "display_name": "CodeBuddy"},
+        ]
+        settings.BK_LOGIN_TICKET_KEY = "bk_ticket"
+        settings.ENABLE_MULTI_TENANT_MODE = False
+
+        server1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            name="server-1",
+            title="Server 1",
+            protocol_type="streamable_http",
+        )
+        server2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            name="server-2",
+            title="Server 2",
+            protocol_type="sse",
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Config",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.build_mcp_server_url",
+            return_value="https://example.com/mcp/",
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([server1.id, server2.id], "codebuddy")
+
+        assert len(result) == 2
+        assert result[0]["name"] == "server-1"
+        assert result[1]["name"] == "server-2"
+
+    def test_build_batch_agent_client_configs_with_tenant(self, fake_gateway, fake_stage, settings, mocker):
+        """多租户模式下的配置生成"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "claude", "display_name": "Claude"},
+        ]
+        settings.BK_LOGIN_TICKET_KEY = "bk_ticket"
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            name="test-server",
+            title="Test Server",
+            protocol_type="streamable_http",
+        )
+
+        mock_render = mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Config",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.build_mcp_server_url",
+            return_value="https://example.com/mcp/test-server",
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs(
+            [mcp_server.id], "claude", user_tenant_id="tenant_123"
+        )
+
+        assert len(result) == 1
+        # 验证模板上下文包含租户信息
+        call_context = mock_render.call_args[1]["context"]
+        assert call_context["enable_multi_tenant_mode"] is True
+        assert call_context["user_tenant_id"] == "tenant_123"
+
+    def test_build_batch_agent_client_configs_fallback_title(self, fake_gateway, fake_stage, settings, mocker):
+        """title 为空时 fallback 到 name"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+        settings.MCP_CONFIG_AGENT_CLIENTS = [
+            {"name": "cursor", "display_name": "Cursor"},
+        ]
+        settings.BK_LOGIN_TICKET_KEY = "bk_ticket"
+        settings.ENABLE_MULTI_TENANT_MODE = False
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            name="test-server",
+            title="",  # 空 title
+            protocol_type="streamable_http",
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.render_to_string",
+            return_value="# Config",
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.build_mcp_server_url",
+            return_value="https://example.com/mcp/",
+        )
+
+        result = MCPServerHandler.build_batch_agent_client_configs([mcp_server.id], "cursor")
+
+        assert result[0]["title"] == "test-server"  # fallback 到 name
