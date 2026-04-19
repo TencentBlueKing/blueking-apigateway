@@ -860,7 +860,10 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     raw_response_enabled = serializers.BooleanField(
         required=False,
         default=False,
-        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+        help_text=(
+            "是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，"
+            "不添加 request_id 等额外信息"
+        ),
     )
     category_names = serializers.ListField(
         child=serializers.CharField(),

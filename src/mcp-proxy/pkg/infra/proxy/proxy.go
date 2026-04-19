@@ -257,7 +257,9 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 			}, &mcp.StreamableHTTPOptions{
 				Stateless: true,
 			})
-			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID, config.RawResponseEnabled)
+			mcpServer = NewStreamableHTTPMCPServer(
+				server, httpHandler, config.Name, config.ResourceVersionID, config.RawResponseEnabled,
+			)
 		} else {
 			// 默认使用 SSE Handler
 			sseHandler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {

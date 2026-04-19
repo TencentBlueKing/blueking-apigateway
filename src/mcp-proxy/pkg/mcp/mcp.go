@@ -162,7 +162,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
 			// 使用纯资源名列表和工具名映射来添加 MCP Server
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
-				conf.resourceVersion, conf.openapiFileData, resourceNames, toolNameMap, server.GetProtocolType(), server.RawResponseEnabled)
+				conf.resourceVersion, conf.openapiFileData, resourceNames,
+				toolNameMap, server.GetProtocolType(), server.RawResponseEnabled)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue

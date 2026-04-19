@@ -231,7 +231,10 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
     raw_response_enabled = serializers.BooleanField(
         required=False,
         default=False,
-        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+        help_text=(
+            "是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，"
+            "不添加 request_id 等额外信息"
+        ),
     )
 
     class Meta:
@@ -358,7 +361,10 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
 
     raw_response_enabled = serializers.BooleanField(
         read_only=True,
-        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+        help_text=(
+            "是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，"
+            "不添加 request_id 等额外信息"
+        ),
     )
 
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
@@ -461,7 +467,10 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
     )
     raw_response_enabled = serializers.BooleanField(
         required=False,
-        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+        help_text=(
+            "是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，"
+            "不添加 request_id 等额外信息"
+        ),
     )
 
     def validate_resource_names(self, resource_names):
