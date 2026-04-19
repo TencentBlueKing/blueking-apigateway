@@ -121,6 +121,14 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    # Data plane names to bind to when creating a new gateway
+    # If empty, will use 'default' data plane
+    data_planes = serializers.ListField(
+        child=serializers.CharField(max_length=32),
+        required=False,
+        allow_empty=True,
+        help_text="Data plane names to bind the gateway to (defaults to 'default')",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncInputSLZ"
@@ -136,6 +144,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "api_type",
             "user_config",
             "allow_delete_sensitive_params",
+            "data_planes",
         ]
         extra_kwargs = {
             "description_en": {
@@ -848,6 +857,11 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         default=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    raw_response_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+    )
     category_names = serializers.ListField(
         child=serializers.CharField(),
         required=False,
@@ -870,6 +884,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "protocol_type",
             "target_app_codes",
             "oauth2_public_client_enabled",
+            "raw_response_enabled",
             "category_names",
         )
         lookup_field = "id"
@@ -877,6 +892,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         validators = [MCPServerValidator()]
 
     def validate_resource_names(self, resource_names):
+        """验证资源名称列表"""
         if not resource_names:
             raise serializers.ValidationError("资源名称列表不能为空")
 
@@ -886,6 +902,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         return resource_names
 
     def validate_tool_names(self, tool_names):
+        """验证工具名称列表"""
         if tool_names and len(tool_names) != len(set(tool_names)):
             raise serializers.ValidationError("工具名称不能重复")
 
@@ -903,6 +920,7 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         return category_names
 
     def validate(self, data):
+        """验证 tool_names 和 resource_names 的长度一致性"""
         tool_names = data.get("tool_names")
         resource_names = data.get("resource_names")
 

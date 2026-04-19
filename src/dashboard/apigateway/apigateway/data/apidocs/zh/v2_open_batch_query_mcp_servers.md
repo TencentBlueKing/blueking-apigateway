@@ -12,7 +12,7 @@
 | -------- | -------- | ---- | ----------------------------------------------------------------------- |
 | ids      | array    | 否   | MCPServer ID 列表（ids 和 names 至少提供一个）                           |
 | names    | array    | 否   | MCPServer 名称列表（ids 和 names 至少提供一个）                           |
-| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,title`；不传默认返回 `id` 和 `name` |
+| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,title`；不传默认返回 `id` 和 `name`。可选字段包括：id, name, title, description, categories |
 
 ### 请求示例
 

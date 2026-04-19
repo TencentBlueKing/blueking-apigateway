@@ -257,18 +257,18 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 			}, &mcp.StreamableHTTPOptions{
 				Stateless: true,
 			})
-			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID)
+			mcpServer = NewStreamableHTTPMCPServer(server, httpHandler, config.Name, config.ResourceVersionID, config.RawResponseEnabled)
 		} else {
 			// 默认使用 SSE Handler
 			sseHandler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 				return server
 			}, nil)
-			mcpServer = NewMCPServer(server, sseHandler, config.Name, config.ResourceVersionID)
+			mcpServer = NewMCPServer(server, sseHandler, config.Name, config.ResourceVersionID, config.RawResponseEnabled)
 		}
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			toolHandler := genToolHandler(toolConfig)
+			toolHandler := genToolHandler(toolConfig, config.Name, config.RawResponseEnabled)
 			mcpServer.AddTool(buildMCPTool(toolConfig, config.Name), toolHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
@@ -281,17 +281,18 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 // toolNameMap: 资源名到工具名的映射，如果为 nil 则使用资源名作为工具名
 func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 	resourceVersionID int, openAPISpec *openapi3.T, operationIDList []string,
-	toolNameMap map[string]string, protocolType string,
+	toolNameMap map[string]string, protocolType string, rawResponseEnabled bool,
 ) error {
 	operationIDMap := make(map[string]struct{})
 	for _, operationID := range operationIDList {
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:              name,
-		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
-		ResourceVersionID: resourceVersionID,
-		ProtocolType:      protocolType,
+		Name:               name,
+		Tools:              OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
+		ResourceVersionID:  resourceVersionID,
+		ProtocolType:       protocolType,
+		RawResponseEnabled: rawResponseEnabled,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
 }
@@ -308,12 +309,13 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:  name,
-		Tools: OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
+		Name:               name,
+		Tools:              OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
+		RawResponseEnabled: mcpServer.IsRawResponseEnabled(),
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		toolHandler := genToolHandler(toolConfig)
+		toolHandler := genToolHandler(toolConfig, name, mcpServer.IsRawResponseEnabled())
 		mcpServer.AddTool(buildMCPTool(toolConfig, name), toolHandler)
 	}
 	// 更新资源版本号
@@ -504,7 +506,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, nil
 }
 
-func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
+func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponse bool) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
@@ -659,11 +661,17 @@ func genToolHandler(toolApiConfig *ToolConfig) ToolHandler {
 						}
 					}
 
-					responseResult := buildToolResponseEnvelope(
-						response.Code(),
-						response.GetHeader(constant.BkGatewayRequestIDKey),
-						res,
-					)
+					var responseResult any
+					if rawResponse {
+						// raw_response 模式：直接返回 API 响应结果，不添加 request_id 等额外信息
+						responseResult = res
+					} else {
+						responseResult = buildToolResponseEnvelope(
+							response.Code(),
+							response.GetHeader(constant.BkGatewayRequestIDKey),
+							res,
+						)
+					}
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
 					}
