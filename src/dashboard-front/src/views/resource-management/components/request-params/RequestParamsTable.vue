@@ -130,13 +130,23 @@
               v-if="readonly"
               class="readonly-value-wrapper"
             >
-              {{ row.default || '--' }}
+              {{ (isBoolean(row.default) || row.default) ? row.default : '--' }}
             </div>
-            <BkInput
-              v-else
-              v-model="row.default"
-              :placeholder="t('默认值')"
-            />
+            <template v-else>
+              <BkSelect
+                v-if="row.type === 'boolean'"
+                v-model="row.default"
+                clearable
+                :filterable="false"
+                :list="[{value: true, label: 'true'}, {value: false, label: 'false'}]"
+                :allow-empty-values="[false]"
+              />
+              <BkInput
+                v-else
+                v-model="row.default"
+                :placeholder="t('默认值')"
+              />
+            </template>
           </td>
           <!-- 字段备注 -->
           <td class="table-body-row-cell description">
@@ -197,7 +207,7 @@
 </template>
 
 <script lang="ts" setup>
-import { uniqueId } from 'lodash-es';
+import { isBoolean, uniqueId } from 'lodash-es';
 import ParamsRowConfig, { type IConfig } from '../ParamsRowConfig.vue';
 
 export interface IBodyRow {
