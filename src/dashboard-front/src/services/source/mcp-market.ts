@@ -103,6 +103,7 @@ export interface IPrompts {
 export interface IMarketplaceDetails extends IMarketplaceItem {
   guideline: string
   oauth2_public_client_enabled: boolean
+  raw_response_enabled: boolean
   tools: ITool[]
   prompts?: IPrompts[]
   maintainers: string[]
