@@ -65,6 +65,30 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 
+		Describe("RawResponseEnabled", func() {
+			It("should return false by default", func() {
+				Expect(server.RawResponseEnabled()).To(BeFalse())
+			})
+
+			It("should return true when rawResponseEnabled is set", func() {
+				server.rawResponseEnabled = true
+				Expect(server.RawResponseEnabled()).To(BeTrue())
+			})
+		})
+
+		Describe("SetRawResponseEnabled", func() {
+			It("should set rawResponseEnabled to true", func() {
+				server.SetRawResponseEnabled(true)
+				Expect(server.RawResponseEnabled()).To(BeTrue())
+			})
+
+			It("should set rawResponseEnabled to false", func() {
+				server.rawResponseEnabled = true
+				server.SetRawResponseEnabled(false)
+				Expect(server.RawResponseEnabled()).To(BeFalse())
+			})
+		})
+
 		Describe("GetTools", func() {
 			It("should return empty slice when no tools", func() {
 				Expect(server.GetTools()).To(BeEmpty())
