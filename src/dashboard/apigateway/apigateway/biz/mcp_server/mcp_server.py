@@ -33,6 +33,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerLeastPrivilegeEnum,
+    MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import (
@@ -1060,6 +1061,14 @@ class MCPServerHandler:
         return configs
 
     @staticmethod
+    def get_client_display_name(client_type: str) -> str:
+        """获取客户端类型的显示名称"""
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            if client["name"] == client_type:
+                return client["display_name"]
+        return client_type
+
+    @staticmethod
     def build_batch_agent_client_config(
         instances: List[MCPServer],
         client_type: str,
@@ -1071,7 +1080,7 @@ class MCPServerHandler:
 
         Args:
             instances: MCPServer 实例列表
-            client_type: 客户端类型（cursor, codebuddy, claude, vscode, aidev 等）
+            client_type: 客户端类型（cursor, codebuddy, claude, vscode 等）
             least_privileges: 最低权限字典，key 为 (gateway_id, stage_id)
             user_tenant_id: 用户租户 ID（多租户模式下使用）
 
@@ -1090,7 +1099,7 @@ class MCPServerHandler:
             )
 
             # 根据 protocol_type 和客户端类型确定 transport_type
-            if instance.protocol_type == "streamable_http":
+            if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
                 transport_type = "streamable-http" if client_type == "codebuddy" else "http"
             else:
                 transport_type = "sse"
@@ -1109,9 +1118,9 @@ class MCPServerHandler:
             if not instance.oauth2_public_client_enabled:
                 headers["X-Bkapi-Authorization"] = json.dumps(
                     {
-                        "bk_app_code": "your_app_code",
-                        "bk_app_secret": "your_app_secret",
-                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                        "bk_app_code": "<your_app_code>",
+                        "bk_app_secret": "<your_app_secret>",
+                        settings.BK_LOGIN_TICKET_KEY: "<your_ticket>",
                     }
                 )
             if enable_multi_tenant_mode and user_tenant_id:

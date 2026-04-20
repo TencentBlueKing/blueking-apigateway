@@ -891,7 +891,7 @@ class MCPServerBatchConfigInputSLZ(serializers.Serializer):
     )
     client_type = serializers.CharField(
         required=True,
-        help_text="客户端类型（cursor, codebuddy, claude, vscode, aidev 等）",
+        help_text="客户端类型（cursor, codebuddy, claude, vscode 等）",
     )
 
     class Meta:
