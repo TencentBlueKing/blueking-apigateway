@@ -22,7 +22,7 @@
 | --------------- | -------------- | ---- | ---------------------------------------------------------------- |
 | target_app_code | string         | 是   | 申请权限的应用，应于当前请求的应用一致                           |
 | expire_days     | int            | 否   | 过期时间，0 或未提供 表示永久，180 表示 6 个月，360 表示 12 个月 |
-| grant_dimension | string         | 是   | 授权维度，api 表示按网关申请权限，resource 表示按资源申请权限    |
+| grant_dimension | string         | 是   | 授权维度，gateway 表示按网关申请权限，resource 表示按资源申请权限    |
 | resource_names  | array[string]  | 否   | 资源名称列表，按资源申请时必传                                   |
 | reason          | string         | 否   | 申请原因                                                         |
 
@@ -35,7 +35,7 @@
 {
     "target_app_code": "my-app",
     "expire_days": 360,
-    "grant_dimension": "api",
+    "grant_dimension": "gateway",
     "reason": "test"
 }
 ```

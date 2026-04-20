@@ -20,8 +20,29 @@ import datetime
 import pytest
 from ddf import G
 
-from apigateway.apps.permission.models import AppResourcePermission
+from apigateway.apps.permission.constants import RENEWABLE_EXPIRE_DAYS
+from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.utils.time import now_datetime
+
+
+class TestAppGatewayPermission:
+    @pytest.mark.parametrize(
+        "timedelta, expected",
+        [
+            (-10, True),
+            (0, True),
+            (RENEWABLE_EXPIRE_DAYS * 86400 - 1, True),
+            (RENEWABLE_EXPIRE_DAYS * 86400 + 1, False),
+        ],
+    )
+    def test_allow_apply_permission(self, timedelta, expected, fake_gateway):
+        expires = now_datetime() + datetime.timedelta(seconds=timedelta)
+        perm = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=expires)
+        assert perm.allow_apply_permission is expected
+
+    def test_allow_apply_permission_no_expires(self, fake_gateway):
+        perm = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+        assert perm.allow_apply_permission is False
 
 
 class TestAppResourcePermission:
@@ -39,3 +60,21 @@ class TestAppResourcePermission:
         expires = now_datetime() + datetime.timedelta(seconds=timedelta)
         permission = G(AppResourcePermission, expires=expires)
         assert permission.will_expired_in(seconds=300) is expected
+
+    @pytest.mark.parametrize(
+        "timedelta, expected",
+        [
+            (-10, True),
+            (0, True),
+            (RENEWABLE_EXPIRE_DAYS * 86400 - 1, True),
+            (RENEWABLE_EXPIRE_DAYS * 86400 + 1, False),
+        ],
+    )
+    def test_allow_apply_permission(self, timedelta, expected, fake_gateway):
+        expires = now_datetime() + datetime.timedelta(seconds=timedelta)
+        perm = G(AppResourcePermission, gateway=fake_gateway, bk_app_code="test", expires=expires)
+        assert perm.allow_apply_permission is expected
+
+    def test_allow_apply_permission_no_expires(self, fake_gateway):
+        perm = G(AppResourcePermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+        assert perm.allow_apply_permission is False
