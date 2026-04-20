@@ -1069,34 +1069,91 @@ class MCPServerHandler:
         return client_type
 
     @staticmethod
+    def get_least_privileges_by_server(
+        mcp_servers,
+        releases: Optional[Dict[Tuple[int, int], Release]] = None,
+    ) -> Dict[int, str]:
+        """按 MCPServer ID 计算最低权限级别
+
+        与 get_least_privileges 不同，此方法以 mcp_server.id 为 key，
+        避免同 gateway+stage 下多个 server 的 least_privilege 互相覆盖。
+
+        Args:
+            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+            releases: 可选，预查询的 Release 映射，避免重复查询
+
+        Returns:
+            {mcp_server_id: least_privilege} 映射
+        """
+        if not mcp_servers:
+            return {}
+
+        if releases is None:
+            releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
+
+        # 先按 (gateway_id, stage_id) 计算每个 server 的 tool_names
+        server_tool_names: Dict[int, List[str]] = {}
+        for mcp_server in mcp_servers:
+            server_tool_names[mcp_server.id] = mcp_server.resource_names
+
+        least_privileges: Dict[int, str] = {}
+        # 按 (gateway_id, stage_id) 分组计算，然后映射到每个 server
+        for mcp_server in mcp_servers:
+            gateway_stage_key = (mcp_server.gateway_id, mcp_server.stage_id)
+            release = releases.get(gateway_stage_key)
+            if not release:
+                least_privileges[mcp_server.id] = ""
+                continue
+
+            tool_names = server_tool_names.get(mcp_server.id, [])
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                if resource["name"] not in tool_names:
+                    continue
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                verified_user_required = not auth_config.get("skip_auth_verification", False) and bool(
+                    auth_config.get("auth_verified_required", False)
+                )
+                if verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                    break
+            least_privileges[mcp_server.id] = least_privilege
+
+        return least_privileges
+
+    @staticmethod
     def build_batch_agent_client_config(
         instances: List[MCPServer],
         client_type: str,
-        least_privileges: Dict[Tuple[int, int], str],
+        least_privileges: Dict[int, str],
         user_tenant_id: str = "",
     ) -> Dict[str, Any]:
         """
         批量构建指定客户端类型的 MCP Server 配置
 
+        不同客户端类型有不同的 JSON schema：
+        - cursor: {"mcpServers": {name: {url, headers}}}
+        - codebuddy: {"mcpServers": {name: {url, transportType, headers}}}
+        - claude: {"mcpServers": {name: {type, url, headers}}}
+        - vscode: {"servers": {name: {type, url, headers}}}
+
         Args:
             instances: MCPServer 实例列表
             client_type: 客户端类型（cursor, codebuddy, claude, vscode 等）
-            least_privileges: 最低权限字典，key 为 (gateway_id, stage_id)
+            least_privileges: 最低权限字典，key 为 mcp_server_id
             user_tenant_id: 用户租户 ID（多租户模式下使用）
 
         Returns:
-            对应客户端类型的 JSON 配置，包含所有 mcpServers
+            对应客户端类型的 JSON 配置
         """
         if not instances:
             return {"mcpServers": {}}
 
         enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
-        mcp_servers_config = {}
+        servers_config = {}
 
         for instance in instances:
-            mcp_url = MCPServerHandler.get_mcp_server_url(
-                instance, least_privileges.get((instance.gateway.id, instance.stage.id), "")
-            )
+            mcp_url = MCPServerHandler.get_mcp_server_url(instance, least_privileges.get(instance.id, ""))
 
             # 根据 protocol_type 和客户端类型确定 transport_type
             if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
@@ -1105,9 +1162,13 @@ class MCPServerHandler:
                 transport_type = "sse"
 
             # 构建单个 server 配置
-            server_config: Dict[str, Any] = {
-                "url": mcp_url,
-            }
+            server_config: Dict[str, Any] = {}
+
+            # claude 和 vscode 需要 type 字段
+            if client_type in ("claude", "vscode"):
+                server_config["type"] = transport_type
+
+            server_config["url"] = mcp_url
 
             # CodeBuddy 需要 transportType
             if client_type == "codebuddy":
@@ -1130,6 +1191,8 @@ class MCPServerHandler:
             if headers:
                 server_config["headers"] = headers
 
-            mcp_servers_config[instance.name] = server_config
+            servers_config[instance.name] = server_config
 
-        return {"mcpServers": mcp_servers_config}
+        # vscode 顶层 key 是 servers，其他客户端用 mcpServers
+        top_level_key = "servers" if client_type == "vscode" else "mcpServers"
+        return {top_level_key: servers_config}

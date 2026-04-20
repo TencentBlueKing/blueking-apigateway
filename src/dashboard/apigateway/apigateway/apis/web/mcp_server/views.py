@@ -17,7 +17,6 @@
 #
 
 
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -449,7 +448,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        operation_description="获取 MCPServer 配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
         responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -1022,7 +1021,7 @@ class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode, aidev 等）",
+        operation_description="批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
         request_body=MCPServerBatchConfigInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
         tags=["WebAPI.MCPServer"],
@@ -1050,8 +1049,8 @@ class MCPServerBatchConfigApi(generics.CreateAPIView):
         if not instances:
             raise error_codes.NOT_FOUND.format(_("未找到有效的 MCPServer"), replace=True)
 
-        # 获取最低权限信息
-        least_privileges = MCPServerHandler.get_least_privileges(instances)
+        # 获取最低权限信息（按 mcp_server.id 为 key）
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(instances)
 
         # 获取用户租户 ID
         user_tenant_id = get_user_tenant_id(request)
@@ -1062,11 +1061,7 @@ class MCPServerBatchConfigApi(generics.CreateAPIView):
         )
 
         # 查找客户端显示名称
-        display_name = client_type
-        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
-            if client["name"] == client_type:
-                display_name = client["display_name"]
-                break
+        display_name = MCPServerHandler.get_client_display_name(client_type)
 
         result = {
             "client_type": client_type,

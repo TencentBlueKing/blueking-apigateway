@@ -1651,7 +1651,7 @@ class TestMCPServerHandler:
             oauth2_public_client_enabled=False,
         )
 
-        least_privileges = {(fake_gateway.id, fake_stage.id): ""}
+        least_privileges = {server1.id: "", server2.id: ""}
 
         result = MCPServerHandler.build_batch_agent_client_config(
             [server1, server2], "cursor", least_privileges, user_tenant_id=""
@@ -1661,9 +1661,10 @@ class TestMCPServerHandler:
         assert "server-1" in result["mcpServers"]
         assert "server-2" in result["mcpServers"]
 
-        # 验证 Cursor 配置结构
+        # 验证 Cursor 配置结构（不带 type 字段）
         config1 = result["mcpServers"]["server-1"]
         assert "url" in config1
+        assert "type" not in config1
         assert "headers" in config1
         assert "X-Bkapi-Authorization" in config1["headers"]
 
@@ -1680,7 +1681,7 @@ class TestMCPServerHandler:
             protocol_type="streamable_http",
         )
 
-        least_privileges = {(fake_gateway.id, fake_stage.id): ""}
+        least_privileges = {server.id: ""}
 
         result = MCPServerHandler.build_batch_agent_client_config(
             [server], "codebuddy", least_privileges, user_tenant_id=""
@@ -1690,6 +1691,61 @@ class TestMCPServerHandler:
         assert "url" in config
         assert "transportType" in config
         assert config["transportType"] == "streamable-http"
+        assert "type" not in config
+
+    def test_build_batch_agent_client_config_claude(self, fake_gateway, fake_stage):
+        """测试批量生成 Claude 配置（包含 type 字段，顶层 key 为 mcpServers）"""
+        server = G(
+            MCPServer,
+            name="claude-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="streamable_http",
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "claude", least_privileges, user_tenant_id=""
+        )
+
+        # Claude 顶层 key 为 mcpServers
+        assert "mcpServers" in result
+        config = result["mcpServers"]["claude-server"]
+        assert "url" in config
+        assert "type" in config
+        assert config["type"] == "http"
+        assert "transportType" not in config
+
+    def test_build_batch_agent_client_config_vscode(self, fake_gateway, fake_stage):
+        """测试批量生成 VSCode 配置（包含 type 字段，顶层 key 为 servers）"""
+        server = G(
+            MCPServer,
+            name="vscode-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="streamable_http",
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "vscode", least_privileges, user_tenant_id=""
+        )
+
+        # VSCode 顶层 key 为 servers
+        assert "servers" in result
+        assert "mcpServers" not in result
+        config = result["servers"]["vscode-server"]
+        assert "url" in config
+        assert "type" in config
+        assert config["type"] == "http"
 
     def test_build_batch_agent_client_config_oauth2_public_client_enabled(self, fake_gateway, fake_stage, settings):
         """测试 OAuth2 公开客户端模式开启时不包含认证请求头"""
@@ -1703,7 +1759,7 @@ class TestMCPServerHandler:
             oauth2_public_client_enabled=True,
         )
 
-        least_privileges = {(fake_gateway.id, fake_stage.id): ""}
+        least_privileges = {server.id: ""}
 
         result = MCPServerHandler.build_batch_agent_client_config(
             [server], "cursor", least_privileges, user_tenant_id=""
@@ -1727,7 +1783,7 @@ class TestMCPServerHandler:
             oauth2_public_client_enabled=False,
         )
 
-        least_privileges = {(fake_gateway.id, fake_stage.id): ""}
+        least_privileges = {server.id: ""}
 
         result = MCPServerHandler.build_batch_agent_client_config(
             [server], "cursor", least_privileges, user_tenant_id="tenant-123"
@@ -1751,7 +1807,7 @@ class TestMCPServerHandler:
             protocol_type="sse",
         )
 
-        least_privileges = {(fake_gateway.id, fake_stage.id): ""}
+        least_privileges = {server.id: ""}
 
         result = MCPServerHandler.build_batch_agent_client_config(
             [server], "codebuddy", least_privileges, user_tenant_id=""
@@ -1760,3 +1816,37 @@ class TestMCPServerHandler:
         config = result["mcpServers"]["sse-server"]
         # SSE 协议下 CodeBuddy 的 transportType 应为 sse
         assert config["transportType"] == "sse"
+
+    def test_build_batch_agent_client_config_per_server_least_privilege(self, fake_gateway, fake_stage):
+        """测试同一 gateway+stage 下不同 server 的 least_privilege 独立计算"""
+        server1 = G(
+            MCPServer,
+            name="server-app",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+        server2 = G(
+            MCPServer,
+            name="server-user",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource2",
+            oauth2_public_client_enabled=False,
+        )
+
+        # 不同的 least_privilege（按 mcp_server.id 为 key）
+        least_privileges = {
+            server1.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+            server2.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+        }
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server1, server2], "cursor", least_privileges, user_tenant_id=""
+        )
+
+        assert "server-app" in result["mcpServers"]
+        assert "server-user" in result["mcpServers"]

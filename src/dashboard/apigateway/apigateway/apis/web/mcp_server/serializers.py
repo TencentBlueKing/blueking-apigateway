@@ -19,6 +19,7 @@
 import logging
 from typing import Any, Dict, List
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -832,7 +833,7 @@ class MCPServerFilterOptionsOutputSLZ(serializers.Serializer):
 class MCPServerConfigItemOutputSLZ(serializers.Serializer):
     """MCPServer 单个配置项输出序列化器"""
 
-    name = serializers.CharField(read_only=True, help_text="配置名称（如 cursor, codebuddy, claude, aidev）")
+    name = serializers.CharField(read_only=True, help_text="配置名称（如 cursor, codebuddy, claude, vscode 等）")
     display_name = serializers.CharField(read_only=True, help_text="配置显示名称")
     content = serializers.CharField(read_only=True, help_text="配置内容（markdown 格式）")
     install_url = serializers.CharField(
@@ -887,6 +888,7 @@ class MCPServerBatchConfigInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         required=True,
         min_length=1,
+        max_length=100,
         help_text="MCPServer ID 列表",
     )
     client_type = serializers.CharField(
@@ -896,6 +898,16 @@ class MCPServerBatchConfigInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBatchConfigInputSLZ"
+
+    def validate_client_type(self, value):
+        """校验 client_type 必须在 MCP_CONFIG_AGENT_CLIENTS 中"""
+        valid_client_types = [client["name"] for client in settings.MCP_CONFIG_AGENT_CLIENTS]
+        if value not in valid_client_types:
+            raise serializers.ValidationError(
+                _("不支持的客户端类型：%(value)s，支持的类型：%(valid_types)s")
+                % {"value": value, "valid_types": ", ".join(valid_client_types)}
+            )
+        return value
 
 
 class MCPServerBatchConfigOutputSLZ(serializers.Serializer):

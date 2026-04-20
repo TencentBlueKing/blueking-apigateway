@@ -15,7 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.db.models import Count, Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -185,7 +184,7 @@ class MCPMarketplaceServerToolDocRetrieveApi(generics.RetrieveAPIView):
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、AIDev 等工具的配置）",
+        operation_description="获取 MCP 市场中某个 Server 的配置列表（支持 Cursor、CodeBuddy、Claude、VSCode 等工具的配置）",
         responses={status.HTTP_200_OK: MCPServerConfigListOutputSLZ()},
         tags=["WebAPI.MCPServer"],
     ),
@@ -299,7 +298,7 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        operation_description="批量获取 MCP 市场 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode, aidev 等）",
+        operation_description="批量获取 MCP 市场 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）",
         request_body=MCPServerBatchConfigInputSLZ,
         responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
         tags=["WebAPI.MCPServer"],
@@ -338,8 +337,8 @@ class MCPMarketplaceBatchConfigApi(generics.CreateAPIView):
         for instance in instances:
             check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
 
-        # 获取最低权限信息
-        least_privileges = MCPServerHandler.get_least_privileges(instances)
+        # 获取最低权限信息（按 mcp_server.id 为 key）
+        least_privileges = MCPServerHandler.get_least_privileges_by_server(instances)
 
         # 构建批量配置
         config = MCPServerHandler.build_batch_agent_client_config(
@@ -347,11 +346,7 @@ class MCPMarketplaceBatchConfigApi(generics.CreateAPIView):
         )
 
         # 查找客户端显示名称
-        display_name = client_type
-        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
-            if client["name"] == client_type:
-                display_name = client["display_name"]
-                break
+        display_name = MCPServerHandler.get_client_display_name(client_type)
 
         result = {
             "client_type": client_type,
