@@ -265,3 +265,32 @@ class MCPServerToolDocOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerToolDocOutputSLZ"
+
+
+class MCPServerBatchConfigInputSLZ(serializers.Serializer):
+    """批量获取 MCPServer 配置输入序列化器"""
+
+    mcp_server_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True,
+        min_length=1,
+        help_text="MCPServer ID 列表",
+    )
+    client_type = serializers.CharField(
+        required=True,
+        help_text="客户端类型（cursor, codebuddy, claude, vscode, aidev 等）",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigInputSLZ"
+
+
+class MCPServerBatchConfigOutputSLZ(serializers.Serializer):
+    """批量获取 MCPServer 配置输出序列化器"""
+
+    client_type = serializers.CharField(read_only=True, help_text="客户端类型")
+    display_name = serializers.CharField(read_only=True, help_text="客户端显示名称")
+    config = serializers.DictField(read_only=True, help_text="客户端配置（JSON 格式）")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigOutputSLZ"

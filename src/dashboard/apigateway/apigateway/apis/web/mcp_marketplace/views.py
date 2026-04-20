@@ -15,8 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.conf import settings
 from django.db.models import Count, Q
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -28,6 +30,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
@@ -36,6 +39,8 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPServerBatchConfigInputSLZ,
+    MCPServerBatchConfigOutputSLZ,
     MCPServerCategoryOutputSLZ,
     MCPServerListInputSLZ,
     MCPServerListOutputSLZ,
@@ -289,3 +294,70 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
 
         serializer = self.get_serializer(queryset, many=True, context={"category_stats": category_stats})
         return OKJsonResponse(data=serializer.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="批量获取 MCP 市场 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode, aidev 等）",
+        request_body=MCPServerBatchConfigInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceBatchConfigApi(generics.CreateAPIView):
+    """批量获取 MCP 市场 MCPServer 配置，支持指定客户端类型"""
+
+    def create(self, request, *args, **kwargs):
+        slz = MCPServerBatchConfigInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        mcp_server_ids = slz.validated_data["mcp_server_ids"]
+        client_type = slz.validated_data["client_type"]
+
+        # 查询 MCPServer 列表（只查询公开的）
+        queryset = MCPServer.objects.filter(
+            id__in=mcp_server_ids,
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        ).select_related("gateway", "stage")
+
+        # 租户过滤
+        user_tenant_id = get_user_tenant_id(request)
+        if user_tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
+
+        instances = list(queryset)
+
+        if not instances:
+            raise error_codes.NOT_FOUND.format(_("未找到有效的 MCPServer"), replace=True)
+
+        # 校验访问权限
+        for instance in instances:
+            check_user_can_access_gateway(instance.gateway.tenant_mode, instance.gateway.tenant_id, user_tenant_id)
+
+        # 获取最低权限信息
+        least_privileges = MCPServerHandler.get_least_privileges(instances)
+
+        # 构建批量配置
+        config = MCPServerHandler.build_batch_agent_client_config(
+            instances, client_type, least_privileges, user_tenant_id=user_tenant_id
+        )
+
+        # 查找客户端显示名称
+        display_name = client_type
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            if client["name"] == client_type:
+                display_name = client["display_name"]
+                break
+
+        result = {
+            "client_type": client_type,
+            "display_name": display_name,
+            "config": config,
+        }
+
+        output_slz = MCPServerBatchConfigOutputSLZ(result)
+        return OKJsonResponse(data=output_slz.data)

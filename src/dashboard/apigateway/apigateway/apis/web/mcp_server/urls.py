@@ -25,6 +25,7 @@ from .views import (
     MCPServerAppPermissionApplyUpdateStatusApi,
     MCPServerAppPermissionDestroyApi,
     MCPServerAppPermissionListCreateApi,
+    MCPServerBatchConfigApi,
     MCPServerCategoriesListApi,
     MCPServerConfigListApi,
     MCPServerFilterOptionsApi,
@@ -125,4 +126,5 @@ urlpatterns = [
     path("-/stage-release-check/", MCPServerStageReleaseCheckApi.as_view(), name="mcp_server.stage_release_check"),
     path("-/remote-prompts/", MCPServerRemotePromptsListApi.as_view(), name="mcp_server.remote_prompts_list"),
     path("-/remote-prompts/batch/", MCPServerRemotePromptsBatchApi.as_view(), name="mcp_server.remote_prompts_batch"),
+    path("-/batch-config/", MCPServerBatchConfigApi.as_view(), name="mcp_server.batch_config"),
 ]

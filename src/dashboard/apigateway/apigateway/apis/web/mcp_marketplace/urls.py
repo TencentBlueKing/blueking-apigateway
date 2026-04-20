@@ -19,6 +19,7 @@
 from django.urls import include, path
 
 from .views import (
+    MCPMarketplaceBatchConfigApi,
     MCPMarketplaceCategoryListApi,
     MCPMarketplaceServerConfigListApi,
     MCPMarketplaceServerListApi,
@@ -29,6 +30,8 @@ from .views import (
 urlpatterns = [
     # 分类列表
     path("categories/", MCPMarketplaceCategoryListApi.as_view(), name="mcp_marketplace.category.list"),
+    # 批量获取配置
+    path("batch-config/", MCPMarketplaceBatchConfigApi.as_view(), name="mcp_marketplace.batch_config"),
     path(
         "servers/",
         include(

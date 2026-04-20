@@ -1058,3 +1058,69 @@ class MCPServerHandler:
             )
 
         return configs
+
+    @staticmethod
+    def build_batch_agent_client_config(
+        instances: List[MCPServer],
+        client_type: str,
+        least_privileges: Dict[Tuple[int, int], str],
+        user_tenant_id: str = "",
+    ) -> Dict[str, Any]:
+        """
+        批量构建指定客户端类型的 MCP Server 配置
+
+        Args:
+            instances: MCPServer 实例列表
+            client_type: 客户端类型（cursor, codebuddy, claude, vscode, aidev 等）
+            least_privileges: 最低权限字典，key 为 (gateway_id, stage_id)
+            user_tenant_id: 用户租户 ID（多租户模式下使用）
+
+        Returns:
+            对应客户端类型的 JSON 配置，包含所有 mcpServers
+        """
+        if not instances:
+            return {"mcpServers": {}}
+
+        enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
+        mcp_servers_config = {}
+
+        for instance in instances:
+            mcp_url = MCPServerHandler.get_mcp_server_url(
+                instance, least_privileges.get((instance.gateway.id, instance.stage.id), "")
+            )
+
+            # 根据 protocol_type 和客户端类型确定 transport_type
+            if instance.protocol_type == "streamable_http":
+                transport_type = "streamable-http" if client_type == "codebuddy" else "http"
+            else:
+                transport_type = "sse"
+
+            # 构建单个 server 配置
+            server_config: Dict[str, Any] = {
+                "url": mcp_url,
+            }
+
+            # CodeBuddy 需要 transportType
+            if client_type == "codebuddy":
+                server_config["transportType"] = transport_type
+
+            # 处理 headers
+            headers = {}
+            if not instance.oauth2_public_client_enabled:
+                headers["X-Bkapi-Authorization"] = json.dumps(
+                    {
+                        "bk_app_code": "your_app_code",
+                        "bk_app_secret": "your_app_secret",
+                        settings.BK_LOGIN_TICKET_KEY: "your_ticket",
+                    }
+                )
+            if enable_multi_tenant_mode and user_tenant_id:
+                headers["X-Bk-Tenant-Id"] = user_tenant_id
+                headers["X-Bkapi-Allowed-Headers"] = "X-Bk-Tenant-Id"
+
+            if headers:
+                server_config["headers"] = headers
+
+            mcp_servers_config[instance.name] = server_config
+
+        return {"mcpServers": mcp_servers_config}

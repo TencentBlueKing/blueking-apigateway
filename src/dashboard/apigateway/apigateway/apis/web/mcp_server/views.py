@@ -17,6 +17,7 @@
 #
 
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -63,6 +64,8 @@ from .serializers import (
     MCPServerAppPermissionCreateInputSLZ,
     MCPServerAppPermissionListInputSLZ,
     MCPServerAppPermissionListOutputSLZ,
+    MCPServerBatchConfigInputSLZ,
+    MCPServerBatchConfigOutputSLZ,
     MCPServerCategoryOutputSLZ,
     MCPServerConfigListOutputSLZ,
     MCPServerCreateInputSLZ,
@@ -1013,4 +1016,63 @@ class MCPServerAppPermissionAppCodeListApi(generics.ListAPIView):
 
         output_slz = MCPServerAppPermissionAppCodeListOutputSLZ(data={"bk_app_codes": list(bk_app_codes)})
         output_slz.is_valid(raise_exception=True)
+        return OKJsonResponse(data=output_slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="批量获取 MCPServer 配置（支持指定客户端类型：cursor, codebuddy, claude, vscode, aidev 等）",
+        request_body=MCPServerBatchConfigInputSLZ,
+        responses={status.HTTP_200_OK: MCPServerBatchConfigOutputSLZ()},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPServerBatchConfigApi(generics.CreateAPIView):
+    """批量获取 MCPServer 配置，支持指定客户端类型"""
+
+    def create(self, request, *args, **kwargs):
+        slz = MCPServerBatchConfigInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        mcp_server_ids = slz.validated_data["mcp_server_ids"]
+        client_type = slz.validated_data["client_type"]
+
+        # 查询 MCPServer 列表
+        instances = list(
+            MCPServer.objects.filter(
+                id__in=mcp_server_ids,
+                gateway=request.gateway,
+                status=MCPServerStatusEnum.ACTIVE.value,
+            ).select_related("gateway", "stage")
+        )
+
+        if not instances:
+            raise error_codes.NOT_FOUND.format(_("未找到有效的 MCPServer"), replace=True)
+
+        # 获取最低权限信息
+        least_privileges = MCPServerHandler.get_least_privileges(instances)
+
+        # 获取用户租户 ID
+        user_tenant_id = get_user_tenant_id(request)
+
+        # 构建批量配置
+        config = MCPServerHandler.build_batch_agent_client_config(
+            instances, client_type, least_privileges, user_tenant_id=user_tenant_id
+        )
+
+        # 查找客户端显示名称
+        display_name = client_type
+        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+            if client["name"] == client_type:
+                display_name = client["display_name"]
+                break
+
+        result = {
+            "client_type": client_type,
+            "display_name": display_name,
+            "config": config,
+        }
+
+        output_slz = MCPServerBatchConfigOutputSLZ(result)
         return OKJsonResponse(data=output_slz.data)

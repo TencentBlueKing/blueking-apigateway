@@ -1025,3 +1025,136 @@ class TestMCPServerCategoryModel:
         )
         fake_public_mcp_server.categories.add(featured_category)
         assert fake_public_mcp_server.is_featured() is True
+
+
+class TestMCPMarketplaceBatchConfigApi:
+    """测试 MCP 市场批量获取 MCPServer 配置 API"""
+
+    def test_batch_config_success(self, request_view, fake_public_mcp_server):
+        """测试批量获取配置成功"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["client_type"] == "cursor"
+        assert result["data"]["display_name"] == "Cursor"
+        assert "config" in result["data"]
+        assert "mcpServers" in result["data"]["config"]
+        assert fake_public_mcp_server.name in result["data"]["config"]["mcpServers"]
+
+    def test_batch_config_codebuddy(self, request_view, fake_public_mcp_server):
+        """测试批量获取 CodeBuddy 配置"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id],
+                "client_type": "codebuddy",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["client_type"] == "codebuddy"
+        assert result["data"]["display_name"] == "CodeBuddy"
+
+        # CodeBuddy 配置应该包含 transportType
+        server_config = result["data"]["config"]["mcpServers"][fake_public_mcp_server.name]
+        assert "transportType" in server_config
+
+    def test_batch_config_multiple_servers(self, request_view, fake_public_mcp_server):
+        """测试批量获取多个 MCPServer 配置"""
+        other_server = G(
+            MCPServer,
+            name="other-marketplace-server",
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            _resource_names="resource3",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id, other_server.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert fake_public_mcp_server.name in result["data"]["config"]["mcpServers"]
+        assert other_server.name in result["data"]["config"]["mcpServers"]
+
+    def test_batch_config_not_public(self, request_view, fake_public_mcp_server):
+        """测试非公开的 MCPServer 不会被包含"""
+        fake_public_mcp_server.is_public = False
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id],
+                "client_type": "cursor",
+            },
+        )
+
+        assert resp.status_code == 404
+
+    def test_batch_config_inactive(self, request_view, fake_public_mcp_server):
+        """测试未启用的 MCPServer 不会被包含"""
+        fake_public_mcp_server.status = MCPServerStatusEnum.INACTIVE.value
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id],
+                "client_type": "cursor",
+            },
+        )
+
+        assert resp.status_code == 404
+
+    def test_batch_config_invalid_input(self, request_view):
+        """测试无效输入时返回 400"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [],
+                "client_type": "cursor",
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_batch_config_oauth2_public_client_enabled(self, request_view, fake_public_mcp_server):
+        """测试 OAuth2 公开客户端模式开启时配置中不包含认证请求头"""
+        fake_public_mcp_server.oauth2_public_client_enabled = True
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.batch_config",
+            data={
+                "mcp_server_ids": [fake_public_mcp_server.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        server_config = result["data"]["config"]["mcpServers"][fake_public_mcp_server.name]
+        if "headers" in server_config:
+            assert "X-Bkapi-Authorization" not in server_config["headers"]

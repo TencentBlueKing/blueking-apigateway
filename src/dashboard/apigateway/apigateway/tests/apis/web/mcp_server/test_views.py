@@ -37,7 +37,9 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, ResourceVersion, Stage
+from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -3028,3 +3030,213 @@ class TestMCPServerListAppPermissionRisk:
         assert mcp_server_data is not None
         assert mcp_server_data["app_permission_risk"]["has_risk"] is False
         assert mcp_server_data["app_permission_risk"]["risk_tools"] == []
+
+
+class TestMCPServerBatchConfigApi:
+    """测试批量获取 MCPServer 配置 API"""
+
+    def test_batch_config_success(self, request_view, fake_gateway, fake_stage, faker):
+        """测试批量获取配置成功"""
+        server1 = G(
+            MCPServer,
+            name="test-server-1",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+        server2 = G(
+            MCPServer,
+            name="test-server-2",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource2",
+            oauth2_public_client_enabled=False,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [server1.id, server2.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["client_type"] == "cursor"
+        assert result["data"]["display_name"] == "Cursor"
+        assert "config" in result["data"]
+        assert "mcpServers" in result["data"]["config"]
+        assert "test-server-1" in result["data"]["config"]["mcpServers"]
+        assert "test-server-2" in result["data"]["config"]["mcpServers"]
+
+    def test_batch_config_codebuddy(self, request_view, fake_gateway, fake_stage, faker):
+        """测试批量获取 CodeBuddy 配置（包含 transportType）"""
+        server = G(
+            MCPServer,
+            name="test-server-codebuddy",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [server.id],
+                "client_type": "codebuddy",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["client_type"] == "codebuddy"
+        assert result["data"]["display_name"] == "CodeBuddy"
+
+        server_config = result["data"]["config"]["mcpServers"]["test-server-codebuddy"]
+        assert "transportType" in server_config
+
+    def test_batch_config_with_inactive_server(self, request_view, fake_gateway, fake_stage, faker):
+        """测试包含停用状态的 MCPServer 时会被过滤"""
+        active_server = G(
+            MCPServer,
+            name="active-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1",
+        )
+        inactive_server = G(
+            MCPServer,
+            name="inactive-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource2",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [active_server.id, inactive_server.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert "active-server" in result["data"]["config"]["mcpServers"]
+        assert "inactive-server" not in result["data"]["config"]["mcpServers"]
+
+    def test_batch_config_not_found(self, request_view, fake_gateway):
+        """测试所有 MCPServer 都无效时返回 404"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [99999, 99998],
+                "client_type": "cursor",
+            },
+        )
+
+        assert resp.status_code == 404
+
+    def test_batch_config_invalid_input(self, request_view, fake_gateway):
+        """测试无效输入时返回 400"""
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [],
+                "client_type": "cursor",
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_batch_config_oauth2_public_client_enabled(self, request_view, fake_gateway, fake_stage, faker):
+        """测试 OAuth2 公开客户端模式开启时配置中不包含认证请求头"""
+        server = G(
+            MCPServer,
+            name="oauth2-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=True,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [server.id],
+                "client_type": "cursor",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        server_config = result["data"]["config"]["mcpServers"]["oauth2-server"]
+        if "headers" in server_config:
+            assert "X-Bkapi-Authorization" not in server_config["headers"]
+
+    def test_batch_config_other_gateway_server(self, request_view, fake_gateway, faker):
+        """测试不能获取其他网关的 MCPServer 配置"""
+        other_gateway = create_gateway()
+        other_stage = G(Stage, gateway=other_gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+
+        other_server = G(
+            MCPServer,
+            name="other-server",
+            gateway=other_gateway,
+            stage=other_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.batch_config",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "mcp_server_ids": [other_server.id],
+                "client_type": "cursor",
+            },
+        )
+
+        assert resp.status_code == 404
