@@ -224,9 +224,25 @@
       theme="primary"
       class="mr-8px"
     />
-    <span class="text-12px color-#979ba5">{{
-      t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权')
-    }}</span>
+    <span class="text-12px color-#979ba5">
+      {{ t('不公开则不会展示到 MCP 市场，且蓝鲸应用无法申请主动申请权限，只能由网关管理员给应用主动授权') }}
+    </span>
+  </BkFormItem>
+  <BkFormItem
+    :label="t('是否返回原始响应')"
+    property="raw_response_enabled"
+    required
+    class="mb-0!"
+  >
+    <BkSwitcher
+      v-model="formData.raw_response_enabled"
+      :disabled="noValidStage"
+      theme="primary"
+      class="mr-8px"
+    />
+    <span class="text-12px color-#979ba5">
+      {{ t('开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息') }}
+    </span>
   </BkFormItem>
 </template>
 
