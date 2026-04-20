@@ -88,7 +88,15 @@ func setupProxyWithServers(count, toolsPerServer, resourceVersion int) *proxy.MC
 	ops := operationIDs(toolsPerServer)
 	for i := 0; i < count; i++ {
 		name := fmt.Sprintf("server_%d", i)
-		_ = p.AddMCPServerFromOpenAPISpec(name, resourceVersion, spec, ops, nil, constant.MCPServerProtocolTypeSSE)
+		_ = p.AddMCPServerFromOpenAPISpec(
+			name,
+			resourceVersion,
+			spec,
+			ops,
+			nil,
+			constant.MCPServerProtocolTypeSSE,
+			false,
+		)
 	}
 	return p
 }
@@ -190,6 +198,7 @@ func BenchmarkAddMCPServerFromOpenAPISpec(b *testing.B) {
 				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
+					false,
 				)
 			}
 		})
@@ -208,6 +217,7 @@ func BenchmarkAddMCPServerFromOpenAPISpec_StreamableHTTP(b *testing.B) {
 				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, nil, constant.MCPServerProtocolTypeStreamableHTTP,
+					false,
 				)
 			}
 		})
@@ -228,7 +238,7 @@ func BenchmarkUpdateMCPServerFromOpenApiSpec(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				_ = p.UpdateMCPServerFromOpenApiSpec(
-					server, "server_0", i+2, newSpec, newOps, nil,
+					server, "server_0", i+2, newSpec, newOps, nil, false,
 				)
 			}
 		})
@@ -386,6 +396,7 @@ func BenchmarkAddMultipleServers(b *testing.B) {
 				for j := 0; j < numServers; j++ {
 					_ = p.AddMCPServerFromOpenAPISpec(
 						fmt.Sprintf("server_%d", j), 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
+						false,
 					)
 				}
 			}
@@ -411,6 +422,7 @@ func BenchmarkAddMCPServerWithToolNameMap(b *testing.B) {
 				p := proxy.NewMCPProxy("", "")
 				_ = p.AddMCPServerFromOpenAPISpec(
 					"bench-server", 1, spec, ops, toolNameMap, constant.MCPServerProtocolTypeSSE,
+					false,
 				)
 			}
 		})

@@ -50,6 +50,7 @@ type MCPServer struct {
 	GatewayID     int         `gorm:"column:gateway_id"`
 	StageID       int         `gorm:"column:stage_id"`
 	ProtocolType  string      `gorm:"column:protocol_type;size:32;default:sse"`
+	RawResponseEnabled bool        `gorm:"column:raw_response_enabled;default:false"`
 }
 
 // GetProtocolType 获取协议类型，默认返回 SSE
