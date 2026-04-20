@@ -330,10 +330,57 @@ class TestResourcePermissionDimensionManager:
             == 2
         )
 
-    def test_allow_apply_permission(self, fake_gateway):
+    def test_allow_apply_permission(self, mocker, fake_gateway):
         manager = ResourcePermissionDimensionManager()
-        result, _ = manager.allow_apply_permission(fake_gateway.id, "test", [])
-        assert result
+        target_app_code = "test"
+
+        # resource_ids 为空
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, [])
+        assert result is True
+
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, None)
+        assert result is True
+
+        resource = G(Resource, gateway=fake_gateway)
+
+        # 权限申请中
+        G(
+            AppPermissionApplyStatus,
+            gateway=fake_gateway,
+            bk_app_code=target_app_code,
+            resource=resource,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        result, reason = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
+        assert result is False
+        assert resource.name in reason
+
+        AppPermissionApplyStatus.objects.filter(gateway=fake_gateway, bk_app_code=target_app_code).delete()
+
+        # 无权限申请
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
+        assert result is True
+
+        # 已拥有权限，权限永久有效
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            bk_app_code=target_app_code,
+            resource_id=resource.id,
+            expires=None,
+        )
+        result, reason = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
+        assert result is False
+        assert resource.name in reason
+
+        # 已拥有权限，权限将过期
+        mocker.patch(
+            "apigateway.apps.permission.models.AppResourcePermission.allow_apply_permission",
+            new_callable=mock.PropertyMock(return_value=True),
+        )
+        result, _ = manager.allow_apply_permission(fake_gateway.id, target_app_code, [resource.id])
+        assert result is True
 
     def test_create_apply_record(self, fake_gateway, fake_resource):
         manager = ResourcePermissionDimensionManager()
