@@ -43,6 +43,7 @@ type MCPServer struct {
 	name                  string
 	// 生效的资源版本号
 	resourceVersionID int
+	rawResponseEnabled bool // 是否返回原始响应，开启后直接返回 API 响应结果，不添加 request_id 等额外信息
 	tools             map[string]struct{}
 	prompts           map[string]struct{}
 	rwLock            *sync.RWMutex
@@ -54,16 +55,18 @@ func NewMCPServer(
 	handler *mcp.SSEHandler,
 	name string,
 	resourceVersion int,
+	rawResponseEnabled bool,
 ) *MCPServer {
 	return &MCPServer{
-		Server:            server,
-		SSEHandler:        handler,
-		protocolType:      constant.MCPServerProtocolTypeSSE,
-		tools:             make(map[string]struct{}),
-		prompts:           make(map[string]struct{}),
-		rwLock:            &sync.RWMutex{},
-		name:              name,
-		resourceVersionID: resourceVersion,
+		Server:             server,
+		SSEHandler:         handler,
+		protocolType:       constant.MCPServerProtocolTypeSSE,
+		tools:              make(map[string]struct{}),
+		prompts:            make(map[string]struct{}),
+		rwLock:             &sync.RWMutex{},
+		name:               name,
+		resourceVersionID:  resourceVersion,
+		rawResponseEnabled: rawResponseEnabled,
 	}
 }
 
@@ -73,6 +76,7 @@ func NewStreamableHTTPMCPServer(
 	handler *mcp.StreamableHTTPHandler,
 	name string,
 	resourceVersion int,
+	rawResponseEnabled bool,
 ) *MCPServer {
 	return &MCPServer{
 		Server:                server,
@@ -83,6 +87,7 @@ func NewStreamableHTTPMCPServer(
 		rwLock:                &sync.RWMutex{},
 		name:                  name,
 		resourceVersionID:     resourceVersion,
+		rawResponseEnabled:    rawResponseEnabled,
 	}
 }
 
@@ -94,6 +99,20 @@ func (s *MCPServer) GetProtocolType() string {
 // IsStreamableHTTP 判断是否为 Streamable HTTP 协议
 func (s *MCPServer) IsStreamableHTTP() bool {
 	return s.protocolType == constant.MCPServerProtocolTypeStreamableHTTP
+}
+
+// RawResponseEnabled 是否返回原始响应
+func (s *MCPServer) RawResponseEnabled() bool {
+	s.rwLock.RLock()
+	defer s.rwLock.RUnlock()
+	return s.rawResponseEnabled
+}
+
+// SetRawResponseEnabled 设置是否返回原始响应
+func (s *MCPServer) SetRawResponseEnabled(rawResponseEnabled bool) {
+	s.rwLock.Lock()
+	defer s.rwLock.Unlock()
+	s.rawResponseEnabled = rawResponseEnabled
 }
 
 // HandleSSE 返回 SSE 连接 Handler
