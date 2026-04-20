@@ -111,10 +111,19 @@ paths:
                   example: 360
                 grant_dimension:
                   type: string
-                  description: 授权维度，api 表示按网关申请权限
+                  description: 授权维度，gateway 表示按网关申请权限，resource 表示按资源申请权限
                   enum:
-                    - api
-                  example: api
+                    - gateway
+                    - resource
+                  example: gateway
+                resource_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 资源名称列表，按资源申请时必传
+                  example:
+                    - user_query
+                    - user_create
                 reason:
                   type: string
                   description: 申请原因
@@ -122,7 +131,7 @@ paths:
             example:
               target_app_code: my-app
               expire_days: 360
-              grant_dimension: api
+              grant_dimension: gateway
               reason: test
       responses:
         '200':
@@ -2725,10 +2734,19 @@ paths:
                   example: 360
                 grant_dimension:
                   type: string
-                  description: 授权维度，api 表示按网关申请权限
+                  description: 授权维度，gateway 表示按网关申请权限，resource 表示按资源申请权限
                   enum:
-                    - api
-                  example: api
+                    - gateway
+                    - resource
+                  example: gateway
+                resource_names:
+                  type: array
+                  items:
+                    type: string
+                  description: 资源名称列表，按资源申请时必传
+                  example:
+                    - user_query
+                    - user_create
                 reason:
                   type: string
                   description: 申请原因
@@ -2736,7 +2754,7 @@ paths:
             example:
               target_app_code: my-app
               expire_days: 360
-              grant_dimension: api
+              grant_dimension: gateway
               reason: test
       responses:
         '200':

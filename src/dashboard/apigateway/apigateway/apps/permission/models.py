@@ -137,6 +137,13 @@ class AppResourcePermission(TimestampedModelMixin):
 
         return expires_in <= seconds
 
+    @property
+    def allow_apply_permission(self) -> bool:
+        if self.expires_in is not None and self.expires_in < to_seconds(days=RENEWABLE_EXPIRE_DAYS):
+            return True
+
+        return False
+
     @cached_property
     def resource(self) -> Optional[Resource]:
         return Resource.objects.filter(gateway_id=self.gateway_id, id=self.resource_id).first()

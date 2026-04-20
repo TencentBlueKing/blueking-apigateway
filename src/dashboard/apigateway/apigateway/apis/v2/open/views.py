@@ -229,11 +229,13 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
                     replace=True,
                 )
 
+        resource_ids = data.get("resource_ids") or []
+
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
         record = manager.create_apply_record(
             app_code,
             request.gateway,
-            data.get("resource_ids") or [],
+            resource_ids,
             data["grant_dimension"],
             data["reason"],
             data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
