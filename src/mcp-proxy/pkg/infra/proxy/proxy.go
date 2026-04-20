@@ -270,7 +270,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			toolHandler := genToolHandler(toolConfig, config.Name, config.RawResponseEnabled)
+			toolHandler := genToolHandler(toolConfig, config.Name, mcpServer.RawResponseEnabled)
 			mcpServer.AddTool(buildMCPTool(toolConfig, config.Name), toolHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
@@ -317,7 +317,7 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		toolHandler := genToolHandler(toolConfig, name, mcpServer.RawResponseEnabled())
+		toolHandler := genToolHandler(toolConfig, name, mcpServer.RawResponseEnabled)
 		mcpServer.AddTool(buildMCPTool(toolConfig, name), toolHandler)
 	}
 	// 更新资源版本号
@@ -508,7 +508,7 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, nil
 }
 
-func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponse bool) ToolHandler {
+func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseGetter func() bool) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		auditLog := logging.GetAuditLoggerWithContext(ctx)
@@ -664,7 +664,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponse bo
 					}
 
 					var responseResult any
-					if rawResponse {
+					if rawResponseGetter() {
 						// raw_response 模式：直接返回 API 响应结果，不添加 request_id 等额外信息
 						responseResult = res
 					} else {
