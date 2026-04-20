@@ -119,6 +119,13 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 				// 删除后需要重新加载 openapi spec
 				wouldReloadOpenapiSpec = true
 			} else if mcpServer.GetResourceVersionID() == release.ResourceVersionID {
+				// 检查 raw_response_enabled 是否变化
+				if mcpServer.RawResponseEnabled() != server.RawResponseEnabled {
+					mcpServer.SetRawResponseEnabled(server.RawResponseEnabled)
+					logging.GetLogger().Infof(
+						"mcp server[%s] raw_response_enabled changed to %v", server.Name, server.RawResponseEnabled)
+				}
+				// 判断资源版本是否变化
 				// 判断资源版本是否变化
 				// 检查 tool_names 是否有新增的工具（使用工具名而非原始 resource_names 进行比较）
 				currentTools := mcpServer.GetTools()
@@ -155,7 +162,8 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 		if !mcpProxy.IsMCPServerExist(server.Name) && conf != nil {
 			// 使用纯资源名列表和工具名映射来添加 MCP Server
 			err = mcpProxy.AddMCPServerFromOpenAPISpec(server.Name,
-				conf.resourceVersion, conf.openapiFileData, resourceNames, toolNameMap, server.GetProtocolType())
+				conf.resourceVersion, conf.openapiFileData, resourceNames,
+				toolNameMap, server.GetProtocolType(), server.RawResponseEnabled)
 			if err != nil {
 				logging.GetLogger().Errorf("add mcp server[name:%s] error: %v", server.Name, err)
 				continue

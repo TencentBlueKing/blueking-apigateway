@@ -33,6 +33,7 @@ type MCPServerConfig struct {
 	ResourceVersionID int           `json:"resource_version_id"`
 	Tools             []*ToolConfig `json:"tools"`
 	ProtocolType      string        `json:"protocol_type"` // 协议类型: sse 或 streamable_http
+	RawResponseEnabled bool `json:"raw_response_enabled"` // 返回原始响应，不添加 request_id 等
 }
 
 // ToolConfig ...
