@@ -238,7 +238,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 
 		// register tool
 		for _, toolConfig := range config.Tools {
-			toolHandler := genToolHandler(toolConfig, config.Name, config.RawResponseEnabled)
+			toolHandler := genToolHandler(toolConfig, config.Name, mcpServer.RawResponseEnabled)
 			mcpServer.AddTool(buildMCPTool(toolConfig, config.Name), toolHandler)
 		}
 		m.AddMCPServer(config.Name, mcpServer)
@@ -285,7 +285,7 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 	}
 	// update tool
 	for _, toolConfig := range mcpServerConfig.Tools {
-		toolHandler := genToolHandler(toolConfig, name, rawResponseEnabled)
+		toolHandler := genToolHandler(toolConfig, name, mcpServer.RawResponseEnabled)
 		mcpServer.AddTool(buildMCPTool(toolConfig, name), toolHandler)
 	}
 	// 更新资源版本号
@@ -748,7 +748,7 @@ func handleToolCallError(
 	return result
 }
 
-func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEnabled bool) ToolHandler {
+func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEnabledGetter func() bool) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
 		start := time.Now()
@@ -919,12 +919,12 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						}
 					}
 
-					var responseResult any
-					if rawResponseEnabled {
-						// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
-						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
-						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
-						responseResult = res
+				var responseResult any
+				if rawResponseEnabledGetter() {
+					// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
+					// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
+					// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
+					responseResult = res
 					} else {
 						responseResult = buildToolResponseEnvelope(
 							response.Code(),
