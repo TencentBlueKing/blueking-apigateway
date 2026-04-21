@@ -186,16 +186,27 @@
             v-if="readonly"
             class="readonly-value-wrapper"
           >
-            {{ row.default || '--' }}
+            {{ (isBoolean(row.default) || row.default) ? row.default : '--' }}
           </div>
-          <BkInput
-            v-else
-            v-model="row.default"
-            :disabled="row.in === 'body'"
-            :clearable="false"
-            :placeholder="row.in === 'body' ? '--' : t('默认值')"
-            class="edit-input"
-          />
+          <template v-else>
+            <BkSelect
+              v-if="row.type === 'boolean'"
+              v-model="row.default"
+              clearable
+              :filterable="false"
+              class="edit-select"
+              :list="[{value: true, label: 'true'}, {value: false, label: 'false'}]"
+              :allow-empty-values="[false]"
+            />
+            <BkInput
+              v-else
+              v-model="row.default"
+              :disabled="row.in === 'body'"
+              :clearable="false"
+              :placeholder="row.in === 'body' ? '--' : t('默认值')"
+              class="edit-input"
+            />
+          </template>
         </template>
       </TableColumn>
       <TableColumn
@@ -275,7 +286,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import { uniqueId } from 'lodash-es';
+import { isBoolean, isNil, uniqueId } from 'lodash-es';
 import RequestParamsTable from './RequestParamsTable.vue';
 import {
   type JSONSchema7,
@@ -691,7 +702,7 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
     schema.description = row.description;
   }
 
-  if (row.default) {
+  if (!isNil(row.default)) {
     schema.default = row.default;
   }
 

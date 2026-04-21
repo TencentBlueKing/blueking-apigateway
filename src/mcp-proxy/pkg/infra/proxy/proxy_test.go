@@ -443,12 +443,13 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("buildToolResponseEnvelope", func() {
 		It("should include response_body as nil when body is nil", func() {
-			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", nil)
+			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", "x-req-1", nil)
 
 			Expect(envelope).To(Equal(map[string]any{
 				toolResponseStatusCodeField: 204,
 				toolResponseRequestIDField:  "req-1",
 				toolResponseTraceIDField:    "trace-1",
+				toolResponseXRequestIDField: "x-req-1",
 				toolResponseBodyField:       nil,
 			}))
 		})
@@ -456,7 +457,7 @@ var _ = Describe("MCPProxy", func() {
 
 	Describe("buildToolResult", func() {
 		It("should populate text content for envelope with object body", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", map[string]any{
+			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", map[string]any{
 				"timezone": "Asia/Shanghai",
 				"datetime": "2026-03-19T15:04:05+08:00",
 			})
@@ -468,11 +469,11 @@ var _ = Describe("MCPProxy", func() {
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
 			Expect(
 				result.Content[0].(*mcp.TextContent).Text,
-			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","response_body":{"datetime":"2026-03-19T15:04:05+08:00","timezone":"Asia/Shanghai"}}`))
+			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","x_request_id":"x-req-1","response_body":{"datetime":"2026-03-19T15:04:05+08:00","timezone":"Asia/Shanghai"}}`))
 		})
 
 		It("should populate text content for envelope with array body", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", []any{"a", "b"})
+			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", []any{"a", "b"})
 			result := buildToolResult(envelope)
 
 			Expect(result).NotTo(BeNil())
@@ -481,7 +482,34 @@ var _ = Describe("MCPProxy", func() {
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
 			Expect(
 				result.Content[0].(*mcp.TextContent).Text,
-			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","response_body":["a","b"]}`))
+			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","x_request_id":"x-req-1","response_body":["a","b"]}`))
+		})
+
+		It("should return raw API response directly when rawResponseEnabled is enabled", func() {
+			// When rawResponseEnabled is true, the response result is the raw API response (not wrapped in envelope)
+			rawBody := map[string]any{
+				"timezone": "Asia/Shanghai",
+				"datetime": "2026-03-19T15:04:05+08:00",
+			}
+			result := buildToolResult(rawBody)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
+			// Raw response should NOT contain status_code, request_id, trace_id, x_request_id wrapper
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(MatchJSON(`{"timezone":"Asia/Shanghai","datetime":"2026-03-19T15:04:05+08:00"}`))
+		})
+
+		It("should return raw string response directly when rawResponseEnabled is enabled", func() {
+			rawBody := "plain text response"
+			result := buildToolResult(rawBody)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal(`"plain text response"`))
 		})
 	})
 

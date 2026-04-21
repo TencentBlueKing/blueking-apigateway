@@ -125,65 +125,81 @@
 
 <script setup lang="ts">
 import CodeBlock from './CodeBlock.vue';
+import { useEnv } from '@/stores';
 
 const { t } = useI18n();
+const envStore = useEnv();
 
 const authTab = ref('app_user');
 
-// 代码内容留空，由用户自行填写
-const installNpmCode = `# 安装 CLI
-$ npm install -g @blueking/bk-cli
+const installNpmCode = computed(() => `# ${t('安装 CLI')}
+$ ${envStore.env.CLI.NPM_INSTALL_CMD}
 
-# 安装 CLI SKILL（必需）
-$ npx skills add blueking/bk-cli -y -g`;
-const installSourceCode = `# 克隆仓库
-$ git clone https://github.com/TencentBlueKing/bk-cli.git
+# ${t('安装 CLI SKILL（必需）')}
+$ ${envStore.env.CLI.SKILL_NPM_INSTALL_CMD}`);
+
+const installSourceCode = computed(() => `# ${t('克隆仓库')}
+$ git clone ${envStore.env.CLI.GIT_REPO_URL}
 $ cd cli
 $ make install
 
-# 安装 CLI SKILL（必需）
-$ npx skills add blueking/bk-cli -y -g`;
-const initContextCode = `# 初始化 default 上下文
-$ bk-cli context init \\
-  --bk_api_url_tmpl"https://bkapi.your-domain.com/api/{gateway_name}/"
+# ${t('安装 CLI SKILL（必需）')}
+$ ${envStore.env.CLI.SKILL_NPM_INSTALL_CMD}`);
 
-# 可选：设置默认请求超时（默认 60s）
+const initContextCode = computed(() => `# ${t('初始化 default 上下文')}
 $ bk-cli context init \\
-  --bk_api_url_tmpl"https://bkapi.your-domain.com/api/{gateway_name}/" \\
-  --timeout 90s`;
-const authAppUserCode = `# 存储应用 + 用户令牌
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"
+
+# ${t('可选：设置默认请求超时（默认 60s，最大 300s）')}
+$ bk-cli context init \\
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}" \\
+  --timeout 90s`);
+
+const authAppUserCode = computed(() => `# ${t('存储应用 + 用户令牌 + {token} 有效期 {day} 天', {
+  token: envStore.env.CLI.USER_KEY,
+  day: envStore.env.CLI.USER_KEY_EXPIRE_DAYS,
+})}
 $ bk-cli auth login \\
-  --bk_app_code"your_app" \\
-  --bk_app_secret"your_secret" \\
-  --bk_token"your_token"
+  --bk_app_code="your_app" \\
+  --bk_app_secret="your_secret" \\
+  --${envStore.env.CLI.USER_KEY}="your_token"
 
-# 检查认证状态
-$ bk-cli auth status`;
-const authAccessTokenCode = `# 仅使用访问令牌
-$ bk-cli auth login --access_token"your_access_token"
+# ${t('检查认证状态')}
+$ bk-cli auth status`);
 
-# 检查认证状态
-$ bk-cli auth status`;
-const apiCallCode = `# 调用 API Gateway 网关
-$ bk-cli api bk-apigateway GET /api/v2/open/gateways/
+const authAccessTokenCode = computed(() => `# ${t('仅使用访问令牌 access_token 有效期 {day} 天', { day: envStore.env.CLI.ACCESS_TOKEN_EXPIRE_DAYS })}
+$ bk-cli auth login --access_token="your_access_token"
 
-# 携带查询参数
+# ${t('检查认证状态')}
+$ bk-cli auth status`);
+
+const apiCallCode = computed(() => `# ${t('获取帮助')}
+$ bk-cli api -h
+
+# ${t('调用 API Gateway 网关')}, ${t('携带查询参数')}
 $ bk-cli api bk-apigateway GET /api/v2/open/gateways/ \\
   --query '{"name": "bk-iam", "fuzzy": true}'
 
-# 路径占位符替换
+# ${t('路径占位符替换')}
 $ bk-cli api bk-apigateway GET /api/v2/open/gateways/{gateway_name}/resources/ \\
   --path '{"gateway_name": "bk-iam"}'
 
-# 携带请求体发起 POST
+# ${t('携带请求体发起 POST')}
 $ bk-cli api bk-demo POST /api/v2/resources/ \\
   --body '{"name": "test"}'
 
-# 仅预览，不实际执行
-$ bk-cli api bk-demo GET /api/v2/foo/ --dry-run`;
-const systemCommandCode = `# API Gateway 系统子命令
+# ${t('仅预览，不实际执行')}
+$ bk-cli api bk-demo GET /api/v2/foo/ --dry-run`);
+
+const systemCommandCode = computed(() => `# ${t('获取帮助')}
+$ bk-cli apigateway -h
+
+# ${t('API Gateway 系统子命令')}
 $ bk-cli apigateway list_gateways --name bk-iam --fuzzy
-$ bk-cli apigateway list_gateway_apis --gateway_name bk-iam`;
+$ bk-cli apigateway list_gateway_apis --gateway_name bk-iam
+$ bk-cli apigateway retrieve_gateway_api_details --gateway_name bk-iam --api_name v2_management_groups_policies_list
+`);
+
 </script>
 
 <style scoped lang="scss">

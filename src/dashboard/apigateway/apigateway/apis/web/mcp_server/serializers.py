@@ -228,6 +228,11 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         default=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    raw_response_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerCreateInputSLZ"
@@ -245,6 +250,7 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
             "protocol_type",
             "category_ids",
             "oauth2_public_client_enabled",
+            "raw_response_enabled",
         )
         lookup_field = "id"
         validators = [MCPServerValidator()]
@@ -350,6 +356,11 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
 
+    raw_response_enabled = serializers.BooleanField(
+        read_only=True,
+        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+    )
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
 
     updated_time = serializers.DateTimeField(read_only=True, help_text="MCPServer 更新时间")
@@ -448,6 +459,10 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         required=False,
         help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权",
     )
+    raw_response_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否返回原始响应，开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+    )
 
     def validate_resource_names(self, resource_names):
         """验证资源名称列表"""
@@ -497,6 +512,7 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
             "protocol_type",
             "category_ids",
             "oauth2_public_client_enabled",
+            "raw_response_enabled",
         )
         lookup_field = "id"
 
@@ -838,3 +854,27 @@ class MCPServerConfigListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerConfigListOutputSLZ"
+
+
+class MCPServerAppPermissionAppCodeListInputSLZ(serializers.Serializer):
+    """MCPServer 已授权应用 bk_app_code 列表输入序列化器"""
+
+    mcp_server_id = serializers.IntegerField(
+        required=False,
+        help_text="MCPServer ID，传入则只查询该 MCPServer 的授权应用",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionAppCodeListInputSLZ"
+
+
+class MCPServerAppPermissionAppCodeListOutputSLZ(serializers.Serializer):
+    """MCPServer 已授权应用 bk_app_code 列表输出序列化器"""
+
+    bk_app_codes = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="有权限的应用 bk_app_code 列表",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionAppCodeListOutputSLZ"

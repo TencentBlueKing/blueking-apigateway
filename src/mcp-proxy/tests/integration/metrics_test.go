@@ -182,15 +182,19 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			metricsOutput, err := fetchMetrics(client.BaseURL)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"method":          "initialize",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for initialize")
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for tools/call")
 		})
@@ -214,10 +218,12 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(
 				containsMetricLine(
 					metricsOutput,
-					"apigateway_mcp_proxy_mcp_request_duration_milliseconds_count",
+					"bk_apigateway_mcp_proxy_mcp_request_duration_milliseconds_count",
 					map[string]string{
+						"gateway_name":    "bk-apigateway",
 						"mcp_server_name": "test-http-server",
 						"method":          "tools/call",
+						"app_code":        "test-app",
 					},
 				),
 			).To(BeTrue(), "should have mcp_request_duration_milliseconds for tools/call")
@@ -239,9 +245,11 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			metricsOutput, err := fetchMetrics(client.BaseURL)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"tool_name":       "echo",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_tool_calls_total for echo tool")
 		})
@@ -254,8 +262,10 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			metricsOutput, err := fetchMetrics(client.BaseURL)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_sessions_active", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_sessions_active", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
+				"app_code":        "test-app",
 			})).To(BeTrue(), "should have mcp_sessions_active for test-http-server")
 		})
 
@@ -273,14 +283,19 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			metricsOutput, err := fetchMetrics(client.BaseURL)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_errors_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_errors_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
+				"app_code":        "test-app",
+				"error_code":      "invalid_params",
 			})).To(BeTrue(), "should have mcp_errors_total for failed tools/call")
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
+				"app_code":        "test-app",
 				"error":           "1",
 			})).To(BeTrue(), "should have mcp_requests_total with error for failed tools/call")
 		})
@@ -304,26 +319,34 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			metricsOutput, err := fetchMetrics(client.BaseURL)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-sse-server",
 				"method":          "initialize",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for SSE initialize")
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-sse-server",
 				"method":          "tools/call",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_requests_total for SSE tools/call")
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_tool_calls_total", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-sse-server",
 				"tool_name":       "echo",
+				"app_code":        "test-app",
 				"error":           "0",
 			})).To(BeTrue(), "should have mcp_tool_calls_total for SSE echo tool")
 
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_sessions_active", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_sessions_active", map[string]string{
+				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-sse-server",
+				"app_code":        "test-app",
 			})).To(BeTrue(), "should have mcp_sessions_active for test-sse-server")
 		})
 	})
@@ -346,10 +369,11 @@ var _ = Describe("MCP Protocol Metrics", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// The gateway_name should be "bk-apigateway" (from init.sql test data)
-			Expect(containsMetricLine(metricsOutput, "apigateway_mcp_proxy_mcp_requests_total", map[string]string{
+			Expect(containsMetricLine(metricsOutput, "bk_apigateway_mcp_proxy_mcp_requests_total", map[string]string{
 				"gateway_name":    "bk-apigateway",
 				"mcp_server_name": "test-http-server",
 				"method":          "tools/call",
+				"app_code":        "test-app",
 			})).To(BeTrue(), "should have gateway_name=bk-apigateway in mcp_requests_total")
 		})
 	})

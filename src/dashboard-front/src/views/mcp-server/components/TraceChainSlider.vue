@@ -49,12 +49,12 @@
       </div>
     </template>
     <template #default>
-      <BkLoading :loading="detailLoading">
+      <BkLoading
+        :loading="detailLoading"
+        :z-index="999"
+      >
         <div class="trace-chain-content">
-          <AgMcpTraceChain
-            v-model:active-tab="activeTab"
-            :trace-chain-detail="traceData"
-          />
+          <AgMcpTraceChain :trace-chain-detail="traceData" />
         </div>
       </BkLoading>
     </template>
@@ -85,7 +85,6 @@ const { apiGatewayId, requestId = '' } = defineProps<IProps>();
 const traceStore = useTrace();
 
 const isShow = ref(false);
-const activeTab = ref('proxy_log');
 const traceData = ref<ITraceDetail>(DEFAULT_TRACE_DATA);
 
 const detailLoading = computed(() => traceStore.traceLoading);
@@ -107,10 +106,18 @@ const getTraceChainDetail = async () => {
 
     const [logInfo, traceChain] = results.map(getParallelRequestResult);
 
+    const { upstream_log, downstream_log } = traceStore.parseTraceChainLogs(traceChain);
+
+    const logList = [
+      ...(logInfo.results ?? []),
+      upstream_log,
+      downstream_log,
+    ].filter(Boolean);
+
     traceData.value = {
       ...cloneDeep(DEFAULT_TRACE_DATA),
       ...traceChain,
-      logList: logInfo.results ?? [],
+      logList,
     };
     // 同步存储至全局trace信息
     traceStore.setMcpTraceInfo(traceData.value);
@@ -144,11 +151,12 @@ const handleCopy = (value: string) => {
 };
 
 const handleCloseSlider = () => {
-  activeTab.value = 'proxy_log';
+  traceStore.setTraceLogTab('proxy_log');
 };
 
 defineExpose({
   show,
+  handleCloseSlider,
   getTraceChainDetail,
 });
 </script>

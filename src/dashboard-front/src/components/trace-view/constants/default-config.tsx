@@ -82,7 +82,7 @@ export default deepFreeze(
             {},
             {},
             {},
-            {}, // 补全尾随逗号
+            {},
           ],
         },
       ],
@@ -113,10 +113,10 @@ export default deepFreeze(
           alert: {
             message: 'Service Performance Monitoring requires a Prometheus-compatible time series database.',
             type: 'info',
-          }, // 补全尾随逗号
+          },
         },
         docsLink: 'https://www.jaegertracing.io/docs/latest/spm/',
-      }, // 补全尾随逗号
+      },
     },
     // fields that should be individually merged vs wholesale replaced
     '__mergeFields',
@@ -124,7 +124,6 @@ export default deepFreeze(
   ),
 );
 
-// 注意：第18行的 eslint-disable 注释已被移除，因为代码中没有触发 naming-convention 错误
 export const deprecations = [
   {
     formerKey: 'dependenciesMenuEnabled',

@@ -25,6 +25,7 @@ from typing import Any, Dict, List
 
 from celery import shared_task
 from django.conf import settings
+from django.db.models import Exists, OuterRef
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -47,6 +48,7 @@ from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, GatewayStatusEnum
 from apigateway.core.models import Context, Gateway, Resource
 from apigateway.utils.file import read_file
+from apigateway.utils.time import NeverExpiresTime
 
 logger = logging.getLogger(__name__)
 
@@ -245,8 +247,18 @@ class AppPermissionExpiringSoonAlerter:
                 }
             )
 
-        # 按资源的权限
-        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time))
+        # 过滤掉已拥有永久网关维度权限的应用，网关维度权限可以覆盖资源维度权限，无需告警
+        permissions_by_resource = AppResourcePermission.objects.filter(
+            expires__range=(now, expire_end_time)
+        ).filter(
+            ~Exists(
+                AppGatewayPermission.objects.filter(
+                    gateway_id=OuterRef("gateway_id"),
+                    bk_app_code=OuterRef("bk_app_code"),
+                    expires__gte=NeverExpiresTime.time,
+                )
+            )
+        )
 
         contexts = Context.objects.filter(
             scope_id__in=list(permissions_by_resource.values_list("resource_id", flat=True)),

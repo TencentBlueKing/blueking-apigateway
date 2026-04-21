@@ -21,7 +21,6 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import duration from 'dayjs/plugin/duration';
 import _dropWhile from 'lodash-es/dropWhile';
-import _round from 'lodash-es/round';
 
 import { toFloatPrecision } from './number';
 
@@ -123,9 +122,22 @@ export function formatDatetime(duration: number): string {
 /**
  * Humanizes the duration for display.
  *
- * 输入原样输出，不自动换算单位、不四舍五入、不进位
+ * Example:
+ * 5000ms => 5s
+ * 1000μs => 1ms
+ * 183840s => 2d 3h
+ *
+ * @param {number} duration (in microseconds)
+ * @param {string} split 分隔符
+ * @param {number} precision 精度
+ * @return {string} formatted duration
  */
-export function formatDuration(duration: number, split: string = '', precision: number = 2): string {
+export function formatDuration(duration: number, split: string = '', precision?: number | null): string {
+  const decimalLen = (String(duration).split('.')[1] || '').length;
+  if (precision && duration > 0) {
+    return decimalLen > precision ? `${duration.toFixed(precision)}${split}ms` : `${duration}${split}ms`;
+  }
+
   // 直接以 ms 输出，完全不换算、不四舍五入
   return `${duration}${split}ms`;
 }

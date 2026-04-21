@@ -215,6 +215,8 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT": env.bool(
             "FEATURE_FLAG_ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT", True
         ),
+        # 是否开启 BK CLI 展示
+        "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
     }
 
 
@@ -263,6 +265,18 @@ def get_frontend_env_vars(
         },
         "BK_SHARED_RES_URL": env.str("BK_SHARED_RES_URL", default=""),
         "BK_SDK_LANGUAGES": bk_sdk_languages,
+        "CLI": {
+            "DETAIL_URL": env.str("CLI_DETAIL_URL", default="https://github.com/TencentBlueKing/bk-cli"),
+            "USER_KEY": env.str("CLI_USER_KEY", default="bk_token"),
+            "USER_KEY_EXPIRE_DAYS": env.int("CLI_USER_KEY_EXPIRE_DAYS", default=1),
+            "ACCESS_TOKEN_EXPIRE_DAYS": env.int("CLI_ACCESS_TOKEN_EXPIRE_DAYS", default=1),
+            "BK_API_URL_TMPL": bk_api_url_tmpl.replace("{api_name}", "{gateway_name}"),
+            "GIT_REPO_URL": env.str("CLI_GIT_REPO_URL", default="https://github.com/TencentBlueKing/bk-cli.git"),
+            "NPM_INSTALL_CMD": env.str("CLI_NPM_INSTALL_CMD", default="npm install -g @blueking/bk-cli"),
+            "SKILL_NPM_INSTALL_CMD": env.str(
+                "CLI_SKILL_NPM_INSTALL_CMD", default="npx skills add TencentBlueKing/bk-cli -y -g"
+            ),
+        },
     }
 
 
@@ -387,6 +401,12 @@ def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "Z
         "PLUGIN_AI_RATE_LIMITING": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/ai-rate-limiting.md",
         # uri-blocker
         "PLUGIN_URI_BLOCKER": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/uri-blocker.md",
+        # bk-oauth2-protected-resource
+        "PLUGIN_BK_OAUTH2_PROTECTED_RESOURCE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-protected-resource.md",
+        # bk-oauth2-verify
+        "PLUGIN_BK_OAUTH2_VERIFY": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-verify.md",
+        # bk-oauth2-audience-validate
+        "PLUGIN_BK_OAUTH2_AUDIENCE_VALIDATE": f"{doc_link_prefix}/UserGuide/HowTo/Plugins/bk-oauth2-audience-validate.md",
     }
 
 

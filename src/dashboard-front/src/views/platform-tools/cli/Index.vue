@@ -23,6 +23,7 @@
         <IconButton
           theme="primary"
           icon="link"
+          @click="openDetailUrl"
         >
           {{ t('查看详情') }}
         </IconButton>
@@ -73,7 +74,7 @@
           {{ t('跨网关编排') }}
         </div>
         <div class="feature-desc">
-          {{ t('天然支持跨网关 API 发现和调用。查主机、跑脚本、看告警，一条命令打通多个系统') }}
+          {{ t('天然支持跨网关 API 发现和调用。查主机、跑脚本、看告警，一个 CLI 打通多个系统') }}
         </div>
       </div>
     </div>
@@ -136,11 +137,16 @@
 import FunctionOverview from './components/FunctionOverview.vue';
 import QuickStart from './components/QuickStart.vue';
 import AdvancedUsage from './components/AdvancedUsage.vue';
+import { useEnv } from '@/stores/useEnv';
 
 const { t } = useI18n();
+const envStore = useEnv();
 
 const activeTab = ref('overview');
 
+const openDetailUrl = () => {
+  window.open(envStore.env.CLI.DETAIL_URL, '_blank');
+};
 </script>
 
 <style lang="scss" scoped>

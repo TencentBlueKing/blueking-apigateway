@@ -61,7 +61,7 @@ const routes: RouteRecordRaw[] = [
         name: 'MCPServerObservability',
         component: () => import('@/views/mcp-server/observability/Index.vue'),
         meta: {
-          title: t('可观测性'),
+          title: t('可观测'),
           matchRoute: 'MCPServerObservability',
           topMenu: 'MCPServerObservability',
           hideHeaderBorder: true,

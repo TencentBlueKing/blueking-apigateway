@@ -158,7 +158,7 @@ defineExpose({ handleResetForm });
   align-items: center;
 
   .refresh-time-trigger {
-    border: 1px solid #c4C6cc;
+    border: 1px solid #c4c6cc;
     border-radius: 2px;
     display: flex;
     align-items: center;
@@ -169,7 +169,7 @@ defineExpose({ handleResetForm });
       height: 26px;
       line-height: 26px;
       text-align: center;
-      border-right: 1px solid #C4C6CC;
+      border-right: 1px solid #c4c6cc;
       font-size: 14px;
       color: #737987;
     }

@@ -98,8 +98,14 @@ const {
   title = '响应耗时', // 图表 title
   chartData = {}, // 图表数据
 } = defineProps<IProps>();
-
 const emit = defineEmits<IEmits>();
+
+// 需要横向超过两个grid布局
+const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
+// 需要转换为毫秒的metrics
+const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
+// 需要转换为字节的metrics
+const displayBytesList = ['request_body_size', 'response_body_size'];
 
 const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
@@ -138,8 +144,11 @@ const getChartOption = () => {
   // 基础配置
   const baseOption: echarts.EChartsOption = {
     grid: {
-      left: '36px',
-      right: '24px',
+      top: '15%',
+      left: '2%',
+      right: '1%',
+      bottom: '12%',
+      containLabel: true,
     },
     xAxis: {
       type: 'time',
@@ -200,10 +209,6 @@ const getChartOption = () => {
   };
 
   let moreOption: any = {};
-  // 需要横向超过两个grid布局
-  const multipleList = ['requests', 'requests_2xx', 'non_2xx_status'];
-  // 需要转换为毫秒的metrics
-  const displayMSList = ['response_time_50th', 'response_time_95th', 'response_time_99th'];
   const seriesData = (chartData as { series: ISeriesItemType[] }).series || [];
 
   // 处理业务数据，生成系列配置
@@ -287,6 +292,13 @@ const getChartOption = () => {
     };
   }
 
+  if (displayBytesList.includes(instanceId)) {
+    (chartOption.yAxis as any).axisLabel = {
+      ...(chartOption.yAxis as any).axisLabel,
+      formatter: '{value} bytes',
+    };
+  }
+
   // 合并所有配置
   return merge(baseOption, chartOption, moreOption);
 };
@@ -337,6 +349,7 @@ const setChartTooltip = (
       const value = p.data[1] !== null ? p.data[1].toLocaleString() : '0';
       let unit = t('次');
       if (displayMSList.includes(instanceId)) unit = 'ms';
+      if (displayBytesList.includes(instanceId)) unit = 'bytes';
       if (['requests'].includes(instanceId)) {
         p.seriesName = t('总请求数');
       }
@@ -497,10 +510,10 @@ defineExpose({
 
   .chart-title {
     padding-top: 12px;
-    color: #4d4f56;
     font-size: 14px;
     font-weight: bold;
     line-height: 22px;
+    color: #4d4f56;
   }
 
   .line-chart {
@@ -516,13 +529,13 @@ defineExpose({
 
     .legend-item {
       display: flex;
-      align-items: center;
-      flex: none;
+      margin-right: 16px;
       font-size: 12px;
       line-height: 22px;
-      margin-right: 16px;
       white-space: nowrap;
       cursor: pointer;
+      align-items: center;
+      flex: none;
 
       &:hover,
       &.selected {
@@ -535,22 +548,22 @@ defineExpose({
     }
 
     .legend-icon {
-      flex: none;
       width: 16px;
       height: 4px;
+      margin-right: 4px;
       background-color: #999;
       border-radius: 2px;
-      margin-right: 4px;
+      flex: none;
     }
   }
 
   .side-legend {
     position: absolute;
-    right: -34px;
     top: 10px;
-    flex-direction: column;
+    right: -34px;
     max-height: 242px;
     padding: 8px 0;
+    flex-direction: column;
   }
 
   .custom-scroll-bar {
@@ -562,19 +575,19 @@ defineExpose({
 
     &::-webkit-scrollbar-thumb {
       height: 5px;
-      border-radius: 2px;
       background-color: #c4c6cc;
+      border-radius: 2px;
     }
 
     &::-webkit-scrollbar-track {
-      background: transparent;
+      background-color: transparent;
     }
   }
 }
 
 .basic-height {
-  height: 286px;
   display: flex;
+  height: 286px;
   align-items: center;
   justify-content: center;
 }

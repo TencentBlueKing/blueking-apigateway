@@ -23,7 +23,7 @@ from django.utils import timezone
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.permission.tasks import AppPermissionExpiringSoonAlerter, renew_app_resource_permission
-from apigateway.utils.time import now_datetime, to_datetime_from_now
+from apigateway.utils.time import NeverExpiresTime, now_datetime, to_datetime_from_now
 
 
 class TestRenewAppResourcePermission:
@@ -234,3 +234,47 @@ class TestAppPermissionExpiringSoonAlerter:
         permissions = alerter._get_permissions_expiring_soon()
         alerter._complete_permissions(permissions)
         assert permissions[unique_id][0]["gateway_name"] == fake_gateway.name
+
+    def test_get_permissions_expiring_soon_skip_when_gateway_perm_is_forever(self, fake_resource_ctx, unique_id):
+        """应用拥有永久网关维度权限时，对应的资源维度权限过期告警应被忽略"""
+        now = timezone.now()
+        fake_gateway = fake_resource_ctx[0].gateway
+        resource1 = fake_resource_ctx[0]
+
+        G(
+            AppGatewayPermission,
+            gateway=fake_gateway,
+            bk_app_code=unique_id,
+            expires=NeverExpiresTime.time,
+        )
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            resource_id=resource1.id,
+            expires=now + datetime.timedelta(days=10),
+            bk_app_code=unique_id,
+        )
+
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        result = alerter._get_permissions_expiring_soon()
+
+        assert len(result[unique_id]) == 0
+
+    def test_get_permissions_expiring_soon_alert_when_no_forever_gateway_perm(self, fake_resource_ctx, unique_id):
+        """应用没有永久网关维度权限时，资源维度权限过期告警应正常触发"""
+        now = timezone.now()
+        fake_gateway = fake_resource_ctx[0].gateway
+        resource1 = fake_resource_ctx[0]
+
+        G(
+            AppResourcePermission,
+            gateway=fake_gateway,
+            resource_id=resource1.id,
+            expires=now + datetime.timedelta(days=10),
+            bk_app_code=unique_id,
+        )
+
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        result = alerter._get_permissions_expiring_soon()
+
+        assert len(result[unique_id]) == 1

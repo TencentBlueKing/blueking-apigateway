@@ -17,14 +17,13 @@
  */
 
 import _groupBy from 'lodash-es/groupBy';
-import type { ISpan } from '@/components/trace-view/typings';
+import type { ISpan, ITimeTick } from '@/components/trace-view/typings';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 import './span-bar.scss';
 
 const SpanBarProps = {
   color: { type: String },
-  hintSide: { type: String },
   rpc: { type: Object },
   span: { type: Object as PropType<ISpan> },
   label: {
@@ -47,55 +46,15 @@ const SpanBarProps = {
     type: Number,
     default: 0,
   },
-  level: {
-    type: Number,
-    default: 0,
-  },
   totalTraceDuration: {
     type: Number,
     default: 0,
   },
-  containerWidth: {
+  numTicks: {
     type: Number,
-    default: 1000,
+    default: 4,
   },
 };
-
-// 百分比计算
-function toPercent(value: number) {
-  const percent = (value * 100).toFixed(2);
-  return +percent < 0.5 ? '16px' : `${percent}%`;
-}
-
-// 生成时间刻度线配置（适配蓝鲸设计风格）
-function generateTimeTicks(totalDuration: number) {
-  if (!totalDuration || totalDuration <= 0) return [];
-
-  const ticks = [];
-  // 自动生成4个左右刻度，间隔为100的倍数，和截图0ms/373ms/746ms/1119ms/1493ms对齐
-  const step = Math.ceil(totalDuration / 4 / 100) * 100;
-  let current = 0;
-
-  while (current <= totalDuration) {
-    ticks.push({
-      time: current,
-      percent: current / totalDuration,
-      label: `${current}ms`,
-    });
-    current += step;
-  }
-
-  // 强制添加总耗时刻度，确保最后一个刻度精准对齐
-  if (ticks[ticks.length - 1].time !== totalDuration) {
-    ticks.push({
-      time: totalDuration,
-      percent: 1,
-      label: `${totalDuration}ms`,
-    });
-  }
-
-  return ticks;
-}
 
 export default defineComponent({
   name: 'SpanBar',
@@ -104,51 +63,83 @@ export default defineComponent({
   setup(props: any) {
     const label = ref(props.shortLabel);
 
+    // 百分比格式化
+    function toPercent(value: number): string {
+      const percent = value * 100;
+
+      if (percent >= 99 && !['inside'].includes(labelPosition.value)) return '99%';
+
+      const decimalLen = (String(percent).split('.')[1] || '').length;
+      const formatted = decimalLen > 2 ? percent.toFixed(3) : percent;
+
+      return `${formatted}%`;
+    }
+
+    // 生成时间刻度
+    function generateTimeTicks(totalDuration: number): ITimeTick[] {
+      if (!totalDuration || totalDuration <= 0) return [];
+      const ticks: ITimeTick[] = [];
+      const step = Math.ceil(totalDuration / props.numTicks / 100) * 100;
+      let current = 0;
+
+      while (current <= totalDuration) {
+        ticks.push({
+          time: current,
+          percent: current / totalDuration,
+          label: `${current}ms`,
+        });
+        current += step;
+      }
+
+      if (ticks[ticks.length - 1].time !== totalDuration) {
+        ticks.push({
+          time: totalDuration,
+          percent: 1,
+          label: `${totalDuration}ms`,
+        });
+      }
+
+      // 给最后一个刻度加 is-last 标记
+      if (ticks.length > 0) {
+        ticks[ticks.length - 1].isLast = true;
+      }
+
+      return ticks;
+    }
+
     const setShortLabel = () => {
       label.value = props.shortLabel;
     };
-
     const setLongLabel = () => {
       label.value = props.longLabel;
     };
 
-    // 从 span 真实字段计算开始 / 结束位置
-    const viewStart = computed(() => {
-      return props.span?.start_offset_ms ?? 0;
-    });
-
-    const viewEnd = computed(() => {
-      const start = props.span?.start_offset_ms ?? 0;
-      const dur = props.span?.latency_ms ?? 0;
-      return start + dur;
-    });
-
-    // 判断是否铺满整个 trace（耗时 ≈ 总耗时）
+    // 计算位置
+    const viewStart = computed(() => props.span?.start_offset_ms ?? 0);
+    const viewEnd = computed(() => (props.span?.start_offset_ms ?? 0) + (props.span?.latency_ms ?? 0));
     const isFullWidth = computed(() => {
       const total = props.totalTraceDuration;
-      if (!total) return false;
-      const dur = props.span?.latency_ms ?? 0;
-      // 当前耗时 ≥ 总耗时的 99% → 判定铺满
-      return dur >= total * 0.99;
+      return total && (props.span?.latency_ms ?? 0) >= total * 0.99;
     });
 
-    // 铺满 → 直接沾满 100% 宽度
-    // 没铺满 → 正常计算
+    // 文字放左边还是右边
+    const labelPosition = computed(() => {
+      if (isFullWidth.value) return 'inside';
+      const total = props.totalTraceDuration || 1;
+      const endPos = viewEnd.value / total;
+      return endPos > 0.8 ? 'left' : 'right';
+    });
+
+    // 进度条样式
     const barStyle = computed(() => {
       const total = props.totalTraceDuration || 1;
-      const startMs = viewStart.value;
-      const endMs = viewEnd.value;
+      const left = isFullWidth.value ? 0 : viewStart.value / total;
+      let width = isFullWidth.value ? 1 : (viewEnd.value - viewStart.value) / total;
 
-      let left = 0;
-      let width = 0;
-
-      if (isFullWidth.value) {
-        left = 0;
-        width = 1; // 沾满 100%
-      }
-      else {
-        left = startMs / total;
-        width = (endMs - startMs) / total;
+      // 极短跨度（0.002ms）强制设置最小宽度
+      const minWidthPercent = 0.002;
+      if (width > 0 && width < minWidthPercent) {
+        width = minWidthPercent;
       }
 
       return {
@@ -160,23 +151,16 @@ export default defineComponent({
       };
     });
 
-    // 铺满 → 文字必须放内部
-    const isLabelInside = computed(() => {
-      return isFullWidth.value;
-    });
-
-    // 时间刻度线列表
-    const timeTicks = computed(() => {
-      return generateTimeTicks(props.totalTraceDuration);
-    });
+    const timeTicks = computed(() => generateTimeTicks(props.totalTraceDuration));
 
     return {
       label,
       setShortLabel,
       setLongLabel,
       barStyle,
-      isLabelInside,
+      labelPosition,
       timeTicks,
+      toPercent,
     };
   },
 
@@ -190,16 +174,14 @@ export default defineComponent({
         onMouseout={this.setShortLabel}
         onMouseover={this.setLongLabel}
       >
-        {/* 时间刻度 + 垂直时间线 */}
         {this.timeTicks.map((tick: any) => (
           <div
             key={tick.time}
-            class="time-tick"
-            style={{ left: toPercent(tick.percent) }}
+            class={['time-tick', { 'is-last': tick.isLast }]}
+            style={{ left: this.toPercent(tick.percent) }}
           />
         ))}
 
-        {/* 原有 span 条 */}
         <div
           style={this.barStyle}
           class={{
@@ -207,7 +189,7 @@ export default defineComponent({
             'is-infer': isVirtual,
           }}
         >
-          <span class={['span-duration', this.isLabelInside ? 'inside' : '']}>
+          <span class={['span-duration', this.labelPosition]}>
             <AgIcon name="tongbu" />
             {this.label}
           </span>

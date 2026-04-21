@@ -50,6 +50,7 @@
       <BkLoading
         :loading="queryLoading"
         color="#ffffff"
+        :z-index="99"
       >
         <!-- 空状态 -->
         <div
@@ -70,10 +71,7 @@
           v-else
           class="body-content"
         >
-          <AgMcpTraceChain
-            v-model:active-tab="activeTab"
-            :trace-chain-detail="traceData"
-          />
+          <AgMcpTraceChain :trace-chain-detail="traceData" />
         </div>
       </BkLoading>
     </div>
@@ -99,7 +97,6 @@ const route = useRoute();
 const traceStore = useTrace();
 
 const searchKeyword = ref('');
-const activeTab = ref('proxy_log');
 const traceData = ref<ITraceDetail>(cloneDeep(DEFAULT_TRACE_DATA));
 
 // 空状态配置
@@ -142,6 +139,7 @@ const handleQueryTrace = async () => {
   }
 
   traceStore.setTraceLoading(true);
+  traceStore.setTraceLogTab('proxy_log');
 
   try {
     const promiseList = [
@@ -153,11 +151,19 @@ const handleQueryTrace = async () => {
 
     const [logInfo, logSummary, traceChain] = results.map(getParallelRequestResult);
 
+    const { upstream_log, downstream_log } = traceStore.parseTraceChainLogs(traceChain);
+
+    const logList = [
+      ...(logInfo.results ?? []),
+      upstream_log,
+      downstream_log,
+    ].filter(Boolean);
+
     traceData.value = {
       ...cloneDeep(DEFAULT_TRACE_DATA),
       ...traceChain,
       ...logSummary,
-      logList: logInfo.results ?? [],
+      logList,
     };
     // 同步存储至全局trace信息
     traceStore.setMcpTraceInfo(traceData.value);
@@ -200,6 +206,7 @@ onMounted(() => {
     :deep(.body-content) {
       overflow-x: hidden;
       overflow-y: auto;
+      height: calc(100vh - 240px);
 
       .ag-trace-chain-info {
         margin-top: 16px;

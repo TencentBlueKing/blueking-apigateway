@@ -48,5 +48,5 @@ export * from './use-sticky-bottom';
 export * from './use-operation-lock';
 // Mcp配置自适应5个tab宽度
 export * from './use-mcp-config-divide-ratio';
-// Mcp 可观测性仪表盘
+// Mcp 可观测仪表盘
 export * from './use-observability-dashboard';

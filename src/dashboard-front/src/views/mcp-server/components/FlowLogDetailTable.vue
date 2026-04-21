@@ -115,13 +115,14 @@
     <AgTraceChainSlider
       ref="traceChainSliderRef"
       :api-gateway-id="apiGatewayId"
-      :request-id="callChainDetail?.request_id"
+      :request-id="callChainDetail?.request_id || callChainDetail?.x_request_id"
     />
   </div>
 </template>
 
 <script lang="tsx" setup>
 import dayjs from 'dayjs';
+import { Button, Popover } from 'bkui-vue';
 // 图标组件
 import { CopyShape, EnlargeLine, InfoLine, NarrowLine } from 'bkui-vue/lib/icon';
 // 类型定义
@@ -129,7 +130,8 @@ import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 // 服务请求
 import {
   type IFlowLogTable,
-  type IObservabilityBasicForm, fetchObservabilityLogList,
+  type IObservabilityBasicForm,
+  fetchObservabilityLogList,
 } from '@/services/source/observability';
 // 工具函数
 import { copy } from '@/utils';
@@ -325,6 +327,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: 'MCP Server',
     colKey: 'mcp_server_name',
+    width: 300,
     ellipsis: true,
   },
   {
@@ -341,9 +344,17 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     ellipsis: true,
   },
   {
-    title: t('耗时(毫秒)'),
+    title: t('耗时'),
     colKey: 'latency',
+    width: 150,
     ellipsis: true,
+    cell: (_: any, { row }: { row?: IFlowLogTable }) => {
+      const duration = row?.latency;
+      if (!duration) {
+        return '--';
+      }
+      return String(duration).replace(/(\d+\.\d{2})\d*/, '$1');
+    },
   },
   {
     title: 'app_code',
@@ -354,13 +365,12 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态'),
     colKey: 'status',
     width: 130,
-  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
-      const isSuccess = row?.status && Number(row.status) >= 200 && Number(row.status) < 300;
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
       return (
         <AgStatusDot
           class="lh-20px"
-          type={isSuccess ? 'success' : 'error'}
-          text={t(isSuccess ? '成功' : '失败')}
+          type={isSuccessStatus(row) ? 'success' : 'error'}
+          text={t(isSuccessStatus(row) ? '成功' : '失败')}
         />
       );
     },
@@ -369,7 +379,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('错误'),
     colKey: 'error',
     ellipsis: true,
-  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: IFlowLogTable }) => {
       if (!row?.error) return '--';
       return <span class="color-#ea3636">{row.error}</span>;
     },
@@ -379,19 +389,27 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'operate',
     fixed: 'right',
     width: 102,
-  cell: (_: any, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+      const isDisabled = !row.request_id && !row.x_request_id;
       return (
         <div class="flex">
-          <bk-button
-            text
-            theme="primary"
-            onClick={(e: MouseEvent) => {
-              e.stopPropagation();
-              handleShowCallChain(row!);
-            }}
+          <Popover
+            content={t('request_id 和 x_request_id 不存在')}
+            disabled={!isDisabled}
+            popoverDelay={0}
           >
-            {t('调用链')}
-          </bk-button>
+            <Button
+              text
+              theme="primary"
+              disabled={isDisabled}
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                handleShowCallChain(row);
+              }}
+            >
+              {t('调用链')}
+            </Button>
+          </Popover>
         </div>
       );
     },
@@ -578,8 +596,12 @@ const isShowRetrieveBtn = (field: keyof IFlowLogTable) => {
   return allowFields.includes(field);
 };
 
-const getRowClass = ({ row }: { row: Record<string, any> }) => {
-  return !(row.status >= 200 && row.status < 300) || row.error ? 'exception hover:cursor-pointer' : 'hover:cursor-pointer';
+const isSuccessStatus = (row: IFlowLogTable) => {
+  return row?.status && ((Number(row.status) >= 200 && Number(row.status) < 300) || ['success'].includes(row.status));
+};
+
+const getRowClass = ({ row }: { row: IFlowLogTable }) => {
+  return !isSuccessStatus(row) || row.error ? 'error-exception hover:cursor-pointer' : 'hover:cursor-pointer';
 };
 
 watch(
@@ -669,6 +691,14 @@ defineExpose({
         }
       }
     }
+  }
+}
+
+:deep(.error-exception) {
+  background-color: #f9edec;
+
+  td {
+    background-color: #f9edec;
   }
 }
 </style>
