@@ -65,6 +65,72 @@ var _ = Describe("MCPServer", func() {
 			})
 		})
 
+		Describe("RawResponseEnabled", func() {
+			It("should return default false when not set", func() {
+				Expect(server.RawResponseEnabled()).To(BeFalse())
+			})
+
+			It("should return true when set to true", func() {
+				server.SetRawResponseEnabled(true)
+				Expect(server.RawResponseEnabled()).To(BeTrue())
+			})
+
+			It("should return false when set to false", func() {
+				server.SetRawResponseEnabled(true)
+				Expect(server.RawResponseEnabled()).To(BeTrue())
+
+				server.SetRawResponseEnabled(false)
+				Expect(server.RawResponseEnabled()).To(BeFalse())
+			})
+
+			It("should handle concurrent reads and writes", func() {
+				var wg sync.WaitGroup
+
+				// Concurrent reads
+				for i := 0; i < 50; i++ {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						_ = server.RawResponseEnabled()
+					}()
+				}
+
+				// Concurrent writes
+				for i := 0; i < 50; i++ {
+					wg.Add(1)
+					go func(idx int) {
+						defer wg.Done()
+						server.SetRawResponseEnabled(idx%2 == 0)
+					}(i)
+				}
+
+				wg.Wait()
+			})
+
+			It("should dynamically update value for tool handler getter", func() {
+				// Simulate the scenario where tool handler uses RawResponseEnabled as a getter
+				// This tests the hot-reload scenario for raw_response_enabled
+
+				// Initial state: false
+				Expect(server.RawResponseEnabled()).To(BeFalse())
+
+				// Simulate getter function (like genToolHandler uses)
+				getter := server.RawResponseEnabled
+				Expect(getter()).To(BeFalse())
+
+				// Hot update: change raw_response_enabled to true
+				server.SetRawResponseEnabled(true)
+
+				// Getter should return new value without re-registering handler
+				Expect(getter()).To(BeTrue())
+				Expect(server.RawResponseEnabled()).To(BeTrue())
+
+				// Hot update: change back to false
+				server.SetRawResponseEnabled(false)
+				Expect(getter()).To(BeFalse())
+			})
+		})
+
 		Describe("GetTools", func() {
 			It("should return empty slice when no tools", func() {
 				Expect(server.GetTools()).To(BeEmpty())
