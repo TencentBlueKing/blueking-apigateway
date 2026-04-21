@@ -35,7 +35,11 @@
           "id": 1,
           "name": "mcp_1",
           "title": "MCP服务1",
-          "description": null
+          "description": null,
+          "categories": [
+            {"name": "official", "display_name": "官方"},
+            {"name": "ai", "display_name": "AI"}
+          ]
         }
       }
     ]
@@ -69,3 +73,4 @@
 | name          | string  | mcp_server 名称        |
 | title         | string  | mcp_server 中文名/显示名称  |
 | description   | string  | mcp_server 描述        |
+| categories    | array   | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |

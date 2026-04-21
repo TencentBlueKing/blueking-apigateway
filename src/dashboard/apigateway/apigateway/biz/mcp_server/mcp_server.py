@@ -640,6 +640,33 @@ class MCPServerHandler:
         return queryset.select_related("gateway", "stage").order_by(order_by)
 
     @staticmethod
+    def build_categories_map(mcp_server_ids: List[int]) -> Dict[int, List[Dict[str, str]]]:
+        """批量查询 MCPServer 的分类信息，返回 {mcp_server_id: [{"name": ..., "display_name": ...}]} 映射
+
+        使用单次查询替代 N+1 的 categories.filter() 调用。
+
+        Args:
+            mcp_server_ids: MCPServer ID 列表
+
+        Returns:
+            以 mcp_server_id 为 key 的分类字典映射
+        """
+        if not mcp_server_ids:
+            return {}
+
+        categories_qs = MCPServerCategory.objects.filter(
+            mcp_servers__id__in=mcp_server_ids,
+            is_active=True,
+        ).values("mcp_servers__id", "name", "display_name")
+
+        categories_map: Dict[int, List[Dict[str, str]]] = {}
+        for cat in categories_qs:
+            categories_map.setdefault(cat["mcp_servers__id"], []).append(
+                {"name": cat["name"], "display_name": cat["display_name"]}
+            )
+        return categories_map
+
+    @staticmethod
     def build_list_context(
         mcp_servers: Sequence,
         include_prompts_count: bool = False,

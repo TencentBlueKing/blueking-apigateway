@@ -1525,3 +1525,87 @@ class TestMCPServerBatchQueryApi:
             content_type="application/json",
         )
         assert resp.status_code == 400
+
+
+class TestMCPServerListCategories:
+    """测试 MCP Server 列表接口的 categories 字段"""
+
+    def test_list_with_categories(self, request_view, fake_gateway):
+        """有分类的 MCP Server 返回 categories 字段"""
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        cat1, _ = MCPServerCategory.objects.get_or_create(name="official", defaults={"display_name": "Official"})
+        cat2, _ = MCPServerCategory.objects.get_or_create(name="ai", defaults={"display_name": "AI"})
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server.categories.add(cat1, cat2)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert len(result["data"]["results"]) >= 1
+
+        mcp_data = next(r for r in result["data"]["results"] if r["id"] == mcp_server.id)
+        assert len(mcp_data["categories"]) == 2
+        cat_names = {c["name"] for c in mcp_data["categories"]}
+        assert cat_names == {"official", "ai"}
+
+    def test_list_without_categories(self, request_view, fake_gateway):
+        """无分类的 MCP Server 返回空 categories"""
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_data = next(r for r in result["data"]["results"] if r["id"] == mcp_server.id)
+        assert mcp_data["categories"] == []
+
+    def test_list_filters_inactive_categories(self, request_view, fake_gateway):
+        """不活跃的分类不出现在 categories 中"""
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        cat_active, _ = MCPServerCategory.objects.get_or_create(name="official", defaults={"display_name": "Official"})
+        cat_inactive = G(MCPServerCategory, name="inactive_cat", display_name="Inactive", is_active=False)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server.categories.add(cat_active, cat_inactive)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        mcp_data = next(r for r in result["data"]["results"] if r["id"] == mcp_server.id)
+        assert len(mcp_data["categories"]) == 1
+        assert mcp_data["categories"][0]["name"] == "official"

@@ -1624,3 +1624,46 @@ class TestMCPServerHandler:
         MCPServerHandler._sync_mcp_server_categories(mcp_server, None)
 
         assert mcp_server.categories.count() == 1
+
+
+class TestBuildCategoriesMap:
+    """测试 MCPServerHandler.build_categories_map 批量查询分类"""
+
+    def test_build_categories_map_with_categories(self, fake_gateway, fake_stage):
+        """有分类的 MCP Server 返回正确的分类映射"""
+        cat1, _ = MCPServerCategory.objects.get_or_create(name="official", defaults={"display_name": "Official"})
+        cat2, _ = MCPServerCategory.objects.get_or_create(name="ai", defaults={"display_name": "AI"})
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server.categories.add(cat1, cat2)
+
+        result = MCPServerHandler.build_categories_map([mcp_server.id])
+
+        assert mcp_server.id in result
+        categories = result[mcp_server.id]
+        assert len(categories) == 2
+        cat_names = {c["name"] for c in categories}
+        assert cat_names == {"official", "ai"}
+
+    def test_build_categories_map_no_categories(self, fake_gateway, fake_stage):
+        """无分类的 MCP Server 不出现在映射中"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        result = MCPServerHandler.build_categories_map([mcp_server.id])
+
+        assert mcp_server.id not in result
+
+    def test_build_categories_map_empty_ids(self):
+        """空 ID 列表返回空映射"""
+        result = MCPServerHandler.build_categories_map([])
+
+        assert result == {}
+
+    def test_build_categories_map_filters_inactive(self, fake_gateway, fake_stage):
+        """不活跃的分类被过滤"""
+        cat_inactive = G(MCPServerCategory, name="inactive_cat", display_name="Inactive", is_active=False)
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server.categories.add(cat_inactive)
+
+        result = MCPServerHandler.build_categories_map([mcp_server.id])
+
+        assert mcp_server.id not in result
