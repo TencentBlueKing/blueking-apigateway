@@ -19,7 +19,6 @@
 from typing import Any, Dict, List
 
 from django.conf import settings
-from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
@@ -279,23 +278,14 @@ class MCPServerBatchConfigInputSLZ(serializers.Serializer):
         max_length=100,
         help_text="MCPServer ID 列表",
     )
-    client_type = serializers.CharField(
+    client_type = serializers.ChoiceField(
         required=True,
-        help_text="客户端类型（cursor, codebuddy, claude, vscode 等）",
+        choices=[(client["name"], client["display_name"]) for client in settings.MCP_CONFIG_AGENT_CLIENTS],
+        help_text="客户端类型",
     )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigInputSLZ"
-
-    def validate_client_type(self, value):
-        """校验 client_type 必须在 MCP_CONFIG_AGENT_CLIENTS 中"""
-        valid_client_types = [client["name"] for client in settings.MCP_CONFIG_AGENT_CLIENTS]
-        if value not in valid_client_types:
-            raise serializers.ValidationError(
-                _("不支持的客户端类型：%(value)s，支持的类型：%(valid_types)s")
-                % {"value": value, "valid_types": ", ".join(valid_client_types)}
-            )
-        return value
 
 
 class MCPServerBatchConfigOutputSLZ(serializers.Serializer):

@@ -1034,7 +1034,7 @@ class TestMCPMarketplaceBatchConfigApi:
         """测试批量获取配置成功"""
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id],
                 "client_type": "cursor",
@@ -1053,7 +1053,7 @@ class TestMCPMarketplaceBatchConfigApi:
         """测试批量获取 CodeBuddy 配置"""
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id],
                 "client_type": "codebuddy",
@@ -1083,7 +1083,7 @@ class TestMCPMarketplaceBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id, other_server.id],
                 "client_type": "cursor",
@@ -1102,7 +1102,7 @@ class TestMCPMarketplaceBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id],
                 "client_type": "cursor",
@@ -1118,7 +1118,7 @@ class TestMCPMarketplaceBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id],
                 "client_type": "cursor",
@@ -1131,7 +1131,7 @@ class TestMCPMarketplaceBatchConfigApi:
         """测试无效输入时返回 400"""
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [],
                 "client_type": "cursor",
@@ -1146,7 +1146,7 @@ class TestMCPMarketplaceBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_marketplace.batch_config",
+            view_name="mcp_marketplace.batch_configs",
             data={
                 "mcp_server_ids": [fake_public_mcp_server.id],
                 "client_type": "cursor",

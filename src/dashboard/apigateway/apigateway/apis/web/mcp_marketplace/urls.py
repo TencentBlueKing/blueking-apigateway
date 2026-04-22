@@ -31,7 +31,7 @@ urlpatterns = [
     # 分类列表
     path("categories/", MCPMarketplaceCategoryListApi.as_view(), name="mcp_marketplace.category.list"),
     # 批量获取配置
-    path("batch-config/", MCPMarketplaceBatchConfigApi.as_view(), name="mcp_marketplace.batch_config"),
+    path("batch-configs/", MCPMarketplaceBatchConfigApi.as_view(), name="mcp_marketplace.batch_configs"),
     path(
         "servers/",
         include(

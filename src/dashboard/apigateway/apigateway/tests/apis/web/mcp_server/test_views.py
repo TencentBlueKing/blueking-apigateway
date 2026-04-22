@@ -3062,7 +3062,7 @@ class TestMCPServerBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3096,7 +3096,7 @@ class TestMCPServerBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3138,7 +3138,7 @@ class TestMCPServerBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3156,7 +3156,7 @@ class TestMCPServerBatchConfigApi:
         """测试所有 MCPServer 都无效时返回 404"""
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3171,7 +3171,7 @@ class TestMCPServerBatchConfigApi:
         """测试无效输入时返回 400"""
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3197,7 +3197,7 @@ class TestMCPServerBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
@@ -3230,7 +3230,7 @@ class TestMCPServerBatchConfigApi:
 
         resp = request_view(
             method="POST",
-            view_name="mcp_server.batch_config",
+            view_name="mcp_server.batch_configs",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
             data={
