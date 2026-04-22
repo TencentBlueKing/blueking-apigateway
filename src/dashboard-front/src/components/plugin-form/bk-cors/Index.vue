@@ -55,8 +55,8 @@ const formData = defineModel('modelValue', {
 });
 
 const {
-  schema = {},
-  componentMap = {},
+  schema = {} as ISchema,
+  componentMap = {} as Record<string, any>,
   disabled = false,
 } = defineProps<IProps>();
 
@@ -225,7 +225,7 @@ const handleRemoveItem = (row: any) => {
 
 const validate = async (): Promise<boolean> => {
   try {
-    const isValid = await formRef.value?.validate();
+    const isValid = await (formRef.value as any)?.validate();
     if (!isValid) {
       // @ts-ignore
       return;

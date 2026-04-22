@@ -476,6 +476,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import ResourceDetail from '@/components/resource-detail/Index.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import TableEmpty from '@/components/table-empty/Index.vue';

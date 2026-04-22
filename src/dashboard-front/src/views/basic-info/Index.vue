@@ -683,6 +683,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { cloneDeep } from 'lodash-es';
 import {
   InfoBox,

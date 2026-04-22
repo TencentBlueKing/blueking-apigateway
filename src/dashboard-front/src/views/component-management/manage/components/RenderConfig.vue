@@ -89,7 +89,7 @@ const { list = [] } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const configList = ref([]);
+const configList = ref<any[]>([]);
 
 const handleSelected = (value: string) => {
   configList.value?.forEach((item: {
@@ -131,7 +131,10 @@ watch(
       const temps = cloneDeep(value);
       temps?.forEach((item: Record<string, any>) => {
         if (item?.type === 'enum') {
-          const arrays: { id: string; name: string }[] = [];
+          const arrays: {
+            id: string
+            name: string
+          }[] = [];
           (item?.options || []).forEach((sub: string[]) => {
             arrays.push({
               id: sub[0],

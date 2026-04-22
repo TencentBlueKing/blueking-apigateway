@@ -464,6 +464,8 @@ import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
 
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+
 interface IProps {
   id: number | undefined
   isShow: boolean
@@ -481,8 +483,6 @@ const info = ref<any>({});
 const currentSource = ref<any>({});
 const displayedResources = shallowRef<any[]>([]);
 const rawResources = shallowRef<any[]>([]);
-
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
 // 网关标签
 const labels = ref<IGatewayLabelItem[]>([]);

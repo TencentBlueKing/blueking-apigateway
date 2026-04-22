@@ -49,20 +49,17 @@
 import dayjs from 'dayjs';
 import { t } from '@/locales';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import type {
-  IFlowLogTable,
-  ITraceDetail,
-} from '@/services/source/observability';
+import type { ITraceDetail } from '@/services/source/observability';
 import { useTrace } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
-const { traceChainDetail = {} } = defineProps<IProps>();
+const { traceChainDetail = {} as ITraceDetail } = defineProps<IProps>();
 
 const traceStore = useTrace();
 
-let tabKey = -1;
+let tabKey: string | number = -1;
 const logPanels = [
   {
     name: 'proxy_log',
@@ -167,9 +164,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .trace-chain-log-table {
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px 0 #1919290d;
+  background-color: #fff;
   border-radius: 2px;
+  box-shadow: 0 2px 4px 0 #1919290d;
   box-sizing: border-box;
 
   :deep(.bk-tab) {
@@ -180,8 +177,8 @@ onMounted(() => {
 
       &-item {
         padding: 0;
-        font-size: 14px;
         margin-right: 32px;
+        font-size: 14px;
       }
     }
 

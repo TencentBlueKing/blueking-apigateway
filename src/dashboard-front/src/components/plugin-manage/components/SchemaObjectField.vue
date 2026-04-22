@@ -63,7 +63,7 @@ const modelField = defineModel('modelValue', {
 });
 
 const {
-  schema = {},
+  schema = {} as ISchema,
   selectedSchema = null,
 } = defineProps<IProps>();
 
@@ -95,7 +95,7 @@ const renderFormItem = computed(() => {
     return schema?.oneOf;
   }
   if (isObjectProperties) {
-    return Object.values(schemaOption.value?.properties);
+    return Object.values(schemaOption.value?.properties ?? {});
   }
   return [];
 });

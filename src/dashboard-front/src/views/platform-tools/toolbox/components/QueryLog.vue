@@ -136,10 +136,7 @@ import AgIcon from '@/components/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import { getLogsInfo } from '@/services/source/access-log';
-import type { IExtractApiReturn } from '@/services/types/utils';
 import dayjs from 'dayjs';
-
-type ILogsInfoResult = IExtractApiReturn<typeof getLogsInfo>;
 
 const route = useRoute();
 const { t } = useI18n();
@@ -151,10 +148,10 @@ const details = ref<any>({
   result: {},
 });
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -219,7 +216,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const formatValue = (value: any, field: string) => {
@@ -253,11 +250,13 @@ const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
 <style lang="scss" scoped>
 .query-log {
   padding-top: 36px;
+
   .page-header {
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 24px;
+
     .header-input {
       width: 640px;
       margin-right: 8px;
@@ -266,45 +265,54 @@ const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
 
   .query-log-body {
     padding: 0 76px 26px 68px;
+
     .body-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 12px;
+
       .body-title {
-        font-weight: Bold;
         font-size: 14px;
-        color: #4D4F56;
+        font-weight: bold;
         line-height: 22px;
+        color: #4D4F56;
       }
+
       .body-copy-btn {
         font-size: 12px;
+
         .copy-text {
           margin-left: 2px;
         }
       }
     }
+
     .body-content {
       height: calc(100vh - 276px);
       padding: 24px;
       overflow-y: auto;
-      box-sizing: border-box;
       border: 1px solid #DCDEE5;
+      box-sizing: border-box;
     }
   }
 
   .empty-wrapper {
     padding-top: 126px;
+
     .exception-part {
+
       :deep(.bk-exception-img) {
         width: 220px;
         height: 112px;
       }
+
       :deep(.bk-exception-title) {
+        margin-top: -8px;
         font-size: 14px;
         color: #4D4F56;
-        margin-top: -8px;
       }
+
       :deep(.bk-exception-description) {
         font-size: 12px;
         color: #979BA5;
@@ -316,24 +324,28 @@ const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
 .details {
   position: relative;
   font-size: 12px;
-  background-color: #ffffff;
+  background-color: #fff;
+
   .item {
     display: flex;
     align-items: center;
     margin-bottom: 8px;
 
     .label {
-      font-size: 12px;
       position: relative;
-      flex: none;
       width: 212px;
-      color: #63656E;
       margin-right: 12px;
+      font-size: 12px;
+      color: #63656E;
       text-align: right;
+      flex: none;
+
       .fields {
         color: #979BA5;
+
         .fields-main {
           cursor: pointer;
+
           &:hover {
             background-color: #f0f1f5;
           }
@@ -341,11 +353,11 @@ const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
       }
 
       .copy-btn {
-        color: #c4c6cc;
-        font-size: 12px;
         position: absolute;
-        right: -18px;
         top: 4px;
+        right: -18px;
+        font-size: 12px;
+        color: #c4c6cc;
         cursor: pointer;
 
         &:hover {
@@ -355,41 +367,45 @@ const handleClickCopyLink = ({ request_id }: { request_id?: string }) => {
     }
 
     .value {
-      font-family: "Courier New", Courier, monospace;
-      flex: none;
-      width: calc(100% - 400px);
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #313238;
-      line-height: 20px;
       display: flex;
+      width: calc(100% - 400px);
+      font-family: "Courier New", Courier, monospace;
+      line-height: 20px;
+      color: #313238;
+      word-break: break-word;
+      white-space: pre-wrap;
+      flex: none;
       align-items: center;
 
       .respond {
+        display: flex;
         font-size: 12px;
         color: #FF9C01;
-        display: flex;
         align-items: center;
+
         .respond-icon {
-          margin-right: 4px;
           margin-top: -2px;
+          margin-right: 4px;
         }
       }
 
       .opt-btns {
-        color: #979BA5;
-        font-size: 16px;
         padding-top: 3px;
         margin-left: 10px;
+        font-size: 16px;
+        color: #979BA5;
+
         &:hover {
           color: #1768EF;
         }
+
         .opt-copy {
           font-size: 14px;
         }
+
         span {
-          cursor: pointer;
           margin-right: -4px;
+          cursor: pointer;
         }
       }
     }

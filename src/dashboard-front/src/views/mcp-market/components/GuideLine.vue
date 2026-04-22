@@ -151,7 +151,7 @@ const markdownHtml = ref('');
 const guideType = ref('');
 const activeTab = ref('default');
 
-const serverId = computed(() => route.params.serverId);
+const serverId = computed(() => Number(route.params.serverId));
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
   if (!page) {

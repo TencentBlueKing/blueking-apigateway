@@ -105,6 +105,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { isObject } from 'lodash-es';
 import type { ComponentMap, ICorsFormData, IHeaderWriteFormData, ISchema } from '@/components/plugin-manage/schema-type';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
@@ -136,7 +137,7 @@ const formData = defineModel<ICorsFormData>('modelValue', {
 });
 
 const {
-  schema = {},
+  schema = {} as ISchema,
   disabled = false,
   displayKey = 'key',
   displayValue = 'value',

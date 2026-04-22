@@ -174,7 +174,7 @@ const getValue = () => {
 // 初始化编辑器
 const initEditor = () => {
   editor = monaco.editor.create(monacoEditor.value, {
-    value: modelValue,
+    value: typeof modelValue === 'string' ? modelValue : JSON.stringify(modelValue),
     theme: theme, // 主题
     language: language,
     folding: true, // 是否折叠

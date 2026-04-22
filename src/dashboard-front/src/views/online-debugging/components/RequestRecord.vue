@@ -283,9 +283,9 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
     cell: (h: any, { row }: { row: Record<string, any> }) => (
       <div>
         <span
-          class={[String(row?.response?.data?.status_code)?.startsWith('2') ? 'dot success' : 'dot failure']}
+          class={[String(row.response?.data?.status_code)?.startsWith('2') ? 'dot success' : 'dot failure']}
         />
-        { row?.response?.data?.status_code }
+        { row.response?.data?.status_code }
       </div>
     ),
   },
@@ -296,7 +296,7 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
     width: 120,
     cell: (h: any, { row }: { row: Record<string, any> }) => (
       <span>
-        { row?.response?.data?.proxy_time }
+        { row.response?.data?.proxy_time }
         ms
       </span>
     ),

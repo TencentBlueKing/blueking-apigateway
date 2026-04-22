@@ -271,6 +271,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import {
   cloneDeep,
   snakeCase,

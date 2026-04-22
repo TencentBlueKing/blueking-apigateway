@@ -133,19 +133,21 @@ const handleConfirm = () => {
 
 <style lang="scss" scoped>
 .app-renewal-slider {
+
   :deep(.bk-modal-content) {
     padding: 20px 24px 0;
     overflow-y: auto;
   }
 
   .collapse-wrap {
+
     :deep(.collapse-cls) {
       margin-bottom: 24px;
 
       .bk-collapse-item {
-        box-shadow: none;
         margin-bottom: 16px;
         background-color: #f0f1f5;
+        box-shadow: none;
       }
     }
 
@@ -155,19 +157,19 @@ const handleConfirm = () => {
       cursor: pointer;
 
       .title {
-        font-weight: 700;
-        font-size: 14px;
         margin-left: 8px;
+        font-size: 14px;
+        font-weight: 700;
       }
 
       .panel-header-show {
-        transition: 0.2s;
         transform: rotate(0deg);
+        transition: 0.2s;
       }
 
       .panel-header-hide {
-        transition: 0.2s;
         transform: rotate(-90deg);
+        transition: 0.2s;
       }
     }
 

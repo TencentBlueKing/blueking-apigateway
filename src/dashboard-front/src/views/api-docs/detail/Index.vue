@@ -263,8 +263,6 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import hljs from 'highlight.js';
 
-import type { IExtractApiReturn } from '@/services/types/utils';
-
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -459,7 +457,8 @@ const fetchApiList = async () => {
     }
 
     if (curComponentApiName.value) {
-      curApi.value = apiList.value.find((api: IResource & IComponent) => api.name === curComponentApiName.value) ?? null;
+      curApi.value = apiList.value.find((api: IResource & IComponent) => api.name === curComponentApiName.value)
+        ?? null;
     }
     else {
       curApi.value = apiList.value[0] ?? null;
@@ -646,7 +645,10 @@ const handleSystemChange = async (system: ISystem) => {
   curComponentApiName.value = '';
   router.replace({
     name: 'ApiDocDetail',
-    params: { ...route.params, targetName: curTargetName.value },
+    params: {
+      ...route.params,
+      targetName: curTargetName.value,
+    },
   });
   await init();
 };

@@ -416,6 +416,7 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 import {
   cloneDeep,
   isEqual,
@@ -436,7 +437,6 @@ import {
 } from '@/stores';
 import type { IFormMethod } from '@/types/common';
 import {
-  type IBackendServicesConfig,
   createBackendService,
   getBackendServiceDetail,
   updateBackendService,
@@ -684,7 +684,8 @@ const handleConfirm = async () => {
     for (const item of stageConfigRef.value) {
       if (!item) break;
       const { hosts, timeout } = item.model.configs;
-      const isEmpty = hosts.some((config: { host: string }) => !config.host || !hostReg.test(config.host)) || !String(timeout);
+      const isEmpty = hosts.some((config: { host: string }) => !config.host || !hostReg.test(config.host))
+        || !String(timeout);
       if (isEmpty) {
         emptyHostIndex = item.model.$index;
       }

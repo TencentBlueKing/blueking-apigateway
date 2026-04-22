@@ -34,7 +34,6 @@ import type {
 import type {
   IAppPermissionApplyApprovalInputSLZ,
   IAppPermissionExportInputSLZ,
-  IAppPermissionIDsSLZ,
   IAppPermissionInputSLZ,
   IAppPermissionRenewInputSLZ,
 } from '@/services/types/body/post/gateways.ts';

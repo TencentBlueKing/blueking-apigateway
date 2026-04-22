@@ -211,41 +211,48 @@ defineExpose({
 .body-payload {
   height: 100%;
 }
+
 .table-header {
-  width: 100%;
   display: flex;
+  width: 100%;
+  margin-bottom: 8px;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+
   .body-type {
     display: flex;
     align-items: center;
     padding-bottom: 10px;
+
     .body-type-item {
       padding: 4px 8px;
+      font-size: 12px;
+      color: #63656E;
+      cursor: pointer;
       background: #F0F1F5;
       border-radius: 11px;
-      color: #63656E;
-      font-size: 12px;
-      cursor: pointer;
+
       &:not(:nth-last-child(1)) {
         margin-right: 8px;
       }
+
       &.active {
-        color: #FFFFFF;
-        background: #3A84FF;
         position: relative;
+        color: #FFF;
+        background: #3A84FF;
       }
     }
   }
 }
+
 .raw-select {
   width: 120px;
 }
+
 .raw-content {
   width: 100%;
   height: calc(100% - 50px);
-  background: #FFFFFF;
+  background: #FFF;
   border: 1px solid #DCDEE5;
   border-radius: 2px;
 }

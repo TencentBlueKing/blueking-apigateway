@@ -198,9 +198,9 @@ interface Emits {
 }
 
 const {
-  sliderParams = {},
-  detailData = {},
-  initData = {},
+  sliderParams = {} as any,
+  detailData = {} as any,
+  initData = {} as any,
   categoryList = [],
 } = defineProps<IProps>();
 const emits = defineEmits<Emits>();
@@ -246,8 +246,8 @@ const formData = computed({
   },
 });
 const categoryOption = computed(() => categoryList);
-const systemId = computed(() => formData.value.id);
-const isDisabled = computed(() => formData.value.is_official);
+const systemId = computed(() => (formData.value as any).id);
+const isDisabled = computed(() => (formData.value as any).is_official);
 
 const handleSave = async () => {
   await systemFormRef?.value?.validate();
@@ -257,17 +257,17 @@ const handleSave = async () => {
     return;
   }
   saveLoading.value = true;
-  const tempData = { ...formData.value };
+  const tempData: Record<string, any> = { ...formData.value };
   if (!tempData.timeout) {
     tempData.timeout = null;
   }
   try {
     if (systemId.value) {
       delete tempData.id;
-      await updateSystem(systemId.value, tempData);
+      await updateSystem(systemId.value, tempData as any);
     }
     else {
-      await addSystem(tempData);
+      await addSystem(tempData as any);
     }
     sliderConfig.value.isShow = false;
     Message({
@@ -301,7 +301,7 @@ const handleCancel = () => {
 };
 </script>
 
-<style lang="scss" setup>
+<style lang="scss" scoped>
 .timeout-append {
   width: 32px;
   color: #63656e;
@@ -311,8 +311,8 @@ const handleCancel = () => {
 }
 
 .tips {
-  line-height: 24px;
   font-size: 12px;
+  line-height: 24px;
   color: #63656e;
 
   i {

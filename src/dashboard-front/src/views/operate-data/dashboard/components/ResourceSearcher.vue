@@ -67,7 +67,7 @@ const {
   needPrefix = true,
 } = defineProps<IProp>();
 
-const emit = defineEmits<{ change: [id: string | number] }>();
+const emit = defineEmits<{ change: [id: string | number | undefined] }>();
 
 const { t } = useI18n();
 
@@ -103,16 +103,17 @@ const handleChange = () => {
   .resource-select {
 
     .label {
-      font-size: 12px;
-      color: #63656e;
       padding: 0 8px;
+      font-size: 12px;
       line-height: 30px;
+      color: #63656e;
       background: #fafbfd;
       border-right: 1px solid #c4c6cc;
     }
   }
 
   .resource-dropdown-wrapper {
+
     .bk-select-content-wrapper .bk-select-option {
       border: 1px solid red !important;
     }
@@ -126,11 +127,11 @@ const handleChange = () => {
       height: 43px !important;
 
       .resource-option-wrapper {
-        padding-block: 4px;
-        width: 100%;
         display: flex;
-        flex-direction: column;
+        width: 100%;
         line-height: 20px;
+        padding-block: 4px;
+        flex-direction: column;
 
         .path {
           font-size: 10px;
@@ -149,15 +150,16 @@ const handleChange = () => {
 <style lang="scss">
 
 .resource-dropdown-wrapper {
+
   .bk-select-option {
     height: 43px !important;
 
     .resource-option-wrapper {
-      padding-block: 4px;
-      width: 100%;
       display: flex;
-      flex-direction: column;
+      width: 100%;
       line-height: 20px;
+      padding-block: 4px;
+      flex-direction: column;
 
       .path {
         font-size: 10px;

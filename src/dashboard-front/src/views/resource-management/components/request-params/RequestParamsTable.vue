@@ -81,7 +81,7 @@
               v-if="readonly"
               class="readonly-value-wrapper"
             >
-            {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
+              {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
             </div>
             <div
               v-else
@@ -102,7 +102,7 @@
               </BkSelect>
               <ParamsRowConfig
                 :row="row"
-              @change="(config: any) => handleConfigChange(row, config)"
+                @change="(config: any) => handleConfigChange(row, config)"
               />
             </div>
           </td>
@@ -364,8 +364,8 @@ const clearInvalidState = (rowId: string) => {
 
 defineExpose({
   validate: () => {
-    if (recursiveSubTableRef.value?.[0]) {
-      return recursiveSubTableRef.value[0].validate().then(() => new Promise((resolve, reject) => {
+    if ((recursiveSubTableRef.value as any)?.[0]) {
+      return (recursiveSubTableRef.value as any)[0].validate().then(() => new Promise((resolve, reject) => {
         setInvalidRowId();
         if (Object.keys(invalidRowIdMap.value).length > 0) {
           reject('invalid request params');

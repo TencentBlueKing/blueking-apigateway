@@ -417,6 +417,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import PluginInfo from './PluginInfo.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import {

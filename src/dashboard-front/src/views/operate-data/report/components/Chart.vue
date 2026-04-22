@@ -93,10 +93,10 @@ const myChart = shallowRef();
 const searchParams = ref<ISearchParamsType>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -135,16 +135,16 @@ const handleInit = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  const list = Object.values(searchParams.value).filter(item => !!item);
+  const list = Object.values(searchParams.value ?? {}).filter(item => !!item);
   if (list.length > 0) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  if (searchParams.value.stage_id) {
+  if (searchParams.value?.stage_id) {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const chartResize = () => {
@@ -230,7 +230,7 @@ const getChartOption = () => {
 
   let moreOption: Record<string, any> = { xAxis: { axisLabel: {} } };
 
-  chartData?.series?.forEach((item: ISeriesItemType) => {
+  (chartData as any)?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
     chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
@@ -250,7 +250,7 @@ const getChartOption = () => {
     }
   });
   // 设置图表颜色
-  chartOption.color = generateChartColor(chartData.series ?? []);
+  chartOption.color = generateChartColor((chartData as any).series ?? []);
 
   // tooltip
   chartOption.tooltip.formatter = (params: any) => {

@@ -298,7 +298,10 @@ const { divideRatio } = useMcpConfigDivideRatio();
 
 const createSliderRef = ref();
 const serverId = ref(0);
-const server = ref<MCPServerType>({
+const server = ref<MCPServerType & {
+  oauth2_public_client_enabled?: boolean
+  [key: string]: any
+}>({
   id: 0,
   name: '',
   description: '',
@@ -313,7 +316,7 @@ const server = ref<MCPServerType>({
     id: 0,
     name: '',
   },
-});
+} as any);
 const showDropdown = ref(false);
 const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
@@ -329,7 +332,7 @@ const isEnabledOAuth = computed(() =>
 );
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
-  panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
+    panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
   }
   return panels.value.filter((item: any) => item.show);
 });
@@ -422,7 +425,7 @@ const handleSuspendToggle = async () => {
     isShow: true,
     type: 'warning',
     title: t('确认停用 {n}？', { n: server.value.name }),
-    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
+    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.value.name }),
     confirmText: t('确认停用'),
     cancelText: t('取消'),
     onConfirm: async () => {
@@ -465,7 +468,7 @@ const updateCount = (count?: number, panelName?: string) => {
   const { tools_count, prompts } = server.value ?? {} as any;
   const panelCountMap: Record<string, () => number> = {
     tools: () => tools_count ?? 0,
-    prompts: () => (prompts as any[])?.length ?? 0,
+    prompts: () => (prompts as unknown as any[])?.length ?? 0,
     ...(panelName ? { [panelName]: () => count ?? 0 } : {}),
   };
   panels.value.forEach((item: any) => {
@@ -486,7 +489,9 @@ const updateCount = (count?: number, panelName?: string) => {
   .tab-wrapper {
 
     :deep(.bk-tab-header) {
+
       .bk-tab-header-item:last-child {
+
         &::after {
           display: none;
         }
@@ -495,7 +500,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
     :deep(.bk-tab-content) {
       padding: 0;
-      background-color: #ffffff;
+      background-color: #fff;
     }
 
     .bk-resize-layout-right {
@@ -513,7 +518,7 @@ const updateCount = (count?: number, panelName?: string) => {
           display: block;
 
           .bk-resize-trigger {
-            background-color: #ffffff;
+            background-color: #fff;
           }
         }
       }
@@ -521,12 +526,12 @@ const updateCount = (count?: number, panelName?: string) => {
   }
 
   .external-oauth-tag {
+    display: flex;
     min-width: 22px;
     min-height: 22px;
-    display: flex;
+    text-align: center;
     align-items: center;
     justify-content: center;
-    text-align: center;
   }
 }
 
@@ -616,14 +621,14 @@ const updateCount = (count?: number, panelName?: string) => {
       flex-wrap: wrap;
 
       .value {
-        flex: 1;
-        color: #313238;
         margin-left: 8px;
+        color: #313238;
+        flex: 1;
 
         &.url,
         &.description {
-          max-width: 230px;
           display: flex;
+          max-width: 230px;
           align-items: baseline;
 
           i {

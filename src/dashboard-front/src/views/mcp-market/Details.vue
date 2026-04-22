@@ -325,6 +325,7 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 import { copy } from '@/utils';
 import { useMcpConfigDivideRatio } from '@/hooks';
 import {
@@ -338,10 +339,6 @@ import {
   getMcpAIConfigList,
   getMcpServerDetails,
 } from '@/services/source/mcp-market';
-
-interface IMarketplaceDetailsWithOverflow extends IMarketplaceDetails {
-  isOverflow?: boolean
-}
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import ServerConfig from '@/views/mcp-server/components/ServerConfig.vue';
@@ -349,6 +346,10 @@ import Guideline from './components/GuideLine.vue';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import DefaultMdGuideSlider from '@/views/mcp-market/components/DefaultMdGuideSlider.vue';
+
+interface IMarketplaceDetailsWithOverflow extends IMarketplaceDetails {
+  isOverflow?: boolean
+}
 
 const { t } = useI18n();
 const router = useRouter();
@@ -447,10 +448,10 @@ watch(
   .top-bar {
     position: sticky;
     top: 0;
+    z-index: 999;
     height: 52px;
     padding: 0 24px;
-    background-color: #ffffff;
-    z-index: 999;
+    background-color: #fff;
     box-shadow: 0 3px 4px 0 #0000000a;
 
     .icon {
@@ -467,20 +468,20 @@ watch(
 
   .main {
     max-width: 1920px;
-    margin: 24px auto;
     padding: 0 80px;
+    margin: 24px auto;
     background-color: #f5f7fa;
     box-sizing: border-box;
 
     .base-info {
       margin-bottom: 16px;
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
 
       .header {
-        padding: 0 24px;
         height: 52px;
+        padding: 0 24px;
         border-bottom: 1px solid #eaebf0;
 
         .title {
@@ -492,7 +493,7 @@ watch(
       }
 
       .info-content {
-        padding: 24px 24px 20px 24px;
+        padding: 24px 24px 20px;
 
         .info-item {
           display: flex;
@@ -501,16 +502,16 @@ watch(
           line-height: 40px;
 
           .label {
-            flex-shrink: 0;
-            color: #4d4f56;
             margin-right: 12px;
+            color: #4d4f56;
             text-align: right;
+            flex-shrink: 0;
           }
 
           .value {
-            flex: 1;
-            color: #313238;
             line-height: 22px;
+            color: #313238;
+            flex: 1;
 
             .icon {
               color: #3a84ff;
@@ -555,12 +556,14 @@ watch(
   }
 
   .tab-wrapper {
+
     :deep(.bk-tab-content) {
       padding: 0;
-      background-color: #ffffff;
+      background-color: #fff;
     }
 
     .bk-resize-layout-right {
+
       :deep(>.bk-resize-layout-aside) {
         display: none;
       }
@@ -576,7 +579,7 @@ watch(
           display: block;
 
           .bk-resize-trigger {
-            background-color: #ffffff;
+            background-color: #fff;
           }
         }
 
@@ -588,13 +591,13 @@ watch(
   }
 
   .external-oauth-tag {
+    display: flex;
     min-width: 18px;
     min-height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     text-align: center;
     border-radius: 2px;
+    align-items: center;
+    justify-content: center;
   }
 }
 

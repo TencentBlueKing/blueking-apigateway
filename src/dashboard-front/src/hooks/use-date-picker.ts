@@ -110,7 +110,7 @@ export const useDatePicker = (filterData?: any) => {
       ];
   });
 
-  const dateValue = ref<(string | Date)[]>([]); // 日期值
+  const dateValue = ref<any>([]); // 日期值
   // 面板默认切换值
   const selectionMode = ref('date');
 
@@ -122,8 +122,8 @@ export const useDatePicker = (filterData?: any) => {
     dateValue.value = date;
     // 选择了同一天，则需要把开始时间的时分秒设置为 00:00:00
     if (dateValue.value?.length > 0 && dayjs(dateValue.value[0]).isSame(dateValue.value[1])) {
-      if (dateValue.value[0]?.setHours) {
-        dateValue.value[0]?.setHours(0, 0, 0);
+      if ((dateValue.value[0] as Date)?.setHours) {
+        (dateValue.value[0] as Date)?.setHours(0, 0, 0);
       }
       else {
         dateValue.value[0] = dayjs(dateValue.value[0])

@@ -348,6 +348,9 @@ export interface IMCPServerListOutput {
   is_official: boolean
   is_featured: boolean
   prompts_count: number
+  oauth2_public_client_enabled?: boolean
+  app_permission_risk?: any
+  [key: string]: any
 }
 
 /**
@@ -382,11 +385,11 @@ export interface IMCPServerCategoryOutput {
  */
 export interface IMCPServerFilterOptionsOutput {
   stages: {
-    [key: string]: string | null
+    [key: string]: string | number | null
   }[]
   labels: string[]
   categories: {
-    [key: string]: string | null
+    [key: string]: string | number | null
   }[]
 }
 
@@ -461,10 +464,18 @@ export interface IMCPServerRetrieveOutput {
   stage: any
   updated_time: string
   created_time: string
-  categories: string
+  categories: string | any[]
   is_official: boolean
   is_featured: boolean
-  prompts: string
+  prompts: string | any[]
+  oauth2_public_client_enabled?: boolean
+  tools?: any[]
+  gateway?: {
+    id: number
+    name: string
+    is_official?: boolean
+  }
+  [key: string]: any
 }
 
 /**

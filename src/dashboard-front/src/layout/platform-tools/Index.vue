@@ -38,7 +38,7 @@
             >
               <template #icon>
                 <AgIcon
-                  :name="menu.icon"
+                  :name="menu.icon || ''"
                   size="18"
                 />
               </template>

@@ -213,8 +213,20 @@ import { getAICompletion } from '@/services/source/ai.ts';
 import hljs from 'highlight.js';
 import { useFeatureFlag } from '@/stores';
 
+type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
+
 interface IProps {
-  resource?: object
+  resource?: {
+    id: number
+    name: string
+    method: string
+    path: string
+    backend?: any
+    doc?: any
+    _localId?: any
+    _unchecked?: any
+    [key: string]: any
+  }
   showFooter?: boolean
   showCreateBtn?: boolean
   isPreview?: boolean
@@ -227,7 +239,7 @@ const isShow = defineModel<boolean>({
 });
 
 const {
-  resource = {},
+  resource = {} as IProps['resource'] & Record<string, any>,
   showFooter = true,
   showCreateBtn = true,
   isPreview = false,
@@ -255,8 +267,6 @@ const isEmpty = ref(false);
 const isUpdate = ref(false);
 const markdownDoc = ref('');
 const markdownHtml = ref('');
-type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
-
 const docData = ref<IDocItem[]>([]);
 const isEdited = ref(false); // 是否是编辑
 const language = ref<'zh' | 'en'>('zh');
@@ -342,7 +352,7 @@ const handleEditMarkdown = (type: string) => {
   emit('on-update', 'update', isUpdate.value);
   const docDataItem = cloneDeep(docData.value)
     .find((e: any) => e.language === language.value);
-  markdownDoc.value = docDataItem.content;
+  markdownDoc.value = docDataItem!.content ?? '';
 };
 
 const isFullscreen = ref(false);
@@ -370,12 +380,12 @@ const initData = async () => {
       doc_language: previewLang ?? language.value,
     };
 
-    const res = await getResourceDocPreview(gatewayId.value, params);
+    const res = await getResourceDocPreview(gatewayId.value, params as any);
 
     docData.value.push({
-      id: null,
+      id: null as any,
       language: previewLang ?? language.value,
-      content: res.doc,
+      content: (res as any).doc,
     });
   }
   // 根据语言找到是否有文档内容
@@ -437,8 +447,8 @@ const handleTranslateClick = async () => {
               language: targetLanguage,
             },
           });
-          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id;
-          await updateResourceDocs(gatewayId.value, resource.id, {
+          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id!;
+          await updateResourceDocs(gatewayId.value, resource.id!, {
             language: targetLanguage,
             content: response.content,
           }, docId);
@@ -522,10 +532,10 @@ const handleDocDataWithLanguage = () => {
   if (!isPreview) {
     const docDataItem = cloneDeep(docData.value)
       .find((e: any) => e.language === language.value);
-    docId.value = docDataItem.id;
-    isEmpty.value = !docDataItem.id;
-    markdownDoc.value = docDataItem.content;
-    renderHljsMd(docDataItem.content);
+    docId.value = docDataItem!.id;
+    isEmpty.value = !docDataItem!.id;
+    markdownDoc.value = docDataItem!.content ?? '';
+    renderHljsMd(docDataItem!.content ?? '');
     nextTick(() => {
       const markdownDom = document.getElementById('resource-doc-markdown');
       if (markdownDom) {
@@ -571,8 +581,8 @@ const handleDocDataWithLanguage = () => {
 
 const escHandler = (e: KeyboardEvent) => {
   if (e.code === 'Escape') {
-    if (markdownRef.value?.s_fullScreen) {
-      markdownRef.value.s_fullScreen = false;
+    if ((markdownRef.value as any)?.s_fullScreen) {
+      (markdownRef.value as any).s_fullScreen = false;
     }
   }
 };

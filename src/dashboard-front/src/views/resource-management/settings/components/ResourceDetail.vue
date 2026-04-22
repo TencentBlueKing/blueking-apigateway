@@ -152,8 +152,8 @@
                     :resource-id="resourceId"
                     :labels-data="labelsData"
                     @close="labelsEdit = false"
-                    @update-success="handleUpdateLabelSuccess"
-                    @label-add-success="initLabels"
+                    @updated="handleUpdateLabelSuccess"
+                    @added="initLabels"
                   />
                 </section>
               </div>
@@ -212,7 +212,7 @@
                         <BkFormItem :label="t('认证方式')">
                           <BkCheckbox
                             v-model="formData.auth_config.app_verified_required_copy"
-                            :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                            :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                           >
                             <span
                               v-bk-tooltips="{ content: t('请求方需提供蓝鲸应用身份信息') }"
@@ -239,7 +239,7 @@
                         >
                           <BkSwitcher
                             v-model="formData.auth_config.resource_perm_required_copy"
-                            :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                            :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                             theme="primary"
                             size="small"
                           />
@@ -296,7 +296,7 @@
               >
                 <BkSwitcher
                   v-model="formData.auth_config.resource_perm_required_copy"
-                  :disabled="!gatewayStore.currentGateway.allow_update_gateway_auth"
+                  :disabled="!gatewayStore.currentGateway?.allow_update_gateway_auth"
                   theme="primary"
                   size="small"
                   class="mt-8px!"
@@ -372,7 +372,7 @@
                 v-if="!frontMethodEdit"
                 class="value-container"
               >
-                <BkTag :theme="METHOD_THEMES[formData?.method]">
+                <BkTag :theme="(METHOD_THEMES as any)[formData?.method]">
                   {{ formData?.method }}
                 </BkTag>
                 <span class="operate-btn">
@@ -659,7 +659,7 @@
                 v-if="!backMethodEdit"
                 class="value-container"
               >
-                <BkTag :theme="METHOD_THEMES[formData.backend?.config?.method]">
+                <BkTag :theme="(METHOD_THEMES as any)[formData.backend?.config?.method]">
                   {{ formData.backend?.config?.method }}
                 </BkTag>
                 <span class="operate-btn">
@@ -881,7 +881,8 @@ import {
 import { getBackendServiceDetail, getBackendServiceList } from '@/services/source/backend-services.ts';
 import { getGatewayLabels } from '@/services/source/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import { Message, Input as BkInput, PopConfirm as BkPopConfirm } from 'bkui-vue';
+import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
+import { Input as BkInput, PopConfirm as BkPopConfirm, Message } from 'bkui-vue';
 import { copy } from '@/utils';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS } from '@/constants';
@@ -891,6 +892,9 @@ import ResponseParams from '../../components/response-params/Index.vue';
 import { useGateway, useStage } from '@/stores';
 import { useStickyBottom } from '@/hooks';
 import SelectCheckBox from './SelectCheckBox.vue';
+
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number];
 
 interface IProps {
   resourceId?: number
@@ -920,9 +924,6 @@ const { controlStickyToggle, observerNodeScroll, destroyEvent } = useStickyBotto
   parentNodeClass: '.resource-container',
 });
 
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
-type IBackendPathCheckItem = IExtractApiReturn<typeof backendsPathCheck>[number];
-
 const labelsData = ref<IGatewayLabelItem[]>([]);
 const isStickyFixed = ref(false);
 const nameEdit = ref(false);
@@ -939,7 +940,7 @@ const backServicesEdit = ref(false);
 const backPathEdit = ref(false);
 const nameInputRef = ref();
 // 服务列表下拉框数据
-const backendsList = ref([]);
+const backendsList = ref<IBackendListOutput[]>([]);
 const popoverConfirmRef = ref();
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
@@ -1068,7 +1069,7 @@ const handleMouseLeave = (e: Event, row: Record<string, number | string | boolea
 };
 
 // 服务详情缓存数据
-const servicesConfigsStorage = ref([]);
+const servicesConfigsStorage = ref<any[]>([]);
 
 const handleClickOutSide = (e: Event) => {
   if (
@@ -1127,11 +1128,12 @@ const renderTimeOutLabel = () => {
         <span>{t('超时时间')}</span>
         <BkPopConfirm
           width="280"
-          trigger="manual"
+          trigger={'manual' as any}
           ref={popoverConfirmRef}
           title={t('批量修改超时时间')}
           extCls="back-config-timeout-popover"
           is-show={isShowPopConfirm.value}
+          // @ts-expect-error content 接受 JSX 元素
           content={(
             <div class="back-config-timeout-wrapper">
               <div class="back-config-timeout-content">

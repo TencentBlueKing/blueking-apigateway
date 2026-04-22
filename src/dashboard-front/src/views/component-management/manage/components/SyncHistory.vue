@@ -69,12 +69,12 @@ const router = useRouter();
 const { t, locale } = useI18n();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const tableColumns = shallowRef([
+const tableColumns = shallowRef<any[]>([
   {
     title: 'ID',
     colKey: 'resource_version_title',
-    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
-      if (!row?.id) {
+    cell: (h: any, { row }: { row: Partial<ISyncHistoryItem> }) => {
+      if (!row.id) {
         return '--';
       }
       return (
@@ -98,10 +98,10 @@ const tableColumns = shallowRef([
     title: t('同步版本号（版本标题）'),
     colKey: 'resource_version_name',
     ellipse: true,
-    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
-          { row?.resource_version_display || '--' }
+          { row.resource_version_display || '--' }
         </span>
       );
     },
@@ -110,10 +110,10 @@ const tableColumns = shallowRef([
     title: t('操作人'),
     colKey: 'component_name',
     ellipse: true,
-    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
-          { row?.created_by || '--' }
+          { row.created_by || '--' }
         </span>
       );
     },
@@ -122,8 +122,8 @@ const tableColumns = shallowRef([
     title: t('操作结果'),
     colKey: 'status ',
     ellipse: true,
-    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
-      if (['releasing'].includes(row?.status!)) {
+    cell: (h: any, { row }: { row: Partial<ISyncHistoryItem> }) => {
+      if (['releasing'].includes(row.status!)) {
         return (
           <span>
             <Loading
@@ -138,8 +138,8 @@ const tableColumns = shallowRef([
       }
       return (
         <span>
-          <span class={`ag-dot ${row?.status} m-r-5px`} />
-          { OPERATE_STATUS_MAP[row?.status ?? ''] }
+          <span class={`ag-dot ${row.status} mr-5px`} />
+          { OPERATE_STATUS_MAP[row.status ?? ''] }
         </span>
       );
     },
@@ -148,10 +148,10 @@ const tableColumns = shallowRef([
     title: t('操作日志'),
     field: 'message',
     ellipse: true,
-    cell: (h: any, { row }: { row?: Partial<ISyncHistoryItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncHistoryItem> }) => {
       return (
         <span>
-          { row?.message || '--' }
+          { row.message || '--' }
         </span>
       );
     },

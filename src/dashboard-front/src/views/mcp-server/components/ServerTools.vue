@@ -313,7 +313,7 @@ const md = new MarkdownIt({
   },
 });
 
-const descriptionRef = ref<InstanceType<typeof AgDescription | null>>(null);
+const descriptionRef = ref<InstanceType<typeof AgDescription> | null>(null);
 const toolList = ref<IMCPServerTool[]>([]);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel
@@ -494,7 +494,7 @@ const initMarkdownHtml = (box: string) => {
       btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
       btn.setAttribute('data-copy', code!);
       parentDiv?.appendChild(btn);
-      codeBox?.appendChild(item?.querySelector('code')!);
+      codeBox?.appendChild(item?.querySelector('code') as Node);
       item?.appendChild(codeBox);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
@@ -526,9 +526,9 @@ const handleNavDocDetail = () => {
     name: 'ApiDocDetail',
     params: {
       curTab: 'gateway',
-      targetName: gatewayStore?.currentGateway?.name || server?.gateway?.name || '',
+      targetName: gatewayStore?.currentGateway?.name || (server as any)?.gateway?.name || '',
     },
-    query: { apiName: selectedTool.value.name },
+    query: { apiName: selectedTool.value!.name },
   });
   window.open(routeData.href, '_blank');
 };
@@ -544,10 +544,10 @@ const handleToolCollapseChange = (isCollapse: boolean) => {
 };
 
 const handleToolMouseenter = (e: MouseEvent, row: IMCPServerTool) => {
-    const cell = (e.target as HTMLElement).closest('.truncate');
-    if (cell) {
-      row.isOverflow = (cell as HTMLElement).scrollWidth > (cell as HTMLElement).offsetWidth;
-  };
+  const cell = (e.target as HTMLElement).closest('.truncate');
+  if (cell) {
+    row.isOverflow = (cell as HTMLElement).scrollWidth > (cell as HTMLElement).offsetWidth;
+  }
 };
 
 const handleToolMouseleave = (row: IMCPServerTool) => {
@@ -574,9 +574,9 @@ $code-color: #63656e;
 
   .left-aside-wrap {
     width: auto;
-    min-width: 230px;
     height: 100%;
-    background-color: #ffffff;
+    min-width: 230px;
+    background-color: #fff;
     border-radius: 2px;
 
     .left-aside-header {
@@ -691,13 +691,13 @@ $code-color: #63656e;
 
   .main-content-wrap {
     overflow-y: auto;
-    background-color: #ffffff;
+    background-color: #fff;
 
     .tool-name,
     .tool-basics,
     .tool-detail-content {
       margin: 24px;
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 2px;
     }
 
@@ -727,11 +727,11 @@ $code-color: #63656e;
 
       .basic-cell {
         display: flex;
-        align-items: center;
         padding: 0 12px;
-        line-height: 20px;
         font-size: 12px;
+        line-height: 20px;
         color: #63656e;
+        align-items: center;
 
         .label {
           color: #979ba5;

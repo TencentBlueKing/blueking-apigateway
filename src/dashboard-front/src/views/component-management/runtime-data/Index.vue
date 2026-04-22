@@ -169,15 +169,18 @@ const timeList = shallowRef([
   },
 ]);
 const isDataLoading = ref(false);
-const timer = ref(null);
+const timer = ref<number | null>(null);
 const autoEnable = ref(true);
 const timeRange = ref('1m');
 const containerHeight = ref('100%');
-const charts = ref([]);
-const timeLines = ref([]);
-const statusList = ref([]);
-const tableEmptyConfig = ref({
-  emptyType: '',
+const charts = ref<any[]>([]);
+const timeLines = ref<any[]>([]);
+const statusList = ref<any[]>([]);
+const tableEmptyConfig = ref<{
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
+  isAbnormal: boolean
+}>({
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -246,10 +249,10 @@ const getRuntime = async () => {
     tableEmptyConfig.value.isAbnormal = false;
   }
   catch {
-    tableEmptyConfig.value = Object.assign({}, {
+    tableEmptyConfig.value = {
       emptyType: 'empty',
       isAbnormal: true,
-    });
+    };
   }
 };
 
@@ -316,25 +319,25 @@ const handleTimeChange = (value: string) => {
 };
 
 const enableAutoRefresh = () => {
-  clearInterval(timer.value);
+  clearInterval(timer.value!);
   if (!autoEnable.value) {
     return false;
   }
-  timer.value = setInterval(() => {
+  timer.value = window.setInterval(() => {
     initData();
   }, 1000 * 60);
 };
 
 const clearAutoRefresh = () => {
-  clearInterval(timer.value);
+  clearInterval(timer.value!);
 };
 
 const handleClearFilterKey = () => {
   timeRange.value = '1m';
-  tableEmptyConfig.value.emptyType = Object.assign({}, {
-    empType: '',
+  tableEmptyConfig.value = {
+    emptyType: undefined,
     isAbnormal: false,
-  });
+  };
 };
 
 watch(

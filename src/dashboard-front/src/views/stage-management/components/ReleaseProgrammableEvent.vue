@@ -145,7 +145,8 @@ import {
   type IGatewayEventTemplate,
   type IPaasEventInstance,
   getDeployEvents,
-  getFinishedDeployEvents, getProgrammableStageDetail,
+  getFinishedDeployEvents,
+  getProgrammableStageDetail,
 } from '@/services/source/programmable.ts';
 import AgEditor from '@/components/ag-editor/Index.vue';
 import { useTimeoutPoll } from '@vueuse/core';
@@ -592,7 +593,11 @@ async function getEvents() {
     }
   }
   else {
-    paasEvents.forEach((event: { id: number; event: string; data: string }) => {
+    paasEvents.forEach((event: {
+      id: number
+      event: string
+      data: string
+    }) => {
       let line = '';
       try {
         const data = JSON.parse(event.data);

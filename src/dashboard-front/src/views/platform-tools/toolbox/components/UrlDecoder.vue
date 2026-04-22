@@ -145,7 +145,7 @@ const mltUrlDecode = (str: string) => {
 };
 
 const handleInputClick = () => {
-  urlInputRef.value?.focus();
+  (urlInputRef.value as any)?.focus();
 };
 
 // url编码

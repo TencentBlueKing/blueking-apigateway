@@ -84,7 +84,6 @@ import { Message } from 'bkui-vue';
 import { useTrace } from '@/stores';
 import { t } from '@/locales';
 import {
-  type ITraceDetail,
   fetchObservabilityLogInfo,
   fetchObservabilityLogSummary,
   fetchObservabilityTraceChain,
@@ -97,11 +96,14 @@ const route = useRoute();
 const traceStore = useTrace();
 
 const searchKeyword = ref('');
-const traceData = ref<ITraceDetail>(cloneDeep(DEFAULT_TRACE_DATA));
+const traceData = ref<any>(cloneDeep(DEFAULT_TRACE_DATA));
 
 // 空状态配置
-const emptyConfig = ref({
-  emptyType: '',
+const emptyConfig = ref<{
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
+  isAbnormal: boolean
+}>({
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -113,7 +115,7 @@ const isEmptyResult = computed<boolean>(() => {
 
 // 更新空状态展示配置
 const updateEmptyConfig = () => {
-  emptyConfig.value.emptyType = searchKeyword.value ? 'searchEmpty' : '';
+  emptyConfig.value.emptyType = searchKeyword.value ? 'searchEmpty' : undefined;
 };
 
 // 重置清空
@@ -164,7 +166,7 @@ const handleQueryTrace = async () => {
       ...traceChain,
       ...logSummary,
       logList,
-    };
+    } as any;
     // 同步存储至全局trace信息
     traceStore.setMcpTraceInfo(traceData.value);
   }
@@ -204,20 +206,19 @@ onMounted(() => {
   .query-trace-chain-body {
 
     :deep(.body-content) {
-      overflow-x: hidden;
-      overflow-y: auto;
       height: calc(100vh - 240px);
+      overflow: hidden auto;
 
       .ag-trace-chain-info {
-        margin-top: 16px;
         padding: 16px;
+        margin-top: 16px;
         border: 1px solid #dcdee5;
         box-shadow: none;
       }
 
       .ag-trace-chain-chart {
-        margin: 24px 0;
         padding: 0;
+        margin: 24px 0;
       }
 
       .ag-trace-chain-table {

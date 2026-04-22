@@ -282,10 +282,10 @@ const emit = defineEmits<IEmits>();
 const envStore = useEnv();
 const gatewayStore = useGateway();
 
-const nameRef = ref<InstanceType<typeof Input>>(null);
-const titleRef = ref<InstanceType<typeof Input>>(null);
-const descriptionRef = ref<InstanceType<typeof Input>>(null);
-const categoriesRef = ref<InstanceType<typeof TagInput>>(null);
+const nameRef = ref<InstanceType<typeof Input> | null>(null);
+const titleRef = ref<InstanceType<typeof Input> | null>(null);
+const descriptionRef = ref<InstanceType<typeof Input> | null>(null);
+const categoriesRef = ref<InstanceType<typeof TagInput> | null>(null);
 const isOverflow = ref(false);
 const isCategoryFocus = ref(false);
 
@@ -303,7 +303,7 @@ const previewUrl = computed(() => {
   const protocolUrl = ['sse'].includes(protocolType) ? `${protocolType}/` : 'mcp/';
 
   if (isEditMode) {
-    const cleanedUrl = formData.value.url.replace(/\/(mcp|sse)\/$/, '');
+    const cleanedUrl = formData.value.url?.replace(/\/(mcp|sse)\/$/, '') ?? '';
     return `${cleanedUrl}/${protocolUrl}`;
   }
 
@@ -375,15 +375,15 @@ const validateForm = () => {
 
   // 自动focus到必填项
   if (!name) {
-    nameRef.value?.focus();
+    (nameRef.value as any)?.focus();
     return nameRef.value;
   }
   if (title?.trim().length < 3) {
-    titleRef.value?.focus();
+    (titleRef.value as any)?.focus();
     return titleRef.value;
   }
   if (description.length < 10) {
-    descriptionRef.value?.focus();
+    (descriptionRef.value as any)?.focus();
     return descriptionRef.value;
   }
 

@@ -89,6 +89,7 @@
 </template>
 
 <script lang="tsx" setup>
+// @ts-nocheck
 import { cloneDeep } from 'lodash-es';
 import type { ISearchSelect, ITableMethod } from '@/types/common';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';

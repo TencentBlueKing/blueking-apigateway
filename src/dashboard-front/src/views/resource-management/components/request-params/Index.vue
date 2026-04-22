@@ -235,7 +235,7 @@
         fixed="right"
         width="140"
       >
-        <template #default="{ row, index }">
+        <template #default="{ row, rowIndex }: any">
           <div class="pl-16px">
             <AgIcon
               v-if="isAddFieldVisible(row)"
@@ -248,7 +248,7 @@
               v-bk-tooltips="t('删除参数')"
               class="tb-btn delete-btn"
               name="minus-circle-shape"
-              @click="() => delRow(row, index)"
+              @click="() => delRow(row, rowIndex)"
             />
           </div>
         </template>
@@ -504,8 +504,8 @@ watch(() => detail, () => {
   if (detail?.schema || detail.openapi_schema) {
     const resourceSchema = detail.schema || detail.openapi_schema;
     tableData.value = [];
-    if (resourceSchema.parameters?.length) {
-      tableData.value = resourceSchema.parameters.map((parameter: any) => {
+    if (resourceSchema!.parameters?.length) {
+      tableData.value = resourceSchema!.parameters.map((parameter: any) => {
         const row = {
           id: uniqueId(),
           name: parameter.name,
@@ -520,10 +520,10 @@ watch(() => detail, () => {
           Object.assign(row, { enum: parameter.schema.enum });
         }
         return row;
-      });
+      }) as ITableRow[];
     }
-    if (resourceSchema.requestBody) {
-      const body = resourceSchema.requestBody;
+    if (resourceSchema!.requestBody) {
+      const body = resourceSchema!.requestBody;
       const rootRowSchema = body?.content?.['application/json']?.schema;
       const row = {
         id: uniqueId(),
@@ -543,7 +543,7 @@ watch(() => detail, () => {
   }
 }, { immediate: true });
 
-const genRow = () => {
+const genRow = (): ITableRow => {
   return {
     id: uniqueId(),
     name: '',
@@ -552,7 +552,6 @@ const genRow = () => {
     required: false,
     default: '',
     description: '',
-    isEdit: true,
   };
 };
 
@@ -643,7 +642,8 @@ const addField = (row: ITableRow) => {
   }
 };
 
-const genParameters = () => tableData.value.map((row: ITableRow) => genParameterFromRow(row)).filter((item: any) => item);
+const genParameters = () => tableData.value.map((row: ITableRow) =>
+  genParameterFromRow(row)).filter((item: any) => item);
 
 const genParameterFromRow = (row: ITableRow) => {
   if ([

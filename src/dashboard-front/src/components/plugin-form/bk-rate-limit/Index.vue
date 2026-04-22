@@ -40,7 +40,7 @@
         :route-mode="routeMode"
         :disabled="disabled"
         :layout="getLayout('specials')"
-        @update:model-value="updateSpecials"
+        @update:model-value="updateSpecials as any"
       />
     </div>
   </BkForm>
@@ -66,9 +66,9 @@ const formData = defineModel<IRateLimitFormData>('modelValue', {
 });
 
 const {
-  schema = {},
-  layout = {},
-  componentMap = {},
+  schema = {} as ISchema,
+  layout = {} as Record<string, any>,
+  componentMap = {} as Record<string, any>,
   disabled = false,
 } = defineProps<IProps>();
 
@@ -113,7 +113,7 @@ const getValue = () => {
 
 const validate = async (): Promise<boolean> => {
   try {
-    const isValid = await formRef.value?.validate();
+    const isValid = await (formRef.value as any)?.validate();
     if (!isValid) {
       // @ts-ignore
       return;

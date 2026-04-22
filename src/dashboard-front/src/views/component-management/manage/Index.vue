@@ -128,7 +128,6 @@
 import { cloneDeep } from 'lodash-es';
 import { Button, Message } from 'bkui-vue';
 import type { ISearchValue } from 'bkui-vue/lib/search-select/utils.d';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
@@ -148,6 +147,12 @@ import { getFeatureFlags } from '@/services/source/basic.ts';
 type ISystemFilterMethod = {
   setSelected: (value: number) => void
   updateTableEmptyConfig: () => void
+};
+
+type ISliderParams = {
+  isShow: boolean
+  loading: boolean
+  title: string
 };
 
 const router = useRouter();
@@ -184,41 +189,45 @@ const searchData = shallowRef([
   },
 ]);
 const tableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
-const searchValue = ref([]);
-const searchParams = ref({
+const searchValue = ref<any[]>([]);
+const searchParams = ref<Record<string, any>>({
   name: '',
   path: '',
 });
-const sliderConfig = ref({
+const sliderConfig = ref<ISliderParams>({
   isShow: false,
   title: '',
+  loading: false,
 });
-const formData = ref(getDefaultData());
+const formData = ref<any>(getDefaultData());
 const needNewVersion = ref(false);
 const syncEsbToApigwEnabled = ref(false);
 const isReleasing = ref(false);
 const isExpand = ref(true);
-const curSelectSystemId = ref('*');
-const tableData = ref([]);
-const systemList = ref([]);
-const selections = ref([]);
+const curSelectSystemId = ref<string | number>('*');
+const tableData = ref<any[]>([]);
+const systemList = ref<any[]>([]);
+const selections = ref<any[]>([]);
 const requestQueue = reactive(['system', 'component']);
-const deleteDialogConf = reactive({
+const deleteDialogConf = reactive<{
+  loading: boolean
+  ids: any[]
+}>({
   loading: false,
   ids: [],
 });
-let initData = reactive({});
+let initData: Record<string, any> = reactive({});
 
-const tableColumns = computed(() => {
+const tableColumns = computed<any[]>(() => {
   return [
     {
       title: t('系统名称'),
       colKey: 'system_name',
       ellipsis: true,
-      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row: Partial<IComponentItem> }) => {
         return (
           <span>
-            {row?.system_name || '--' }
+            {row.system_name || '--' }
           </span>
         );
       },
@@ -226,38 +235,42 @@ const tableColumns = computed(() => {
     {
       title: t('组件名称'),
       colKey: 'name',
-      cell: (h: any, { row }: { row?: Partial<IComponentItem> & { isOverflow?: boolean } }) => {
+      cell: (h: any, { row }: { row: any }): any => {
         return (
           <div class="flex items-center">
             <div
               v-bk-tooltips={{
                 placement: 'top',
-                content: row?.name,
-                disabled: !row?.isOverflow,
+                content: row.name,
+                disabled: !row.isOverflow,
                 extCls: 'max-w-480px',
               }}
               class="truncate"
-              onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
-                e,
-                row,
-              })}
-              onMouseLeave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
-                e,
-                row,
-              })}
+              onMouseenter={(e: MouseEvent) => {
+                (tableRef.value?.handleCellEnter as any)({
+                  e,
+                  row,
+                });
+              }}
+              onMouseleave={(e: MouseEvent) => {
+                (tableRef.value?.handleCellLeave as any)({
+                  e,
+                  row,
+                });
+              }}
             >
-              { row?.name || '--' }
+              { row.name || '--' }
             </div>
             {
-              syncEsbToApigwEnabled.value && row?.is_created && (
-                <div class={`ag-tag primary m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
+              syncEsbToApigwEnabled.value && row.is_created && (
+                <div class={`ag-tag primary ml-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('新创建') }
                 </div>
               )
             }
             {
-              syncEsbToApigwEnabled.value && row?.has_updated && (
-                <div class={`ag-tag success m-l-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
+              syncEsbToApigwEnabled.value && row.has_updated && (
+                <div class={`ag-tag success ml-5px ${locale.value === 'en' ? 'min-w-56px' : 'min-w-44px'}`}>
                   { t('有更新') }
                 </div>
               )
@@ -271,9 +284,9 @@ const tableColumns = computed(() => {
       colKey: 'method',
       ellipsis: true,
       width: 90,
-      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row: Partial<IComponentItem> }) => {
         return (
-          <span>{ row?.method || '--' }</span>
+          <span>{ row.method || '--' }</span>
         );
       },
     },
@@ -281,9 +294,9 @@ const tableColumns = computed(() => {
       title: t('请求路径'),
       colKey: 'path',
       ellipsis: true,
-      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row: Partial<IComponentItem> }) => {
         return (
-          <span>{ row?.path || '--' }</span>
+          <span>{ row.path || '--' }</span>
         );
       },
     },
@@ -298,7 +311,7 @@ const tableColumns = computed(() => {
       colKey: 'operate',
       fixed: 'right',
       width: 120,
-      cell: (h: any, { row }: { row?: Partial<IComponentItem> }) => {
+      cell: (h: any, { row }: { row: Partial<IComponentItem> }) => {
         return (
           <div>
             <Button
@@ -312,11 +325,11 @@ const tableColumns = computed(() => {
             <Button
               theme="primary"
               text
-              disabled={row?.is_official}
+              disabled={row.is_official}
               onClick={() => handleDelete(row as { id: number })}
             >
               {
-                row?.is_official
+                row.is_official
                   ? (
                     <span v-bk-tooltips={t('官方组件，不可删除')}>
                       { t('删除') }
@@ -346,9 +359,9 @@ const disabledSelection = (row: any) => {
   return row.is_official;
 };
 
-const handleSelect = ({ id }: { id: number }) => {
-  curSelectSystemId.value = id;
-  getSystemName(id);
+const handleSelect = (value?: any) => {
+  curSelectSystemId.value = value?.id;
+  getSystemName(value?.id);
   getList();
 };
 
@@ -371,13 +384,13 @@ const handleSysSelect = (
 
 const checkNeedNewVersion = async () => {
   const res = await checkEsbNeedNewVersion();
-  needNewVersion.value = res?.need_new_release;
+  needNewVersion.value = (res as any)?.need_new_release;
 };
 
 const getSystemList = async () => {
   try {
     const res = await getSystems();
-    systemList.value = Object.freeze(res);
+    systemList.value = Object.freeze(res) as any;
     // 获取组件是否需要发版本更新
     checkNeedNewVersion();
     // 子组件状态更新
@@ -400,7 +413,7 @@ const handleConfirm = () => {
 
 const handleCreate = () => {
   let curSystemName = '';
-  const curSystem = systemList.value?.find(({ id }: { id: string }) => id === curSelectSystemId.value);
+  const curSystem = systemList.value?.find(({ id }: { id: string | number }) => id === curSelectSystemId.value);
   if (curSystem) {
     curSystemName = curSystem?.name?.toLocaleLowerCase();
   }
@@ -415,7 +428,7 @@ const handleCreate = () => {
     isShow: true,
     loading: false,
     title: t('新建组件'),
-  });
+  }) as ISliderParams;
   initData = cloneDeep(formData.value);
 };
 
@@ -424,7 +437,7 @@ const handleEdit = async (payload: IComponentItem) => {
     isShow: true,
     loading: true,
     title: t('编辑组件'),
-  });
+  }) as ISliderParams;
   try {
     const res = await getComponentsDetail(payload?.id);
     const configData = Object.assign({}, {
@@ -441,7 +454,7 @@ const handleEdit = async (payload: IComponentItem) => {
   }
   finally {
     sliderConfig.value.loading = false;
-    initData = cloneDeep(formData.value);
+    initData = cloneDeep(formData.value) as any;
   }
 };
 
@@ -476,19 +489,19 @@ const handleConfirmDelete = () => {
 };
 
 const handleBatchDelete = () => {
-  deleteDialogConf.ids = selections.value?.map((item: any) => item.id);
+  deleteDialogConf.ids = selections.value?.map((item: any) => item.id) as any;
   handleConfirmDelete();
 };
 
 const handleDelete = ({ id }: { id: number }) => {
-  deleteDialogConf.ids?.push(id);
+  (deleteDialogConf.ids as any[])?.push(id);
   handleConfirmDelete();
 };
 
 const getStatus = async () => {
   try {
     const res = await getReleaseStatus();
-    isReleasing.value = res?.is_releasing;
+    isReleasing.value = (res as any)?.is_releasing;
     if (isReleasing.value) {
       setTimeout(() => {
         getStatus();
@@ -510,15 +523,15 @@ const getFeature = async () => {
     offset: 0,
   };
   const res = await getFeatureFlags(params);
-  syncEsbToApigwEnabled.value = res?.SYNC_ESB_TO_APIGW_ENABLED;
+  syncEsbToApigwEnabled.value = (res as any)?.SYNC_ESB_TO_APIGW_ENABLED;
 };
 
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected }: any) => {
-  selections.value = selected;
+const handleSelectionChange = (payload: any) => {
+  selections.value = payload?.selections ?? payload?.selected ?? [];
 };
 
 const handleClearFilter = () => {
-  searchValue.value = [];
+  searchValue.value = [] as any;
 };
 
 const handleClearSelection = () => {
@@ -526,10 +539,10 @@ const handleClearSelection = () => {
   selections.value = [];
 };
 
-const getSystemName = (id: number) => {
+const getSystemName = (id: number | string) => {
   if (id && id !== ('*' as any)) {
     const curSystem = systemList.value?.find((item: any) => item?.id === curSelectSystemId.value);
-    searchParams.value.system_name = curSystem?.name;
+    (searchParams.value as any).system_name = curSystem?.name;
   }
 };
 

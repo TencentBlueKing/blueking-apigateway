@@ -247,7 +247,7 @@ watch(() => data, (newVal: any) => {
 
 const validate = async () => {
   try {
-    await formRef.value?.validate();
+    await (formRef.value as any)?.validate();
 
     if (!formData.value.abort.enabled && !formData.value.delay.enabled) {
       Message({

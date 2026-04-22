@@ -410,7 +410,7 @@ const needBkuiTablePage = computed(() => {
 
 const routerViewWrapperClass = computed(() => {
   const initClass = 'default-header-view';
-  const displayBkuiTable = needBkuiTablePage.value.includes(route.name) ? 'need-bkui-table-wrapper' : '';
+  const displayBkuiTable = needBkuiTablePage.value.includes(route.name as string) ? 'need-bkui-table-wrapper' : '';
   if (route.meta.customHeader) {
     return `custom-header-view ${displayBkuiTable}`;
   }

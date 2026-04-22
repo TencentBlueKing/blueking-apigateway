@@ -574,7 +574,7 @@
     <!-- 文档侧边栏 -->
     <ResourceDocSlider
       v-model="isResourceDocSliderVisible"
-      :resource="editingResource"
+      :resource="(editingResource as any)"
       :show-footer="false"
       :show-create-btn="false"
       :is-preview="!editingResource.id"
@@ -582,7 +582,7 @@
     />
     <!--  查看插件侧边栏  -->
     <PluginPreviewSideSlider
-      :plugins="editingResource.plugin_configs"
+      :plugins="(editingResource.plugin_configs as any)"
       :is-slider-show="isPluginsSliderShow"
       @on-hidden="isPluginsSliderShow = false"
     />
@@ -975,7 +975,7 @@ onBeforeRouteLeave((to, from, next) => {
       onConfirm() {
         next();
       },
-      onClosed() {
+      onClose() {
         return false;
       },
     });
@@ -1075,7 +1075,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
         json_path: string
         message: string
       }[] = error.data ?? [];
-      errorReasons.value = errData.map((err) => {
+      errorReasons.value = errData.map((err): ErrorReasonType => {
         if (err.json_path !== '$' && err.json_path !== '') {
           // 从 jsonpath 提取路径组成数组，去掉开头的 $
           let paths = JSONPath.toPathArray(err.json_path)
@@ -1112,11 +1112,11 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
           });
 
           offset = resourceEditorRef.value?.getValue()
-            .search(regex);
+            ?.search(regex) ?? -1;
           // 用 editor 的 api 找到 Position
           if (offset > -1) {
             position = resourceEditorRef.value?.getModel()
-              .getPositionAt(offset);
+              ?.getPositionAt(offset) ?? null;
           }
           return {
             paths,
@@ -1130,7 +1130,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
             message: err.message,
             isDecorated: false,
             level: 'Error',
-          };
+          } as any;
         }
         return {
           json_path: err.json_path,

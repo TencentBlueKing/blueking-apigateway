@@ -354,8 +354,8 @@
                 :cur-select-label-ids="[]"
                 :labels-data="labelsData"
                 class="select-labels"
-                @update-success="getLabelsData"
-                @label-add-success="getLabelsData"
+                @updated="getLabelsData"
+                @added="getLabelsData"
               />
             </div>
           </BkFormItem>
@@ -885,11 +885,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
                   cur-select-label-ids={curLabelIds.value}
                   labels-data={labelsData.value}
                   resource-id={resourceId.value}
-                  width={selectCheckBoxParentRef?.offsetWidth}
+                  width={(selectCheckBoxParentRef as any)?.offsetWidth}
                   force-focus
-                  onClose={(newLabelData: any) => handleCloseSelect(row, newLabelData)}
-                  onUpdateSuccess={() => handleUpdateLabelSuccess()}
-                  onLabelAddSuccess={() => getLabelsData()}
+                  onClose={newLabelData => handleCloseSelect(row, newLabelData)}
+                  onUpdated={() => handleUpdateLabelSuccess()}
+                  onAdded={() => getLabelsData()}
                 />
               </section>
             )}
@@ -1196,7 +1196,7 @@ watch(
     }
     if (resourceSettingStore.previousPagination) {
       nextTick(() => {
-        const { current, pageSize } = resourceSettingStore.previousPagination;
+        const { current, pageSize } = resourceSettingStore.previousPagination!;
         tableRef.value?.setPagination({
           current,
           pageSize,
@@ -1483,7 +1483,7 @@ const handleShowVersion = async () => {
   try {
     const res = await checkNeedNewVersion(gatewayId);
     versionConfigs.needNewVersion = res.need_new_version;
-    versionConfigs.versionMessage = res.msg;
+    versionConfigs.versionMessage = res.msg ?? '';
   }
   catch (error: any) {
     versionConfigs.needNewVersion = false;
@@ -1528,7 +1528,7 @@ const getLabelsData = async () => {
 const handleCloseSelect = (row: any, newLabelData: any = []) => {
   row.isEditLabel = false;
   // 接收新的标签数据，检查标签的 name 是否有变化，有则重新获取列表数据
-  // 用于修复标签更改名称后，SelectCheckBox 组件的 update-success 不能触发，列表中的标签名没有相应更新的 bug
+  // 用于修复标签更改名称后，SelectCheckBox 组件的 updated 不能触发，列表中的标签名没有相应更新的 bug
   if (newLabelData.length > 0) {
     const diff = differenceBy(row.labels, newLabelData, 'name');
     if (diff.length > 0) {
@@ -1571,7 +1571,7 @@ const handleVersionCreated = () => {
 
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
-    const { current, pageSize } = tableRef.value!.getPagination();
+    const { current, pageSize } = tableRef.value!.getPagination() as any;
     resourceSettingStore.setPagination({
       current,
       pageSize,
@@ -1638,7 +1638,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterValue) =>
   });
 };
 
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections, selectionsRowKeys }: any) => {
+const handleSelectionChange = ({ selections, selectionsRowKeys }: any) => {
   selectedRows.value = selections;
   selectedRowKeys.value = selectionsRowKeys;
 };

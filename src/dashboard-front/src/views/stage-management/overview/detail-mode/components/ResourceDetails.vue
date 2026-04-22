@@ -339,6 +339,8 @@ import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vu
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
 
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+
 interface IProps { info: any }
 
 const { info } = defineProps<IProps>();
@@ -350,8 +352,6 @@ const route = useRoute();
 
 const isShow = ref(false);
 const currentSource = ref<any>({});
-
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
 // 网关标签
 const labels = ref<IGatewayLabelItem[]>([]);

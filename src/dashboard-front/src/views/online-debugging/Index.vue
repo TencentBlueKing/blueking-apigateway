@@ -502,6 +502,7 @@ import {
   resourceSchema,
 } from '@/services/source/online-debugging';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -518,7 +519,12 @@ const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
 const testAppCode = ref(envStore.env.BK_DEFAULT_TEST_APP_CODE || 'bk_apigw_test');
-const curApigw = ref({
+const curApigw = ref<IGatewayRetrieveOutput & {
+  statusBoolean?: boolean
+  statusForFe?: boolean
+  maintainersForFe?: any[]
+  user_auth_type?: string
+}>({
   name: '',
   description: '',
   status: 0,
@@ -528,7 +534,7 @@ const curApigw = ref({
   user_auth_type: '',
   maintainers: [],
   maintainersForFe: [],
-});
+} as any);
 const originResourceGroup = ref<any>({});
 const curComponentName = ref<any>('');
 const curResource = ref<any>({});
@@ -603,7 +609,7 @@ const userCookies = reactive<any>({
 });
 const response = ref<any>({});
 
-const resourceTabs = ref([]);
+const resourceTabs = ref<any[]>([]);
 const autoSelectFirstResource = ref(true);
 const dropdownList = ref([
   {
@@ -1561,11 +1567,11 @@ init();
   }
 
   .resize-aside {
+    display: flex;
     height: 100%;
     padding: 24px 0;
     background: #FFF;
     box-sizing: border-box;
-    display: flex;
     flex-direction: column;
 
     .source-title {
@@ -1621,9 +1627,10 @@ init();
   }
 
   .request-setting-content {
-    padding: 0 22px 20px;
     max-height: 116px;
+    padding: 0 22px 20px;
     transition: all 0.3s ease;
+
     &.anim-hidden {
       max-height: 56px;
     }
@@ -1926,21 +1933,23 @@ init();
   display: flex;
   align-items: center;
   border-bottom: 1px solid #DCDEE5;
+
   .resource-list {
     display: flex;
     align-items: center;
+
     .name {
+      position: relative;
+      display: flex;
       min-width: 100px;
       padding: 10px 24px;
-      box-sizing: border-box;
-      color: #4d4f56;
-      font-size: 14px;
-      position: relative;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
+      margin-left: 0;
       overflow: hidden;
-      margin-left: 0px;
+      font-size: 14px;
+      color: #4d4f56;
+      cursor: pointer;
+      box-sizing: border-box;
+      align-items: center;
 
       .tab-text {
         flex: 1 1 0;
@@ -1952,68 +1961,79 @@ init();
 
       .icon-close {
         position: absolute;
-        display: none;
-        right: 6px;
         top: 6px;
+        right: 6px;
+        display: none;
       }
+
       &:hover {
+
         .icon-close {
           display: block;
-          border-radius: 7px;
           color: #4D4F56;
           background: #D9D9D9;
+          border-radius: 7px;
         }
       }
+
       &::before {
-        content: ' ';
         position: absolute;
+        top: 50%;
+        right: 0;
         width: 1px;
         height: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        right: 0;
         background: #D9D9D9;
+        content: ' ';
+        transform: translateY(-50%);
       }
+
       &.active {
-        background-color: #FFFFFF;
-        color: #3A84FF;
-        border-top: 2px solid #3A84FF;
         margin-bottom: -1px;
-        border-bottom: 1px solid #FFFFFF;
         margin-left: -1px;
+        color: #3A84FF;
+        background-color: #FFF;
+        border-top: 2px solid #3A84FF;
+        border-bottom: 1px solid #FFF;
+
         &:hover {
+
           .icon-close {
             display: block;
             color: #979BA5;
-            background: #FFFFFF;
+            background: #FFF;
           }
         }
+
         &::before {
-          height: 100%;
           top: 0;
+          height: 100%;
           transform: translateY(0);
         }
+
         &::after {
-          content: ' ';
           position: absolute;
-          width: 1px;
-          height: 100%;
           top: 0;
           left: 0;
+          width: 1px;
+          height: 100%;
           background: #D9D9D9;
+          content: ' ';
         }
       }
     }
   }
+
   .tools {
-    margin-left: 6px;
     display: flex;
+    margin-left: 6px;
     align-items: center;
+
     .tool {
       margin: 10px 7px;
       cursor: pointer;
+
       &:hover {
-        background-color: #FFFFFF;
+        background-color: #FFF;
         border-radius: 4px;
       }
     }

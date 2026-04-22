@@ -302,8 +302,8 @@ interface Emits {
 }
 
 const {
-  sliderParams = {},
-  detailData = {},
+  sliderParams = {} as any,
+  detailData = {} as any,
   initData = {},
   systemList = [],
 } = defineProps<IProps>();
@@ -409,9 +409,9 @@ const formData = computed({
     emits('update:detailData', form);
   },
 });
-const componentId = computed(() => formData.value.id);
+const componentId = computed(() => (formData.value as any).id);
 const isEdit = computed(() => Boolean(componentId.value));
-const isDisabled = computed(() => isEdit.value && formData.value?.is_official);
+const isDisabled = computed(() => isEdit.value && (formData.value as any)?.is_official);
 
 const handleSysSelect = (
   value: number,
@@ -428,6 +428,7 @@ const handleSave = async () => {
   const configData = configRef.value?.getData() ?? {};
   const initConfigFields: Record<string, any> = {};
   // 默认组件配置转换成标准格式
+  // @ts-expect-error config_fields 是运行时动态字段
   initData?.config_fields?.forEach((item: any) => {
     initConfigFields[item.variable] = item.default;
   });
@@ -438,7 +439,7 @@ const handleSave = async () => {
     handleCancel();
     return;
   }
-  const tempData = Object.assign({}, formData.value);
+  const tempData: Record<string, any> = Object.assign({}, formData.value);
   if (!tempData.timeout) {
     tempData.timeout = null;
   }
@@ -457,11 +458,11 @@ const handleSave = async () => {
     let msg = '';
     if (!isEdit.value) {
       delete tempData.id;
-      await addComponent(tempData);
+      await addComponent(tempData as any);
       msg = t('新建成功');
     }
     else {
-      await updateComponent(formData.value?.id, tempData);
+      await updateComponent((formData.value as any)?.id, tempData as any);
       msg = t('编辑成功');
     }
     Message({

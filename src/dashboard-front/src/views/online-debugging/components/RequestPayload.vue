@@ -90,14 +90,23 @@ import PayloadBody from './PayloadBody.vue';
 import PayloadParams from './PayloadParams.vue';
 import PayloadHeaders from './PayloadHeaders.vue';
 
+interface ISchema {
+  fromDataPayload?: any[]
+  rawPayload?: any
+  queryPayload?: any[]
+  pathPayload?: any[]
+  priorityPath?: any[]
+  headersPayload?: any[]
+}
+
 interface IProps {
   tab?: string
-  schema?: object
+  schema?: ISchema
 }
 
 const {
   tab = 'Params',
-  schema = {},
+  schema = {} as ISchema,
 } = defineProps<IProps>();
 
 const active = ref<string>(tab);

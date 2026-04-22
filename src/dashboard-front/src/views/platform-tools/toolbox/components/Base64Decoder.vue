@@ -151,7 +151,7 @@ const mltBase64Decode = (str: string) => {
 };
 
 const handleInputClick = () => {
-  base64InputRef.value?.focus();
+  (base64InputRef.value as any)?.focus();
 };
 
 // base64编码

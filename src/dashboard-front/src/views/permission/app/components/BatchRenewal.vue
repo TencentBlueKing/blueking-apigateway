@@ -124,7 +124,6 @@ import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
 import AgTable from '@/components/ag-table/Index.vue';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import ExpireDaySelector from '@/views/permission/app/components/ExpireDaySelector.vue';
 
 type ISliderParams = {
@@ -167,7 +166,7 @@ const emits = defineEmits<IEmits>();
 const permissionStore = usePermission();
 
 const activeIndex = ref(['resource', 'gateway']);
-const tableColumns = shallowRef([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('蓝鲸应用ID'),
     colKey: 'bk_app_code',
@@ -190,18 +189,18 @@ const tableColumns = shallowRef([
     cell: (h: any, { row }: { row?: IPermission }) => {
       return (
         <div>
-          <span style={{ color: permissionStore.getDurationTextColor(row!.expires) }}>
-            { permissionStore.getDurationText(row?.expires) }
+          <span style={{ color: permissionStore.getDurationTextColor(row!.expires ?? null) }}>
+            { permissionStore.getDurationText(row?.expires ?? null) }
           </span>
-          <span class="m-l-4px m-r-4px">
-            <AgIcon name="arrows--right--line" style="color: #699df4;" />
+          <span class="ml-4px mr-4px">
+            <ag-icon name="arrows--right--line" style="color: #699df4;" />
           </span>
           <span>
             {
-            row!.renewable
+              row!.renewable
                 ? (
                   <span class="ag-normal primary">
-                    { permissionStore.getDurationAfterRenew(row?.expires, expireDays.value) }
+                    { permissionStore.getDurationAfterRenew(row?.expires ?? null, expireDays.value) }
                   </span>
                 )
                 : (

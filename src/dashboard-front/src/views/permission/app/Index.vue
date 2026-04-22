@@ -124,7 +124,6 @@
 import { cloneDeep } from 'lodash-es';
 import { Button, Message } from 'bkui-vue';
 import { type ISearchItem, type ISearchValue } from 'bkui-vue/lib/search-select/utils.d';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import {
@@ -154,7 +153,7 @@ const gatewayStore = useGateway();
 const permissionStore = usePermission();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('蓝鲸应用ID'),
     colKey: 'bk_app_code',
@@ -245,7 +244,6 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     fixed: 'right',
     width: 120,
     cell: (h: any, { row }: { row: IPermission }) => {
-      const data = row as IPermission;
       return (
         <div>
           <Button
@@ -255,17 +253,17 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
             v-bk-tooltips={{
               content: t('权限有效期大于 360 天时，暂无法续期'),
               placement: 'left',
-              disabled: data.renewable,
+              disabled: row.renewable,
             }}
-            disabled={!data.renewable}
-            onClick={() => handleSingleApply(data)}
+            disabled={!row.renewable}
+            onClick={() => handleSingleApply(row)}
           >
             { t('续期') }
           </Button>
           <Button
             theme="primary"
             text
-            onClick={() => handleRemove(data)}
+            onClick={() => handleRemove(row)}
           >
             { t('删除') }
           </Button>
@@ -437,7 +435,7 @@ const disabledSelection = (row: any) => {
 
 function getList() {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
-};
+}
 
 function handleSearch() {
   filterData.value = {};
@@ -463,12 +461,7 @@ function handleSearch() {
 }
 
 // AgTable emit 类型已修复，无需 ts-expect-error
-const handleSelectionChange = ({
-  selections,
-}: {
-  selections: any[]
-  selectionsRowKeys: (string | number)[]
-}) => {
+const handleSelectionChange = ({ selections }: { selections: any[] }) => {
   isBatchRenewal.value = true;
   curSelections.value = selections as IPermission[];
 };

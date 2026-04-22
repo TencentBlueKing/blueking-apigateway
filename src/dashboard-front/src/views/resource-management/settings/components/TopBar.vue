@@ -191,7 +191,7 @@ const handleTranslateConfirmClick = async () => {
     }
   });
   await batchResourceDocAITranslate(toValue(gatewayId), { doc_ids: docIds });
-  popoverRef.value?.hide();
+  (popoverRef.value as any)?.hide();
   Message({
     theme: 'success',
     message: t('已启动翻译任务，请稍后查看翻译结果'),
@@ -201,7 +201,7 @@ const handleTranslateConfirmClick = async () => {
 
 const handleTranslateAllClick = async () => {
   await batchResourceDocAITranslate(toValue(gatewayId), {});
-  popoverRef.value?.hide();
+  (popoverRef.value as any)?.hide();
   Message({
     theme: 'success',
     message: t('已启动翻译任务，请稍后查看翻译结果'),
@@ -214,7 +214,7 @@ const handleResourceSelect = ({ selections }: { selections: any[] }) => {
 };
 
 const handleCancelClick = () => {
-  popoverRef.value?.hide();
+  (popoverRef.value as any)?.hide();
 };
 
 </script>

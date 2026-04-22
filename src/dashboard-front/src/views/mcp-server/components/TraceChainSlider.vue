@@ -85,7 +85,7 @@ const { apiGatewayId, requestId = '' } = defineProps<IProps>();
 const traceStore = useTrace();
 
 const isShow = ref(false);
-const traceData = ref<ITraceDetail>(DEFAULT_TRACE_DATA);
+const traceData = ref<ITraceDetail>(DEFAULT_TRACE_DATA as ITraceDetail);
 
 const detailLoading = computed(() => traceStore.traceLoading);
 

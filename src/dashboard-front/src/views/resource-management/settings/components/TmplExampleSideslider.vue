@@ -37,10 +37,6 @@
 </template>
 
 <script setup lang="ts">
-// @ts-expect-error vue type resolution issue
-import { ref, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
-
 import editorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 
@@ -60,7 +56,7 @@ const handleHidden = () => {
   emits('on-hidden');
 };
 
-watch(() => isShow, (val: boolean) => {
+watch(() => isShow, (val) => {
   renderShow.value = val;
 });
 

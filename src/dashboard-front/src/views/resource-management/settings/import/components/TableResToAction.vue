@@ -87,7 +87,7 @@
       prop="method"
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
-        <BkTag :theme="METHOD_THEMES[row.method]">
+        <BkTag :theme="(METHOD_THEMES as any)[row.method!]">
           {{ row.method }}
         </BkTag>
       </template>
@@ -107,7 +107,7 @@
     >
       <template #default="{ row }: { row: ILocalImportedResource }">
         <BkTag
-          :theme="METHOD_THEMES[row.backend?.config.method ?? row.method]"
+          :theme="(METHOD_THEMES as any)[(row.backend?.config.method ?? row.method)!]"
         >
           {{ row.backend?.config.method ?? row.method }}
         </BkTag>

@@ -93,6 +93,9 @@ import { HTTP_METHODS } from '@/constants';
 import { cloneDeep } from 'lodash-es';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
+
 interface IProps {
   stageAddress: string
   stageId: number
@@ -117,9 +120,6 @@ const resourceDetailsRef = ref();
 const stageSidesliderRef = ref();
 // 是否是点击了后端服务
 const highlightRowId = ref(0);
-
-type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
-type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
 
 // 网关标签
 const labels = ref<IGatewayLabelItem[]>([]);
@@ -156,11 +156,11 @@ const renderResourceTag = computed(() => {
   return <span class="inline-block bg-#EDF4FF color-#3A84FF rounded-2px text-10px w-18px! h-16px! line-height-16px text-center">{ t('资') }</span>;
 });
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<any>(() => [
   {
     colKey: 'backend',
     title: t('后端服务'),
-    cell: (h: any, { row }: { row: any }) => (
+    cell: (_h: any, { row }: { row: any }) => (
       <bk-button
         theme="primary"
         text
@@ -233,10 +233,12 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       list: labelsList.value,
     },
     cell: (h: any, { row }: { row: any }) => (
-      labels.value?.filter((label: IGatewayLabelItem) => row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
+      labels.value?.filter((label: IGatewayLabelItem) =>
+        row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
         ? (
           <RenderTagOverflow
-            data={labels.value?.filter((label: IGatewayLabelItem) => row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
+            data={labels.value?.filter((label: IGatewayLabelItem) =>
+              row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
           />
         )
         : <span>--</span>

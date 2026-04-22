@@ -102,7 +102,7 @@
     "vue-tsc": "^2.2.12"
   },
   "simple-git-hooks": {
-    "pre-commit": "cd src/dashboard-front && npx lint-staged",
+    "pre-commit": "cd src/dashboard-front && npx lint-staged && npm run type-check",
     "commit-msg": "cd src/dashboard-front && npx commitlint --edit $1"
   },
   "lint-staged": {

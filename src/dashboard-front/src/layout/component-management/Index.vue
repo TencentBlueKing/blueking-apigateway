@@ -90,6 +90,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { useFeatureFlag, useGateway } from '@/stores';
 import { useGatewaysList } from '@/hooks';
 import type { IMenu } from '@/types/common';

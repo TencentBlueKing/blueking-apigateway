@@ -232,14 +232,14 @@
                   >
                     {{ t('闲置') }}
                   </span>
-                  <bk-button
+                  <BkButton
                     theme="primary"
                     class="ml-8px inactive-btn"
                     text
                     @click="() => openTab(item.operation_status?.link)"
                   >
                     {{ item.operation_status?.source === 'apigateway' ? t('去停用') : t('去下架') }}
-                  </bk-button>
+                  </BkButton>
                 </div>
               </div>
               <div
@@ -508,7 +508,7 @@ const {
 } = useGatewaysList(filterNameData);
 
 const tableEmptyConf = ref<{
-  emptyType: 'refresh' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
   emptyType: undefined,
@@ -549,7 +549,11 @@ const contacts = [
   },
 ];
 
-const steps: { name: string; describe: string; link?: string }[] = [
+const steps: {
+  name: string
+  describe: string
+  link?: string
+}[] = [
   {
     name: t('API 全生命周期管理：'),
     describe: t('涵盖 API 的配置、发布、测试、监控、下线等各个生命周期的管理，并且支持版本控制'),
@@ -740,7 +744,7 @@ const isGuide = computed(() => {
   return false;
 });
 
-watch(() => dataList.value, (val: GatewayType[]) => {
+watch(() => dataList.value, (val) => {
   gatewaysList.value = convertGatewaysList(val as unknown as GatewayType[]);
   updateTableEmptyConfig();
 });
@@ -759,6 +763,7 @@ const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
 
   return arr.map((gateway) => {
     const item: any = { ...gateway };
+    // item.isAfter24h = isAfter24h(item.created_time);
     item.tagOrder = '3';
     item.stages?.sort((a: any, b: any) => (b.released - a.released));
     item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
@@ -816,7 +821,8 @@ const handleChange = (v: string) => {
       gatewaysList.value.sort((a, b) => new Date(b.updated_time) - new Date(a.updated_time));
       break;
     case 'name':
-      gatewaysList.value.sort((a: ConvertedGatewayType, b: ConvertedGatewayType) => a.name.charAt(0).localeCompare(b.name.charAt(0)));
+      gatewaysList.value.sort((a: ConvertedGatewayType, b: ConvertedGatewayType) =>
+        a.name.charAt(0).localeCompare(b.name.charAt(0)));
       break;
     default:
       break;

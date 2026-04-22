@@ -137,6 +137,7 @@ const {
   },
   selections = [],
 } = defineProps<IProps>();
+
 const emits = defineEmits<IEmits>();
 
 const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();

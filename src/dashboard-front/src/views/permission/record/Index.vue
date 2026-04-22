@@ -220,6 +220,11 @@ import { useFeatureFlag, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import type { IApprovalListItem } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
+import { sortByKey } from '@/utils';
+import { AUTHORIZATION_DIMENSION } from '@/constants';
+import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
+import AgIcon from '@/components/ag-icon/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 // 扩展 IApprovalListItem，补充运行时动态添加的字段
 interface IApprovalListItemExt extends IApprovalListItem {
@@ -229,17 +234,12 @@ interface IApprovalListItemExt extends IApprovalListItem {
   selection?: any[]
   isSelectAll?: boolean
 }
-import { sortByKey } from '@/utils';
-import { AUTHORIZATION_DIMENSION } from '@/constants';
-import { APPROVAL_HISTORY_STATUS_MAP } from '@/enums';
-import AgIcon from '@/components/ag-icon/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
 
-const historyExpandColumn = shallowRef([
+const historyExpandColumn = shallowRef<any[]>([
   {
     title: '#',
     colKey: 'serial-number',
@@ -290,7 +290,7 @@ const historyExpandColumn = shallowRef([
     },
   },
 ]);
-const resourceInfoColumn = shallowRef([
+const resourceInfoColumn = shallowRef<any[]>([
   {
     title: t('资源名称'),
     colKey: 'name',
@@ -321,15 +321,15 @@ const resourceInfoColumn = shallowRef([
   },
 ]);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
-const tableData = ref([]);
-const filterData = ref({
+const tableData = ref<any[]>([]);
+const filterData = ref<Record<string, any>>({
   bk_app_code: '',
   grant_dimension: '',
   time_start: '',
   time_end: '',
 });
-const filterValue = ref({});
-const resourceList = ref([]);
+const filterValue = ref<Record<string, any>>({});
+const resourceList = ref<any[]>([]);
 const expandableConfig = ref({
   expandColumn: false,
   expandedRowKeys: [] as any[],
@@ -371,7 +371,7 @@ const {
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
-const getTableColumns = computed(() => {
+const getTableColumns = computed((): any[] => {
   return [
     {
       title: t('蓝鲸应用ID'),
@@ -391,28 +391,28 @@ const getTableColumns = computed(() => {
           value: id,
         })),
       },
-      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
-        if (['resource'].includes(row!.grant_dimension!)) {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (['resource'].includes(row.grant_dimension!)) {
           return (
             <div class="flex items-center">
               <AgIcon
-                name={row!.isExpand ? 'down-shape' : 'right-shape'}
+                name={row.isExpand ? 'down-shape' : 'right-shape'}
                 size="10"
                 class="mr-4px"
               />
-              {`${row!.grant_dimension_display} (${row!.resource_ids?.length || '--'})`}
+              {`${row.grant_dimension_display} (${row.resource_ids?.length || '--'})`}
             </div>
           );
         }
-        return row!.grant_dimension_display || '--';
+        return row.grant_dimension_display || '--';
       },
     },
     {
       title: t('权限期限'),
       colKey: 'expire_days_display',
       ellipsis: true,
-      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
-        return row!.expire_days_display || '--';
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        return row.expire_days_display || '--';
       },
     },
     {
@@ -443,12 +443,12 @@ const getTableColumns = computed(() => {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
-      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
-        if (['rejected'].includes(row?.status!)) {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (['rejected'].includes(row.status!)) {
           return (
             <div class="perm-record-dot">
               <div class="ag-dot default m-r-5px" />
-              {APPROVAL_HISTORY_STATUS_MAP[row?.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
+              {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
             </div>
           );
         }
@@ -456,7 +456,7 @@ const getTableColumns = computed(() => {
           return (
             <div class="perm-record-dot">
               <span class="ag-dot success m-r-5px" />
-              {APPROVAL_HISTORY_STATUS_MAP[row?.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
+              {APPROVAL_HISTORY_STATUS_MAP[row.status as keyof typeof APPROVAL_HISTORY_STATUS_MAP]}
             </div>
           );
         }
@@ -467,14 +467,14 @@ const getTableColumns = computed(() => {
       colKey: 'operate',
       fixed: 'right',
       ellipsis: true,
-      cell: (h: any, { row }: { row?: Partial<IApprovalListItemExt> }) => {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
         return (
           <div>
             <Button
               theme="primary"
               text
               onClick={(e: MouseEvent) => {
-                handleShowRecord(e, row! as IApprovalListItemExt);
+                handleShowRecord(e, row as IApprovalListItemExt);
               }}
             >
               { t('详情') }
@@ -588,6 +588,7 @@ const handleClearFilter = () => {
 
 <style lang="scss" scoped>
 .permission-record-container {
+
   .record-content {
     border: 1px solid #DCDEE5;
   }
@@ -639,6 +640,7 @@ const handleClearFilter = () => {
 }
 
 :deep(.t-table__header) {
+
   .t-table__ellipsis {
     font-weight: 700 !important;
     color: #63656e !important;
@@ -646,6 +648,7 @@ const handleClearFilter = () => {
 }
 
 :deep(.t-table__expanded-row) {
+
   .t-table__row-full-element {
     padding: 0;
   }

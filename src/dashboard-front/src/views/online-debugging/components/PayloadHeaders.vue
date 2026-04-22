@@ -226,10 +226,10 @@ if (!local) {
 const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
 const formRef = ref();
-const propsHeaders = ref([]);
-const newHeaders = ref([]);
+const propsHeaders = ref<any[]>([]);
+const newHeaders = ref<any[]>([]);
 const presuppose = ref('');
-const hoverIndex = ref<number>();
+const hoverIndex = ref<number | null>();
 const isIconClick = ref<boolean>(false); // 是否点击了icon
 const editInputRef = ref(null);
 const localHeaders = ref(JSON.parse(local) || []);
@@ -237,7 +237,7 @@ const dialogData = reactive({
   isShow: false,
   loading: false,
   name: '',
-  table: [],
+  table: [] as any[],
   columns: [
     {
       field: 'name',
@@ -256,7 +256,7 @@ const rules = {
     trigger: 'blur',
   }],
 };
-const localHeadersNames = ref([]);
+const localHeadersNames = ref<any[]>([]);
 
 watch(
   () => localHeaders.value,
@@ -349,7 +349,7 @@ const handleEditOptionItem = (option: any) => {
   });
   option.isEdited = true;
   setTimeout(() => {
-    editInputRef.value[0]?.focus();
+    (editInputRef.value as any)?.[0]?.focus();
   }, 500);
 };
 
@@ -469,16 +469,19 @@ defineExpose({
 .params-header {
   margin-bottom: 8px;
   cursor: pointer;
+
   .params-header-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: #313238;
     display: flex;
-    align-items: center;
     margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #313238;
+    align-items: center;
+
     .params-header-fold {
       margin-right: 8px;
       transition: all .2s;
+
       &.fold {
         transform: rotate(-90deg);
       }
@@ -489,52 +492,66 @@ defineExpose({
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     .presuppose-select {
       width: 80px;
     }
+
     .presuppose-btn {
       font-size: 14px;
       color: #3A84FF;
     }
   }
 }
+
 .params-collapse {
+
   :deep(.bk-collapse-content) {
     padding: 0;
   }
 }
+
 .dialog-content {
+
   .input-wrapper {
     margin-bottom: 12px;
+
     .name {
       font-size: 14px;
       color: #4D4F56;
     }
   }
+
   .header-list {
     padding-bottom: 18px;
+
     .tips {
+      margin-bottom: 12px;
       font-size: 14px;
       color: #979BA5;
-      margin-bottom: 12px;
     }
   }
 }
+
 .select-option-row {
+  position: relative;
   display: inline-block;
   width: 100%;
-  position: relative;
   overflow: hidden;
+
   .icon-container {
     position: absolute;
-    right: 0;
     top: 0;
+    right: 0;
+
     .icon {
+
       &:hover {
         color: #3a84ff;
       }
     }
   }
+
   .select-option-row-name {
     width: 74%;
     overflow: hidden;

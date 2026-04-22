@@ -170,8 +170,8 @@ const {
 
 const emit = defineEmits<{
   'close': [data: any[]]
-  'update-success': [void]
-  'label-add-success': [id: number]
+  'updated': [void]
+  'added': [id: number]
   'update:modelValue': [data: any[]]
 }>();
 
@@ -236,7 +236,7 @@ const handleToggle = async (v: boolean) => {
           theme: 'success',
           width: 'auto',
         });
-        emit('update-success');
+        emit('updated');
       }
       else {
         labelsData.forEach((item: any) => {
@@ -267,7 +267,7 @@ const addOption = async () => {
         await updateResourceLabels(gatewayId.value, resourceId, { label_ids: curLabelIds.value });
       }
     }
-    emit('label-add-success', ret.id);
+    emit('added', ret.id);
   }
   showEdit.value = false;
 };
@@ -307,7 +307,7 @@ const updateOption = async (option: any) => {
       labelsData.forEach((item: any) => {
         item.isEdited = false;
       });
-      emit('update-success');
+      emit('updated');
     }
   }
   catch {
@@ -357,7 +357,7 @@ const handleDeleteOptionItemConfirm = async (e: any) => {
     width: 'auto',
   });
   selectRef.value.showPopover();
-  emit('update-success');
+  emit('updated');
 };
 
 // 输入框聚焦

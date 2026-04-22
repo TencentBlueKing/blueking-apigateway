@@ -132,6 +132,7 @@ import { getResourcesOnline } from '@/services/source/online-debugging';
 import Chat from '@/components/chat/Index.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
+import type { IDocsGatewaysResourcesListResponse } from '@/services/types/responses/docs.ts';
 
 interface IProps {
   stageName?: string
@@ -153,17 +154,27 @@ const featureFlagStore = useFeatureFlag();
 type IGatewayDocsDetail = IExtractApiReturn<typeof getGatewaysDetailsDocs>;
 
 const active = ref('doc');
-const curComponent = ref({
-  id: '',
+const curComponent = ref<IDocsGatewaysResourcesListResponse & {
+  content: string
+  innerHtml: string
+  markdownHtml: string
+}>({
+  id: 0,
   name: '',
-  label: '',
+  description: '',
+  method: '',
+  path: '',
+  verified_user_required: false,
+  verified_app_required: false,
+  resource_perm_required: false,
+  allow_apply_permission: false,
+  labels: '',
   content: '',
   innerHtml: '',
   markdownHtml: '',
 });
 const curApigw = ref<Partial<IGatewayDocsDetail>>({
   name: '',
-  label: '',
   maintainers: [],
 });
 const curDocUpdated = ref('');
@@ -175,7 +186,7 @@ const renderHtmlIndex = ref(0);
 const curUser = computed(() => userStore.info);
 const userList = computed(() => {
   // 去重
-  const set = new Set([curUser.value?.username, ...(curApigw.value?.maintainers ?? [])]);
+  const set = new Set([curUser.value?.username, ...(curApigw.value?.maintainers ?? [])].filter(Boolean) as string[]);
   return [...set];
 });
 const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${curApigw.value?.name}`);
@@ -270,7 +281,7 @@ const initMarkdownHtml = (box: string) => {
 };
 
 const getApigwAPIDetail = async () => {
-  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name, { source: 'api_debug' });
+  curApigw.value = await getGatewaysDetailsDocs(gatewayStore.currentGateway?.name ?? '', { source: 'api_debug' });
 };
 
 const getApigwResourceDetail = async () => {
@@ -278,7 +289,7 @@ const getApigwResourceDetail = async () => {
     limit: 10000,
     offset: 0,
   };
-  const res = await getResourcesOnline(gatewayStore.currentGateway?.id, stageId, query);
+  const res = await getResourcesOnline(gatewayStore.currentGateway?.id ?? 0, stageId, query);
 
   const match = res?.find((item) => {
     return item.name === resourceName;
@@ -287,7 +298,7 @@ const getApigwResourceDetail = async () => {
     curComponent.value = {
       ...curComponent.value,
       ...match,
-    };
+    } as any;
   }
 };
 
@@ -296,7 +307,7 @@ const getApigwResourceDoc = async () => {
     stage_name: stageName,
     source: 'api_debug',
   };
-  const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name, resourceName, query);
+  const res = await getApigwResourceDocDocs(gatewayStore.currentGateway?.name ?? '', resourceName, query);
   const { content } = res;
   curComponent.value.content = content;
   curComponent.value.markdownHtml = md.render(content);
@@ -313,7 +324,7 @@ const getApigwResourceSDK = async () => {
     resource_name: resourceName,
     source: 'api_debug',
   };
-  const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name, query);
+  const res = await getApigwResourceSDKDocs(gatewayStore.currentGateway?.name ?? '', query);
   const { content } = res;
   sdkMarkdownHtml.value = md.render(content);
   initMarkdownHtml('sdk-markdown');

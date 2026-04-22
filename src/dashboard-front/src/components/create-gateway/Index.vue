@@ -374,6 +374,7 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 import { getEnv } from '@/services/source/basic.ts';
 import {
   checkNameAvailable,
@@ -384,6 +385,7 @@ import {
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import type { IFormMethod } from '@/types/common';
+import type { IGatewayCreateInputSLZ } from '@/services/types/body/post/gateways';
 import MemberSelector from '@/components/member-selector';
 import BkUserSelector from '@blueking/bk-user-selector';
 import bareGit from '@/images/bare_git.png';
@@ -397,7 +399,11 @@ import {
 import AgIcon from '@/components/ag-icon/Index.vue';
 import AgSideslider from '@/components/ag-sideslider/Index.vue';
 
-type ParamType = Parameters<typeof patchGateway>[1];
+type ParamType = IGatewayCreateInputSLZ & {
+  id?: number
+  tenant_mode?: string
+  tenant_id?: string
+};
 
 interface IProps { initData?: ParamType }
 

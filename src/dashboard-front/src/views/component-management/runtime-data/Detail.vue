@@ -151,7 +151,7 @@
       :is-show="detailDialog.visible"
       theme="primary"
       :width="900"
-      :quick-close
+      quick-close
       :header-align="'left'"
       :title="t('错误请求详情')"
       dialog-type="show"
@@ -202,10 +202,7 @@
 <script lang="tsx" setup>
 import ChartView from './Chart.vue';
 import moment from 'moment';
-import { Button } from 'bkui-vue';
-const BkButton = Button;
 import {
-  type ITimeChartResponse,
   getApigwErrorRequest,
   getApigwRuntimeRequest,
   getApigwSystemSummary,
@@ -216,10 +213,12 @@ interface IRuntimeRequestItem {
   req_app_code?: string
   req_component_name?: string
   req_url?: string
-  requests?: { error_count?: number; count?: number }
+  requests?: { error_count?: number
+    count?: number }
   perc95_resp_time?: { value?: number }
   avg_resp_time?: { value?: number }
-  rate_availability?: { value?: number; value_str?: string }
+  rate_availability?: { value?: number
+    value_str?: string }
   [key: string]: any
 }
 
@@ -227,15 +226,15 @@ const route = useRoute();
 const { t } = useI18n();
 
 const active = ref('req_component_name');
-const systemName = ref<string | string[]>();
-const system = ref<string | string[]>();
+const systemName = ref<string>('');
+const system = ref<string>('');
 const timer = ref(0);
 const autoEnable = ref(true);
 const detailDialog = reactive({
   name: '',
   visible: false,
 });
-const requests = ref([]);
+const requests = ref<any[]>([]);
 const endTime = ref(Date.now());
 const startTime = ref(Date.now() - 60 * 60 * 1000);
 const dayStartTime = ref(Date.now() - 24 * 60 * 60 * 1000);
@@ -248,7 +247,7 @@ const summaryData = ref<any>({
   requests: { count_str: '' },
 });
 const isErrorDataLoading = ref(false);
-const errorRequests = ref([]);
+const errorRequests = ref<any[]>([]);
 const initColumns = ref([
   {
     label: t('序列'),
@@ -260,22 +259,22 @@ const initColumns = ref([
     field: 'error_count',
     sort: true,
     sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortCount(a, b),
-    render: ({ row }: { row?: IRuntimeRequestItem }) => {
+    render: ({ row }: { row: IRuntimeRequestItem }) => {
       return (
         <div>
           <span>
-            { row?.requests?.error_count }
+            { row.requests?.error_count }
             /
           </span>
-          <span>{ row?.requests?.count }</span>
-          <BkButton
-            v-if="row?.requests?.error_count"
+          <span>{ row.requests?.count }</span>
+          <bk-button
+            v-if="row.requests?.error_count"
             text
-            class="m-l-5px"
+            class="ml-5px"
             onClick={() => handleShowDetail(row!)}
           >
             { t('详情') }
-          </BkButton>
+          </bk-button>
         </div>
       );
     },
@@ -285,10 +284,10 @@ const initColumns = ref([
     field: 'perc95_resp_time',
     sort: true,
     sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortRespTime(a, b),
-    render: ({ row }: { row?: IRuntimeRequestItem }) => {
+    render: ({ row }: { row: IRuntimeRequestItem }) => {
       return (
         <span>
-          { row?.perc95_resp_time?.value }
+          { row.perc95_resp_time?.value }
         </span>
       );
     },
@@ -298,10 +297,10 @@ const initColumns = ref([
     field: 'avg_resp_time',
     sort: true,
     sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortAvgTime(a, b),
-    render: ({ row }: { row?: IRuntimeRequestItem }) => {
+    render: ({ row }: { row: IRuntimeRequestItem }) => {
       return (
         <span>
-          { row?.avg_resp_time?.value }
+          { row.avg_resp_time?.value }
         </span>
       );
     },
@@ -311,10 +310,10 @@ const initColumns = ref([
     field: 'rate_availability',
     sort: true,
     sortFn: (a: Record<string, any>, b: Record<string, any>) => handleSortRate(a, b),
-    render: ({ row }: { row?: IRuntimeRequestItem }) => {
+    render: ({ row }: { row: IRuntimeRequestItem }) => {
       return (
         <span>
-          { row?.rate_availability?.value_str }
+          { row.rate_availability?.value_str }
           %
         </span>
       );
@@ -431,7 +430,7 @@ const getSystemSummary = async () => {
   isSummaryDataLoading.value = true;
   try {
     const res = await getApigwSystemSummary({
-      system: system.value,
+      system: system.value!,
       start: startTime.value,
       end: endTime.value,
     });
@@ -442,9 +441,9 @@ const getSystemSummary = async () => {
   }
 };
 
-const handleTimeChange = (start: number, end: number) => {
-  startTime.value = start;
-  endTime.value = end;
+const handleTimeChange = (start?: number, end?: number) => {
+  startTime.value = start ?? startTime.value;
+  endTime.value = end ?? endTime.value;
   init();
 };
 
@@ -482,7 +481,6 @@ const handleShowDetail = async (data: IRuntimeRequestItem) => {
       start: startTime.value,
       end: endTime.value,
     });
-    console.log(res);
     errorRequests.value = (res as any).data.data_list.map((item: any) => {
       const datetime = moment(item.timestamp).format('MM-DD HH:mm');
       const endTime = moment(item.req_end_time).valueOf();
@@ -503,8 +501,8 @@ const handleShowDetail = async (data: IRuntimeRequestItem) => {
 
 const getRouteData = () => {
   const { params, query } = route;
-  system.value = params?.system;
-  systemName.value = query?.systemName;
+  system.value = params?.system as string;
+  systemName.value = query?.systemName as string;
   route.meta.title = `${t('系统实时概况')}`;
 };
 getRouteData();

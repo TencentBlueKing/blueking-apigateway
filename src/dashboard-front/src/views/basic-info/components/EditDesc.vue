@@ -83,6 +83,8 @@ interface IProps {
   mode?: 'edit' | 'detail'
 }
 
+interface IEmits { 'on-change': [data: { [key: string]: string }] }
+
 const {
   field,
   content = '',
@@ -91,8 +93,6 @@ const {
   maxLength = 500,
   mode = 'edit',
 } = defineProps<IProps>();
-
-interface IEmits { 'on-change': [data: { [key: string]: string }] }
 
 const emit = defineEmits<IEmits>();
 

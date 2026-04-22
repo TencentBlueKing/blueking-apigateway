@@ -140,7 +140,7 @@
                       v-if="readonly"
                       class="readonly-value-wrapper"
                     >
-                    {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
+                      {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
                     </div>
                     <div
                       v-else
@@ -161,7 +161,7 @@
                       </BkSelect>
                       <ParamsRowConfig
                         :row="row"
-                      @change="(config: any) => handleConfigChange(row, config)"
+                        @change="(config: any) => handleConfigChange(row, config)"
                       />
                     </div>
                   </td>
@@ -578,8 +578,8 @@ onMounted(() => {
 defineExpose({
   getValue: async () => {
     try {
-      if (subTableRefs.value?.length) {
-        for (const subTable of subTableRefs.value) {
+      if ((subTableRefs.value as any)?.length) {
+        for (const subTable of (subTableRefs.value as any)) {
           await subTable?.validate();
         }
       }

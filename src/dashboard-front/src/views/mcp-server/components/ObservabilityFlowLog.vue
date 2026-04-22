@@ -77,7 +77,7 @@
         <template #content>
           <Component
             :is="flowLogFormCompMap[collapse.name as keyof typeof flowLogFormCompMap]"
-            :ref="(el: HTMLElement | null) => setComponentRef(el, collapse.name)"
+            :ref="(el: any) => setComponentRef(el, collapse.name)"
             v-model:page-count="pageCount"
             v-model:search-params="searchParams"
             v-model:include-query="includeQuery"
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 
   .collapse-panel {
     margin: 24px;
-    background-color: #ffffff;
+    background-color: #fff;
     box-sizing: border-box;
 
     &-header {

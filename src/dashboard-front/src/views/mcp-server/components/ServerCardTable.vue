@@ -46,7 +46,6 @@ import { type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number];
@@ -111,7 +110,7 @@ const hiddenColumn = computed(() => {
   return hiddenColumns;
 });
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('名称'),
     colKey: 'name',
@@ -147,12 +146,12 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
               tableRef.value?.handleCellEnter({
                 e,
                 row,
-              })}
-            onMouseLeave={(e: any) =>
+              } as any)}
+            onMouseleave={(e: any) =>
               tableRef.value?.handleCellLeave({
                 e,
                 row,
-              })}
+              } as any)}
           >
             {row.name}
           </div>
@@ -163,7 +162,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
                 class="ml-4px hover-cursor-pointer"
                 v-slots={{
                   icon: () => (
-                    <AgIcon name="zhiming" />
+                    <ag-icon name="zhiming" />
                   ),
                 }}
                 v-bk-tooltips={{
@@ -216,7 +215,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       type: 'single',
       showConfirmAndReset: true,
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: filterCondition.stages.map((item: any) => {
+      list: (filterCondition.stages ?? []).map((item: any) => {
         return {
           label: item.name,
           value: item.id,
@@ -232,7 +231,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       type: 'multiple',
       showConfirmAndReset: true,
       resetValue: [],
-      list: filterCondition.categories.map((item: any) => {
+      list: (filterCondition.categories ?? []).map((item: any) => {
         return {
           label: item.display_name,
           value: item.name,
@@ -336,7 +335,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
           <bk-dropdown trigger="click">
             {{
               default: () => (
-                <AgIcon
+                <ag-icon
                   class="flex items-center justify-center w-16px h-16px color-#4d4f56 cursor-pointer"
                   name="more-fill"
                   size="16"
@@ -431,10 +430,10 @@ const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
 const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
   if (sort) {
     const { sortBy: colKey, descending } = sort as any;
-    filterData.value.order_by = descending ? `-${colKey}` : colKey;
+    filterData.value!.order_by = descending ? `-${colKey}` : colKey;
   }
   else {
-    delete filterData.value.order_by;
+    delete filterData.value!.order_by;
   }
   getList();
 };
@@ -443,9 +442,9 @@ const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   handleTableFilterChange({
     filterItem,
-    filterData,
-    searchOptions: searchData,
-    searchParams: searchValue,
+    filterData: filterData as any,
+    searchOptions: searchData as any,
+    searchParams: searchValue as any,
   });
   getList();
 };
@@ -458,14 +457,15 @@ defineExpose({ getList });
 
 <style lang="scss" scoped>
 :deep(.no-perm-row) {
+
   .bk-tag {
-    background-color: #f5f7fa;
     color: #c4c6cc;
+    background-color: #f5f7fa;
 
     &:hover {
-      border-color: transparent;
-      background-color: #f5f7fa;
       color: #c4c6cc;
+      background-color: #f5f7fa;
+      border-color: transparent;
     }
   }
 }

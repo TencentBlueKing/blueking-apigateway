@@ -91,7 +91,7 @@ const showVersionLog = () => {
 };
 
 const showSyncReleaseNote = ref(false);
-const syncReleaseList = ref([]);
+const syncReleaseList = ref<any[]>([]);
 
 onMounted(async () => {
   const list = await getVersionLog();

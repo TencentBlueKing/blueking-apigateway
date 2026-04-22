@@ -161,7 +161,7 @@ const getResourceVersions = async () => {
     limit: 1000,
   };
   const res = await getVersionList(apigwId.value, query);
-  versionOpts.value = res.results;
+  versionOpts.value = res.results as unknown as IVersionItem[];
 };
 
 watch(

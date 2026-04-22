@@ -125,7 +125,7 @@ const initMarkdownHtml = (box: string) => {
     markdownDom.querySelectorAll('.ag-markdown-view__copy-btn').forEach((btn) => {
       btn.removeEventListener('click', handleCopy);
       // 清理缓存
-      codeContentMap.value.delete(btn);
+      codeContentMap.value.delete(btn as HTMLElement);
     });
     // 清理安装按钮事件
     markdownDom.querySelectorAll('.ag-markdown-view__install-btn').forEach((btn) => {

@@ -31,7 +31,7 @@
       />
       <BkNavigation
         class="navigation-content"
-        :class="[`${route.name}-navigation-content`]"
+        :class="[`${String(route.name)}-navigation-content`]"
         navigation-type="top-bottom"
         :need-menu="false"
         default-open
@@ -208,7 +208,7 @@ const fetchInitData = async () => {
 
 watch(
   () => route.path,
-  (newVal: string, oldVal: string) => {
+  (newVal, oldVal) => {
     if (newVal === oldVal) {
       return;
     }
@@ -221,7 +221,7 @@ watch(
     if (platform.indexOf('win') === 0) {
       systemCls.value = 'win';
     }
-    gateway.setApigwId(apigwId.value);
+    gateway.setApigwId(Number(apigwId.value));
     // 需要在不同页面实时查询以下接口最新状态
     fetchInitData();
   },

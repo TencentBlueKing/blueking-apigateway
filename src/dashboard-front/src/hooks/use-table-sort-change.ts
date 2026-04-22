@@ -21,6 +21,7 @@ import type {
   SortInfo,
   TableSort,
 } from '@blueking/tdesign-ui';
+import type { ShallowRef } from 'vue';
 
 /**
  * 表格排序(暂时只支持单字段排序)
@@ -39,7 +40,7 @@ export function useTableSortChange() {
     orderBy: SortInfo
     filterData: Ref<Partial<FilterValue>>
     sortData: Ref<Partial<TableSort>>
-    allowSortField: Ref<string[]>
+    allowSortField: ShallowRef<string[]>
   }) {
     if (orderBy) {
       const { sortBy: colKey, descending } = orderBy;

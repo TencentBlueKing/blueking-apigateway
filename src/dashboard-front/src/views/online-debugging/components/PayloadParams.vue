@@ -103,10 +103,10 @@ const pathList = ref<any[]>([]);
 const activeIndex = ref<number[]>([1]);
 
 watch(
-  () => [queryPayload, pathPayload, priorityPath],
-  ([v1, v2, v3]: [any[], any[], any[]]) => {
-    queryList.value = v1;
-    pathList.value = v3?.length ? v3 : v2;
+  () => [queryPayload, pathPayload, priorityPath] as const,
+  ([v1, v2, v3]) => {
+    queryList.value = v1 as any[];
+    pathList.value = (v3 as any[])?.length ? v3 as any[] : v2 as any[];
   },
   { deep: true },
 );

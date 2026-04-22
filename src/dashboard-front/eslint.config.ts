@@ -38,6 +38,7 @@ export default defineConfigWithVueTs(
     rules: {
       // TypeScript
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
       // ESLint
       'no-duplicate-imports': 'error',
       'sort-imports': ['error', { ignoreDeclarationSort: true }],

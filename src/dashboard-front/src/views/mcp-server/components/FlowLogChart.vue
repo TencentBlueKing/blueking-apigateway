@@ -54,8 +54,8 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 interface IEmits {
   'clear-filter': [void]
   'refresh-request': [void]
-  'update-date': { dateValue: string[] }
-};
+  'update-date': [{ dateValue: string[] }]
+}
 
 // 空数据配置
 const chartEmptyConf = defineModel('chartEmptyConf', {
@@ -76,7 +76,7 @@ const emit = defineEmits<IEmits>();
 
 const { getChartIntervalOption } = useChartIntervalOption();
 
-const chartBoxRef = ref<HTMLDivElement>(null);
+const chartBoxRef = ref<HTMLDivElement | null>(null);
 // ECharts 实例
 const chartInstance = ref<echarts.ECharts | null>(null);
 // 图表数据（series + timeline）
@@ -127,7 +127,7 @@ const handleDataZoom = debounce((e: any) => {
   // 无值直接返回
   if (start === undefined || end === undefined) return;
 
-  const xAxisOption = chartInstance.value?.getOption().xAxis?.[0];
+  const xAxisOption = (chartInstance.value?.getOption() as any).xAxis?.[0];
   if (!xAxisOption || !xAxisOption.data) return;
 
   const xData = xAxisOption.data;
@@ -176,7 +176,7 @@ const renderChart = async (data: {
     chartInstance.value?.setOption({
       series: [],
       xAxis: { data: [] },
-    }, true);
+    } as any, true);
     return;
   }
 
@@ -434,10 +434,10 @@ defineExpose({
   box-sizing: border-box;
 
   .chart-box {
+    position: relative;
     width: 100%;
     height: 160px;
-    background: #ffffff;
-    position: relative;
+    background: #fff;
 
     .chart-el {
       width: 100%;

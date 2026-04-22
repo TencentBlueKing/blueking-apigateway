@@ -131,10 +131,12 @@ const expireDays = defineModel('expireDate', {
   required: true,
   default: 0,
 });
+
 const curSelections = defineModel<IPermission[]>('selections', {
   required: true,
   default: () => [],
 });
+
 const {
   applyCount = 0,
   dialogParams = {
@@ -143,6 +145,7 @@ const {
     isShow: false,
   },
 } = defineProps<IProps>();
+
 const emits = defineEmits<IEmits>();
 
 const permissionStore = usePermission();
@@ -164,7 +167,3 @@ const handleApplyDialogClose = () => {
 };
 
 </script>
-
-<style lang="scss" scoped>
-
-</style>

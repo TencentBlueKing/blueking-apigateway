@@ -16,7 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-// @ts-expect-error type utils
 import { type CSSProperties, getCurrentInstance } from 'vue';
 import { useTrace } from '@/stores/useTrace';
 import type { ISpan, TNil } from '@/components/trace-view/typings';

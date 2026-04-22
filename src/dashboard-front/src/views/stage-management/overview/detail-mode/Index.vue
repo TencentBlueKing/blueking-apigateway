@@ -454,7 +454,7 @@ async function fetchStageList() {
         }
         else {
           tasks.push(Promise.resolve(undefined));
-        const index = loadingProgrammableStageIds.value.findIndex((id: number) => id === stage.id);
+          const index = loadingProgrammableStageIds.value.findIndex((id: number) => id === stage.id);
           if (index !== -1) {
             loadingProgrammableStageIds.value.splice(index, 1);
           }

@@ -101,19 +101,8 @@ interface LegendItem {
 };
 
 interface ChartLegend {
-  requests_total?: LegendItem
-  health_rate?: LegendItem
-  requests?: LegendItem
-  non_20x_status?: LegendItem
-  app_requests?: LegendItem
-  resource_requests?: LegendItem
-  ingress?: LegendItem
-  egress?: LegendItem
-  response_time_90th?: LegendItem
-  response_time_50th?: LegendItem
-  response_time_95th?: LegendItem
-  response_time_99th?: LegendItem
-};
+  [key: string]: LegendItem[] | null | undefined
+}
 
 const { getChartIntervalOption } = useChartIntervalOption();
 
@@ -122,10 +111,10 @@ const chartLegend = ref<ChartLegend>({});
 const searchParams = ref<ISearchParamsType>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -164,16 +153,16 @@ const handleInit = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  const list = Object.values(searchParams.value).filter(item => !!item);
+  const list = Object.values(searchParams.value ?? {}).filter(item => !!item);
   if (list.length > 0) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  if (searchParams.value.stage_id) {
+  if (searchParams.value?.stage_id) {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const chartResize = () => {
@@ -258,7 +247,7 @@ const getChartOption = () => {
   const maxList = ['response_time_99th', 'response_time_95th', 'response_time_90th', 'response_time_50th'];
 
   // if (instanceId !== 'response_time') {
-  chartData?.series?.forEach((item: ISeriesItemType) => {
+  (chartData as any)?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
     chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
@@ -318,7 +307,7 @@ const getChartOption = () => {
   });
 
   // 设置图表颜色
-  chartOption.color = generateChartColor(chartData.series ?? []);
+  chartOption.color = generateChartColor((chartData as any).series ?? []);
 
   // 设置图表tooltip内容
   if (instanceId === 'requests') {
@@ -442,7 +431,7 @@ const generateChartColor = (chartData: ISeriesItemType[]) => {
 };
 
 const generateChartLegend = () => {
-  const option = myChart.value?.getOption();
+  const option = myChart.value?.getOption() as any;
   // 只有一个系列不需要图例
   if (option.series.length > 1) {
     chartLegend.value[instanceId] = option?.series?.map((serie: any, index: number) => ({
@@ -458,6 +447,7 @@ const generateChartLegend = () => {
 
 const handleClickLegend = (index: number) => {
   const legend = chartLegend.value[instanceId];
+  if (!legend) return;
   const currentLegend = legend[index];
 
   const { selected } = currentLegend;
@@ -519,39 +509,45 @@ defineExpose({ syncParams });
 
 .chart-wrapper {
   position: relative;
+
   .chart-title {
     padding: 12px 24px 0;
-    color: '#313238';
     font-size: 14px;
     font-weight: 'bold';
     line-height: 22px;
+    color: '#313238';
   }
+
   .line-chart {
+
     &.mini {
       height: 286px;
     }
+
     &.middle {
       height: 326px;
     }
   }
+
   .chart-legend {
     display: flex;
-    flex-wrap: wrap;
-    margin: 0 40px;
     height: 90px;
+    margin: 0 40px;
+
     // max-height: 110px;
     overflow-y: auto;
+    flex-wrap: wrap;
 
     .legend-item {
       display: flex;
-      align-items: center;
-      flex: none;
+      margin-right: 12px;
       font-size: 12px;
       line-height: 22px;
-      margin-right: 12px;
       color: #777;
       white-space: nowrap;
       cursor: pointer;
+      align-items: center;
+      flex: none;
 
       &:hover,
       &.selected {
@@ -562,24 +558,28 @@ defineExpose({ syncParams });
         color: #ccc;
       }
     }
+
     .legend-icon {
-      height: 4px;
-      background: #999;
-      flex: none;
       width: 16px;
-      border-radius: 2px;
+      height: 4px;
       margin-right: 3px;
+      background: #999;
+      border-radius: 2px;
+      flex: none;
     }
   }
+
   .side-legend {
     position: absolute;
-    right: -34px;
     top: 10px;
-    flex-direction: column;
+    right: -34px;
     height: 220px;
     max-height: 242px;
+    flex-direction: column;
   }
+
   .custom-scroll-bar {
+
     &::-webkit-scrollbar {
       width: 4px;
       background-color: color.scale(#C4C6CC, $lightness: 80%);
@@ -587,8 +587,8 @@ defineExpose({ syncParams });
 
     &::-webkit-scrollbar-thumb {
       height: 5px;
-      border-radius: 2px;
       background-color: #c4c6cc;
+      border-radius: 2px;
     }
 
     &::-webkit-scrollbar-track {
@@ -596,15 +596,18 @@ defineExpose({ syncParams });
     }
   }
 }
+
 :deep(.tooltip-icon) {
   margin-right: 6px;
+
   span {
-    height: 4px !important;
     width: 16px !important;
-    border-radius: 2px !important;
+    height: 4px !important;
     vertical-align: middle;
+    border-radius: 2px !important;
   }
 }
+
 .basic-height {
   height: 286px;
 }

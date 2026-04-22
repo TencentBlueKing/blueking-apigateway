@@ -40,6 +40,6 @@ const bgColor = computed(() => {
     error: 'bg-#ea3636 shadow-[0_0_0_4px_rgba(239,68,68,0.1)]',
   };
 
-  return colorMap[type || 'error'] || colorMap['error'];
+  return colorMap[type || 'error'];
 });
 </script>

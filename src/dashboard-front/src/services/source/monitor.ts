@@ -18,7 +18,6 @@
 import http from '../http';
 import type {
   IAlarmRecordListOutput,
-  IAlarmRecordRetrieveOutput,
   IAlarmStrategyListOutput,
   IAlarmStrategyRetrieveOutput,
 } from '@/services/types/responses/gateways.ts';
@@ -138,13 +137,4 @@ export function updateStrategyStatus(apigwId: number, id: number, params: IAlarm
  */
 export function getRecordList(apigwId: number, params: IGatewaysMonitorsAlarmRecordsListQuery = {}) {
   return http.get<IAlarmRecordListOutput>(`/gateways/${apigwId}/monitors/alarm/records/`, params);
-}
-
-/**
- *  获取某条告警记录详情
- * @param apigwId 网关id
- * @param id 告警记录id
- */
-export function getRecordDetail(apigwId: number, id: number) {
-  return http.get<IAlarmRecordRetrieveOutput>(`/gateways/${apigwId}/monitors/alarm/records/${id}/`);
 }

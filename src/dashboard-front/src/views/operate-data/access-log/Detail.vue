@@ -35,7 +35,7 @@
             v-bk-xss-html="titleInfo"
             class="title"
           />
-          <small class="time">{{ transformTime(+routeQuery.bk_timestamp) }}</small>
+          <small class="time">{{ transformTime(+(routeQuery.bk_timestamp ?? 0)) }}</small>
         </div>
         <div class="panel-bd">
           <dl class="details">
@@ -67,7 +67,8 @@ import {
 import { useGatewaysList } from '@/hooks';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
 import { getGatewayList } from '@/services/source/gateway';
-// import { useCommon } from '@/stores';
+
+type IGatewayListItem = IExtractListApiResults<typeof getGatewayList>;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -76,25 +77,29 @@ const route = useRoute();
 // 组件默认不展示任何请求的错误 Message
 // common.setNoGlobalError(true);
 
-// 获取网关数据方法
-const { getGatewaysListData } = useGatewaysList({});
-
-type IGatewayListItem = IExtractListApiResults<typeof getGatewayList>;
-
 const isDataLoading = ref(false);
 const hasError = ref(false);
 const apigwDataList = ref<IGatewayListItem[]>([]);
-const details = ref<{ fields: { label: string; field: string }[]; result: Record<string, any> }>({
+const details = ref<{
+  fields: {
+    label: string
+    field: string
+  }[]
+  result: Record<string, any>
+}>({
   fields: [],
   result: {},
 });
+// @ts-expect-error useGatewaysList 接受 Ref 类型参数
+const { getGatewaysListData } = useGatewaysList({});
 
 const routeQuery = computed(() => route.query);
 
 const routeParams = computed(() => route.params);
 
 const currentApigwName = computed(() => {
-  const current = apigwDataList.value.find((item: IGatewayListItem) => String(item.id) === String(routeParams.value.id)) || {} as IGatewayListItem;
+  const current = apigwDataList.value.find((item: IGatewayListItem) =>
+    String(item.id) === String(routeParams.value.id)) || {} as IGatewayListItem;
   return current.name || '--';
 });
 
@@ -115,7 +120,11 @@ const getDetailData = async () => {
   };
   isDataLoading.value = true;
   try {
-    const res = await fetchApigwAccessLogDetail(+routeParams.value.id, String(routeParams.value.requestId), params as unknown as Parameters<typeof fetchApigwAccessLogDetail>[2]);
+    const res = await fetchApigwAccessLogDetail(
+      +routeParams.value.id,
+      String(routeParams.value.requestId),
+      params as unknown as Parameters<typeof fetchApigwAccessLogDetail>[2],
+    );
     details.value.result = res.results[0] || {};
     details.value.fields = res.fields;
   }
@@ -144,7 +153,10 @@ const getFieldText = (field: string) => {
 
 onMounted(async () => {
   await initData();
-  apigwDataList.value = await getGatewaysListData();
+  const result = await getGatewaysListData();
+  if (result) {
+    apigwDataList.value = result as unknown as IGatewayListItem[];
+  }
 });
 
 // 离开组件前重置 noGlobalError 状态，避免其他页面也不展示错误 Message

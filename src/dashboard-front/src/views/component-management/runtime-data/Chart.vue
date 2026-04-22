@@ -50,7 +50,7 @@ const route = useRoute();
 const { t } = useI18n();
 
 const isChartDataLoading = ref(true);
-const system = ref<string | string[]>('');
+const system = ref<string>('');
 const chartInstance = ref();
 
 const gettext = (text: string) => {
@@ -70,8 +70,8 @@ const renderChart = () => {
   // 绘制 系统实时概况 图表
   getApigwChartDetail({
     system: system.value,
-    start: startTime,
-    end: endTime,
+    start: startTime as unknown as number,
+    end: endTime as unknown as number,
   }).then((result: any) => {
     let chart_options = extend(
       default_options,
@@ -161,8 +161,8 @@ const getDefaultOptions = (start_value: number, end_value: number) => {
         lineStyle: { color: 'red' },
         filterMode: 'filter',
         // 初始的开始和结束位置，根据实际情况调整
-      startValue: parseInt(String(end_value), 10) - 60 * 60 * 1000,
-      endValue: parseInt(String(end_value), 10),
+        startValue: parseInt(String(end_value), 10) - 60 * 60 * 1000,
+        endValue: parseInt(String(end_value), 10),
         realtime: false,
       },
     ],
@@ -302,7 +302,7 @@ const getSeriesOptions = (option: Record<string, any>) => {
 };
 
 onMounted(() => {
-  system.value = route.params?.system;
+  system.value = route.params?.system as string;
   renderChart();
   window.onresize = () => {
     if (chartInstance.value) {

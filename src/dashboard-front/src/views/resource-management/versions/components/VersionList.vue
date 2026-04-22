@@ -479,7 +479,7 @@ const handleExportDownload = async () => {
   delete params.export_type;
   exportDialogConfig.loading = true;
   try {
-    await exportVersion(apigwId.value, params);
+    await exportVersion(apigwId.value, params as any);
     Message({
       message: t('导出成功'),
       theme: 'success',

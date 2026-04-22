@@ -78,6 +78,8 @@ import AddBackendService from '@/views/backend-services/components/AddBackendSer
 import AgTable from '@/components/ag-table/Index.vue';
 import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
+
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -94,7 +96,6 @@ const filterData = ref({
   name: '',
   type: '',
 });
-type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
 
 const stageList = ref<IStageListItem[]>([]);
 

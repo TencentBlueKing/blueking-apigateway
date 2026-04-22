@@ -409,13 +409,16 @@ import { cloneDeep, isEqual } from 'lodash-es';
 import { Checkbox, Form, Input, Message, Select } from 'bkui-vue';
 import { useAccessLog, useGateway } from '@/stores';
 import type { IFormMethod } from '@/types/common';
-import type { IStageListItem } from '@/services/source/stage';
+import type { IExtractApiReturn } from '@/services/types/utils';
+import { getStageList } from '@/services/source/stage';
 import {
   type IAlarmStrategy,
   createStrategy,
   updateStrategy,
 } from '@/services/source/monitor';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
 
 type ISliderParams = {
   isShow: boolean
@@ -447,8 +450,17 @@ const effectiveStageType = defineModel('effectiveStage', {
 });
 
 const {
-  sliderParams = {},
-  strategy = {},
+  sliderParams = {
+    isShow: false,
+    title: '',
+  },
+  strategy = {
+    id: 0,
+    name: '',
+    alarm_type: '',
+    alarm_subtype: '',
+    effective_stages: [],
+  } as IAlarmStrategy,
   initData = {},
   labelList = [],
   stageList = [],
@@ -484,7 +496,7 @@ const formData = ref<any>({
 });
 const saveLoading = ref(false);
 
-const nameRef = ref<InstanceType<typeof Input>>();
+const nameRef = ref<InstanceType<typeof Input> & { focus: () => void }>();
 const alarmTypeRef = ref<InstanceType<typeof Select>>();
 const effectiveRef = ref<InstanceType<typeof Select>>();
 const noticeWayRef = ref<InstanceType<typeof Checkbox.Group>>();
@@ -702,6 +714,7 @@ const handleSave = async () => {
       await updateStrategy(apigwId.value, strategyId.value, params);
     }
     else {
+      delete params.id;
       await createStrategy(apigwId.value, params);
     }
     Message({

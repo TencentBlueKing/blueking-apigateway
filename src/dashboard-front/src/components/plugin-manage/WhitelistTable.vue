@@ -404,10 +404,10 @@ const rules = reactive<any>({
   ],
 });
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 const sourceEl = ref<any>(null);
@@ -501,7 +501,7 @@ const handleResourceScroll = async () => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.abnormal;
+  tableEmptyConf.value.isAbnormal = (pagination as any).abnormal;
   if (searchFilters.value?.length || !pagingList.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -510,7 +510,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const handleClearFilterKey = () => {

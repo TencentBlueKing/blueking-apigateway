@@ -178,7 +178,14 @@ import { useAccessLog, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
 import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
+import type { IExtractListApiResults } from '@/services/types/utils';
 import AgTable from '@/components/ag-table/Index.vue';
+
+type IStrategyOptionItem = {
+  id: number
+  value: number
+  label: string
+};
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -190,11 +197,11 @@ const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const scrollLoading = ref(false);
 const tableData = ref([]);
-const alarmStrategyOption = ref([]);
+const alarmStrategyOption = ref<IStrategyOptionItem[]>([]);
 const initParams = reactive({
   limit: 10,
   offset: 0,
-  order_by: 'name',
+  order_by: 'name' as const,
 });
 let sliderConfig = reactive({
   isShow: false,
@@ -207,7 +214,7 @@ let sliderConfig = reactive({
     status: '',
   },
 });
-const filterData = ref({});
+const filterData = ref<Record<string, any>>({});
 
 const {
   dateValue,
@@ -221,7 +228,7 @@ const {
 } = useDatePicker(filterData);
 
 const apigwId = computed(() => gatewayStore.apigwId);
-const tableColumns = computed(() => ([
+const tableColumns = computed((): any[] => ([
   {
     title: t('告警ID'),
     colKey: 'id',
@@ -358,7 +365,8 @@ const getAlarmStatusText = (status: string) => {
 const getStrategyOption = async () => {
   const { results, count } = await getStrategyList(apigwId.value, initParams);
   curStrategyCount.value = count;
-  alarmStrategyOption.value = results.map(item => ({
+  alarmStrategyOption.value = results.map((item: IExtractListApiResults<typeof getStrategyList>) => ({
+    id: item.id,
     label: item.name,
     value: item.id,
   }));
@@ -372,7 +380,8 @@ const handleScrollEnd = async () => {
   initParams.offset += 10;
   try {
     const { results } = await getStrategyList(apigwId.value, initParams);
-    const addData = results.map(item => ({
+    const addData = results.map((item: IExtractListApiResults<typeof getStrategyList>) => ({
+      id: item.id,
       label: item.name,
       value: item.id,
     }));

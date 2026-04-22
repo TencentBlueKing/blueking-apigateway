@@ -191,7 +191,7 @@
                                     :show-first-full-row="promptSelections.length > 0"
                                     :row-class-name="handleSetPromptRowClass"
                                     :columns="promptTableColumns"
-                                    :table-empty-type="promptTableEmptyType"
+                                    :table-empty-type="promptTableEmptyType as any"
                                     @clear-filter="handlePromptClearFilter"
                                     @clear-selection="handlePromptClearSelection"
                                     @selection-change="handlePromptSelectionChange"
@@ -400,21 +400,19 @@
 <script lang="tsx" setup>
 import { cloneDeep, uniq } from 'lodash-es';
 import {
+  Tag as BkTag,
   Divider,
   Form,
   Input,
   Message,
   PopConfirm,
   ResizeLayout,
-  Tag as BkTag,
 } from 'bkui-vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
 import { refDebounced } from '@vueuse/core';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import {
   type IMCPFormData,
   type IMCPServerCategory,
@@ -460,9 +458,9 @@ let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
 const resourceNameToIndexMap = new Map<string, number>();
 const authorizedPromptIds = new Set<number>();
 
-const footerRef = ref<InstanceType<typeof HTMLDivElement>>(null);
-const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
-const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
+const footerRef = ref<HTMLDivElement | null>(null);
+const resourceRef = ref<HTMLDivElement | null>(null);
+const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
@@ -471,6 +469,7 @@ const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
+  title: '',
   url: '',
   description: '',
   protocol_type: 'streamable_http',
@@ -478,8 +477,8 @@ const defaultFormData = ref<IMCPFormData>({
   is_public: true,
   oauth2_public_client_enabled: false,
   raw_response_enabled: false,
-  labels: [],
-  categories: [],
+  labels: [] as string[],
+  categories: [] as string[],
 });
 const formData = ref<IMCPFormData>(cloneDeep(defaultFormData.value));
 const isShow = ref(false);
@@ -489,19 +488,19 @@ const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
-const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
+const promptTableEmptyType = ref<'empty' | 'search-empty' | 'searchEmpty'>('empty');
 const resizePreviewWidth = ref('100%');
-const stageList = ref([]);
-const resourceList = ref([]);
-const promptTableData = ref([]);
-const curPromptData = ref({});
-const toolSelections = ref([]);
-const promptSelections = ref([]);
-const allSelections = ref([]);
-const noPermPrompt = ref([]);
-const toolFilterData = ref({});
-const promptLabels = ref([]);
-const filterPromptValues = ref([]);
+const stageList = ref<any[]>([]);
+const resourceList = ref<any[]>([]);
+const promptTableData = ref<any[]>([]);
+const curPromptData = ref<any>({});
+const toolSelections = ref<any[]>([]);
+const promptSelections = ref<any[]>([]);
+const allSelections = ref<any[]>([]);
+const noPermPrompt = ref<any[]>([]);
+const toolFilterData = ref<any>({});
+const promptLabels = ref<any[]>([]);
+const filterPromptValues = ref<any[]>([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
 const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
 
@@ -520,7 +519,7 @@ const customMethodsList = computed(() => {
   ];
 });
 
-const toolNameRowData = shallowRef({});
+const toolNameRowData = shallowRef<any>({});
 const resourceTabList = shallowRef<{
   label: string
   value: string
@@ -537,13 +536,13 @@ const resourceTabList = shallowRef<{
     required: false,
   },
 ]);
-const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const toolTableColumns = shallowRef<any[]>([
   {
     title: t('资源名称'),
     colKey: 'name',
     ellipsis: true,
     cell: (_: any, { row }: { row: IMCPServerTool }) => {
-      if (!row?.name) {
+      if (!row.name) {
         return '--';
       }
       return (
@@ -563,11 +562,11 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             onMouseenter={(e: any) => toolTableRef.value?.handleCellEnter({
               e,
               row,
-            })}
-            onMouseLeave={(e: any) => toolTableRef.value?.handleCellLeave({
+            } as any)}
+            onMouseleave={(e: any) => toolTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
             onClick={() => handleToolNameClick(row)}
           >
             { row.name }
@@ -603,29 +602,29 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
               toolTableRef.value?.handleCellEnter({
                 e,
                 row,
-              });
+              } as any);
             }}
-            onMouseLeave={(e: any) => toolTableRef.value?.handleCellLeave({
+            onMouseleave={(e: any) => toolTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
           >
             { (row as any).tool_name }
           </div>
           { (row as any).has_openapi_schema && (
             <PopConfirm
               ref={popoverConfirmRef}
-              trigger="manual"
+              trigger={'manual' as any}
               width="400"
               placement="right"
               extCls="tool-name-popover"
               is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
               onConfirm={() => handleConfirmToolName(row)}
-              onCancel={() => handleCancelToolName(row)}
+              onCancel={() => handleCancelToolName()}
             >
               {{
                 default: () => (
-                  <AgIcon
+                  <ag-icon
                     name="edit-line"
                     class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
                     onClick={(e: MouseEvent) => {
@@ -709,7 +708,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
     cell: (_: any, { row }: { row: IMCPServerTool }) => (
       <BkTag
-        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
+        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap] as any}
       >
         {row.method}
       </BkTag>
@@ -726,12 +725,12 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     ellipsis: true,
   },
 ]);
-const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const promptTableColumns = shallowRef<any[]>([
   {
     title: t('Prompt 名称'),
     colKey: 'name',
-  cell: (_h: any, { row }: { row: IMCPServerPrompt }) => {
-      if (!row?.name) {
+    cell: (_h: any, { row }: { row: IMCPServerPrompt }) => {
+      if (!row.name) {
         return '--';
       }
       return (
@@ -747,18 +746,18 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
             onMouseenter={(e: any) => promptTableRef.value?.handleCellEnter({
               e,
               row,
-            })}
-            onMouseLeave={(e: any) => promptTableRef.value?.handleCellLeave({
+            } as any)}
+            onMouseleave={(e: any) => promptTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
           >
             { row.name }
           </div>
           <bk-tag theme={row.is_public ? 'success' : 'warning'}>
             { t(row.is_public ? '公开' : '私有') }
           </bk-tag>
-          {row?.is_no_perm && (
+          {row.is_no_perm && (
             <bk-tag
               class="ml-4px"
             >
@@ -770,7 +769,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
-const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
+const privatePromptColumns = shallowRef<any[]>([
   {
     title: 'Prompt',
     colKey: 'name',
@@ -802,7 +801,7 @@ const toolNameRules = {
         const trimValue = value.trim();
         if (!trimValue) return;
 
-    const sameNameItems = resourceList.value?.filter((item: IMCPServerTool) => {
+        const sameNameItems = resourceList.value?.filter((item: IMCPServerTool) => {
           return (item as any).tool_name?.trim() === trimValue;
         }) || [];
 
@@ -844,7 +843,7 @@ const sliderTitle = computed(() => {
     ? t('编辑 {n}', { n: formData.value.name })
     : t('创建 MCP Server');
 });
-const toolTableEmptyType = computed(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
+const toolTableEmptyType = computed<any>(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
   || toolFilterData.value?.method?.length > 0
   ? 'searchEmpty'
   : 'empty');
@@ -920,7 +919,7 @@ const filteredPromptList = computed(() => {
     return isMatch;
   });
 
-  promptTableEmptyType.value = results.length < 1 && filterPromptValues.value.length > 0 ? 'searchEmpty' : 'empty';
+  promptTableEmptyType.value = results.length < 1 && filterPromptValues.value.length > 0 ? 'searchEmpty' as any : 'empty';
 
   return results;
 });
@@ -951,7 +950,8 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
     placeholder: t('请输入修改人'),
   },
 ]);
-const noValidStage = computed(() => stageList.value.length > 0 && stageList.value.every((stage: any) => stage.status === 0));
+const noValidStage = computed(() =>
+  stageList.value.length > 0 && stageList.value.every((stage: any) => stage.status === 0));
 const isCurrentStageValid = computed(() =>
   stageList.value.find((stage: any) => stage.id === formData.value.stage_id)?.status === 1);
 // 处理工具oauth态
@@ -1182,8 +1182,8 @@ const handleSubmit = async () => {
   }
   catch {
     if (!isBasicValidate) {
-      basicFormValidate?.focus?.();
-      handleScrollView(basicFormValidate?.$el);
+      (basicFormValidate as any)?.focus?.();
+      handleScrollView((basicFormValidate as any)?.$el);
       return;
     }
   }
@@ -1196,7 +1196,7 @@ const handleSubmit = async () => {
   let isValidate = toolSelections.value.length > 0;
 
   if (!isValidate) {
-    handleScrollView(resourceRef.value);
+    handleScrollView(resourceRef.value!);
     Message({
       theme: 'warning',
       message: t('请选择工具'),
@@ -1240,7 +1240,7 @@ const handleSubmit = async () => {
         labels,
         title,
       });
-      await patchServer(gatewayId.value, serverId, params);
+      await patchServer(gatewayId.value!, serverId!, params);
       Message({
         theme: 'success',
         message: t('编辑成功'),
@@ -1252,7 +1252,7 @@ const handleSubmit = async () => {
         ...formData.value,
         name: `${serverNamePrefix.value}${formData.value.name}`,
       };
-      await createServer(gatewayId.value, params);
+      await createServer(gatewayId.value!, params);
       Message({
         theme: 'success',
         message: t('创建成功'),
@@ -1491,7 +1491,8 @@ const fetchServer = async () => {
       categories: (categories as any[]).map((item: any) => item.name || ''),
     };
     // 获取已存在但不需要显示在页面上的分类
-    hiddenCategoriesList.value = (categories as any[]).filter((item: any) => !categoriesList.value.map((v: any) => v.name).includes(item.name));
+    hiddenCategoriesList.value = (categories as any[]).filter((item: any) =>
+      !categoriesList.value.map((v: any) => v.name).includes(item.name));
 
     try {
       await fetchStageList();
@@ -1556,7 +1557,7 @@ const fetchPromptResources = async () => {
 const fetchPromptResourcesDetail = async () => {
   promptDetailLoading.value = true;
   try {
-  const res = await getServerPromptsDetail(gatewayId.value!, { ids: [curPromptData.value.id] });
+    const res = await getServerPromptsDetail(gatewayId.value!, { ids: [curPromptData.value.id] });
     curPromptData.value = Object.assign(curPromptData.value, (res as any)?.prompts?.[0] ?? {});
   }
   catch {
@@ -1602,7 +1603,7 @@ const getSliderContentHeight = () => {
     const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
     const footerH = footerRef.value?.offsetHeight;
     if (modalContentEl) {
-      (modalContentEl as HTMLElement).style.maxHeight = !isEnabledOAuth.value ? (modalContentEl as HTMLElement).style.height : `calc(100% - ${footerH + 54}px)`;
+      (modalContentEl as HTMLElement).style.maxHeight = !isEnabledOAuth.value ? (modalContentEl as HTMLElement).style.height : `calc(100% - ${(footerH ?? 0) + 54}px)`;
     }
   });
 };
@@ -1628,7 +1629,7 @@ const handleRemoveResource = ({
   allSelections.value = allSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
 };
 
-const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }: any) => {
+const handleToolSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     toolSelections.value = selections;
@@ -1643,7 +1644,7 @@ const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ select
   }, 0);
 };
 
-const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }: any) => {
+const handlePromptSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     promptSelections.value = selections;
@@ -1657,7 +1658,7 @@ const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ sele
   }, 0);
 };
 
-const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters: any) => {
+const handleToolFilterChange = (filters: any) => {
   toolFilterData.value = { ...filters };
 };
 
@@ -1687,7 +1688,7 @@ const handleConfirmToolName = async (row: any) => {
   }
 };
 
-const handleCancelToolName = (row?: any) => {
+const handleCancelToolName = () => {
   toolNameRowData.value = {};
 };
 
@@ -1774,7 +1775,10 @@ const handleStageSelectChange = () => {
   fetchStageResources();
 };
 
-const handleToolNameClick = (row: { id: number; [key: string]: any }) => {
+const handleToolNameClick = (row: {
+  id: number
+  [key: string]: any
+}) => {
   if (gatewayStore.currentGateway?.kind === 1) return;
   const routeData = router.resolve({
     name: 'ResourceEdit',

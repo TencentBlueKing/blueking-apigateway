@@ -70,7 +70,7 @@ import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { IChartLegend, ISeriesItemType } from '@/services/source/observability';
+import type { ISeriesItemType } from '@/services/source/observability';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 // 补充图例项类型定义
@@ -111,12 +111,12 @@ const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
 
 const myChart = shallowRef<echarts.ECharts>();
-const chartLegend = ref<IChartLegend>({});
+const chartLegend = ref<Record<string, any>>({});
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -419,10 +419,10 @@ const renderChart = () => {
   if (!myChart.value) return;
   nextTick(() => {
     const option = getChartOption();
-    myChart.value.setOption(option, {
+    myChart.value!.setOption(option, {
       notMerge: true,
       animation: { duration: 300 },
-    });
+    } as any);
     chartResize();
     generateChartLegend();
   });
@@ -488,7 +488,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (myChart.value) {
     myChart.value.dispose();
-    myChart.value = null;
+    myChart.value = undefined;
   }
   window.removeEventListener('resize', chartResize);
 });

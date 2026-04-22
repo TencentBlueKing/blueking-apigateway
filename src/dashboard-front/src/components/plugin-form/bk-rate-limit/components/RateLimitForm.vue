@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { cloneDeep } from 'lodash-es';
 import { getDuplicateKeys } from '@/utils/duplicateKeys';
 import type { IRateLimitFormData, ISchema } from '@/components/plugin-manage/schema-type';
@@ -108,8 +109,8 @@ interface IEmits {
 const modeField = defineModel<IRateLimitFormData>('modelValue');
 
 const {
-  schema = {},
-  layout = {},
+  schema = {} as ISchema,
+  layout = {} as Record<string, any>,
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();

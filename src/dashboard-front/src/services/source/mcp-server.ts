@@ -53,34 +53,48 @@ const path = '/gateways';
 export interface IMCPServer {
   id: number
   name: string
+  title?: string
   description: string
   is_public: boolean
-  labels: string[]
+  labels: (string | null)[]
   resource_names: string[]
+  tool_names?: string[]
   tools_count: number
   url: string
   status: number
+  protocol_type?: string
   stage: {
     id: number
     name: string
   }
+  updated_time?: string
+  created_time?: string
+  categories?: string | string[]
+  is_official?: boolean
+  is_featured?: boolean
+  prompts_count?: number
+  oauth2_public_client_enabled?: boolean
+  app_permission_risk?: any
   tools?: IMCPServerTool[]
-  prompts?: IMCPServerPrompt[]
+  prompts?: IMCPServerPrompt[] | string
+  order_by?: string
+  [key: string]: any
 }
 
 // MCPServer工具
 export interface IMCPServerTool {
   id: number
   name: string
+  tool_name?: string
   description: string
   method: string
   path: string
   isOverflow?: boolean
   verified_user_required: boolean
-  verified_app_required: string[]
-  resource_perm_required: string[]
-  allow_apply_permission: string[]
-  labels: {
+  verified_app_required: boolean | string[]
+  resource_perm_required: boolean | string[]
+  allow_apply_permission: boolean | string[]
+  labels: string | {
     id: number
     name: string
   }[]
@@ -145,6 +159,7 @@ export interface IMCPFormData {
   labels: string[]
   categories: string[]
   protocol_type: string
+  url?: string
 }
 
 // 列表

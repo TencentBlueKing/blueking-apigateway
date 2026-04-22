@@ -146,6 +146,11 @@ interface IProps {
   excludeSelfTips?: boolean
 }
 
+interface IEmits {
+  'on-change': [data: { [key: string]: string[] }]
+  'on-submit': [data: { [key: string]: string[] }]
+}
+
 const {
   field,
   content = [],
@@ -157,11 +162,6 @@ const {
   errorValue = '',
   excludeSelfTips = true,
 } = defineProps<IProps>();
-
-interface IEmits {
-  'on-change': [data: { [key: string]: string[] }]
-  'on-submit': [data: { [key: string]: string[] }]
-}
 
 const emit = defineEmits<IEmits>();
 
@@ -262,7 +262,10 @@ const triggerChange = () => {
   emit('on-change', { [field]: displayValue.value });
 };
 
-defineExpose({ isEditable, isShowError });
+defineExpose({
+  isEditable,
+  isShowError,
+});
 
 </script>
 

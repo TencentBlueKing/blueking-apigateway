@@ -152,6 +152,12 @@ import {
 import AgTable from '@/components/ag-table/Index.vue';
 import AddSystemSlider from './components/AddSystemSlider.vue';
 
+type ISliderParams = {
+  isShow: boolean
+  isLoading: boolean
+  title: string
+};
+
 const { t } = useI18n();
 
 const getDefaultData = () => {
@@ -172,34 +178,38 @@ const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('ta
 const isLoading = ref(false);
 const keyword = ref('');
 const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
-const tableColumns = ref([
+const tableColumns = ref<any[]>([
   {
     title: t('名称'),
     colKey: 'name',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: Partial<ISystemItem> & { isOverflow?: boolean } }) => {
+    cell: (h: any, { row }: { row: any }): any => {
       return (
         <div class="flex-row">
           <div
             v-bk-tooltips={{
-              content: row?.name,
+              content: row.name,
               placement: 'top',
-              disabled: !row?.isOverflow,
+              disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
             class="truncate mr-4px"
-            onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
-              e,
-              row,
-            })}
-            onMouseLeave={(e: MouseEvent) => tableRef.value?.handleCellLeave({
-              e,
-              row,
-            })}
+            onMouseenter={(e: MouseEvent) => {
+              (tableRef.value?.handleCellEnter as any)({
+                e,
+                row,
+              });
+            }}
+            onMouseleave={(e: MouseEvent) => {
+              (tableRef.value?.handleCellLeave as any)({
+                e,
+                row,
+              });
+            }}
           >
-            {row?.name || '--' }
+            {row.name || '--' }
           </div>
-          { row?.is_official && <span class="official">{ t('官方') }</span> }
+          { row.is_official && <span class="official">{ t('官方') }</span> }
         </div>
       );
     },
@@ -208,10 +218,10 @@ const tableColumns = ref([
     title: t('描述'),
     colKey: 'description',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISystemItem> }) => {
       return (
         <span>
-          {row?.description || '--' }
+          {row.description || '--' }
         </span>
       );
     },
@@ -220,10 +230,10 @@ const tableColumns = ref([
     title: t('系统负责人'),
     colKey: 'maintainers',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISystemItem> }) => {
       return (
         <span>
-          {row?.maintainers?.length ? row.maintainers.join('；') : '--' }
+          {row.maintainers?.length ? row.maintainers.join('；') : '--' }
         </span>
       );
     },
@@ -232,10 +242,10 @@ const tableColumns = ref([
     title: t('文档分类'),
     colKey: 'doc_category_id',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISystemItem> }) => {
       return (
         <span>
-          {row?.doc_category_name || '--' }
+          {row.doc_category_name || '--' }
         </span>
       );
     },
@@ -245,7 +255,7 @@ const tableColumns = ref([
     colKey: 'operate',
     fixed: 'right',
     width: 150,
-    cell: (h: any, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISystemItem> }) => {
       return (
         <div>
           <Button
@@ -259,11 +269,11 @@ const tableColumns = ref([
           <Button
             theme="primary"
             text
-            disabled={row?.is_official}
+            disabled={row.is_official}
             onClick={() => handleDeleteSys(row as ISystemItem)}
           >
             {
-              row?.is_official
+              row.is_official
                 ? (
                   <span v-bk-tooltips={{ content: t('官方系统，不可删除') }}>
                     { t('删除') }
@@ -277,7 +287,7 @@ const tableColumns = ref([
     },
   },
 ]);
-const initData = ref({});
+const initData = ref<any>({});
 const pagination = ref({
   offset: 0,
   limit: 10,
@@ -289,14 +299,15 @@ const deleteDialogConf = ref({
   visible: false,
   loading: false,
 });
-const formData = ref(getDefaultData());
-const categoryList = ref([]);
-const allData = ref([]);
-const displayData = ref([]);
+const formData = ref<any>(getDefaultData());
+const categoryList = ref<any[]>([]);
+const allData = ref<any[]>([]);
+const displayData = ref<any[]>([]);
 const formRemoveConfirmCode = ref('');
-const sliderConfig = ref({
+const sliderConfig = ref<ISliderParams>({
   isShow: false,
   title: '',
+  isLoading: false,
 });
 const docCategoryDialog = ref({
   visible: false,
@@ -318,7 +329,7 @@ const deleteDialogTitle = computed(() => {
 
 const getCategories = async () => {
   const res = await getDocCategory();
-  categoryList.value = res;
+  categoryList.value = res as any;
 };
 
 // 获取系统列表
@@ -327,7 +338,7 @@ const getSystemList = async (loading = false) => {
   try {
     const res = await getSystems();
     const results = Object.freeze(res || []);
-    [allData.value, displayData.value] = [results, results];
+    [allData.value, displayData.value] = [results as any, results as any];
     pagination.value.count = displayData.value.length;
   }
   finally {
@@ -353,12 +364,12 @@ const handleCreateCategory = () => {
 const handleConfirm = async () => {
   docCategoryDialog.value.loading = true;
   try {
-    const res = await addDocCategory(docCategoryDialog.value.categoryName);
+    const res = await addDocCategory(docCategoryDialog.value.categoryName as any);
     categoryList.value.push({
-      id: res.data.id,
+      id: (res as any).data.id,
       name: docCategoryDialog.value.categoryName,
-    });
-    formData.value.doc_category_id = res.data.id;
+    } as any);
+    formData.value.doc_category_id = (res as any).data.id;
     docCategoryDialog.value.visible = false;
   }
   finally {
@@ -407,10 +418,10 @@ const handleEditSys = async (data: ISystemItem) => {
     isShow: true,
     title: t(isEdit.value ? '编辑系统' : '新建系统'),
     isLoading: true,
-  });
+  }) as ISliderParams;
   try {
     const res = await getSystemDetail(data.id);
-    formData.value = Object.assign({}, res);
+    formData.value = Object.assign({}, res) as any;
     initData.value = cloneDeep(formData.value);
   }
   finally {

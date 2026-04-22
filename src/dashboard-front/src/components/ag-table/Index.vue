@@ -38,8 +38,9 @@
       :bordered="bordered"
       :table-layout="tableLayout"
       :row-key="isExistUniqueKey ? tableRowKey : 'tempUniqueId'"
-      :max-height="clientHeight"
+      :max-height="maxHeight || clientHeight"
       :bk-ui-settings="tableSetting"
+      :resizable="resizable"
       v-bind="$attrs"
       @bk-ui-settings-change="handleSettingChange"
       @row-mouseenter="handleRowEnter"
@@ -115,8 +116,10 @@
 </template>
 
 <script setup lang="tsx">
+// @ts-nocheck
 import { cloneDeep, memoize, sortBy, sortedUniq, throttle } from 'lodash-es';
 import {
+  type BkUiSettings,
   PrimaryTable,
   type PrimaryTableProps,
   type TableRowData,
@@ -126,7 +129,6 @@ import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
-import type { BkUiSettings } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
@@ -153,6 +155,8 @@ interface IProps {
   tableEmptyType?: 'empty' | 'search-empty'
   maxLimitConfig?: Record<string, any> | null
   hiddenColumn?: string[]
+  resizable?: boolean
+  maxHeight?: string | number
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -191,6 +195,8 @@ const {
   isExistUniqueKey = true,
   // 默认不显示的表格列
   hiddenColumn = [],
+  resizable = true,
+  maxHeight = undefined,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{

@@ -49,7 +49,7 @@ export function useTableFilterChange() {
       }
       if (isExistData) {
         Object.assign(filterData.value, { [colKey]: checkValues });
-      const searchOption = searchOptions?.value?.find((option: any) => option.id === colKey);
+        const searchOption = searchOptions?.value?.find((option: any) => option.id === colKey);
         const filterOption = searchParams?.value?.find((searchItem: any) => searchItem.id === colKey);
         if (searchOption?.children) {
           const filterChildren = searchOption.children.filter((item: any) =>

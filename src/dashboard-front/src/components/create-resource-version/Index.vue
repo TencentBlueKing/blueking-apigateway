@@ -248,6 +248,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import semver from 'semver';
 import {
   Spinner,

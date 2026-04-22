@@ -19,7 +19,6 @@
 import http from '../http';
 import type {
   IMCPServerCategoryOutput,
-  IMCPServerConfigItemOutput,
   IMCPServerConfigListOutput,
   IMCPServerListOutput,
   IMCPServerToolDocOutput,

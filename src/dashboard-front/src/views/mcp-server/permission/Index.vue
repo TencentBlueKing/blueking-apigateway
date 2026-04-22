@@ -289,7 +289,7 @@ const route = useRoute();
 
 const columnKey = ref(-1);
 const tableKey = ref(0);
-const filterData = ref({
+const filterData = ref<Record<string, any>>({
   bk_app_code: '',
   applied_by: '',
   mcp_server_id: 0,
@@ -326,25 +326,30 @@ const statusMap = reactive({
   rejected: t('驳回'),
   pending: t('未审批'),
 });
-const mcpList = ref([]);
-const applicantList = ref([]);
+const mcpList = ref<any[]>([]);
+const applicantList = ref<string[]>([]);
 const approveForm = ref();
 const applyActionDialogConf = reactive({
   isShow: false,
   isLoading: false,
   title: t('通过申请'),
 });
-const curAction = ref({
+const curAction = ref<{
+  id: number
+  mcp_server_id: number
+  status: 'approved' | 'rejected' | ''
+  comment: string
+}>({
   id: 0,
   mcp_server_id: 0,
   status: '',
   comment: '',
 });
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -369,7 +374,11 @@ const getMcpList = async () => {
 getMcpList();
 
 const getApplicant = async () => {
-  const response = await getMcpPermissionsApplicant(gatewayStore.apigwId, filterData.value.mcp_server_id, {} as any);
+  const response = await getMcpPermissionsApplicant(
+    gatewayStore.apigwId,
+    filterData.value.mcp_server_id as number,
+    {} as any,
+  );
   applicantList.value = response?.applicants || [];
 };
 
@@ -383,13 +392,13 @@ const handleTabChange = (name: string) => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal ?? false;
   const { bk_app_code, applied_by, mcp_server_id } = filterData.value;
   if (bk_app_code || applied_by || mcp_server_id) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const resetSearch = () => {
@@ -451,7 +460,7 @@ const handleApprove = (row: any, status: string) => {
   curAction.value = {
     id: row.id,
     mcp_server_id: row.mcp_server.id,
-    status,
+    status: status as 'approved' | 'rejected',
     comment: status === 'approved' ? t('通过') : t('驳回'),
   };
   if (status === 'approved') {
@@ -472,7 +481,7 @@ const handleSubmitApprove = async () => {
       gatewayStore.apigwId,
       curAction.value.mcp_server_id,
       curAction.value.id,
-      curAction.value,
+      curAction.value as any,
     );
     Message({
       message: t('操作成功'),

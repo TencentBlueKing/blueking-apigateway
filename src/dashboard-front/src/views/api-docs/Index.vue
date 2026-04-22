@@ -310,7 +310,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               e,
               row,
             })}
-            onMouseLeave={(e: any) => tableRef.value?.handleCellLeave({
+            onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
               e,
               row,
             })}
@@ -394,7 +394,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                   e,
                   row,
                 })}
-                onMouseLeave={(e: any) => tableRef.value?.handleCellLeave({
+                onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
                   e,
                   row,
                 })}

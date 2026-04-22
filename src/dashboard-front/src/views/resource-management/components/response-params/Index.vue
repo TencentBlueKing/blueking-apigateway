@@ -128,12 +128,12 @@ const addResponse = () => {
                   type: 'string',
                   description: '',
                 },
-              },
+              } as any,
             },
           },
         },
       },
-    },
+    } as any,
   });
 };
 

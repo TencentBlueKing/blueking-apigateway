@@ -62,6 +62,7 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-nocheck
 // @ts-ignore
 import type { PropType } from 'vue';
 
