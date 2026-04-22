@@ -606,7 +606,7 @@ class BaseExporter:
                 resource.get("proxy_type", ""),
                 resource.get("proxy_configs", {}),
             ),
-            # 单独导出资源时 plugin_config 是 PluginConfig 对象，资源版本导出时是 dict
+            # 资源配置导出时 plugin_config 是 PluginConfig 对象，资源版本导出时是 dict
             "pluginConfigs": [
                 {
                     "type": plugin_config["type"] if isinstance(plugin_config, dict) else plugin_config.type.code,
