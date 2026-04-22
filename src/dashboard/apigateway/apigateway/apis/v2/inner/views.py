@@ -30,7 +30,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.v2.mcp_server import build_mcp_server_list_context, build_mcp_server_list_queryset
+from apigateway.apis.v2.mcp_server import (
+    build_mcp_server_list_context,
+    build_mcp_server_list_queryset,
+)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -506,6 +509,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
 
         mcp_server_permissions = []
+        # Build categories map for queryset
+        categories_map = MCPServerHandler.build_categories_map([obj.id for obj in queryset])
+
         for obj in queryset:
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
@@ -542,7 +548,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 }
             )
 
-        slz = serializers.MCPServerPermissionListOutputSLZ(mcp_server_permissions, many=True)
+        slz = serializers.MCPServerPermissionListOutputSLZ(
+            mcp_server_permissions, many=True, context={"categories": categories_map}
+        )
         return OKJsonResponse(data=slz.data)
 
 
@@ -627,7 +635,12 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
             for obj in queryset
         ]
 
-        slz = serializers.MCPServerAppPermissionListOutputSLZ(mcp_server_permissions, many=True)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+
+        slz = serializers.MCPServerAppPermissionListOutputSLZ(
+            mcp_server_permissions, many=True, context={"categories": categories_map}
+        )
         return OKJsonResponse(data=slz.data)
 
 
@@ -689,7 +702,12 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             for obj in queryset
         ]
 
-        slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(mcp_server_permission_records, many=True)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+
+        slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(
+            mcp_server_permission_records, many=True, context={"categories": categories_map}
+        )
 
         return OKJsonResponse(data=slz.data)
 
@@ -753,7 +771,11 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             },
         }
 
-        slz = self.get_serializer(mcp_server_permission_record)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([instance.mcp_server_id])
+
+        context = {**self.get_serializer_context(), "categories": categories_map}
+        slz = self.get_serializer(mcp_server_permission_record, context=context)
         return OKJsonResponse(data=slz.data)
 
 
@@ -790,6 +812,9 @@ class MCPServerListApi(generics.ListAPIView):
 
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)
+
+        # Add categories map
+        context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
 
         output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(output_slz.data)

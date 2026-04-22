@@ -34,6 +34,10 @@
         "status": "active",
         "protocol_type": "sse",
         "oauth2_public_client_enabled": false,
+        "categories": [
+          {"name": "official", "display_name": "官方"},
+          {"name": "ai", "display_name": "AI"}
+        ],
         "stage": {
           "id": 1,
           "name": "prod"
@@ -88,6 +92,7 @@
 | status       | string | MCPServer 状态          |
 | protocol_type | string | MCPServer 协议类型        |
 | oauth2_public_client_enabled | bool   | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权       |
+| categories   | array  | MCPServer 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | stage        | object | MCPServer 环境信息        |
 | gateway      | object | MCPServer 网关信息        |
 | tools_count  | int    | MCPServer 工具数量        |

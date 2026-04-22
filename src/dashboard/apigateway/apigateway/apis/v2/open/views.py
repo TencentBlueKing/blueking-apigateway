@@ -277,6 +277,9 @@ class MCPServerListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
         context = build_mcp_server_list_context(page)
 
+        # Add categories map
+        context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
+
         output_slz = MCPServerListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(output_slz.data)
 
@@ -319,7 +322,11 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 
         queryset = MCPServerAppPermission.objects.filter(bk_app_code=slz.validated_data["bk_app_code"])
         page = self.paginate_queryset(queryset)
-        output_slz = MCPServerAppPermissionListOutputSLZ(page, many=True)
+
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([perm.mcp_server_id for perm in page])
+
+        output_slz = MCPServerAppPermissionListOutputSLZ(page, many=True, context={"categories": categories_map})
 
         return self.get_paginated_response(output_slz.data)
 
@@ -342,7 +349,11 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         queryset = MCPServerAppPermission.objects.filter(mcp_server=instance)
         page = self.paginate_queryset(queryset)
-        output_slz = MCPServerPermissionListOutputSLZ(page, many=True)
+
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([instance.id])
+
+        output_slz = MCPServerPermissionListOutputSLZ(page, many=True, context={"categories": categories_map})
 
         return self.get_paginated_response(output_slz.data)
 
@@ -416,7 +427,12 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             if obj.mcp_server.id not in output_data:
                 output_data[obj.mcp_server.id] = obj
 
-        output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(output_data.values(), many=True)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map(list(output_data.keys()))
+
+        output_slz = MCPServerAppPermissionApplyRecordListOutputSLZ(
+            output_data.values(), many=True, context={"categories": categories_map}
+        )
         return OKJsonResponse(data=output_slz.data)
 
 
@@ -501,6 +517,9 @@ class UserMCPServerListApi(generics.ListAPIView):
 
         least_privileges = MCPServerHandler.get_least_privileges(page)
 
+        # Add categories map
+        categories_map = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
+
         output_slz = UserMCPServerListOutputSLZ(
             page,
             many=True,
@@ -508,6 +527,7 @@ class UserMCPServerListApi(generics.ListAPIView):
                 "gateways": gateways,
                 "stages": stages,
                 "least_privileges": least_privileges,
+                "categories": categories_map,
             },
         )
 

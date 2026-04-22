@@ -30,7 +30,11 @@ mcp_server 申请记录列表
         "title": "测试服务",
         "description": "test",
         "tools_count": "1",
-        "doc_link": ""
+        "doc_link": "",
+        "categories": [
+          {"name": "official", "display_name": "官方"},
+          {"name": "ai", "display_name": "AI"}
+        ]
       },
       "record": {
         "id": 1,
@@ -73,6 +77,7 @@ mcp_server 申请记录列表
 | description     | string | mcp_server 描述        |
 | tools_count     | int    | mcp_server 工具数量      |
 | doc_link        | string | mcp_server 文档访问地址    |
+| categories      | array  | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 
 
 #### data.record

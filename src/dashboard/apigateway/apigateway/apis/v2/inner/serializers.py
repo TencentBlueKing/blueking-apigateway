@@ -18,10 +18,12 @@
 #
 import logging
 import math
+from typing import Dict, List
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.mcp_server import get_categories_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
@@ -357,6 +359,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
         help_text="MCPServer 协议类型",
         choices=MCPServerProtocolTypeEnum.get_choices(),
     )
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
 
     def get_title(self, obj) -> str:
         title = obj.get("title", "") if isinstance(obj, dict) else getattr(obj, "title", "")
@@ -366,6 +369,9 @@ class MCPServerBaseSLZ(serializers.Serializer):
     def get_doc_link(self, obj):
         obj_id = obj.get("id") if isinstance(obj, dict) else obj.id
         return build_mcp_server_detail_url(obj_id)
+
+    def get_categories(self, obj) -> List[Dict[str, str]]:
+        return get_categories_from_context(self.context, obj)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
@@ -568,6 +574,8 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
 
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
@@ -583,6 +591,9 @@ class MCPServerListOutputSLZ(serializers.Serializer):
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
+
+    def get_categories(self, obj) -> List[Dict[str, str]]:
+        return get_categories_from_context(self.context, obj)
 
     def get_stage(self, obj):
         return self.context["stages"][obj.stage.id]

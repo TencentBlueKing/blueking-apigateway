@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.mcp_server import get_categories_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -217,6 +218,11 @@ class MCPServerBaseSLZ(serializers.Serializer):
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
 
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+
+    def get_categories(self, obj) -> List[Dict[str, str]]:
+        return get_categories_from_context(self.context, obj)
+
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerBaseSLZ"
 
@@ -262,6 +268,8 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
     )
 
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+
     stage = serializers.SerializerMethodField(help_text="MCPServer 环境")
     gateway = serializers.SerializerMethodField(help_text="MCPServer 网关")
 
@@ -273,6 +281,9 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
     created_by = serializers.CharField(read_only=True, help_text="创建人")
     updated_time = serializers.DateTimeField(read_only=True, help_text="更新时间")
     created_time = serializers.DateTimeField(read_only=True, help_text="创建时间")
+
+    def get_categories(self, obj) -> List[Dict[str, str]]:
+        return get_categories_from_context(self.context, obj)
 
     def get_stage(self, obj) -> Dict[str, Any]:
         return self.context["stages"][obj.stage.id]
@@ -793,8 +804,8 @@ class MCPServerBatchQueryOutputSLZ(serializers.Serializer):
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
 
-    def get_categories(self, obj) -> list:
-        return self.context.get("categories", {}).get(obj.id, [])
+    def get_categories(self, obj) -> List[Dict[str, str]]:
+        return get_categories_from_context(self.context, obj)
 
 
 class OAuthProtectedResourceInputSLZ(serializers.Serializer):
