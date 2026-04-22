@@ -406,7 +406,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
 ]);
 
 watch(
-  selections,
+  () => selections.value,
   () => {
     diffDisabled.value = ![1, 2].includes(selections.value.length);
   },
@@ -463,8 +463,6 @@ const handleShowDiff = () => {
   diffTargetId.value = diffTarget?.id || '';
 
   diffSliderConf.isShow = true;
-  selections.value = [];
-  tableRef.value!.handleResetSelection();
 };
 
 // 版本导出
