@@ -12,7 +12,7 @@
         </div>
         <div class="banner-info">
           <div class="banner-title">
-            BK-CLI
+            bk-cli
           </div>
           <div class="banner-desc">
             {{ t('面向 Agent 和自动化场景的命令行工具，自动发现蓝鲸体系内所有公开 API，天然支持跨网关 API 发现和调用') }}
@@ -100,7 +100,7 @@
         </div>
         <div class="notice-item highlight">
           <span class="pr-4px color-#F59500 text-18px">•</span>
-          {{ t('建议为 CLI 申请单独的应用 ID 和 accesstoken，避免使用具有高权限的凭证') }}
+          {{ t('建议为 cli 申请单独的应用 ID 和 access_token，避免使用具有高权限的凭证') }}
         </div>
       </div>
     </div>
