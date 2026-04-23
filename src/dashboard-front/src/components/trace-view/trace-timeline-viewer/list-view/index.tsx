@@ -467,28 +467,6 @@ export default defineComponent({
       emit('itemClick', itemKey);
     }
 
-    watch(
-      () => route.query,
-      () => {
-        if (!route.query.incident_query) return;
-        const spanInfo = JSON.parse(decodeURIComponent((route.query.incident_query as string) || '{}'));
-        if (Object.keys(spanInfo).length > 0) {
-          span_id.value = spanInfo.span_id;
-          // 打开span详情抽屉
-          if (spanInfo.type === 'spanDetail') {
-            const data = getRowStates.value.find((f: any) => f.span?.id === spanInfo.span_id);
-            if (data) {
-              setTimeout(() => {
-                document.getElementById(spanInfo.span_id)?.scrollIntoView({ behavior: 'smooth' });
-              }, 50);
-              emit('itemClick', data.span, true);
-            }
-          }
-        }
-      },
-      { immediate: true },
-    );
-
     return {
       yPositions,
       wrapperElm,

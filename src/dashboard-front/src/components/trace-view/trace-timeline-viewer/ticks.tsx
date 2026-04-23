@@ -39,7 +39,7 @@ const Ticks = (props: TicksProps) => {
     const viewingDuration = (endTime || 0) - (startTime || 0);
     for (let i = 0; i < numTicks; i++) {
       const durationAtTick = (startTime || 0) + (i / (numTicks - 1)) * viewingDuration;
-      labels.push(formatDuration(durationAtTick, ' ', i === numTicks - 1 ? 0 : 3));
+      labels.push(formatDuration(durationAtTick, ' ', 3));
     }
   }
   const ticks = [];

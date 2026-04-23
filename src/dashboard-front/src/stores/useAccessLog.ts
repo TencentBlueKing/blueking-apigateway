@@ -22,18 +22,7 @@ import router from '@/router';
 export const useAccessLog = defineStore('useAccessLog', {
   state: () => ({
     // 日期选择快捷方式
-    datepickerShortcuts: [
-      ...(['MCPServerObservability'].includes(router?.currentRoute?.value?.name as string)
-        ? [{
-          text: t('今天'),
-          value() {
-            const end = new Date();
-            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-            return [start, end];
-          },
-        }]
-        : []
-      ),
+    baseDatepickerShortcuts: [
       {
         text: t('最近5分钟'),
         value() {
@@ -469,8 +458,24 @@ export const useAccessLog = defineStore('useAccessLog', {
      * @param {Object} state - store 的状态对象
      * @returns {Array} 日期选择快捷方式数组
      */
-    getDatepickerShortcuts(state) {
-      return state.datepickerShortcuts;
+    datepickerShortcuts(state): Array<any> {
+      return computed(() => {
+        const routeName = router?.currentRoute?.value?.name as string;
+        const todayShortcut = {
+          text: t('今天'),
+          value() {
+            const end = new Date();
+            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            return [start, end];
+          },
+        };
+
+        // 满足路由条件则添加“今天”
+        if (routeName && ['MCPServerObservability'].includes(routeName)) {
+          return [todayShortcut, ...state.baseDatepickerShortcuts];
+        }
+        return [...state.baseDatepickerShortcuts];
+      }).value;
     },
     /**
      * 获取一天内的快捷方式

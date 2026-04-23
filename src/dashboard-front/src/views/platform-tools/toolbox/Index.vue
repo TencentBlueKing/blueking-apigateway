@@ -73,6 +73,8 @@ interface ITool {
 }
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const toolCompMap: Record<string, any> = {
   queryLog: QueryLog,
@@ -127,6 +129,18 @@ const handleToolNavClick = (tool: ITool) => {
   curTool.value = tool;
 };
 
+watch(() => route.query.toolbox_id, (value: string) => {
+  if (value) {
+    curTool.value = toolList.value.find(item => item.id === Number(value)) ?? toolList.value[0];
+    router.replace({
+      query: {
+        ...route.query,
+        request_id: undefined,
+        toolbox_id: undefined,
+      },
+    });
+  }
+}, { immediate: true });
 </script>
 
 <style lang="scss" scoped>

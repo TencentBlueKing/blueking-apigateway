@@ -141,7 +141,6 @@ const handleQueryTrace = async () => {
   }
 
   traceStore.setTraceLoading(true);
-  traceStore.setTraceLogTab('proxy_log');
 
   try {
     const promiseList = [

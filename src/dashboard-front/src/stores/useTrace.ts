@@ -76,7 +76,7 @@ export const useTrace = defineStore('useTrace', () => {
   const compareTraceOriginalData = ref([]); // 对比 baseline 原始数据 用于查看 span详情原始数据
   const serviceSpanList = shallowRef<ISpan[]>([]);
   const activeSpan = ref(''); // 全局唯一的 activeSpan
-  const logActiveTab = ref('proxy_log');
+  const logActiveTab = ref('gateway_upstream');
 
   /** 更新页面 loading */
   function setPageLoading(v: boolean) {

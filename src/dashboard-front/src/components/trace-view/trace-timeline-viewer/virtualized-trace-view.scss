@@ -23,6 +23,16 @@ $trace-row-border-color: #dcdee5;
     height: calc(100% + 1px);
     background-color: $trace-row-border-color;
   }
+  
+  .ticks-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: $trace-row-border-color;
+    z-index: 1;
+    pointer-events: none;
+  }
 
   // 最后一行底部横线
   &:last-child {

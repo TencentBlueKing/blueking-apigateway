@@ -262,7 +262,7 @@ const renderChart = async (data: {
         {
           type: 'bar',
           data: series ?? [],
-          barMinHeight: 1,
+          barMinHeight: 0,
           barMaxWidth: 12,
           itemStyle: { color: '#5b8ff9' },
           emphasis: {

@@ -62,30 +62,30 @@ const traceStore = useTrace();
 let tabKey: string | number = -1;
 const logPanels = [
   {
+    name: 'gateway_upstream',
+    label: t('网关接入层日志'),
+  },
+  {
     name: 'proxy_log',
     label: t('MCP Proxy 日志'),
   },
   {
-    name: 'gateway_upstream',
-    label: t('上游网关日志'),
-  },
-  {
     name: 'gateway_downstream',
-    label: t('下游网关日志'),
+    label: t('业务网关日志'),
   },
 ];
 
 const tableData = computed(() => {
   if (['proxy_log'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: any) => ['http', 'mcp'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['http', 'mcp'].includes(item.layer));
   }
 
   if (['gateway_upstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: any) => ['gateway_upstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_upstream'].includes(item.layer));
   }
 
   if (['gateway_downstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter((item: any) => ['gateway_downstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: ITraceDetail) => ['gateway_downstream'].includes(item.layer));
   }
 
   return traceChainDetail?.logList ?? [];
@@ -97,7 +97,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_: any, { row }: { row?: any }) => {
+    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
       return row?.timestamp ? <span>{dayjs.unix(row?.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
     },
   },
@@ -105,7 +105,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('服务'),
     colKey: 'service',
     ellipsis: true,
-    cell: (_: any, { row }: { row?: any }) => {
+    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
       return row?.service || '--';
     },
   },
@@ -118,7 +118,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (_: any, { row }: { row?: any }) => {
+    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
       return row?.mcp_method || row?.method;
     },
   },
@@ -127,7 +127,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'path',
     ellipsis: true,
     width: 260,
-    cell: (_: any, { row }: { row?: any }) => {
+    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
       return row?.http_path || row?.path || row?.operation;
     },
   },
@@ -135,7 +135,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态码'),
     colKey: 'status',
     ellipsis: true,
-    cell: (_: any, { row }: { row?: any }) => {
+    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
       return row?.status || '--';
     },
   },
@@ -143,8 +143,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('耗时'),
     colKey: 'latency',
     ellipsis: true,
-    cell: (_: any, { row }: { row?: any }) => {
-      const duration = row?.latency || row?.request_duration;
+    cell: (_, { row }: { row?: IFlowLogTable }) => {
+      const duration = row?.latency || `${row?.request_duration}ms`;
       if (!duration) {
         return '--';
       }
