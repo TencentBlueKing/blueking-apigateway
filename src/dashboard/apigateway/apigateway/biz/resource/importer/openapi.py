@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.utils.yaml import yaml_loads
+from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 # 初始化openapi validator schema
 init_validator_schema()
@@ -211,6 +211,13 @@ class OpenAPIExportManager:
                 "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
                 "config": json.loads(resource["proxy"]["config"]),
             }
+            resource["plugin_configs"] = [
+                {
+                    "type": plugin["type"],
+                    "yaml": yaml_dumps(plugin["config"]).rstrip("\n"),
+                }
+                for plugin in resource.get("plugins", [])
+            ]
             resource_data_list.append(resource)
 
         return self.export_openapi(resource_data_list, file_type)
