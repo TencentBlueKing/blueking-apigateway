@@ -31,12 +31,12 @@ import SpanBar from '@/components/trace-view/trace-timeline-viewer/span-bar';
 import SpanTreeOffset from '@/components/trace-view/trace-timeline-viewer/span-tree-offset';
 import TimelineRow from '@/components/trace-view/trace-timeline-viewer/timeline-row';
 import TimelineRowCell from '@/components/trace-view/trace-timeline-viewer/timeline-row-cell';
+import Ticks from '@/components/trace-view/trace-timeline-viewer/ticks';
 import type { ISpan } from '@/components/trace-view/typings';
 import { getSpanIcon } from '@/components/trace-view/model/trace-viewer';
 import { t } from '@/locales';
 import type { ITraceDetail } from '@/services/source/observability';
 import { useTrace } from '@/stores/useTrace';
-import { copy } from '@/utils/copy';
 
 import './span-bar-row.scss';
 
@@ -177,39 +177,6 @@ export default defineComponent({
       emit('toggleCollapse', groupID, status);
     };
 
-    /** 文本复制 */
-    function handleCopyText(text: string) {
-      copy(text);
-    }
-
-    /**
-     * @description: span错误icon hover 鼠标移入弹出内容详情 popover
-     */
-    const handleErrorPopoverContent = (title: string, detail: string) => {
-      return (
-        <div class="span-row-content-popover">
-          <div class="span-row-content-popover-title">
-            <span class="title-text">{title}</span>
-            {detail
-              ? (
-                <ag-icon
-                  class="icon-mc-copy"
-                  name="copy"
-                  v-bk-tooltips={{
-                    content: t('复制'),
-                    delay: 200,
-                    boundary: 'window',
-                  }}
-                  onClick={() => handleCopyText(detail)}
-                />
-              )
-              : null}
-          </div>
-          <div class="span-row-content-popover-main">{detail || '--'}</div>
-        </div>
-      );
-    };
-
     return {
       activeSpan,
       showDuration,
@@ -221,7 +188,6 @@ export default defineComponent({
       handleClick,
       getViewedBounds,
       handleToggleCollapse,
-      handleErrorPopoverContent,
       getSpanDuration,
       getSpanStartTime,
       setActiveSpan,
@@ -345,10 +311,6 @@ export default defineComponent({
                   span={span}
                   onClick={(e: MouseEvent) => this.handleClick(e, isParent)}
                 />
-                <a class="cross-span-name">
-                  <span class="cross-span-name">{this.crossRelationInfo.app_code}</span>
-                  <span class="cross-description">{`${t('所属空间：')}${this.crossRelationInfo.bk_biz_name}`}</span>
-                </a>
               </div>
             </TimelineRowCell>
           )
@@ -376,24 +338,6 @@ export default defineComponent({
                     role="switch"
                     tabindex={0}
                   >
-                    {showErrorIcon && (
-                      <Popover
-                        key={label}
-                        extCls="span-error-icon"
-                        v-slots={{
-                          content: () =>
-                            this.handleErrorPopoverContent(t('错误信息'), errorDescription),
-                        }}
-                        placement="bottom"
-                        popoverDelay={[300, 0]}
-                      >
-                        <ag-icon
-                          name="exclamation-circle-fill"
-                          color="rgb(231, 24, 24)"
-                          class="error-icon"
-                        />
-                      </Popover>
-                    )}
                     {span?.layer && (
                       <ag-icon
                         name={getSpanIcon(span)}
@@ -603,6 +547,7 @@ export default defineComponent({
                 width={1 - columnDivision}
                 className="cursor-pointer span-view"
               >
+                <Ticks numTicks={numTicks} />
                 <SpanBar
                   color={color}
                   longLabel={longLabel}

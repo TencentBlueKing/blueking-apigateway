@@ -88,15 +88,6 @@
           />
         </BkSelect>
       </BkFormItem>
-      <BkFormItem label="request_id">
-        <BkInput
-          v-model="searchParams.request_id"
-          :placeholder="t('请输入 request_id')"
-          clearable
-          @enter="fetchSearchData"
-          @clear="handleRequestIdClear"
-        />
-      </BkFormItem>
       <BkFormItem
         :label="t('查询语句')"
         class="ag-form-item-inline"
@@ -338,11 +329,6 @@ const handleMcpServerScrollEnd = debounce(() => {
   fetchMcpServerList();
 }, 200);
 
-const handleRequestIdClear = () => {
-  searchParams.value.request_id = '';
-  fetchSearchData();
-};
-
 const handlePickerConfirm = () => {
   handleConfirm();
   fetchSearchData();
@@ -389,7 +375,6 @@ const handleTagClose = (tag: string) => {
 const handleClearFilter = () => {
   searchParams.value = Object.assign(searchParams.value ?? {}, {
     query: '',
-    request_id: '',
     mcp_server_name: '',
     app_code: '',
     status: 'all',
