@@ -1085,3 +1085,54 @@ class TestOpenAPIExporter:
         exporter = BaseExporter()
         result = exporter._adapt_auth_config(auth_config)
         assert result == expected
+
+    def test_generate_paths__plugin_configs_dict(self, fake_resource_dict):
+        """plugin_configs 为 dict 列表时（资源版本导出路径），pluginConfigs 应正确填充。"""
+        resource = dict(
+            fake_resource_dict,
+            plugin_configs=[
+                {
+                    "type": "bk-header-rewrite",
+                    "yaml": "remove:\n- X-Bar\nset:\n- key: X-Foo\n  value: test",
+                },
+            ],
+        )
+        exporter = BaseExporter()
+        paths = exporter._gen_swagger_paths([resource])
+        operation = paths[resource["path"]][resource["method"].lower()]
+
+        plugin_configs = operation["x-bk-apigateway-resource"]["pluginConfigs"]
+        assert len(plugin_configs) == 1
+        assert plugin_configs[0]["type"] == "bk-header-rewrite"
+        # yaml_dumps 输出末尾不应有多余换行
+        assert not plugin_configs[0]["yaml"].endswith("\n")
+        assert "remove:" in plugin_configs[0]["yaml"]
+
+    def test_generate_paths__plugin_configs_orm_obj(self, fake_plugin_config):
+        """plugin_configs 为 PluginConfig ORM 对象列表时（资源配置导出路径），应兼容。"""
+        resource = {
+            "method": "GET",
+            "path": "/test",
+            "name": "test_api",
+            "description": "",
+            "description_en": None,
+            "labels": [],
+            "is_public": True,
+            "allow_apply_permission": True,
+            "match_subpath": False,
+            "enable_websocket": False,
+            "backend": {
+                "name": "default",
+                "config": {"method": "GET", "path": "/test", "timeout": 0},
+            },
+            "auth_config": {"auth_verified_required": True},
+            "plugin_configs": [fake_plugin_config],
+        }
+        exporter = BaseExporter()
+        paths = exporter._gen_swagger_paths([resource])
+        operation = paths["/test"]["get"]
+
+        plugin_configs = operation["x-bk-apigateway-resource"]["pluginConfigs"]
+        assert len(plugin_configs) == 1
+        assert plugin_configs[0]["type"] == "bk-cors"
+        assert "allow_origins" in plugin_configs[0]["yaml"]

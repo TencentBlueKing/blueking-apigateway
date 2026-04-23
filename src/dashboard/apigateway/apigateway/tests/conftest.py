@@ -1254,6 +1254,16 @@ def fake_resource_dict():
 
 
 @pytest.fixture
+def fake_plugin_config(faker):
+    return PluginConfig(
+        pk=1,
+        name="cors",
+        type=PluginType(code="bk-cors"),
+        yaml="allow_origins:\n- '*'",
+    )
+
+
+@pytest.fixture
 def fake_resource_data(faker):
     return ResourceData(
         resource=None,
