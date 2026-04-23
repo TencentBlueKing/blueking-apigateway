@@ -84,7 +84,7 @@
           </BkTabPanel>
           <BkTabPanel
             name="accesstoken"
-            :label="t('访问令牌（accesstoken）')"
+            :label="t('访问令牌（access_token）')"
           >
             <div class="step-desc">
               {{ t('仅使用访问令牌进行认证。') }}
