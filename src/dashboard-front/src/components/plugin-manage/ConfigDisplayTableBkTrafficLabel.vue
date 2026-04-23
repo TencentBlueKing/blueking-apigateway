@@ -63,7 +63,7 @@ const tableCols = ref<IColumn[]>([
     field: 'key',
     width: firstColWidth,
     index: 0,
-    rowspan: ({ row }) => row.rowSpan || 0,
+    rowspan: ({ row }: any) => row.rowSpan || 0,
   },
   {
     label: t('值'),
@@ -78,7 +78,7 @@ const tableData = computed(() => {
   const { rules } = plugin.config;
   if (rules[0]) {
     const { match, actions } = rules[0];
-    matchRows = match.map(item => ({
+    matchRows = match.map((item: any) => ({
       key: 'match',
       value: item,
     }));
@@ -87,7 +87,7 @@ const tableData = computed(() => {
       matchRows[0].rowSpan = match.length;
     }
 
-    actionRows = actions.map(item => ({
+    actionRows = actions.map((item: any) => ({
       key: 'action',
       value: item,
     }));

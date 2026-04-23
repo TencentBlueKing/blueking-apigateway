@@ -16,6 +16,18 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IAlarmRecordListOutput,
+  IAlarmStrategyListOutput,
+  IAlarmStrategyRetrieveOutput,
+} from '@/services/types/responses/gateways.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IGatewaysMonitorsAlarmRecordsListQuery,
+  IGatewaysMonitorsAlarmStrategiesListQuery,
+} from '@/services/types/query/gateways.ts';
+import type { IAlarmStrategyInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type { IAlarmStrategyUpdateStatusInputSLZ } from '@/services/types/body/patch/gateways.ts';
 
 export interface IAlarmStrategy {
   id: number
@@ -52,15 +64,6 @@ export interface IStrategyListParams {
   keyword: string
 }
 
-export interface IRecordListParams {
-  offset: number
-  limit: number
-  alarm_strategy_id: number
-  status: string
-  time_start?: number
-  time_end?: number
-}
-
 export interface IAlarmRecord {
   id: number
   alarm_id: string
@@ -76,8 +79,8 @@ export interface IAlarmRecord {
  * @param apigwId 网关id
  * @param params 查询参数
  */
-export function getStrategyList(apigwId: number, params: IStrategyListParams) {
-  return http.get(`/gateways/${apigwId}/monitors/alarm/strategies/`, params);
+export function getStrategyList(apigwId: number, params: IGatewaysMonitorsAlarmStrategiesListQuery = {}) {
+  return http.get<ICountAndResults<IAlarmStrategyListOutput>>(`/gateways/${apigwId}/monitors/alarm/strategies/`, params);
 }
 
 /**
@@ -86,7 +89,7 @@ export function getStrategyList(apigwId: number, params: IStrategyListParams) {
  * @param id 告警策略id
  */
 export function getStrategyDetail(apigwId: number, id: number) {
-  return http.get(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/`);
+  return http.get<IAlarmStrategyRetrieveOutput>(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/`);
 }
 
 /**
@@ -94,7 +97,7 @@ export function getStrategyDetail(apigwId: number, id: number) {
  * @param apigwId 网关id
  * @param params 创建参数
  */
-export function createStrategy(apigwId: number, params: IAlarmStrategy) {
+export function createStrategy(apigwId: number, params: IAlarmStrategyInputSLZ) {
   return http.post(`/gateways/${apigwId}/monitors/alarm/strategies/`, params);
 }
 
@@ -104,7 +107,7 @@ export function createStrategy(apigwId: number, params: IAlarmStrategy) {
  * @param id 告警策略id
  * @param params 更新参数
  */
-export function updateStrategy(apigwId: number, id: number, params: IAlarmStrategy) {
+export function updateStrategy(apigwId: number, id: number, params: IAlarmStrategyInputSLZ) {
   return http.put(`/gateways/${apigwId}/monitors/alarm/strategies/${id}`, params);
 }
 
@@ -123,7 +126,7 @@ export function deleteStrategy(apigwId: number, id: number) {
  * @param id 告警策略id
  * @param params 更新状态参数
  */
-export function updateStrategyStatus(apigwId: number, id: number, params: { enabled: boolean }) {
+export function updateStrategyStatus(apigwId: number, id: number, params: IAlarmStrategyUpdateStatusInputSLZ) {
   return http.patch(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/status/`, params);
 }
 
@@ -132,15 +135,6 @@ export function updateStrategyStatus(apigwId: number, id: number, params: { enab
  * @param apigwId 网关id
  * @param params 查询参数
  */
-export function getRecordList(apigwId: number, params: IRecordListParams) {
-  return http.get(`/gateways/${apigwId}/monitors/alarm/records/`, params);
-}
-
-/**
- *  获取某条告警记录详情
- * @param apigwId 网关id
- * @param id 告警记录id
- */
-export function getRecordDetail(apigwId: number, id: number) {
-  return http.get(`/gateways/${apigwId}/monitors/alarm/records/${id}/`);
+export function getRecordList(apigwId: number, params: IGatewaysMonitorsAlarmRecordsListQuery = {}) {
+  return http.get<IAlarmRecordListOutput>(`/gateways/${apigwId}/monitors/alarm/records/`, params);
 }

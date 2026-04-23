@@ -108,7 +108,7 @@ const internalValue = ref<KeyValuePair[]>([]);
 
 watch(
   () => modelValue,
-  (newVal) => {
+  (newVal: any) => {
     if (JSON.stringify(newVal) !== JSON.stringify(internalValue.value)) {
       internalValue.value = newVal.length > 0 ? cloneDeep(newVal) : [];
     }
@@ -119,7 +119,7 @@ watch(
   },
 );
 
-watch(internalValue, (newVal) => {
+watch(internalValue, (newVal: any) => {
   emit('update:modelValue', newVal);
 }, { deep: true });
 
@@ -136,7 +136,7 @@ const rules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => internalValue.value.filter(item => item.key === value).length <= 1,
+      validator: (value: string) => internalValue.value.filter((item: any) => item.key === value).length <= 1,
       message: t('键名已存在'),
       trigger: 'blur',
     },
@@ -168,7 +168,7 @@ const validate = async (): Promise<boolean> => {
   if (!formRefs.value) return Promise.resolve(true);
 
   try {
-    await Promise.all(formRefs.value!.map(formRef => formRef.validate()));
+    await Promise.all(formRefs.value!.map((formRef: any) => formRef.validate()));
     return Promise.resolve(true);
   }
   catch (error) {
@@ -178,7 +178,7 @@ const validate = async (): Promise<boolean> => {
 
 const getValue = (): Record<string, string> => {
   const result: Record<string, string> = {};
-  internalValue.value.forEach((pair) => {
+  internalValue.value.forEach((pair: any) => {
     if (pair.key && pair.value) {
       result[pair.key] = pair.value;
     }

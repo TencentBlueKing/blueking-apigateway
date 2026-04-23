@@ -69,6 +69,7 @@
           v-else
           :label="t('申请人')"
         >
+          <!-- @vue-expect-error BkUserSelector emits string | null -->
           <BkUserSelector
             v-model="filterData.applied_by"
             :api-base-url="envStore.tenantUserDisplayAPI"
@@ -193,8 +194,16 @@ import { APPROVAL_STATUS_MAP } from '@/enums';
 import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
+
+// 扩展 IApprovalListItem，补充运行时动态添加的字段
+interface IApprovalListItemExt extends IApprovalListItem {
+  id: number
+  grant_dimension: string
+  isExpand?: boolean
+  selection?: any[]
+  isSelectAll?: boolean
+}
 
 const envStore = useEnv();
 const gatewayStore = useGateway();
@@ -205,11 +214,11 @@ const { t } = useI18n();
 
 const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
 const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
-const tableData = ref([]);
-const selections = ref([]);
-const selectedRowKeys = ref([]);
-const resourceList = ref([]);
-const childrenColumns = shallowRef([
+const tableData = ref<any[]>([]);
+const selections = ref<any[]>([]);
+const selectedRowKeys = ref<any[]>([]);
+const resourceList = ref<any[]>([]);
+const childrenColumns = shallowRef<any[]>([
   {
     title: '',
     colKey: 'serial-number',
@@ -232,15 +241,27 @@ const childrenColumns = shallowRef([
     ellipsis: true,
   },
 ]);
-const filterData = ref({});
-const filterValue = ref({});
-const curAction = ref({
+const filterData = ref<Record<string, any>>({});
+const filterValue = ref<Record<string, any>>({});
+const curAction = ref<{
+  ids: any[]
+  status: string
+  comment: string
+  part_resource_ids: Record<string, any>
+}>({
   ids: [],
   status: '',
   comment: '',
   part_resource_ids: {},
 });
-const curPermission = ref({
+const curPermission = ref<{
+  bk_app_code: string
+  resourceList: any[]
+  selection: any[]
+  grant_dimension: string
+  isSelectAll: boolean
+  resource_ids: any[]
+}>({
   bk_app_code: '',
   resourceList: [],
   selection: [],
@@ -250,8 +271,8 @@ const curPermission = ref({
 });
 const expandableConfig = ref({
   expandColumn: false,
-  expandedRowKeys: [],
-  canExpand: (row) => {
+  expandedRowKeys: [] as any[],
+  canExpand: (row: any) => {
     return ['resource'].includes(row.grant_dimension);
   },
 });
@@ -322,10 +343,10 @@ watch(
 );
 
 const setRowResources = () => {
-  tableData.value.forEach((row) => {
+  tableData.value.forEach((row: any) => {
     row.isSelectAll = true;
     row.selection = [];
-    row.resourceList = sortByKey(resourceList.value.filter(resource => row.resource_ids.includes(resource.id)), 'path');
+    row.resourceList = sortByKey(resourceList.value.filter((resource: any) => row.resource_ids.includes(resource.id)), 'path');
   });
 };
 
@@ -346,9 +367,9 @@ function getList() {
 
 function handleSearch() {
   getList();
-};
+}
 
-const getTableColumns = computed(() => {
+const getTableColumns = computed((): any[] => {
   return [
     {
       colKey: 'bk_app_code',
@@ -368,11 +389,11 @@ const getTableColumns = computed(() => {
           value: id,
         })),
       },
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['resource'].includes(row.grant_dimension)) {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (['resource'].includes(row.grant_dimension!)) {
           return (
             <div class="flex items-center">
-              <AgIcon
+              <ag-icon
                 name={row.isExpand ? 'down-shape' : 'right-shape'}
                 size="10"
                 class="mr-4px"
@@ -388,23 +409,23 @@ const getTableColumns = computed(() => {
       colKey: 'expire_days_display',
       title: t('权限期限'),
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        return row?.expire_days_display || '--';
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        return row.expire_days_display || '--';
       },
     },
     {
       colKey: 'reason',
       title: t('申请理由'),
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        return row?.reason || '--';
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        return row.reason || '--';
       },
     },
     {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) =>
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
         featureFlagStore.isEnableDisplayName
           ? <span><bk-user-display-name user-id={row.applied_by} /></span>
           : <span>{row.applied_by}</span>,
@@ -419,20 +440,20 @@ const getTableColumns = computed(() => {
       colKey: 'status',
       title: t('审批状态'),
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
-        if (['pending'].includes(row?.status)) {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (['pending'].includes(row.status!)) {
           return (
             <div class="perm-apply-dot">
               <Loading class="mr-4px" loading size="mini" mode="spin" theme="primary" />
-              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
+              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
             </div>
           );
         }
         else {
           return (
             <div class="perm-apply-dot">
-              <span class={['dot', { [row.status]: row?.status }]} />
-              {APPROVAL_STATUS_MAP[row?.status as keyof typeof APPROVAL_STATUS_MAP]}
+              <span class={['dot', { [row.status!]: row.status }]} />
+              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
             </div>
           );
         }
@@ -443,11 +464,11 @@ const getTableColumns = computed(() => {
       title: t('操作'),
       fixed: 'right',
       ellipsis: true,
-      cell: (h, { row }: { row?: Partial<IApprovalListItem> }) => {
+      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
         if (
-          expandableConfig.value.expandedRowKeys.includes(row.id)
-          && !row?.selection?.length
-          && !['api'].includes(row?.grant_dimension)
+          expandableConfig.value.expandedRowKeys.includes(row.id!)
+          && !row.selection?.length
+          && !['api'].includes(row.grant_dimension!)
         ) {
           return (
             <div>
@@ -457,7 +478,7 @@ const getTableColumns = computed(() => {
                   theme="primary"
                   text
                   onClick={(e: Event) => {
-                    handlePrevent(e, row);
+                    handlePrevent(e);
                   }}
                 >
                   {t('全部通过')}
@@ -486,7 +507,7 @@ const getTableColumns = computed(() => {
                   handleApplyApprove(e, row);
                 }}
               >
-                {row?.isSelectAll ? t('全部通过') : t('部分通过')}
+                {row.isSelectAll ? t('全部通过') : t('部分通过')}
               </Button>
               <Button
                 theme="primary"
@@ -512,7 +533,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
 
 // 获取资源列表数据
 const getResourceList = async () => {
-  const pageParams = {
+  const pageParams: any = {
     no_page: true,
     order_by: 'name',
     offset: 0,
@@ -541,13 +562,13 @@ const handleBatchApply = () => {
   batchApplyDialogConf.isShow = true;
 };
 
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections: selected, selectionsRowKeys }) => {
+const handleSelectionChange = ({ selections: selected, selectionsRowKeys }: any) => {
   selections.value = selected;
   selectedRowKeys.value = selectionsRowKeys;
 };
 
 // 折叠table 多选发生变化触发
-const handleRowSelectionChange = (row: Partial<IApprovalListItem>, rowSelections) => {
+const handleRowSelectionChange = (row: any, rowSelections: any) => {
   const { selections } = rowSelections;
   const isSelectAll = row.resourceList.length === selections.length;
   row.selection = selections;
@@ -559,7 +580,7 @@ const handleRowSelectionChange = (row: Partial<IApprovalListItem>, rowSelections
 };
 
 // 处理表头筛选联动搜索框
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: any) => {
   filterData.value = Object.assign(filterData.value, filterItem);
   filterValue.value = Object.assign({}, filterItem);
   getResourceList();
@@ -580,7 +601,7 @@ const updateStatus = async () => {
   ) {
     params = Object.assign(params, {
       status: 'partial_approved',
-      part_resource_ids: { [id]: selection.map(item => item.id) },
+      part_resource_ids: { [id]: selection.map((item: any) => item.id) },
     });
   }
   await updatePermissionStatus(apigwId.value, params);
@@ -599,7 +620,7 @@ const updateStatus = async () => {
 const handleApprovedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'approved',
-    ids: selections.value.map(permission => permission.id),
+    ids: selections.value.map((permission: any) => permission.id),
   });
   updateStatus();
 };
@@ -608,7 +629,7 @@ const handleApprovedPermission = () => {
 const handleRejectedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'rejected',
-    ids: selections.value.map(permission => permission.id),
+    ids: selections.value.map((permission: any) => permission.id),
   });
   updateStatus();
 };
@@ -619,11 +640,11 @@ const handlePrevent = (e: Event) => {
 };
 
 // 全部通过/部分通过
-const handleApplyApprove = (e: Event, row: Partial<IApprovalListItem>) => {
+const handleApplyApprove = (e: Event, row: Partial<IApprovalListItemExt>) => {
   e.stopPropagation();
-  curPermission.value = row;
+  curPermission.value = row as any;
   curAction.value = {
-    ids: [row.id],
+    ids: [row.id!],
     status: 'approved',
     comment: t('全部通过'),
     part_resource_ids: {},
@@ -638,11 +659,11 @@ const handleApplyApprove = (e: Event, row: Partial<IApprovalListItem>) => {
 };
 
 // 全部驳回
-const handleApplyReject = (e: Event, row: Partial<IApprovalListItem>) => {
+const handleApplyReject = (e: Event, row: Partial<IApprovalListItemExt>) => {
   e.stopPropagation();
-  curPermission.value = row;
+  curPermission.value = row as any;
   curAction.value = {
-    ids: [row.id],
+    ids: [row.id!],
     status: 'rejected',
     comment: t('全部驳回'),
     part_resource_ids: {},
@@ -658,7 +679,7 @@ const handleSubmitApprove = () => {
   updateStatus();
 };
 
-const handleSetRowClass = ({ row }) => {
+const handleSetRowClass = ({ row }: { row: any }) => {
   if (row.grant_dimension.includes('resource')) {
     return 'cursor-pointer';
   }
@@ -667,22 +688,22 @@ const handleSetRowClass = ({ row }) => {
 
 const handleRowClick = ({ e, row }: {
   e: Event
-  row: IApprovalListItem
+  row: IApprovalListItemExt
 }) => {
   e.stopPropagation();
   if (row.grant_dimension.includes('resource')) {
     row.isExpand = !row.isExpand;
     expandableConfig.value.expandedRowKeys
-      = expandableConfig.value.expandedRowKeys.filter(item => item === row.id);
-    const curExpandRow = row.isExpand ? row : {};
+      = expandableConfig.value.expandedRowKeys.filter((item: any) => item === row.id);
+    const curExpandRow = row.isExpand ? row : {} as any;
     if (row.isExpand) {
-      expandableConfig.value.expandedRowKeys.push(row.id);
+      expandableConfig.value.expandedRowKeys.push(row.id as any);
     }
     else {
       expandableConfig.value.expandedRowKeys
-        = expandableConfig.value.expandedRowKeys.filter(item => item !== row.id);
+        = expandableConfig.value.expandedRowKeys.filter((item: any) => item !== row.id);
     }
-    tableData.value.forEach((item) => {
+    tableData.value.forEach((item: any) => {
       const isExpand = item.id === curExpandRow.id;
       item.isExpand = isExpand;
       if (!isExpand) {

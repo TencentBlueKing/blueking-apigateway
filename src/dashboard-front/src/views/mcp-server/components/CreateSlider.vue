@@ -191,7 +191,7 @@
                                     :show-first-full-row="promptSelections.length > 0"
                                     :row-class-name="handleSetPromptRowClass"
                                     :columns="promptTableColumns"
-                                    :table-empty-type="promptTableEmptyType"
+                                    :table-empty-type="promptTableEmptyType as any"
                                     @clear-filter="handlePromptClearFilter"
                                     @clear-selection="handlePromptClearSelection"
                                     @selection-change="handlePromptSelectionChange"
@@ -400,6 +400,7 @@
 <script lang="tsx" setup>
 import { cloneDeep, uniq } from 'lodash-es';
 import {
+  Tag as BkTag,
   Divider,
   Form,
   Input,
@@ -407,8 +408,7 @@ import {
   PopConfirm,
   ResizeLayout,
 } from 'bkui-vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import type { ISearchItem } from 'bkui-lib/search-select/utils';
+import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
@@ -458,9 +458,9 @@ let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
 const resourceNameToIndexMap = new Map<string, number>();
 const authorizedPromptIds = new Set<number>();
 
-const footerRef = ref<InstanceType<typeof HTMLDivElement>>(null);
-const resourceRef = ref<InstanceType<typeof HTMLDivElement>>(null);
-const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout>>(null);
+const footerRef = ref<HTMLDivElement | null>(null);
+const resourceRef = ref<HTMLDivElement | null>(null);
+const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
 const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
@@ -469,6 +469,7 @@ const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
+  title: '',
   url: '',
   description: '',
   protocol_type: 'streamable_http',
@@ -476,8 +477,8 @@ const defaultFormData = ref<IMCPFormData>({
   is_public: true,
   oauth2_public_client_enabled: false,
   raw_response_enabled: false,
-  labels: [],
-  categories: [],
+  labels: [] as string[],
+  categories: [] as string[],
 });
 const formData = ref<IMCPFormData>(cloneDeep(defaultFormData.value));
 const isShow = ref(false);
@@ -487,19 +488,19 @@ const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
 const filterKeyword = ref('');
 const activeTab = ref<'tool' | 'prompt'>('tool');
-const promptTableEmptyType = ref<'empty' | 'search-empty'>('empty');
+const promptTableEmptyType = ref<'empty' | 'search-empty' | 'searchEmpty'>('empty');
 const resizePreviewWidth = ref('100%');
-const stageList = ref([]);
-const resourceList = ref([]);
-const promptTableData = ref([]);
-const curPromptData = ref({});
-const toolSelections = ref([]);
-const promptSelections = ref([]);
-const allSelections = ref([]);
-const noPermPrompt = ref([]);
-const toolFilterData = ref({});
-const promptLabels = ref([]);
-const filterPromptValues = ref([]);
+const stageList = ref<any[]>([]);
+const resourceList = ref<any[]>([]);
+const promptTableData = ref<any[]>([]);
+const curPromptData = ref<any>({});
+const toolSelections = ref<any[]>([]);
+const promptSelections = ref<any[]>([]);
+const allSelections = ref<any[]>([]);
+const noPermPrompt = ref<any[]>([]);
+const toolFilterData = ref<any>({});
+const promptLabels = ref<any[]>([]);
+const filterPromptValues = ref<any[]>([]);
 const categoriesList = ref<IMCPServerCategory[]>([]);
 const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
 
@@ -518,7 +519,7 @@ const customMethodsList = computed(() => {
   ];
 });
 
-const toolNameRowData = shallowRef({});
+const toolNameRowData = shallowRef<any>({});
 const resourceTabList = shallowRef<{
   label: string
   value: string
@@ -535,13 +536,13 @@ const resourceTabList = shallowRef<{
     required: false,
   },
 ]);
-const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const toolTableColumns = shallowRef<any[]>([
   {
     title: t('资源名称'),
     colKey: 'name',
     ellipsis: true,
-    cell: (_, { row }: { row: IMCPServerTool }) => {
-      if (!row?.name) {
+    cell: (_: any, { row }: { row: IMCPServerTool }) => {
+      if (!row.name) {
         return '--';
       }
       return (
@@ -556,16 +557,16 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
             class={[
               'truncate mr-4px',
               { 'color-#3a84ff cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
-              { 'color-#979ba5 hover:color-#3a84ff': !row.has_openapi_schema },
+              { 'color-#979ba5 hover:color-#3a84ff': !(row as any).has_openapi_schema },
             ]}
-            onMouseenter={e => toolTableRef.value?.handleCellEnter({
+            onMouseenter={(e: any) => toolTableRef.value?.handleCellEnter({
               e,
               row,
-            })}
-            onMouseLeave={e => toolTableRef.value?.handleCellLeave({
+            } as any)}
+            onMouseleave={(e: any) => toolTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
             onClick={() => handleToolNameClick(row)}
           >
             { row.name }
@@ -578,9 +579,9 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('工具名称'),
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_, { row }: { row: IMCPServerTool }) => {
-      row.tool_name = row.tool_name ?? row.name;
-      if (!row.tool_name) {
+    cell: (_: any, { row }: { row: IMCPServerTool }) => {
+      (row as any).tool_name = (row as any).tool_name ?? row.name;
+      if (!(row as any).tool_name) {
         return '--';
       }
       return (
@@ -588,42 +589,42 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
           <div
             v-bk-tooltips={{
               placement: 'top',
-              content: row.tool_name,
+              content: (row as any).tool_name,
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
             class={[
               'truncate mr-4px',
               { 'cursor-pointer': gatewayStore.currentGateway?.kind === 0 },
-              { 'color-#979ba5': !row.has_openapi_schema },
+              { 'color-#979ba5': !(row as any).has_openapi_schema },
             ]}
             onMouseenter={(e: MouseEvent) => {
               toolTableRef.value?.handleCellEnter({
                 e,
                 row,
-              });
+              } as any);
             }}
-            onMouseLeave={e => toolTableRef.value?.handleCellLeave({
+            onMouseleave={(e: any) => toolTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
           >
-            { row.tool_name }
+            { (row as any).tool_name }
           </div>
-          { row.has_openapi_schema && (
+          { (row as any).has_openapi_schema && (
             <PopConfirm
               ref={popoverConfirmRef}
-              trigger="manual"
+              trigger={'manual' as any}
               width="400"
               placement="right"
               extCls="tool-name-popover"
               is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
               onConfirm={() => handleConfirmToolName(row)}
-              onCancel={() => handleCancelToolName(row)}
+              onCancel={() => handleCancelToolName()}
             >
               {{
                 default: () => (
-                  <AgIcon
+                  <ag-icon
                     name="edit-line"
                     class="hidden cursor-pointer vertical-mid tool-name-edit-icon"
                     onClick={(e: MouseEvent) => {
@@ -643,7 +644,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                         type="solid"
                       />
                       <span class="text-14px color-#979ba5 lh-22px">
-                        { t('资源名称：{value}', { value: row.tool_name }) }
+                        { t('资源名称：{value}', { value: (row as any).tool_name }) }
                       </span>
                     </span>
                     <div class="mt-16px">
@@ -705,9 +706,9 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
       placements: ['right'],
       list: customMethodsList.value,
     },
-    cell: (_, { row }: { row: IMCPServerTool }) => (
+    cell: (_: any, { row }: { row: IMCPServerTool }) => (
       <BkTag
-        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
+        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap] as any}
       >
         {row.method}
       </BkTag>
@@ -724,12 +725,12 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     ellipsis: true,
   },
 ]);
-const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const promptTableColumns = shallowRef<any[]>([
   {
     title: t('Prompt 名称'),
     colKey: 'name',
-    cell: (_h, { row }: { row: IMCPServerPrompt }) => {
-      if (!row?.name) {
+    cell: (_h: any, { row }: { row: IMCPServerPrompt }) => {
+      if (!row.name) {
         return '--';
       }
       return (
@@ -742,21 +743,21 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
               extCls: 'max-w-480px',
             }}
             class="truncate color-#4d4f56 mr-4px prompt-name"
-            onMouseenter={e => promptTableRef.value?.handleCellEnter({
+            onMouseenter={(e: any) => promptTableRef.value?.handleCellEnter({
               e,
               row,
-            })}
-            onMouseLeave={e => promptTableRef.value?.handleCellLeave({
+            } as any)}
+            onMouseleave={(e: any) => promptTableRef.value?.handleCellLeave({
               e,
               row,
-            })}
+            } as any)}
           >
             { row.name }
           </div>
           <bk-tag theme={row.is_public ? 'success' : 'warning'}>
             { t(row.is_public ? '公开' : '私有') }
           </bk-tag>
-          {row?.is_no_perm && (
+          {row.is_no_perm && (
             <bk-tag
               class="ml-4px"
             >
@@ -768,12 +769,12 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
-const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
+const privatePromptColumns = shallowRef<any[]>([
   {
     title: 'Prompt',
     colKey: 'name',
     ellipsis: true,
-    cell: (_h, { row }: { row: IMCPServerPrompt }) => {
+    cell: (_h: any, { row }: { row: IMCPServerPrompt }) => {
       return row.name || '--';
     },
   },
@@ -801,12 +802,12 @@ const toolNameRules = {
         if (!trimValue) return;
 
         const sameNameItems = resourceList.value?.filter((item: IMCPServerTool) => {
-          return item.tool_name?.trim() === trimValue;
+          return (item as any).tool_name?.trim() === trimValue;
         }) || [];
 
         const currentEditRowId = toolNameRowData.value?.id;
         const filteredSameItems = currentEditRowId
-          ? sameNameItems.filter(item => item.id !== currentEditRowId)
+          ? sameNameItems.filter((item: any) => item.id !== currentEditRowId)
           : sameNameItems;
 
         return filteredSameItems.length === 0;
@@ -834,7 +835,7 @@ let resizeLayoutConfig = {
 const gatewayId = computed(() => gatewayStore.currentGateway?.id);
 const isEditMode = computed(() => !!serverId);
 const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
-const stage = computed(() => stageList.value.find(sg => sg.id === formData.value.stage_id));
+const stage = computed(() => stageList.value.find((sg: any) => sg.id === formData.value.stage_id));
 const stageName = computed(() => stage.value?.name || '');
 const serverNamePrefix = computed(() => `${gatewayStore.currentGateway?.name}-${stageName.value}-`);
 const sliderTitle = computed(() => {
@@ -842,7 +843,7 @@ const sliderTitle = computed(() => {
     ? t('编辑 {n}', { n: formData.value.name })
     : t('创建 MCP Server');
 });
-const toolTableEmptyType = computed(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
+const toolTableEmptyType = computed<any>(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
   || toolFilterData.value?.method?.length > 0
   ? 'searchEmpty'
   : 'empty');
@@ -851,7 +852,7 @@ const filteredToolList = computed(() => {
   const methodsData = toolFilterData.value?.method ?? [];
   const currentResourceList = resourceList.value;
 
-  return currentResourceList.filter((resource) => {
+  return currentResourceList.filter((resource: any) => {
     const matchKeyword = (() => {
       const targetStr = [
         resource.name,
@@ -881,12 +882,12 @@ const filteredPromptList = computed(() => {
   }
 
   const searchConditions = {
-    name: filterPromptValues.value.find(item => item.id === 'name')?.values[0]?.id ?? '',
-    content: filterPromptValues.value.find(item => item.id === 'content')?.values[0]?.id ?? '',
-    updated_by: filterPromptValues.value.find(item => item.id === 'updated_by')?.values[0]?.id ?? [],
-    labels: filterPromptValues.value.find(item => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
+    name: filterPromptValues.value.find((item: any) => item.id === 'name')?.values[0]?.id ?? '',
+    content: filterPromptValues.value.find((item: any) => item.id === 'content')?.values[0]?.id ?? '',
+    updated_by: filterPromptValues.value.find((item: any) => item.id === 'updated_by')?.values[0]?.id ?? [],
+    labels: filterPromptValues.value.find((item: any) => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
   };
-  const results = promptTableData.value?.filter((item) => {
+  const results = promptTableData.value?.filter((item: any) => {
     const { name, code, content, updated_by = '', labels = [] } = item;
     let isMatch = true;
 
@@ -911,19 +912,19 @@ const filteredPromptList = computed(() => {
     // 匹配标签
     if (searchConditions.labels.length) {
       // 表格项的labels与搜索标签有交集则匹配
-      const hasLabel = searchConditions.labels.some(label => labels.includes(label));
+      const hasLabel = searchConditions.labels.some((label: any) => labels.includes(label));
       isMatch = isMatch && hasLabel;
     }
 
     return isMatch;
   });
 
-  promptTableEmptyType.value = results.length < 1 && filterPromptValues.value.length > 0 ? 'searchEmpty' : 'empty';
+  promptTableEmptyType.value = results.length < 1 && filterPromptValues.value.length > 0 ? 'searchEmpty' as any : 'empty';
 
   return results;
 });
 const renderPreviewByTab = computed(() => {
-  return allSelections.value.filter(item => item.mode_type === activeTab.value);
+  return allSelections.value.filter((item: any) => item.mode_type === activeTab.value);
 });
 const filterPromptConditions = computed<ISearchItem[]>(() => [
   {
@@ -949,9 +950,10 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
     placeholder: t('请输入修改人'),
   },
 ]);
-const noValidStage = computed(() => stageList.value.length > 0 && stageList.value.every(stage => stage.status === 0));
+const noValidStage = computed(() =>
+  stageList.value.length > 0 && stageList.value.every((stage: any) => stage.status === 0));
 const isCurrentStageValid = computed(() =>
-  stageList.value.find(stage => stage.id === formData.value.stage_id)?.status === 1);
+  stageList.value.find((stage: any) => stage.id === formData.value.stage_id)?.status === 1);
 // 处理工具oauth态
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && formData.value.oauth2_public_client_enabled,
@@ -959,17 +961,17 @@ const isEnabledOAuth = computed(() =>
 // 选中的应用态工具数据
 const appAuthStatusList = computed(() => {
   if (!isEnabledOAuth.value) return [];
-  return toolSelections.value.filter(item => renderOAuthConfig(item)?.app_verified_required);
+  return toolSelections.value.filter((item: any) => renderOAuthConfig(item)?.app_verified_required);
 });
 // 选中工具项是否存在应用态或用户态数据
-const isExistOAuthData = computed(() => isEnabledOAuth.value && toolSelections.value.some(auth =>
+const isExistOAuthData = computed(() => isEnabledOAuth.value && toolSelections.value.some((auth: any) =>
   renderOAuthConfig(auth)?.auth_verified_required || renderOAuthConfig(auth)?.app_verified_required),
 );
 
 // 开启OAuth2 公开客户端模式才展示工具应用态或用户态
-const isEnabledOAuthTag = payload => ['tool'].includes(payload.mode_type) && isEnabledOAuth.value;
+const isEnabledOAuthTag = (payload: any) => ['tool'].includes(payload.mode_type) && isEnabledOAuth.value;
 
-const renderOAuthConfig = (payload) => {
+const renderOAuthConfig = (payload: any) => {
   const resourceAuthConfig = payload?.contexts?.resource_auth?.config;
   if (resourceAuthConfig) {
     return JSON.parse(resourceAuthConfig);
@@ -1000,7 +1002,7 @@ const fetchCommonData = async (isEnablePrompt: boolean) => {
   else {
     // 禁用 Prompt 时，过滤掉 prompt 相关的标签
     resourceTabList.value = resourceTabList.value.filter(
-      item => !['prompt'].includes(item.value),
+      (item: any) => !['prompt'].includes(item.value),
     );
   }
   if (requestList.length) {
@@ -1076,9 +1078,9 @@ const resetResizeLayout = () => {
   });
 };
 
-const toolDisabledSelection = (row) => {
+const toolDisabledSelection = (row: any) => {
   // 先判断当前行是否已被勾选（存在于 toolSelections 中）
-  const isSelected = toolSelections.value.some(item => item.id === row.id);
+  const isSelected = toolSelections.value.some((item: any) => item.id === row.id);
 
   // 设置禁用提示语
   row.selectionTip = isSelected
@@ -1107,7 +1109,7 @@ const clearValidate = () => {
 };
 
 const handleSetToolRowClass = ({ row }: { row: IMCPServerTool }) => {
-  if (!row.has_openapi_schema) {
+  if (!(row as any).has_openapi_schema) {
     return 'is-disabled-tool';
   }
   return '';
@@ -1131,8 +1133,9 @@ const handleResizeLayout = (resizeWidth: number) => {
 const isExistPrivatePrompt = (): Promise<boolean> => {
   // 此处逻辑是为了强制触发 categories 的 blur 事件以关闭 TagInput 下拉
   serverBasicFormRef.value?.handleCategoriesBlur();
-  const privateData = promptSelections.value.filter(item => !item.is_public);
+  const privateData = promptSelections.value.filter((item: any) => !item.is_public);
   if (!privateData.length) {
+    // @ts-expect-error 返回 true 代表无私有 Prompt，可继续
     return true;
   }
   return new Promise((resolve) => {
@@ -1179,8 +1182,8 @@ const handleSubmit = async () => {
   }
   catch {
     if (!isBasicValidate) {
-      basicFormValidate?.focus?.();
-      handleScrollView(basicFormValidate?.$el);
+      (basicFormValidate as any)?.focus?.();
+      handleScrollView((basicFormValidate as any)?.$el);
       return;
     }
   }
@@ -1193,7 +1196,7 @@ const handleSubmit = async () => {
   let isValidate = toolSelections.value.length > 0;
 
   if (!isValidate) {
-    handleScrollView(resourceRef.value);
+    handleScrollView(resourceRef.value!);
     Message({
       theme: 'warning',
       message: t('请选择工具'),
@@ -1207,14 +1210,14 @@ const handleSubmit = async () => {
   try {
     submitLoading.value = true;
     let categoryIds = categoriesList.value
-      .filter(cg => formData.value.categories.includes(cg.name))
-      .map(cname => cname.id);
+      .filter((cg: any) => formData.value.categories.includes(cg.name))
+      .map((cname: any) => cname.id);
     if (hiddenCategoriesList.value.length) {
-      categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map(item => item.id)];
+      categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map((item: any) => item.id)];
     }
-    let params = {
-      resource_names: toolSelections.value.map(item => item.name),
-      tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
+    let params: any = {
+      resource_names: toolSelections.value.map((item: any) => item.name),
+      tool_names: toolSelections.value.map((item: any) => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
       category_ids: categoryIds,
     };
@@ -1237,7 +1240,7 @@ const handleSubmit = async () => {
         labels,
         title,
       });
-      await patchServer(gatewayId.value, serverId, params);
+      await patchServer(gatewayId.value!, serverId!, params);
       Message({
         theme: 'success',
         message: t('编辑成功'),
@@ -1249,7 +1252,7 @@ const handleSubmit = async () => {
         ...formData.value,
         name: `${serverNamePrefix.value}${formData.value.name}`,
       };
-      await createServer(gatewayId.value, params);
+      await createServer(gatewayId.value!, params);
       Message({
         theme: 'success',
         message: t('创建成功'),
@@ -1265,10 +1268,10 @@ const handleSubmit = async () => {
 };
 
 const fetchStageList = async () => {
-  const response = await getStageList(gatewayId.value);
+  const response = await getStageList(gatewayId.value!);
   stageList.value = response || [];
   if (!formData.value.stage_id) {
-    formData.value.stage_id = stageList.value.find(stage => stage.status === 1)?.id ?? 0;
+    formData.value.stage_id = stageList.value.find((stage: any) => stage.status === 1)?.id ?? 0;
   }
   if (formData.value.stage_id) {
     await fetchStageResources();
@@ -1331,7 +1334,7 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
       }
 
       // 给 resourceList 追加 tool_name
-      const updatedResourceList = resourceList.value.map((item) => {
+      const updatedResourceList = resourceList.value.map((item: any) => {
         const nameIndex = resourceNameToIndexMap.get(item.name);
         return {
           ...item,
@@ -1341,11 +1344,11 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
       resourceList.value = updatedResourceList;
 
       // 过滤出匹配的资源项
-      const resourceToolData = updatedResourceList.filter(item =>
+      const resourceToolData = updatedResourceList.filter((item: any) =>
         resourceNameToIndexMap.has(item.name),
       );
         // 分片更新：先更20条，快速渲染
-      toolSelections.value = resourceToolData.slice(0, 20).map(({ name, tool_name, id, contexts }) => {
+      toolSelections.value = resourceToolData.slice(0, 20).map(({ name, tool_name, id, contexts }: any) => {
         return {
           name,
           id,
@@ -1357,7 +1360,7 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
 
       // 剩余数据异步更新，确保DOM挂载
       setTimeout(() => {
-        toolSelections.value = resourceToolData.map(({ name, tool_name, id, contexts }) => {
+        toolSelections.value = resourceToolData.map(({ name, tool_name, id, contexts }: any) => {
           return {
             name,
             id,
@@ -1411,21 +1414,21 @@ const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
       }
       else {
         // 处理无权限数据
-        noPermPrompt.value = prompts.filter(item => !authorizedPromptIds.has(item.id)).map(item => ({
+        noPermPrompt.value = prompts.filter((item: any) => !authorizedPromptIds.has(item.id)).map((item: any) => ({
           ...item,
           mode_type: 'prompt',
           is_no_perm: true,
         }));
 
         // 分片更新
-        promptSelections.value = prompts.slice(0, 20).map(item => ({
+        promptSelections.value = prompts.slice(0, 20).map((item: any) => ({
           ...item,
           mode_type: 'prompt',
           is_no_perm: !authorizedPromptIds.has(item.id),
         }));
 
         setTimeout(() => {
-          promptSelections.value = prompts.map(item => ({
+          promptSelections.value = prompts.map((item: any) => ({
             ...item,
             mode_type: 'prompt',
             is_no_perm: !authorizedPromptIds.has(item.id),
@@ -1454,7 +1457,7 @@ const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
 
 const fetchServer = async () => {
   try {
-    const response = await getServer(gatewayId.value, serverId!);
+    const response = await getServer(gatewayId.value!, serverId!);
 
     const {
       name = '',
@@ -1471,7 +1474,7 @@ const fetchServer = async () => {
       tool_names = [],
       prompts = [],
       categories = [],
-    } = response ?? {};
+    } = (response ?? {}) as any;
 
     formData.value = {
       ...formData.value,
@@ -1485,10 +1488,11 @@ const fetchServer = async () => {
       raw_response_enabled,
       stage_id: stage.id || 0,
       protocol_type,
-      categories: categories.map(item => item.name || ''),
+      categories: (categories as any[]).map((item: any) => item.name || ''),
     };
     // 获取已存在但不需要显示在页面上的分类
-    hiddenCategoriesList.value = categories.filter(item => !categoriesList.value.map(v => v.name).includes(item.name));
+    hiddenCategoriesList.value = (categories as any[]).filter((item: any) =>
+      !categoriesList.value.map((v: any) => v.name).includes(item.name));
 
     try {
       await fetchStageList();
@@ -1496,7 +1500,7 @@ const fetchServer = async () => {
     finally {
       // 启动资源渲染（微任务执行，不阻塞主线程）
       queueMicrotask(() => renderToolResource(resource_names, tool_names));
-      queueMicrotask(() => renderPromptResource(prompts));
+      queueMicrotask(() => renderPromptResource(prompts as any));
       // 统一更新全选数据
       updateAllSelections();
     }
@@ -1514,10 +1518,11 @@ const fetchStageResources = async () => {
     searchLoading.value = true;
     if (stage.value?.resource_version?.id) {
       const response = await getVersionDetail(
-        gatewayId.value,
+        gatewayId.value!,
         stage.value.resource_version.id,
         {
           stage_id: stage.value.id,
+          // @ts-expect-error source 参数用于 MCP Server 筛选
           source: 'mcp_server',
         },
       );
@@ -1533,13 +1538,13 @@ const fetchStageResources = async () => {
 };
 
 const fetchPromptResources = async () => {
-  const res = await getServerPrompts(gatewayId.value);
+  const res = await getServerPrompts(gatewayId.value!);
   promptTableData.value = res?.prompts ?? [];
 
   if (promptTableData.value.length) {
-    curPromptData.value = promptTableData.value.at(0);
-    const allLabels = promptTableData.value.map(item => item?.labels ?? []).flat(1);
-    promptLabels.value = uniq(allLabels).map((item) => {
+    curPromptData.value = (promptTableData.value as any[])[0];
+    const allLabels = promptTableData.value.map((item: any) => item?.labels ?? []).flat(1);
+    promptLabels.value = uniq(allLabels).map((item: any) => {
       return {
         name: item,
         id: item,
@@ -1552,8 +1557,8 @@ const fetchPromptResources = async () => {
 const fetchPromptResourcesDetail = async () => {
   promptDetailLoading.value = true;
   try {
-    const res = await getServerPromptsDetail(gatewayId.value, { ids: [curPromptData.value.id] });
-    curPromptData.value = Object.assign(curPromptData.value, res?.prompts?.[0] ?? {});
+    const res = await getServerPromptsDetail(gatewayId.value!, { ids: [curPromptData.value.id] });
+    curPromptData.value = Object.assign(curPromptData.value, (res as any)?.prompts?.[0] ?? {});
   }
   catch {
     curPromptData.value = {};
@@ -1565,8 +1570,8 @@ const fetchPromptResourcesDetail = async () => {
 
 // 获取MCP分类
 const fetchCategoryList = async () => {
-  const res = await getMcpCategoryList(gatewayId.value);
-  categoriesList.value = (res ?? []).map((cg) => {
+  const res = await getMcpCategoryList(gatewayId.value!);
+  categoriesList.value = (res ?? []).map((cg: any) => {
     return {
       ...cg,
       tips: cg.description,
@@ -1598,7 +1603,7 @@ const getSliderContentHeight = () => {
     const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
     const footerH = footerRef.value?.offsetHeight;
     if (modalContentEl) {
-      modalContentEl.style.maxHeight = !isEnabledOAuth.value ? modalContentEl.style.height : `calc(100% - ${footerH + 54}px)`;
+      (modalContentEl as HTMLElement).style.maxHeight = !isEnabledOAuth.value ? (modalContentEl as HTMLElement).style.height : `calc(100% - ${(footerH ?? 0) + 54}px)`;
     }
   });
 };
@@ -1613,24 +1618,24 @@ const handleRemoveResource = ({
   id?: number
 }) => {
   const removeData = `${mode_type}&${name}&${id}`;
-  if (['tool'].includes(mode_type)) {
-    toolSelections.value = toolSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+  if (['tool'].includes(mode_type!)) {
+    toolSelections.value = toolSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
     toolTableRef.value?.setSelectionData(toolSelections.value);
   }
   else {
-    promptSelections.value = promptSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+    promptSelections.value = promptSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
     promptTableRef.value?.setSelectionData(promptSelections.value);
   }
-  allSelections.value = allSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+  allSelections.value = allSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
 };
 
-const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
+const handleToolSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     toolSelections.value = selections;
     // 保留 Prompt 项，替换工具项
-    const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
-    const toolItems = selections.map(item => ({
+    const promptItems = allSelections.value.filter((item: any) => item.mode_type === 'prompt');
+    const toolItems = selections.map((item: any) => ({
       ...item,
       mode_type: 'tool',
     }));
@@ -1639,13 +1644,13 @@ const handleToolSelectionChange: PrimaryTableProps['onSelectChange'] = ({ select
   }, 0);
 };
 
-const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }) => {
+const handlePromptSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     promptSelections.value = selections;
     // 保留工具项，替换 Prompt 项
-    const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
-    const promptItems = selections.map(item => ({
+    const toolItems = allSelections.value.filter((item: any) => item.mode_type === 'tool');
+    const promptItems = selections.map((item: any) => ({
       ...item,
       mode_type: 'prompt',
     }));
@@ -1653,28 +1658,28 @@ const handlePromptSelectionChange: PrimaryTableProps['onSelectChange'] = ({ sele
   }, 0);
 };
 
-const handleToolFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
+const handleToolFilterChange = (filters: any) => {
   toolFilterData.value = { ...filters };
 };
 
 const handleEditToolName = (row: IMCPServerTool) => {
   toolNameRowData.value = {
     ...row,
-    tool_name: row.tool_name ?? row.name,
+    tool_name: (row as any).tool_name ?? row.name,
     isShow: true,
   };
 };
 
-const handleConfirmToolName = async (row) => {
+const handleConfirmToolName = async (row: any) => {
   try {
     await toolNameRef.value?.validate();
-    const toolData = resourceList.value.find(item => item.id === row.id);
+    const toolData = resourceList.value.find((item: any) => item.id === row.id);
     if (toolData) {
-      toolData.tool_name = toolNameRowData.value.tool_name;
+      (toolData as any).tool_name = toolNameRowData.value.tool_name;
     }
-    const selectData = toolSelections.value.find(item => item.id === toolData.id);
+    const selectData = toolSelections.value.find((item: any) => item.id === (toolData as any).id);
     if (selectData) {
-      selectData.tool_name = toolNameRowData.value.tool_name;
+      (selectData as any).tool_name = toolNameRowData.value.tool_name;
     }
     handleCancelToolName();
   }
@@ -1709,7 +1714,7 @@ const handleSetLoading = (isLoading: boolean, delay = 500) => {
 };
 
 const handleClearSelections = (type?: string) => {
-  const typeMap = {
+  const typeMap: Record<string, () => void> = {
     tool: () => {
       toolSelections.value = [];
       toolTableRef.value?.handleResetSelection();
@@ -1731,12 +1736,12 @@ const handleClearSelections = (type?: string) => {
 
 const handleToolClearSelection = () => {
   toolSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
+  allSelections.value = allSelections.value.filter((item: any) => item.mode_type !== 'tool');
 };
 
 const handlePromptClearSelection = () => {
   promptSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
+  allSelections.value = allSelections.value.filter((item: any) => item.mode_type !== 'prompt');
 };
 
 const handleToolClearFilter = () => {
@@ -1758,8 +1763,8 @@ const handleRefreshClick = async () => {
   toolNameRowData.value = {};
   searchLoading.value = true;
   await fetchStageList();
-  toolSelections.value = toolSelections.value.filter(item =>
-    resourceList.value.some(resource => resource.id === item.id),
+  toolSelections.value = toolSelections.value.filter((item: any) =>
+    resourceList.value.some((resource: any) => resource.id === item.id),
   );
   searchLoading.value = false;
 };
@@ -1770,7 +1775,10 @@ const handleStageSelectChange = () => {
   fetchStageResources();
 };
 
-const handleToolNameClick = (row: { id: number }) => {
+const handleToolNameClick = (row: {
+  id: number
+  [key: string]: any
+}) => {
   if (gatewayStore.currentGateway?.kind === 1) return;
   const routeData = router.resolve({
     name: 'ResourceEdit',
@@ -1783,8 +1791,8 @@ const handleToolNameClick = (row: { id: number }) => {
 };
 
 const handleMcpTypeChange = (tab: string) => {
-  activeTab.value = tab;
-  const tabMap = {
+  activeTab.value = tab as 'tool' | 'prompt';
+  const tabMap: Record<string, () => void> = {
     tool: () => {
       if (toolSelections.value.length) {
         nextTick(() => {
@@ -1887,9 +1895,9 @@ defineExpose({
 .create-mcp-slider {
 
   :deep(.bk-modal-content) {
-    background-color: #f5f7fa;
-    overflow-y: auto;
     overflow-x: hidden !important;
+    overflow-y: auto;
+    background-color: #f5f7fa;
   }
 
   .slider-content {
@@ -1903,6 +1911,7 @@ defineExpose({
     :deep(.tool-name) {
 
       &:hover {
+
         .icon-ag-edit-line {
           display: block;
         }
@@ -1910,6 +1919,7 @@ defineExpose({
     }
 
     :deep(.is-disabled-tool) {
+
       td {
         color: #979ba5;
 
@@ -1937,8 +1947,8 @@ defineExpose({
     }
 
     :deep(.bk-sideslider-footer) {
-      padding: 0;
       height: auto !important;
+      padding: 0;
     }
   }
 }
@@ -1958,9 +1968,9 @@ defineExpose({
     .label-text {
       position: relative;
       min-width: 92px;
-      border-right: 1px solid #dcdee5;
       text-align: center;
       cursor: pointer;
+      border-right: 1px solid #dcdee5;
       transition: all 0.2s;
 
       .required-mark {
@@ -1973,8 +1983,8 @@ defineExpose({
 
       &:hover,
       &.is-active {
-        background-color: #ffffff;
         color: #3a84ff;
+        background-color: #fff;
       }
     }
 
@@ -1982,8 +1992,8 @@ defineExpose({
 
   .resource-tips {
     font-size: 12px;
-    color: #979ba5;
     line-height: 16px;
+    color: #979ba5;
   }
 
   .resource-selector-wrapper {
@@ -2028,7 +2038,7 @@ defineExpose({
             padding: 6px 10px;
             padding-right: 0;
             margin-bottom: 4px;
-            background-color: #ffffff;
+            background-color: #fff;
             border-radius: 2px;
 
             .delete-icon {
@@ -2051,6 +2061,7 @@ defineExpose({
   }
 
   &.prompt {
+
     :deep(.bk-form-label) {
       margin-bottom: 0;
     }

@@ -21,6 +21,21 @@
 *  */
 
 import http from '../http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IPluginBindingListOutput,
+  IPluginConfigRetrieveOutput,
+  IPluginTypeListOutput,
+  IPluginTypeTagsOutput,
+  IScopePluginConfigListOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysPluginsBindingsListQuery,
+  IGatewaysPluginsListQuery,
+  IGatewaysPluginsReadQuery,
+  IGatewaysPluginsTagsListQuery,
+} from '@/services/types/query/gateways.ts';
+import type { IPluginConfigBaseSLZ } from '@/services/types/body/post/gateways.ts';
 
 const path = '/gateways';
 
@@ -29,20 +44,22 @@ const path = '/gateways';
  * @param apigwId 网关id
  * @param data 插件列表参数
  */
-export const getPluginListData = (apigwId: number, data: any) => http.get(`${path}/${apigwId}/plugins/`, data);
+export const getPluginListData = (apigwId: number, data: IGatewaysPluginsListQuery) =>
+  http.get<ICountAndResults<IPluginTypeListOutput>>(`${path}/${apigwId}/plugins/`, data);
 
 /**
  * 获取某个环境或资源下的插件标签
  * @param apigwId 网关id
  */
-export const getPluginTags = (apigwId: number) => http.get<{ tags: string[] }>(`${path}/${apigwId}/plugins/-/tags/`);
+export const getPluginTags = (apigwId: number, query: IGatewaysPluginsTagsListQuery = {}) =>
+  http.get<IPluginTypeTagsOutput>(`${path}/${apigwId}/plugins/-/tags/`, query);
 
 /**
  * 获取插件绑定的环境列表和资源列表
  * @param apigwId 网关id
  * @param code 插件code
  */
-export const getPluginBindingsList = (apigwId: number, code: string) => http.get(`${path}/${apigwId}/plugins/${code}/bindings/`);
+export const getPluginBindingsList = (apigwId: number, code: string, query: IGatewaysPluginsBindingsListQuery = {}) => http.get<IPluginBindingListOutput>(`${path}/${apigwId}/plugins/${code}/bindings/`, query);
 
 /**
  * 获取某个环境或资源绑定的插件列表 (插件类型 + 插件配置)
@@ -50,8 +67,13 @@ export const getPluginBindingsList = (apigwId: number, code: string) => http.get
  * @param scopeType 类型
  * @param scopeId 类型id
  */
-export const getScopeBindingPluginList = (apigwId: number, scopeType: string, scopeId: number) =>
-  http.get(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/`);
+export const getScopeBindingPluginList = (
+  apigwId: number,
+  scopeType: string,
+  scopeId: number,
+  query: IGatewaysPluginsReadQuery = {},
+) =>
+  http.get<IScopePluginConfigListOutput[]>(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/`, query);
 
 /**
  * 创建一个插件，并且绑定到对应的 scope_type + scope_id
@@ -61,7 +83,13 @@ export const getScopeBindingPluginList = (apigwId: number, scopeType: string, sc
  * @param code 插件code
  * @param data 插件的参数
  */
-export const createPlugin = (apigwId: number, scopeType: string, scopeId: number, code: string, data: any) =>
+export const createPlugin = (
+  apigwId: number,
+  scopeType: string,
+  scopeId: number,
+  code: string,
+  data: IPluginConfigBaseSLZ,
+) =>
   http.post(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/`, data);
 
 /**
@@ -73,7 +101,7 @@ export const createPlugin = (apigwId: number, scopeType: string, scopeId: number
  * @param id 插件id
  */
 export const getPluginConfig = (apigwId: number, scopeType: string, scopeId: number, code: string, id: number) =>
-  http.get(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
+  http.get<IPluginConfigRetrieveOutput>(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`);
 
 /**
  * 更新插件的配置
@@ -90,7 +118,7 @@ export const updatePluginConfig = (
   scopeId: number,
   code: string,
   id: number,
-  data: any,
+  data: IPluginConfigBaseSLZ,
 ) =>
   http.put(`${path}/${apigwId}/plugins/${scopeType}/${scopeId}/${code}/configs/${id}/`, data);
 

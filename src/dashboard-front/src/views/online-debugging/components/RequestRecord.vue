@@ -280,12 +280,12 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'status_code',
     ellipsis: true,
     width: 120,
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: { row: Record<string, any> }) => (
       <div>
         <span
-          class={[String(row?.response?.data?.status_code)?.startsWith('2') ? 'dot success' : 'dot failure']}
+          class={[String(row.response?.data?.status_code)?.startsWith('2') ? 'dot success' : 'dot failure']}
         />
-        { row?.response?.data?.status_code }
+        { row.response?.data?.status_code }
       </div>
     ),
   },
@@ -294,9 +294,9 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'proxy_time',
     ellipsis: true,
     width: 120,
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: { row: Record<string, any> }) => (
       <span>
-        { row?.response?.data?.proxy_time }
+        { row.response?.data?.proxy_time }
         ms
       </span>
     ),
@@ -310,7 +310,7 @@ const columns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'act',
     width: 140,
-    cell: (h, { row }: { row: Record<string, any> }) => (
+    cell: (h: any, { row }: { row: Record<string, any> }) => (
       <div class="flex items-center">
         <bk-button
           theme="primary"

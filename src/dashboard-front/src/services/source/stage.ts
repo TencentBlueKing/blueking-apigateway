@@ -16,16 +16,31 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IStageBackendListOutput,
+  IStageListOutput,
+  IStageRetrieveOutput,
+  IStageVarsOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysStagesBackendsListQuery,
+  IGatewaysStagesListQuery,
+} from '@/services/types/query/gateways.ts';
+import type { IStageInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IStageStatusInputSLZ,
+  IStageVarsSLZ,
+} from '@/services/types/body/patch/gateways.ts';
 
 const path = '/gateways';
 
 export interface IStageListItem {
   id: number
   name: string
-  description: string
-  description_en: string
+  description: string | null
+  description_en: string | null
   status: number
-  created_time: string
+  created_time: string | null
   release: {
     status: string
     created_time: string
@@ -42,25 +57,31 @@ export interface IStageListItem {
   new_resource_version: string
 }
 
-export const getStageList = (apigwId: number) => http.get<IStageListItem[]>(`${path}/${apigwId}/stages/`);
+export const getStageList = (apigwId: number, query: IGatewaysStagesListQuery = {}) =>
+  http.get<IStageListOutput[]>(`${path}/${apigwId}/stages/`, query);
 
 export const getStageDetail = (apigwId: number, stageId: number) =>
-  http.get<IStageListItem>(`${path}/${apigwId}/stages/${stageId}/`);
+  http.get<IStageRetrieveOutput>(`${path}/${apigwId}/stages/${stageId}/`);
 
-export const createStage = (apigwId: number, data: any) => http.post(`${path}/${apigwId}/stages/`, data);
+export const createStage = (apigwId: number, data: IStageInputSLZ) =>
+  http.post(`${path}/${apigwId}/stages/`, data);
 
 export const deleteStage = (apigwId: number, stageId: number) =>
   http.delete(`${path}/${apigwId}/stages/${stageId}/`);
 
-export const putStage = (apigwId: number, stageId: number, data: any) =>
+export const putStage = (apigwId: number, stageId: number, data: IStageInputSLZ) =>
   http.put(`${path}/${apigwId}/stages/${stageId}/`, data);
 
-export const toggleStatus = (apigwId: number, stageId: number, param: { status: number }) =>
-  http.put(`${path}/${apigwId}/stages/${stageId}/status/`, param);
+export const toggleStatus = (apigwId: number, stageId: number, params: IStageStatusInputSLZ) =>
+  http.put(`${path}/${apigwId}/stages/${stageId}/status/`, params);
 
-export const getStageBackends = (apigwId: number, stageId: number) =>
-  http.get(`${path}/${apigwId}/stages/${stageId}/backends/`);
+export const getStageBackends = (
+  apigwId: number,
+  stageId: number,
+  query: IGatewaysStagesBackendsListQuery = {},
+) =>
+  http.get<IStageBackendListOutput[]>(`${path}/${apigwId}/stages/${stageId}/backends/`, query);
 
-export const getStageVars = (apigwId: number, stageId: number) => http.get(`${path}/${apigwId}/stages/${stageId}/vars/`);
+export const getStageVars = (apigwId: number, stageId: number) => http.get<IStageVarsOutput>(`${path}/${apigwId}/stages/${stageId}/vars/`);
 
-export const putStageVars = (apigwId: number, stageId: number, data: any) => http.put(`${path}/${apigwId}/stages/${stageId}/vars/`, data);
+export const putStageVars = (apigwId: number, stageId: number, data: IStageVarsSLZ) => http.put(`${path}/${apigwId}/stages/${stageId}/vars/`, data);

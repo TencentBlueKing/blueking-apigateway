@@ -66,8 +66,8 @@ const formData = defineModel<IIPRestriction>('modelValue', {
 });
 
 const {
-  schema = {},
-  componentMap = {},
+  schema = {} as ISchema,
+  componentMap = {} as Record<string, any>,
   disabled = false,
 } = defineProps<IProps>();
 
@@ -80,7 +80,7 @@ const schemaFieldRef = ref<InstanceType<typeof SchemaField> | null>(null);
 const selectedOptionIndex = ref(0);
 
 const selectedSchema = computed(() => {
-  return schema?.oneOf?.[selectedOptionIndex.value];
+  return schema?.oneOf?.[selectedOptionIndex.value] as ISchema | undefined;
 });
 
 const curSelectType = computed(() => {
@@ -136,7 +136,7 @@ const getValue = () => {
 
 const validate = async (): Promise<boolean> => {
   try {
-    const isValid = await formRef.value?.validate();
+    const isValid = await (formRef.value as any)?.validate();
     if (!isValid) {
       const schemaField = schemaFieldRef.value?.comRef?.schemaFieldRef?.[0];
       if (schemaField?.comRef?.focus) {
@@ -162,7 +162,7 @@ const handleOptionChange = () => {
 
 watch(
   () => formData.value,
-  (newVal) => {
+  (newVal: any) => {
     clearValidate();
     if (newVal?.whitelist) selectedOptionIndex.value = 0;
     if (newVal?.blacklist) selectedOptionIndex.value = 1;

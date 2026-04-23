@@ -104,15 +104,15 @@ const { t } = useI18n();
 const router = useRouter();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const tableColumns = ref([
+const tableColumns = ref<any[]>([
   {
     title: t('系统名称'),
     colKey: 'system_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          {row?.system_name || '--' }
+          {row.system_name || '--' }
         </span>
       );
     },
@@ -121,10 +121,10 @@ const tableColumns = ref([
     title: t('组件名称'),
     colKey: 'component_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_name || '--' }
+          { row.component_name || '--' }
         </span>
       );
     },
@@ -133,10 +133,10 @@ const tableColumns = ref([
     title: t('组件请求方法'),
     colKey: 'component_method',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_method || '--' }
+          { row.component_method || '--' }
         </span>
       );
     },
@@ -145,10 +145,10 @@ const tableColumns = ref([
     title: t('组件请求路径'),
     colKey: 'component_path',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_path || '--' }
+          { row.component_path || '--' }
         </span>
       );
     },
@@ -156,31 +156,35 @@ const tableColumns = ref([
   {
     title: t('资源'),
     colKey: 'resource_id',
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: any }): any => {
       if (row.resource_name) {
         return (
           <div
             v-bk-tooltips={{
-              content: row?.resource_id ? row?.resource_name : t('资源不存在'),
+              content: row.resource_id ? row.resource_name : t('资源不存在'),
               placement: 'top',
               disabled: !row.isOverflow,
               extCls: 'max-w-480px',
             }}
             class={[
               'truncate color-#3a84ff cursor-pointer',
-              { 'color-#dcdee5 cursor-not-allowed': !row?.resource_id },
+              { 'color-#dcdee5 cursor-not-allowed': !row.resource_id },
             ]}
-            onMouseenter={e => tableRef.value?.handleCellEnter({
-              e,
-              row,
-            })}
-            onMouseLeave={e => tableRef.value?.handleCellLeave({
-              e,
-              row,
-            })}
-            onClick={() => handleEditResource(row, row?.resource_id)}
+            onMouseenter={(e: MouseEvent) => {
+              (tableRef.value?.handleCellEnter as any)({
+                e,
+                row,
+              });
+            }}
+            onMouseleave={(e: MouseEvent) => {
+              (tableRef.value?.handleCellLeave as any)({
+                e,
+                row,
+              });
+            }}
+            onClick={() => handleEditResource(row as ISyncApigwItem, row.resource_id!)}
           >
-            { row?.resource_name }
+            { row.resource_name }
           </div>
         );
       }
@@ -191,10 +195,10 @@ const tableColumns = ref([
     title: t('组件ID'),
     colKey: 'component_id ',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_id || '--' }
+          { row.component_id || '--' }
         </span>
       );
     },
@@ -203,23 +207,23 @@ const tableColumns = ref([
     title: t('操作类型'),
     colKey: 'status ',
     width: 120,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
-      if (!row.resource_id || ['POST'].includes(row?.component_method)) {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
+      if (!row.resource_id || ['POST'].includes(row.component_method!)) {
         return (
           <span class="color-#2dcb56">
             { t('新建') }
           </span>
         );
       }
-      if (row.resource_id && row?.component_method) {
-        if (['DELETE'].includes(row?.component_method)) {
+      if (row.resource_id && row.component_method) {
+        if (['DELETE'].includes(row.component_method)) {
           return (
             <span class="color-#ea3536">
               { t('删除') }
             </span>
           );
         }
-        if (['PUT', 'PATCH'].includes(row?.component_method)) {
+        if (['PUT', 'PATCH'].includes(row.component_method)) {
           return (
             <span class="color-#ffb400">
               { t('更新') }
@@ -245,21 +249,24 @@ const pagination = reactive({
 });
 const isLoading = ref(false);
 const pathUrl = ref('');
-const esb = ref({});
+const esb = ref<{
+  gateway_id?: number | string
+  [key: string]: any
+}>({});
 const allData = ref([]);
 const displayData = ref([]);
 const requestQueue = reactive(['component']);
 
 const createNum = computed(() => {
-  const results = allData.value?.filter(item => !item?.resource_id);
+  const results = allData.value?.filter((item: any) => !item?.resource_id);
   return results?.length;
 });
 const updateNum = computed(() => {
-  const results = allData.value?.filter(item => item?.resource_id && item?.component_path);
+  const results = allData.value?.filter((item: any) => item?.resource_id && item?.component_path);
   return results?.length;
 });
 const deleteNum = computed(() => {
-  const results = allData.value?.filter(item => item?.resource_id && !item?.component_path);
+  const results = allData.value?.filter((item: any) => item?.resource_id && !item?.component_path);
   return results?.length;
 });
 

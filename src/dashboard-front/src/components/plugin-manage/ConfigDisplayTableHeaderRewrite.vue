@@ -66,7 +66,7 @@ const tableCols = ref<IColumn[]>([
     field: 'action',
     width: firstColWidth,
     index: 0,
-    rowspan: ({ row }) => row.rowSpan || 1,
+    rowspan: ({ row }: any) => row.rowSpan || 1,
   },
   {
     label: t('键'),
@@ -83,12 +83,13 @@ const tableData = computed(() => {
   const setterData: IHeaderRewriteTableRow[] = [];
   const removerData: IHeaderRewriteTableRow[] = [];
   const { config } = plugin;
+  // @ts-ignore
   Object.entries(config).forEach(([action, keyValues]: [string, Array<{
     key: string
     value?: string
   }>]) => {
     if (action === 'set') {
-      keyValues.forEach(({ key, value }) => {
+      keyValues.forEach(({ key, value }: any) => {
         setterData.push({
           key,
           value,
@@ -97,7 +98,7 @@ const tableData = computed(() => {
       });
     }
     else if (action === 'remove') {
-      keyValues.forEach(({ key }) => {
+      keyValues.forEach(({ key }: any) => {
         removerData.push({
           key,
           value: '--',

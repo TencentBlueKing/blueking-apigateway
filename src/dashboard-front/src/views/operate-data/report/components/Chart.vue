@@ -93,10 +93,10 @@ const myChart = shallowRef();
 const searchParams = ref<ISearchParamsType>();
 const isEmpty = ref<boolean>(false);
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => chartData,
-  (data) => {
+  (data: any) => {
     if (!data?.series[0]?.datapoints?.length) {
       isEmpty.value = true;
       updateTableEmptyConfig();
@@ -135,16 +135,16 @@ const handleInit = () => {
 };
 
 const updateTableEmptyConfig = () => {
-  const list = Object.values(searchParams.value).filter(item => !!item);
+  const list = Object.values(searchParams.value ?? {}).filter(item => !!item);
   if (list.length > 0) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  if (searchParams.value.stage_id) {
+  if (searchParams.value?.stage_id) {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const chartResize = () => {
@@ -154,7 +154,7 @@ const chartResize = () => {
 };
 
 const getChartOption = () => {
-  const baseOption: echarts.EChartOption = {
+  const baseOption: Record<string, any> = {
     // 设置距离右侧的间距
     grid: { right: '8%' },
     xAxis: {
@@ -219,7 +219,7 @@ const getChartOption = () => {
     legend: { show: false },
   };
 
-  const chartOption: echarts.EChartOption = {
+  const chartOption: Record<string, any> = {
     xAxis: {},
     yAxis: {},
     series: [],
@@ -228,12 +228,12 @@ const getChartOption = () => {
     grid: {},
   };
 
-  let moreOption = { xAxis: { axisLabel: {} } };
+  let moreOption: Record<string, any> = { xAxis: { axisLabel: {} } };
 
-  chartData?.series?.forEach((item: ISeriesItemType) => {
+  (chartData as any)?.series?.forEach((item: ISeriesItemType) => {
     let datapoints = item.datapoints || [];
     datapoints = datapoints.filter((value: Array<number>) => !isNaN(Math.round(value[0])));
-    chartOption.series.push(merge({}, baseOption.series[0], {
+    chartOption.series.push(merge({}, (baseOption.series as any[])[0], {
       name: (item.target?.split('=')[1])?.replace(/"/g, ''),
       data: datapoints.map(item => ([
         item[1],
@@ -250,10 +250,10 @@ const getChartOption = () => {
     }
   });
   // 设置图表颜色
-  chartOption.color = generateChartColor(chartData.series ?? []);
+  chartOption.color = generateChartColor((chartData as any).series ?? []);
 
   // tooltip
-  chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+  chartOption.tooltip.formatter = (params: any) => {
     return `<div>
   <p>${dayjs(params.data[0]).format('YYYY-MM-DD')}</p>
   <p><span class="tooltip-icon">${params.marker}${t(title)}: </span><span>${params.data[1] !== null ? params.data[1].toLocaleString() : '0'} ${t('次')}</span></p>
@@ -299,7 +299,7 @@ const generateChartColor = (chartData: ISeriesItemType[]) => {
     }
   });
 
-  const finalColors = colors.reduce((a, b) => a.concat(b), []);
+  const finalColors = colors.reduce<string[]>((a, b) => a.concat(b), []);
   return finalColors;
 };
 

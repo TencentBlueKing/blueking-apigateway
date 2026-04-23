@@ -67,14 +67,12 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { Button, Loading, Message, Switcher } from 'bkui-vue';
-import type {
-  FilterValue,
-  PrimaryTableProps,
-} from '@blueking/tdesign-ui';
+import type { FilterValue } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import { useGateway } from '@/stores';
 import { usePopInfoBox } from '@/hooks';
 import { getGatewayLabels } from '@/services/source/gateway';
+import type { IExtractApiReturn } from '@/services/types/utils';
 import {
   type IAlarmStrategy,
   deleteStrategy,
@@ -86,11 +84,19 @@ import { getStageList } from '@/services/source/stage';
 import AgTable from '@/components/ag-table/Index.vue';
 import AddAlarmStrategy from '@/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue';
 
+// 扩展 IAlarmStrategy 以包含运行时动态属性
+type IAlarmStrategyRow = IAlarmStrategy & {
+  statusUpdating?: boolean
+  gateway_label_ids?: number[]
+};
+
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
+
 const { t } = useI18n();
 const gatewayStore = useGateway();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('告警策略名称'),
     colKey: 'name',
@@ -100,19 +106,20 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('标签'),
     colKey: 'gateway_labels',
-    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
-      if (row?.gateway_labels?.length) {
+    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+      if ((row.gateway_labels as any)?.length) {
+        const labels = row!.gateway_labels as any;
         return (
           <div class="lh-1 single-hide">
             <span
               v-bk-tooltips={{
-                content: labelTooltip(row?.gateway_labels),
+                content: labelTooltip(labels),
                 placement: 'top',
               }}
               class="label-box"
             >
               {
-                row.gateway_labels.map((label, index) => {
+                labels.map((label: any, index: number) => {
                   if (index < 4) {
                     return (
                       <span class="ag-label">
@@ -120,7 +127,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
                       </span>
                     );
                   }
-                  if (index === row.gateway_labels.length - 1 && index > 3) {
+                  if (index === labels.length - 1 && index > 3) {
                     return (
                       <span class="ag-label">
                         ...
@@ -140,8 +147,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('生效环境'),
     colKey: 'effective_stages',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
-      if (Array.isArray(row?.effective_stages)) {
+    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+      if (Array.isArray(row.effective_stages)) {
         return (
           <span>{ row.effective_stages.length > 0 ? row.effective_stages.join() : t('所有环境')}</span>
         );
@@ -157,8 +164,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('是否启用'),
     colKey: 'enabled',
-    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
-      if (row?.statusUpdating) {
+    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
+      if (row.statusUpdating) {
         return (
           <Loading
             style="width: 48px;"
@@ -173,12 +180,12 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
       }
       return (
         <Switcher
-          v-model={row.enabled}
+          v-model={row!.enabled}
           theme="primary"
           true-value
           false-value={false}
           disabled={statusSwitcherDisabled.value}
-          onChange={() => handleIsEnable(row)}
+          onChange={() => handleIsEnable(row as IAlarmStrategyRow)}
         />
       );
     },
@@ -187,21 +194,24 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'operate',
     fixed: 'right',
-    cell: (h, { row }: { row?: Partial<IAlarmStrategy> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmStrategyRow> }) => {
       return (
         <div>
           <Button
             class="mr-24px"
             theme="primary"
             text
-            onClick={() => handleEdit(row)}
+            onClick={() => handleEdit(row as { id: number })}
           >
             { t('编辑') }
           </Button>
           <Button
             theme="primary"
             text
-            onClick={() => handleDelete(row)}
+            onClick={() => handleDelete(row as {
+              id: number
+              name: string
+            })}
           >
             { t('删除') }
           </Button>
@@ -214,11 +224,12 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
 const filterData = ref<FilterValue>({});
 const statusSwitcherDisabled = ref(false);
 const tableData = ref([]);
-const labelList = ref([]);
+const labelList = ref<IGatewayLabelItem[]>([]);
 const effectiveStage = ref('');
 
 // 新建初始数据
-const editingStrategy = ref({
+const editingStrategy = ref<IAlarmStrategyRow>({
+  id: 0,
   name: '',
   alarm_type: 'resource_backend',
   alarm_subtype: '',
@@ -229,7 +240,7 @@ const editingStrategy = ref({
       method: 'gte',
       count: 3,
     },
-    filter_config: null,
+    filter_config: undefined,
     converge_config: { duration: 86400 },
     notice_config: {
       notice_way: ['im'],
@@ -240,15 +251,12 @@ const editingStrategy = ref({
   effective_stages: [],
 });
 
-const stageList = ref<{
-  id: number
-  name: string
-}[]>([]);
+const stageList = ref<IExtractApiReturn<typeof getStageList>>([]);
 const sliderConfig = ref({
   isShow: false,
   title: '',
 });
-let initData = reactive({});
+let initData = reactive<Record<string, any>>({});
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -288,17 +296,18 @@ const handleAdd = () => {
     title: t('新建告警策略'),
   });
   editingStrategy.value = {
+    id: 0,
     name: '',
     alarm_type: 'resource_backend',
     alarm_subtype: '',
-    gateway_label_ids: [],
+    gateway_label_ids: [] as any,
     config: {
       detect_config: {
         duration: 300,
         method: 'gte',
         count: 3,
       },
-      filter_config: null,
+      filter_config: undefined,
       converge_config: { duration: 86400 },
       notice_config: {
         notice_way: ['im'],
@@ -316,7 +325,7 @@ const handleAdd = () => {
 };
 
 // 是否启用
-const handleIsEnable = async (item: IAlarmStrategy) => {
+const handleIsEnable = async (item: IAlarmStrategyRow) => {
   const { enabled, id } = item;
   try {
     if (item.statusUpdating) {
@@ -339,7 +348,7 @@ const handleIsEnable = async (item: IAlarmStrategy) => {
 const handleEdit = async ({ id }: { id: number }) => {
   try {
     const res = await getStrategyDetail(apigwId.value, id);
-    editingStrategy.value = res;
+    editingStrategy.value = res as unknown as IAlarmStrategyRow;
     // 当生效环境为空时，应该把生效环境初始化为 ‘全部环境’
     effectiveStage.value = res?.effective_stages?.length > 0 ? 'custom' : 'all';
     initData = cloneDeep({
@@ -388,13 +397,13 @@ const handleClearFilter = () => {
 
 const getStages = async () => {
   const res = await getStageList(apigwId.value);
-  stageList.value = res || [];
+  stageList.value = res ?? [];
 };
 
 const init = async () => {
   labelList.value = await getGatewayLabels(apigwId.value);
   nextTick(() => {
-    tableData.value.forEach((item) => {
+    tableData.value.forEach((item: any) => {
       item.statusUpdating = false;
     });
   });

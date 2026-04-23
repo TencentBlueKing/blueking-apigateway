@@ -114,7 +114,7 @@
           ref="mcpListRef"
           class="mcp-server-list"
         >
-          <template v-if="['searchEmpty', 'error'].includes(cardEmptyType) && mcpList.length < 1 && !isLoading">
+          <template v-if="['searchEmpty', 'error'].includes(cardEmptyType ?? '') && mcpList.length < 1 && !isLoading">
             <TableEmpty
               background="#f5f7fa"
               :empty-type="cardEmptyType"
@@ -224,12 +224,12 @@ const featureFlagStore = useFeatureFlag();
 
 const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverCardTableRef = ref<InstanceType<typeof ServerCardTable>>();
-const mcpListRef = ref<HTMLDivElement>(null);
+const mcpListRef = ref<HTMLDivElement | null>(null);
 const mcpList = ref<MCPServerType[]>([]);
 const editingServerId = ref();
 const activeStatusTab = ref('all');
 const activeViewTab = ref('card');
-const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error'>('');
+const cardEmptyType = ref<'empty' | 'searchEmpty' | 'error' | undefined>(undefined);
 const isLoading = ref(true);
 const pagination = ref({
   current: 1,
@@ -237,18 +237,18 @@ const pagination = ref({
   count: 0,
   hasNoMore: false,
 });
-const filterData = ref<Partial<IMCPServer>>({
+const filterData = ref<Record<string, any>>({
   order_by: '-updated_time',
   status: activeStatusTab.value,
 });
-const mcpFilterOptions = ref<IMCPServerFilterOptions>({
+const mcpFilterOptions = ref<IMCPServerFilterOptions & Record<string, any>>({
   stages: [],
   labels: [],
   categories: [],
 });
 const searchValue = ref([]);
 
-const searchData = computed(() => [
+const searchData = computed<any[]>(() => [
   {
     name: t('模糊搜索'),
     id: 'keyword',
@@ -268,7 +268,7 @@ const searchData = computed(() => [
     name: t('分类'),
     id: 'categories',
     placeholder: t('请选择分类'),
-    children: mcpFilterOptions.value.categories.map((cg) => {
+    children: (mcpFilterOptions.value.categories ?? []).map((cg: any) => {
       return {
         name: cg.display_name,
         id: cg.name,
@@ -280,7 +280,7 @@ const searchData = computed(() => [
     name: t('标签'),
     id: 'label',
     placeholder: t('请选择标签'),
-    children: mcpFilterOptions.value.labels.map((label) => {
+    children: (mcpFilterOptions.value.labels ?? []).map((label: any) => {
       return {
         name: label,
         id: label,
@@ -320,7 +320,7 @@ const isEnabledOAuth = computed(() =>
 );
 const isTableView = computed(() => activeViewTab.value.includes('table'));
 
-const renderRiskToolToolTip = (row: IMCPServer) => {
+const renderRiskToolToolTip = (row: IMCPServer & { app_permission_risk?: any }) => {
   return {
     content: () => (
       <div class="break-all">
@@ -339,7 +339,7 @@ const renderRiskToolToolTip = (row: IMCPServer) => {
 };
 
 const getSingleCardHeight = (): number => {
-  if (isTableView.value) return;
+  if (isTableView.value) return 0;
   const firstCard = mcpListRef.value?.querySelector('.ag-mcp-card-wrapper');
   const addCard = mcpListRef.value?.querySelector('.add-server-card');
 
@@ -360,7 +360,7 @@ const getCardsPerRow = (): number => {
 
 const calculateMaxVisibleCards = (): number => {
   // 表格视图无需计算
-  if (isTableView.value) return;
+  if (isTableView.value) return 0;
   // 通知栏高度40px
   const noticeH = isShowNoticeAlert.value ? 40 : 0;
   // 获取页面可用高度（排除顶部导航/内边距）, 48px=页面内边距(24+24)，152px=顶部预留高度
@@ -400,7 +400,7 @@ const fetchMcpServerList = async () => {
         ? filterData.value.categories.join()
         : filterData.value?.categories,
     };
-    const res = await getServers(gatewayId, params);
+    const res = await getServers(gatewayId, params as any);
     const { results = [], count = 0 } = res ?? {};
     mcpList.value = current === 1 ? results : [...mcpList.value, ...results];
     pagination.value = {
@@ -425,23 +425,23 @@ const fetchMcpServerFilterOptions = async () => {
   const res = await getMcpServerFilterOptions(gatewayId);
   if (res?.categories?.length) {
     // MCPServer筛选掉官方和精选分类
-    res.categories = res?.categories.filter(cg => !['Official', 'Featured'].includes(cg.name));
+    res.categories = res?.categories.filter((cg: any) => !['Official', 'Featured'].includes(cg.name));
   }
   if (res?.stages?.length) {
-    res.stages = res?.stages.map((stage) => {
+    (res as any).stages = res?.stages.map((stage: any) => {
       return {
         ...stage,
         id: String(stage.id),
       };
     });
   }
-  mcpFilterOptions.value = res ?? {};
+  mcpFilterOptions.value = (res ?? {}) as any;
 };
 
 const handleStatusTabChange = ({ id }: { id: string }) => {
   if (activeStatusTab.value === id) return;
   activeStatusTab.value = id;
-  filterData.value.status = id;
+  (filterData.value as any).status = id;
   resetPagination();
 };
 
@@ -455,7 +455,7 @@ const handlePreviewTabChange = ({ id }: { id: string }) => {
       // 表格视图不需要页面滚动条
       const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
       if (mcpEl) {
-        mcpEl.style.overflowY = id.includes('card') ? 'auto' : 'hidden';
+        (mcpEl as HTMLElement).style.overflowY = id.includes('card') ? 'auto' : 'hidden';
       }
       resetPagination();
     });
@@ -479,12 +479,12 @@ const handleEdit = (id: number) => {
 };
 
 const handleSuspend = async (id: number) => {
-  const server = mcpList.value.find(server => server.id === id);
+  const server = mcpList.value.find((server: any) => server.id === id);
   usePopInfoBox({
     isShow: true,
     type: 'warning',
-    title: () => t('确认停用 {n}？', { n: server.name }),
-    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server.name }),
+    title: () => t('确认停用 {n}？', { n: server?.name }),
+    subTitle: t('停用后，{n} 下所有工具不可访问，请确认！', { n: server?.name }),
     confirmText: t('确认停用'),
     cancelText: t('取消'),
     onConfirm: async () => {
@@ -508,7 +508,7 @@ const handleEnable = async (id: number) => {
 };
 
 const handleDelete = async (id: number) => {
-  const server = mcpList.value.find(server => server.id === id);
+  const server = mcpList.value.find((server: any) => server.id === id);
   if (server) {
     usePopInfoBox({
       isShow: true,
@@ -533,8 +533,8 @@ const handleDelete = async (id: number) => {
 const handleServerUpdated = () => {
   // 如果是新建编辑mcp重置滚动条到顶部
   const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
-  if (mcpEl?.scrollTop > 0) {
-    mcpEl.scrollTop = 0;
+  if (mcpEl && (mcpEl as HTMLElement).scrollTop > 0) {
+    (mcpEl as HTMLElement).scrollTop = 0;
   }
   resetPagination();
 };
@@ -589,16 +589,16 @@ const resetPagination = () => {
 };
 
 const handleSearch = () => {
-  const params = { order_by: filterData.value.order_by || '-updated_time' };
-  searchValue.value.forEach((option) => {
+  const params: Record<string, any> = { order_by: filterData.value.order_by || '-updated_time' };
+  searchValue.value.forEach((option: any) => {
     if (option.values) {
-      params[option.id] = !['categories'].includes(option.id)
+      (params as Record<string, any>)[option.id] = !['categories'].includes(option.id)
         ? option.values?.[0]?.id
-        : option.values.map(item => item.id);
+        : option.values.map((item: any) => item.id);
     };
   });
-  filterData.value = params;
-  cardEmptyType.value = Object.keys(params).length > 0 ? 'searchEmpty' : 'empty';
+  filterData.value = params as any;
+  cardEmptyType.value = Object.keys(params).length > 0 ? 'searchEmpty' : undefined;
   resetPagination();
 };
 
@@ -606,9 +606,9 @@ const handleClearFilter = () => {
   filterData.value = {
     order_by: '-updated_time',
     status: activeStatusTab.value,
-  };
+  } as any;
   searchValue.value = [];
-  cardEmptyType.value = '';
+  cardEmptyType.value = undefined;
 };
 
 const handleRefresh = () => {
@@ -645,10 +645,10 @@ onUnmounted(() => {
 
   :deep(.ag-dot) {
     display: inline-block;
-    min-width: 8px;
     height: 8px;
-    border-width: 1px;
+    min-width: 8px;
     border-style: solid;
+    border-width: 1px;
     border-radius: 50%;
   }
 
@@ -661,24 +661,25 @@ onUnmounted(() => {
     .add-server-card {
       min-height: 280px;
       color: #3a84ff;
+      cursor: pointer;
       background-color: #f0f5ff;
       border: 1px dashed #699df4;
       border-radius: 2px;
-      cursor: pointer;
       box-sizing: border-box;
     }
 
     :deep(.ag-mcp-card-wrapper) {
 
       .mcp-footer-content {
-        left: 24px;
         right: 24px;
+        left: 24px;
       }
     }
   }
 }
 
 @media (max-width: 767px) {
+
   .add-server-card,
   :deep(.ag-mcp-card-wrapper) {
     width: 100%;
@@ -686,6 +687,7 @@ onUnmounted(() => {
 }
 
 @media (min-width: 1280px) {
+
   .add-server-card,
   :deep(.ag-mcp-card-wrapper) {
     width: calc(33.3333% - 10.6667px);
@@ -693,6 +695,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1320px) {
+
   :deep(.mcp-card-title) {
     min-width: 30px;
   }

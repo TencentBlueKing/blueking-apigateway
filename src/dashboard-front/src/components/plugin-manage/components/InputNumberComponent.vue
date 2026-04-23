@@ -79,7 +79,7 @@ const emit = defineEmits<IEmits>();
 
 const currentValue = ref(value ?? min);
 
-watch(() => value, (newVal) => {
+watch(() => value, (newVal: any) => {
   currentValue.value = newVal;
 }, { immediate: true });
 

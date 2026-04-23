@@ -276,7 +276,7 @@
     <!-- 发布可编程网关的资源至环境 -->
     <ReleaseProgrammable
       ref="releaseProgrammableRef"
-      :current-stage="currentStage"
+      :current-stage="currentStage!"
       @hidden="handleReleaseSuccess"
       @release-success="handleReleaseSuccess"
       @closed-on-publishing="handleClosedOnPublishing"
@@ -289,7 +289,6 @@ import { Message } from 'bkui-vue';
 import { getStageStatus } from '@/utils';
 import { getProgrammableStageDetail } from '@/services/source/programmable';
 import {
-  type IStageListItem,
   deleteStage,
   getStageDetail,
   getStageList,
@@ -309,12 +308,17 @@ import ReleaseStage from '@/components/release-stage/Index.vue';
 import ResourceInfo from './components/ResourceInfo.vue';
 import PluginManagement from './components/PluginManagement.vue';
 import VarManagement from './components/VarManagement.vue';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
-interface IProps { stageId: number }
+type IPaasInfo = IExtractApiReturn<typeof getProgrammableStageDetail>;
+
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
 
 interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
-type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
+interface ILocalStageDetail extends IExtractApiReturn<typeof getStageDetail> { paasInfo?: IPaasInfo }
+
+interface IProps { stageId: number }
 
 const { stageId } = defineProps<IProps>();
 
@@ -335,10 +339,10 @@ const {
   resume: startPollingStages,
 } = useTimeoutPoll(fetchStageList, 3 * 1000, { immediate: false });
 
-const stageList = ref([]);
+const stageList = ref<ILocalStageItem[]>([]);
 const loadingProgrammableStageIds = ref<number[]>([]);
 // 当前环境信息
-const currentStage = ref<IStageListItem | null>(null);
+const currentStage = ref<ILocalStageDetail>();
 const releaseStageRef = ref();
 const releaseProgrammableRef = ref();
 const stageSidesliderRef = ref();
@@ -381,20 +385,6 @@ const gatewayId = computed(() => Number(route.params.id));
 const publishStatus = computed(() => {
   if (!currentStage.value) {
     return '';
-  }
-  if (currentStage.value?.isProgrammableGateway) {
-    if (['doing', 'pending'].includes(currentStage.value?.paasInfo?.status)
-      || ['doing', 'pending'].includes(currentStage.value?.paasInfo?.latest_deployment?.status)) {
-      return 'doing';
-    }
-    // 未发布
-    if (currentStage.value?.status === 0 || currentStage.value?.release?.status === 'unreleased') {
-      return 'unreleased';
-    }
-    return currentStage.value?.paasInfo?.status
-      || currentStage.value?.paasInfo?.latest_deployment?.status
-      || currentStage.value?.release?.status
-      || '';
   }
   // 未发布
   if (currentStage.value?.status === 0 || currentStage.value?.release?.status === 'unreleased') {
@@ -464,7 +454,7 @@ async function fetchStageList() {
         }
         else {
           tasks.push(Promise.resolve(undefined));
-          const index = loadingProgrammableStageIds.value.findIndex(id => id === stage.id);
+          const index = loadingProgrammableStageIds.value.findIndex((id: number) => id === stage.id);
           if (index !== -1) {
             loadingProgrammableStageIds.value.splice(index, 1);
           }
@@ -479,12 +469,12 @@ async function fetchStageList() {
       loadingProgrammableStageIds.value = [];
     }
     // 所有环境都不是 doing 或 pending 状态时，暂停轮询
-    const isComplete = stageList.value.every((stage) => {
+    const isComplete = stageList.value.every((stage: ILocalStageItem) => {
       const publishStatus = stage?.paasInfo?.latest_deployment?.status
         || stage?.paasInfo?.status || stage?.release?.status;
       return !['doing', 'pending'].includes(publishStatus);
     });
-    const curData = stageList.value.find(stage => stage.id === Number(stageId));
+    const curData = stageList.value.find((stage: ILocalStageItem) => stage.id === Number(stageId));
     if (curData) {
       currentStage.value = {
         ...currentStage.value,
@@ -501,7 +491,7 @@ async function fetchStageList() {
       pausePollingStages();
     }
   }
-};
+}
 
 function setRefreshPolling() {
   // 刷新页面后如果没找到doing项，不需要开启轮询

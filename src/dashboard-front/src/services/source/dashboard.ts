@@ -17,6 +17,19 @@
  */
 
 import http from '../http';
+import type {
+  IMetricInstantOutput,
+  IMetricRangeOutput,
+  IResourceListPageOutput,
+  IStageListOutput,
+} from '@/services/types/responses/gateways.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IGatewaysMetricsQueryInstantListQuery,
+  IGatewaysMetricsQueryRangeListQuery,
+  IGatewaysResourcesListQuery,
+  IGatewaysStagesListQuery,
+} from '@/services/types/query/gateways.ts';
 
 const path = '/gateways';
 
@@ -97,29 +110,29 @@ export interface IChartDataLoading {
  * @param apigwId 网关id
  * @param params
  */
-export const getApigwMetrics = (apigwId: number, params: any) =>
-  http.get(`${path}/${apigwId}/metrics/query-range/`, params, { catchError: true });
+export const getApigwMetrics = (apigwId: number, params: IGatewaysMetricsQueryRangeListQuery) =>
+  http.get<IMetricRangeOutput>(`${path}/${apigwId}/metrics/query-range/`, params, { catchError: true });
 
 /**
  *  请求总数健康率
  * @param apigwId 网关id
  * @param params
  */
-export const getApigwMetricsInstant = (apigwId: number, params: ISearchParamsType) =>
-  http.get(`${path}/${apigwId}/metrics/query-instant/`, params);
+export const getApigwMetricsInstant = (apigwId: number, params: IGatewaysMetricsQueryInstantListQuery) =>
+  http.get<IMetricInstantOutput>(`${path}/${apigwId}/metrics/query-instant/`, params);
 
 /**
  *  获取流程日志列表
  * @param apigwId 网关id
  * @param params
  */
-export const getApigwResources = (apigwId: number, params: any) =>
-  http.get(`${path}/${apigwId}/resources/`, params);
+export const getApigwResources = (apigwId: number, params: IGatewaysResourcesListQuery = {}) =>
+  http.get<ICountAndResults<IResourceListPageOutput>>(`${path}/${apigwId}/resources/`, params);
 
 /**
  *  获取流程日志列表
  * @param apigwId 网关id
  * @param params
  */
-export const getApigwStages = (apigwId: number, params: any) =>
-  http.get(`${path}/${apigwId}/stages/`, params);
+export const getApigwStages = (apigwId: number, params: IGatewaysStagesListQuery = {}) =>
+  http.get<IStageListOutput[]>(`${path}/${apigwId}/stages/`, params);

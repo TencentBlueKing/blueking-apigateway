@@ -117,7 +117,7 @@ watch(() => data, () => {
 
 const validate = async () => {
   try {
-    await formRef.value?.validate();
+    await (formRef.value as any)?.validate();
   }
   catch (error) {
     return Promise.reject(error);

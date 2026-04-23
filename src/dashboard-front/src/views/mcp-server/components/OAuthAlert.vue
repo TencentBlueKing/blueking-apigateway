@@ -97,7 +97,10 @@ const renderAlertStyles = computed(() => {
   };
 });
 const renderToolData = computed(() => {
-  const results = appAuthStatusList.map((item) => {
+  const results = appAuthStatusList.map((item: IMCPServerTool & {
+    contexts?: any
+    tool_name?: string
+  }) => {
     if (item.contexts?.resource_auth?.config?.length) {
       const authConfig = JSON.parse(item.contexts?.resource_auth?.config);
       const displayName = item.tool_name || item.name;
@@ -113,7 +116,7 @@ const renderToolData = computed(() => {
     }
     return item;
   });
-  return results.map(item => item.name).join('、');
+  return results.map((item: any) => item.name).join('、');
 });
 </script>
 
@@ -122,9 +125,9 @@ const renderToolData = computed(() => {
   display: inline-block;
   width: 4px;
   height: 4px;
+  margin-right: 4px;
   vertical-align: middle;
   background-color: #ea3636;
   border-radius: 50%;
-  margin-right: 4px;
 }
 </style>

@@ -235,7 +235,7 @@
 <script lang="tsx" setup>
 import {
   getComponentSystemList,
-  getESBSDKlist,
+  getESBSDKList,
 } from '@/services/source/docs-esb';
 import { getGatewaysDocs } from '@/services/source/docs';
 import SDKInstructionSlider from './components/SDKInstructionSlider.vue';
@@ -292,7 +292,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'name',
     title: t('网关名称'),
     width: 200,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: any) => {
       if (!row?.name) {
         return '--';
       }
@@ -306,15 +306,15 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               extCls: 'max-w-480px',
             }}
             class="truncate color-#3a84ff cursor-pointer mr-4px"
-            onMouseenter={e => tableRef.value?.handleCellEnter({
+            onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
               e,
               row,
             })}
-            onMouseLeave={e => tableRef.value?.handleCellLeave({
+            onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
               e,
               row,
             })}
-            onClick={() => gotoDetails(row)}
+            onClick={() => gotoDetails(row as IApiGatewayBasics)}
           >
             { row.name }
           </div>
@@ -355,14 +355,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         title: t('租户模式'),
         width: 120,
         ellipsis: true,
-        cell: (h, { row }) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
+        cell: (h: any, { row }: any) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode as string] || '--' }</span>,
       },
       {
         colKey: 'tenant_id',
         title: t('租户 ID'),
         width: 120,
         ellipsis: true,
-        cell: (h, { row }) => <span>{ row.tenant_id || '--' }</span>,
+        cell: (h: any, { row }: any) => <span>{ row.tenant_id || '--' }</span>,
       },
     ]
     : []),
@@ -370,7 +370,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'description',
     title: t('网关描述'),
     ellipsis: true,
-    cell: (h, { row }) =>
+    cell: (h: any, { row }: any) =>
       <span>{ row.description || '--' }</span>,
   },
   ...(!featureFlagStore.isTenantMode
@@ -379,7 +379,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         colKey: 'maintainers',
         title: t('网关负责人'),
         width: 180,
-        cell: (h, { row }) => (
+        cell: (h: any, { row }: any) => (
           row.maintainers?.length
             ? (
               <div
@@ -390,11 +390,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                   extCls: 'max-w-480px',
                 }}
                 class="truncate"
-                onMouseenter={e => tableRef.value?.handleCellEnter({
+                onMouseenter={(e: MouseEvent) => tableRef.value?.handleCellEnter({
                   e,
                   row,
                 })}
-                onMouseLeave={e => tableRef.value?.handleCellLeave({
+                onMouseleave={(e: any) => tableRef.value?.handleCellLeave({
                   e,
                   row,
                 })}
@@ -409,7 +409,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
                     : (
                       <span>
                         {
-                          row.maintainers.map((maintainer, index) => (
+                          row.maintainers.map((maintainer: any, index: number) => (
                             <span
                               key={maintainer.login_name}
                             >
@@ -447,7 +447,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         </div>
       );
     },
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       row.is_plugin_gateway ? t('是') : t('否')
     ),
   },
@@ -456,7 +456,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('操作'),
     width: 120,
     fixed: 'right',
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <bk-button
         v-bk-tooltips={{
           content: t('SDK未生成，可联系负责人生成SDK'),
@@ -465,7 +465,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         text
         theme="primary"
         disabled={!row.sdks?.length}
-        onClick={() => handleSdkDetailClick(row)}
+        onClick={() => handleSdkDetailClick(row as IApiGatewayBasics)}
       >
         {t('查看 SDK')}
       </bk-button>
@@ -522,7 +522,7 @@ const fetchComponentSystemList = async () => {
     const systemList = await getComponentSystemList(board.value) as IBoard[];
     // esb 的 sdk 语言，目前只有 python
     const language = 'python';
-    const sdkResponse = await getESBSDKlist(board.value, { language }) as IComponentSdk[];
+    const sdkResponse = await getESBSDKList(board.value, { language }) as IComponentSdk[];
     const sdkList = sdkResponse || [];
     sdkList.forEach((sdk) => {
       sdk.language = language;
@@ -545,8 +545,8 @@ const fetchComponentSystemList = async () => {
 
 const handleNavClick = (cat: ICategory) => {
   const { _navId } = cat;
-  curCategoryNavId.value = _navId;
-  const categoryRef = categoryRefs.value.find(item => item.dataset?._navId === _navId);
+  curCategoryNavId.value = _navId ?? '';
+  const categoryRef = categoryRefs.value.find((item: HTMLElement) => item.dataset?._navId === _navId);
   if (categoryRef?.scrollIntoView) {
     categoryRef.scrollIntoView({ behavior: 'smooth' });
   }
@@ -893,6 +893,7 @@ $primary-color: #3a84ff;
 }
 
 .docs-list {
+
   :deep(.t-table__content) {
     max-height: 652px !important;
   }

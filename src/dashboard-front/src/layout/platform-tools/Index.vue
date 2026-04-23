@@ -38,7 +38,7 @@
             >
               <template #icon>
                 <AgIcon
-                  :name="menu.icon"
+                  :name="menu.icon || ''"
                   size="18"
                 />
               </template>
@@ -128,7 +128,7 @@ const platformToolsMenu = computed<IMenu[]>(() => [
   },
 ]);
 
-const openedKeys = computed(() => platformToolsMenu.value.map(e => e.name));
+const openedKeys = computed(() => platformToolsMenu.value.map((e: IMenu) => e.name));
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
@@ -146,7 +146,7 @@ const routerViewWrapperClass = computed(() => {
 // 监听当前路由
 watch(
   () => route.meta,
-  (meta) => {
+  (meta: typeof route.meta) => {
     activeMenuKey.value = meta.matchRoute as string;
     headerTitle.value = meta.title as string;
   },

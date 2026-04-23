@@ -47,10 +47,10 @@
           <a
             target="_blank"
             class="link-item"
-            :href="basics.doc_maintainers?.service_account?.link"
+            :href="basics?.doc_maintainers?.service_account?.link"
           >
             <i class="ag-doc-icon doc-qw text-16px apigateway-icon icon-ag-qw" />
-            {{ t('联系') }} {{ basics.doc_maintainers?.service_account?.name }}
+            {{ t('联系') }} {{ basics?.doc_maintainers?.service_account?.name }}
           </a>
         </aside>
       </template>
@@ -68,7 +68,7 @@
             {{ t('网关描述') }}
           </header>
           <main class="content-main">
-            {{ basics.description }}
+            {{ basics?.description }}
           </main>
         </article>
         <template v-if="featureFlagStore.isTenantMode">
@@ -77,7 +77,7 @@
               {{ t('租户模式') }}
             </header>
             <main class="content-main">
-              {{ TENANT_MODE_TEXT_MAP[basics.tenant_mode] || '--' }}
+              {{ (basics?.tenant_mode && TENANT_MODE_TEXT_MAP[basics.tenant_mode]) || '--' }}
             </main>
           </article>
           <article>
@@ -85,7 +85,7 @@
               {{ t('租户 ID') }}
             </header>
             <main class="content-main">
-              {{ basics.tenant_id || '--' }}
+              {{ basics?.tenant_id || '--' }}
             </main>
           </article>
         </template>
@@ -94,10 +94,10 @@
             {{ t('网关负责人') }}
           </header>
           <main class="content-main">
-            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics.maintainers.join(', ') }}</span>
+            <span v-if="!featureFlagStore.isEnableDisplayName">{{ basics?.maintainers?.join(', ') }}</span>
             <span v-else>
               <bk-user-display-name
-                :user-id="basics.maintainers.join(', ')"
+                :user-id="basics?.maintainers?.join(', ')"
                 style="word-break: break-all;"
               />
             </span>
@@ -109,14 +109,14 @@
           </header>
           <main class="content-main">
             <span v-if="!featureFlagStore.isEnableDisplayName">
-              {{ basics.doc_maintainers?.type === 'user' ?
-                basics.doc_maintainers?.contacts.join(', ') :
-                basics.doc_maintainers?.service_account?.name }}
+              {{ basics?.doc_maintainers?.type === 'user' ?
+                basics?.doc_maintainers?.contacts.join(', ') :
+                basics?.doc_maintainers?.service_account?.name }}
             </span>
             <span v-else><bk-user-display-name
-              :user-id="basics.doc_maintainers?.type === 'user' ?
-                basics.doc_maintainers?.contacts.join(', ') :
-                basics.doc_maintainers?.service_account?.name"
+              :user-id="basics?.doc_maintainers?.type === 'user' ?
+                basics?.doc_maintainers?.contacts.join(', ') :
+                basics?.doc_maintainers?.service_account?.name"
             /></span>
           </main>
         </article>
@@ -125,7 +125,7 @@
             {{ t('网关访问地址') }}
           </header>
           <main class="content-main">
-            {{ basics.api_url }}
+            {{ basics?.api_url }}
           </main>
         </article>
         <!--  网关 SDK 信息  -->
@@ -136,7 +136,7 @@
             </header>
             <SdkLanguageSelector
               v-model="language"
-              :sdk-languages="sdks.map(item => item.language)"
+              :sdk-languages="sdks.map((item: any) => item.language)"
               :width="90"
               :margin-bottom="12"
             />
@@ -168,7 +168,7 @@
             {{ t('组件描述') }}
           </header>
           <main class="content-main">
-            {{ basics.comment }}
+            {{ basics?.comment }}
           </main>
         </article>
         <article>
@@ -176,7 +176,7 @@
             {{ t('组件负责人') }}
           </header>
           <main class="content-main">
-            {{ basics.maintainers.join(', ') }}
+            {{ basics?.maintainers?.join(', ') }}
           </main>
         </article>
         <article>
@@ -243,20 +243,20 @@ const userList = computed(() => {
     curUser.value?.username,
     ...(basics?.maintainers ?? []),
   ]);
-  return [...set];
+  return [...set].filter((s): s is string => !!s);
 });
 const chatName = computed(() => `${t('[蓝鲸网关API咨询] 网关')}${basics?.name}`);
 const chatContent = computed(() => `${t('网关API文档')}:${location.href}`);
 
 const curSdk = computed(() => {
-  return sdks.find(item => item.language === language.value) ?? null;
+  return sdks.find((item: any) => item.language === language.value) ?? null;
 });
 
 watch(
   () => basics,
   () => {
     if (basics) {
-      configureDisplayName({ tenantId: basics.tenant_mode === 'global' ? 'system' : userStore.info.tenant_id });
+      configureDisplayName({ tenantId: basics?.tenant_mode === 'global' ? 'system' : (userStore.info.tenant_id ?? undefined) });
     }
   }, {
     deep: true,

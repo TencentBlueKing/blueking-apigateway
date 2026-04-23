@@ -18,6 +18,42 @@
 
 import http from '../http';
 import { blobDownLoad } from '@/utils';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IBackendPathCheckOutput,
+  IDocListOutput,
+  IResourceListPageOutput,
+  IResourceRetrieveOutput,
+  IResourceVersionDiffOutput,
+  IResourceVersionListOutput,
+  IResourceVersionRetrieveOutput,
+  IResourceWithVerifiedUserRequiredOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysResourceVersionsDiffReadQuery,
+  IGatewaysResourceVersionsListQuery,
+  IGatewaysResourceVersionsReadQuery,
+  IGatewaysResourcesBackendPathCheckReadQuery,
+  IGatewaysResourcesDocsListQuery,
+  IGatewaysResourcesListQuery,
+  IGatewaysResourcesWithVerifiedUserRequiredListQuery,
+} from '@/services/types/query/gateways.ts';
+import type {
+  IDocImportByArchiveInputSLZ,
+  IDocImportBySwaggerInputSLZ,
+  IDocInputSLZ,
+  IResourceExportInputSLZ,
+  IResourceImportCheckInputSLZ,
+  IResourceImportDocPreviewInputSLZ,
+  IResourceImportInputSLZ,
+  IResourceInputSLZ,
+  IResourceVersionCreateInputSLZ,
+  IResourceVersionExportInputSLZ,
+} from '@/services/types/body/post/gateways.ts';
+import type {
+  IResourceBatchUpdateInputSLZ,
+  IResourceLabelUpdateInputSLZ,
+} from '@/services/types/body/patch/gateways.ts';
 
 const path = '/gateways';
 
@@ -50,7 +86,8 @@ export interface IDiffData {
  * @param params
  * @returns
  */
-export const getResourceList = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/resources/`, params);
+export const getResourceList = (apigwId: number, params: IGatewaysResourcesListQuery = {}) =>
+  http.get<ICountAndResults<IResourceListPageOutput>>(`${path}/${apigwId}/resources/`, params);
 
 /**
  *  获取资源详情
@@ -59,7 +96,7 @@ export const getResourceList = (apigwId: number, params: any) => http.get(`${pat
  * @returns
  */
 export const getResourceDetail = (apigwId: number, resourceId: number) =>
-  http.get(`${path}/${apigwId}/resources/${resourceId}/`);
+  http.get<IResourceRetrieveOutput>(`${path}/${apigwId}/resources/${resourceId}/`);
 
 /**
  *  创建资源
@@ -67,7 +104,7 @@ export const getResourceDetail = (apigwId: number, resourceId: number) =>
  * @param data 网关资源数据
  * @returns
  */
-export const createResources = (apigwId: number, data: any) =>
+export const createResources = (apigwId: number, data: IResourceInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/`, data);
 
 /**
@@ -77,7 +114,7 @@ export const createResources = (apigwId: number, data: any) =>
  * @param data 网关资源数据
  * @returns
  */
-export const updateResources = (apigwId: number, resourceId: number, data: any) =>
+export const updateResources = (apigwId: number, resourceId: number, data: IResourceInputSLZ) =>
   http.put(`${path}/${apigwId}/resources/${resourceId}/`, data);
 
 /**
@@ -104,18 +141,15 @@ export const batchDeleteResources = (apigwId: number, params: { ids: number[] })
  * @param params
  * @returns
  */
-export const batchEditResources = (apigwId: number, params: {
-  ids: number[]
-  is_public: boolean
-  allow_apply_permission: boolean
-}) => http.put(`${path}/${apigwId}/resources/batch/`, params);
+export const batchEditResources = (apigwId: number, params: IResourceBatchUpdateInputSLZ) =>
+  http.put(`${path}/${apigwId}/resources/batch/`, params);
 
 /**
  * 导入资源
  * @param apigwId 网关id
  * @param data 导入参数
  */
-export const importResource = (apigwId: number, data: any) =>
+export const importResource = (apigwId: number, data: IResourceImportInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/import/`, data);
 
 /**
@@ -124,7 +158,11 @@ export const importResource = (apigwId: number, data: any) =>
  * @param data 检查参数
  * @param config 拦截器选项
  */
-export const checkResourceImport = (apigwId: number, data: any, config: any = {}) =>
+export const checkResourceImport = (
+  apigwId: number,
+  data: IResourceImportCheckInputSLZ,
+  config: Record<string, unknown> = {},
+) =>
   http.post(`${path}/${apigwId}/resources/import/check/`, data, config);
 
 /**
@@ -132,7 +170,7 @@ export const checkResourceImport = (apigwId: number, data: any, config: any = {}
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportResources = async (apigwId: number, data: any) =>
+export const exportResources = async (apigwId: number, data: IResourceExportInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/export/`, data, { responseType: 'blob' });
 
 /**
@@ -140,7 +178,7 @@ export const exportResources = async (apigwId: number, data: any) =>
  * @param apigwId 网关id
  * @param data 导入参数
  */
-export const importResourceDoc = (apigwId: number, data: any) =>
+export const importResourceDoc = (apigwId: number, data: IDocImportByArchiveInputSLZ) =>
   http.post(`${path}/${apigwId}/docs/import/by-archive/`, data, { responseType: 'formdata' });
 
 /**
@@ -148,7 +186,7 @@ export const importResourceDoc = (apigwId: number, data: any) =>
  * @param apigwId 网关id
  * @param data 导入参数
  */
-export const importResourceDocSwagger = (apigwId: number, data: any) =>
+export const importResourceDocSwagger = (apigwId: number, data: IDocImportBySwaggerInputSLZ) =>
   http.post(`${path}/${apigwId}/docs/import/by-swagger/`, data);
 
 /**
@@ -156,46 +194,37 @@ export const importResourceDocSwagger = (apigwId: number, data: any) =>
  * @param apigwId 网关id
  * @param data 资源版本信息
  */
-export const createResourceVersion = (apigwId: number, data: any) =>
+export const createResourceVersion = (apigwId: number, data: IResourceVersionCreateInputSLZ) =>
   http.post(`${path}/${apigwId}/resource-versions/`, data);
 
 /**
  * 获取建议的版本
  * @param apigwId 网关id
  */
-export const getNextVersion = (apigwId: number) => http.get(`${path}/${apigwId}/resource-versions/next-version/`);
+export const getNextVersion = (apigwId: number) =>
+  http.get<{ version: string }>(`${path}/${apigwId}/resource-versions/next-version/`);
 
-export const getVersionList = (apigwId: number, params: {
-  limit?: number
-  offset?: number
-}) =>
-  http.get<{
-    count: number
-    results: IVersionItem[]
-  }>(`${path}/${apigwId}/resource-versions/`, params);
+export const getVersionList = (apigwId: number, params: IGatewaysResourceVersionsListQuery = {}) =>
+  http.get<ICountAndResults<IResourceVersionListOutput>>(`${path}/${apigwId}/resource-versions/`, params);
 
 // 资源版本详情
-export const getVersionDetail = (apigwId: number, id: number, params?: any) =>
-  http.get(`${path}/${apigwId}/resource-versions/${id}/`, params);
+export const getVersionDetail = (apigwId: number, id: number, params: IGatewaysResourceVersionsReadQuery = {}) =>
+  http.get<IResourceVersionRetrieveOutput>(`${path}/${apigwId}/resource-versions/${id}/`, params);
 
 /**
  * 是否需要创建新资源版本
  * @param apigwId 网关id
  */
 export const checkNeedNewVersion = (apigwId: number) =>
-  http.get(`${path}/${apigwId}/resource-versions/need-new-version/`, undefined, { catchError: true });
+  http.get<{
+    msg: string | null
+    need_new_version: boolean
+  }>(`${path}/${apigwId}/resource-versions/need-new-version/`, undefined, { catchError: true });
 
-export const getVersionDiff = (apigwId: number, data: {
-  source_resource_version_id: number
-  target_resource_version_id: number
-}) =>
-  http.get<IDiffData>(`${path}/${apigwId}/resource-versions/diff/`, data);
+export const getVersionDiff = (apigwId: number, data: IGatewaysResourceVersionsDiffReadQuery) =>
+  http.get<IResourceVersionDiffOutput>(`${path}/${apigwId}/resource-versions/diff/`, data);
 
-export const exportVersion = async (apigwId: number, data: {
-  id?: number
-  export_type: string
-  file_type: string
-}) => {
+export const exportVersion = async (apigwId: number, data: IResourceVersionExportInputSLZ) => {
   const { id } = data;
   delete data.id;
   const res = await http.post(`${path}/${apigwId}/resource-versions/${id}/export/`, data, {
@@ -210,21 +239,15 @@ export const exportVersion = async (apigwId: number, data: {
  * @param apigwId 网关id
  * @param params 参数
  */
-export const getVerifiedUserRequiredResources = (apigwId: number, params?: {
-  limit?: number
-  offset?: number
-}) =>
-  http.get(`${path}/${apigwId}/resources/with/verified-user-required/`, params);
+export const getVerifiedUserRequiredResources = (
+  apigwId: number,
+  params: IGatewaysResourcesWithVerifiedUserRequiredListQuery = {},
+) =>
+  http.get<IResourceWithVerifiedUserRequiredOutput[]>(`${path}/${apigwId}/resources/with/verified-user-required/`, params);
 
 // 校验资源后端地址
-export const backendsPathCheck = (apigwId: number, data: any) =>
-  http.get<Array<{
-    backend_urls: string[]
-    stage: {
-      id: number
-      name: string
-    }
-  }>>(`${path}/${apigwId}/resources/backend-path/check/`, data);
+export const backendsPathCheck = (apigwId: number, data: IGatewaysResourcesBackendPathCheckReadQuery) =>
+  http.get<IBackendPathCheckOutput[]>(`${path}/${apigwId}/resources/backend-path/check/`, data);
 
 /**
  * 设置标签
@@ -232,7 +255,7 @@ export const backendsPathCheck = (apigwId: number, data: any) =>
  * @param resourceId 资源id
  * @param data 标签数据
  */
-export const updateResourceLabels = (apigwId: number, resourceId: number, data: any) =>
+export const updateResourceLabels = (apigwId: number, resourceId: number, data: IResourceLabelUpdateInputSLZ) =>
   http.put(`${path}/${apigwId}/resources/${resourceId}/labels/`, data);
 
 /**
@@ -240,15 +263,15 @@ export const updateResourceLabels = (apigwId: number, resourceId: number, data: 
  * @param apigwId 网关id
  * @param resourceId 资源id
  */
-export const getResourceDocs = (apigwId: number, resourceId: number) =>
-  http.get(`${path}/${apigwId}/resources/${resourceId}/docs/`);
+export const getResourceDocs = (apigwId: number, resourceId: number, query: IGatewaysResourcesDocsListQuery = {}) =>
+  http.get<IDocListOutput[]>(`${path}/${apigwId}/resources/${resourceId}/docs/`, query);
 
 /**
  * 获取资源文档预览数据
  * @param apigwId 网关id
  * @param data 资源参数
  */
-export const getResourceDocPreview = (apigwId: number, data: any) =>
+export const getResourceDocPreview = (apigwId: number, data: IResourceImportDocPreviewInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/import/doc/preview/`, data);
 
 /**
@@ -257,7 +280,7 @@ export const getResourceDocPreview = (apigwId: number, data: any) =>
  * @param resourceId 资源id
  * @param data 文档内容
  */
-export const saveResourceDocs = (apigwId: number, resourceId: number, data: any) =>
+export const saveResourceDocs = (apigwId: number, resourceId: number, data: IDocInputSLZ) =>
   http.post(`${path}/${apigwId}/resources/${resourceId}/docs/`, data);
 
 /**
@@ -267,7 +290,7 @@ export const saveResourceDocs = (apigwId: number, resourceId: number, data: any)
  * @param data 文档内容
  * @param docId 文档id
  */
-export const updateResourceDocs = (apigwId: number, resourceId: number, data: any, docId: number) =>
+export const updateResourceDocs = (apigwId: number, resourceId: number, data: IDocInputSLZ, docId: number) =>
   http.put(`${path}/${apigwId}/resources/${resourceId}/docs/${docId}/`, data);
 
 /**

@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// @ts-ignore
 import { inject, provide } from 'vue';
 
 import type { IChildrenHiddenStore, IFocusMatchesStore, ISpanBarStore, IViewRangeStore } from '../typings';

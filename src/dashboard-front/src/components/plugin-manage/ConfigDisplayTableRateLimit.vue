@@ -76,7 +76,7 @@ const tableCols = ref<IColumn[]>([
     field: 'type',
     width: firstColWidth,
     index: 0,
-    rowspan: ({ row }) => row.rowSpan || 1,
+    rowspan: ({ row }: any) => row.rowSpan || 1,
   },
   {
     label: t('次数'),
@@ -98,6 +98,7 @@ const tableData = computed(() => {
   const specialData: IRateLimitTableRow[] = [];
   const { rates } = plugin.config;
   Object.entries(rates).forEach(([appId, rateConfig]) => {
+    // @ts-ignore
     const { tokens, period } = rateConfig[0];
     if (appId === '__default') {
       defaultData.push({

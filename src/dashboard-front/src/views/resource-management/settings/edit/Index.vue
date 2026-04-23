@@ -203,7 +203,7 @@ const init = async () => {
 };
 
 const getResourceDetails = async () => {
-  const res = await getResourceDetail(gatewayId.value, resourceId.value);
+  const res: any = await getResourceDetail(gatewayId.value, resourceId.value);
   if (res.schema?.none_schema) {
     hasNoRequestParams.value = true;
   }

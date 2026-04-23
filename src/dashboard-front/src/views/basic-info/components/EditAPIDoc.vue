@@ -43,7 +43,7 @@
             :placeholder="t('请选择联系人')"
             :content="docForm.contacts"
             :is-error-class="'maintainers-error-tip'"
-            @on-change="(e:Record<string, any>) => handleContactsChange(e)"
+            @on-change="(e: any) => handleContactsChange(e)"
           />
           <TenantUserSelector
             v-else
@@ -55,7 +55,7 @@
             field="contacts"
             mode="edit"
             width="600px"
-            @on-change="(e:Record<string, any>) => handleContactsChange(e)"
+            @on-change="(e: any) => handleContactsChange(e)"
           />
           <div class="form-item-tip lh-32px">
             <span>{{ t('文档页面上展示出来的文档咨询接口人') }}</span>
@@ -220,7 +220,8 @@
 import { useFeatureFlag } from '@/stores';
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
-import { patchGateway } from '@/services/source/gateway';
+import { getGatewayDetail, patchGateway } from '@/services/source/gateway';
+import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 
@@ -235,18 +236,20 @@ interface IForm {
 
 interface IProps {
   modelValue?: boolean
-  data?: any
+  data?: IExtractApiReturn<typeof getGatewayDetail>
+}
+
+interface IEmits {
+  'update:modelValue': [value: boolean]
+  'done': [void]
 }
 
 const {
   modelValue = false,
-  data = {},
+  data = undefined,
 } = defineProps<IProps>();
 
-const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  'done': [void]
-}>();
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
@@ -263,7 +266,8 @@ const InitForm = (): IForm => {
 };
 
 const formRef = ref<InstanceType<typeof Form> & { clearValidate: () => void }>();
-const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector>>();
+const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector> & { isShowError: boolean
+  isEditable: boolean }>();
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
 
@@ -296,7 +300,7 @@ watch(
   () => modelValue,
   () => {
     if (modelValue) {
-      const { doc_maintainers } = data;
+      const { doc_maintainers } = data as any;
       docForm.value = cloneDeep(doc_maintainers);
     }
   },
@@ -311,7 +315,7 @@ const handleCancel = () => {
 
 const handleCommit = async () => {
   try {
-    await formRef.value.validate();
+    await formRef.value?.validate();
 
     loading.value = true;
 
@@ -339,7 +343,7 @@ const handleCommit = async () => {
       };
     }
 
-    await patchGateway(data.id, payload);
+    await patchGateway(data!.id, payload);
 
     emit('done');
     handleUpdateIsShow(false);

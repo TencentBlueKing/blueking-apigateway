@@ -42,7 +42,7 @@ const curQueryVersion = ref('');
 
 watch(
   () => resourceVersionStore.tabActive,
-  (tab) => {
+  (tab: any) => {
     if (tab === 'edition') {
       resourceVersionStore.setResourceFilter({});
     }

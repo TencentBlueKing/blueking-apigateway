@@ -76,7 +76,7 @@ const tableCols = ref<IColumn[]>([
     field: 'key',
     width: firstColWidth,
     index: 0,
-    rowspan: ({ row }) => row.rowSpan || 1,
+    rowspan: ({ row }: any) => row.rowSpan || 1,
   },
   {
     label: t('值'),

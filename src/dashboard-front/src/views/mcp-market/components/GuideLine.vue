@@ -151,7 +151,7 @@ const markdownHtml = ref('');
 const guideType = ref('');
 const activeTab = ref('default');
 
-const serverId = computed(() => route.params.serverId);
+const serverId = computed(() => Number(route.params.serverId));
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const setPageMaxH = computed(() => {
   if (!page) {
@@ -192,7 +192,7 @@ const handleTabChange = (tabName: string) => {
 
 const handleShowGuide = (mode: string) => {
   guideType.value = mode;
-  const modeMap = {
+  const modeMap: Record<string, () => void> = {
     add: () => {
       return markdownText.value;
     },

@@ -58,7 +58,7 @@
                 <div class="ag-value tags">
                   <template v-if="currentSource.gateway_label_ids?.length">
                     <BkTag
-                      v-for="tag in labels?.filter((label) => {
+                      v-for="tag in labels?.filter((label: IGatewayLabelItem) => {
                         if (currentSource.gateway_label_ids?.includes(label.id))
                           return true;
                       })"
@@ -334,9 +334,12 @@
 <script lang="ts" setup>
 import { getGatewayLabels } from '@/services/source/gateway';
 import { getMethodsTheme } from '@/utils';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import ResponseParams from '@/views/resource-management/components/response-params/Index.vue';
 import RequestParams from '@/views/resource-management/components/request-params/Index.vue';
+
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
 interface IProps { info: any }
 
@@ -351,7 +354,7 @@ const isShow = ref(false);
 const currentSource = ref<any>({});
 
 // 网关标签
-const labels = ref<any[]>([]);
+const labels = ref<IGatewayLabelItem[]>([]);
 
 // 网关id
 const apigwId = computed(() => +route.params.id);

@@ -146,6 +146,11 @@ interface IProps {
   excludeSelfTips?: boolean
 }
 
+interface IEmits {
+  'on-change': [data: { [key: string]: string[] }]
+  'on-submit': [data: { [key: string]: string[] }]
+}
+
 const {
   field,
   content = [],
@@ -158,10 +163,7 @@ const {
   excludeSelfTips = true,
 } = defineProps<IProps>();
 
-const emit = defineEmits<{
-  'on-change': [data: { [key: string]: string[] }]
-  'on-submit': [data: { [key: string]: string[] }]
-}>();
+const emit = defineEmits<IEmits>();
 
 const { t } = useI18n();
 
@@ -236,7 +238,7 @@ const handleChange = () => {
   emit('on-change', { [field]: displayValue.value });
 };
 
-const handleEnter = (event: MouseEvent) => {
+const handleEnter = (event: KeyboardEvent) => {
   isShowError.value = !displayValue.value.length;
   if (!isEditable.value) return;
   if (event.key !== 'Enter' || event.keyCode !== 13) return;
@@ -260,7 +262,10 @@ const triggerChange = () => {
   emit('on-change', { [field]: displayValue.value });
 };
 
-defineExpose({ isEditable });
+defineExpose({
+  isEditable,
+  isShowError,
+});
 
 </script>
 

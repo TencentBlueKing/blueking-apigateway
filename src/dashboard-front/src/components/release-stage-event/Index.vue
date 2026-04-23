@@ -154,7 +154,7 @@ watch(
 // 获取日志列表
 const getLogsList = async () => {
   try {
-    const response = await getReleaseEvents(apigwId.value, historyId);
+    const response = await getReleaseEvents(apigwId.value, historyId!);
     stageStore.setDoing(true);
     if (response.status !== 'doing') {
       stageStore.setDoing(false);

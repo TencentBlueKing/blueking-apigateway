@@ -33,7 +33,7 @@
       />
     </BkTab>
     <!-- 定时选择器 -->
-    <template v-if="['Dashboard'].includes(activeTab)">
+    <template v-if="['Dashboard'].includes(activeTab ?? '')">
       <ObservabilityTimeInterval
         class="mb-4px"
       />
@@ -59,26 +59,26 @@ const handleTabChange = (tab: string) => {
 
 <style lang="scss" scoped>
 .observability-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background-color: #ffffff;
-  box-shadow: 0 3px 4px rgb(64 112 203 / 5.88%);
   position: sticky;
   top: 0;
   z-index: 99;
+  display: flex;
+  padding: 0 24px;
+  background-color: #fff;
+  box-shadow: 0 3px 4px rgb(64 112 203 / 5.88%);
+  align-items: center;
+  justify-content: space-between;
 
   :deep(.bk-tab) {
 
     .bk-tab-header {
-      border-bottom: none;
       line-height: 36px !important;
+      border-bottom: none;
 
       &-item {
         padding: 0;
-        font-size: 14px;
         margin-right: 32px;
+        font-size: 14px;
       }
     }
 

@@ -200,65 +200,12 @@ import {
 } from '@/stores';
 import { debounce, uniqueId } from 'lodash-es';
 import CardContainer from '@/components/card-container/Index.vue';
+import type { IStageListItem } from '@/services/source/stage.ts';
+import { getProgrammableStageDetail } from '@/services/source/programmable.ts';
 
-interface IRelease {
-  status: string
-  created_time: null | string
-  created_by: string
-}
+type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
-interface IResourceVersion {
-  version: string
-  id: number
-  schema_version: string
-}
-
-interface IPaasInfo {
-  branch: string
-  commit_id: string
-  created_by: string | null
-  created_time: string
-  deploy_id: string
-  latest_deployment: {
-    branch: string
-    commit_id: string
-    deploy_id: string
-    history_id: number
-    status: string
-    version: string
-  }
-  repo_info: {
-    branch_commit_info: {
-      [branch: string]: {
-        commit_id: string
-        extra: object
-        last_update: string
-        message: string
-        type: string
-      }
-    }
-    branch_list: string[]
-    repo_url: string
-  }
-  status: string
-  version: string
-}
-
-interface IStageItem {
-  id: number
-  name: string
-  description: string
-  description_en: string
-  status: number
-  created_time: string
-  release: IRelease
-  resource_version: IResourceVersion
-  publish_id: number
-  publish_version: string
-  publish_validate_msg: string
-  new_resource_version: string
-  paasInfo?: IPaasInfo
-}
+interface IStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
 interface IProps {
   stage: IStageItem
@@ -391,7 +338,7 @@ async function getRequestTrend() {
     metrics: 'requests',
   });
 
-  const seriesDataPoints = series?.[0]?.datapoints as [number, number][] || [];
+  const seriesDataPoints = (series?.[0] as { datapoints?: [number, number][] })?.datapoints as [number, number][] || [];
   const results = [] as number[];
   let count = 0;
 

@@ -17,35 +17,21 @@
  */
 
 import http from '../http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IReleaseHistoryEventRetrieveOutput,
+  IReleaseHistoryListOutput,
+} from '@/services/types/responses/gateways.ts';
+import type { IGatewaysReleasesHistoriesListQuery } from '@/services/types/query/gateways.ts';
+import type { IReleaseInputSLZ } from '@/services/types/body/post/gateways.ts';
 
 const path = '/gateways';
 
-export interface IEventTemplate {
-  description: string
-  name: string
-  step: number
-}
-
-export interface IEvent {
-  id: number
-  release_history_id: number
-  name: string
-  step: number
-  status: 'doing' | 'success' | 'failure'
-  created_time: string
-  detail?: Record<string, any> | null
-}
-
-export interface ILogResponse {
-  events: IEvent[]
-  events_template: IEventTemplate[]
-  status: string
-}
-
-export const createRelease = (apigwId: number, params: any) =>
+export const createRelease = (apigwId: number, params: IReleaseInputSLZ) =>
   http.post(`${path}/${apigwId}/releases/`, params, { catchError: true });
 
 export const getReleaseEvents = (apigwId: number, historyId: number) =>
-  http.get<ILogResponse>(`${path}/${apigwId}/releases/histories/${historyId}/events/`);
+  http.get<IReleaseHistoryEventRetrieveOutput>(`${path}/${apigwId}/releases/histories/${historyId}/events/`);
 
-export const getReleaseHistories = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/releases/histories/`, params);
+export const getReleaseHistories = (apigwId: number, params: IGatewaysReleasesHistoriesListQuery = {}) =>
+  http.get<ICountAndResults<IReleaseHistoryListOutput>>(`${path}/${apigwId}/releases/histories/`, params);

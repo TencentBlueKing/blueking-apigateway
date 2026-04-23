@@ -41,7 +41,7 @@ export const useSelection = (
       selections.value.push(selection?.row);
     }
     else {
-      const index = selections.value.findIndex(item => item.id === selection.row?.id);
+      const index = selections.value.findIndex((item: any) => item.id === selection.row?.id);
       selections.value.splice(index, 1);
     }
   };

@@ -18,15 +18,23 @@
 
 import { defineStore } from 'pinia';
 
-import { type IStageListItem } from '@/services/source/stage';
+import {
+  type getStageDetail,
+  getStageList,
+} from '@/services/source/stage';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
+
+type IStage = IExtractApiReturn<typeof getStageDetail>;
 
 interface IState {
   stageList: IStageListItem[]
   notUpdatedStages: IStageListItem[]
-  curStageData: IStageListItem | {
+  curStageData: IStage | IStageListItem | {
     id: null
     name: string
-  }
+  } | null
   curStageId: number
   stageMainLoading: boolean
   exist2: boolean

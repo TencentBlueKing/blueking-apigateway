@@ -336,7 +336,7 @@ import {
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
 import { useSelection } from '@/hooks';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
-import { type UploadFile } from 'bkui-vue/lib/upload/upload.type.d.ts';
+import type { UploadFile } from 'bkui-vue/lib/upload/upload.type';
 import Cookie from 'js-cookie';
 import { useEnv } from '@/stores';
 
@@ -381,13 +381,13 @@ const CSRFToken = computed(() => {
 
 // 资源新建条数
 const createNum = computed(() => {
-  const results = deDuplication(selections.value.filter(item => !item.id), 'name');
+  const results = deDuplication(selections.value.filter((item: any) => !item.id), 'name');
   return results.length;
 });
 
 // 资源覆盖条数
 const updateNum = computed(() => {
-  const results = deDuplication(selections.value.filter(item => item.id), 'name');
+  const results = deDuplication(selections.value.filter((item: any) => item.id), 'name');
   return results.length;
 });
 

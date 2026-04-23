@@ -113,12 +113,15 @@ const emit = defineEmits<Emits>();
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 
-const curList = ref([]);
+const curList = ref<ISystemItem[]>([]);
 const searchValue = ref('');
-const curSelect = ref('*');
+const curSelect = ref<string | number>('*');
 const isFilter = ref(false);
-const tableEmptyConf = reactive({
-  emptyType: '',
+const tableEmptyConf = reactive<{
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
+  isAbnormal: boolean
+}>({
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -139,7 +142,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.emptyType = '';
+  tableEmptyConf.emptyType = undefined;
 };
 
 const handleSearch = debounce((payload) => {
@@ -159,18 +162,18 @@ const handleSearch = debounce((payload) => {
 });
 
 const handleSelectSys = (payload: Partial<ISystemItem>) => {
-  curSelect.value = payload?.id;
-  emit('on-select', payload);
+  curSelect.value = payload?.id as any;
+  emit('on-select', payload as ISystemItem);
 };
 
-const setSelected = (id: string) => {
-  curSelect.value = id;
-  emit('on-select', { id });
+const setSelected = (id: string | number) => {
+  curSelect.value = id as any;
+  emit('on-select', { id } as any);
 };
 
 const handleSelectAll = () => {
   curSelect.value = '*';
-  emit('on-select', { id: '*' });
+  emit('on-select', { id: '*' } as any);
 };
 
 const highlight = ({ name }: { name: string }) => {
@@ -198,7 +201,7 @@ const clearFilterKey = () => {
 
 watch(
   () => systemList.value,
-  (value) => {
+  (value: ISystemItem[]) => {
     curList.value = [...value];
   },
   { immediate: true },
@@ -226,23 +229,22 @@ defineExpose({
   color: #63656e;
 
   .apigw-badge {
-    min-width: 30px;
+    display: inline-block;
     height: 18px;
+    min-width: 30px;
+    padding: 0 5px;
+    font-size: 12px;
+    line-height: 18px;
+    color: #979ba5;
+    text-align: center;
     background-color: #f0f1f5;
     border-radius: 2px;
-    font-size: 12px;
-    text-align: left;
-    color: #979ba5;
-    display: inline-block;
-    line-height: 18px;
-    text-align: center;
-    padding: 0 5px;
   }
 
   .system-list {
     position: relative;
-    margin-top: 6px;
     height: calc(100% - 40px);
+    margin-top: 6px;
     overflow-y: auto;
 
     &::-webkit-scrollbar {
@@ -262,10 +264,10 @@ defineExpose({
 
     .item {
       position: relative;
-      padding: 4px 16px;
       height: 48px;
-      text-align: left;
+      padding: 4px 16px;
       overflow: hidden;
+      text-align: left;
       cursor: pointer;
 
       &.all-item {
@@ -280,29 +282,30 @@ defineExpose({
         }
 
         .all-wrapper {
+
           i {
             color: #3a84ff !important;
           }
         }
 
         .count {
+          color: #fff;
           background-color: #a3c5fd;
-          color: #ffffff;
         }
       }
 
       .name {
         max-width: 268px;
-        font-size: 14px;
-        text-align: left;
-        color: #63656e;
         overflow: hidden;
+        font-size: 14px;
+        color: #63656e;
+        text-align: left;
         text-overflow: ellipsis;
         white-space: nowrap;
 
         .title-wrapper {
-          max-width: 182px;
           display: inline-block;
+          max-width: 182px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -312,39 +315,39 @@ defineExpose({
           line-height: 48px;
 
           i {
-            color: #979ba5;
             position: relative;
             top: -1px;
+            color: #979ba5;
           }
         }
       }
 
       .desc {
         max-width: 240px;
-        font-size: 12px;
-        text-align: left;
-        color: #979ba5;
-        line-height: 18px;
         overflow: hidden;
+        font-size: 12px;
+        line-height: 18px;
+        color: #979ba5;
+        text-align: left;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
       .tag {
         padding: 0 5px;
-        border-radius: 2px;
         margin-left: 5px;
-        background-color: #dcffe2;
         font-size: 12px;
         color: #2dcb56;
+        background-color: #dcffe2;
+        border-radius: 2px;
       }
 
       .count {
-        color: #979ba5;
-        font-size: 12px;
         padding: 0 5px;
-        border-radius: 2px;
+        font-size: 12px;
+        color: #979ba5;
         background-color: #eaebf0;
+        border-radius: 2px;
       }
 
       &.active {
@@ -365,16 +368,17 @@ defineExpose({
     }
 
     .empty-wrapper {
-      width: 100%;
       position: absolute;
       top: 208px;
       left: 50%;
+      width: 100%;
       transform: translate(-50%, -50%);
 
       i {
         font-size: 48px;
         color: #c3cdd7;
       }
+
       :deep(.paas-table-serch .search-empty-tips) {
         white-space: nowrap !important;
       }
@@ -382,8 +386,8 @@ defineExpose({
 
     .line {
       height: 1px;
-      background-color: #dcdee5;
       margin: 6px 16px;
+      background-color: #dcdee5;
     }
 
     &.show-notice-wrapper {
@@ -394,10 +398,11 @@ defineExpose({
 </style>
 
 <style>
+/* stylelint-disable-next-line */
 sysmark {
+  font-style: normal;
   font-weight: 700;
   color: #3a84ff;
-  font-style: normal;
 }
 
 .system-input-cls .bk-input-text input {

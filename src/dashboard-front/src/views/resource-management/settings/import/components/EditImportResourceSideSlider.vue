@@ -152,7 +152,7 @@ const frontConfigRef = ref();
 const backConfigRef = ref();
 const renderShow = ref(isSliderShow);
 
-watch(() => isSliderShow, (val) => {
+watch(() => isSliderShow, (val: any) => {
   renderShow.value = val;
 });
 

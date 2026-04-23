@@ -140,7 +140,7 @@
                       v-if="readonly"
                       class="readonly-value-wrapper"
                     >
-                      {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+                      {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
                     </div>
                     <div
                       v-else
@@ -161,7 +161,7 @@
                       </BkSelect>
                       <ParamsRowConfig
                         :row="row"
-                        @change="(config) => handleConfigChange(row, config)"
+                        @change="(config: any) => handleConfigChange(row, config)"
                       />
                     </div>
                   </td>
@@ -337,11 +337,11 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   const body: ITableRow[] = [];
   if (Object.keys(schema.properties || {}).length) {
     for (const propertyName in schema.properties) {
-      const property = schema.properties[propertyName];
+      const property = schema.properties[propertyName] as JSONSchema7;
       const row: ITableRow = {
         id: uniqueId(),
         name: propertyName,
-        type: convertPropertyType(property.type),
+        type: convertPropertyType(property.type as string),
         description: property.description ?? '',
       };
 
@@ -350,11 +350,11 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       }
 
       if (Object.keys(property.properties || {}).length) {
-        row.properties = convertSchemaToBodyRow(property);
+        row.properties = convertSchemaToBodyRow(property) ?? undefined;
       }
       // 处理 array 类型和 items 属性
       if (property.type === 'array' && Object.keys(property.items || {}).length) {
-        row.properties = convertSchemaToBodyRow(property.items);
+        row.properties = convertSchemaToBodyRow(property.items as JSONSchema7) ?? undefined;
       }
       body.push(row);
     }
@@ -422,7 +422,7 @@ const isAddFieldVisible = (row: ITableRow) => {
 };
 
 const addField = (row: ITableRow) => {
-  const targetRow = tableData.value.find(data => data.id === row.id);
+  const targetRow = tableData.value.find((data: any) => data.id === row.id);
   if (targetRow) {
     if (targetRow.properties) {
       targetRow.properties.push(genRow());
@@ -484,7 +484,7 @@ const genSchema = (row: ITableRow) => {
         type: 'object',
       };
       row.properties.forEach((item) => {
-        Object.assign(schema.items!.properties, { [item.name]: genSchema(item) });
+        Object.assign((schema.items as JSONSchema7).properties!, { [item.name]: genSchema(item) });
       });
     }
   }
@@ -492,7 +492,7 @@ const genSchema = (row: ITableRow) => {
   else if (row.properties?.length) {
     schema.properties = {};
     row.properties.forEach((item) => {
-      Object.assign(schema.properties, { [item.name]: genSchema(item) });
+      Object.assign(schema.properties!, { [item.name]: genSchema(item) });
     });
   }
   return schema;
@@ -506,7 +506,7 @@ const removeField = (row: ITableRow) => {
     });
     return;
   }
-  const index = tableData.value.findIndex(data => data.id === row.id);
+  const index = tableData.value.findIndex((data: any) => data.id === row.id);
   if (index !== -1) {
     tableData.value.splice(index, 1);
   }
@@ -560,7 +560,7 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
 
 const handleConfigChange = (row: ITableRow, config: IConfig) => {
   const { enums } = config;
-  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  const bodyRow = tableData.value!.find((data: any) => data.id === row.id);
   if (bodyRow) {
     if (enums?.enabled && enums.values?.length) {
       bodyRow.enum = enums.values;
@@ -578,8 +578,8 @@ onMounted(() => {
 defineExpose({
   getValue: async () => {
     try {
-      if (subTableRefs.value?.length) {
-        for (const subTable of subTableRefs.value) {
+      if ((subTableRefs.value as any)?.length) {
+        for (const subTable of (subTableRefs.value as any)) {
           await subTable?.validate();
         }
       }

@@ -164,7 +164,7 @@ watch(() => data, () => {
 
 const validate = async () => {
   try {
-    await formRef.value?.validate();
+    await (formRef.value as any)?.validate();
     await addRef.value?.validate();
     await setRef.value?.validate();
     await removeRef.value?.validate();

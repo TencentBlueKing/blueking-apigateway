@@ -63,7 +63,7 @@
             <div class="value">
               <!-- 200状态码时响应正文提示 -->
               <span
-                v-if="field === 'response_body' && row.status === 200"
+                v-if="(field as string) === 'response_body' && row.status === 200"
                 class="flex items-center color-#ff9c01"
               >
                 <InfoLine class="text-14px mr-8px" />
@@ -83,18 +83,18 @@
                 <CopyShape
                   v-bk-tooltips="t('复制')"
                   class="opt-copy opt-icon"
-                  @click="() => handleRowCopy(field, row)"
+                  @click="() => handleRowCopy(field as any, row)"
                 />
-                <template v-if="isShowRetrieveBtn(field)">
+                <template v-if="isShowRetrieveBtn(field as any)">
                   <EnlargeLine
                     v-bk-tooltips="t('添加到本次检索')"
                     class="opt-icon"
-                    @click="() => handleInclude(field, row)"
+                    @click="() => handleInclude(field as any, row)"
                   />
                   <NarrowLine
                     v-bk-tooltips="t('从本次检索中排除')"
                     class="opt-icon"
-                    @click="() => handleExclude(field, row)"
+                    @click="() => handleExclude(field as any, row)"
                   />
                 </template>
               </div>
@@ -125,8 +125,6 @@ import dayjs from 'dayjs';
 import { Button, Popover } from 'bkui-vue';
 // 图标组件
 import { CopyShape, EnlargeLine, InfoLine, NarrowLine } from 'bkui-vue/lib/icon';
-// 类型定义
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 // 服务请求
 import {
   type IFlowLogTable,
@@ -188,12 +186,12 @@ const expandableConfig = ref({
 });
 // 缓存上一个展开行
 const lastExpandRow = ref<IFlowLogTable | null>(null);
-const callChainDetail = ref<IFlowLogTable>({});
+const callChainDetail = ref<IFlowLogTable>({} as IFlowLogTable);
 
 // 展开行显示的字段配置
 interface IFieldItem {
   label: string
-  field: keyof IFlowLogTable
+  field: string
 }
 const expandedFields = shallowRef<IFieldItem[]>([
   {
@@ -304,22 +302,21 @@ const expandedFields = shallowRef<IFieldItem[]>([
 })));
 
 // 表格列配置
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('请求时间'),
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
       return (
         <div class="flex items-center">
-          <AgIcon
-            name={row?.isExpand ? 'down-shape' : 'right-shape'}
-            class={`color-${row?.isExpand ? '#4d4f56' : '#979ba5'}`}
+          <ag-icon
+            name={(row as any).isExpand ? 'down-shape' : 'right-shape'}
+            class={`mr-8px color-${(row as any).isExpand ? '#4d4f56' : '#979ba5'}`}
             size="14"
-            class="mr-8px"
           />
-          <span>{formatCellValue(row?.timestamp, 'timestamp')}</span>
+          <span>{formatCellValue(row.timestamp as any, 'timestamp')}</span>
         </div>
       );
     },
@@ -334,8 +331,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: 'Tool/Prompt',
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      return row?.tool_name || row?.prompt_name || '--';
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+      return row.tool_name || row.prompt_name || '--';
     },
   },
   {
@@ -348,8 +345,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'latency',
     width: 150,
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      const duration = row?.latency;
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+      const duration = row.latency;
       if (!duration) {
         return '--';
       }
@@ -365,7 +362,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态'),
     colKey: 'status',
     width: 130,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
       return (
         <AgStatusDot
           class="lh-20px"
@@ -379,8 +376,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('错误'),
     colKey: 'error',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      if (!row?.error) return '--';
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+      if (!row.error) return '--';
       return <span class="color-#ea3636">{row.error}</span>;
     },
   },
@@ -389,8 +386,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'operate',
     fixed: 'right',
     width: 102,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      const isDisabled = !row?.request_id && !row?.x_request_id;
+    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+      const isDisabled = !row.request_id && !row.x_request_id;
       return (
         <div class="flex">
           <Popover
@@ -438,7 +435,7 @@ const getPagination = () => {
  */
 const getTableData = async (params: IObservabilityBasicForm = {}, extraStr?: string) => {
   try {
-    const res = await fetchObservabilityLogList(apiGatewayId, params, extraStr);
+    const res = await fetchObservabilityLogList(apiGatewayId as number, params as any, extraStr);
     const { fields = [], count = 0 } = res ?? {};
     // 更新展开字段配置
     expandedFields.value = fields;
@@ -497,7 +494,7 @@ const handleShowTraceSlider = () => {
  * @param row 行数据
  */
 const handleShowCallChain = (row: IFlowLogTable) => {
-  callChainDetail.value = { ...row };
+  callChainDetail.value = { ...row } as IFlowLogTable;
   handleShowTraceSlider();
 };
 
@@ -560,23 +557,23 @@ const handleRowClick = async ({ e, row }: {
   row: IFlowLogTable
 }) => {
   e.stopPropagation();
-  const newIsExpand = !row.isExpand;
+  const newIsExpand = !(row as any).isExpand;
 
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
-    lastExpandRow.value.isExpand = false;
-    lastExpandRow.value.selection = [];
+    (lastExpandRow.value as any).isExpand = false;
+    (lastExpandRow.value as any).selection = [];
   }
 
   // 更新当前行状态
-  row.isExpand = newIsExpand;
+  (row as any).isExpand = newIsExpand;
   expandableConfig.value.expandedRowKeys = newIsExpand
-    ? [row.tempUniqueId as string]
+    ? [(row as any).tempUniqueId as string] as any
     : [];
   lastExpandRow.value = newIsExpand ? row : null;
 
   if (newIsExpand) {
-    row.selection = [];
+    (row as any).selection = [];
   }
 };
 
@@ -597,7 +594,7 @@ const isShowRetrieveBtn = (field: keyof IFlowLogTable) => {
 };
 
 const isSuccessStatus = (row: IFlowLogTable) => {
-  return row?.status && ((Number(row.status) >= 200 && Number(row.status) < 300) || ['success'].includes(row.status));
+  return row.status && ((Number(row.status) >= 200 && Number(row.status) < 300) || ['success'].includes(row.status));
 };
 
 const getRowClass = ({ row }: { row: IFlowLogTable }) => {
@@ -606,7 +603,7 @@ const getRowClass = ({ row }: { row: IFlowLogTable }) => {
 
 watch(
   () => route.query,
-  (newQuery) => {
+  (newQuery: any) => {
     const { request_id, showTraceChain } = newQuery ?? {};
     // 路由中带request_id时自动填充调用链
     if (request_id) {
@@ -628,8 +625,8 @@ defineExpose({
 
 <style lang="scss" scoped>
 .flow-log-detail-wrapper {
-  margin-left: 46px;
   margin-right: 24px;
+  margin-left: 46px;
   box-sizing: border-box;
 
   :deep(.flow-log-detail-table) {
@@ -648,9 +645,9 @@ defineExpose({
           box-sizing: border-box;
 
           &-row {
+            height: 32px;
             padding-left: 24px;
             font-size: 12px;
-            height: 32px;
             line-height: 20px;
 
             .label {
@@ -660,11 +657,11 @@ defineExpose({
 
             .value {
               display: flex;
-              align-items: center;
+              max-width: calc(100% - 332px);
               color: #313238;
               word-break: break-all;
               white-space: pre-wrap;
-              max-width: calc(100% - 332px);
+              align-items: center;
 
               .opt-btns {
                 display: inline-flex;
@@ -673,15 +670,15 @@ defineExpose({
                 color: #979ba5;
 
                 .opt-icon {
-                  color: #3a84ff;
                   margin-right: 4px;
+                  color: #3a84ff;
                   cursor: pointer;
                 }
               }
             }
 
             &:nth-child(odd) {
-              background-color: #ffffff;
+              background-color: #fff;
             }
 
             &:nth-child(even) {
@@ -692,7 +689,6 @@ defineExpose({
       }
     }
   }
-
 }
 
 :deep(.error-exception) {

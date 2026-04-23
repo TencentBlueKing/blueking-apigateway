@@ -17,7 +17,6 @@
  */
 
 /** 基于infoBox二次封装  */
-import { type VNode } from 'vue';
 import { InfoBox } from 'bkui-vue';
 import { isFunction } from 'lodash-es';
 

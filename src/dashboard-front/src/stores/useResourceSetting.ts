@@ -32,7 +32,7 @@ export const useResourceSetting = defineStore('useResourceSetting', {
   }),
   actions: {
     // 设置分页信息
-    setPagination(pagination: IPagination) {
+    setPagination(pagination: IPagination | null) {
       this.previousPagination = pagination;
     },
   },

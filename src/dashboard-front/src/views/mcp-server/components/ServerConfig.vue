@@ -75,7 +75,7 @@ const activeTab = computed(() => {
 // 根据激活的tab自动计算对应的配置内容
 const selectedConfigContent = computed(() => {
   if (!activeTab.value) return '';
-  const curTab = list.find(item => item.name === activeTab.value);
+  const curTab = list.find((item: any) => item.name === activeTab.value);
   installUrl.value = curTab?.install_url ?? '';
   if (!curTab || !curTab.content) return '';
   // 初始化markdown解析器
@@ -102,7 +102,7 @@ const selectedConfigContent = computed(() => {
   return md.render(curTab.content);
 });
 
-const handleConfigChange = (tab: string) => {
+const handleConfigChange = (tab: any) => {
   manualActiveTab.value = tab;
 };
 </script>
@@ -111,8 +111,8 @@ const handleConfigChange = (tab: string) => {
 :deep(.server-config-tab) {
 
   .bk-tab-header {
-    padding-left: 16px;
     padding-right: 24px;
+    padding-left: 16px;
 
     &-nav {
       display: flex;

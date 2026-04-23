@@ -58,15 +58,15 @@ const { t } = useI18n();
 const route = useRoute();
 
 const tableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
-const tableColumns = ref([
+const tableColumns = ref<any[]>([
   {
     title: t('系统名称'),
     colKey: 'system_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          {row?.system_name || '--' }
+          {row.system_name || '--' }
         </span>
       );
     },
@@ -75,10 +75,10 @@ const tableColumns = ref([
     title: t('组件名称'),
     colKey: 'component_name',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_name || '--' }
+          { row.component_name || '--' }
         </span>
       );
     },
@@ -87,10 +87,10 @@ const tableColumns = ref([
     title: t('组件请求方法'),
     colKey: 'component_method',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_method || '--' }
+          { row.component_method || '--' }
         </span>
       );
     },
@@ -99,10 +99,10 @@ const tableColumns = ref([
     title: t('组件请求路径'),
     colKey: 'component_path',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_path || '--' }
+          { row.component_path || '--' }
         </span>
       );
     },
@@ -111,10 +111,10 @@ const tableColumns = ref([
     title: t('资源ID'),
     colKey: 'resource_id',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.resource_id || '--'}
+          { row.resource_id || '--'}
         </span>
       );
     },
@@ -123,10 +123,10 @@ const tableColumns = ref([
     title: t('组件ID'),
     colKey: 'component_id',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { row?.component_id || '--' }
+          { row.component_id || '--' }
         </span>
       );
     },
@@ -135,19 +135,19 @@ const tableColumns = ref([
     title: t('权限级别'),
     colKey: 'component_permission_level',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISyncApigwItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ISyncApigwItem> }) => {
       return (
         <span>
-          { PERMISSION_LEVEL_MAP[row?.component_permission_level] ?? '--' }
+          { PERMISSION_LEVEL_MAP[row.component_permission_level ?? ''] ?? '--' }
         </span>
       );
     },
   },
 ]);
-let pagination = reactive({});
+let pagination = reactive<Record<string, any>>({});
 const requestQueue = reactive(['component']);
-const allData = ref([]);
-const displayData = ref([]);
+const allData = ref<any[]>([]);
+const displayData = ref<any[]>([]);
 const isLoading = ref(false);
 const pathUrl = ref('');
 const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
@@ -157,8 +157,8 @@ const historyId = computed(() => route.query.id);
 const getComponents = async () => {
   isLoading.value = true;
   try {
-    const res = await getSyncVersion(historyId.value);
-    [displayData.value, allData.value] = [Object.freeze(res), Object.freeze(res)];
+    const res = await getSyncVersion(Number(historyId.value));
+    [displayData.value, allData.value] = [Object.freeze(res) as any, Object.freeze(res) as any];
     pagination.total = displayData.value?.length;
   }
   finally {
@@ -180,7 +180,7 @@ const handleClearFilter = async () => {
 const handleSearch = () => {
   isLoading.value = true;
   tableEmptyType.value = pathUrl.value ? 'search-empty' : 'empty';
-  displayData.value = allData.value?.filter((item: IISyncApigwItem) => {
+  displayData.value = allData.value?.filter((item: ISyncApigwItem) => {
     return (item?.component_path?.includes(pathUrl.value)) || (item?.component_name?.includes(pathUrl.value));
   });
   pagination.total = displayData.value?.length;
@@ -188,7 +188,7 @@ const handleSearch = () => {
 };
 
 onMounted(() => {
-  pagination = tableRef.value?.getPagination();
+  pagination = tableRef.value?.getPagination() as any;
 });
 </script>
 

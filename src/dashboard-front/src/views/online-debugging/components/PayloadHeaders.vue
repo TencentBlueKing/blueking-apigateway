@@ -226,10 +226,10 @@ if (!local) {
 const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
 const formRef = ref();
-const propsHeaders = ref([]);
-const newHeaders = ref([]);
+const propsHeaders = ref<any[]>([]);
+const newHeaders = ref<any[]>([]);
 const presuppose = ref('');
-const hoverIndex = ref<number>();
+const hoverIndex = ref<number | null>();
 const isIconClick = ref<boolean>(false); // 是否点击了icon
 const editInputRef = ref(null);
 const localHeaders = ref(JSON.parse(local) || []);
@@ -237,7 +237,7 @@ const dialogData = reactive({
   isShow: false,
   loading: false,
   name: '',
-  table: [],
+  table: [] as any[],
   columns: [
     {
       field: 'name',
@@ -256,12 +256,12 @@ const rules = {
     trigger: 'blur',
   }],
 };
-const localHeadersNames = ref([]);
+const localHeadersNames = ref<any[]>([]);
 
 watch(
   () => localHeaders.value,
-  (v) => {
-    localHeadersNames.value = v?.map(item => ({
+  (v: any) => {
+    localHeadersNames.value = v?.map((item: any) => ({
       name: item.name,
       value: item.id,
       isEdited: false,
@@ -336,29 +336,29 @@ const handleClosed = () => {
   }, 500);
 };
 
-const handlePresupposeChange = async (option, value: string, event: Event) => {
+const handlePresupposeChange = async (option: any, value: string, event: Event) => {
   stopEvent(event);
   if (!value) return;
   option.name = value;
   await updateOption(option);
 };
 
-const handleEditOptionItem = (option) => {
-  localHeadersNames.value.forEach((item) => {
+const handleEditOptionItem = (option: any) => {
+  localHeadersNames.value.forEach((item: any) => {
     item.isEdited = false;
   });
   option.isEdited = true;
   setTimeout(() => {
-    editInputRef.value[0]?.focus();
+    (editInputRef.value as any)?.[0]?.focus();
   }, 500);
 };
 
 // 删除
-const handleDeleteOptionItemConfirm = async (option) => {
+const handleDeleteOptionItemConfirm = async (option: any) => {
   try {
     const { value } = option;
 
-    localHeaders.value = localHeaders.value.filter(item => item.id !== value);
+    localHeaders.value = localHeaders.value.filter((item: any) => item.id !== value);
     localStorage.setItem(
       'presupposeHeaders',
       JSON.stringify(localHeaders.value),
@@ -380,7 +380,7 @@ const handleDeleteOptionItemConfirm = async (option) => {
 
 const isUpdatingOption = ref(false);
 // 更新
-const updateOption = async (option) => {
+const updateOption = async (option: any) => {
   await new Promise(resolve => setTimeout(resolve, 100));
   if (isUpdatingOption.value) {
     return;
@@ -391,7 +391,7 @@ const updateOption = async (option) => {
     if (name.trim()) {
       isUpdatingOption.value = true;
 
-      const found = localHeaders.value.find(item => item.id === value);
+      const found = localHeaders.value.find((item: any) => item.id === value);
       if (found) {
         found.name = name;
       }
@@ -405,7 +405,7 @@ const updateOption = async (option) => {
         theme: 'success',
       });
 
-      localHeadersNames.value.forEach((item) => {
+      localHeadersNames.value.forEach((item: any) => {
         item.isEdited = false;
       });
     }
@@ -422,16 +422,16 @@ const updateOption = async (option) => {
 
 // select 失焦时，移除所有 input 的编辑态
 const handleBlur = () => {
-  localHeadersNames.value.forEach((item) => {
+  localHeadersNames.value.forEach((item: any) => {
     item.isEdited = false;
   });
 };
 
 const handleHeadersChange = () => {
-  const found = localHeaders.value.find(item => item.id === presuppose.value);
+  const found = localHeaders.value.find((item: any) => item.id === presuppose.value);
   if (found) {
-    const foundNames = found.list.map(item => item.name);
-    const list = propsHeaders.value?.filter(item => !foundNames?.includes(item.name));
+    const foundNames = found.list.map((item: any) => item.name);
+    const list = propsHeaders.value?.filter((item: any) => !foundNames?.includes(item.name));
     propsHeaders.value = [...list, ...found.list];
   }
 };
@@ -444,14 +444,14 @@ const getData = () => {
   return editTableRef.value?.getTableData();
 };
 
-const handleChange = (list) => {
+const handleChange = (list: any) => {
   newHeaders.value = list;
   emit('change', list);
 };
 
 watch(
   () => headersPayload,
-  (value) => {
+  (value: any) => {
     propsHeaders.value = value;
     presuppose.value = '';
   },
@@ -469,16 +469,19 @@ defineExpose({
 .params-header {
   margin-bottom: 8px;
   cursor: pointer;
+
   .params-header-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: #313238;
     display: flex;
-    align-items: center;
     margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #313238;
+    align-items: center;
+
     .params-header-fold {
       margin-right: 8px;
       transition: all .2s;
+
       &.fold {
         transform: rotate(-90deg);
       }
@@ -489,52 +492,66 @@ defineExpose({
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     .presuppose-select {
       width: 80px;
     }
+
     .presuppose-btn {
       font-size: 14px;
       color: #3A84FF;
     }
   }
 }
+
 .params-collapse {
+
   :deep(.bk-collapse-content) {
     padding: 0;
   }
 }
+
 .dialog-content {
+
   .input-wrapper {
     margin-bottom: 12px;
+
     .name {
       font-size: 14px;
       color: #4D4F56;
     }
   }
+
   .header-list {
     padding-bottom: 18px;
+
     .tips {
+      margin-bottom: 12px;
       font-size: 14px;
       color: #979BA5;
-      margin-bottom: 12px;
     }
   }
 }
+
 .select-option-row {
+  position: relative;
   display: inline-block;
   width: 100%;
-  position: relative;
   overflow: hidden;
+
   .icon-container {
     position: absolute;
-    right: 0;
     top: 0;
+    right: 0;
+
     .icon {
+
       &:hover {
         color: #3a84ff;
       }
     }
   }
+
   .select-option-row-name {
     width: 74%;
     overflow: hidden;

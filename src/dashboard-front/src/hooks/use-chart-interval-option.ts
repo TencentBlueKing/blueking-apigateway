@@ -19,7 +19,7 @@
 import dayjs from 'dayjs';
 
 export function useChartIntervalOption() {
-  const getChartIntervalOption = (max: number, type: string, axis?: string) => {
+  const getChartIntervalOption = (max: number, type: string, axis: string = 'yAxis') => {
     const option: any = {
       yAxis: { axisLabel: {} },
       xAxis: { axisLabel: {} },

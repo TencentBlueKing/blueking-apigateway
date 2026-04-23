@@ -37,15 +37,15 @@ export function useGatewaysList(filter: Ref) {
     isLoading.value = true;
     try {
       const params = {
-        limit: pagination.value.limit,
-        offset: pagination.value.limit * pagination.value.offset,
+        limit: pagination.value.limit!,
+        offset: pagination.value.limit! * pagination.value.offset!,
         ...filter.value,
       };
       if (['all'].includes(params.kind)) {
         params.kind = '';
       }
       const res = await getGatewayList(params);
-      dataList.value = res.results;
+      dataList.value = res.results as any;
       return dataList.value;
     }
     catch (error) {

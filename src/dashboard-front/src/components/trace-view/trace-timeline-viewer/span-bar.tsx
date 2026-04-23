@@ -60,7 +60,7 @@ export default defineComponent({
   name: 'SpanBar',
   props: SpanBarProps,
 
-  setup(props) {
+  setup(props: any) {
     const label = ref(props.shortLabel);
 
     // 百分比格式化
@@ -174,7 +174,7 @@ export default defineComponent({
         onMouseout={this.setShortLabel}
         onMouseover={this.setLongLabel}
       >
-        {this.timeTicks.map(tick => (
+        {this.timeTicks.map((tick: any) => (
           <div
             key={tick.time}
             class={['time-tick', { 'is-last': tick.isLast }]}

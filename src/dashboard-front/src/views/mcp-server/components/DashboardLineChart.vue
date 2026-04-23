@@ -70,7 +70,7 @@ import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { IChartLegend, ISeriesItemType } from '@/services/source/observability';
+import type { ISeriesItemType } from '@/services/source/observability';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 // 补充图例项类型定义
@@ -111,12 +111,12 @@ const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
 
 const myChart = shallowRef<echarts.ECharts>();
-const chartLegend = ref<IChartLegend>({});
+const chartLegend = ref<Record<string, any>>({});
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -142,7 +142,7 @@ const chartResize = () => {
 // 获取图表核心配置
 const getChartOption = () => {
   // 基础配置
-  const baseOption: echarts.EChartOption = {
+  const baseOption: echarts.EChartsOption = {
     grid: {
       top: '15%',
       left: '2%',
@@ -153,6 +153,7 @@ const getChartOption = () => {
     xAxis: {
       type: 'time',
       // 不强制包含零刻度
+      // @ts-expect-error scale 属性在 echarts time 轴上有效但类型定义缺失
       scale: true,
       boundaryGap: false,
       axisLabel: {
@@ -198,7 +199,7 @@ const getChartOption = () => {
     tooltip: { trigger: 'axis' }, // 轴触发tooltip
   };
 
-  const chartOption: echarts.EChartOption = {
+  const chartOption: echarts.EChartsOption = {
     xAxis: {},
     yAxis: {},
     series: [],
@@ -213,7 +214,7 @@ const getChartOption = () => {
   // 处理业务数据，生成系列配置
   seriesData.forEach((item: ISeriesItemType) => {
     // 过滤无效数据：空值、时间戳无效的项
-    const dataPoints = (item?.datapoints || item.dataPoints || [])
+    const dataPoints = (item?.datapoints || (item as any).dataPoints || [])
       .filter((value: Array<number | null>) => !isNaN(Math.round(value[1] as number)) && value[0] !== null);
 
     // 格式化数据：[时间戳, 数值]，保留2位小数，适配不同instanceId的单位转换
@@ -225,7 +226,7 @@ const getChartOption = () => {
     });
 
     // 生成系列项，合并基础配置
-    chartOption.series.push(merge({}, baseOption.series[0], {
+    (chartOption.series as any[]).push(merge({}, (baseOption.series as any[])[0], {
       // 优先使用dimensions中的资源名
       name: item.dimensions?.resource_name || (item.target?.split('=')[1])?.replace(/"/g, ''),
       data: formatData,
@@ -277,23 +278,23 @@ const getChartOption = () => {
   // 实例ID专属配置
   if (multipleList.includes(instanceId)) {
     if (document.body.clientWidth < 1550) {
-      chartOption.xAxis.axisLabel = {
-        ...chartOption.xAxis.axisLabel,
+      (chartOption.xAxis as any).axisLabel = {
+        ...(chartOption.xAxis as any).axisLabel,
         rotate: 35,
       };
     }
   }
 
   if (displayMSList.includes(instanceId)) {
-    chartOption.yAxis.axisLabel = {
-      ...chartOption.yAxis.axisLabel,
+    (chartOption.yAxis as any).axisLabel = {
+      ...(chartOption.yAxis as any).axisLabel,
       formatter: '{value} ms',
     };
   }
 
   if (displayBytesList.includes(instanceId)) {
-    chartOption.yAxis.axisLabel = {
-      ...chartOption.yAxis.axisLabel,
+    (chartOption.yAxis as any).axisLabel = {
+      ...(chartOption.yAxis as any).axisLabel,
       formatter: '{value} bytes',
     };
   }
@@ -333,17 +334,18 @@ const generateChartColor = (seriesList: ISeriesItemType[]) => {
 
 // 设置Tooltip格式化（适配业务数据，优化多系列展示）
 const setChartTooltip = (
-  chartOption: echarts.EChartOption,
+  chartOption: echarts.EChartsOption,
   multipleList: string[],
   displayMSList: string[],
 ) => {
   // 统一Tooltip格式化逻辑，适配所有instanceId
-  chartOption.tooltip.formatter = (params: echarts.EChartOption.Tooltip.Format) => {
+  // @ts-expect-error echarts tooltip formatter 类型兼容
+  chartOption.tooltip.formatter = (params: any) => {
     if (!Array.isArray(params)) params = [params];
     // 时间标题（所有系列共用一个时间）
     let res = `<p>${dayjs(params[0].data[0]).format('YYYY-MM-DD HH:mm:ss')}</p>`;
     // 遍历所有系列，显示颜色标记+资源名+数值+单位
-    params.forEach((p) => {
+    params.forEach((p: any) => {
       const value = p.data[1] !== null ? p.data[1].toLocaleString() : '0';
       let unit = t('次');
       if (displayMSList.includes(instanceId)) unit = 'ms';
@@ -363,9 +365,9 @@ const setChartTooltip = (
 // 生成自定义图例
 const generateChartLegend = () => {
   const option = myChart.value?.getOption();
-  if (option && option.series.length > 1) {
-    chartLegend.value[instanceId] = option?.series?.map((ser: echarts.EChartOption.Series, index: number) => ({
-      color: option.color[index],
+  if (option && (option.series as any[]).length > 1) {
+    chartLegend.value[instanceId] = (option?.series as any[])?.map((ser: any, index: number) => ({
+      color: (option.color as string[])[index],
       name: ser.name,
       selected: 'all',
     }));
@@ -417,10 +419,10 @@ const renderChart = () => {
   if (!myChart.value) return;
   nextTick(() => {
     const option = getChartOption();
-    myChart.value.setOption(option, {
+    myChart.value!.setOption(option, {
       notMerge: true,
       animation: { duration: 300 },
-    });
+    } as any);
     chartResize();
     generateChartLegend();
   });
@@ -486,7 +488,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (myChart.value) {
     myChart.value.dispose();
-    myChart.value = null;
+    myChart.value = undefined;
   }
   window.removeEventListener('resize', chartResize);
 });
@@ -508,10 +510,10 @@ defineExpose({
 
   .chart-title {
     padding-top: 12px;
-    color: #4d4f56;
     font-size: 14px;
     font-weight: bold;
     line-height: 22px;
+    color: #4d4f56;
   }
 
   .line-chart {
@@ -527,13 +529,13 @@ defineExpose({
 
     .legend-item {
       display: flex;
-      align-items: center;
-      flex: none;
+      margin-right: 16px;
       font-size: 12px;
       line-height: 22px;
-      margin-right: 16px;
       white-space: nowrap;
       cursor: pointer;
+      align-items: center;
+      flex: none;
 
       &:hover,
       &.selected {
@@ -546,22 +548,22 @@ defineExpose({
     }
 
     .legend-icon {
-      flex: none;
       width: 16px;
       height: 4px;
+      margin-right: 4px;
       background-color: #999;
       border-radius: 2px;
-      margin-right: 4px;
+      flex: none;
     }
   }
 
   .side-legend {
     position: absolute;
-    right: -34px;
     top: 10px;
-    flex-direction: column;
+    right: -34px;
     max-height: 242px;
     padding: 8px 0;
+    flex-direction: column;
   }
 
   .custom-scroll-bar {
@@ -573,8 +575,8 @@ defineExpose({
 
     &::-webkit-scrollbar-thumb {
       height: 5px;
-      border-radius: 2px;
       background-color: #c4c6cc;
+      border-radius: 2px;
     }
 
     &::-webkit-scrollbar-track {
@@ -584,8 +586,8 @@ defineExpose({
 }
 
 .basic-height {
-  height: 286px;
   display: flex;
+  height: 286px;
   align-items: center;
   justify-content: center;
 }

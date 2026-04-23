@@ -16,8 +16,24 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IESBChannelDetailResponse,
+  IESBChannelListResponse,
+  IESBGatewayInfoResponse,
+  IESBNeedNewReleaseResponse,
+  IESBReleaseHistoryDetailResponse,
+  IESBReleaseHistoryListResponse,
+  IESBReleaseStatusResponse,
+} from '@/services/types/responses/esb.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IEsbComponentsListQuery,
+  IEsbComponentsSyncReleaseHistoriesListQuery,
+} from '@/services/types/query/esb.ts';
+import type { IEsbComponentsUpdate } from '@/services/types/body/patch/esb.ts';
+import type { IEsbComponentsCreate } from '@/services/types/body/post/esb.ts';
 
-const path = '/esb/components/';
+const path = '/esb/components';
 
 export interface IComponentItem {
   id: number
@@ -62,62 +78,47 @@ export interface ISyncHistoryItem {
   message: string
 }
 
-export interface IComponentListParams {
-  limit: number
-  offset: number
-  path: string
-  name: string
-  system_name: string
+export function getEsbComponents(params: IEsbComponentsListQuery) {
+  return http.get<IESBChannelListResponse>(`${path}/`, params);
 }
 
-export interface ISyncHistoryParams {
-  limit: number
-  offset: number
-  time_start?: number
-  time_end?: number
+export function addComponent(params: IEsbComponentsCreate) {
+  return http.post(`${path}/`, params);
 }
 
-export function getEsbComponents(params: IComponentListParams) {
-  return http.get(`${path}`, params);
-}
-
-export function addComponent(params: IComponentItem) {
-  return http.post(`${path}`, params);
-}
-
-export function updateComponent(id: number, params: IComponentItem) {
-  return http.put(`${path}${id}/`, params);
+export function updateComponent(id: number, params: IEsbComponentsUpdate) {
+  return http.put(`${path}/${id}/`, params);
 }
 
 export function getComponentsDetail(id: number) {
-  return http.get(`${path}${id}/`);
+  return http.get<IESBChannelDetailResponse>(`${path}/${id}/`);
 }
 
 export function deleteComponentByBatch(params: { ids: string[] }) {
-  return http.delete(`${path}batch/`, params);
+  return http.delete(`${path}/batch/`, params);
 }
 
 export function getReleaseStatus() {
-  return http.get(`${path}sync/release/status/`);
+  return http.get<IESBReleaseStatusResponse>(`${path}/sync/release/status/`);
 }
 
 export function checkEsbNeedNewVersion() {
-  return http.get(`${path}sync/need-new-release/`);
+  return http.get<IESBNeedNewReleaseResponse>(`${path}/sync/need-new-release/`);
 };
 
 export function checkSyncComponent() {
-  return http.post(`${path}sync/check/`);
+  return http.post(`${path}/sync/check/`);
 }
 
 export function getSyncReleaseData() {
-  return http.post(`${path}sync/release/`);
+  return http.post(`${path}/sync/release/`);
 }
 
 /**
  *  获取 Esb 网关
  */
 export function getEsbGateway() {
-  return http.get(`${path}gateway/`);
+  return http.get<IESBGatewayInfoResponse>(`${path}/gateway/`);
 }
 
 /**
@@ -125,8 +126,8 @@ export function getEsbGateway() {
  * @param params
  * @returns
  */
-export function getSyncHistory(params: ISyncHistoryParams) {
-  return http.get(`${path}sync/release/histories/`, params);
+export function getSyncHistory(params: IEsbComponentsSyncReleaseHistoriesListQuery) {
+  return http.get<ICountAndResults<IESBReleaseHistoryListResponse>>(`${path}/sync/release/histories/`, params);
 }
 
 /**
@@ -135,17 +136,5 @@ export function getSyncHistory(params: ISyncHistoryParams) {
  * @returns
  */
 export function getSyncVersion(id: number) {
-  return http.get(`${path}sync/release/histories/${id}/`);
-}
-
-/**
- * 获取 feature flag 全局特性开关列表
- * @param data 分页参数
- * @returns
- */
-export function getFeatures(params?: {
-  limit: number
-  offset: number
-}) {
-  return http.get('/settings/feature-flags/', params);
+  return http.get<IESBReleaseHistoryDetailResponse[]>(`${path}/sync/release/histories/${id}/`);
 }

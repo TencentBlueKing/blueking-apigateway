@@ -101,15 +101,19 @@
 </template>
 
 <script setup lang="ts">
-import { type IStageListItem, getStageList } from '@/services/source/stage';
+import { getStageList } from '@/services/source/stage';
 import { Spinner } from 'bkui-vue/lib/icon';
 import { getStageStatus } from '@/utils';
 import { useGateway, useStage } from '@/stores';
 import CreateStage from '@/views/stage-management/overview/components/CreateStage.vue';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
 
 interface IProps { stageId: number | string }
 
 const mode = defineModel<string>('mode', { default: 'card-mode' });
+
 const { stageId } = defineProps<IProps>();
 
 const emit = defineEmits<{ 'change-stage': [stageId: number] }>();
@@ -261,10 +265,10 @@ const handleCreateDone = async () => {
   }
 };
 
-const setStageInfo = (stage) => {
+const setStageInfo = (stage: IStageListItem) => {
   curStage.value = stage;
   stageStore.curStageData = curStage.value;
-  stageStore.curStageId = curStage.value.id;
+  stageStore.curStageId = curStage.value!.id;
   stageStore.setStageList(stageList.value);
 };
 
@@ -273,7 +277,7 @@ onMounted(() => {
     stageList.value = await getStageList(gatewayId.value);
     if (stageList.value?.length) {
       setStageInfo(stageList.value[0]);
-      emit('change-stage', curStage.value.id);
+      emit('change-stage', curStage.value!.id);
     }
   });
 });

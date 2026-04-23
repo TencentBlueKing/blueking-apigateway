@@ -16,29 +16,41 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IAPIDebugHistoriesListOutput,
+  IAPIDebugHistoriesRetrieveOutput,
+  IGatewayRetrieveOutput,
+  IReleaseResourceSchemaOutput,
+  IResourceListOutput,
+  IStageListOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysReleasesStagesResourcesListQuery,
+  IGatewaysStagesListQuery,
+  IGatewaysTestsHistoriesListQuery,
+} from '@/services/types/query/gateways.ts';
 
 const path = '/gateways';
-
-/**
- *  获取环境下可用的资源列表接口(在线调试)
- * @param gatewayId 网关id
- * @returns
- */
-export const getReleaseResources = (gatewayId: number, stageId: string) => http.get(`${path}/${gatewayId}/releases/stages/${stageId}/resources/`);
 
 /**
  *  获取环境列表
  * @param gatewayId 网关id
  * @returns
  */
-export const getStages = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/stages/`, data);
+export const getStages = (gatewayId: number, data: IGatewaysStagesListQuery = {}) =>
+  http.get<IStageListOutput[]>(`${path}/${gatewayId}/stages/`, data);
 
 /**
  *  获取环境下可用的资源列表接口(在线调试)
  * @param gatewayId 网关id
  * @returns
  */
-export const getResourcesOnline = (gatewayId: number, stageId: number, data: any) => http.get(`${path}/${gatewayId}/releases/stages/${stageId}/resources/`, data);
+export const getResourcesOnline = (
+  gatewayId: number,
+  stageId: number,
+  data: IGatewaysReleasesStagesResourcesListQuery = {},
+) =>
+  http.get<IResourceListOutput[]>(`${path}/${gatewayId}/releases/stages/${stageId}/resources/`, data);
 
 /**
  *  在线调试发起请求
@@ -46,20 +58,16 @@ export const getResourcesOnline = (gatewayId: number, stageId: number, data: any
  * @param data 请求数据
  * @returns
  */
-export const postAPITest = (gatewayId: number, data: any) => http.post(`${path}/${gatewayId}/tests/`, data);
+export const postAPITest = (gatewayId: number, data: Record<string, unknown>) =>
+  http.post(`${path}/${gatewayId}/tests/`, data);
 
 /**
  *  获取指定网关的信息
  * @param gatewayId 网关id
  * @returns
  */
-export const getApiDetail = (gatewayId: number) => http.get(`${path}/${gatewayId}/`);
-
-/**
- *  获取 user_auth_type
- * @returns
- */
-export const getUserAuthType = () => http.get('/settings/user_auth_type/');
+export const getApiDetail = (gatewayId: number) =>
+  http.get<IGatewayRetrieveOutput>(`${path}/${gatewayId}/`);
 
 /**
  * 获取环境下可用的某个资源接口schema(在线调试)
@@ -68,18 +76,24 @@ export const getUserAuthType = () => http.get('/settings/user_auth_type/');
  * @param resourceId 资源id
  * @returns
  */
-export const resourceSchema = (gatewayId: number, stageId: number, resourceId: number) => http.get(`${path}/${gatewayId}/releases/stages/${stageId}/resources/${resourceId}/schema/`);
+export const resourceSchema = (gatewayId: number, stageId: number, resourceId: number) =>
+  http.get<IReleaseResourceSchemaOutput>(`${path}/${gatewayId}/releases/stages/${stageId}/resources/${resourceId}/schema/`);
 
 /**
  *  在线调试历史记录列表
  * @param gatewayId 网关id
  * @returns
  */
-export const getTestHistories = (gatewayId: number, data: any) => http.get(`${path}/${gatewayId}/tests/histories/`, data);
+export const getTestHistories = (
+  gatewayId: number,
+  data: IGatewaysTestsHistoriesListQuery = {},
+) =>
+  http.get<IAPIDebugHistoriesListOutput[]>(`${path}/${gatewayId}/tests/histories/`, data);
 
 /**
  *  获取调用历史详情
  * @param gatewayId 网关id
  * @returns
  */
-export const getTestHistoriesDetails = (gatewayId: number, id: number) => http.get(`${path}/${gatewayId}/tests/histories/${id}/`);
+export const getTestHistoriesDetails = (gatewayId: number, id: number) =>
+  http.get<IAPIDebugHistoriesRetrieveOutput>(`${path}/${gatewayId}/tests/histories/${id}/`);

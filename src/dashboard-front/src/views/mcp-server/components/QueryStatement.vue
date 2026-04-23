@@ -156,12 +156,12 @@ const popoverOptions = {
   placement: 'bottom-start',
 };
 
-const queryStatement = ref<InstanceType<typeof HTMLDivElement>>(null);
-const drownDownRef = ref<InstanceType<typeof Dropdown>>(null);
-const localPlaceholder = ref(placeholder || t('请输入查询语句'));
+const queryStatement = ref<HTMLDivElement | null>(null);
+const drownDownRef = ref<InstanceType<typeof Dropdown> | null>(null);
+const localPlaceholder = ref(placeholder ?? t('请输入查询语句'));
 
 const handleEnter = () => {
-  emit('search', localValue.value);
+  emit('search', localValue.value ?? '');
 };
 
 const handleHistoryClick = (value: string) => {

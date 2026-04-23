@@ -16,6 +16,26 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type {
+  IDocsEsbBoardsSdksDocReadResponse,
+  IDocsEsbBoardsSdksLatestReadResponse,
+  IDocsEsbBoardsSdksListResponse,
+  IDocsEsbBoardsSdksUsageExampleReadResponse,
+  IDocsEsbBoardsSystemsComponentsDocReadResponse,
+  IDocsEsbBoardsSystemsComponentsListResponse,
+  IDocsEsbBoardsSystemsComponentsSearchListResponse,
+  IDocsEsbBoardsSystemsListResponse,
+  IDocsEsbBoardsSystemsReadResponse,
+} from '@/services/types/responses/docs.ts';
+import type {
+  IDocsEsbBoardsSdksDocReadQuery,
+  IDocsEsbBoardsSdksLatestReadQuery,
+  IDocsEsbBoardsSdksListQuery,
+  IDocsEsbBoardsSdksUsageExampleReadQuery,
+  IDocsEsbBoardsSystemsComponentsListQuery,
+  IDocsEsbBoardsSystemsComponentsSearchListQuery,
+  IDocsEsbBoardsSystemsListQuery,
+} from '@/services/types/query/docs.ts';
 
 const path = '/docs/esb';
 
@@ -24,24 +44,28 @@ const path = '/docs/esb';
  * @param board
  * @param data 查询参数
  */
-export const getComponentSystemList = (board: string, data: any = {}) =>
-  http.get(`${path}/boards/${board}/systems/`, data);
+export const getComponentSystemList = (board: string, data: IDocsEsbBoardsSystemsListQuery = {}) =>
+  http.get<IDocsEsbBoardsSystemsListResponse[]>(`${path}/boards/${board}/systems/`, data);
 
 /**
  *  获取组件系统信息
  * @param board
  * @param system_name  系统名称
  */
-export const getComponenSystemDetail = (board: string, system_name: string) =>
-  http.get(`${path}/boards/${board}/systems/${system_name}/`);
+export const getComponentSystemDetail = (board: string, system_name: string) =>
+  http.get<IDocsEsbBoardsSystemsReadResponse>(`${path}/boards/${board}/systems/${system_name}/`);
 
 /**
  *  查询指定组件系统下的组件 API 列表，仅返回公开的组件
  * @param board
  * @param system_name  系统名称
  */
-export const getSystemAPIList = (board: string, system_name: string) =>
-  http.get(`${path}/boards/${board}/systems/${system_name}/components/`);
+export const getSystemAPIList = (
+  board: string,
+  system_name: string,
+  query: IDocsEsbBoardsSystemsComponentsListQuery = {},
+) =>
+  http.get<IDocsEsbBoardsSystemsComponentsListResponse[]>(`${path}/boards/${board}/systems/${system_name}/components/`, query);
 
 /**
  *  查询组件 API，根据筛选条件模糊搜索，仅返回前 30 条记录
@@ -49,8 +73,12 @@ export const getSystemAPIList = (board: string, system_name: string) =>
  * @param data 查询参数
  * @param system_name  系统名称
  */
-export const searchAPI = (board: string, system_name: string, data: any) =>
-  http.get(`${path}/boards/${board}/systems/${system_name}/components/search/`, data);
+export const searchAPI = (
+  board: string,
+  system_name: string,
+  data: IDocsEsbBoardsSystemsComponentsSearchListQuery = {},
+) =>
+  http.get<IDocsEsbBoardsSystemsComponentsSearchListResponse[]>(`${path}/boards/${board}/systems/${system_name}/components/search/`, data);
 
 /**
  *  获取组件 API 文档，仅获取当前语言（中文/英文）的文档
@@ -59,32 +87,36 @@ export const searchAPI = (board: string, system_name: string, data: any) =>
  * @param component_name   组件名称
  */
 export const getSystemComponentDoc = (board: string, system_name: string, component_name: string) =>
-  http.get(`${path}/boards/${board}/systems/${system_name}/components/${component_name}/doc/`);
+  http.get<IDocsEsbBoardsSystemsComponentsDocReadResponse>(`${path}/boards/${board}/systems/${system_name}/components/${component_name}/doc/`);
 
 /**
  *  获取指定组件的指定语言（python） SDK 的调用示例
  * @param data
  * @param board   系统名称
  */
-export const getSDKDoc = (board: string, data: any) => http.get(`${path}/boards/${board}/sdks/usage-example/`, data);
+export const getSDKDoc = (board: string, data: IDocsEsbBoardsSdksUsageExampleReadQuery) =>
+  http.get<IDocsEsbBoardsSdksUsageExampleReadResponse>(`${path}/boards/${board}/sdks/usage-example/`, data);
 
 /**
  *  获取所有的组件 SDK 列表，单个 SDK 仅返回最新版本 SDK 信息
  * @param board
  * @param data 查询参数
  */
-export const getESBSDKlist = (board: string, data: any) => http.get(`${path}/boards/${board}/sdks/`, data);
+export const getESBSDKList = (board: string, data: IDocsEsbBoardsSdksListQuery) =>
+  http.get<IDocsEsbBoardsSdksListResponse[]>(`${path}/boards/${board}/sdks/`, data);
 
 /**
  *  获取指定语言（python）组件 SDK 的调用样例
  * @param board
  * @param data 查询参数
  */
-export const getESBSDKDoc = (board: string, data: any) => http.get(`${path}/boards/${board}/sdks/doc/`, data);
+export const getESBSDKDoc = (board: string, data: IDocsEsbBoardsSdksDocReadQuery) =>
+  http.get<IDocsEsbBoardsSdksDocReadResponse>(`${path}/boards/${board}/sdks/doc/`, data);
 
 /**
  *  获取指定语言（python） 组件 SDK 的信息
  * @param board
  * @param data 查询参数
  */
-export const getESBSDKDetail = (board: string, data: any) => http.get(`${path}/boards/${board}/sdks/latest/`, data);
+export const getESBSDKDetail = (board: string, data: IDocsEsbBoardsSdksLatestReadQuery) =>
+  http.get<IDocsEsbBoardsSdksLatestReadResponse>(`${path}/boards/${board}/sdks/latest/`, data);

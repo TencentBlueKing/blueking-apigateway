@@ -99,7 +99,7 @@
 
 <script setup lang="tsx">
 import { delay } from 'lodash-es';
-import { Button, Form, Message } from 'bkui-vue';
+import { Form, Message } from 'bkui-vue';
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { usePopInfoBox } from '@/hooks';
 import {
@@ -116,11 +116,11 @@ const { t } = useI18n();
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const validateFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const keyword = ref('');
-const tableColumns = ref([
+const tableColumns = ref<any[]>([
   {
     title: t('名称'),
     colKey: 'name',
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: any }): any => {
       return (
         <div class="flex-row">
           <div
@@ -131,16 +131,20 @@ const tableColumns = ref([
               extCls: 'max-w-480px',
             }}
             class="truncate mr-4px"
-            onMouseenter={e => tableRef.value?.handleCellEnter({
-              e,
-              row,
-            })}
-            onMouseLeave={e => tableRef.value?.handleCellLeave({
-              e,
-              row,
-            })}
+            onMouseenter={(e: MouseEvent) => {
+              (tableRef.value?.handleCellEnter as any)({
+                e,
+                row,
+              });
+            }}
+            onMouseleave={(e: MouseEvent) => {
+              (tableRef.value?.handleCellLeave as any)({
+                e,
+                row,
+              });
+            }}
           >
-            {row?.name || '--' }
+            {row.name || '--' }
           </div>
           { row.is_official && <span class="official">{ t('官方') }</span> }
         </div>
@@ -151,7 +155,7 @@ const tableColumns = ref([
     title: t('优先级'),
     colKey: 'priority',
     ellipsis: true,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: Partial<ICategoryItem> }) => {
       return (
         <span>
           { row.priority || '--'}
@@ -174,22 +178,22 @@ const tableColumns = ref([
     colKey: 'operate',
     ellipsis: true,
     width: 150,
-    cell: (h, { row }: { row?: Partial<ISystemItem> }) => {
+    cell: (h: any, { row }: { row: any }): any => {
       return (
         <div>
-          <Button
+          <bk-button
             class="mr-10px"
             theme="primary"
             text
-            onClick={() => handleEdit(row)}
+            onClick={() => handleEdit(row as ICategoryItem)}
           >
             { t('编辑') }
-          </Button>
-          <BkButton
+          </bk-button>
+          <bk-button
             theme="primary"
             text
-            disabled={row.is_official || row.system_count > 0}
-            onClick={() => handleDelete(row)}
+            disabled={row.is_official || (row.system_count ?? 0) > 0}
+            onClick={() => handleDelete(row as ICategoryItem)}
           >
             {
               row.is_official
@@ -200,15 +204,15 @@ const tableColumns = ref([
               )
             }
             {
-              row.system_count > 0 && !row.is_official
+              (row.system_count ?? 0) > 0 && !row.is_official
               && (
                 <span v-bk-tooltips={{ content: t('存在关联系统，不可删除') }}>
                   { t('删除') }
                 </span>
               )
             }
-            { !row.is_official && row.system_count < 1 && t('删除') }
-          </BkButton>
+            { !row.is_official && (row.system_count ?? 0) < 1 && t('删除') }
+          </bk-button>
         </div>
       );
     },
@@ -219,16 +223,21 @@ const pagination = ref({
   count: 0,
   limit: 10,
 });
-const curDocCategory = ref({
+const curDocCategory = ref<{
+  name: string
+  is_official: boolean
+  categoryName: string
+  [key: string]: any
+}>({
   name: '',
   is_official: false,
   categoryName: '',
 });
-const allData = ref([]);
-const displayData = ref([]);
-const classifyFilters = ref([]);
+const allData = ref<any[]>([]);
+const displayData = ref<any[]>([]);
+const classifyFilters = ref<any[]>([]);
 const isLoading = ref(false);
-const docCategoryDialog = ref({
+const docCategoryDialog = ref<Record<string, any>>({
   visible: false,
   width: 480,
   headerPosition: 'left',
@@ -237,6 +246,7 @@ const docCategoryDialog = ref({
   priority: 1000,
   title: '',
   loading: false,
+  categoryName: '',
 });
 const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 const rules = ref({
@@ -322,9 +332,9 @@ const getDocCategoryList = async (loading = false) => {
   isLoading.value = loading;
   try {
     const res = await getDocCategory();
-    [allData.value, displayData.value] = [Object.freeze(res), Object.freeze(res)];
-    allData.value.forEach((item) => {
-      if (!classifyFilters.value.map(subItem => subItem.value).includes(item.doc_category_id)) {
+    [allData.value, displayData.value] = [Object.freeze(res) as any, Object.freeze(res) as any];
+    allData.value.forEach((item: any) => {
+      if (!classifyFilters.value.map((subItem: any) => subItem.value).includes(item.doc_category_id)) {
         classifyFilters.value.push({
           text: item.doc_category_name,
           value: item.doc_category_id,
@@ -345,7 +355,7 @@ const updateTableEmptyConfig = () => {
 
 // 编辑文档
 const handleEdit = (data: ICategoryItem) => {
-  curDocCategory.value = data;
+  curDocCategory.value = data as any;
   docCategoryDialog.value = Object.assign(docCategoryDialog.value, {
     title: t('编辑文档分类'),
     id: data.id,
@@ -366,7 +376,7 @@ const handleDeleteDocCategory = async (id: number) => {
 
 const handleSearch = (payload: string) => {
   updateTableEmptyConfig();
-  displayData.value = allData.value.filter((item) => {
+  displayData.value = allData.value.filter((item: any) => {
     const reg = new RegExp(`(${payload})`, 'gi');
     return item.name.match(reg);
   });
@@ -375,7 +385,7 @@ const handleSearch = (payload: string) => {
 };
 
 const handleDelete = (data: ICategoryItem) => {
-  curDocCategory.value = data;
+  curDocCategory.value = data as any;
   usePopInfoBox({
     title: t('确认删除'),
     type: 'warning',
@@ -383,7 +393,7 @@ const handleDelete = (data: ICategoryItem) => {
     confirmText: t('删除'),
     confirmButtonTheme: 'danger',
     onConfirm: () => {
-      handleDeleteDocCategory(data.id);
+      handleDeleteDocCategory(data.id!);
     },
   });
 };
@@ -401,18 +411,19 @@ const handleClearFilter = () => {
 
 <style lang="scss" scoped>
 .category-container {
+
   .ag-top-header {
+    position: relative;
     min-height: 32px;
     margin-bottom: 20px;
-    position: relative;
   }
 }
 
 :deep(.official) {
-  margin-left: 2px;
   padding: 2px;
-  background: #dcffe2;
+  margin-left: 2px;
   font-size: 12px;
   color: #2dcb56;
+  background: #dcffe2;
 }
 </style>

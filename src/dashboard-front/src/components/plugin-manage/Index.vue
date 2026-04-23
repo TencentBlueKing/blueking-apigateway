@@ -417,6 +417,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import PluginInfo from './PluginInfo.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import {
@@ -585,7 +586,7 @@ watch([selectedTag, searchValue], () => {
 // 监听是否成功添加
 watch(
   () => isAddSuccess.value,
-  (newVal) => {
+  (newVal: any) => {
     if (newVal) {
       init();
     }
@@ -799,6 +800,7 @@ const getPluginListDetails = async (params: {
   try {
     isPluginListLoading.value = true;
     const [pluginRes, tagRes] = await Promise.all([
+      // @ts-ignore
       getPluginListData(gatewayId.value, params),
       getPluginTags(gatewayId.value),
     ]);

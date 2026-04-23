@@ -18,7 +18,7 @@
 
 import { cloneDeep } from 'lodash-es';
 import { Popover } from 'bkui-vue';
-import { Funnel } from 'bkui-lib/icon';
+import { Funnel } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
 import { type IFilterValue } from '@/types/permission';
 import './table-header-filter.scss';
@@ -55,7 +55,7 @@ export default defineComponent({
 
   emits: ['selected'],
 
-  setup(props, ctx) {
+  setup(props: any, ctx: any) {
     // 引用弹出框组件的引用
     const popoverRef = ref();
     // 控制弹出框显示状态的变量
@@ -107,7 +107,7 @@ export default defineComponent({
 
     // 监听 list 属性的变化
     watch(
-      () => props.list as IFilterValue[], (payload) => {
+      () => props.list as IFilterValue[], (payload: any) => {
         const allList = cloneDeep([{
           id: 'ALL',
           name: t('全部'),

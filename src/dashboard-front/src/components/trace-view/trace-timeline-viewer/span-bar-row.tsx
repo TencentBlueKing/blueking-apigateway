@@ -18,7 +18,6 @@
 
 import { Divider, PopConfirm, Popover } from 'bkui-vue';
 import { bkTooltips } from 'bkui-vue/lib/directives';
-import AgIcon from '@/components/ag-icon/Index.vue';
 import {
   type ViewedBoundsFunctionType,
   createViewedBoundsFunc,
@@ -95,7 +94,7 @@ export default defineComponent({
   props: SpanBarRowProps,
   emits: ['toggleCollapse'],
 
-  setup(props, { emit }) {
+  setup(props: any, { emit }: any) {
     const traceStore = useTrace();
     const spanBarCurrentStore = useSpanBarCurrentInject();
     const childrenHiddenStore = useChildrenHiddenInject();
@@ -193,7 +192,7 @@ export default defineComponent({
             <span class="title-text">{title}</span>
             {detail
               ? (
-                <AgIcon
+                <ag-icon
                   class="icon-mc-copy"
                   name="copy"
                   v-bk-tooltips={{
@@ -388,7 +387,7 @@ export default defineComponent({
                         placement="bottom"
                         popoverDelay={[300, 0]}
                       >
-                        <AgIcon
+                        <ag-icon
                           name="exclamation-circle-fill"
                           color="rgb(231, 24, 24)"
                           class="error-icon"
@@ -396,7 +395,7 @@ export default defineComponent({
                       </Popover>
                     )}
                     {span?.layer && (
-                      <AgIcon
+                      <ag-icon
                         name={getSpanIcon(span)}
                         class="service-icon"
                         color="#4d4f56"
@@ -528,7 +527,7 @@ export default defineComponent({
                       )}
                       {noInstrumentedServer && (
                         <span>
-                          <AgIcon
+                          <ag-icon
                             name="arrows--right--line"
                             class="span-bar-row-arrow-icon"
                           />
@@ -581,13 +580,13 @@ export default defineComponent({
                             ? (
                               <i
                                 class="icon-monitor icon-mc-fold-menu icon-collapsed"
-                                onClick={e => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
+                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
                               />
                             )
                             : (
                               <span
                                 class="collapsed-mark"
-                                onClick={e => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
+                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
                               >
                                 {groupInfo.members.length}
                               </span>

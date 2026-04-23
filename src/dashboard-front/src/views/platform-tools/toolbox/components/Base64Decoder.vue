@@ -120,7 +120,7 @@ const errorMsg = ref('');
 const mltBase64Encode = (str: string) => {
   // 标准 Base64 编码
   const base64 = btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
-    (match, encode) => String.fromCharCode('0x' + encode)));
+    (_match, encode) => String.fromCharCode(Number('0x' + encode))));
 
   // 转换为 URL 安全格式并去除填充字符
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -145,13 +145,13 @@ const mltBase64Decode = (str: string) => {
       code => '%' + ('00' + code.charCodeAt(0).toString(16)).slice(-2)).join(''));
   }
   catch (e) {
-    console.error('Invalid MLT Base64 encoding:', e.message);
+    console.error('Invalid MLT Base64 encoding:', (e as Error).message);
     return str;
   }
 };
 
 const handleInputClick = () => {
-  base64InputRef.value?.focus();
+  (base64InputRef.value as any)?.focus();
 };
 
 // base64编码
@@ -161,7 +161,7 @@ const handleEncodeClick = () => {
     result.value = mltBase64Encode(base64Content.value);
   }
   catch (err) {
-    errorMsg.value = err.message;
+    errorMsg.value = (err as Error).message;
     result.value = '';
   }
 };
@@ -172,8 +172,8 @@ const handleDecodeClick = () => {
   try {
     result.value = mltBase64Decode(base64Content.value);
   }
-  catch (err: Error) {
-    errorMsg.value = err.message;
+  catch (err) {
+    errorMsg.value = (err as Error).message;
     result.value = '';
   }
 };

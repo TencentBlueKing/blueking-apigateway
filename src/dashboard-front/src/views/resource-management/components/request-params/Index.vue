@@ -97,7 +97,7 @@
             v-if="readonly"
             class="readonly-value-wrapper"
           >
-            {{ inList.find(item => item.value === row.in)?.label || '--' }}
+            {{ inList.find((item: any) => item.value === row.in)?.label || '--' }}
           </div>
           <BkSelect
             v-else
@@ -112,7 +112,7 @@
               v-for="item in inList"
               :id="item.value"
               :key="item.value"
-              :disabled="tableData.find((dataRow) => dataRow.in === 'body') && item.value === 'body'"
+              :disabled="tableData.find((dataRow: any) => dataRow.in === 'body') && item.value === 'body'"
               :name="item.label"
             />
           </BkSelect>
@@ -128,7 +128,7 @@
             v-if="readonly"
             class="readonly-value-wrapper"
           >
-            {{ typeList.find(item => item.value === row.type)?.label || '--' }}
+            {{ typeList.find((item: any) => item.value === row.type)?.label || '--' }}
           </div>
           <div
             v-else
@@ -151,7 +151,7 @@
             </BkSelect>
             <ParamsRowConfig
               :row="row"
-              @change="(config) => handleConfigChange(row, config)"
+              @change="(config: any) => handleConfigChange(row, config)"
             />
           </div>
         </template>
@@ -235,7 +235,7 @@
         fixed="right"
         width="140"
       >
-        <template #default="{ row, index }">
+        <template #default="{ row, rowIndex }: any">
           <div class="pl-16px">
             <AgIcon
               v-if="isAddFieldVisible(row)"
@@ -248,7 +248,7 @@
               v-bk-tooltips="t('删除参数')"
               class="tb-btn delete-btn"
               name="minus-circle-shape"
-              @click="() => delRow(row, index)"
+              @click="() => delRow(row, rowIndex)"
             />
           </div>
         </template>
@@ -440,13 +440,13 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   const body: IBodyRow[] = [];
   if (Object.keys(schema.properties || {}).length) {
     for (const propertyName in schema.properties) {
-      const property = schema.properties[propertyName];
+      const property = schema.properties[propertyName] as JSONSchema7;
       const row: IBodyRow = {
         id: uniqueId(),
         name: propertyName,
-        type: convertPropertyType(property.type),
+        type: convertPropertyType(property.type as string),
         required: schema?.required?.includes(propertyName) ?? false,
-        default: property.default ?? '',
+        default: (property.default as string) ?? '',
         description: property.description ?? '',
       };
       // 处理枚举值
@@ -455,23 +455,24 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
       }
       // 处理嵌套的属性
       if (Object.keys(property.properties || {}).length) {
-        row.body = convertSchemaToBodyRow(property);
+        row.body = convertSchemaToBodyRow(property) ?? undefined;
       }
       else if (property.type === 'array' && Object.keys(property.items || {}).length) {
-        if (property.items.type === 'object') {
+        const items = property.items as JSONSchema7;
+        if (items.type === 'object') {
           row.body = [{
             id: uniqueId(),
             name: '',
             type: 'object',
             required: false,
             default: '',
-            description: property.items.description ?? '',
+            description: items.description ?? '',
             body: [],
           }];
-          row.body[0].body = convertSchemaToBodyRow(property.items);
+          row.body[0].body = convertSchemaToBodyRow(items) ?? undefined;
         }
         else {
-          row.body = convertSchemaToBodyRow(property.items);
+          row.body = convertSchemaToBodyRow(items) ?? undefined;
         }
       }
       body.push(row);
@@ -479,16 +480,17 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
   }
   // 处理根节点为数组的情况
   else if (schema.type === 'array' && Object.keys(schema.items || {}).length) {
+    const items = schema.items as JSONSchema7;
     const row: IBodyRow = {
       id: uniqueId(),
       name: '',
-      type: schema.items!.type ? convertPropertyType(schema.items!.type) : 'string',
+      type: items.type ? convertPropertyType(items.type as string) : 'string',
       required: false,
       default: '',
       description: schema.description ?? '',
     };
     if (row.type === 'object') {
-      row.body = convertSchemaToBodyRow(schema.items!);
+      row.body = convertSchemaToBodyRow(items) ?? undefined;
     }
     body.push(row);
   }
@@ -502,8 +504,8 @@ watch(() => detail, () => {
   if (detail?.schema || detail.openapi_schema) {
     const resourceSchema = detail.schema || detail.openapi_schema;
     tableData.value = [];
-    if (resourceSchema.parameters?.length) {
-      tableData.value = resourceSchema.parameters.map((parameter) => {
+    if (resourceSchema!.parameters?.length) {
+      tableData.value = resourceSchema!.parameters.map((parameter: any) => {
         const row = {
           id: uniqueId(),
           name: parameter.name,
@@ -518,10 +520,10 @@ watch(() => detail, () => {
           Object.assign(row, { enum: parameter.schema.enum });
         }
         return row;
-      });
+      }) as ITableRow[];
     }
-    if (resourceSchema.requestBody) {
-      const body = resourceSchema.requestBody;
+    if (resourceSchema!.requestBody) {
+      const body = resourceSchema!.requestBody;
       const rootRowSchema = body?.content?.['application/json']?.schema;
       const row = {
         id: uniqueId(),
@@ -541,7 +543,7 @@ watch(() => detail, () => {
   }
 }, { immediate: true });
 
-const genRow = () => {
+const genRow = (): ITableRow => {
   return {
     id: uniqueId(),
     name: '',
@@ -550,7 +552,6 @@ const genRow = () => {
     required: false,
     default: '',
     description: '',
-    isEdit: true,
   };
 };
 
@@ -567,7 +568,7 @@ const genBodyRow = (id?: string) => {
 };
 
 const handleInChange = (row: ITableRow) => {
-  const _row = tableData.value.find(data => data.id === row.id);
+  const _row = tableData.value.find((data: ITableRow) => data.id === row.id);
   if (_row) {
     if (row.in === 'body') {
       _row.name = t('根节点');
@@ -595,7 +596,7 @@ const handleInChange = (row: ITableRow) => {
 };
 
 const handleTypeChange = (row: ITableRow) => {
-  const _row = tableData.value.find(data => data.id === row.id);
+  const _row = tableData.value.find((data: ITableRow) => data.id === row.id);
   if (_row) {
     if (_row.type === 'object' || _row.type === 'array') {
       _row.body = [genBodyRow()];
@@ -630,7 +631,7 @@ const isAddFieldVisible = (row: ITableRow) => {
 };
 
 const addField = (row: ITableRow) => {
-  const bodyRow = tableData.value.find(data => data.id === row.id);
+  const bodyRow = tableData.value.find((data: ITableRow) => data.id === row.id);
   if (bodyRow) {
     if (bodyRow.body) {
       bodyRow.body.push(genBodyRow());
@@ -641,7 +642,8 @@ const addField = (row: ITableRow) => {
   }
 };
 
-const genParameters = () => tableData.value.map(row => genParameterFromRow(row)).filter(item => item);
+const genParameters = () => tableData.value.map((row: ITableRow) =>
+  genParameterFromRow(row)).filter((item: any) => item);
 
 const genParameterFromRow = (row: ITableRow) => {
   if ([
@@ -674,7 +676,7 @@ const genParameterFromRow = (row: ITableRow) => {
 };
 
 const genBody = () => {
-  const bodyRow = tableData.value.find(row => row.in === 'body');
+  const bodyRow = tableData.value.find((row: ITableRow) => row.in === 'body');
   if (bodyRow) {
     const requestBody = {
       description: bodyRow.description,
@@ -715,7 +717,7 @@ const genSchemaFromBodyRow = (row: IBodyRow) => {
       }
       schema.properties = {};
       row.body.forEach((item) => {
-        Object.assign(schema.properties, { [item.name]: genSchemaFromBodyRow(item) });
+        Object.assign(schema.properties!, { [item.name]: genSchemaFromBodyRow(item) });
       });
     }
   }
@@ -747,12 +749,12 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
     };
 
     // 是否已存在 request body 表格行
-    const currentBodyRowIndex = tableData.value.findIndex(item => item.in === 'body');
+    const currentBodyRowIndex = tableData.value.findIndex((item: ITableRow) => item.in === 'body');
     if (currentBodyRowIndex > -1) {
       Object.assign(row, tableData.value[currentBodyRowIndex]);
     }
 
-    const subBody = convertSchemaToBodyRow(schema);
+    const subBody = convertSchemaToBodyRow(schema as unknown as JSONSchema7);
     if (subBody) {
       Object.assign(row, { body: subBody });
     }
@@ -776,7 +778,7 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
 
 const handleConfigChange = (row: ITableRow, config: IConfig) => {
   const { enums } = config;
-  const bodyRow = tableData.value!.find(data => data.id === row.id);
+  const bodyRow = tableData.value!.find((data: ITableRow) => data.id === row.id);
   if (bodyRow) {
     if (enums?.enabled && enums.values?.length) {
       bodyRow.enum = enums.values;
@@ -789,7 +791,7 @@ const handleConfigChange = (row: ITableRow, config: IConfig) => {
 
 const setInvalidRowId = () => {
   invalidRowIdMap.value = {};
-  tableData.value?.forEach((row) => {
+  tableData.value?.forEach((row: ITableRow) => {
     if (!row.name) {
       invalidRowIdMap.value[row.id] = true;
     }

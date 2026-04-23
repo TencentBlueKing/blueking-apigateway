@@ -61,10 +61,12 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
-import { type MavonEditorProps, mavonEditor } from 'mavon-editor';
+import mavonEditor from 'mavon-editor';
 import type { IFormMethod } from '@/types/common';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+
+type MavonEditorProps = any;
 
 const isShow = defineModel('isShow', {
   type: Boolean,
@@ -99,7 +101,7 @@ const route = useRoute();
 const { t } = useI18n();
 
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const markdownRef = ref<InstanceType<typeof mavonEditor> | null>(null);
+const markdownRef = ref<any>(null);
 const submitLoading = ref(false);
 const isSubfield = ref(true);
 const isFullscreen = ref(false);
@@ -137,7 +139,7 @@ const customToolbars: MavonEditorProps['toolbars'] = ({
   redo: true,
 });
 
-const serverId = computed(() => route.params.serverId);
+const serverId = computed(() => Number(route.params.serverId));
 
 const setFormData = ({ content }: { content: string }) => {
   [defaultFormData.value, formData.value] = [cloneDeep({ content }), cloneDeep({ content })];
@@ -147,7 +149,7 @@ watch(() => markdownText, (newVal: string) => {
   setFormData({ content: newVal });
 }, { immediate: true });
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(formData.value));
 };
 
@@ -170,7 +172,7 @@ const handleConfirm = async () => {
       theme: 'success',
     });
     handleCancel();
-    emit('confirm');
+    emit('confirm', formData.value.content ?? '');
   }
   finally {
     submitLoading.value = false;
@@ -192,11 +194,11 @@ const handleCancel = () => {
 
 <style lang="scss" scoped>
 .markdown-guide-editor {
-  margin-left: 40px;
+  height: calc(100vh - 124px);
   margin-right: 24px;
+  margin-left: 40px;
   border: 1px solid #e5e5e5;
   border-radius: 2px;
-  height: calc(100vh - 124px);
 
   :deep(.bk-form-content) {
     height: 100%;
@@ -209,9 +211,10 @@ const handleCancel = () => {
       border-bottom: 1px solid #dcdee5;
 
       .op-icon {
+
         &.selected {
-          background-color: #e1ecff;
           color: #3a84ff;
+          background-color: #e1ecff;
         }
 
          &.fa-mavon-compress {
@@ -221,11 +224,12 @@ const handleCancel = () => {
     }
 
     .v-note-panel {
+
       .divarea-wrapper .content-input-wrapper,
       .auto-textarea-wrapper .auto-textarea-input {
-        background-color: transparent !important;
-        color: #4d4f56 !important;
         font-size: 14px;
+        color: #4d4f56 !important;
+        background-color: transparent !important;
       }
 
       .v-show-content {
@@ -236,6 +240,7 @@ const handleCancel = () => {
   }
 
   &.is-error {
+
     :deep(.markdown-body) {
       height: calc(100% - 22px);
     }

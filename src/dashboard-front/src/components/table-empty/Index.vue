@@ -68,11 +68,11 @@ const {
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  'clear-filter': void
-  'refresh': void
+  'clear-filter': []
+  'refresh': []
 }>();
 
-const exceptionAttrs = computed(() => {
+const exceptionAttrs = computed<any>(() => {
   if (error || ['error'].includes(emptyType)) {
     return {
       type: 500,

@@ -17,9 +17,17 @@
  */
 
 // 环境状态
-import type { IStageListItem } from '@/services/source/stage';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import {
+  getStageDetail,
+  getStageList,
+} from '@/services/source/stage.ts';
 
-export const getStageStatus = (stageData?: IStageListItem | null) => {
+type IStage = IExtractApiReturn<typeof getStageDetail>;
+
+type IStageListItem = IExtractApiReturn<typeof getStageList>[number];
+
+export const getStageStatus = (stageData?: IStage | IStageListItem | null) => {
   if (stageData?.status === 1) {
     return stageData?.release?.status;
   }

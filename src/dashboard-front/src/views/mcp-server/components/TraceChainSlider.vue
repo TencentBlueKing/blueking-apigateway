@@ -85,7 +85,7 @@ const { apiGatewayId, requestId = '' } = defineProps<IProps>();
 const traceStore = useTrace();
 
 const isShow = ref(false);
-const traceData = ref<ITraceDetail>(DEFAULT_TRACE_DATA);
+const traceData = ref<ITraceDetail>(DEFAULT_TRACE_DATA as ITraceDetail);
 
 const detailLoading = computed(() => traceStore.traceLoading);
 
@@ -99,8 +99,8 @@ const getTraceChainDetail = async () => {
 
   try {
     const promiseList = [
-      fetchObservabilityLogInfoByGateway(apiGatewayId, requestId),
-      fetchObservabilityTraceChainByGateway(apiGatewayId, requestId),
+      fetchObservabilityLogInfoByGateway(apiGatewayId as number, requestId, {} as any),
+      fetchObservabilityTraceChainByGateway(apiGatewayId as number, requestId),
     ];
     const results = await Promise.allSettled(promiseList);
 
@@ -140,11 +140,12 @@ const show = () => {
 };
 
 const handleCopy = (value: string) => {
-  let content = value;
+  let content: string = value;
   if (value === 'link') {
-    content = new URL(location.href);
-    content.searchParams.set('request_id', requestId);
-    content.searchParams.set('showTraceChain', 'true');
+    const url = new URL(location.href);
+    url.searchParams.set('request_id', requestId);
+    url.searchParams.set('showTraceChain', 'true');
+    content = url.toString();
   }
   copy(content);
 };

@@ -61,6 +61,7 @@ import { copy } from '@/utils';
 import { getESBSDKDoc } from '@/services/source/docs-esb';
 import { getGatewaySDKDoc } from '@/services/source/sdks';
 import type { TabType } from '../types.d.ts';
+import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
 import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
 import 'highlight.js/styles/github.css';
 
@@ -107,7 +108,7 @@ const initMarkdownHtml = (content: string) => {
   nextTick(() => {
     const markdownDom = document.getElementById('sdk-instruction-markdown');
     // 复制代码
-    markdownDom.querySelectorAll('a')
+    markdownDom?.querySelectorAll('a')
       .forEach((item: any) => {
         item.target = '_blank';
       });
@@ -121,9 +122,10 @@ const initMarkdownHtml = (content: string) => {
         btn.className = 'ag-copy-btn';
         codeBox.className = 'code-box';
         btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
-        btn.setAttribute('data-copy', code);
+        btn.setAttribute('data-copy', code ?? '');
         parentDiv?.appendChild(btn);
-        codeBox?.appendChild(item?.querySelector('code'));
+        const codeEl = item?.querySelector('code');
+        if (codeEl) codeBox?.appendChild(codeEl);
         item?.appendChild(codeBox);
         item?.parentNode?.replaceChild(parentDiv, item);
         parentDiv?.appendChild(item);
@@ -142,15 +144,15 @@ const initMarkdownHtml = (content: string) => {
 
 // 获取SDK 说明
 const getSDKDoc = async () => {
-  const params = { language: language.value };
+  const lang = language.value as IDocsSdksDocReadQuery['language'];
   isLoading.value = true;
   try {
-    if (curTab.value === 'gateway') {
-      const res = await getGatewaySDKDoc(params);
+    if (curTab?.value === 'gateway') {
+      const res = await getGatewaySDKDoc({ language: lang });
       sdkDoc.value = res.content;
     }
     else {
-      const res = await getESBSDKDoc(board.value, params);
+      const res = await getESBSDKDoc(board.value, { language: lang });
       sdkDoc.value = res.content;
     }
     isLoading.value = false;
@@ -184,7 +186,7 @@ const init = async () => {
 
 // 监听 tab 的变化，改变内容时重新渲染
 watch(
-  () => curTab.value,
+  () => curTab?.value,
   () => {
     renderKey.value += 1;
     init();

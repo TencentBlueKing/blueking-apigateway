@@ -25,6 +25,7 @@
 </template>
 
 <script lang="ts" setup>
+// @ts-expect-error echarts/lib/echarts 没有类型声明
 import echarts from 'echarts/lib/echarts';
 import 'echarts/lib/chart/line';
 import 'echarts/lib/component/tooltip';
@@ -49,7 +50,7 @@ const route = useRoute();
 const { t } = useI18n();
 
 const isChartDataLoading = ref(true);
-const system = ref<string | string[]>('');
+const system = ref<string>('');
 const chartInstance = ref();
 
 const gettext = (text: string) => {
@@ -69,9 +70,9 @@ const renderChart = () => {
   // 绘制 系统实时概况 图表
   getApigwChartDetail({
     system: system.value,
-    start: startTime,
-    end: endTime,
-  }).then((result) => {
+    start: startTime as unknown as number,
+    end: endTime as unknown as number,
+  }).then((result: any) => {
     let chart_options = extend(
       default_options,
       getYAxisOptions(true, true, false),
@@ -86,7 +87,7 @@ const renderChart = () => {
       const end_value = chart_options.dataZoom[0].endValue;
       emits('time-change', start_value, end_value);
     });
-    echartStatus.on('legendselectchanged', (params) => {
+    echartStatus.on('legendselectchanged', (params: any) => {
       const is_rate_availability_show = params.selected[gettext(t('可用率'))];
       const is_requests_show = params.selected[gettext(t('请求数'))];
       let is_resp_time_show = params.selected[gettext(t('平均响应时间'))] || params.selected[gettext(t('统计响应时间'))];
@@ -160,17 +161,17 @@ const getDefaultOptions = (start_value: number, end_value: number) => {
         lineStyle: { color: 'red' },
         filterMode: 'filter',
         // 初始的开始和结束位置，根据实际情况调整
-        startValue: parseInt(end_value, 10) - 60 * 60 * 1000,
-        endValue: parseInt(end_value, 10),
+        startValue: parseInt(String(end_value), 10) - 60 * 60 * 1000,
+        endValue: parseInt(String(end_value), 10),
         realtime: false,
       },
     ],
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter(params) {
+      formatter(params: any) {
         const tip_msg: any[] = [];
-        let current_time = null;
+        let current_time: string | null = null;
         each(params, (obj) => {
           if (!obj.value) {
             return;
@@ -301,7 +302,7 @@ const getSeriesOptions = (option: Record<string, any>) => {
 };
 
 onMounted(() => {
-  system.value = route.params?.system;
+  system.value = route.params?.system as string;
   renderChart();
   window.onresize = () => {
     if (chartInstance.value) {

@@ -73,7 +73,7 @@
     <!-- 发布可编程网关的资源至环境 -->
     <ReleaseProgrammable
       ref="releaseProgrammableRef"
-      :current-stage="currentStage"
+      :current-stage="currentStage!"
       @hidden="handleReleaseSuccess"
       @release-success="handleReleaseSuccess"
       @closed-on-publishing="handleSliderHideWhenPending"
@@ -118,8 +118,7 @@ import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.vue';
-
-type GatewayDetailType = Awaited<ReturnType<typeof getGatewayDetail>>;
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
@@ -136,7 +135,7 @@ const gatewayStore = useGateway();
 
 const historyId = ref<number>();
 const deployId = ref<string>();
-const currentStage = ref<IStageListItem | null>(null);
+const currentStage = ref<IStageListItem>();
 
 const releaseStageRef = ref();
 const releaseProgrammableRef = ref();
@@ -144,25 +143,7 @@ const logDetailsRef = ref();
 const programmableEventSliderRef = ref();
 
 // 当前网关基本信息
-const basicInfoData = ref<Partial<GatewayDetailType>>({
-  status: 1,
-  name: '',
-  description: '',
-  description_en: '',
-  public_key_fingerprint: '',
-  bk_app_codes: [],
-  docs_url: '',
-  api_domain: '',
-  created_by: '',
-  created_time: '',
-  public_key: '',
-  maintainers: [],
-  developers: [],
-  is_public: true,
-  is_official: false,
-  related_app_codes: [],
-  kind: 0,
-});
+const basicInfoData = ref<IExtractApiReturn<typeof getGatewayDetail>>();
 
 const stageList = ref<ILocalStageItem[]>([]);
 const stageSidesliderRef = ref();
@@ -194,7 +175,7 @@ async function fetchStageList() {
   const _stageList = response as ILocalStageItem[] || [];
 
   // 获取可编程网关的 stage 详情
-  if (basicInfoData.value.kind === 1) {
+  if (basicInfoData.value?.kind === 1) {
     const tasks: (ReturnType<typeof getProgrammableStageDetail> | Promise<undefined>)[] = [];
 
     for (const stage of _stageList) {
@@ -204,7 +185,7 @@ async function fetchStageList() {
       }
       else {
         tasks.push(Promise.resolve(undefined));
-        const index = loadingProgrammableStageIds.value.findIndex(id => id === stage.id);
+        const index = loadingProgrammableStageIds.value.findIndex((id: number) => id === stage.id);
         if (index !== -1) {
           loadingProgrammableStageIds.value.splice(index, 1);
         }
@@ -222,7 +203,7 @@ async function fetchStageList() {
   isLoading.value = false;
 
   // 所有环境都不是 doing 或 pending 状态时，暂停轮询
-  if (stageList.value.every((stage) => {
+  if (stageList.value.every((stage: ILocalStageItem) => {
     let _status = '';
     if (stage.paasInfo?.latest_deployment?.status) {
       _status = stage?.paasInfo.latest_deployment.status;

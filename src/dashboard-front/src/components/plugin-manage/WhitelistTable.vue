@@ -404,10 +404,10 @@ const rules = reactive<any>({
   ],
 });
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 const sourceEl = ref<any>(null);
@@ -423,7 +423,7 @@ const formattedData = computed(() => {
 
 watch(
   () => keyword.value,
-  (value) => {
+  (value: any) => {
     if (value === '') {
       getTableData();
     }
@@ -486,6 +486,7 @@ const removeResourceScroll = () => {
 const hideToolTips = throttle(() => {
   const tipsEl = document.querySelectorAll('.tippy-popper');
   if (tipsEl.length) {
+    // @ts-ignore
     tipsEl[0].parentNode.removeChild(tipsEl[tipsEl.length - 1]);
   }
 }, 60);
@@ -500,7 +501,7 @@ const handleResourceScroll = async () => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.abnormal;
+  tableEmptyConf.value.isAbnormal = (pagination as any).abnormal;
   if (searchFilters.value?.length || !pagingList.value.length) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -509,7 +510,7 @@ const updateTableEmptyConfig = () => {
     tableEmptyConf.value.emptyType = 'empty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const handleClearFilterKey = () => {
@@ -667,6 +668,7 @@ const handleBindResource = () => {
 // 接口数组转换
 const yamlConvertJson = (yamlStr: any) => {
   const yamlData = yaml2Json(yamlStr).data || { exempted_apps: [] };
+  // @ts-ignore
   const { exempted_apps: list } = yamlData;
   if (list.length) {
     dataList.value = list.map((item: any) => {

@@ -176,10 +176,10 @@ const {
 
 const curSelectData = ref<{ [key: string]: any }>({ grant_type: 'ALL' });
 const tableEmptyConf = ref<{
-  emptyType: string
+  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
   isAbnormal: boolean
 }>({
-  emptyType: '',
+  emptyType: undefined,
   isAbnormal: false,
 });
 
@@ -271,12 +271,12 @@ const handleDel = async (id: number) => {
 };
 
 const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal;
+  tableEmptyConf.value.isAbnormal = pagination.value.abnormal ?? false;
   if (filterData.value.bk_app_code || filterData.value.grant_type) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
   }
-  tableEmptyConf.value.emptyType = '';
+  tableEmptyConf.value.emptyType = undefined;
 };
 
 const refreshTableData = async () => {

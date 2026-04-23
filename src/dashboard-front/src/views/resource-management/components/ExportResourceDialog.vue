@@ -33,7 +33,7 @@
       class="resource-number"
     >
       {{
-        ["all"].includes(exportParams.export_type)
+        ["all"].includes(exportParams.export_type ?? '')
           ? t("已选择全部资源")
           : t("已选择{num}个资源", { num: checkedList.length })
       }}
@@ -96,8 +96,8 @@ interface IProps {
 }
 
 const {
-  dialogConfig = {},
-  dialogParams = {},
+  dialogConfig = {} as IExportDialog,
+  dialogParams = {} as IExportParamsFields,
   selections = [],
 } = defineProps<IProps>();
 
@@ -111,8 +111,8 @@ const { t } = useI18n();
 const slots = useSlots();
 
 const exportDialogConfig = computed<IExportDialog>({
-  get: () => dialogConfig,
-  set: (val) => {
+  get: () => dialogConfig as IExportDialog,
+  set: (val: IExportDialog) => {
     emit('update:dialogConfig', val);
   },
 });
@@ -121,7 +121,7 @@ const checkedList = computed(() => selections);
 
 const exportParams = computed({
   get: () => dialogParams,
-  set: (val) => {
+  set: (val: IExportParamsFields) => {
     emit('update:dialogParams', val);
   },
 });

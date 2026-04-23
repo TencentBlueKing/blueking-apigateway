@@ -60,8 +60,8 @@ interface IProps {
 }
 
 interface IEmits {
-  (e: 'input', value: string): void
-  (e: 'update:value', value: string): void
+  (e: 'input', value: string | number): void
+  (e: 'update:value', value: string | number): void
 }
 
 const {
@@ -77,7 +77,7 @@ const emit = defineEmits<IEmits>();
 
 const currentValue = ref(1);
 
-watch(() => value, (newVal) => {
+watch(() => value, (newVal: any) => {
   if (newVal) {
     currentValue.value = newVal;
   }

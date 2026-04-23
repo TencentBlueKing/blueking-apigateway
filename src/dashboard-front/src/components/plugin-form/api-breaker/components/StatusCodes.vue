@@ -96,7 +96,7 @@ const formRefs = useTemplateRef<InstanceType<typeof Form>[]>('forms');
 const rules = {
   key: [
     {
-      validator: (value: number) => internalValue.value.filter(item => item === value).length <= 1,
+      validator: (value: number) => internalValue.value.filter((item: any) => item === value).length <= 1,
       message: t('状态码已存在'),
       trigger: 'blur',
     },
@@ -105,7 +105,7 @@ const rules = {
 
 watch(
   () => modelValue,
-  (newVal) => {
+  (newVal: any) => {
     if (JSON.stringify(newVal) !== JSON.stringify(internalValue.value)) {
       internalValue.value = newVal.length > 0 ? cloneDeep(newVal) : [];
     }
@@ -116,7 +116,7 @@ watch(
   },
 );
 
-watch(internalValue, (newVal) => {
+watch(internalValue, (newVal: any) => {
   emit('update:modelValue', newVal);
 }, { deep: true });
 
@@ -135,7 +135,7 @@ const validate = async () => {
   if (!formRefs.value) return Promise.resolve(true);
 
   try {
-    await Promise.all(formRefs.value!.map(formRef => formRef.validate()));
+    await Promise.all(formRefs.value!.map((formRef: any) => formRef.validate()));
     return Promise.resolve(true);
   }
   catch (error) {

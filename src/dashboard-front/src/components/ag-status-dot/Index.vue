@@ -35,7 +35,7 @@ interface IProps {
 const { type, text } = defineProps<IProps>();
 
 const bgColor = computed(() => {
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     success: 'bg-#2caf5e shadow-[0_0_0_4px_rgba(34,197,94,0.1)]',
     error: 'bg-#ea3636 shadow-[0_0_0_4px_rgba(239,68,68,0.1)]',
   };

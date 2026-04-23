@@ -16,27 +16,55 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '../http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IDocsGatewaysListResponse,
+  IDocsGatewaysReadResponse,
+  IDocsGatewaysResourcesDocReadResponse,
+  IDocsGatewaysResourcesListResponse,
+  IDocsGatewaysSdksListResponse,
+  IDocsGatewaysSdksUsageExampleReadResponse,
+  IDocsGatewaysStagesListResponse,
+} from '@/services/types/responses/docs.ts';
+import type {
+  IDocsGatewaysListQuery,
+  IDocsGatewaysResourcesDocReadQuery,
+  IDocsGatewaysResourcesListQuery,
+  IDocsGatewaysSdksListQuery,
+  IDocsGatewaysSdksUsageExampleReadQuery,
+  IDocsGatewaysStagesListQuery,
+} from '@/services/types/query/docs.ts';
 
 const path = '/docs/gateways';
 
 // 网关api文档列表
-export const getGatewaysDocs = (data: any) => http.get(`${path}/`, data);
+export const getGatewaysDocs = (data: IDocsGatewaysListQuery = {}) =>
+  http.get<ICountAndResults<IDocsGatewaysListResponse>>(`${path}/`, data);
 
 // 获取网关文档详情
-export const getGatewaysDetailsDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/`, data);
+export const getGatewaysDetailsDocs = (gatewayName: string, data: { source?: string } = {}) =>
+  http.get<IDocsGatewaysReadResponse>(`${path}/${gatewayName}/`, data);
 
 // 获取网关资源的文档
-export const getApigwResourceDocDocs = (gatewayName: string, resourceName: string, data: any) => http.get(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);
+export const getApigwResourceDocDocs = (
+  gatewayName: string,
+  resourceName: string,
+  data: IDocsGatewaysResourcesDocReadQuery,
+) =>
+  http.get<IDocsGatewaysResourcesDocReadResponse>(`${path}/${gatewayName}/resources/${resourceName}/doc/`, data);
 
 // 获取网关 SDK 调用示例
-export const getApigwResourceSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/usage-example/`, data);
+export const getApigwResourceSDKDocs = (gatewayName: string, data: IDocsGatewaysSdksUsageExampleReadQuery) =>
+  http.get<IDocsGatewaysSdksUsageExampleReadResponse>(`${path}/${gatewayName}/sdks/usage-example/`, data);
 
 // 获取网关 SDK 列表
-export const getApigwSDKDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/sdks/`, data);
+export const getApigwSDKDocs = (gatewayName: string, data: IDocsGatewaysSdksListQuery) =>
+  http.get<ICountAndResults<IDocsGatewaysSdksListResponse>>(`${path}/${gatewayName}/sdks/`, data);
 
 // 获取网关环境下已发布的资源列表
-export const getApigwResourcesDocs = (gatewayName: string, data: any) => http.get(`${path}/${gatewayName}/resources/`, data);
+export const getApigwResourcesDocs = (gatewayName: string, data: IDocsGatewaysResourcesListQuery) =>
+  http.get<IDocsGatewaysResourcesListResponse[]>(`${path}/${gatewayName}/resources/`, data);
 
 // 获取网关公开、可用的环境列表
-export const getApigwStagesDocs = (gatewayName: string, data: any) =>
-  http.get(`${path}/${gatewayName}/stages/`, data);
+export const getApigwStagesDocs = (gatewayName: string, data: IDocsGatewaysStagesListQuery = {}) =>
+  http.get<IDocsGatewaysStagesListResponse[]>(`${path}/${gatewayName}/stages/`, data);

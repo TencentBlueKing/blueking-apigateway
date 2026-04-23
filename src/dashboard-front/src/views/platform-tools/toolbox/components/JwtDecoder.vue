@@ -120,7 +120,7 @@ const handleClear = () => {
   decodedPayload.value = {};
 };
 
-const highlightJson = (value) => {
+const highlightJson = (value: any) => {
   return highlightJs.highlight(JSON.stringify(value, null, 4), { language: 'json' }).value;
 };
 

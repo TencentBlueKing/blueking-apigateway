@@ -21,6 +21,18 @@
 *  */
 
 import http from '../http';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IDeployHistoryListOutput,
+  IGetDeployEventsByDeployIdOutput,
+  IGetDeployEventsByHistoryIdOutput,
+  IProgrammableStageDeployOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysReleasesProgrammableDeployHistoriesListQuery,
+  IGatewaysResourceVersionsProgrammableNextDeployVersionReadQuery,
+} from '@/services/types/query/gateways.ts';
+import type { IProgrammableDeployCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
 
 const path = '/gateways';
 
@@ -165,7 +177,10 @@ export interface IGatewayEvent {
   step: number // 步骤
   status: string // 状态
   created_time: string // 创建时间
-  detail: any // 详情
+  // 详情
+  detail: {
+    err_msg?: string
+  }
 }
 
 // 网关事件模板接口
@@ -194,60 +209,30 @@ export interface IEventResponse {
 }
 
 // 发布
-export const deployReleases = (apigwId: number, data: {
-  stage_id: number
-  branch: string
-  commit_id: string
-  version: string
-  comment: string
-}) => http.post(`${path}/${apigwId}/releases/programmable/deploy/`, data, { catchError: true });
+export const deployReleases = (apigwId: number, data: IProgrammableDeployCreateInputSLZ) =>
+  http.post(`${path}/${apigwId}/releases/programmable/deploy/`, data, { catchError: true });
 
 // 获取环境详情
-export const getProgrammableStageDetail = (apigwId: number, stageId: number) => http.get<{
-  branch: string // 分支
-  commit_id: string // 提交ID
-  created_by: string | null // 创建者
-  created_time: string // 创建时间
-  deploy_id: string // 部署ID
-  latest_deployment: {
-    branch: string // 分支
-    commit_id: string // 提交ID
-    deploy_id: string // 部署ID
-    history_id: number // 历史ID
-    status: string // 状态
-    version: string // 版本
-  }
-  repo_info: {
-    branch_commit_info: {
-      [branch: string]: {
-        commit_id: string // 提交ID
-        extra: object // 额外信息
-        last_update: string // 最后更新
-        message: string // 信息
-        type: string // 类型
-      }
-    }
-    branch_list: string[] // 分支列表
-    repo_url: string // 仓库URL
-  }
-  status: string // 状态
-  version: string // 版本
-}>(`${path}/${apigwId}/stages/${stageId}/programmable/`);
+export const getProgrammableStageDetail = (apigwId: number, stageId: number) => http.get<IProgrammableStageDeployOutput>(`${path}/${apigwId}/stages/${stageId}/programmable/`);
 
 // 获取下一个发布版本号
-export const getStageNextVersion = (apigwId: number, params: {
-  stage_name: string // 阶段名称
-  version_type: string // 版本类型
-}) => http.get<{ version: string }>(`${path}/${apigwId}/resource-versions/programmable/next-deploy-version/`, params);
+export const getStageNextVersion = (
+  apigwId: number,
+  params: IGatewaysResourceVersionsProgrammableNextDeployVersionReadQuery,
+) =>
+  http.get<{ version: string }>(`${path}/${apigwId}/resource-versions/programmable/next-deploy-version/`, params);
 
 // 查询部署中的发布事件
 export const getDeployEvents = (apigwId: number, deploy_id: string) =>
-  http.get<IEventResponse>(`${path}/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
+  http.get<IGetDeployEventsByDeployIdOutput>(`${path}/${apigwId}/releases/programmable/deploy/${deploy_id}/histories/events/`);
 
 // 查询已完成部署后的发布事件
 export const getFinishedDeployEvents = (apigwId: number, history_id: number) =>
-  http.get<IEventResponse>(`${path}/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);
+  http.get<IGetDeployEventsByHistoryIdOutput>(`${path}/${apigwId}/releases/programmable/deploy/histories/${history_id}/events/`);
 
 // 查询部署历史
-export const getDeployHistories = (apigwId: number, params: Record<string, any>) =>
-  http.get<IEventResponse>(`${path}/${apigwId}/releases/programmable/deploy/histories/`, params);
+export const getDeployHistories = (
+  apigwId: number,
+  params: IGatewaysReleasesProgrammableDeployHistoriesListQuery = {},
+) =>
+  http.get<ICountAndResults<IDeployHistoryListOutput>>(`${path}/${apigwId}/releases/programmable/deploy/histories/`, params);
