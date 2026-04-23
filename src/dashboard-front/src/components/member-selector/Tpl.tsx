@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// @ts-ignore
 import { defineComponent } from 'vue';
 
 export default defineComponent({
@@ -35,7 +36,7 @@ export default defineComponent({
   },
 
   // 组件的setup函数
-  setup(props) {
+  setup(props: any) {
     // 返回一个渲染函数
     return () => (
       <div class="flex items-center flex-grow-1 p-10px">

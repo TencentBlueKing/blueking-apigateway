@@ -17,11 +17,11 @@
  */
 
 // TDesign表格设置隐藏列
-import type { ShallowRef } from 'vue';
 import type { ITableSettings } from '@/types/common';
 import { isEqual } from 'lodash-es';
 import i18n from '@/locales';
 import router from '@/router';
+import type { ShallowRef } from 'vue';
 
 export function useTableSetting(setting: ShallowRef<ITableSettings>, name?: string) {
   const lang = i18n.global.locale;

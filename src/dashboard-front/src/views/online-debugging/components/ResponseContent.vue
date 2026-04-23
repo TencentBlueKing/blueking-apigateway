@@ -277,7 +277,7 @@ const statusColor = computed(() => {
 
 watch(
   () => tabActive.value,
-  (value) => {
+  (value: string) => {
     if (value !== 'headers') {
       setEditorValue();
     }
@@ -286,7 +286,7 @@ watch(
 
 watch(
   () => res,
-  (value) => {
+  (value: any) => {
     data.value = value || {};
     tabActive.value = 'body';
     setEditorValue(JSON.stringify(value) === '{}');

@@ -16,8 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { onMounted, onUnmounted, ref } from 'vue';
-
 interface OperationLockOptions {
   lockTime?: number // 锁定时间（秒），默认 10 秒
   storageKey?: string // localStorage 存储的 key

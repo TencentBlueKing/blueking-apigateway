@@ -380,7 +380,7 @@
                   theme="primary"
                   :loading="isLoading"
                   :disabled="isLoading"
-                  @click="(e) => handleSend(e, curResource?.name)"
+                  @click="(e: any) => handleSend(e, curResource?.name)"
                 >
                   {{ t('发送') }}
                 </BkButton>
@@ -502,6 +502,7 @@ import {
   resourceSchema,
 } from '@/services/source/online-debugging';
 import AgIcon from '@/components/ag-icon/Index.vue';
+import type { IGatewayRetrieveOutput } from '@/services/types/responses/gateways.ts';
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -518,7 +519,12 @@ const stageList = ref<any[]>([]);
 const resourceList = ref<any>([]);
 const activeName = ref<any>([]);
 const testAppCode = ref(envStore.env.BK_DEFAULT_TEST_APP_CODE || 'bk_apigw_test');
-const curApigw = ref({
+const curApigw = ref<IGatewayRetrieveOutput & {
+  statusBoolean?: boolean
+  statusForFe?: boolean
+  maintainersForFe?: any[]
+  user_auth_type?: string
+}>({
   name: '',
   description: '',
   status: 0,
@@ -528,7 +534,7 @@ const curApigw = ref({
   user_auth_type: '',
   maintainers: [],
   maintainersForFe: [],
-});
+} as any);
 const originResourceGroup = ref<any>({});
 const curComponentName = ref<any>('');
 const curResource = ref<any>({});
@@ -603,7 +609,7 @@ const userCookies = reactive<any>({
 });
 const response = ref<any>({});
 
-const resourceTabs = ref([]);
+const resourceTabs = ref<any[]>([]);
 const autoSelectFirstResource = ref(true);
 const dropdownList = ref([
   {
@@ -841,7 +847,7 @@ const resourceGroupLength = computed(() => {
 
 watch(
   () => keyword.value,
-  (val) => {
+  (val: any) => {
     const keys = Object.keys(resourceGroup.value);
     if (val) {
       activeName.value = keys;
@@ -857,7 +863,7 @@ watch(
 
 watch(
   () => curResource.value,
-  (resource) => {
+  (resource: any) => {
     if (['POST', 'PUT'].includes(resource?.method)) {
       tab.value = 'Body';
     }
@@ -1051,13 +1057,13 @@ const handleShowDoc = (resource: any) => {
   }
 
   // 如果当前已达到最大 tab 数，且点击的是未打开的资源，则提示并不创建新 tab
-  if (!resourceTabs.value.some(tab => tab.id === resource.id) && willExceedMinWidth(1)) {
+  if (!resourceTabs.value.some((tab: any) => tab.id === resource.id) && willExceedMinWidth(1)) {
     showTabLimitMessage();
     return;
   }
 
   // 只在当前 tab 列表中不存在时才添加，避免重复
-  if (!resourceTabs.value.some(tab => tab.id === resource.id)) {
+  if (!resourceTabs.value.some((tab: any) => tab.id === resource.id)) {
     resourceTabs.value.push(resource);
   }
 
@@ -1072,7 +1078,7 @@ const hightlight = (value: string) => {
 };
 
 const getApigwStages = async () => {
-  const pageParams = {
+  const pageParams: Record<string, any> = {
     no_page: true,
     order_by: 'name',
   };
@@ -1130,7 +1136,7 @@ const setUserToken = () => {
   // tokenInputRender.value += 1;
 };
 
-const handleDebuggingCacheData = (resource, save = true) => {
+const handleDebuggingCacheData = (resource: any, save = true) => {
   // 将当前资源的调试数据保存
   if (save) {
     const payload = requestPayloadRef.value?.getData();
@@ -1203,7 +1209,7 @@ const handleDebuggingCacheData = (resource, save = true) => {
   }
 };
 
-const handleResourceSwitch = (resource) => {
+const handleResourceSwitch = (resource: any) => {
   if (resource.id === curResource.value?.id) {
     return;
   }
@@ -1212,8 +1218,8 @@ const handleResourceSwitch = (resource) => {
   activeName.value = [...activeName.value, curGroup.value?.labelName];
 };
 
-const handleCloseTab = (resource) => {
-  const index = resourceTabs.value.findIndex(tab => tab.id === resource.id);
+const handleCloseTab = (resource: any) => {
+  const index = resourceTabs.value.findIndex((tab: any) => tab.id === resource.id);
   if (index === -1) return;
 
   const isCurrent = curResource.value?.id === resource.id;
@@ -1255,7 +1261,7 @@ const handleAddResource = () => {
   }
 
   // 如果新增后会导致每个 tab 宽度低于最小值，则提示并返回
-  if (!resourceTabs.value.some(tab => tab.id === targetResource.id) && willExceedMinWidth(1)) {
+  if (!resourceTabs.value.some((tab: any) => tab.id === targetResource.id) && willExceedMinWidth(1)) {
     showTabLimitMessage();
     selectedResourceId.value = '';
     return;
@@ -1265,7 +1271,7 @@ const handleAddResource = () => {
   handleDebuggingCacheData(targetResource);
 
   // 如果未在 tabs 中，则添加
-  if (!resourceTabs.value.some(tab => tab.id === targetResource.id)) {
+  if (!resourceTabs.value.some((tab: any) => tab.id === targetResource.id)) {
     resourceTabs.value.push(targetResource);
   }
 
@@ -1469,7 +1475,7 @@ const handleRetry = (row: Record<string, any>) => {
     });
     if (match) {
       // 如果当前已达到最大 tab 数，且当前资源未打开，则提示并退出
-      if (!resourceTabs.value.some(tab => tab.id === match.id) && willExceedMinWidth(1)) {
+      if (!resourceTabs.value.some((tab: any) => tab.id === match.id) && willExceedMinWidth(1)) {
         showTabLimitMessage();
         break;
       }
@@ -1480,7 +1486,7 @@ const handleRetry = (row: Record<string, any>) => {
       isLoading.value = false;
 
       // 如果未在 tabs 中，则添加
-      if (!resourceTabs.value.some(tab => tab.id === match.id)) {
+      if (!resourceTabs.value.some((tab: any) => tab.id === match.id)) {
         resourceTabs.value.push(match);
       }
       break;
@@ -1561,11 +1567,11 @@ init();
   }
 
   .resize-aside {
+    display: flex;
     height: 100%;
     padding: 24px 0;
     background: #FFF;
     box-sizing: border-box;
-    display: flex;
     flex-direction: column;
 
     .source-title {
@@ -1621,9 +1627,10 @@ init();
   }
 
   .request-setting-content {
-    padding: 0 22px 20px;
     max-height: 116px;
+    padding: 0 22px 20px;
     transition: all 0.3s ease;
+
     &.anim-hidden {
       max-height: 56px;
     }
@@ -1926,21 +1933,23 @@ init();
   display: flex;
   align-items: center;
   border-bottom: 1px solid #DCDEE5;
+
   .resource-list {
     display: flex;
     align-items: center;
+
     .name {
+      position: relative;
+      display: flex;
       min-width: 100px;
       padding: 10px 24px;
-      box-sizing: border-box;
-      color: #4d4f56;
-      font-size: 14px;
-      position: relative;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
+      margin-left: 0;
       overflow: hidden;
-      margin-left: 0px;
+      font-size: 14px;
+      color: #4d4f56;
+      cursor: pointer;
+      box-sizing: border-box;
+      align-items: center;
 
       .tab-text {
         flex: 1 1 0;
@@ -1952,68 +1961,79 @@ init();
 
       .icon-close {
         position: absolute;
-        display: none;
-        right: 6px;
         top: 6px;
+        right: 6px;
+        display: none;
       }
+
       &:hover {
+
         .icon-close {
           display: block;
-          border-radius: 7px;
           color: #4D4F56;
           background: #D9D9D9;
+          border-radius: 7px;
         }
       }
+
       &::before {
-        content: ' ';
         position: absolute;
+        top: 50%;
+        right: 0;
         width: 1px;
         height: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        right: 0;
         background: #D9D9D9;
+        content: ' ';
+        transform: translateY(-50%);
       }
+
       &.active {
-        background-color: #FFFFFF;
-        color: #3A84FF;
-        border-top: 2px solid #3A84FF;
         margin-bottom: -1px;
-        border-bottom: 1px solid #FFFFFF;
         margin-left: -1px;
+        color: #3A84FF;
+        background-color: #FFF;
+        border-top: 2px solid #3A84FF;
+        border-bottom: 1px solid #FFF;
+
         &:hover {
+
           .icon-close {
             display: block;
             color: #979BA5;
-            background: #FFFFFF;
+            background: #FFF;
           }
         }
+
         &::before {
-          height: 100%;
           top: 0;
+          height: 100%;
           transform: translateY(0);
         }
+
         &::after {
-          content: ' ';
           position: absolute;
-          width: 1px;
-          height: 100%;
           top: 0;
           left: 0;
+          width: 1px;
+          height: 100%;
           background: #D9D9D9;
+          content: ' ';
         }
       }
     }
   }
+
   .tools {
-    margin-left: 6px;
     display: flex;
+    margin-left: 6px;
     align-items: center;
+
     .tool {
       margin: 10px 7px;
       cursor: pointer;
+
       &:hover {
-        background-color: #FFFFFF;
+        background-color: #FFF;
         border-radius: 4px;
       }
     }

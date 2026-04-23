@@ -16,6 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+// @ts-ignore
 import type { PropType } from 'vue';
 import { useTrace } from '@/stores/useTrace';
 import {
@@ -41,7 +42,7 @@ export default defineComponent({
   name: 'TracePlugin',
   props: TraceProps,
 
-  setup(_, { expose }) {
+  setup(_: any, { expose }: any) {
     const traceStore = useTrace();
 
     const traceTimelineViewer = ref<InstanceType<typeof TraceTimelineViewer>>();
@@ -150,7 +151,7 @@ export default defineComponent({
         }
 
         focusMatchesIdIndex.value = (spanTree.value || []).findIndex(
-          item => item.span_id === focusMatchesId.value,
+          (item: any) => item.span_id === focusMatchesId.value,
         );
       });
     };

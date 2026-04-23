@@ -15,7 +15,6 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
-import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePopInfoBox } from '@/hooks';
 // import mitt from '@/common/event-bus';

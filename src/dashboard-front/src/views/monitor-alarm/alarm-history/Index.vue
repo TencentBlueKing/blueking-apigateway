@@ -176,8 +176,16 @@
 import type { ITableMethod } from '@/types/common';
 import { useAccessLog, useGateway } from '@/stores';
 import { useDatePicker } from '@/hooks';
+import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import { type IAlarmRecord, getRecordList, getStrategyList } from '@/services/source/monitor';
+import type { IExtractListApiResults } from '@/services/types/utils';
 import AgTable from '@/components/ag-table/Index.vue';
+
+type IStrategyOptionItem = {
+  id: number
+  value: number
+  label: string
+};
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
@@ -189,11 +197,11 @@ const dateKey = ref('dateKey');
 const curStrategyCount = ref(0);
 const scrollLoading = ref(false);
 const tableData = ref([]);
-const alarmStrategyOption = ref([]);
+const alarmStrategyOption = ref<IStrategyOptionItem[]>([]);
 const initParams = reactive({
   limit: 10,
   offset: 0,
-  order_by: 'name',
+  order_by: 'name' as const,
 });
 let sliderConfig = reactive({
   isShow: false,
@@ -206,7 +214,7 @@ let sliderConfig = reactive({
     status: '',
   },
 });
-const filterData = ref({});
+const filterData = ref<Record<string, any>>({});
 
 const {
   dateValue,
@@ -220,7 +228,7 @@ const {
 } = useDatePicker(filterData);
 
 const apigwId = computed(() => gatewayStore.apigwId);
-const tableColumns = computed(() => ([
+const tableColumns = computed((): any[] => ([
   {
     title: t('告警ID'),
     colKey: 'id',
@@ -241,7 +249,7 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStrategyOption.value,
     },
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       if (row.alarm_strategy_names?.length) {
         return (
           <div class="lh-1">
@@ -253,7 +261,7 @@ const tableColumns = computed(() => ([
               class="strategy-names"
             >
               {
-                row.alarm_strategy_names.map((strategy, index) => {
+                row.alarm_strategy_names!.map((strategy, index) => {
                   if (index < 4) {
                     return (
                       <span class="ag-label">
@@ -261,7 +269,7 @@ const tableColumns = computed(() => ([
                       </span>
                     );
                   }
-                  if (index === row.alarm_strategy_names.length - 1 && index > 3) {
+                  if (index === row.alarm_strategy_names!.length - 1 && index > 3) {
                     return <span class="ag-label">...</span>;
                   }
                 })
@@ -277,7 +285,7 @@ const tableColumns = computed(() => ([
     title: t('告警内容'),
     colKey: 'message',
     ellipsis: true,
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
           { row.message || '--' }
@@ -294,18 +302,18 @@ const tableColumns = computed(() => ([
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: alarmStatus,
     },
-    cell: (h, { row }: { row: Partial<IAlarmRecord> }) => {
+    cell: (_h: any, { row }: { row: Partial<IAlarmRecord> }) => {
       return (
         <span>
           <span class={['m-r-4px', 'ag-outline-dot', row.status]} />
           <span
             v-bk-tooltips={{
               content: row.comment || '--',
-              disabled: !['skipped'].includes(row.status),
+              disabled: !['skipped'].includes(row.status ?? ''),
             }}
             class="status-text"
           >
-            { getAlarmStatusText(row.status) }
+            { getAlarmStatusText(row.status ?? '') }
           </span>
         </span>
       );
@@ -326,7 +334,7 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return results ?? [];
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue | any) => {
   filterData.value = Object.assign(filterData.value, filterItem);
 };
 
@@ -349,7 +357,7 @@ const handlePickSuccess = () => {
 
 // 获取状态name
 const getAlarmStatusText = (status: string) => {
-  const curStatus = alarmStatus.find(item => item.value === status) ?? {};
+  const curStatus = alarmStatus.find((item: any) => item.value === status) ?? {} as any;
   return curStatus.label ?? '--';
 };
 
@@ -357,7 +365,8 @@ const getAlarmStatusText = (status: string) => {
 const getStrategyOption = async () => {
   const { results, count } = await getStrategyList(apigwId.value, initParams);
   curStrategyCount.value = count;
-  alarmStrategyOption.value = results.map(item => ({
+  alarmStrategyOption.value = results.map((item: IExtractListApiResults<typeof getStrategyList>) => ({
+    id: item.id,
     label: item.name,
     value: item.id,
   }));
@@ -371,7 +380,8 @@ const handleScrollEnd = async () => {
   initParams.offset += 10;
   try {
     const { results } = await getStrategyList(apigwId.value, initParams);
-    const addData = results.map(item => ({
+    const addData = results.map((item: IExtractListApiResults<typeof getStrategyList>) => ({
+      id: item.id,
       label: item.name,
       value: item.id,
     }));

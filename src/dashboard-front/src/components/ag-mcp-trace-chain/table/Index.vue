@@ -49,20 +49,17 @@
 import dayjs from 'dayjs';
 import { t } from '@/locales';
 import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import type {
-  IFlowLogTable,
-  ITraceDetail,
-} from '@/services/source/observability';
+import type { ITraceDetail } from '@/services/source/observability';
 import { useTrace } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
-const { traceChainDetail = {} } = defineProps<IProps>();
+const { traceChainDetail = {} as ITraceDetail } = defineProps<IProps>();
 
 const traceStore = useTrace();
 
-let tabKey = -1;
+let tabKey: string | number = -1;
 const logPanels = [
   {
     name: 'proxy_log',
@@ -80,15 +77,15 @@ const logPanels = [
 
 const tableData = computed(() => {
   if (['proxy_log'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter(item => ['http', 'mcp'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['http', 'mcp'].includes(item.layer));
   }
 
   if (['gateway_upstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter(item => ['gateway_upstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['gateway_upstream'].includes(item.layer));
   }
 
   if (['gateway_downstream'].includes(traceStore.logActiveTab)) {
-    return traceChainDetail?.logList?.filter(item => ['gateway_downstream'].includes(item.layer));
+    return traceChainDetail?.logList?.filter((item: any) => ['gateway_downstream'].includes(item.layer));
   }
 
   return traceChainDetail?.logList ?? [];
@@ -100,7 +97,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.timestamp ? <span>{dayjs.unix(row?.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
     },
   },
@@ -108,7 +105,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('服务'),
     colKey: 'service',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.service || '--';
     },
   },
@@ -121,7 +118,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.mcp_method || row?.method;
     },
   },
@@ -130,7 +127,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'path',
     ellipsis: true,
     width: 260,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.http_path || row?.path || row?.operation;
     },
   },
@@ -138,7 +135,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('状态码'),
     colKey: 'status',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       return row?.status || '--';
     },
   },
@@ -146,7 +143,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('耗时'),
     colKey: 'latency',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
+    cell: (_: any, { row }: { row?: any }) => {
       const duration = row?.latency || row?.request_duration;
       if (!duration) {
         return '--';
@@ -167,9 +164,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .trace-chain-log-table {
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px 0 #1919290d;
+  background-color: #fff;
   border-radius: 2px;
+  box-shadow: 0 2px 4px 0 #1919290d;
   box-sizing: border-box;
 
   :deep(.bk-tab) {
@@ -180,8 +177,8 @@ onMounted(() => {
 
       &-item {
         padding: 0;
-        font-size: 14px;
         margin-right: 32px;
+        font-size: 14px;
       }
     }
 

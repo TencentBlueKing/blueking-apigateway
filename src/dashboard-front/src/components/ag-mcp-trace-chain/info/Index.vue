@@ -100,7 +100,7 @@ import AgStatusDot from '@/components/ag-status-dot/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
-const { traceChainDetail = {} } = defineProps<IProps>();
+const { traceChainDetail = {} as ITraceDetail } = defineProps<IProps>();
 
 const isSuccessStatus = computed(() => {
   return traceChainDetail?.status
@@ -110,7 +110,7 @@ const isSuccessStatus = computed(() => {
 
 const renderStatusDot = () => {
   return {
-    type: isSuccessStatus.value ? 'success' : 'error',
+    type: (isSuccessStatus.value ? 'success' : 'error') as 'success' | 'error',
     text: t(isSuccessStatus.value ? '成功' : '失败'),
   };
 };
@@ -119,7 +119,7 @@ const renderLatencyDistribution = () => {
   const latencyDistribution = traceChainDetail?.latency_distribution;
 
   if (latencyDistribution?.length) {
-    return latencyDistribution.map(item => `${item?.latency_ms}ms`)?.join(' - ');
+    return latencyDistribution.map((item: any) => `${item?.latency_ms}ms`)?.join(' - ');
   }
 
   return '0ms';

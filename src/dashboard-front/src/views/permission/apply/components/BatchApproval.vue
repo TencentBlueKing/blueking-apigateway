@@ -108,19 +108,19 @@ interface IProps {
   }
 }
 
-interface Emits {
+interface IEmits {
   (e: 'approved'): void
   (e: 'rejected'): void
   (e: 'update:dialogParams', value: {
     isShow: boolean
     isLoading: boolean
-  })
+  }): void
   (e: 'update:actionParams', value: {
     status: string
     comment?: string
     ids: number[]
     part_resource_ids: Record<string, unknown>
-  })
+  }): void
 }
 
 const {
@@ -137,7 +137,8 @@ const {
   },
   selections = [],
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+
+const emits = defineEmits<IEmits>();
 
 const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const approvalColumns = shallowRef([
@@ -162,14 +163,14 @@ const tableData = computed(() => selections);
 
 const batchApplyDialogConf = computed({
   get: () => dialogParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:dialogParams', params);
   },
 });
 
 const formData = computed({
   get: () => actionParams,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:actionParams', form);
   },
 });

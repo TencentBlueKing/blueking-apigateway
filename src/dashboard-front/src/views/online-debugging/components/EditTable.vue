@@ -322,7 +322,7 @@ const delRow = (index: number) => {
     return;
   }
   const row = tableData.value[index];
-  checkedList.value = checkedList.value.filter(item => item.id !== row.id);
+  checkedList.value = checkedList.value.filter((item: IRowType) => item.id !== row.id);
   tableData.value?.splice(index, 1);
 };
 
@@ -330,7 +330,7 @@ const validate = async () => {
   const list = tableData.value;
   let flag = true;
 
-  list?.forEach(async (item: IRowType) => {
+  list?.forEach((item: IRowType) => {
     if (item?.required) {
       if (!item.name) {
         flag = false;
@@ -362,7 +362,7 @@ const handleSelect = ({ row, checked }: ISelectPayload) => {
   }
   else {
     const { id } = row;
-    checkedList.value = checkedList.value?.filter(item => item.id !== id);
+    checkedList.value = checkedList.value?.filter((item: IRowType) => item.id !== id);
   }
 };
 
@@ -377,7 +377,7 @@ const handleSelectAll = ({ checked, data }: ISelectPayload) => {
 
 watch(
   () => list,
-  (v) => {
+  (v: IRowType[]) => {
     const list: IRowType[] = [];
     v?.forEach((item: any) => {
       list.push({
@@ -444,21 +444,25 @@ defineExpose({
   font-size: 14px;
   color: #C4C6CC;
   cursor: pointer;
+
   &:hover {
     color: #979BA5;
   }
+
   &.add-btn {
     margin-right: 16px;
   }
 }
 
 .edit-input.bk-input {
-  border: none;
   height: 100%;
+  border: none;
+
   &.is-focused:not(.is-readonly) {
     border: 1px solid #3A84FF;
     box-shadow: none;
   }
+
   &:hover {
     border: 1px solid #A3C5FD;
   }
@@ -466,26 +470,34 @@ defineExpose({
 
 .edit-select {
   height: 100%;
+
   :deep(.bk-select-trigger) {
     height: 100%;
   }
+
   :deep(.bk-input) {
-    border: none;
     height: 100%;
-    border-radius: 0px;
+    border: none;
+    border-radius: 0;
+
     .angle-up {
       display: none !important;
     }
+
     &:hover {
       border: 1px solid #A3C5FD;
+
       .angle-up {
         display: inline-flex !important;
       }
     }
   }
+
   &.is-focus {
+
     :deep(.bk-input) {
     border: 1px solid #3A84FF;
+
     .angle-up {
       display: inline-flex !important;
     }
@@ -494,8 +506,9 @@ defineExpose({
 }
 
 .variable-table {
+
   .td-text {
-    //padding: 0 16px;
+    // padding: 0 16px;
   }
 
   :deep(.bk-form-error-tips) {
@@ -504,44 +517,59 @@ defineExpose({
 
   :deep(.bk-form.table-cell-form) {
     line-height: 42px;
+
     .bk-form-item.table-form-item {
       margin-bottom: 0;
+
       .bk-form-content {
         line-height: 42px !important;
+
         .bk-input {
           height: 42px;
           line-height: 42px;
           border: 0;
+
           .bk-input--text {
-            //padding: 0 16px;
+            // padding: 0 16px;
           }
         }
+
         .edit-input.bk-input {
-          border-radius: 0px;
+          border-radius: 0;
+
           &:hover {
             border: 1px solid #A3C5FD;
           }
+
           &.is-focused {
             border: 1px solid #3A84FF;
           }
         }
+
         .bk-select {
+
           &:hover {
+
             .bk-input {
               border: 1px solid #A3C5FD;
             }
           }
+
           &.is-focus {
+
             .bk-input {
               border: 1px solid #3A84FF;
             }
           }
         }
       }
+
       &.is-error {
+
         .bk-form-content {
+
           .bk-input--text {
-            background: #FFEEEE;
+            background: #FEE;
           }
         }
       }
@@ -549,9 +577,12 @@ defineExpose({
   }
 
   :deep(.bk-table-body-content) {
+
     .custom-table-cell {
+
       .cell {
         padding: 0;
+
         &:hover {
           cursor: pointer;
         }
@@ -561,7 +592,7 @@ defineExpose({
 
   :deep(.bk-scrollbar .bk__rail-x) {
     display: none;
-    opacity: 0
+    opacity: 0%
   }
 }
 </style>

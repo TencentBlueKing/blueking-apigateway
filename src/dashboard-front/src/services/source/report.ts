@@ -17,6 +17,15 @@
  */
 
 import http from '../http';
+import type {
+  IMetricSummaryCallerOutput,
+  IMetricSummaryOutput,
+} from '@/services/types/responses/gateways.ts';
+import type {
+  IGatewaysMetricsQuerySummaryCallerListQuery,
+  IGatewaysMetricsQuerySummaryExportListQuery,
+  IGatewaysMetricsQuerySummaryListQuery,
+} from '@/services/types/query/gateways.ts';
 
 const path = '/gateways';
 
@@ -54,23 +63,27 @@ export interface IChartDataLoading {
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportLogs = (apigwId: number, data: any, extraStr?: string) => http.get(`${path}/${apigwId}/logs/export/?${extraStr}`, data, { responseType: 'blob' });
+export const exportLogs = (apigwId: number, data: Record<string, unknown> = {}, extraStr?: string) =>
+  http.get<unknown>(`${path}/${apigwId}/logs/export/?${extraStr}`, data, { responseType: 'blob' });
 
 /**
  *  查询请求总量/失败总量接口
  * @param apigwId 网关id
  */
-export const getReportSummary = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/`, params);
+export const getReportSummary = (apigwId: number, params: IGatewaysMetricsQuerySummaryListQuery) =>
+  http.get<IMetricSummaryOutput>(`${path}/${apigwId}/metrics/query-summary/`, params);
 
 /**
  *  请求总量/失败请求总量导出接口
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportReportSummary = (apigwId: number, data: any) => http.get(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
+export const exportReportSummary = (apigwId: number, data: IGatewaysMetricsQuerySummaryExportListQuery = {}) =>
+  http.get<unknown>(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
 
 /**
  *  查询调用方接口
  * @param apigwId 网关id
  */
-export const getCallers = (apigwId: number, params: any) => http.get(`${path}/${apigwId}/metrics/query-summary/caller/`, params);
+export const getCallers = (apigwId: number, params: IGatewaysMetricsQuerySummaryCallerListQuery) =>
+  http.get<IMetricSummaryCallerOutput>(`${path}/${apigwId}/metrics/query-summary/caller/`, params);

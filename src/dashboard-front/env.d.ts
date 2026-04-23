@@ -10,12 +10,12 @@ declare module '*.css' {
 }
 
 declare module '*.png' {
-  const css: string;
+  const png: string;
   export default png;
 }
 
 declare module '*.js' {
-  const css: string;
+  const js: string;
   export default js;
 }
 
@@ -29,7 +29,12 @@ declare module '@blueking/login-modal' {
 
 declare module '@blueking/release-note';
 
-declare module '@blueking/xss-filter';
+declare module '@blueking/xss-filter' {
+  export const BkXssFilterDirective: any;
+  export default function xssFilter(str: string): string;
+}
+
+declare module 'mavon-editor';
 
 declare interface Window {
   BKANALYSIS?: { init: (params: { siteName: string }) => void }
@@ -38,8 +43,11 @@ declare interface Window {
   BK_STATIC_URL: string
 }
 
-declare global {
-  var BK_DASHBOARD_URL: string;
-  var BK_SITE_PATH: string;
-  var BK_STATIC_URL: string;
-}
+// eslint-disable-next-line
+declare var BK_DASHBOARD_URL: string;
+// eslint-disable-next-line
+declare var BK_SITE_PATH: string;
+// eslint-disable-next-line
+declare var BK_STATIC_URL: string;
+
+type CustomDirective = import('vue').Directive<HTMLElement, any>;

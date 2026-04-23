@@ -54,8 +54,8 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 interface IEmits {
   'clear-filter': [void]
   'refresh-request': [void]
-  'update-date': { dateValue: string[] }
-};
+  'update-date': [{ dateValue: string[] }]
+}
 
 // 空数据配置
 const chartEmptyConf = defineModel('chartEmptyConf', {
@@ -76,7 +76,7 @@ const emit = defineEmits<IEmits>();
 
 const { getChartIntervalOption } = useChartIntervalOption();
 
-const chartBoxRef = ref<HTMLDivElement>(null);
+const chartBoxRef = ref<HTMLDivElement | null>(null);
 // ECharts 实例
 const chartInstance = ref<echarts.ECharts | null>(null);
 // 图表数据（series + timeline）
@@ -121,13 +121,13 @@ const handleChartResize = debounce(() => {
 }, 200);
 
 // echart监听区域拖拽
-const handleDataZoom = debounce((e: echarts.EChartEvent) => {
+const handleDataZoom = debounce((e: any) => {
   const { start, end } = e ?? {};
 
   // 无值直接返回
   if (start === undefined || end === undefined) return;
 
-  const xAxisOption = chartInstance.value?.getOption().xAxis?.[0];
+  const xAxisOption = (chartInstance.value?.getOption() as any).xAxis?.[0];
   if (!xAxisOption || !xAxisOption.data) return;
 
   const xData = xAxisOption.data;
@@ -176,7 +176,7 @@ const renderChart = async (data: {
     chartInstance.value?.setOption({
       series: [],
       xAxis: { data: [] },
-    }, true);
+    } as any, true);
     return;
   }
 
@@ -288,7 +288,7 @@ const renderChart = async (data: {
         },
         padding: [8, 8],
         extraCssText: 'box-shadow: 0 0 10px 0 #31323826;',
-        formatter: (params: echarts.DefaultLabelFormatterParams) => {
+        formatter: (params: any) => {
           try {
             const { name = '', value = 0, color } = params ?? {};
             const num = Number(value);
@@ -316,7 +316,7 @@ const renderChart = async (data: {
     };
 
     // 间隔配置
-    const timeDuration = timeline.at(-1)! - timeline[0]!;
+    const timeDuration = timeline[timeline.length - 1]! - timeline[0]!;
     const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
 
     const finalOption = merge({}, baseOption, intervalOption);
@@ -396,7 +396,7 @@ const initChart = async () => {
   }
 };
 
-const setChartData = (data) => {
+const setChartData = (data: any) => {
   renderChart(data);
 };
 
@@ -434,10 +434,10 @@ defineExpose({
   box-sizing: border-box;
 
   .chart-box {
+    position: relative;
     width: 100%;
     height: 160px;
-    background: #ffffff;
-    position: relative;
+    background: #fff;
 
     .chart-el {
       width: 100%;

@@ -259,7 +259,7 @@ const varRules = {
 
 watch(
   () => stage,
-  (stage) => {
+  (stage: IStageListItem) => {
     if (stage) {
       getData();
     }

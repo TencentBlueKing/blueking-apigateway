@@ -157,7 +157,10 @@ export function getTenantUsers(
   tenant_id: string,
 ) {
   const envStore = useEnv();
-  return http.get(
+  return http.get<{
+    bk_username: string
+    display_name: string
+  }[]>(
     `${envStore.env.BK_USER_WEB_API_URL}/api/v3/open-web/tenant/users/-/search/`,
     params,
     { headers: { 'X-Bk-Tenant-Id': tenant_id || 'default' } },
@@ -167,7 +170,12 @@ export function getTenantUsers(
 /**
  * 获取版本日志
  */
-export const getVersionLog = () => http.get('/version-log/');
+export const getVersionLog = () =>
+  http.get<Array<{
+    content: string
+    date: string
+    version: string
+  }>>('/version-log/');
 
 /**
  * 将国际化语言设置保存到用户管理中

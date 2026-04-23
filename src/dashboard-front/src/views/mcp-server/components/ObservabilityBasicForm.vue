@@ -113,7 +113,7 @@
       >
         <BkButton
           theme="primary"
-          @click="() => handleSearch(searchParams.query)"
+          @click="() => handleSearch(searchParams.query ?? '')"
         >
           {{ t('查询') }}
         </BkButton>
@@ -175,9 +175,12 @@ interface IProps {
   mode: string
 }
 
-interface IEmits { request: [void] };
+interface IEmits { request: [void] }
 
-const searchParams = defineModel<IObservabilityBasicForm>('searchParams', { type: Object });
+const searchParams = defineModel<IObservabilityBasicForm>('searchParams', {
+  type: Object,
+  default: () => ({}),
+});
 const includeQuery = defineModel('includeQuery', {
   type: Array,
   default: () => [],
@@ -191,7 +194,7 @@ const { apiGatewayId, mode } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
-const queryHistory = useStorage('observability-flow-log-query-history', []);
+const queryHistory = useStorage<string[]>('observability-flow-log-query-history', []);
 const accessLogStore = useAccessLog();
 
 const datePickerRef = ref<InstanceType<typeof DatePicker>>();
@@ -206,8 +209,8 @@ const defaultPagination = ref({
 });
 const mcpServerPagination = ref(cloneDeep(defaultPagination.value));
 
-const mcpServerList = shallowRef([]);
-const appCodeList = shallowRef([]);
+const mcpServerList = shallowRef<any[]>([]);
+const appCodeList = shallowRef<any[]>([]);
 
 const {
   dateValue,
@@ -222,12 +225,12 @@ const {
 // 获取检索项
 const searchConditions = computed(() => {
   const results: string[] = [];
-  includeQuery.value?.forEach((item: string) => {
-    const tempArr = item?.split(':');
+  includeQuery.value?.forEach((item: any) => {
+    const tempArr = (item as string)?.split(':');
     results.push(`${tempArr[0]}=${tempArr[1]}`);
   });
-  excludeQuery.value?.forEach((item: string) => {
-    const tempArr = item?.split(':');
+  excludeQuery.value?.forEach((item: any) => {
+    const tempArr = (item as string)?.split(':');
     results.push(`${tempArr[0]}!=${tempArr[1]}`);
   });
   return results;
@@ -241,7 +244,7 @@ const fetchMcpServerList = async () => {
   if (hasNoMore) {
     scrollLoading.value = false;
     return;
-  };
+  }
 
   try {
     const params = {
@@ -249,9 +252,9 @@ const fetchMcpServerList = async () => {
       offset: limit * (current - 1),
       keyword: mcpServerName.value,
     };
-    const res = await getServers(apiGatewayId, filterSimpleEmpty(params));
+    const res = await getServers(apiGatewayId as number, filterSimpleEmpty(params));
     const { results = [], count = 0 } = res ?? {};
-    mcpServerList.value = current === 1 ? results : [...mcpServerList.value, ...results];
+    mcpServerList.value = current === 1 ? results as any : [...mcpServerList.value, ...results as any];
     mcpServerPagination.value = {
       ...mcpServerPagination.value,
       count,
@@ -271,7 +274,7 @@ const fetchMcpServerList = async () => {
 // 获取AppCode列表
 const fetchMcpAppCodeList = async () => {
   try {
-    const res = await fetchObservabilityAppCode(apiGatewayId);
+    const res = await fetchObservabilityAppCode(apiGatewayId as number);
     appCodeList.value = res?.bk_app_codes ?? [];
   }
   catch {
@@ -279,7 +282,7 @@ const fetchMcpAppCodeList = async () => {
   }
 };
 
-const formatDatetime = (timeRange: number[]) => {
+const formatDatetime = (timeRange: any[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
 };
 
@@ -290,10 +293,10 @@ const handleSearchTimeRange = () => {
   if (shortcutSelectedIndex.value !== -1) {
     timeRange = accessLogStore.datepickerShortcuts[shortcutSelectedIndex.value].value();
   }
-  const formatTimeRange = formatDatetime(timeRange);
-  searchParams.value = Object.assign(searchParams.value, {
-    time_start: formatTimeRange?.at(0),
-    time_end: formatTimeRange?.at(1),
+  const formatTimeRange = formatDatetime(timeRange) as any;
+  searchParams.value = Object.assign(searchParams.value ?? {}, {
+    time_start: formatTimeRange?.[0],
+    time_end: formatTimeRange?.[1],
   });
 };
 
@@ -384,14 +387,14 @@ const handleTagClose = (tag: string) => {
 };
 
 const handleClearFilter = () => {
-  searchParams.value = Object.assign(searchParams.value, {
+  searchParams.value = Object.assign(searchParams.value ?? {}, {
     query: '',
     request_id: '',
     mcp_server_name: '',
     app_code: '',
     status: 'all',
   });
-  [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[0]];
+  (datePickerRef.value as any).shortcut = accessLogStore.datepickerShortcuts[0];
   dateValue.value = [];
   includeQuery.value = [];
   excludeQuery.value = [];
@@ -401,7 +404,7 @@ const handleClearFilter = () => {
 };
 
 // 请求数组件图表调用的同步更新数据
-const syncDateFromChart = (dateInfo) => {
+const syncDateFromChart = (dateInfo: any) => {
   if (dateInfo?.dateValue?.length) {
     shortcutSelectedIndex.value = -1;
     dateValue.value = dateInfo.dateValue;
@@ -409,7 +412,7 @@ const syncDateFromChart = (dateInfo) => {
   else {
     dateValue.value = [];
     shortcutSelectedIndex.value = 0;
-    [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[0]];
+    (datePickerRef.value as any).shortcut = accessLogStore.datepickerShortcuts[0];
   }
   dateKey.value = String(+new Date());
 
@@ -433,12 +436,12 @@ defineExpose({
   box-sizing: border-box;
 
   .collapse-panel-form {
-    width: 100%;
     display: flex;
+    width: 100%;
+    box-sizing: border-box;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 16px;
-    box-sizing: border-box;
 
     .bk-form-item {
       flex: 1;
@@ -478,12 +481,12 @@ defineExpose({
 
     .title {
       font-size: 12px;
-      color: #000000;
+      color: #000;
     }
 
     :deep(.search-term-tag) {
-      background-color: #eae8f0;
       color: #4d4f56;
+      background-color: #eae8f0;
 
       .include-equal,
       .exclude-equal {

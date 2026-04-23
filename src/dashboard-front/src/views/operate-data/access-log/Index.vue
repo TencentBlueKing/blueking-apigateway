@@ -373,9 +373,16 @@ import ResourceSearcher from '@/views/operate-data/dashboard/components/Resource
 import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import AiChatSlider from '@/components/ai-seek/AiChatSlider.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import AgTable from '@/components/ag-table/Index.vue';
+import type {
+  IExtractApiReturn,
+  IExtractListApiResults,
+} from '@/services/types/utils.ts';
+import type { EChartsType } from 'echarts';
+
+type IStageItem = IExtractApiReturn<typeof fetchApigwStages>[number];
+type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
 
 const { t } = useI18n();
 const { getChartIntervalOption } = useChartIntervalOption();
@@ -388,9 +395,9 @@ const queryHistory = useStorage('access-log-query-history', []);
 
 const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
-const chartInstance = ref(null);
-const chartContainer = ref(null);
-const datePickerRef = ref(null);
+const chartInstance = ref<EChartsType | null>(null);
+const chartContainer = ref<HTMLDivElement | null>(null);
+const datePickerRef = ref<any>(null);
 const isPageLoading = ref(false);
 const isDataLoading = ref(false);
 const isShareLoading = ref(false);
@@ -406,13 +413,20 @@ const searchParams = ref<ISearchParamsInterface>({
   query: '',
   backend_name: '',
 });
-const tableEmptyConf = ref({
+const tableEmptyConf = ref<{
+  keyword?: string
+  emptyType: string
+  isAbnormal: boolean
+}>({
   emptyType: '',
   isAbnormal: false,
 });
 
-const tableData = ref([]);
-const expandedFields = ref([]);
+const tableData = ref<any[]>([]);
+const expandedFields = ref<{
+  label: string
+  field: string
+}[]>([]);
 const pageCount = ref<number>(0);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const settings = shallowRef({
@@ -517,14 +531,14 @@ const settings = shallowRef({
       field: 'response_desc',
     },
   ],
-});
+}) as any;
 
 const includeObj = ref<string[]>([]);
 const excludeObj = ref<string[]>([]);
 
 const chartData: Record<string, any> = ref({});
-const stageList = ref([]);
-const backendList = ref([]);
+const stageList = ref<IStageItem[]>([]);
+const backendList = ref<IBackendItem[]>([]);
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
@@ -568,7 +582,7 @@ const formatValue = (value: any, field: string) => {
   return value || '--';
 };
 
-const formatDatetime = (timeRange: number[]) => {
+const formatDatetime = (timeRange: (number | string | Date)[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
 };
 
@@ -656,7 +670,7 @@ const renderChart = (data: Record<string, any>) => {
   const timeDuration = timeline[timeline.length - 1] - timeline[0];
   const intervalOption = getChartIntervalOption(timeDuration, 'time', 'xAxis');
   nextTick(() => {
-    chartInstance.value.setOption(merge(options, intervalOption));
+    chartInstance.value?.setOption(merge(options, intervalOption));
   });
   chartInstance.value?.dispatchAction({
     type: 'takeGlobalCursor',
@@ -667,12 +681,12 @@ const renderChart = (data: Record<string, any>) => {
 };
 
 const getResources = async () => {
-  const pageParams = {
+  const pageParams: Parameters<typeof getApigwResources>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
     limit: 10000,
-    backend_id: backend_id.value,
+    backend_id: (backend_id.value || undefined) as number | undefined,
   };
 
   try {
@@ -685,7 +699,7 @@ const getResources = async () => {
   }
 };
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any[]>([
   {
     title: t('请求ID'),
     colKey: 'request_id',
@@ -697,7 +711,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 180,
-    cell: (h, { row }: { row: Record<string, any> }) => {
+    cell: (h: any, { row }: { row: Record<string, any> }) => {
       return formatValue(row.timestamp, 'timestamp');
     },
   },
@@ -826,7 +840,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'error',
     ellipsis: true,
     width: 120,
-    cell: (h, { row }: { row: Record<string, any> }) => {
+    cell: (h: any, { row }: { row: Record<string, any> }) => {
       return row.error || '--';
     },
   },
@@ -843,10 +857,7 @@ const handleResourceChange = () => {
 };
 
 const getApigwStages = async () => {
-  const pageParams = {
-    no_page: true,
-    order_by: 'name',
-  };
+  const pageParams: Parameters<typeof fetchApigwStages>[1] = {};
   const res = await fetchApigwStages(apigwId.value, pageParams);
   stageList.value = res || [];
   if (stageList.value.length) {
@@ -1079,8 +1090,8 @@ const handleSearch = (value: string) => {
   searchParams.value.query = keyword.value;
   // 若是非空字符串则写入搜索历史
   if (trim(value) !== '') {
-    queryHistory.value.unshift(value);
-    queryHistory.value = uniq(queryHistory.value).slice(0, 10);
+    (queryHistory.value as unknown as string[]).unshift(value);
+    queryHistory.value = uniq(queryHistory.value as unknown as string[]).slice(0, 10) as any;
   }
   getSearchData();
 };
@@ -1097,7 +1108,7 @@ const handleClearFilterKey = () => {
   backend_id.value = '';
   searchParams.value.backend_name = '';
   searchParams.value.resource_id = '';
-  [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
+  [datePickerRef.value!.shortcut] = [accessLogStore.datepickerShortcuts[1]];
   dateValue.value = [];
   shortcutSelectedIndex.value = 1;
   dateKey.value = String(+new Date());
@@ -1123,7 +1134,7 @@ const getRowClass = ({ row }: { row: Record<string, any> }) => {
 
 const chartResize = () => {
   nextTick(() => {
-    chartInstance.value.resize();
+    chartInstance.value?.resize();
   });
 };
 
@@ -1138,23 +1149,18 @@ const initChart = async () => {
   chartInstance.value = markRaw(echarts.init(chartContainer.value));
   window.addEventListener('resize', chartResize);
 
-  chartInstance.value.on('datazoom', (event: {
-    batch: {
-      startValue: number
-      endValue: number
-    }[]
-  }) => {
+  chartInstance.value?.on('datazoom', (event: any) => {
     const { startValue, endValue } = event.batch[0];
 
     // 获取x轴缩放后的数据范围
-    const zoomedXAxisData = chartInstance.value.getOption().xAxis[0].data.slice(startValue, endValue + 1);
+    const zoomedXAxisData = (chartInstance.value?.getOption() as any).xAxis[0].data.slice(startValue, endValue + 1);
     const startTime = zoomedXAxisData[0];
     const endTime = zoomedXAxisData[zoomedXAxisData.length - 1];
 
     if (startTime === endTime) {
       dateValue.value = [];
       shortcutSelectedIndex.value = 1;
-      [datePickerRef.value.shortcut] = [accessLogStore.datepickerShortcuts[1]];
+      [datePickerRef.value!.shortcut] = [accessLogStore.datepickerShortcuts[1]];
     }
     else {
       shortcutSelectedIndex.value = -1;
@@ -1168,7 +1174,10 @@ const initChart = async () => {
 
 const handleAIChatClick = (row: any) => {
   const res: Record<string, any> = {};
-  expandedFields.value.forEach(({ label, field }) => {
+  expandedFields.value.forEach(({ label, field }: {
+    label: string
+    field: string
+  }) => {
     res[`${label}(${field})`] = row[field] || '--';
   });
   try {

@@ -94,7 +94,7 @@
         >
           <template v-if="localData.api_labels?.length">
             <BkTag
-              v-for="tag in labels?.filter((label) =>
+              v-for="tag in labels?.filter((label: any) =>
                 localData.api_labels?.includes(label.id) || localData.api_labels?.includes(String(label.id)))"
               :key="tag.id"
               class="ag-value mb-4px ml-4px"

@@ -59,8 +59,8 @@ const formData = defineModel('modelValue', {
 });
 
 const {
-  schema = {},
-  componentMap = {},
+  schema = {} as ISchema,
+  componentMap = {} as Record<string, any>,
   disabled = false,
 } = defineProps<IProps>();
 
@@ -77,7 +77,7 @@ const formRules = computed(() => ({
   remove: [
     {
       required: true,
-      message: schema?.properties?.set?.['ui:rules']?.[0]?.message,
+      message: (schema?.properties?.set as any)?.['ui:rules']?.[0]?.message,
       trigger: 'change',
       validator: () => {
         const isExistSet = formData.value.set?.length > 0;
@@ -95,7 +95,7 @@ const getValue = () => {
   return cloneDeep(formData.value);
 };
 
-const handleAddItem = (row) => {
+const handleAddItem = (row: any) => {
   const typeMap = {
     set: () => {
       formData.value[row.name]?.push({
@@ -107,18 +107,20 @@ const handleAddItem = (row) => {
       formData.value[row.name]?.push({ key: '' });
     },
   };
+  // @ts-ignore
   return typeMap[row?.name]?.();
 };
 
-const handleRemoveItem = (row) => {
+const handleRemoveItem = (row: any) => {
   const { field, index } = row;
   formData.value[field.name]?.splice(index, 1);
 };
 
 const validate = async (): Promise<boolean> => {
   try {
-    const isValid = await formRef.value?.validate();
+    const isValid = await (formRef.value as any)?.validate();
     if (!isValid) {
+      // @ts-ignore
       return;
     }
     return isValid;
@@ -134,7 +136,7 @@ const clearValidate = () => {
 
 watch(
   () => formData.value,
-  (newVal) => {
+  (newVal: any) => {
     clearValidate();
     if (isObject(newVal) && isEmpty(newVal)) {
       formData.value = { ...DEFAULT_FORM_DATA };

@@ -121,7 +121,7 @@ const option = {
 watch(
   () => data,
   () => {
-    option.series![0].data = data;
+    (option.series![0] as any).data = data;
     renderChart();
   },
   { deep: true },

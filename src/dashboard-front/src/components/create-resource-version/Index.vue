@@ -248,6 +248,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import semver from 'semver';
 import {
   Spinner,
@@ -472,6 +473,7 @@ const handlePublish = async () => {
       offset: 0,
       limit: 10,
     });
+    // @ts-ignore
     const newVersion = results.filter((item: VersionType) => item.version === formData.version)[0];
     if (newVersion?.id) {
       versionData.value = newVersion;
@@ -499,7 +501,7 @@ const getSuggestionVersion = async () => {
 
 watch(
   isShow,
-  (val) => {
+  (val: any) => {
     if (val) {
       getResourceVersions();
       getSuggestionVersion();

@@ -38,7 +38,7 @@
   <!-- 调用历史 -->
   <RequestRecord
     ref="requestRecordRef"
-    @retry="(row) => emit('retry', row)"
+    @retry="(row: any) => emit('retry', row)"
   />
 </template>
 
@@ -49,10 +49,10 @@ import RequestRecord from '@/views/online-debugging/components/RequestRecord.vue
 const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const stage = useStage();
-const requestRecordRef = ref(null);
+const requestRecordRef = ref<InstanceType<typeof RequestRecord> | null>(null);
 
 const showHistory = () => {
-  requestRecordRef.value?.show();
+  (requestRecordRef.value as any)?.show();
 };
 </script>
 

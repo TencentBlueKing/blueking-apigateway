@@ -47,7 +47,7 @@ import AgMcpTraceChainTable from '@/components/ag-mcp-trace-chain/table/Index.vu
 
 interface IProps { traceChainDetail?: ITraceDetail }
 
-const { traceChainDetail = {} } = defineProps<IProps>();
+const { traceChainDetail = {} as ITraceDetail } = defineProps<IProps>();
 
 </script>
 

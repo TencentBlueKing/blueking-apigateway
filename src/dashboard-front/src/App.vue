@@ -31,7 +31,7 @@
       />
       <BkNavigation
         class="navigation-content"
-        :class="[`${route.name}-navigation-content`]"
+        :class="[`${String(route.name)}-navigation-content`]"
         navigation-type="top-bottom"
         :need-menu="false"
         default-open
@@ -88,13 +88,9 @@ import LanguageToggle from '@/components/language-toggle/Index.vue';
 import ProductInfo from '@/components/product-info/Index.vue';
 import UserInfo from '@/components/user-info/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
-// @ts-expect-error missing module type
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
-// @ts-expect-error missing module type
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
-// @ts-expect-error missing module type
 import NoticeComponent from '@blueking/notice-component';
-
 import {
   useEnv,
   useFeatureFlag,
@@ -225,7 +221,7 @@ watch(
     if (platform.indexOf('win') === 0) {
       systemCls.value = 'win';
     }
-    gateway.setApigwId(apigwId.value);
+    gateway.setApigwId(Number(apigwId.value));
     // 需要在不同页面实时查询以下接口最新状态
     fetchInitData();
   },

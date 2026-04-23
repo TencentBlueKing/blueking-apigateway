@@ -161,7 +161,7 @@ const getResourceVersions = async () => {
     limit: 1000,
   };
   const res = await getVersionList(apigwId.value, query);
-  versionOpts.value = res.results;
+  versionOpts.value = res.results as unknown as IVersionItem[];
 };
 
 watch(
@@ -198,7 +198,7 @@ const handleCreate = async () => {
     await baseInfoRef.value?.validate();
     dialogConfig.loading = true;
 
-    await createSDK(apigwId.value, formData);
+    await createSDK(apigwId.value, formData as any);
 
     Message({
       message: t('创建成功'),

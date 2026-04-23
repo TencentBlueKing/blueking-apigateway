@@ -77,7 +77,7 @@
         <template #content>
           <Component
             :is="flowLogFormCompMap[collapse.name as keyof typeof flowLogFormCompMap]"
-            :ref="(el: HTMLElement | null) => setComponentRef(el, collapse.name)"
+            :ref="(el: any) => setComponentRef(el, collapse.name)"
             v-model:page-count="pageCount"
             v-model:search-params="searchParams"
             v-model:include-query="includeQuery"
@@ -170,8 +170,8 @@ const getSearchParams = () => {
     delete params.status;
   }
 
-  const includeStr = includeQuery.value?.map(item => `include=${item}`).join('&') || '';
-  const excludeStr = excludeQuery.value?.map(item => `exclude=${item}`).join('&') || '';
+  const includeStr = includeQuery.value?.map((item: any) => `include=${item}`).join('&') || '';
+  const excludeStr = excludeQuery.value?.map((item: any) => `exclude=${item}`).join('&') || '';
 
   const path = [includeStr, excludeStr].filter(Boolean).join('&');
 
@@ -198,7 +198,7 @@ const getObservabilityLogChart = async () => {
 
     chartEmptyConf.value.emptyType = 'searchEmpty';
 
-    const res = await fetchObservabilityLogChart(apigwId.value, params, path);
+    const res = await fetchObservabilityLogChart(apigwId.value, params as any, path);
 
     if (!res || res?.series?.length === 0) {
       chartEmptyConf.value = {
@@ -308,14 +308,14 @@ const handleDownload = async (e: MouseEvent) => {
       limit: 10000,
     });
 
-    await fetchExportFlowLog(apigwId.value, queryParams, path);
+    await fetchExportFlowLog(apigwId.value, queryParams as any, path);
 
     Message({
       message: t('导出成功'),
       theme: 'success',
     });
   }
-  catch (err: Error) {
+  catch (err: any) {
     Message({
       message: err?.message || t('导出失败'),
       theme: 'error',
@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
 
   .collapse-panel {
     margin: 24px;
-    background-color: #ffffff;
+    background-color: #fff;
     box-sizing: border-box;
 
     &-header {

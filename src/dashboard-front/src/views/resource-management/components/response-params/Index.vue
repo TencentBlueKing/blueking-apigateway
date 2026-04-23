@@ -28,7 +28,7 @@
         :readonly="readonly"
         :response="response"
         @delete="() => handleDelete(response)"
-        @change-code="(code) => response.code = code"
+        @change-code="(code: any) => response.code = code"
       />
     </div>
     <div v-if="!readonly">
@@ -106,8 +106,8 @@ watch(() => detail, () => {
 const addResponse = () => {
   // 响应码查重，如果存在了，就递增
   let code = '200';
-  if (responseList.value.length && responseList.value.some(item => item.code === code)) {
-    code = Number(last(responseList.value)!.code) + 1 + '';
+  if (responseList.value.length && responseList.value.some((item: any) => item.code === code)) {
+    code = Number((last(responseList.value) as any)!.code) + 1 + '';
   }
 
   responseList.value.push({
@@ -128,17 +128,17 @@ const addResponse = () => {
                   type: 'string',
                   description: '',
                 },
-              },
+              } as any,
             },
           },
         },
       },
-    },
+    } as any,
   });
 };
 
 const handleDelete = (response: IResponse) => {
-  responseList.value = responseList.value.filter(item => item.id !== response.id);
+  responseList.value = responseList.value.filter((item: any) => item.id !== response.id);
 };
 
 defineExpose({

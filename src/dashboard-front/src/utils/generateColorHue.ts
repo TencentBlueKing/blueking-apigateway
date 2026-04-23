@@ -19,9 +19,9 @@
 /**
  * 实现类似CSS filter:hue-rotate色调旋转生成颜色
  */
-export function getColorHue(rgb, degree) {
+export function getColorHue(rgb: string, degree: number) {
   // exepcts a string and returns an object
-  function rgbToHSL(rgb) {
+  function rgbToHSL(rgb: string) {
     // strip the leading # if it's there
     rgb = rgb.replace(/^\s*#|\s*$/g, '');
 
@@ -117,7 +117,7 @@ export function getColorHue(rgb, degree) {
     return rgbToHex(r, g, b);
   }
 
-  function normalizeRgbValue(color, m) {
+  function normalizeRgbValue(color: number, m: number) {
     color = Math.floor((color + m) * 255);
     if (color < 0) {
       color = 0;
@@ -125,7 +125,7 @@ export function getColorHue(rgb, degree) {
     return color;
   }
 
-  function rgbToHex(r, g, b) {
+  function rgbToHex(r: number, g: number, b: number) {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   }
 

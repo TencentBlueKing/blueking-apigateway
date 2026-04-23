@@ -75,7 +75,7 @@
         :clearable="false"
         :filterable="false"
         :popover-options="{
-          width: ['auto'].includes(searchParams.step) ? 'auto' : undefined,
+          width: ['auto'].includes(searchParams.step ?? '') ? 'auto' : undefined,
         }"
         @toggle="handleStepToggle"
         @change="handleStepChange"
@@ -145,8 +145,8 @@ const handleStepToggle = (isVisible: boolean) => {
 const handleResetForm = () => {
   interval.value = 'off';
   searchParams.value.step = 'auto';
-  handleRefreshTimeChange();
-  handleStepChange();
+  handleRefreshTimeChange('off');
+  handleStepChange('auto');
 };
 
 defineExpose({ handleResetForm });
@@ -158,29 +158,29 @@ defineExpose({ handleResetForm });
   align-items: center;
 
   .refresh-time-trigger {
+    display: flex;
+    cursor: pointer;
     border: 1px solid #c4c6cc;
     border-radius: 2px;
-    display: flex;
     align-items: center;
-    cursor: pointer;
 
     .label {
-      min-width: 26px;
       height: 26px;
+      min-width: 26px;
+      font-size: 14px;
       line-height: 26px;
+      color: #737987;
       text-align: center;
       border-right: 1px solid #c4c6cc;
-      font-size: 14px;
-      color: #737987;
     }
 
     .value {
       display: flex;
+      height: 26px;
+      line-height: 26px;
+      cursor: pointer;
       align-items: center;
       justify-content: space-between;
-      line-height: 26px;
-      height: 26px;
-      cursor: pointer;
 
       :deep(.bk-input) {
         display: flex;
@@ -188,8 +188,8 @@ defineExpose({ handleResetForm });
       }
 
       :deep(.apigateway-select-icon) {
-        color: #979ba5;
         font-size: 20px !important;
+        color: #979ba5;
         transition: transform .3s;
 
         &.is-open {

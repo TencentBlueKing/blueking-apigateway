@@ -116,13 +116,13 @@ type IDialogParams = {
 interface IProps {
   applyCount?: number
   expireDate: number
-  selections: IPermission
+  selections: IPermission[]
   dialogParams?: IDialogParams
 }
 
-interface Emits {
-  (e: 'update:expireDate', value: number)
-  (e: 'update:dialogParams', value: IDialogParams)
+interface IEmits {
+  (e: 'update:expireDate', value: number): void
+  (e: 'update:dialogParams', value: IDialogParams): void
   (e: 'confirm'): void
 }
 
@@ -131,11 +131,12 @@ const expireDays = defineModel('expireDate', {
   required: true,
   default: 0,
 });
-const curSelections = defineModel('selections', {
-  type: Array,
+
+const curSelections = defineModel<IPermission[]>('selections', {
   required: true,
-  default: [],
+  default: () => [],
 });
+
 const {
   applyCount = 0,
   dialogParams = {
@@ -144,13 +145,14 @@ const {
     isShow: false,
   },
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+
+const emits = defineEmits<IEmits>();
 
 const permissionStore = usePermission();
 
 const renewalDialogConfig = computed({
   get: () => dialogParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:dialogParams', params);
   },
 });
@@ -165,7 +167,3 @@ const handleApplyDialogClose = () => {
 };
 
 </script>
-
-<style lang="scss" scoped>
-
-</style>

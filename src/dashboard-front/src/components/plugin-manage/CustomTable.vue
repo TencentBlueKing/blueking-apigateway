@@ -41,6 +41,7 @@ interface IProps {
 const { columns, data } = defineProps<IProps>();
 
 const renderValue = (row: IBaseTableRow, col: IColumn) => {
+  // @ts-ignore
   const rowField = row[col.field]?.valueRender?.({ row }) || row[col.field];
   if (['boolean', 'number'].includes(typeof rowField)) {
     return String(rowField);

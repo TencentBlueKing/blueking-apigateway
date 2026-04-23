@@ -165,7 +165,7 @@
                             <div class="ag-value tags">
                               <template v-if="resource.gateway_label_ids?.length">
                                 <BkTag
-                                  v-for="tag in labels?.filter((label) => {
+                                  v-for="tag in labels?.filter((label: any) => {
                                     if (resource.gateway_label_ids?.includes(label.id))
                                       return true;
                                   })"
@@ -457,11 +457,14 @@
 <script lang="ts" setup>
 import { getGatewayLabels } from '@/services/source/gateway.ts';
 import { getVersionDetail } from '@/services/source/resource.ts';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { getMethodsTheme } from '@/utils';
 import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vue';
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
+
+type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
 interface IProps {
   id: number | undefined
@@ -482,7 +485,7 @@ const displayedResources = shallowRef<any[]>([]);
 const rawResources = shallowRef<any[]>([]);
 
 // 网关标签
-const labels = ref<any[]>([]);
+const labels = ref<IGatewayLabelItem[]>([]);
 
 const exceptionType = ref('empty');
 const exceptionDesc = ref(t('暂无数据'));
@@ -510,8 +513,8 @@ useScroll(resourceCollapseWrapper, {
       topPanel = panelEls.reverse().find(el => el.getBoundingClientRect().top < 0);
     }
     if (topPanel) {
-      const id = topPanel.dataset.id;
-      const topResource = displayedResources.value.find(item => item.id === Number(id));
+      const id = (topPanel as HTMLElement).dataset.id;
+      const topResource = displayedResources.value.find((item: any) => item.id === Number(id));
       if (topResource) {
         currentSource.value = topResource;
         const listItem = document.querySelector(`.sideslider-lf-li[data-resource-id="${id}"]`);
@@ -662,9 +665,9 @@ getLabels();
 const changeCurrentSource = (source: any) => {
   currentSource.value = source;
 
-  const renderedResource = displayedResources.value.find(item => item.id === source.id);
+  const renderedResource = displayedResources.value.find((item: any) => item.id === source.id);
   if (!renderedResource) {
-    const targetResource = rawResources.value.find(item => item.id === source.id);
+    const targetResource = rawResources.value.find((item: any) => item.id === source.id);
     displayedResources.value.push(targetResource);
   }
 

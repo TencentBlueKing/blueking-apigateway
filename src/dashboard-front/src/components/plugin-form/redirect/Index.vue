@@ -86,6 +86,6 @@ watch(() => data, () => {
   deep: true,
 });
 
-defineExpose({ getValue: () => formRef.value.validate().then(() => form.value) });
+defineExpose({ getValue: () => (formRef.value as any)?.validate().then(() => form.value) });
 
 </script>

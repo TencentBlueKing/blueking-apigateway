@@ -63,7 +63,7 @@ const modelField = defineModel('modelValue', {
 });
 
 const {
-  schema = {},
+  schema = {} as ISchema,
   selectedSchema = null,
 } = defineProps<IProps>();
 
@@ -85,7 +85,7 @@ const renderAllKeys = computed(() => {
 });
 
 const renderRequired = computed(() => {
-  return renderAllKeys.value.some(key => schemaOption.value?.required?.includes(key));
+  return renderAllKeys.value.some((key: any) => schemaOption.value?.required?.includes(key));
 });
 
 const renderFormItem = computed(() => {
@@ -95,19 +95,19 @@ const renderFormItem = computed(() => {
     return schema?.oneOf;
   }
   if (isObjectProperties) {
-    return Object.values(schemaOption.value?.properties);
+    return Object.values(schemaOption.value?.properties ?? {});
   }
   return [];
 });
 
-const renderFields = (row) => {
+const renderFields = (row: any) => {
   if (isObject(row?.items?.properties)) {
     return Object.values(row?.items?.properties);
   }
   return row?.properties;
 };
 
-const renderShowForm = (row) => {
+const renderShowForm = (row: any) => {
   return !selectedSchema || isEqual(schemaOption.value, row);
 };
 

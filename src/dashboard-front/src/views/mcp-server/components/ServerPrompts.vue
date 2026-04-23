@@ -155,7 +155,7 @@ const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 
 const mcpPromptRef = ref<HTMLDivElement | null>(null);
-const curPromptData = ref<IMCPServerPrompt>({});
+const curPromptData = ref<IMCPServerPrompt>({} as IMCPServerPrompt);
 const promptCollapseMargin = ref('mt-16px');
 const promptDetailLoading = ref(false);
 
@@ -168,9 +168,9 @@ const setPageMaxH = computed(() => {
   return `calc(100vh - ${offsetH}px)`;
 });
 const promptList = computed<IMCPServerPrompt[]>(() => {
-  const results = server?.prompts ?? [];
+  const results = (server?.prompts ?? []) as IMCPServerPrompt[];
   if (results.length) {
-    curPromptData.value = results?.[0];
+    curPromptData.value = results?.[0] as IMCPServerPrompt;
     emit('update-count', results.length);
   }
   return results;

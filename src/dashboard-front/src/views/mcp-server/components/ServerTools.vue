@@ -313,7 +313,7 @@ const md = new MarkdownIt({
   },
 });
 
-const descriptionRef = ref<InstanceType<typeof AgDescription | null>>(null);
+const descriptionRef = ref<InstanceType<typeof AgDescription> | null>(null);
 const toolList = ref<IMCPServerTool[]>([]);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel
@@ -327,17 +327,17 @@ const toolCollapseMargin = ref('');
 
 const filteredToolList = computed(() => {
   const regex = new RegExp(keyword.value, 'i');
-  return toolList.value.filter((tool) => {
+  return toolList.value.filter((tool: any) => {
     const searchName = tool.tool_name || tool.name;
     return regex.test(searchName) || regex.test(tool.description);
   });
 });
 // tool 分类列表
 const toolGroupList = computed(() => {
-  return filteredToolList.value?.reduce((groupList, tool) => {
+  return filteredToolList.value?.reduce((groupList: any, tool: any) => {
     if (tool.labels[0]) {
       const { id, name } = tool.labels[0];
-      const group = groupList.find(item => item.id === id);
+      const group = groupList.find((item: any) => item.id === id);
       if (group) {
         group.toolList.push(tool);
       }
@@ -350,7 +350,7 @@ const toolGroupList = computed(() => {
       }
     }
     else {
-      const group = groupList.find(item => item.id === 0);
+      const group = groupList.find((item: any) => item.id === 0);
       if (group) {
         group.toolList.push(tool);
       }
@@ -367,7 +367,7 @@ const toolGroupList = computed(() => {
   }, [] as {
     id: number
     name: string
-    toolList: typeof toolList.value
+    toolList: any[]
   }[]);
 });
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
@@ -386,7 +386,7 @@ watch(() => [server?.id, server?.name], () => {
 
 // 分类列表变化时更新 collapse 展开状态
 watch(toolGroupList, () => {
-  activeGroupPanelNames.value = toolGroupList.value.map(item => item.name);
+  activeGroupPanelNames.value = toolGroupList.value.map((item: any) => item.name);
 });
 
 watch(selectedToolMarkdownHtml, () => {
@@ -414,7 +414,7 @@ const fetchToolList = async () => {
       selectedToolName.value = route.query.tool_name as string;
     }
     if (selectedToolName.value) {
-      selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
+      selectedTool.value = toolList.value.find((tool: any) => tool.name === selectedToolName.value) ?? null;
     }
     else {
       selectedTool.value = toolList.value[0] ?? null;
@@ -435,7 +435,7 @@ const handleToolClick = async (resId: number, toolName: string) => {
   try {
     isLoading.value = true;
     selectedToolName.value = toolName;
-    selectedTool.value = toolList.value.find(tool => tool.name === selectedToolName.value) ?? null;
+    selectedTool.value = toolList.value.find((tool: any) => tool.name === selectedToolName.value) ?? null;
     if (selectedTool.value) {
       await getDoc();
     }
@@ -460,10 +460,10 @@ const getDoc = async () => {
 
     let res: any = {};
     if (page === 'market') {
-      res = await getMcpServerToolDoc(server.id, selectedTool.value.name);
+      res = await getMcpServerToolDoc(server.id, selectedTool.value!.name);
     }
     else {
-      res = await getServerToolDoc(gatewayId.value, server.id, selectedTool.value.name);
+      res = await getServerToolDoc(gatewayId.value, server.id, selectedTool.value!.name);
     }
 
     const { content, updated_time, schema } = res;
@@ -492,9 +492,9 @@ const initMarkdownHtml = (box: string) => {
       btn.className = 'ag-copy-btn';
       codeBox.className = 'code-box';
       btn.innerHTML = '<span title="复制"><i class="apigateway-icon icon-ag-copy-info"></i></span>';
-      btn.setAttribute('data-copy', code);
+      btn.setAttribute('data-copy', code!);
       parentDiv?.appendChild(btn);
-      codeBox?.appendChild(item?.querySelector('code'));
+      codeBox?.appendChild(item?.querySelector('code') as Node);
       item?.appendChild(codeBox);
       item?.parentNode?.replaceChild(parentDiv, item);
       parentDiv?.appendChild(item);
@@ -526,9 +526,9 @@ const handleNavDocDetail = () => {
     name: 'ApiDocDetail',
     params: {
       curTab: 'gateway',
-      targetName: gatewayStore?.currentGateway?.name || server?.gateway?.name || '',
+      targetName: gatewayStore?.currentGateway?.name || (server as any)?.gateway?.name || '',
     },
-    query: { apiName: selectedTool.value.name },
+    query: { apiName: selectedTool.value!.name },
   });
   window.open(routeData.href, '_blank');
 };
@@ -546,8 +546,8 @@ const handleToolCollapseChange = (isCollapse: boolean) => {
 const handleToolMouseenter = (e: MouseEvent, row: IMCPServerTool) => {
   const cell = (e.target as HTMLElement).closest('.truncate');
   if (cell) {
-    row.isOverflow = cell.scrollWidth > cell.offsetWidth;
-  };
+    row.isOverflow = (cell as HTMLElement).scrollWidth > (cell as HTMLElement).offsetWidth;
+  }
 };
 
 const handleToolMouseleave = (row: IMCPServerTool) => {
@@ -574,9 +574,9 @@ $code-color: #63656e;
 
   .left-aside-wrap {
     width: auto;
-    min-width: 230px;
     height: 100%;
-    background-color: #ffffff;
+    min-width: 230px;
+    background-color: #fff;
     border-radius: 2px;
 
     .left-aside-header {
@@ -691,13 +691,13 @@ $code-color: #63656e;
 
   .main-content-wrap {
     overflow-y: auto;
-    background-color: #ffffff;
+    background-color: #fff;
 
     .tool-name,
     .tool-basics,
     .tool-detail-content {
       margin: 24px;
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 2px;
     }
 
@@ -727,11 +727,11 @@ $code-color: #63656e;
 
       .basic-cell {
         display: flex;
-        align-items: center;
         padding: 0 12px;
-        line-height: 20px;
         font-size: 12px;
+        line-height: 20px;
         color: #63656e;
+        align-items: center;
 
         .label {
           color: #979ba5;

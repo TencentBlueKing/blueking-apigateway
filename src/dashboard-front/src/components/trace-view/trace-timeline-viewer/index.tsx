@@ -74,7 +74,7 @@ export default defineComponent({
 
     /** 默认展开三层 其他的先收起 */
     const setDefaultExpandSpan = () => {
-      const childrenHiddenIDs = spans.value.reduce((res, s) => {
+      const childrenHiddenIDs = spans.value.reduce((res: any, s: any) => {
         if (s.depth > 1) {
           res.add(s.span_id);
         }
@@ -101,7 +101,7 @@ export default defineComponent({
       if (shouldDisableCollapse(spans.value, childrenHiddenIds.value)) {
         return;
       }
-      const childrenHiddenIDs = spans.value.reduce((res, s) => {
+      const childrenHiddenIDs = spans.value.reduce((res: any, s: any) => {
         if (s.hasChildren) {
           res.add(s.span_id);
         }
@@ -115,7 +115,7 @@ export default defineComponent({
         return;
       }
       let nearestCollapsedAncestor: ISpan | undefined;
-      const childrenHiddenIDs = spans.value.reduce((res, curSpan) => {
+      const childrenHiddenIDs = spans.value.reduce((res: any, curSpan: any) => {
         if (nearestCollapsedAncestor && curSpan.depth <= nearestCollapsedAncestor.depth) {
           res.add(nearestCollapsedAncestor.span_id);
           if (curSpan.hasChildren) {
@@ -140,7 +140,7 @@ export default defineComponent({
       }
       let prevExpandedDepth = -1;
       let expandNextHiddenSpan = true;
-      const childrenHiddenIDs = spans.value.reduce((res, s) => {
+      const childrenHiddenIDs = spans.value.reduce((res: any, s: any) => {
         if (s.depth <= prevExpandedDepth) {
           expandNextHiddenSpan = true;
         }

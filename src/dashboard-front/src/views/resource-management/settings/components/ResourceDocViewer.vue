@@ -226,6 +226,7 @@ import {
   saveResourceDocs,
   updateResourceDocs,
 } from '@/services/source/resource';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import {
   useFeatureFlag,
   useStage,
@@ -240,6 +241,8 @@ import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
 import { getAICompletion } from '@/services/source/ai.ts';
 import hljs from 'highlight.js';
 import MarkdownIt from 'markdown-it';
+
+type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
 
 interface IProps {
   curResource?: Record<string, any>
@@ -286,7 +289,7 @@ const isEmpty = ref(false);
 const isUpdate = ref(false);
 const markdownDoc = ref('');
 const markdownHtml = ref('');
-const docData = ref<any[]>([]);
+const docData = ref<IDocItem[]>([]);
 const isEdited = ref(false); // 是否是编辑
 const language = ref('zh');
 const isSaving = ref(false);
@@ -387,7 +390,7 @@ const handleEditMarkdown = (type: string) => {
   isUpdate.value = type === 'edit'; // 是否是更新
   emit('on-update', 'update', isUpdate.value);
   const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
-  markdownDoc.value = docDataItem.content;
+  markdownDoc.value = docDataItem!.content ?? '';
   controlToggle();
 };
 
@@ -414,11 +417,11 @@ const initData = async () => {
       doc_language: language.value,
     };
 
-    const res = await getResourceDocPreview(gatewayId.value, params);
+    const res = await getResourceDocPreview(gatewayId.value, params as any);
     docData.value.push({
-      id: null,
+      id: null as any,
       language: language.value,
-      content: res.doc,
+      content: (res as any).doc,
     });
   }
   // 根据语言找到是否有文档内容
@@ -493,10 +496,10 @@ const handleSelectLanguage = (payload: string) => {
 const handleDocDataWithLanguage = () => {
   if (!isPreview) {
     const docDataItem = cloneDeep(docData.value).find((e: any) => e.language === language.value);
-    docId.value = docDataItem.id;
-    isEmpty.value = !docDataItem.id;
-    markdownDoc.value = docDataItem.content;
-    renderHljsMd(docDataItem.content);
+    docId.value = docDataItem!.id;
+    isEmpty.value = !docDataItem!.id;
+    markdownDoc.value = docDataItem!.content ?? '';
+    renderHljsMd(docDataItem!.content ?? '');
   }
   else {
     // 预览资源文档会走到这里
@@ -560,8 +563,8 @@ const handleTranslateClick = async () => {
               language: targetLanguage,
             },
           });
-          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id;
-          await updateResourceDocs(gatewayId.value, curResource.id, {
+          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id!;
+          await updateResourceDocs(gatewayId.value, curResource.id!, {
             language: targetLanguage,
             content: response.content,
           }, docId);
@@ -586,7 +589,7 @@ const controlToggle = () => {
   const el = document.querySelector(`.${docRootClass}-btn`);
   const bottomDistance = el?.getBoundingClientRect()?.bottom;
   // 是否吸附
-  if (bottomDistance > window?.innerHeight) {
+  if (bottomDistance !== undefined && bottomDistance > window?.innerHeight) {
     isAdsorb.value = true;
     el?.classList?.add('is-pinned');
   }
@@ -620,8 +623,8 @@ const destroyEvent = () => {
 
 const escHandler = (e: KeyboardEvent) => {
   if (e.code === 'Escape') {
-    if (markdownRef.value?.s_fullScreen) {
-      markdownRef.value.s_fullScreen = false;
+    if ((markdownRef.value as any)?.s_fullScreen) {
+      (markdownRef.value as any).s_fullScreen = false;
     }
   }
 };

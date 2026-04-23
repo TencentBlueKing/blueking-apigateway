@@ -210,7 +210,7 @@
         >
           <BkTableColumn
             :label="t('环境名称')"
-            :rowspan="({ row }) => row.rowSpan"
+            :rowspan="({ row }: any) => row.rowSpan"
           >
             <template #default="{ data }">
               {{ data.stage?.name }}
@@ -257,6 +257,10 @@ import { backendsPathCheck } from '@/services/source/resource.ts';
 // import mitt from '@/common/event-bus';
 import AddBackendService from '@/views/backend-services/components/AddBackendService.vue';
 import { HTTP_METHODS } from '@/constants';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import type { IBackendListOutput } from '@/services/types/responses/gateways.ts';
+
+type IBackendConfig = IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number];
 
 interface IProps {
   detail?: any
@@ -296,11 +300,11 @@ const baseInfo = ref({
   description: '',
 });
 // 服务列表下拉框数据
-const servicesData = ref([]);
+const servicesData = ref<IBackendListOutput[]>([]);
 // 服务详情
-const servicesConfigs = ref([]);
+const servicesConfigs = ref<IBackendConfig[]>([]);
 // 服务详情缓存数据
-const servicesConfigsStorage = ref([]);
+const servicesConfigsStorage = ref<IBackendConfig[]>([]);
 // 校验列表
 const servicesCheckData = ref<{
   stage: {
@@ -400,7 +404,7 @@ const handleRefreshTime = () => {
 const handleShowPopover = () => {
   isShowPopConfirm.value = true;
   isTimeEmpty.value = false;
-  servicesConfigs.value.forEach((item) => {
+  servicesConfigs.value.forEach((item: any) => {
     item.isEditTime = false;
   });
 };
@@ -410,7 +414,7 @@ const handleConfirmTime = () => {
     isTimeEmpty.value = true;
     return;
   }
-  servicesConfigs.value.forEach((item: Record<string, string | boolean>) => {
+  servicesConfigs.value.forEach((item: any) => {
     item.isCustom = true;
     item.timeout = timeOutValue.value;
   });
@@ -556,7 +560,7 @@ const editService = () => {
       description: service.description,
     };
 
-    addBackendServiceRef.value?.show();
+    (addBackendServiceRef.value as any)?.show();
   }
 };
 
@@ -655,7 +659,7 @@ const init = async () => {
   servicesData.value = res.results;
   // 检查传进来的资源的 backend 有没有 id，没有的话用 name 匹配一下以正确获取服务数据
   if (!detail?.backend?.id) {
-    const backendId = servicesData.value.find(s => s.name === detail?.backend?.name)?.id;
+    const backendId = servicesData.value.find((s: any) => s.name === detail?.backend?.name)?.id;
     if (backendId) {
       backConfigData.value.id = backendId;
       await handleServiceChange(backendId);

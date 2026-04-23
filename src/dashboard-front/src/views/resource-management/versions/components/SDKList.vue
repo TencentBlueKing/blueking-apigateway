@@ -106,7 +106,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('资源版本'),
     colKey: 'resource_version',
     ellipsis: true,
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <bk-button
         text
         theme="primary"
@@ -123,7 +123,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('创建人'),
     colKey: 'created_by',
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <div>
         {
           !featureFlagStore.isEnableDisplayName
@@ -157,7 +157,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('操作'),
     colKey: 'operate',
     width: 160,
-    cell: (h, { row }) => {
+    cell: (h: any, { row }: any) => {
       return (
         <div class="flex gap-10px">
           <bk-button

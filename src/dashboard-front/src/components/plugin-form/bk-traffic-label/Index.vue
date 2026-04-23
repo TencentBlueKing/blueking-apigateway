@@ -84,7 +84,7 @@
                 v-if="readonly"
                 class="readonly-value-wrapper"
               >
-                {{ argOnList.find(item => item.value === row.operator)?.label || '--' }}
+                {{ argOnList.find((item: any) => item.value === row.operator)?.label || '--' }}
               </div>
               <BkSelect
                 v-else
@@ -125,7 +125,7 @@
                 v-if="readonly"
                 class="readonly-value-wrapper"
               >
-                {{ operatorList.find(item => item.value === row.operator)?.label || '--' }}
+                {{ operatorList.find((item: any) => item.value === row.operator)?.label || '--' }}
               </div>
               <BkSelect
                 v-else
@@ -331,7 +331,7 @@ const formRules = {
       trigger: 'change',
     },
     {
-      validator: () => form.value.match.every(item => item.name && item.operator && item.value),
+      validator: () => form.value.match.every((item: any) => item.name && item.operator && item.value),
       message: t('bk-traffic-label.每条 match 的每一项都需要填写'),
       trigger: 'blur',
     },
@@ -348,6 +348,7 @@ const formRules = {
 const actionFormRules = {
   weight: [
     {
+      // @ts-ignore
       validator: () => sumBy(form.value.actions, item => Number(item.weight)) == 100,
       message: t('bk-traffic-label.weight 总和不等于 100'),
       trigger: 'blur',
@@ -433,7 +434,7 @@ watch(() => data, () => {
     if (data.rules[0].match?.length) {
       const match = data.rules[0].match;
       matchRelation.value = typeof match[0] === 'string' ? match[0] : 'AND';
-      form.value.match = match.filter(item => typeof item !== 'string').map((item) => {
+      form.value.match = match.filter((item: any) => typeof item !== 'string').map((item: any) => {
         const [argOnAndName, operator, value] = item;
         const { arg_on, name } = parseArgOnAndName(argOnAndName);
         return {
@@ -448,7 +449,7 @@ watch(() => data, () => {
 
     if (data.rules[0].actions?.length) {
       const actions = data.rules[0].actions;
-      form.value.actions = actions.map(item => ({
+      form.value.actions = actions.map((item: any) => ({
         key: Object.keys(item.set_headers!)[0],
         value: item.set_headers![Object.keys(item.set_headers!)[0]],
         weight: item.weight || 1,
@@ -462,7 +463,7 @@ watch(() => data, () => {
 });
 
 const addMatchRow = (row: IFormModel['match'][number]) => {
-  const index = form.value.match.findIndex(item => item.id === row.id);
+  const index = form.value.match.findIndex((item: any) => item.id === row.id);
   form.value.match.splice(index + 1, 0, {
     arg_on: 'header',
     name: '',
@@ -473,14 +474,14 @@ const addMatchRow = (row: IFormModel['match'][number]) => {
 };
 
 const removeMatchRow = (row: IFormModel['match'][number]) => {
-  const index = form.value.match.findIndex(item => item.id === row.id);
+  const index = form.value.match.findIndex((item: any) => item.id === row.id);
   if (index !== -1) {
     form.value.match.splice(index, 1);
   }
 };
 
 const addActionRow = (action: IFormModel['actions'][number]) => {
-  const index = form.value.actions.findIndex(item => item.id === action.id);
+  const index = form.value.actions.findIndex((item: any) => item.id === action.id);
   form.value.actions.splice(index + 1, 0, {
     key: '',
     value: '',
@@ -490,7 +491,7 @@ const addActionRow = (action: IFormModel['actions'][number]) => {
 };
 
 const removeActionRow = (action: IFormModel['actions'][number]) => {
-  const index = form.value.actions.findIndex(item => item.id === action.id);
+  const index = form.value.actions.findIndex((item: any) => item.id === action.id);
   if (index !== -1) {
     form.value.actions.splice(index, 1);
   }
@@ -498,7 +499,7 @@ const removeActionRow = (action: IFormModel['actions'][number]) => {
 
 const handleWeightInput = () => {
   if (Array.isArray(actionFormRefs.value)) {
-    actionFormRefs.value.forEach((item) => {
+    actionFormRefs.value.forEach((item: any) => {
       item.validate('weight');
     });
   }
@@ -510,12 +511,12 @@ const handleWeightInput = () => {
 const genRules = () => {
   formRef.value.validate();
   const finalRule: IRules = {
-    match: form.value.match.map(item => [
+    match: form.value.match.map((item: any) => [
       item.arg_on === 'built_in' ? item.name : `${item.arg_on}_${item.name}`,
       item.operator,
       item.value,
     ]),
-    actions: form.value.actions.map(item => ({
+    actions: form.value.actions.map((item: any) => ({
       set_headers: { [item.key]: item.value },
       weight: item.weight,
     })),

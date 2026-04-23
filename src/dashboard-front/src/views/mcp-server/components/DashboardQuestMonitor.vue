@@ -276,7 +276,7 @@ const handleReportInit = () => {
   emit('request');
 };
 
-watch(() => searchParams.value.step, () => {
+watch(() => searchParams.value?.step, () => {
   emit('request');
 });
 
@@ -288,6 +288,7 @@ defineExpose({ syncParamsToCharts });
   box-sizing: border-box;
 
   // 指标卡片行
+
   .metrics-cards {
     display: flex;
     flex-wrap: wrap;
@@ -295,13 +296,13 @@ defineExpose({ syncParamsToCharts });
     margin-bottom: 16px;
 
     .metrics-card {
-      flex: 1;
       display: flex;
+      background-color: #fff;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 0 #1919290d;
+      flex: 1;
       align-items: center;
       justify-content: center;
-      border-radius: 2px;
-      background-color: #ffffff;
-      box-shadow: 0 2px 4px 0 #1919290d;
 
       .metrics-card-content {
         width: 100%;
@@ -309,8 +310,8 @@ defineExpose({ syncParamsToCharts });
         text-align: center;
 
         .title {
-          font-size: 13px;
           margin-bottom: 24px;
+          font-size: 13px;
         }
 
         .number {
@@ -319,15 +320,15 @@ defineExpose({ syncParamsToCharts });
       }
 
       &.requests-total-card {
-        min-width: 200px;
         width: fit-content;
+        min-width: 200px;
         padding: 8px 24px;
         flex: none;
 
         .requests-total-number {
+          display: inline-block;
           width: 100%;
           max-width: 100%;
-          display: inline-block;
           word-break: break-all;
         }
       }
@@ -335,6 +336,7 @@ defineExpose({ syncParamsToCharts });
   }
 
   // 图表行容器
+
   .chart-row {
     display: flex;
     gap: 16px;
@@ -342,10 +344,11 @@ defineExpose({ syncParamsToCharts });
     flex-wrap: wrap;
 
     // 图表卡片
+
     .chart-card {
       flex: 1;
       min-width: 300px;
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 2px;
       box-shadow: 0 2px 4px 0 #1919290d;
       box-sizing: border-box;
@@ -353,10 +356,11 @@ defineExpose({ syncParamsToCharts });
   }
 
   // 全屏容器样式
+
   .full-line {
     padding-bottom: 12px;
     margin-bottom: 16px;
-    background-color: #ffffff;
+    background-color: #fff;
     border-radius: 2px;
     box-shadow: 0 2px 4px 0 #1919290d;
 
@@ -369,6 +373,7 @@ defineExpose({ syncParamsToCharts });
 
 // 响应式适配
 @media (max-width: 768px) {
+
   .dashboard-monitor-wrapper {
 
     .metrics-cards,
@@ -390,6 +395,7 @@ defineExpose({ syncParamsToCharts });
 }
 
 @media (min-width: 769px) and (max-width: 1200px) {
+
   .dashboard-monitor-wrapper {
 
     .chart-card {

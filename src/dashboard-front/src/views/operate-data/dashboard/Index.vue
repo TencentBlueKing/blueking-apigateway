@@ -36,7 +36,7 @@
             class="date-choose"
             format="YYYY-MM-DD HH:mm:ss"
             style="min-width: 154px;background: #fff;"
-            @update:model-value="handleValueChange"
+            @update:model-value="(handleValueChange as any)"
           />
         </BkFormItem>
         <BkFormItem :label="t('环境')">
@@ -288,27 +288,33 @@ import { getBackendServiceList } from '@/services/source/backend-services.ts';
 import ResourceSearcher from '@/views/operate-data/dashboard/components/ResourceSearcher.vue';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
-// import { ResourcesItem } from '@/views/resource/setting/types';
-// import { IStageData } from '@/views/stage/overview/types/stage';
+import type {
+  IExtractApiReturn,
+  IExtractListApiResults,
+} from '@/services/types/utils.ts';
 
 type InfoTypeItem = {
   formatText: null | string
   dayjs: dayjs.Dayjs | null
 };
 
+type IStageItem = IExtractApiReturn<typeof getApigwStages>[number];
+type IBackendItem = IExtractListApiResults<typeof getBackendServiceList>;
+type IResourceItem = IExtractListApiResults<typeof getApigwResources>;
+
 const { t } = useI18n();
 const gatewayStore = useGateway();
 const route = useRoute();
 
-const stageList = ref([]);
-const resourceList = ref([]);
+const stageList = ref<IStageItem[]>([]);
+const resourceList = ref<IResourceItem[]>([]);
 const backend_id = ref('');
-const backendList = ref([]);
-const dateTime = ref([
+const backendList = ref<IBackendItem[]>([]);
+const dateTime = ref<[string, string]>([
   'now-10m',
   'now',
 ]);
-const formatTime = ref<string[]>([
+const formatTime = ref<(string | null)[]>([
   dayjs().subtract(10, 'minute')
     .format('YYYY-MM-DD HH:mm:ss'),
   dayjs().format('YYYY-MM-DD HH:mm:ss'),
@@ -344,16 +350,16 @@ const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
 const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
 const chartLoading = ref<IChartDataLoading>({});
-const searchParams = ref<ISearchParamsType>({
+const searchParams = ref<ISearchParamsType & { step?: string }>({
   stage_id: 0,
   resource_id: '',
-  time_start: dayjs(formatTime.value[0]).unix(),
-  time_end: dayjs(formatTime.value[1]).unix(),
-  metrics: '',
+  time_start: dayjs(formatTime.value[0]!).unix(),
+  time_end: dayjs(formatTime.value[1]!).unix(),
+  metrics: '' as ISearchParamsType['metrics'],
   backend_name: '',
 });
 
-let timeId: NodeJS.Timeout | null = null;
+let timeId: ReturnType<typeof setInterval> | null = null;
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
@@ -386,10 +392,7 @@ watch(searchParams, () => {
 }, { deep: true });
 
 const getStages = async () => {
-  const pageParams = {
-    no_page: true,
-    order_by: 'name',
-  };
+  const pageParams: Parameters<typeof getApigwStages>[1] = {};
   const res = await getApigwStages(apigwId.value, pageParams);
 
   stageList.value = res || [];
@@ -399,12 +402,12 @@ const getStages = async () => {
 };
 
 const getResources = async () => {
-  const pageParams = {
+  const pageParams: Parameters<typeof getApigwResources>[1] = {
     no_page: true,
     order_by: 'path',
     offset: 0,
     limit: 10000,
-    backend_id: backend_id.value,
+    backend_id: (backend_id.value || undefined) as number | undefined,
   };
   const response = await getApigwResources(apigwId.value, pageParams);
   resourceList.value = response.results;
@@ -426,16 +429,16 @@ const handleBackendChange = async () => {
 };
 
 // 请求数据
-const getData = async (searchParams: ISearchParamsType, type: string) => {
+const getData = async (params: ISearchParamsType & { step?: string }, type: string) => {
   chartLoading.value[type as keyof IChartDataLoading] = true;
   try {
     chartData.value[type as keyof IChartDataType] = await getApigwMetrics(
       apigwId.value,
       {
-        ...searchParams,
+        ...params,
         metrics: type,
-      },
-    );
+      } as Parameters<typeof getApigwMetrics>[1],
+    ) as any;
   }
   finally {
     chartLoading.value[type as keyof IChartDataLoading] = false;
@@ -460,7 +463,7 @@ const getInstantData = () => {
         {
           ...searchParams.value,
           metrics: type,
-        },
+        } as Parameters<typeof getApigwMetricsInstant>[1],
       );
     }
     finally {
@@ -512,7 +515,7 @@ const syncParamsToCharts = () => {
 };
 
 const handleRefreshChange = (interval: string) => {
-  clearInterval(timeId);
+  clearInterval(timeId!);
   timeId = null;
   setIntervalFn(interval);
 };
@@ -523,11 +526,11 @@ const handleStepChange = (step: string) => {
 
 const handleClearParams = () => {
   searchParams.value = {
-    stage_id: stageList.value[0].id,
+    stage_id: stageList.value[0]?.id,
     resource_id: '',
-    time_start: dayjs(formatTime.value[0]).unix(),
-    time_end: dayjs(formatTime.value[1]).unix(),
-    metrics: '',
+    time_start: dayjs(formatTime.value[0]!).unix(),
+    time_end: dayjs(formatTime.value[1]!).unix(),
+    metrics: '' as ISearchParamsType['metrics'],
     backend_name: '',
   };
   backend_id.value = '';
@@ -541,8 +544,8 @@ const handleReportInit = () => {
 const handleValueChange = (value: string[], info: InfoTypeItem[]) => {
   const [startTime, endTime] = info;
   formatTime.value = [
-    startTime?.formatText,
-    endTime?.formatText,
+    startTime?.formatText ?? null,
+    endTime?.formatText ?? null,
   ];
   const [time_start, time_end] = formatTime.value;
   if (time_start && time_end) {

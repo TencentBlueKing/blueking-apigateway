@@ -246,7 +246,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('版本号'),
     width: 120,
     ellipsis: true,
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <bk-button
         text
         theme="primary"
@@ -260,7 +260,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'released_stages',
     title: t('生效环境'),
     ellipsis: true,
-    cell: (h, { row }) =>
+    cell: (h: any, { row }: any) =>
       <span>{ row.released_stages?.map((item: any) => item.name).join(', ') || '--' }</span>,
   },
   {
@@ -272,7 +272,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'sdk',
     title: 'SDK',
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <div>
         {
           row.sdk_count > 0
@@ -293,7 +293,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'created_by',
     title: t('创建者'),
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <div>
         {
           !featureFlagStore.isEnableDisplayName
@@ -321,7 +321,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'actions',
     title: t('操作'),
     width: 200,
-    cell: (h, { row }) => (
+    cell: (h: any, { row }: any) => (
       <div class="flex gap-10px">
         {
           featureFlagStore.flags.ALLOW_UPLOAD_SDK_TO_REPOSITORY
@@ -477,7 +477,7 @@ const handleExportDownload = async () => {
   delete params.export_type;
   exportDialogConfig.loading = true;
   try {
-    await exportVersion(apigwId.value, params);
+    await exportVersion(apigwId.value, params as any);
     Message({
       message: t('导出成功'),
       theme: 'success',
@@ -611,7 +611,7 @@ const handleBatchDelete = () => {
           </div>
           <div class="detail-list">
             {
-              selections.value.map(row => (
+              selections.value.map((row: any) => (
                 <div class="detail-item">{row.version}</div>
               ))
             }

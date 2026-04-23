@@ -83,6 +83,8 @@ interface IProps {
   mode?: 'edit' | 'detail'
 }
 
+interface IEmits { 'on-change': [data: { [key: string]: string }] }
+
 const {
   field,
   content = '',
@@ -92,7 +94,7 @@ const {
   mode = 'edit',
 } = defineProps<IProps>();
 
-const emit = defineEmits<{ 'on-change': [data: { [key: string]: string }] }>();
+const emit = defineEmits<IEmits>();
 
 const textareaRef = ref();
 const isShowError = ref(false);

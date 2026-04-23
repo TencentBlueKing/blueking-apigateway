@@ -146,6 +146,7 @@ import {
   type IPaasEventInstance,
   getDeployEvents,
   getFinishedDeployEvents,
+  getProgrammableStageDetail,
 } from '@/services/source/programmable.ts';
 import AgEditor from '@/components/ag-editor/Index.vue';
 import { useTimeoutPoll } from '@vueuse/core';
@@ -153,6 +154,8 @@ import { Spinner } from 'bkui-vue/lib/icon';
 import dayjs from 'dayjs';
 import { sumBy } from 'lodash-es';
 import { useStage } from '@/stores';
+import type { IStageListItem } from '@/services/source/stage.ts';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 interface ITimelineItem {
   description?: string
@@ -170,69 +173,14 @@ interface ITimelineItem {
   nodeType?: string
 }
 
-interface IRelease {
-  status: string
-  created_time: null | string
-  created_by: string
-}
+type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 
-interface IResourceVersion {
-  version: string
-  id: number
-  schema_version: string
-}
-
-interface IPaasInfo {
-  branch: string
-  commit_id: string
-  created_by: string | null
-  created_time: string
-  deploy_id: string
-  latest_deployment: {
-    branch: string
-    commit_id: string
-    deploy_id: string
-    history_id: number
-    status: string
-    version: string
-  }
-  repo_info: {
-    branch_commit_info: {
-      [branch: string]: {
-        commit_id: string
-        extra: object
-        last_update: string
-        message: string
-        type: string
-      }
-    }
-    branch_list: string[]
-    repo_url: string
-  }
-  status: string
-  version: string
-}
-
-interface IStageItem {
-  id: number
-  name: string
-  description: string
-  description_en: string
-  status: number
-  created_time: string
-  release: IRelease
-  resource_version: IResourceVersion
-  publish_id: number
-  publish_version: string
-  publish_validate_msg: string
-  new_resource_version: string
-  paasInfo?: IPaasInfo
-}
+interface ILocalStageItem extends IStageListItem { paasInfo?: IPaasInfo }
 
 interface IProps {
   deployId?: string
   historyId?: number
-  stage?: IStageItem | null
+  stage?: ILocalStageItem
   version?: string
   history?: IEventResponse | null
 }
@@ -326,7 +274,7 @@ const apigwId = computed(() => +route.params?.id);
 
 const paasTimelineLists = computed(() => {
   const list: ITimelineItem[][] = [];
-  paasEventInstances.value.forEach((instance) => {
+  paasEventInstances.value.forEach((instance: IPaasEventInstance) => {
     const subList: ITimelineItem[] = [];
     let instanceDuration = 0;
     subList.push({
@@ -348,7 +296,7 @@ const paasTimelineLists = computed(() => {
     });
 
     if (instance.steps?.length) {
-      instance.steps.forEach((step) => {
+      instance.steps.forEach((step: IPaasEventInstance['steps'][number]) => {
         const stepDuration = getDotDuration(step.start_time, step.complete_time);
         instanceDuration += stepDuration || 0;
         subList.push({
@@ -373,20 +321,20 @@ const gatewayPublishTimeline = computed(() => {
   let list: ITimelineItem[] = [];// 整理步骤
 
   // 生成步骤节点
-  list = gatewayEventTemplates.value.map((eventTemplate) => {
+  list = gatewayEventTemplates.value.map((eventTemplate: IGatewayEventTemplate) => {
     const step: any = {
       // size: 'large',
       tag: eventTemplate.description,
       isParent: false,
     };
-    const currentEvents = gatewayEvents.value.filter(event => event.step === eventTemplate.step);
+    const currentEvents = gatewayEvents.value.filter((event: IGatewayEvent) => event.step === eventTemplate.step);
 
     // 根据步骤状态赋予不同的图标样式
-    if (currentEvents.some(event => event.status === 'failure')) {
+    if (currentEvents.some((event: IGatewayEvent) => event.status === 'failure')) {
       step.color = 'red';
       step.status = 'failure';
     }
-    else if (currentEvents.some(event => event.status === 'success')) {
+    else if (currentEvents.some((event: IGatewayEvent) => event.status === 'success')) {
       step.color = 'green';
       step.filled = true;
       step.status = 'success';
@@ -397,8 +345,8 @@ const gatewayPublishTimeline = computed(() => {
       // 整个发布任务在进行中时才处理图标样式
       if (deployStatus.value === 'pending' || deployStatus.value === 'doing') {
         // 给已结束步骤的下一个在 doing 状态的步骤显示加载图标
-        const prevEvents = gatewayEvents.value.filter(event => event.step === eventTemplate.step - 1);
-        if (prevEvents.find(event => event.status === 'success' || event.status === 'failure')) {
+        const prevEvents = gatewayEvents.value.filter((event: IGatewayEvent) => event.step === eventTemplate.step - 1);
+        if (prevEvents.find((event: IGatewayEvent) => event.status === 'success' || event.status === 'failure')) {
           step.color = 'blue';
           step.icon = Spinner;
         }
@@ -406,9 +354,9 @@ const gatewayPublishTimeline = computed(() => {
     }
 
     // 计算每个步骤使用的时间
-    const startTime = dayjs(currentEvents.find(event => event.status === 'doing')?.created_time);
+    const startTime = dayjs(currentEvents.find((event: IGatewayEvent) => event.status === 'doing')?.created_time);
     let duration = 0;
-    const nextEvents = gatewayEvents.value.filter(event => event.step === eventTemplate.step + 1);
+    const nextEvents = gatewayEvents.value.filter((event: IGatewayEvent) => event.step === eventTemplate.step + 1);
 
     // 当前步骤未完成，则计算当前步骤已使用的时间
     if (step.status === 'doing') {
@@ -417,12 +365,12 @@ const gatewayPublishTimeline = computed(() => {
     else {
       // 如果当前步骤已结束，则用下一个步骤的开始时间计算时间差
       if (nextEvents.length) {
-        const endTime = dayjs(nextEvents.find(event => event.status === 'doing')?.created_time);
+        const endTime = dayjs(nextEvents.find((event: IGatewayEvent) => event.status === 'doing')?.created_time);
         duration = endTime.diff(startTime, 's', true) || 0;
       }
       else {
         // 没有下一个步骤就用当前步骤自己的 created_time 计算时间差
-        const endTime = dayjs(currentEvents.find(event => event.status === 'success' || event.status === 'failure')?.created_time);
+        const endTime = dayjs(currentEvents.find((event: IGatewayEvent) => event.status === 'success' || event.status === 'failure')?.created_time);
         duration = endTime.diff(startTime, 's', true) || 0;
       }
     }
@@ -435,7 +383,7 @@ const gatewayPublishTimeline = computed(() => {
     return step;
   });
 
-  const allStepDuration = sumBy(list, step => step.duration || 0);
+  const allStepDuration = sumBy(list, (step: ITimelineItem) => step.duration || 0);
 
   const parentNode: ITimelineItem = {
     color: 'green',
@@ -462,13 +410,13 @@ const gatewayPublishTimeline = computed(() => {
     delete parentNode.color;
     parentNode.filled = false;
   }
-  else if (list.some(step => step.status === 'doing')) {
+  else if (list.some((step: ITimelineItem) => step.status === 'doing')) {
     parentNode.status = 'doing';
     parentNode.color = 'blue';
     parentNode.icon = Spinner;
     parentNode.filled = false;
   }
-  else if (list.some(step => step.status === 'failure')) {
+  else if (list.some((step: ITimelineItem) => step.status === 'failure')) {
     parentNode.color = 'red';
     parentNode.status = 'failure';
     parentNode.filled = false;
@@ -485,8 +433,8 @@ const gatewayPublishTotalDuration = computed(() => {
 });
 
 const paasDeployTotalDuration = computed(() => {
-  return paasTimelineLists.value.reduce((duration, timelineList) => {
-    timelineList.forEach((node) => {
+  return paasTimelineLists.value.reduce((duration: number, timelineList: ITimelineItem[]) => {
+    timelineList.forEach((node: ITimelineItem) => {
       if (node.isParent) {
         duration += node.duration || 0;
       }
@@ -580,7 +528,15 @@ watch(
 
 // 获取日志列表
 async function getEvents() {
-  const requestFunc = deployId ? getDeployEvents : getFinishedDeployEvents;
+  let response:
+    IExtractApiReturn<typeof getDeployEvents> & IExtractApiReturn<typeof getFinishedDeployEvents> | null = null;
+
+  if (deployId) {
+    response = await getDeployEvents(apigwId.value, deployId);
+  }
+  else {
+    response = await getFinishedDeployEvents(apigwId.value, historyId);
+  }
 
   const {
     stage: stageResponse,
@@ -592,7 +548,7 @@ async function getEvents() {
     source: sourceResponse,
     status,
     data_plane,
-  } = await requestFunc(apigwId.value, deployId || historyId);
+  } = response;
 
   historyStage.value = stageResponse || null;
   historyVersion.value = resource_version_display || '';
@@ -637,7 +593,11 @@ async function getEvents() {
     }
   }
   else {
-    paasEvents.forEach((event) => {
+    paasEvents.forEach((event: {
+      id: number
+      event: string
+      data: string
+    }) => {
       let line = '';
       try {
         const data = JSON.parse(event.data);
@@ -657,7 +617,7 @@ async function getEvents() {
     });
   }
 
-  gatewayEvents.value.forEach((event) => {
+  gatewayEvents.value.forEach((event: IGatewayEvent) => {
     let line = event.status === 'failure'
       ? `  Err_msg: ${event.detail?.err_msg ?? 'Unknown error'}`
       : `${event.created_time}  ${event.name}  ${event.status}`;
@@ -681,7 +641,7 @@ async function getEvents() {
   editorRef.value?.setCursorPos({ toBottom: true });
   if (isFinished.value) {
     stageStore.setDoing(false);
-    if (['success'].includes(step.status)) {
+    if (['success'].includes(status)) {
       emit('release-success');
     }
     pausePoll();

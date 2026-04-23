@@ -16,8 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { AxiosInterceptorManager, AxiosRequestConfig } from 'axios';
+import type { AxiosInterceptorManager, InternalAxiosRequestConfig } from 'axios';
 
-export default (interceptors: AxiosInterceptorManager<AxiosRequestConfig>) => {
+export default (interceptors: AxiosInterceptorManager<InternalAxiosRequestConfig>) => {
   interceptors.use(request => request, undefined);
 };

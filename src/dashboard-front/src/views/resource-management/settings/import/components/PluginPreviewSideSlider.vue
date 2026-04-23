@@ -85,7 +85,7 @@ const emits = defineEmits<{ 'on-hidden': [] }>();
 
 const { t } = useI18n();
 
-const activeIndex = computed(() => plugins.map(plugin => plugin.type));
+const activeIndex = computed(() => plugins.map((plugin: any) => plugin.type));
 const renderShow = ref(isSliderShow);
 
 const handleHidden = () => {
@@ -102,7 +102,7 @@ const parseYaml = (yamlStr: string) => {
   }
 };
 
-watch(() => isSliderShow, (val) => {
+watch(() => isSliderShow, (val: any) => {
   renderShow.value = val;
 });
 

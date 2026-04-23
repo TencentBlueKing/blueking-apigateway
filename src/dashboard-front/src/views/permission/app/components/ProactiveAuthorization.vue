@@ -185,9 +185,9 @@ interface IProps {
   resourceList?: IResource[]
 }
 
-interface Emits {
-  (e: 'update:sliderParams', value: ISliderParams)
-  (e: 'update:authData', value: IAuthData)
+interface IEmits {
+  (e: 'update:sliderParams', value: ISliderParams): void
+  (e: 'update:authData', value: IAuthData): void
   (e: 'confirm'): void
 }
 
@@ -205,22 +205,23 @@ const {
   },
   resourceList = [],
 } = defineProps<IProps>();
-const emits = defineEmits<Emits>();
+
+const emits = defineEmits<IEmits>();
 
 const route = useRoute();
 
 const authFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const appCodeRef = ref<InstanceType<typeof Input>>(null);
-const expireTypeRef = ref<InstanceType<typeof Input>>(null);
-const dimensionRef = ref<InstanceType<typeof Transfer>>(null);
-const transferIsAllEl = ref(null);
-const transferInputEl = ref(null);
-const clearIconEl = ref(null);
-const transferSourceList = ref([]);
-const transferTargetList = ref([]);
-const searchTargetList = ref([]);
-const resourceTransferList = ref([]);
-const resourceTransferListBack = ref([]);
+const appCodeRef = ref<InstanceType<typeof Input> | null>(null);
+const expireTypeRef = ref<InstanceType<typeof Input> | null>(null);
+const dimensionRef = ref<InstanceType<typeof Transfer> | null>(null);
+const transferIsAllEl = ref<Element | null>(null);
+const transferInputEl = ref<HTMLInputElement | null>(null);
+const clearIconEl = ref<Element | null>(null);
+const transferSourceList = ref<IResource[]>([]);
+const transferTargetList = ref<IResource[]>([]);
+const searchTargetList = ref<IResource[]>([]);
+const resourceTransferList = ref<IResource[]>([]);
+const resourceTransferListBack = ref<IResource[]>([]);
 const initData = ref({
   bk_app_code: '',
   expire_type: 'permanent',
@@ -275,14 +276,14 @@ const rules = reactive({
 
 const authSliderConfig = computed({
   get: () => sliderParams,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:sliderParams', params);
   },
 });
 
 const curAuthData = computed({
   get: () => authData,
-  set: (params) => {
+  set: (params: any) => {
     emits('update:authData', params);
   },
 });
@@ -294,14 +295,14 @@ watch(authSliderConfig.value, ({ isShow }: { isShow: boolean }) => {
   }
 }, { immediate: true });
 
-watch(curAuthData.value, (authData) => {
+watch(curAuthData.value, (authData: IAuthData) => {
   if (['resource'].includes(authData.dimension)) {
     nextTick(() => {
       const transferSourceEl = document.querySelector('.proactive-auth-transfer .source-list');
-      transferIsAllEl.value = transferSourceEl.querySelector('.select-all');
-      transferInputEl.value = transferSourceEl.querySelector('input');
+      transferIsAllEl.value = transferSourceEl?.querySelector('.select-all') ?? null;
+      transferInputEl.value = transferSourceEl?.querySelector('input') ?? null;
       transferIsAllEl.value?.addEventListener('click', handleSetSearchAll, { capture: true });
-      transferInputEl.value?.addEventListener('input', getTransferSearch, { capture: true });
+      transferInputEl.value?.addEventListener('input', getTransferSearch as EventListener, { capture: true });
     });
   }
 });
@@ -313,7 +314,7 @@ const formatData = () => {
     params.expire_days = null;
   }
   if (params.dimension.includes('api')) {
-    params.resource_ids = null;
+    params.resource_ids = null as any;
   }
   return params;
 };
@@ -325,7 +326,7 @@ const handleScrollView = (el: HTMLInputElement | HTMLElement) => {
   });
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(curAuthData.value));
 };
 
@@ -340,13 +341,13 @@ const handleResourceChange = (
     transferSourceList.value = [...sourceList];
     transferTargetList.value = [...targetList];
     const isTargetEmpty = document.querySelector('.proactive-auth-transfer .target-list .empty');
-    if (isTargetEmpty && dimensionRef.value.selectListSearch.length < resourceTransferListBack.value.length) {
+    if (isTargetEmpty && dimensionRef.value!.selectListSearch.length < resourceTransferListBack.value.length) {
       searchTargetList.value = [];
       curAuthData.value.resource_ids = [];
       resourceTransferList.value = cloneDeep(resourceTransferListBack.value);
     }
     if (searchTargetList.value.length) {
-      curAuthData.value.resource_ids = searchTargetList.value.map(item => item.id);
+      curAuthData.value.resource_ids = searchTargetList.value.map((item: any) => item.id);
     }
     else {
       curAuthData.value.resource_ids = targetValueList;
@@ -357,53 +358,53 @@ const handleResourceChange = (
 // 设置transfer组件搜索状态选择全部交互
 function handleSetSearchAll() {
   searchTargetList.value = [];
-  const searchKeyword = dimensionRef.value.selectSearchQuery;
+  const searchKeyword = dimensionRef.value!.selectSearchQuery;
   // 获取搜索列表的数据
   if (searchKeyword) {
     const transferEl = document.querySelector('.proactive-auth-transfer');
-    const sourceEl = transferEl.querySelector('.source-list > ul');
+    const sourceEl = transferEl?.querySelector('.source-list > ul');
     // 获取所有li下transfer-source-item元素
     const sourceItems = sourceEl?.querySelectorAll('.transfer-source-item');
     if (sourceItems) {
-      const itemTexts = Array.from(sourceItems).map((item) => {
-        return item.textContent.trim();
+      const itemTexts = Array.from(sourceItems).map((item: any) => {
+        return item.textContent!.trim();
       });
-      searchTargetList.value = resourceTransferListBack.value.filter(item =>
-        itemTexts.includes(item.name) || transferTargetList.value.map(target => target.id).includes(item.id),
+      searchTargetList.value = resourceTransferListBack.value.filter((item: any) =>
+        itemTexts.includes(item.name) || transferTargetList.value.map((target: any) => target.id).includes(item.id),
       );
     }
     // 重置已选资源
     setTimeout(() => {
-      dimensionRef.value.selectedList = searchTargetList.value;
+      dimensionRef.value!.selectedList = searchTargetList.value;
     }, 0);
   }
 };
 
 const handleResetTransferData = () => {
   if (!curAuthData.value.resource_ids.length) {
-    searchTargetList.value.map(item => item.id);
+    searchTargetList.value.map((item: any) => item.id);
   }
-  const hasSelected = resourceTransferListBack.value.filter(item =>
+  const hasSelected = resourceTransferListBack.value.filter((item: any) =>
     curAuthData.value.resource_ids.includes(item.id),
   );
-  resourceTransferList.value = resourceTransferListBack.value.filter(item =>
-    item.name.indexOf(dimensionRef.value.selectSearchQuery) > -1
-    && !hasSelected.map(target => target.id).includes(item.id),
+  resourceTransferList.value = resourceTransferListBack.value.filter((item: any) =>
+    item.name.indexOf(dimensionRef.value!.selectSearchQuery) > -1
+    && !hasSelected.map((target: any) => target.id).includes(item.id),
   );
   setTimeout(() => {
-    dimensionRef.value.selectedList = hasSelected;
+    dimensionRef.value!.selectedList = hasSelected;
   }, 0);
 };
 
 function handleClearTransferSearch() {
-  dimensionRef.value.selectSearchQuery = '';
+  dimensionRef.value!.selectSearchQuery = '';
   handleResetTransferData();
 }
 
 // 获取transfer实时输入值
 function getTransferSearch(e: InputEvent) {
   const target = e.target as HTMLInputElement;
-  dimensionRef.value.selectSearchQuery = target.value;
+  dimensionRef.value!.selectSearchQuery = target.value;
   // 清空按钮实例
   nextTick(() => {
     clearIconEl.value = document.querySelector('.proactive-auth-transfer .source-list .bk-input--clear-icon');
@@ -425,12 +426,12 @@ const handleSave = async () => {
       resource_ids,
     } = curAuthData.value;
     if (!bk_app_code) {
-      appCodeRef.value?.focus();
+      (appCodeRef.value as any)?.focus();
       handleScrollView(appCodeRef?.value?.$el);
       return;
     }
     if (['custom'].includes(expire_type) && !expire_days) {
-      expireTypeRef.value?.focus();
+      (expireTypeRef.value as any)?.focus();
       handleScrollView(expireTypeRef?.value?.$el);
       return;
     }
@@ -443,7 +444,7 @@ const handleSave = async () => {
   const fetchMethod = ['resource'].includes(params.dimension)
     ? authResourcePermission
     : authApiPermission;
-  await fetchMethod(route.params.id, params);
+  await fetchMethod(route.params.id as any, params as any);
   handleCancel();
   emits('confirm');
 };
@@ -453,7 +454,7 @@ const handleCancel = () => {
   curAuthData.value = cloneDeep(initData.value);
   clearIconEl.value?.removeEventListener('click', handleClearTransferSearch, { capture: true });
   transferIsAllEl.value?.removeEventListener('click', handleSetSearchAll, { capture: true });
-  transferInputEl.value?.removeEventListener('input', getTransferSearch, { capture: true });
+  transferInputEl.value?.removeEventListener('input', getTransferSearch as EventListener, { capture: true });
   transferIsAllEl.value = null;
   transferInputEl.value = null;
   clearIconEl.value = null;
@@ -513,6 +514,7 @@ const handleCancel = () => {
     }
 
     .auth-resource {
+
       :deep(.bk-form-error) {
         margin-top: 4px;
         margin-left: 20px;

@@ -16,12 +16,12 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { Ref, ShallowRef } from 'vue';
 import type {
   FilterValue,
   SortInfo,
   TableSort,
 } from '@blueking/tdesign-ui';
+import type { ShallowRef } from 'vue';
 
 /**
  * 表格排序(暂时只支持单字段排序)

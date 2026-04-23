@@ -83,7 +83,7 @@ export default defineComponent({
 
   emits: ['change', 'input', 'blur', 'focus'],
 
-  setup(props, ctx) {
+  setup(props: any, ctx: any) {
     const tagInputRef = ref(null);
     // 使用 staffStore 获取员工数据
     const staffStore = useStaff();
@@ -98,7 +98,7 @@ export default defineComponent({
     // 监听 staffStore.list 的变化
     watch(
       () => staffStore.list,
-      (list) => {
+      (list: any) => {
         if (list.length) {
           nextTick(() => {
             userList.value = cloneDeep(list);

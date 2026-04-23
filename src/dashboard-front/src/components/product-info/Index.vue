@@ -78,7 +78,6 @@
 
 <script setup lang="ts">
 import semver from 'semver';
-// @ts-expect-error missing module type
 import ReleaseNote from '@blueking/release-note';
 
 import { getVersionLog } from '@/services/source/basic';
@@ -92,7 +91,7 @@ const showVersionLog = () => {
 };
 
 const showSyncReleaseNote = ref(false);
-const syncReleaseList = ref([]);
+const syncReleaseList = ref<any[]>([]);
 
 onMounted(async () => {
   const list = await getVersionLog();

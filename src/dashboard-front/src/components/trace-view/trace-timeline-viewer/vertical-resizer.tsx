@@ -49,7 +49,7 @@ export default defineComponent({
   name: 'VerticalResizer',
   props: VerticalResizerProps,
 
-  setup(props) {
+  setup(props: any) {
     const verticalResizerRef = ref<HTMLDivElement>();
     const state = reactive<{ dragPosition: number | null }>({ dragPosition: null });
 

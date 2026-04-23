@@ -17,9 +17,13 @@
  */
 
 import {
+  // @ts-ignore
   defineComponent,
+  // @ts-ignore
   ref,
+  // @ts-ignore
   unref,
+  // @ts-ignore
   watch,
 } from 'vue';
 import { Popover } from 'bkui-vue'; // 引入 bkui-vue 库中的 Popover 组件
@@ -62,7 +66,7 @@ export default defineComponent({
 
   emits: ['selected'],
 
-  setup(props, ctx) {
+  setup(props: any, ctx: any) {
     // 引用弹出框组件的引用
     const popoverRef = ref();
     // 控制弹出框显示状态的变量

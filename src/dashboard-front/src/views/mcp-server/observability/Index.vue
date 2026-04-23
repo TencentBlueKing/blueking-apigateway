@@ -46,7 +46,7 @@ const activeTab = shallowRef('FlowLog');
 // 切换重置tab滚动条
 const handleResetScroll = () => {
   const scrollEl = document.querySelector('.default-header-view');
-  if (scrollEl?.scrollTop > 0) {
+  if (scrollEl && scrollEl.scrollTop > 0) {
     scrollEl.scrollTop = 0;
   }
 };

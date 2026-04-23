@@ -290,20 +290,20 @@ interface IProps {
 }
 
 interface Emits {
-  (e: 'update:detailData', value: IDetailData)
-  (e: 'update:sliderParams', value: ISliderParams)
+  (e: 'update:detailData', value: IDetailData): void
+  (e: 'update:sliderParams', value: ISliderParams): void
   (e: 'sys-select',
     value: number,
     option: {
       id: number
       name: string
-    })
+    }): void
   (e: 'confirm'): void
 }
 
 const {
-  sliderParams = {},
-  detailData = {},
+  sliderParams = {} as any,
+  detailData = {} as any,
   initData = {},
   systemList = [],
 } = defineProps<IProps>();
@@ -399,19 +399,19 @@ const rules = reactive({
 
 const sliderConfig = computed({
   get: () => sliderParams,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:sliderParams', form);
   },
 });
 const formData = computed({
   get: () => detailData,
-  set: (form) => {
+  set: (form: any) => {
     emits('update:detailData', form);
   },
 });
-const componentId = computed(() => formData.value.id);
+const componentId = computed(() => (formData.value as any).id);
 const isEdit = computed(() => Boolean(componentId.value));
-const isDisabled = computed(() => isEdit.value && formData.value?.is_official);
+const isDisabled = computed(() => isEdit.value && (formData.value as any)?.is_official);
 
 const handleSysSelect = (
   value: number,
@@ -426,9 +426,10 @@ const handleSysSelect = (
 const handleSave = async () => {
   await componentFormRef?.value?.validate();
   const configData = configRef.value?.getData() ?? {};
-  const initConfigFields = {};
+  const initConfigFields: Record<string, any> = {};
   // 默认组件配置转换成标准格式
-  initData?.config_fields?.forEach((item) => {
+  // @ts-expect-error config_fields 是运行时动态字段
+  initData?.config_fields?.forEach((item: any) => {
     initConfigFields[item.variable] = item.default;
   });
   // 是否存在组件配置，存在则作对比是否存在数据更新
@@ -438,7 +439,7 @@ const handleSave = async () => {
     handleCancel();
     return;
   }
-  const tempData = Object.assign({}, formData.value);
+  const tempData: Record<string, any> = Object.assign({}, formData.value);
   if (!tempData.timeout) {
     tempData.timeout = null;
   }
@@ -457,11 +458,11 @@ const handleSave = async () => {
     let msg = '';
     if (!isEdit.value) {
       delete tempData.id;
-      await addComponent(tempData);
+      await addComponent(tempData as any);
       msg = t('新建成功');
     }
     else {
-      await updateComponent(formData.value?.id, tempData);
+      await updateComponent((formData.value as any)?.id, tempData as any);
       msg = t('编辑成功');
     }
     Message({
@@ -476,7 +477,7 @@ const handleSave = async () => {
   }
 };
 
-const handleCompare = (callback) => {
+const handleCompare = (callback: any) => {
   callback(cloneDeep(formData.value));
 };
 

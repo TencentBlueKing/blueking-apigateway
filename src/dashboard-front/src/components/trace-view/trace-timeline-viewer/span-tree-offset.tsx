@@ -46,7 +46,7 @@ export default defineComponent({
     'removeHoverIndentGuideId',
   ],
 
-  setup(props, { emit }) {
+  setup(props: any, { emit }: any) {
     // 处理缩进层级 ID
     const processedAncestorIds = computed(() => {
       const ids = spanAncestorIds(props.span);
@@ -150,7 +150,7 @@ export default defineComponent({
       wrapperProps,
       [
         // 缩进引导线（保留原有逻辑）
-        ...processedAncestorIds.map(id =>
+        ...processedAncestorIds.map((id: any) =>
           h('span', {
             'key': id,
             'class': 'span-tree-offset-indent-guide',
