@@ -104,11 +104,17 @@ _MCP_CONFIG_DEFAULT_CLIENT_TYPES = [
 
 def get_mcp_config_agent_clients() -> list:
     """获取 MCP Server 配置工具的客户端列表，根据 AIDEV_AGENT_CREATE_URL 动态决定是否包含 AIDev"""
-    clients = [{"name": member.value, "display_name": member.label} for member in _MCP_CONFIG_DEFAULT_CLIENT_TYPES]
+    clients = [
+        {"name": member.value, "display_name": MCPAgentClientTypeEnum.get_choice_label(member)}
+        for member in _MCP_CONFIG_DEFAULT_CLIENT_TYPES
+    ]
 
     if getattr(settings, "AIDEV_AGENT_CREATE_URL", ""):
         clients.append(
-            {"name": MCPAgentClientTypeEnum.AIDEV.value, "display_name": MCPAgentClientTypeEnum.AIDEV.label}
+            {
+                "name": MCPAgentClientTypeEnum.AIDEV.value,
+                "display_name": MCPAgentClientTypeEnum.get_choice_label(MCPAgentClientTypeEnum.AIDEV),
+            }
         )
 
     return clients
