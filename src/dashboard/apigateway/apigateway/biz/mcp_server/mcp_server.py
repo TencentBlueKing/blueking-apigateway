@@ -30,6 +30,7 @@ from django.utils.translation import gettext as _
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    MCPAgentClientTypeEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerLeastPrivilegeEnum,
@@ -1020,7 +1021,9 @@ class MCPServerHandler:
 
             # 根据 protocol_type 和客户端类型确定 transport_type
             if instance.protocol_type == "streamable_http":
-                transport_type = "streamable-http" if client["name"] == "codebuddy" else "http"
+                transport_type = (
+                    "streamable-http" if client["name"] == MCPAgentClientTypeEnum.CODEBUDDY.value else "http"
+                )
             else:
                 transport_type = "sse"
 
@@ -1037,14 +1040,14 @@ class MCPServerHandler:
             }
 
             # AIDev 需要额外的创建链接
-            if client["name"] == "aidev":
+            if client["name"] == MCPAgentClientTypeEnum.AIDEV.value:
                 context["aidev_agent_create_url"] = settings.AIDEV_AGENT_CREATE_URL
 
             content = render_to_string(template_name, context=context)
 
             # 生成一键配置 URL（目前只有 Cursor 支持）
             install_url = ""
-            if client["name"] == "cursor":
+            if client["name"] == MCPAgentClientTypeEnum.CURSOR.value:
                 install_url = MCPServerHandler._build_cursor_install_url(
                     instance.name, mcp_url, instance.oauth2_public_client_enabled, user_tenant_id
                 )
@@ -1157,7 +1160,7 @@ class MCPServerHandler:
 
             # 根据 protocol_type 和客户端类型确定 transport_type
             if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
-                transport_type = "streamable-http" if client_type == "codebuddy" else "http"
+                transport_type = "streamable-http" if client_type == MCPAgentClientTypeEnum.CODEBUDDY.value else "http"
             else:
                 transport_type = "sse"
 
@@ -1165,13 +1168,13 @@ class MCPServerHandler:
             server_config: Dict[str, Any] = {}
 
             # claude 和 vscode 需要 type 字段
-            if client_type in ("claude", "vscode"):
+            if client_type in (MCPAgentClientTypeEnum.CLAUDE.value, MCPAgentClientTypeEnum.VSCODE.value):
                 server_config["type"] = transport_type
 
             server_config["url"] = mcp_url
 
             # CodeBuddy 需要 transportType
-            if client_type == "codebuddy":
+            if client_type == MCPAgentClientTypeEnum.CODEBUDDY.value:
                 server_config["transportType"] = transport_type
 
             # 处理 headers
@@ -1194,5 +1197,5 @@ class MCPServerHandler:
             servers_config[instance.name] = server_config
 
         # vscode 顶层 key 是 servers，其他客户端用 mcpServers
-        top_level_key = "servers" if client_type == "vscode" else "mcpServers"
+        top_level_key = "servers" if client_type == MCPAgentClientTypeEnum.VSCODE.value else "mcpServers"
         return {top_level_key: servers_config}

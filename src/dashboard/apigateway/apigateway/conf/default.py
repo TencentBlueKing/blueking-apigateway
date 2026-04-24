@@ -28,6 +28,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.backends.mysql.features import DatabaseFeatures
 from django.utils.encoding import force_bytes
 
+from apigateway.apps.mcp_server.constants import MCPAgentClientTypeEnum
 from apigateway.common.env import Env
 from apigateway.conf.celery_conf import *  # noqa
 from apigateway.conf.celery_conf import CELERY_BEAT_SCHEDULE
@@ -564,15 +565,17 @@ MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLI
 
 # MCP Server 配置工具列表
 MCP_CONFIG_AGENT_CLIENTS = [
-    {"name": "codebuddy", "display_name": "CodeBuddy"},
-    {"name": "cursor", "display_name": "Cursor"},
-    {"name": "claude", "display_name": "Claude"},
-    {"name": "vscode", "display_name": "VSCode"},
+    {"name": MCPAgentClientTypeEnum.CODEBUDDY.value, "display_name": MCPAgentClientTypeEnum.CODEBUDDY.label},
+    {"name": MCPAgentClientTypeEnum.CURSOR.value, "display_name": MCPAgentClientTypeEnum.CURSOR.label},
+    {"name": MCPAgentClientTypeEnum.CLAUDE.value, "display_name": MCPAgentClientTypeEnum.CLAUDE.label},
+    {"name": MCPAgentClientTypeEnum.VSCODE.value, "display_name": MCPAgentClientTypeEnum.VSCODE.label},
 ]
 
 # 如果配置了 AIDEV_AGENT_CREATE_URL，则添加 AIDev 到配置列表
 if AIDEV_AGENT_CREATE_URL:
-    MCP_CONFIG_AGENT_CLIENTS.append({"name": "aidev", "display_name": "AIDev"})
+    MCP_CONFIG_AGENT_CLIENTS.append(
+        {"name": MCPAgentClientTypeEnum.AIDEV.value, "display_name": MCPAgentClientTypeEnum.AIDEV.label}
+    )
 
 
 # ==============================================================================

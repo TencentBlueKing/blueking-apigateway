@@ -18,11 +18,11 @@
 
 from typing import Any, Dict, List
 
-from django.conf import settings
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
+    MCP_AGENT_CLIENT_CHOICES_WITHOUT_AIDEV,
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -280,7 +280,7 @@ class MCPServerBatchConfigInputSLZ(serializers.Serializer):
     )
     client_type = serializers.ChoiceField(
         required=True,
-        choices=[(client["name"], client["display_name"]) for client in settings.MCP_CONFIG_AGENT_CLIENTS],
+        choices=MCP_AGENT_CLIENT_CHOICES_WITHOUT_AIDEV,
         help_text="客户端类型",
     )
 

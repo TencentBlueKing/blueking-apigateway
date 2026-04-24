@@ -77,6 +77,22 @@ class MCPServerProtocolTypeEnum(StructuredEnum):
     STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
 
 
+class MCPAgentClientTypeEnum(StructuredEnum):
+    """MCP Agent 客户端类型"""
+
+    CODEBUDDY = EnumField("codebuddy", label="CodeBuddy")
+    CURSOR = EnumField("cursor", label="Cursor")
+    CLAUDE = EnumField("claude", label="Claude")
+    VSCODE = EnumField("vscode", label="VSCode")
+    AIDEV = EnumField("aidev", label="AIDev")
+
+
+# MCP Agent 客户端 choices（不含 AIDev），供批量配置序列化器校验使用
+MCP_AGENT_CLIENT_CHOICES_WITHOUT_AIDEV = [
+    choice for choice in MCPAgentClientTypeEnum.get_choices() if choice[0] != MCPAgentClientTypeEnum.AIDEV.value
+]
+
+
 # MCPServer 分类名称常量 - 用于判断特殊分类
 OFFICIAL_MCP_CATEGORY_NAME = "Official"
 FEATURED_MCP_CATEGORY_NAME = "Featured"
