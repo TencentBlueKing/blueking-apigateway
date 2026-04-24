@@ -36,6 +36,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerLeastPrivilegeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
+    MCPTransportTypeEnum,
     get_mcp_config_agent_clients,
 )
 from apigateway.apps.mcp_server.models import (
@@ -1021,12 +1022,14 @@ class MCPServerHandler:
             template_name = f"mcp_server/{language_code}/config/{client['name']}.md"
 
             # 根据 protocol_type 和客户端类型确定 transport_type
-            if instance.protocol_type == "streamable_http":
+            if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
                 transport_type = (
-                    "streamable-http" if client["name"] == MCPAgentClientTypeEnum.CODEBUDDY.value else "http"
+                    MCPTransportTypeEnum.STREAMABLE_HTTP.value
+                    if client["name"] == MCPAgentClientTypeEnum.CODEBUDDY.value
+                    else MCPTransportTypeEnum.HTTP.value
                 )
             else:
-                transport_type = "sse"
+                transport_type = MCPTransportTypeEnum.SSE.value
 
             # 构建模板上下文
             context = {
@@ -1161,9 +1164,13 @@ class MCPServerHandler:
 
             # 根据 protocol_type 和客户端类型确定 transport_type
             if instance.protocol_type == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value:
-                transport_type = "streamable-http" if client_type == MCPAgentClientTypeEnum.CODEBUDDY.value else "http"
+                transport_type = (
+                    MCPTransportTypeEnum.STREAMABLE_HTTP.value
+                    if client_type == MCPAgentClientTypeEnum.CODEBUDDY.value
+                    else MCPTransportTypeEnum.HTTP.value
+                )
             else:
-                transport_type = "sse"
+                transport_type = MCPTransportTypeEnum.SSE.value
 
             # 构建单个 server 配置
             server_config: Dict[str, Any] = {}

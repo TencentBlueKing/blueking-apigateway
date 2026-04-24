@@ -78,6 +78,14 @@ class MCPServerProtocolTypeEnum(StructuredEnum):
     STREAMABLE_HTTP = EnumField("streamable_http", label=_("Streamable HTTP"))
 
 
+class MCPTransportTypeEnum(StructuredEnum):
+    """MCP 传输协议类型（客户端配置中使用）"""
+
+    SSE = EnumField("sse", label="SSE")
+    HTTP = EnumField("http", label="HTTP")
+    STREAMABLE_HTTP = EnumField("streamable-http", label="Streamable HTTP")
+
+
 class MCPAgentClientTypeEnum(StructuredEnum):
     """MCP Agent 客户端类型"""
 
