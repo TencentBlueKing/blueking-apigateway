@@ -516,7 +516,12 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
         """获取申请人 display_name"""
         try:
             if isinstance(obj, dict):
-                return obj.get("applied_by", "")
+                return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                    obj.get("bk_app_code", ""),
+                    obj.get("applied_by", ""),
+                    obj.get("tenant_mode", ""),
+                    obj.get("tenant_id", ""),
+                )
 
             if hasattr(obj, "mcp_server"):
                 return ResourcePermissionHandler.convert_applied_by_to_display_name(
