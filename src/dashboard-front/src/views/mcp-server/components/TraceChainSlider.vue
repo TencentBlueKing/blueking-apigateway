@@ -143,15 +143,16 @@ const handleCopy = (value: string) => {
   let content: string = value;
   if (value === 'link') {
     const url = new URL(location.href);
+    url.pathname = '/platform-tools/toolbox';
     url.searchParams.set('request_id', requestId);
-    url.searchParams.set('showTraceChain', 'true');
+    url.searchParams.set('toolbox_id', '2');
     content = url.toString();
   }
   copy(content);
 };
 
 const handleCloseSlider = () => {
-  traceStore.setTraceLogTab('proxy_log');
+  traceStore.setTraceLogTab('gateway_upstream');
 };
 
 defineExpose({

@@ -54,21 +54,6 @@ export const useDatePicker = (filterData?: any) => {
 
   // 不同页面存在多种日期快捷选项
   const shortcutsRange = computed(() => {
-    const isExistToday = accessLogStore.datepickerShortcuts.find((item: any) => item.text === t('今天'));
-    if (isObservabilityRoute && !isExistToday) {
-      return [
-        {
-          text: t('今天'),
-          value() {
-            const end = new Date();
-            const start = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-            return [start, end];
-          },
-        },
-        ...accessLogStore.datepickerShortcuts,
-      ];
-    }
-
     return isAccessLog.value
       ? accessLogStore.datepickerShortcuts
       : [

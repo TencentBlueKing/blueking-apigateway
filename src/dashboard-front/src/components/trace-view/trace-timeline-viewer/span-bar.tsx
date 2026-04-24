@@ -17,7 +17,7 @@
  */
 
 import _groupBy from 'lodash-es/groupBy';
-import type { ISpan, ITimeTick } from '@/components/trace-view/typings';
+import type { ISpan } from '@/components/trace-view/typings';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 import './span-bar.scss';
@@ -75,41 +75,10 @@ export default defineComponent({
       return `${formatted}%`;
     }
 
-    // 生成时间刻度
-    function generateTimeTicks(totalDuration: number): ITimeTick[] {
-      if (!totalDuration || totalDuration <= 0) return [];
-      const ticks: ITimeTick[] = [];
-      const step = Math.ceil(totalDuration / props.numTicks / 100) * 100;
-      let current = 0;
-
-      while (current <= totalDuration) {
-        ticks.push({
-          time: current,
-          percent: current / totalDuration,
-          label: `${current}ms`,
-        });
-        current += step;
-      }
-
-      if (ticks[ticks.length - 1].time !== totalDuration) {
-        ticks.push({
-          time: totalDuration,
-          percent: 1,
-          label: `${totalDuration}ms`,
-        });
-      }
-
-      // 给最后一个刻度加 is-last 标记
-      if (ticks.length > 0) {
-        ticks[ticks.length - 1].isLast = true;
-      }
-
-      return ticks;
-    }
-
     const setShortLabel = () => {
       label.value = props.shortLabel;
     };
+
     const setLongLabel = () => {
       label.value = props.longLabel;
     };
@@ -151,15 +120,12 @@ export default defineComponent({
       };
     });
 
-    const timeTicks = computed(() => generateTimeTicks(props.totalTraceDuration));
-
     return {
       label,
-      setShortLabel,
-      setLongLabel,
       barStyle,
       labelPosition,
-      timeTicks,
+      setShortLabel,
+      setLongLabel,
       toPercent,
     };
   },
@@ -174,14 +140,6 @@ export default defineComponent({
         onMouseout={this.setShortLabel}
         onMouseover={this.setLongLabel}
       >
-        {this.timeTicks.map((tick: any) => (
-          <div
-            key={tick.time}
-            class={['time-tick', { 'is-last': tick.isLast }]}
-            style={{ left: this.toPercent(tick.percent) }}
-          />
-        ))}
-
         <div
           style={this.barStyle}
           class={{

@@ -33,7 +33,7 @@
         v-bk-tooltips="{
           content: slots?.description,
           disabled: !(isShowExpand && !showExpandIcon),
-          extCls: 'max-w-480px'
+          extCls: 'max-w-480px break-all'
         }"
       >
         <slot name="description" />

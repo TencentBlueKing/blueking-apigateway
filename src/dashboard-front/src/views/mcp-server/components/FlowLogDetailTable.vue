@@ -41,65 +41,69 @@
           v-if="row.isExpand"
           class="expand-details"
         >
-          <div
+          <template
             v-for="({ label, field }, index) of expandedFields"
-            :key="index"
-            class="flex items-center expand-details-row"
+            :key="`${field}-${index}`"
           >
-            <div class="label">
-              {{ label }}
-              <span class="color-#979ba5">
-                (
-                <span
-                  v-bk-tooltips="t('复制')"
-                  class="hover:bg-#f0f1f5 cursor-pointer"
-                  @click.stop="() => copy(field)"
-                >
-                  {{ field }}
+            <div
+              v-if="isShowField({ row, field })"
+              class="flex items-center expand-details-row"
+            >
+              <div class="label">
+                {{ label }}
+                <span class="color-#979ba5">
+                  (
+                  <span
+                    v-bk-tooltips="t('复制')"
+                    class="hover:bg-#f0f1f5 cursor-pointer"
+                    @click.stop="() => copy(field)"
+                  >
+                    {{ field }}
+                  </span>
+                  ) :
                 </span>
-                ) :
-              </span>
-            </div>
-            <div class="value">
-              <!-- 200状态码时响应正文提示 -->
-              <span
-                v-if="(field as string) === 'response_body' && row.status === 200"
-                class="flex items-center color-#ff9c01"
-              >
-                <InfoLine class="text-14px mr-8px" />
-                <span>{{ t('状态码为 200 时不记录响应正文') }}</span>
-              </span>
-              <span
-                v-else
-                class="truncate"
-              >
-                {{ formatCellValue(row[field], field) }}
-              </span>
-              <!-- 操作按钮组 -->
-              <div
-                v-if="row[field]"
-                class="opt-btns"
-              >
-                <CopyShape
-                  v-bk-tooltips="t('复制')"
-                  class="opt-copy opt-icon"
-                  @click="() => handleRowCopy(field as any, row)"
-                />
-                <template v-if="isShowRetrieveBtn(field as any)">
-                  <EnlargeLine
-                    v-bk-tooltips="t('添加到本次检索')"
-                    class="opt-icon"
-                    @click="() => handleInclude(field as any, row)"
+              </div>
+              <div class="value">
+                <!-- 200状态码时响应正文提示 -->
+                <span
+                  v-if="field === 'response_body' && row.status === 200"
+                  class="flex items-center color-#ff9c01"
+                >
+                  <InfoLine class="text-14px mr-8px" />
+                  <span>{{ t('状态码为 200 时不记录响应正文') }}</span>
+                </span>
+                <span
+                  v-else
+                  class="truncate"
+                >
+                  {{ formatCellValue(row[field], field) }}
+                </span>
+                <!-- 操作按钮组 -->
+                <div
+                  v-if="row[field]"
+                  class="opt-btns"
+                >
+                  <CopyShape
+                    v-bk-tooltips="t('复制')"
+                    class="opt-copy opt-icon"
+                    @click="() => handleRowCopy(field, row)"
                   />
-                  <NarrowLine
-                    v-bk-tooltips="t('从本次检索中排除')"
-                    class="opt-icon"
-                    @click="() => handleExclude(field as any, row)"
-                  />
-                </template>
+                  <template v-if="isShowRetrieveBtn(field)">
+                    <EnlargeLine
+                      v-bk-tooltips="t('添加到本次检索')"
+                      class="opt-icon"
+                      @click="() => handleInclude(field, row)"
+                    />
+                    <NarrowLine
+                      v-bk-tooltips="t('从本次检索中排除')"
+                      class="opt-icon"
+                      @click="() => handleExclude(field, row)"
+                    />
+                  </template>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </template>
       <!-- 空单元格占位 -->
@@ -173,9 +177,6 @@ const detailEmptyConf = defineModel('detailEmptyConf', {
 const { apiGatewayId } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
-
-const route = useRoute();
-const router = useRouter();
 
 const tableRef = ref<InstanceType<typeof AgTable>>();
 const traceChainSliderRef = ref<InstanceType<typeof AgTraceChainSlider>>();
@@ -308,7 +309,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       return (
         <div class="flex items-center">
           <ag-icon
@@ -331,7 +332,7 @@ const tableColumns = shallowRef<any[]>([
     title: 'Tool/Prompt',
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       return row.tool_name || row.prompt_name || '--';
     },
   },
@@ -345,7 +346,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'latency',
     width: 150,
     ellipsis: true,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       const duration = row.latency;
       if (!duration) {
         return '--';
@@ -362,7 +363,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('状态'),
     colKey: 'status',
     width: 130,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       return (
         <AgStatusDot
           class="lh-20px"
@@ -376,7 +377,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('错误'),
     colKey: 'error',
     ellipsis: true,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       if (!row.error) return '--';
       return <span class="color-#ea3636">{row.error}</span>;
     },
@@ -386,7 +387,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'operate',
     fixed: 'right',
     width: 102,
-    cell: (_: any, { row }: { row: IFlowLogTable }) => {
+    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
       const isDisabled = !row.request_id && !row.x_request_id;
       return (
         <div class="flex">
@@ -473,19 +474,26 @@ const formatCellValue = (value: string | undefined, field: string) => {
   return value;
 };
 
+// 统一控制字段是否展示
+const isShowField = ({ row, field }: {
+  row: IFlowLogTable
+  field: string
+}) => {
+  const EXCLUDE_LOG_PATH = '/app/logs/mcp_proxy_api.log';
+  // path 字段且不是指定日志路径才显示
+  if (field === 'path') {
+    return row?.[field] !== EXCLUDE_LOG_PATH;
+  }
+
+  return true;
+};
+
 /**
  * 是否打开trace侧边栏
  */
 const handleShowTraceSlider = () => {
   nextTick(() => {
     traceChainSliderRef.value?.show();
-    router.replace({
-      query: {
-        ...route.query,
-        request_id: undefined,
-        showTraceChain: undefined,
-      },
-    });
   });
 };
 
@@ -504,7 +512,7 @@ const handleShowCallChain = (row: IFlowLogTable) => {
  * @param row 行数据
  */
 const handleRowCopy = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
-  const copyContent = `${field}: ${row[field] || '--'}`;
+  const copyContent = formatCellValue(row[field], field);
   copy(copyContent);
 };
 
@@ -600,22 +608,6 @@ const isSuccessStatus = (row: IFlowLogTable) => {
 const getRowClass = ({ row }: { row: IFlowLogTable }) => {
   return !isSuccessStatus(row) || row.error ? 'error-exception hover:cursor-pointer' : 'hover:cursor-pointer';
 };
-
-watch(
-  () => route.query,
-  (newQuery: any) => {
-    const { request_id, showTraceChain } = newQuery ?? {};
-    // 路由中带request_id时自动填充调用链
-    if (request_id) {
-      callChainDetail.value.request_id = request_id;
-      // 路由中带showTraceChain时自动打开调用链侧边栏
-      if (showTraceChain) {
-        handleShowTraceSlider();
-      }
-    }
-  },
-  { immediate: true },
-);
 
 defineExpose({
   getList,
