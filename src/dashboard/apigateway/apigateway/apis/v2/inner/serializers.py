@@ -531,7 +531,7 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
                     obj.mcp_server.gateway.tenant_id,
                 )
         except Exception:
-            logger.warning("Failed to convert applied_by for object: %s", obj)
+            logger.warning("Failed to convert applied_by for object: %s", obj, exc_info=True)
 
         return getattr(obj, "applied_by", "")
 
