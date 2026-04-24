@@ -1625,45 +1625,228 @@ class TestMCPServerHandler:
 
         assert mcp_server.categories.count() == 1
 
+    def test_build_batch_agent_client_config_empty_list(self):
+        """测试空列表返回空配置"""
+        result = MCPServerHandler.build_batch_agent_client_config([], "cursor", {}, user_tenant_id="")
+        assert result == {"mcpServers": {}}
 
-class TestBuildCategoriesMap:
-    """测试 MCPServerHandler.build_categories_map 批量查询分类"""
+    def test_build_batch_agent_client_config_cursor(self, fake_gateway, fake_stage):
+        """测试批量生成 Cursor 配置"""
+        server1 = G(
+            MCPServer,
+            name="server-1",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+        server2 = G(
+            MCPServer,
+            name="server-2",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource2",
+            oauth2_public_client_enabled=False,
+        )
 
-    def test_build_categories_map_with_categories(self, fake_gateway, fake_stage):
-        """有分类的 MCP Server 返回正确的分类映射"""
-        cat1, _ = MCPServerCategory.objects.get_or_create(name="official", defaults={"display_name": "Official"})
-        cat2, _ = MCPServerCategory.objects.get_or_create(name="ai", defaults={"display_name": "AI"})
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.categories.add(cat1, cat2)
+        least_privileges = {server1.id: "", server2.id: ""}
 
-        result = MCPServerHandler.build_categories_map([mcp_server.id])
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server1, server2], "cursor", least_privileges, user_tenant_id=""
+        )
 
-        assert mcp_server.id in result
-        categories = result[mcp_server.id]
-        assert len(categories) == 2
-        cat_names = {c["name"] for c in categories}
-        assert cat_names == {"official", "ai"}
+        assert "mcpServers" in result
+        assert "server-1" in result["mcpServers"]
+        assert "server-2" in result["mcpServers"]
 
-    def test_build_categories_map_no_categories(self, fake_gateway, fake_stage):
-        """无分类的 MCP Server 不出现在映射中"""
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        # 验证 Cursor 配置结构（不带 type 字段）
+        config1 = result["mcpServers"]["server-1"]
+        assert "url" in config1
+        assert "type" not in config1
+        assert "headers" in config1
+        assert "X-Bkapi-Authorization" in config1["headers"]
 
-        result = MCPServerHandler.build_categories_map([mcp_server.id])
+    def test_build_batch_agent_client_config_codebuddy(self, fake_gateway, fake_stage):
+        """测试批量生成 CodeBuddy 配置（包含 transportType）"""
+        server = G(
+            MCPServer,
+            name="codebuddy-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="streamable_http",
+        )
 
-        assert mcp_server.id not in result
+        least_privileges = {server.id: ""}
 
-    def test_build_categories_map_empty_ids(self):
-        """空 ID 列表返回空映射"""
-        result = MCPServerHandler.build_categories_map([])
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "codebuddy", least_privileges, user_tenant_id=""
+        )
 
-        assert result == {}
+        config = result["mcpServers"]["codebuddy-server"]
+        assert "url" in config
+        assert "transportType" in config
+        assert config["transportType"] == "streamable-http"
+        assert "type" not in config
 
-    def test_build_categories_map_filters_inactive(self, fake_gateway, fake_stage):
-        """不活跃的分类被过滤"""
-        cat_inactive = G(MCPServerCategory, name="inactive_cat", display_name="Inactive", is_active=False)
-        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        mcp_server.categories.add(cat_inactive)
+    def test_build_batch_agent_client_config_claude(self, fake_gateway, fake_stage):
+        """测试批量生成 Claude 配置（包含 type 字段，顶层 key 为 mcpServers）"""
+        server = G(
+            MCPServer,
+            name="claude-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="streamable_http",
+        )
 
-        result = MCPServerHandler.build_categories_map([mcp_server.id])
+        least_privileges = {server.id: ""}
 
-        assert mcp_server.id not in result
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "claude", least_privileges, user_tenant_id=""
+        )
+
+        # Claude 顶层 key 为 mcpServers
+        assert "mcpServers" in result
+        config = result["mcpServers"]["claude-server"]
+        assert "url" in config
+        assert "type" in config
+        assert config["type"] == "http"
+        assert "transportType" not in config
+
+    def test_build_batch_agent_client_config_vscode(self, fake_gateway, fake_stage):
+        """测试批量生成 VSCode 配置（包含 type 字段，顶层 key 为 servers）"""
+        server = G(
+            MCPServer,
+            name="vscode-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="streamable_http",
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "vscode", least_privileges, user_tenant_id=""
+        )
+
+        # VSCode 顶层 key 为 servers
+        assert "servers" in result
+        assert "mcpServers" not in result
+        config = result["servers"]["vscode-server"]
+        assert "url" in config
+        assert "type" in config
+        assert config["type"] == "http"
+
+    def test_build_batch_agent_client_config_oauth2_public_client_enabled(self, fake_gateway, fake_stage, settings):
+        """测试 OAuth2 公开客户端模式开启时不包含认证请求头"""
+        server = G(
+            MCPServer,
+            name="oauth2-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=True,
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "cursor", least_privileges, user_tenant_id=""
+        )
+
+        config = result["mcpServers"]["oauth2-server"]
+        # OAuth2 公开客户端模式下不应该有 headers
+        assert "headers" not in config or "X-Bkapi-Authorization" not in config.get("headers", {})
+
+    def test_build_batch_agent_client_config_with_tenant(self, fake_gateway, fake_stage, settings):
+        """测试多租户模式下包含租户 ID"""
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        server = G(
+            MCPServer,
+            name="tenant-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "cursor", least_privileges, user_tenant_id="tenant-123"
+        )
+
+        config = result["mcpServers"]["tenant-server"]
+        assert "headers" in config
+        assert "X-Bk-Tenant-Id" in config["headers"]
+        assert config["headers"]["X-Bk-Tenant-Id"] == "tenant-123"
+
+    def test_build_batch_agent_client_config_sse_protocol(self, fake_gateway, fake_stage):
+        """测试 SSE 协议类型"""
+        server = G(
+            MCPServer,
+            name="sse-server",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+            protocol_type="sse",
+        )
+
+        least_privileges = {server.id: ""}
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server], "codebuddy", least_privileges, user_tenant_id=""
+        )
+
+        config = result["mcpServers"]["sse-server"]
+        # SSE 协议下 CodeBuddy 的 transportType 应为 sse
+        assert config["transportType"] == "sse"
+
+    def test_build_batch_agent_client_config_per_server_least_privilege(self, fake_gateway, fake_stage):
+        """测试同一 gateway+stage 下不同 server 的 least_privilege 独立计算"""
+        server1 = G(
+            MCPServer,
+            name="server-app",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+            oauth2_public_client_enabled=False,
+        )
+        server2 = G(
+            MCPServer,
+            name="server-user",
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource2",
+            oauth2_public_client_enabled=False,
+        )
+
+        # 不同的 least_privilege（按 mcp_server.id 为 key）
+        least_privileges = {
+            server1.id: MCPServerLeastPrivilegeEnum.APPLICATION.value,
+            server2.id: MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value,
+        }
+
+        result = MCPServerHandler.build_batch_agent_client_config(
+            [server1, server2], "cursor", least_privileges, user_tenant_id=""
+        )
+
+        assert "server-app" in result["mcpServers"]
+        assert "server-user" in result["mcpServers"]
