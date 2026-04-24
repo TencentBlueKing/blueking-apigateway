@@ -17,3 +17,5 @@ pre-*-bkcodeai
 
 bkcodeai.json
 .worktrees
+
+*.png
