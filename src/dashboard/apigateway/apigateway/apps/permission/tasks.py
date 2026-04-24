@@ -248,9 +248,7 @@ class AppPermissionExpiringSoonAlerter:
             )
 
         # 过滤掉已拥有永久网关维度权限的应用，网关维度权限可以覆盖资源维度权限，无需告警
-        permissions_by_resource = AppResourcePermission.objects.filter(
-            expires__range=(now, expire_end_time)
-        ).filter(
+        permissions_by_resource = AppResourcePermission.objects.filter(expires__range=(now, expire_end_time)).filter(
             ~Exists(
                 AppGatewayPermission.objects.filter(
                     gateway_id=OuterRef("gateway_id"),
