@@ -36,6 +36,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerLeastPrivilegeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
+    get_mcp_config_agent_clients,
 )
 from apigateway.apps.mcp_server.models import (
     MCPServer,
@@ -1016,7 +1017,7 @@ class MCPServerHandler:
         enable_multi_tenant_mode = settings.ENABLE_MULTI_TENANT_MODE
         configs = []
 
-        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+        for client in get_mcp_config_agent_clients():
             template_name = f"mcp_server/{language_code}/config/{client['name']}.md"
 
             # 根据 protocol_type 和客户端类型确定 transport_type
@@ -1066,7 +1067,7 @@ class MCPServerHandler:
     @staticmethod
     def get_client_display_name(client_type: str) -> str:
         """获取客户端类型的显示名称"""
-        for client in settings.MCP_CONFIG_AGENT_CLIENTS:
+        for client in get_mcp_config_agent_clients():
             if client["name"] == client_type:
                 return client["display_name"]
         return client_type

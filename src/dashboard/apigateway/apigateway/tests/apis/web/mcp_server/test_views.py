@@ -870,12 +870,15 @@ class TestMCPServerConfigListApi:
             return_value="# Config Content",
         )
         # 模拟配置了 AIDEV_AGENT_CREATE_URL（AIDev 启用）
-        settings.MCP_CONFIG_AGENT_CLIENTS = [
-            {"name": "codebuddy", "display_name": "CodeBuddy"},
-            {"name": "cursor", "display_name": "Cursor"},
-            {"name": "claude", "display_name": "Claude"},
-            {"name": "aidev", "display_name": "AIDev"},
-        ]
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.get_mcp_config_agent_clients",
+            return_value=[
+                {"name": "codebuddy", "display_name": "CodeBuddy"},
+                {"name": "cursor", "display_name": "Cursor"},
+                {"name": "claude", "display_name": "Claude"},
+                {"name": "aidev", "display_name": "AIDev"},
+            ],
+        )
 
         resp = request_view(
             method="GET",

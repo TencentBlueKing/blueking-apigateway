@@ -17,6 +17,7 @@
 #
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
@@ -91,6 +92,26 @@ class MCPAgentClientTypeEnum(StructuredEnum):
 MCP_AGENT_CLIENT_CHOICES_WITHOUT_AIDEV = [
     choice for choice in MCPAgentClientTypeEnum.get_choices() if choice[0] != MCPAgentClientTypeEnum.AIDEV.value
 ]
+
+# MCP Server 配置工具的默认客户端类型列表（不含 AIDev）
+_MCP_CONFIG_DEFAULT_CLIENT_TYPES = [
+    MCPAgentClientTypeEnum.CODEBUDDY,
+    MCPAgentClientTypeEnum.CURSOR,
+    MCPAgentClientTypeEnum.CLAUDE,
+    MCPAgentClientTypeEnum.VSCODE,
+]
+
+
+def get_mcp_config_agent_clients() -> list:
+    """获取 MCP Server 配置工具的客户端列表，根据 AIDEV_AGENT_CREATE_URL 动态决定是否包含 AIDev"""
+    clients = [{"name": member.value, "display_name": member.label} for member in _MCP_CONFIG_DEFAULT_CLIENT_TYPES]
+
+    if getattr(settings, "AIDEV_AGENT_CREATE_URL", ""):
+        clients.append(
+            {"name": MCPAgentClientTypeEnum.AIDEV.value, "display_name": MCPAgentClientTypeEnum.AIDEV.label}
+        )
+
+    return clients
 
 
 # MCPServer 分类名称常量 - 用于判断特殊分类

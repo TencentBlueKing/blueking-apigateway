@@ -562,21 +562,6 @@ AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 # MCP Server OAuth2 公开客户端模式开启后自动授权的 bk_app_code
 MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public")
 
-# MCP Server 配置工具列表
-# 注意：此处使用字面值而非枚举引用，因为 settings 加载阶段 Django app registry 尚未初始化，
-# 无法导入使用了 gettext_lazy 的 constants 模块。值需要与 MCPAgentClientTypeEnum 保持一致。
-MCP_CONFIG_AGENT_CLIENTS = [
-    {"name": "codebuddy", "display_name": "CodeBuddy"},
-    {"name": "cursor", "display_name": "Cursor"},
-    {"name": "claude", "display_name": "Claude"},
-    {"name": "vscode", "display_name": "VSCode"},
-]
-
-# 如果配置了 AIDEV_AGENT_CREATE_URL，则添加 AIDev 到配置列表
-if AIDEV_AGENT_CREATE_URL:
-    MCP_CONFIG_AGENT_CLIENTS.append({"name": "aidev", "display_name": "AIDev"})
-
-
 # ==============================================================================
 # 网关全局配置
 # ==============================================================================
