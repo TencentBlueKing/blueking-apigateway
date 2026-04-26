@@ -514,24 +514,29 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
 
     def get_applied_by(self, obj):
         """获取申请人 display_name"""
-        try:
-            if isinstance(obj, dict):
+        if isinstance(obj, dict):
+            try:
                 return ResourcePermissionHandler.convert_applied_by_to_display_name(
                     obj.get("bk_app_code", ""),
                     obj.get("applied_by", ""),
                     obj.get("tenant_mode", ""),
                     obj.get("tenant_id", ""),
                 )
+            except Exception:
+                logger.warning("Failed to convert applied_by for dict object: %s", obj, exc_info=True)
+                return obj.get("applied_by", "")
 
-            if hasattr(obj, "mcp_server"):
+        if hasattr(obj, "mcp_server"):
+            try:
                 return ResourcePermissionHandler.convert_applied_by_to_display_name(
                     obj.bk_app_code,
                     obj.applied_by,
                     obj.mcp_server.gateway.tenant_mode,
                     obj.mcp_server.gateway.tenant_id,
                 )
-        except Exception:
-            logger.warning("Failed to convert applied_by for object: %s", obj, exc_info=True)
+            except Exception:
+                logger.warning("Failed to convert applied_by for model object: %s", obj, exc_info=True)
+                return getattr(obj, "applied_by", "")
 
         return getattr(obj, "applied_by", "")
 
