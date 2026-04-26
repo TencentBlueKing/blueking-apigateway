@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	sty "mcp_proxy/pkg/infra/sentry"
 )
@@ -64,16 +65,26 @@ func Run(cfg *config.Config) {
 	<-quit
 	logging.GetLogger().Info("Shutdown Server ...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	// Flush buffered sentry events before exit (defer ensures this runs even on fatal paths)
 	defer sty.Flush(2 * time.Second)
 
-	if err := srv.Shutdown(ctx); err != nil {
-		logging.GetLogger().Fatalf("Server Shutdown: %s", err)
+	// Shutdown HTTP server with a 5-second timeout
+	srvCtx, srvCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer srvCancel()
+
+	if err := srv.Shutdown(srvCtx); err != nil {
+		logging.GetLogger().Errorf("Server Shutdown: %s", err)
 	}
-	// catching ctx.Done(). timeout of 5 seconds.
-	<-ctx.Done()
-	logging.GetLogger().Info("timeout of 5 seconds.")
+
+	// Shutdown BkAIDev trace provider with its own independent context,
+	// so it has a full 3 seconds to flush buffered spans regardless of
+	// how long srv.Shutdown took.
+	traceCtx, traceCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer traceCancel()
+
+	if err := bkaidevtrace.Shutdown(traceCtx); err != nil {
+		logging.GetLogger().Errorf("BkAIDev trace shutdown error: %s", err)
+	}
+
 	logging.GetLogger().Info("Server exiting")
 }

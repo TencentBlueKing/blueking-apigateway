@@ -33,6 +33,7 @@ import (
 	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/entity/model"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
 	"mcp_proxy/pkg/util"
@@ -357,6 +358,10 @@ func addMCPServer(
 		// Add tracing middleware if MCP tracing is enabled
 		if config.G.Tracing.McpAPIEnabled() {
 			AddTracingMiddleware(mcpServer.GetServer(), svr.Name)
+		}
+		// Add BKAIDev trace middleware if enabled
+		if bkaidevtrace.Enabled() {
+			AddBkAIDevTraceMiddleware(mcpServer.GetServer(), svr.Name)
 		}
 	}
 

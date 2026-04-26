@@ -16,39 +16,29 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-package middleware
+package bkaidevtrace
 
 import (
-	"encoding/json"
+	"sync"
 
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/cast"
-
-	"mcp_proxy/pkg/constant"
-	"mcp_proxy/pkg/util"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// MCPServerHeaderMiddleware ... 用于处理mcp server的header参数
-func MCPServerHeaderMiddleware() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		// 设置 timeout
-		util.SetBkApiTimeout(c, cast.ToInt(c.Request.Header.Get(constant.BkApiTimeoutHeaderKey)))
-		// 处理 AllowedHeaders
-		util.SetBkApiAllowedHeaders(c, c.Request.Header.Get(constant.BkApiAllowedHeadersKey))
-		// 解析 ItsmFlex header
-		parseBkApiItsmFlex(c)
-		c.Next()
-	}
+// ResetForTest resets all global state so that Init can be called again in tests.
+// NOTE: This function is exported for cross-package test usage (e.g., middleware_test).
+// It is only intended for use in test code; production callers should never invoke it.
+func ResetForTest() {
+	globalProvider = nil
+	globalTracer = nil
+	propagator = nil
+	once = sync.Once{}
 }
 
-func parseBkApiItsmFlex(c *gin.Context) {
-	itsmFlexStr := c.Request.Header.Get(constant.BkApiItsmFlexKey)
-	if itsmFlexStr == "" {
-		return
-	}
-	var data util.ItsmFlexData
-	if err := json.Unmarshal([]byte(itsmFlexStr), &data); err != nil {
-		return
-	}
-	util.SetBkApiItsmFlexData(c, &data)
+// SetTestProvider injects a test TracerProvider and propagator directly.
+// NOTE: This function is exported for cross-package test usage only.
+func SetTestProvider(tp *sdktrace.TracerProvider, p propagation.TextMapPropagator) {
+	globalProvider = tp
+	globalTracer = tp.Tracer("test")
+	propagator = p
 }
