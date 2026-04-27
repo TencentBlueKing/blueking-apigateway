@@ -35,6 +35,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.models import Resource
@@ -367,7 +368,7 @@ class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):
     mcp_server = MCPServerBaseSLZ()
     id = serializers.IntegerField(read_only=True, help_text="申请记录 ID")
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
-    applied_by = serializers.CharField(read_only=True, help_text="申请人")
+    applied_by = serializers.SerializerMethodField(help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
     handled_by = serializers.CharField(read_only=True, help_text="处理人")
     handled_time = serializers.DateTimeField(read_only=True, help_text="处理时间")
@@ -383,6 +384,14 @@ class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):
 
     def get_approval_url(self, obj) -> str:
         return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+
+    def get_applied_by(self, obj):
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            obj.mcp_server.gateway.tenant_mode,
+            obj.mcp_server.gateway.tenant_id,
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyRecordListOutputSLZ"
