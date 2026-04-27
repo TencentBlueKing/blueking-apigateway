@@ -27,12 +27,12 @@ import (
 
 // MCPServerConfig ...
 type MCPServerConfig struct {
-	Name              string        `json:"name"`  // 唯一标识name，可以是：gateway_name+stage或者其他id
-	Title             string        `json:"title"` // 标题
-	ResourceVersionID int           `json:"resource_version_id"`
-	Tools             []*ToolConfig `json:"tools"`
-	ProtocolType      string        `json:"protocol_type"` // 协议类型: sse 或 streamable_http
-	RawResponseEnabled bool `json:"raw_response_enabled"` // 是否返回原始响应，开启后直接返回 API 响应结果，不添加 request_id 等额外信息
+	Name               string        `json:"name"`  // 唯一标识name，可以是：gateway_name+stage或者其他id
+	Title              string        `json:"title"` // 标题
+	ResourceVersionID  int           `json:"resource_version_id"`
+	Tools              []*ToolConfig `json:"tools"`
+	ProtocolType       string        `json:"protocol_type"`        // 协议类型: sse 或 streamable_http
+	RawResponseEnabled bool          `json:"raw_response_enabled"` // 是否返回原始响应，开启后直接返回 API 响应结果，不添加 request_id 等额外信息
 }
 
 // ToolConfig ...

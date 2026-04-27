@@ -369,4 +369,44 @@ var _ = Describe("Context", func() {
 			Expect(headers["X-Header-2"]).To(Equal("value2"))
 		})
 	})
+
+	Describe("BkApiItsmFlexData", func() {
+		It("should set and get ItsmFlex data", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			data := &util.ItsmFlexData{
+				AgentCode:      "ai-test-appcode",
+				AgentName:      "AgentName",
+				CallerExecutor: "judge-caller",
+				Executor:       "judge-executor",
+			}
+			util.SetBkApiItsmFlexData(c, data)
+
+			retrieved := util.GetBkApiItsmFlexData(c.Request.Context())
+			Expect(retrieved).NotTo(BeNil())
+			Expect(retrieved.AgentCode).To(Equal("ai-test-appcode"))
+			Expect(retrieved.AgentName).To(Equal("AgentName"))
+			Expect(retrieved.CallerExecutor).To(Equal("judge-caller"))
+			Expect(retrieved.Executor).To(Equal("judge-executor"))
+		})
+
+		It("should return nil when not set", func() {
+			ctx := context.Background()
+			data := util.GetBkApiItsmFlexData(ctx)
+			Expect(data).To(BeNil())
+		})
+
+		It("should return nil when set to nil", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			util.SetBkApiItsmFlexData(c, nil)
+
+			retrieved := util.GetBkApiItsmFlexData(c.Request.Context())
+			Expect(retrieved).To(BeNil())
+		})
+	})
 })

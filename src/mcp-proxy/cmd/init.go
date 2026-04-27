@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/database"
 	"mcp_proxy/pkg/infra/logging"
 	sty "mcp_proxy/pkg/infra/sentry"
@@ -92,4 +93,18 @@ func initTracing() {
 		return
 	}
 	logging.GetLogger().Info("init tracing success")
+}
+
+func initBkAIDevTrace() {
+	if !globalConfig.BkAIDevTrace.Enable {
+		logging.GetLogger().Info("bkai dev trace is not enabled, will not init it")
+		return
+	}
+	logging.GetLogger().Info("enabling bkai dev trace")
+	err := bkaidevtrace.Init(globalConfig.BkAIDevTrace)
+	if err != nil {
+		logging.GetLogger().Errorf("init bkai dev trace fail: %+v", err)
+		return
+	}
+	logging.GetLogger().Info("init bkai dev trace success")
 }

@@ -294,6 +294,29 @@ func GetBkApiAllowedHeaders(ctx context.Context) map[string]string {
 	return allowedHeaders
 }
 
+// ItsmFlexData holds fields extracted from X-Bkapi-ItsmFlex header.
+type ItsmFlexData struct {
+	AgentCode      string `json:"agent.info.code"`
+	AgentName      string `json:"agent.info.name"`
+	CallerExecutor string `json:"agent.session.caller_executor"`
+	Executor       string `json:"agent.session.executor"`
+}
+
+// SetBkApiItsmFlexData stores the parsed ItsmFlex data into context.
+func SetBkApiItsmFlexData(c *gin.Context, data *ItsmFlexData) {
+	if c.Request != nil {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiItsmFlexData, data))
+	}
+}
+
+// GetBkApiItsmFlexData retrieves the parsed ItsmFlex data from context.
+func GetBkApiItsmFlexData(ctx context.Context) *ItsmFlexData {
+	if data, ok := ctx.Value(constant.BkApiItsmFlexData).(*ItsmFlexData); ok {
+		return data
+	}
+	return nil
+}
+
 // JWTClaimsForLazySigning 用于延迟签发 JWT 的 claims 信息
 type JWTClaimsForLazySigning struct {
 	AppCode      string
@@ -331,5 +354,3 @@ func GetPrivateKeyFromContext(ctx context.Context) []byte {
 	}
 	return nil
 }
-
-

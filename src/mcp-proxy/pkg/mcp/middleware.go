@@ -37,6 +37,7 @@ import (
 	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/infra/trace"
@@ -561,4 +562,85 @@ func TracingMiddleware(serverName string) mcp.Middleware {
 // AddTracingMiddleware adds tracing middleware to the MCP server.
 func AddTracingMiddleware(server *mcp.Server, serverName string) {
 	server.AddReceivingMiddleware(TracingMiddleware(serverName))
+}
+
+// BkAIDevTraceMiddleware returns a middleware that creates independent BKAIDev Agent
+// trace spans for MCP method calls. It uses the isolated bkaidevtrace provider.
+func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
+			if !bkaidevtrace.Enabled() {
+				return next(ctx, method, req)
+			}
+
+			spanName := fmt.Sprintf("mcp_gw.%s.%s", serverName, method)
+			start := time.Now()
+
+			ctx, span := bkaidevtrace.StartSpan(ctx, spanName)
+			defer span.End()
+
+			// Collect attributes
+			appCode := util.GetAppCodeFromContext(ctx)
+			username := util.GetUsernameFromContext(ctx)
+			clientIP := util.GetClientIPFromContext(ctx)
+			clientID := util.GetClientIDFromContext(ctx)
+			gatewayName := util.GetGatewayNameFromContext(ctx)
+			requestID := util.GetRequestIDFromContext(ctx)
+			xRequestID := util.GetXRequestIDFromContext(ctx)
+			traceID := bkaidevtrace.GetTraceIDFromContext(ctx)
+
+			span.SetAttributes(
+				attribute.String("app_code", appCode),
+				attribute.String("bk_username", username),
+				attribute.String("client_ip", clientIP),
+				attribute.String("client_id", clientID),
+				attribute.String("gateway_name", gatewayName),
+				attribute.String("mcp_server_name", serverName),
+				attribute.String("request_id", requestID),
+				attribute.String("x_request_id", xRequestID),
+				attribute.String("trace_id", traceID),
+			)
+
+			// ItsmFlex fields
+			if itsmFlex := util.GetBkApiItsmFlexData(ctx); itsmFlex != nil {
+				span.SetAttributes(
+					attribute.String("caller_executor", itsmFlex.CallerExecutor),
+					attribute.String("agent_code", itsmFlex.AgentCode),
+				)
+			}
+
+			// Tool name
+			if method == "tools/call" {
+				toolName := extractToolName(req)
+				if toolName != "" {
+					span.SetAttributes(attribute.String("tool_name", toolName))
+				}
+			}
+
+			result, err = next(ctx, method, req)
+
+			// Status and latency
+			latency := time.Since(start)
+			status := "success"
+			if err != nil {
+				status = "failed"
+				span.SetStatus(codes.Error, err.Error())
+				var jsonrpcErr *jsonrpc.Error
+				if errors.As(err, &jsonrpcErr) {
+					span.SetAttributes(attribute.Int64("error_code", jsonrpcErr.Code))
+				}
+			}
+			span.SetAttributes(
+				attribute.String("status", status),
+				attribute.Float64("latency_ms", latency.Seconds()*1000),
+			)
+
+			return result, err
+		}
+	}
+}
+
+// AddBkAIDevTraceMiddleware adds BKAIDev trace middleware to the MCP server.
+func AddBkAIDevTraceMiddleware(server *mcp.Server, serverName string) {
+	server.AddReceivingMiddleware(BkAIDevTraceMiddleware(serverName))
 }

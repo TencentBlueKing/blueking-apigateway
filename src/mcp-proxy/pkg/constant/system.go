@@ -35,6 +35,9 @@ const (
 	// BkApiAllowedHeadersKey is a key to set the allowed headers in header
 	BkApiAllowedHeadersKey = "X-Bkapi-Allowed-Headers"
 
+	// BkApiItsmFlexKey is a key to set the itsm flex info in header
+	BkApiItsmFlexKey = "X-Bkapi-ItsmFlex"
+
 	// BkApiMCPServerIDKey is a key to set the mcp server id in header
 	BkApiMCPServerIDKey = "X-Bkapi-Mcp-Server-Id"
 	// BkApiMCPServerNameKey is a key to set the mcp server name in header
@@ -60,6 +63,7 @@ const (
 	TraceID             CtxKey = "trace_id"
 	BkApiTimeout        CtxKey = "bk_api_timeout"
 	BkApiAllowedHeaders CtxKey = "bk_api_allowed_headers"
+	BkApiItsmFlexData   CtxKey = "bk_api_itsm_flex_data"
 	ClientIP            CtxKey = "client_ip"
 	ClientID            CtxKey = "client_id"
 )
