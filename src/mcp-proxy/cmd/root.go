@@ -89,6 +89,7 @@ func Start() {
 	initLogger()
 	initDatabase()
 	initTracing()
+	initBkAIDevTrace()
 	initSentry()
 	initMetrics()
 

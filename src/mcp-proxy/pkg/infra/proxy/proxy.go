@@ -258,10 +258,10 @@ func (m *MCPProxy) AddMCPServerFromOpenAPISpec(name string,
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:              name,
-		Tools:             OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
-		ResourceVersionID: resourceVersionID,
-		ProtocolType:      protocolType,
+		Name:               name,
+		Tools:              OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
+		ResourceVersionID:  resourceVersionID,
+		ProtocolType:       protocolType,
 		RawResponseEnabled: rawResponseEnabled,
 	}
 	return m.AddMCPServerFromConfigs([]*MCPServerConfig{mcpServerConfig})
@@ -279,8 +279,8 @@ func (m *MCPProxy) UpdateMCPServerFromOpenApiSpec(
 		operationIDMap[operationID] = struct{}{}
 	}
 	mcpServerConfig := &MCPServerConfig{
-		Name:        name,
-		Tools:       OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
+		Name:               name,
+		Tools:              OpenapiToMcpToolConfig(openAPISpec, operationIDMap, toolNameMap),
 		RawResponseEnabled: rawResponseEnabled,
 	}
 	// update tool
@@ -919,12 +919,12 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						}
 					}
 
-				var responseResult any
-				if rawResponseEnabledGetter() {
-					// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
-					// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
-					// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
-					responseResult = res
+					var responseResult any
+					if rawResponseEnabledGetter() {
+						// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
+						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
+						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
+						responseResult = res
 					} else {
 						responseResult = buildToolResponseEnvelope(
 							response.Code(),

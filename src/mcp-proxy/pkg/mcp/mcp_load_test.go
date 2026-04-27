@@ -151,9 +151,9 @@ var _ = Describe("MCP Load Functions", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			server := &model.MCPServer{
-				Name:                "test-server",
-				ProtocolType:        constant.MCPServerProtocolTypeSSE,
-				RawResponseEnabled:  true, // Changed raw_response_enabled
+				Name:               "test-server",
+				ProtocolType:       constant.MCPServerProtocolTypeSSE,
+				RawResponseEnabled: true, // Changed raw_response_enabled
 			}
 			release := &model.Release{ResourceVersionID: 1}
 

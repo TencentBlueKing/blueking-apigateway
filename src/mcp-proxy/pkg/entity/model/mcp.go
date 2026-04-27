@@ -40,16 +40,16 @@ const ToolNameSeparator = "@"
 
 // MCPServer ...
 type MCPServer struct {
-	ID            int         `gorm:"primaryKey;autoIncrement;column:id"`
-	Name          string      `gorm:"column:name;size:64;uniqueIndex"`
-	Description   string      `gorm:"column:description;size:512"`
-	IsPublic      bool        `gorm:"column:is_public"`
-	Labels        ArrayString `gorm:"column:labels"`
-	ResourceNames ArrayString `gorm:"column:resource_names"`
-	Status        int         `gorm:"column:status"`
-	GatewayID     int         `gorm:"column:gateway_id"`
-	StageID       int         `gorm:"column:stage_id"`
-	ProtocolType  string      `gorm:"column:protocol_type;size:32;default:sse"`
+	ID                 int         `gorm:"primaryKey;autoIncrement;column:id"`
+	Name               string      `gorm:"column:name;size:64;uniqueIndex"`
+	Description        string      `gorm:"column:description;size:512"`
+	IsPublic           bool        `gorm:"column:is_public"`
+	Labels             ArrayString `gorm:"column:labels"`
+	ResourceNames      ArrayString `gorm:"column:resource_names"`
+	Status             int         `gorm:"column:status"`
+	GatewayID          int         `gorm:"column:gateway_id"`
+	StageID            int         `gorm:"column:stage_id"`
+	ProtocolType       string      `gorm:"column:protocol_type;size:32;default:sse"`
 	RawResponseEnabled bool        `gorm:"column:raw_response_enabled;default:false"`
 }
 

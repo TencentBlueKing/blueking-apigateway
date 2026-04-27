@@ -81,8 +81,8 @@ var _ = Describe("Config", func() {
 	Describe("MCPServerConfig", func() {
 		It("should have correct fields", func() {
 			config := proxy.MCPServerConfig{
-				Name:              "test-server",
-				ResourceVersionID: 123,
+				Name:               "test-server",
+				ResourceVersionID:  123,
 				RawResponseEnabled: true,
 				Tools: []*proxy.ToolConfig{
 					{

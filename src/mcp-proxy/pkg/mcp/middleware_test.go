@@ -30,10 +30,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	mcppkg "mcp_proxy/pkg/mcp"
 	"mcp_proxy/pkg/metric"
+	"mcp_proxy/pkg/util"
 )
 
 // getCounterValue extracts the float64 value from a CounterVec for the given labels
@@ -424,6 +430,162 @@ var _ = Describe("Middleware", func() {
 		It("should return string representation for unknown codes", func() {
 			Expect(mcppkg.MatchErrorCodeNameForTest(-32000)).To(Equal("-32000"))
 			Expect(mcppkg.MatchErrorCodeNameForTest(42)).To(Equal("42"))
+		})
+	})
+
+	Describe("BkAIDevTraceMiddleware", func() {
+		var exporter *tracetest.InMemoryExporter
+
+		BeforeEach(func() {
+			bkaidevtrace.ResetForTest()
+			exporter = tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			bkaidevtrace.SetTestProvider(tp, propagation.NewCompositeTextMapPropagator(
+				propagation.TraceContext{},
+				propagation.Baggage{},
+			))
+		})
+
+		AfterEach(func() {
+			bkaidevtrace.ResetForTest()
+		})
+
+		It("should pass through when not initialized", func() {
+			bkaidevtrace.ResetForTest()
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			result, err := handler(ctx, "initialize", nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(successResult))
+		})
+
+		It("should create span with correct name and attributes on success", func() {
+			testCtx := context.WithValue(ctx, constant.BkAppCode, "test-app")
+			testCtx = context.WithValue(testCtx, constant.BkUsername, "test-user")
+			testCtx = context.WithValue(testCtx, constant.ClientIP, "127.0.0.1")
+			testCtx = context.WithValue(testCtx, constant.ClientID, "test-client")
+			testCtx = context.WithValue(testCtx, constant.GatewayName, "test-gateway")
+			testCtx = context.WithValue(testCtx, constant.RequestID, "req-123")
+			testCtx = context.WithValue(testCtx, constant.XRequestID, "x-req-456")
+
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			_, err := handler(testCtx, "tools/list", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			span := spans[0]
+			Expect(span.Name).To(Equal("mcp_gw.test-server.tools/list"))
+			Expect(span.Status.Code).NotTo(Equal(codes.Error))
+
+			attrs := make(map[string]any)
+			for _, attr := range span.Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrs["app_code"]).To(Equal("test-app"))
+			Expect(attrs["bk_username"]).To(Equal("test-user"))
+			Expect(attrs["client_ip"]).To(Equal("127.0.0.1"))
+			Expect(attrs["client_id"]).To(Equal("test-client"))
+			Expect(attrs["gateway_name"]).To(Equal("test-gateway"))
+			Expect(attrs["mcp_server_name"]).To(Equal("test-server"))
+			Expect(attrs["request_id"]).To(Equal("req-123"))
+			Expect(attrs["x_request_id"]).To(Equal("x-req-456"))
+			Expect(attrs["status"]).To(Equal("success"))
+			Expect(attrs["latency_ms"]).To(BeNumerically(">=", 0))
+			Expect(attrs["trace_id"]).NotTo(BeEmpty())
+		})
+
+		It("should create span with error status and error_code on failure", func() {
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return nil, &jsonrpc.Error{
+					Code:    jsonrpc.CodeMethodNotFound,
+					Message: "method not found",
+				}
+			})
+			_, err := handler(ctx, "tools/call", nil)
+			Expect(err).To(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			span := spans[0]
+			Expect(span.Name).To(Equal("mcp_gw.test-server.tools/call"))
+			Expect(span.Status.Code).To(Equal(codes.Error))
+
+			attrs := make(map[string]any)
+			for _, attr := range span.Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrs["status"]).To(Equal("failed"))
+			Expect(attrs["error_code"]).To(Equal(int64(jsonrpc.CodeMethodNotFound)))
+		})
+
+		It("should include tool_name for tools/call", func() {
+			req := &sdkmcp.ServerRequest[*sdkmcp.CallToolParamsRaw]{
+				Params: &sdkmcp.CallToolParamsRaw{Name: "test-tool"},
+			}
+
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			_, err := handler(ctx, "tools/call", req)
+			Expect(err).NotTo(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			attrs := make(map[string]any)
+			for _, attr := range spans[0].Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrs["tool_name"]).To(Equal("test-tool"))
+		})
+
+		It("should include caller_executor and agent_code when ItsmFlex is present", func() {
+			testCtx := context.WithValue(ctx, constant.BkApiItsmFlexData, &util.ItsmFlexData{
+				CallerExecutor: "judge-caller",
+				AgentCode:      "ai-test-appcode",
+			})
+
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			_, err := handler(testCtx, "initialize", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			attrs := make(map[string]any)
+			for _, attr := range spans[0].Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrs["caller_executor"]).To(Equal("judge-caller"))
+			Expect(attrs["agent_code"]).To(Equal("ai-test-appcode"))
+		})
+
+		It("should record latency_ms as float with sub-millisecond precision", func() {
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			_, err := handler(ctx, "initialize", nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			attrs := make(map[string]any)
+			for _, attr := range spans[0].Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			latency, ok := attrs["latency_ms"].(float64)
+			Expect(ok).To(BeTrue())
+			Expect(latency).To(BeNumerically(">=", 0))
 		})
 	})
 })

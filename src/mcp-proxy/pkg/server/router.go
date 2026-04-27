@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"mcp_proxy/pkg/config"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
 	sty "mcp_proxy/pkg/infra/sentry"
@@ -109,11 +110,16 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	logging.GetLogger().Infof("mcp proxy init complete, duration=%s", time.Since(mcpInitStart))
 
 	// 用户态路由
+	// BkAIDevTraceContextMiddleware is registered at the group level, so it covers
+	// both SSE (/sse) and Streamable HTTP (/mcp) routes within this group.
 	seeRouter := router.Group("/:name")
 	seeRouter.Use(middleware.APILogger())
 	seeRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeRouter.Use(middleware.MCPServerHeaderMiddleware())
+	if bkaidevtrace.Enabled() {
+		seeRouter.Use(middleware.BkAIDevTraceContextMiddleware())
+	}
 	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
 	seeRouter.GET("/sse", mcpProxy.SseHandler())
 	seeRouter.POST("/sse", mcpProxy.SseHandler())
@@ -122,11 +128,15 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	seeRouter.POST("/mcp", mcpProxy.StreamableHTTPHandler())
 
 	// 应用态路由（共享 MCPProxy 实例）
+	// BkAIDevTraceContextMiddleware covers both /sse and /mcp routes in this group as well.
 	seeAppRouter := router.Group("/:name/application")
 	seeAppRouter.Use(middleware.APILogger())
 	seeAppRouter.Use(middleware.BkGatewayJWTAuthMiddleware())
 	seeAppRouter.Use(middleware.MCPServerPermissionMiddleware())
 	seeAppRouter.Use(middleware.MCPServerHeaderMiddleware())
+	if bkaidevtrace.Enabled() {
+		seeAppRouter.Use(middleware.BkAIDevTraceContextMiddleware())
+	}
 	// SSE 协议路由 - 官方 SDK 的 SSEHandler 同时处理 GET 和 POST 请求
 	seeAppRouter.GET("/sse", mcpProxy.SseHandlerApplication())
 	seeAppRouter.POST("/sse", mcpProxy.SseHandlerApplication())

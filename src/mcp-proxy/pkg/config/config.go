@@ -155,6 +155,15 @@ type Instrument struct {
 	McpAPI bool
 }
 
+// BkAIDevTrace is the config for BKAIDev agent trace reporting.
+// It uses an independent OTLP/HTTP endpoint, fully isolated from the project's own tracing.
+type BkAIDevTrace struct {
+	Enable      bool
+	Endpoint    string
+	ServiceName string
+	Token       string
+}
+
 // Transport is the config for the shared HTTP transport used by tool calls.
 type Transport struct {
 	InsecureSkipVerify    bool
@@ -306,9 +315,10 @@ type Config struct {
 	Databases   []Database
 	DatabaseMap map[string]Database
 
-	Logger  Logger
-	Tracing Tracing
-	Metric  Metric
+	Logger       Logger
+	Tracing      Tracing
+	Metric       Metric
+	BkAIDevTrace BkAIDevTrace
 
 	McpServer McpServer
 	PProf     Pprof

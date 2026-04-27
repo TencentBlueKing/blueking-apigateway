@@ -87,5 +87,50 @@ var _ = Describe("MCPHeader", func() {
 			Expect(headers["X-Custom-Header"]).To(Equal("custom-value"))
 			Expect(headers["X-Another-Header"]).To(Equal("another-value"))
 		})
+
+		It("should parse X-Bkapi-ItsmFlex header", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			itsmFlexJSON := `{"agent.info.code":"ai-test-appcode","agent.info.name":"AgentName","agent.session.caller_executor":"judge-caller","agent.session.executor":"judge-executor"}`
+			c.Request.Header.Set(constant.BkApiItsmFlexKey, itsmFlexJSON)
+
+			mw := middleware.MCPServerHeaderMiddleware()
+			mw(c)
+
+			data := util.GetBkApiItsmFlexData(c.Request.Context())
+			Expect(data).NotTo(BeNil())
+			Expect(data.AgentCode).To(Equal("ai-test-appcode"))
+			Expect(data.AgentName).To(Equal("AgentName"))
+			Expect(data.CallerExecutor).To(Equal("judge-caller"))
+			Expect(data.Executor).To(Equal("judge-executor"))
+		})
+
+		It("should ignore invalid X-Bkapi-ItsmFlex header", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			c.Request.Header.Set(constant.BkApiItsmFlexKey, "not-json")
+
+			mw := middleware.MCPServerHeaderMiddleware()
+			mw(c)
+
+			data := util.GetBkApiItsmFlexData(c.Request.Context())
+			Expect(data).To(BeNil())
+		})
+
+		It("should handle missing X-Bkapi-ItsmFlex header", func() {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+			mw := middleware.MCPServerHeaderMiddleware()
+			mw(c)
+
+			data := util.GetBkApiItsmFlexData(c.Request.Context())
+			Expect(data).To(BeNil())
+		})
 	})
 })

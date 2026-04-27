@@ -42,11 +42,11 @@ type MCPServer struct {
 	protocolType          string                     // 协议类型: sse 或 streamable_http
 	name                  string
 	// 生效的资源版本号
-	resourceVersionID int
+	resourceVersionID  int
 	rawResponseEnabled bool // 是否返回原始响应，开启后直接返回 API 响应结果，不添加 request_id 等额外信息
-	tools             map[string]struct{}
-	prompts           map[string]struct{}
-	rwLock            *sync.RWMutex
+	tools              map[string]struct{}
+	prompts            map[string]struct{}
+	rwLock             *sync.RWMutex
 }
 
 // NewMCPServer 创建 SSE 协议的 MCP Server
@@ -58,14 +58,14 @@ func NewMCPServer(
 	rawResponseEnabled bool,
 ) *MCPServer {
 	return &MCPServer{
-		Server:            server,
-		SSEHandler:        handler,
-		protocolType:      constant.MCPServerProtocolTypeSSE,
-		tools:             make(map[string]struct{}),
-		prompts:           make(map[string]struct{}),
-		rwLock:            &sync.RWMutex{},
-		name:              name,
-		resourceVersionID: resourceVersion,
+		Server:             server,
+		SSEHandler:         handler,
+		protocolType:       constant.MCPServerProtocolTypeSSE,
+		tools:              make(map[string]struct{}),
+		prompts:            make(map[string]struct{}),
+		rwLock:             &sync.RWMutex{},
+		name:               name,
+		resourceVersionID:  resourceVersion,
 		rawResponseEnabled: rawResponseEnabled,
 	}
 }
