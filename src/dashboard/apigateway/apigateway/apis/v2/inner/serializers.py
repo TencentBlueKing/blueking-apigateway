@@ -37,6 +37,7 @@ from apigateway.apps.permission.constants import (
     PermissionStatusEnum,
 )
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
@@ -249,6 +250,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     apply_status_display = serializers.SerializerMethodField()
     handled_by = serializers.SerializerMethodField()
     comment = serializers.SerializerMethodField()
+    applied_by = serializers.SerializerMethodField()
 
     class Meta:
         model = AppPermissionRecord
@@ -285,6 +287,14 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
 
     def get_comment(self, obj):
         return obj.comment or ""
+
+    def get_applied_by(self, obj):
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            obj.gateway.tenant_mode,
+            obj.gateway.tenant_id,
+        )
 
 
 class AppPermissionRecordListOutputSLZ(AppPermissionRecordBaseSLZ):
@@ -477,7 +487,7 @@ class MCPServerAppPermissionRecordListInputSLZ(serializers.Serializer):
 
 class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    applied_by = serializers.CharField(read_only=True, help_text="申请人")
+    applied_by = serializers.SerializerMethodField(help_text="申请人")
     applied_time = serializers.DateTimeField(read_only=True, help_text="申请时间")
     handled_by = serializers.ListField(child=serializers.CharField(), help_text="处理人")
     handled_time = serializers.DateTimeField(read_only=True, help_text="处理时间")
@@ -507,6 +517,34 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
             logger.warning("Failed to build approval URL for object: %s", obj)
 
         return ""
+
+    def get_applied_by(self, obj):
+        """获取申请人 display_name"""
+        if isinstance(obj, dict):
+            try:
+                return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                    obj.get("bk_app_code", ""),
+                    obj.get("applied_by", ""),
+                    obj.get("tenant_mode", ""),
+                    obj.get("tenant_id", ""),
+                )
+            except Exception:
+                logger.warning("Failed to convert applied_by for dict object: %s", obj, exc_info=True)
+                return obj.get("applied_by", "")
+
+        if hasattr(obj, "mcp_server"):
+            try:
+                return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                    obj.bk_app_code,
+                    obj.applied_by,
+                    obj.mcp_server.gateway.tenant_mode,
+                    obj.mcp_server.gateway.tenant_id,
+                )
+            except Exception:
+                logger.warning("Failed to convert applied_by for model object: %s", obj, exc_info=True)
+                return getattr(obj, "applied_by", "")
+
+        return getattr(obj, "applied_by", "")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionRecordBaseSLZ"

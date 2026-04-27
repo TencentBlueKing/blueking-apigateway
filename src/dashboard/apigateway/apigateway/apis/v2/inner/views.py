@@ -686,6 +686,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                 },
                 "record": {
                     "id": obj.id,
+                    "bk_app_code": obj.bk_app_code,
                     "applied_by": obj.applied_by,
                     "applied_time": obj.applied_time,
                     "handled_by": [obj.handled_by] if obj.handled_by else obj.mcp_server.gateway.maintainers,
@@ -697,6 +698,8 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "expire_days": obj.expire_days,
                     "mcp_server_id": obj.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
                     "gateway_id": obj.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
+                    "tenant_mode": obj.mcp_server.gateway.tenant_mode,
+                    "tenant_id": obj.mcp_server.gateway.tenant_id,
                 },
             }
             for obj in queryset

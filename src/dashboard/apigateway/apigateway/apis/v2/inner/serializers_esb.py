@@ -33,6 +33,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
     PermissionStatusEnum,
 )
+from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.fields import TimestampField
@@ -223,6 +224,7 @@ class AppPermissionApplyRecordBaseSLZ(serializers.ModelSerializer):
     comment = serializers.SerializerMethodField()
     tag = serializers.SerializerMethodField()
     components = serializers.ListField(child=ComponentInRecordSLZ())
+    applied_by = serializers.SerializerMethodField()
 
     class Meta:
         model = AppPermissionApplyRecord
@@ -256,6 +258,14 @@ class AppPermissionApplyRecordBaseSLZ(serializers.ModelSerializer):
 
     def get_tag(self, obj):
         return BoardConfigManager.get_optional_display_label(obj.board)
+
+    def get_applied_by(self, obj):
+        return ResourcePermissionHandler.convert_applied_by_to_display_name(
+            obj.bk_app_code,
+            obj.applied_by,
+            "",
+            "",
+        )
 
 
 class EsbAppPermissionApplyRecordListOutputSLZ(AppPermissionApplyRecordBaseSLZ):
