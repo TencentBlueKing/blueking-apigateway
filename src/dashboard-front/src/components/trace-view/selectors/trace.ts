@@ -123,13 +123,13 @@ export const getTraceSpanIdsAsTree = (trace: ITraceLog): TreeNode => {
 };
 
 // 将流程作为对象附加到每个跨度。
-export const hydrateSpansWithProcesses = (trace: any) => {
+export const hydrateSpansWithProcesses = (trace: ITraceLog & { processes: Record<string, any> }) => {
   const spans = getTraceSpans(trace);
   const processes = getTraceProcesses(trace);
 
   return {
     ...trace,
-    spans: spans.map((span: any) => getSpanWithProcess({
+    spans: spans.map((span: ISpan) => getSpanWithProcess({
       span,
       processes,
     })),
@@ -265,8 +265,8 @@ export const omitCollapsedSpans = createSelector(
   createSelector(({ trace }) => trace, getTraceSpanIdsAsTree),
   ({ collapsed }) => collapsed,
   (spans = [], tree, collapse) => {
-    const hiddenSpanIds = collapse.reduce((result: { add: (arg0: any) => any }, collapsedSpanId: any) => {
-      tree.find(collapsedSpanId).walk((id: any) => id !== collapsedSpanId && result.add(id));
+    const hiddenSpanIds = collapse.reduce((result: { add: (arg0: any) => any }, collapsedSpanId: string) => {
+      tree.find(collapsedSpanId).walk((id: string) => id !== collapsedSpanId && result.add(id));
       return result;
     }, new Set());
 
@@ -302,7 +302,7 @@ export const enforceUniqueSpanIds = createSelector(
 
     return {
       ...trace,
-      spans: spans.reduce((result: any[], span: ISpan) => {
+      spans: spans.reduce((result: ISpan[], span: ISpan) => {
         const span_id = map.has(getSpanId(span)) ? `${getSpanId(span)}_${map.get(getSpanId(span))}` : getSpanId(span);
         const updatedSpan = {
           ...span,

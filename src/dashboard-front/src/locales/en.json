@@ -2470,6 +2470,10 @@
   "查看帮助": "View Help",
   "查看子命令帮助": "View Subcommand Help",
   "查看子命令action的帮助": "View Subcommand Action Help",
- "是否返回原始响应": "Whether to return the original response",
-        "开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息": "After opening, mcp-proxy will directly return the API response result without adding request_id and other information"
+  "是否返回原始响应": "Whether to return the original response",
+  "开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息": "After opening, mcp-proxy will directly return the API response result without adding request_id and other information",
+  "复制配置": "Copy Configuration",
+  "批量复制": "Batch copy",
+  "复制 MCP Server 接入配置": "Copy MCP Server Access Configuration",
+  "已停用的MCP无法批量操作": "Deactivated MCP cannot perform batch operations"
 }

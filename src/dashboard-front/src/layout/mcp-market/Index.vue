@@ -89,6 +89,8 @@
         <AgMcpTopBar
           v-model:publish-time="filterData.order_by"
           class="mb-16px"
+          :selections="selections"
+          @batch-copy="handleBatchCopy"
           @sort-change="handleSortChange"
         >
           <template #mcpServerTab>
@@ -143,7 +145,9 @@
                 :show-actions="false"
                 :show-public="false"
                 :oauth2-tooltip="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-                @click="() => handleCardClick(server.id)"
+                @selection-change="handleSelectionChange"
+                @checked="(isChecked: boolean) => handleChecked(isChecked, server)"
+                @click.stop="() => handleView(server.id)"
               >
                 <template #externalTag>
                   <BkTag
@@ -166,6 +170,12 @@
             </template>
           </div>
         </BkLoading>
+        <!-- 复制 MCP 配置 -->
+        <AgMcpCopyConfigDialog
+          v-model:is-show="isShowConfig"
+          :loading="copyConfigLoading"
+          :list="mcpConfigList"
+        />
         <!-- 触底翻页触发器 -->
         <div
           v-intersection-observer="onIntersectionObserver"
@@ -181,23 +191,34 @@
 import { debounce } from 'lodash-es';
 import {
   type IMCPMarketCategory,
-  type IMarketplaceItem,
+  type IMarketplaceItemWithUIState,
+  getMcpBatchCopyConfigList,
   getMcpMarketplace,
   getMcpMarketplaceCategories,
 } from '@/services/source/mcp-market';
 import { type IPagination } from '@/types/common';
 import { vIntersectionObserver } from '@vueuse/components';
 import { useFeatureFlag } from '@/stores';
+import { useMcpBatchCopyConfig } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import mcpBanner from '@/images/mcp-banner.jpg';
 import mcpBannerEn from '@/images/mcp-banner-en.jpg';
 import TableEmpty from '@/components/table-empty/Index.vue';
 import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
 import AgMcpTopBar from '@/components/ag-mcp-search-bar/Index.vue';
+import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
 
 const { t, locale } = useI18n();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+// 批量复制配置hooks
+const {
+  copyConfigLoading,
+  mcpConfigList,
+  fetchMcpBatchCopyConfigList,
+} = useMcpBatchCopyConfig({
+  fetchApi: getMcpBatchCopyConfigList,
+});
 
 const bannerRef = ref<HTMLImageElement>(null);
 const mcpCategorizeRef = ref<HTMLDivElement>(null);
@@ -209,6 +230,8 @@ const isFirstLoad = ref(true);
 const isBannerLoadedInit = ref(false);
 // 标记是否正在切换分类（用于冻结计数显示）
 const isSwitchingCategory = ref(false);
+// 显示复制 MCP Server 接入配置
+const isShowConfig = ref(false);
 const mcpCategorizeWidth = ref(0);
 const cachedViewportHeight = ref(0);
 const activeStatusTab = ref('all');
@@ -218,7 +241,7 @@ const filterData = ref({
   order_by: '-updated_time',
   keyword: '',
 });
-const mcpMarketList = ref<IMarketplaceItem[]>([]);
+const mcpMarketList = ref<IMarketplaceItemWithUIState[]>([]);
 const categoriesList = ref<IMCPMarketCategory[]>([]);
 const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
   current: 1,
@@ -226,6 +249,8 @@ const pagination = ref<Omit<IPagination, 'hasNoMore'>>({
   count: 0,
   hasNoMore: false,
 });
+// 批量复制内容
+const selections = ref<Map<number, IMarketplaceItemWithUIState>>(new Map());
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const bannerImg = computed(() => {
@@ -397,6 +422,7 @@ const resetPagination = async () => {
     limit: calculateMaxVisibleCards(),
     hasNoMore: false,
   });
+  selections.value.clear();
   await getList();
 };
 
@@ -443,7 +469,7 @@ const handleMouseleave = (_: MouseEvent, row: IMarketplaceItem & { isOverflow?: 
   row.isOverflow = false;
 };
 
-const handleCardClick = (id: number) => {
+const handleView = (id: number) => {
   router.push({
     name: 'McpMarketDetails',
     params: { id },
@@ -466,6 +492,26 @@ const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
   if (entry?.isIntersecting && !isFirstLoad.value) {
     getList();
   }
+};
+
+const handleChecked = (isChecked: boolean, row: IMarketplaceItemWithUIState) => {
+  row.is_checked = isChecked;
+  if (isChecked) {
+    selections.value.set(row.id, row);
+  }
+  else {
+    selections.value.delete(row.id);
+  }
+};
+
+const handleBatchCopy = () => {
+  isShowConfig.value = true;
+  fetchMcpBatchCopyConfigList({ selections: selections.value });
+};
+
+const handleSelectionChange = (selection: IMarketplaceItemWithUIState) => {
+  selections.value.clear();
+  selection.forEach(item => selections.value.set(item.id, item));
 };
 
 const handleResize = debounce(() => {

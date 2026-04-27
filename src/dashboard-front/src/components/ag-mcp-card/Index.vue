@@ -17,210 +17,255 @@
  */
 
 <template>
-  <div class="ag-mcp-card-wrapper">
-    <header class="w-full flex items-baseline justify-between card-header">
-      <!-- mcp启用、停用、精选状态 -->
-      <slot name="mcpStatus" />
-      <div class="flex items-center header-title-wrapper">
-        <div class="w-full flex items-baseline">
-          <AgDescription
-            class="color-#313238 text-16px font-700 lh-24px break-all mcp-card-title"
-            :max-lines="2"
-            :font-size="16"
-            :line-height="'24px'"
-            :show-expand-icon="false"
-          >
-            <template #description>
-              {{ server?.title }}
-            </template>
-          </AgDescription>
-          <div
-            v-if="isEnabledOAuth"
-            v-bk-tooltips="oauth2Tooltip"
-            class="external-oauth-tag bg-#e1ecff ml-8px"
-          >
-            <AgIcon
-              name="deqiu"
-              size="14"
-              color="#3a84ff"
-            />
+  <div
+    class="ag-mcp-card-wrapper"
+    :class="[{
+      'is-open': server.status,
+      'is-checked': isChecked
+    }]"
+  >
+    <section @click.stop>
+      <BkCheckbox
+        :checked="isChecked"
+        class="ag-mcp-card-checkbox"
+        @change="handleChecked"
+      />
+    </section>
+    <div class="p-23px card-header-wrapper">
+      <header class="w-full flex items-baseline justify-between card-header">
+        <!-- mcp启用、停用、精选状态 -->
+        <slot name="mcpStatus" />
+        <div class="flex items-center header-title-wrapper">
+          <div class="w-full flex items-baseline">
+            <AgDescription
+              class="color-#313238 text-16px font-700 lh-24px break-all mcp-card-title"
+              :max-lines="2"
+              :font-size="16"
+              :line-height="'24px'"
+              :show-expand-icon="false"
+            >
+              <template #description>
+                {{ server?.title }}
+              </template>
+            </AgDescription>
+            <div
+              v-if="isEnabledOAuth"
+              v-bk-tooltips="oauth2Tooltip"
+              class="external-oauth-tag bg-#e1ecff ml-8px"
+            >
+              <AgIcon
+                name="deqiu"
+                size="20"
+                color="#3a84ff"
+              />
+            </div>
+            <slot name="externalTag" />
           </div>
-          <slot name="externalTag" />
-        </div>
-      </div>
-      <div
-        v-if="showActions"
-        class="header-actions"
-      >
-        <div class="mx-8px button-group">
-          <BkButton
-            v-if="server.status"
-            size="small"
-            theme="primary"
-            @click.stop="handleEditClick"
-          >
-            {{ t("编辑") }}
-          </BkButton>
-          <BkButton
-            v-else
-            size="small"
-            @click.stop="handleEnableClick"
-          >
-            {{ t("启用") }}
-          </BkButton>
         </div>
         <div
-          class="dropdown-wrapper"
-          @click.stop="preventDefault"
+          v-if="showActions"
+          class="header-actions"
         >
-          <BkDropdown trigger="hover">
-            <AgIcon
-              class="flex items-center justify-center w-16px h-16px cursor-pointer dropdown-wrapper-icon"
-              name="more-fill"
-              size="18"
-            />
-            <template #content>
-              <BkDropdownMenu>
-                <BkDropdownItem
-                  v-if="server.status === 1"
-                  @click="handleSuspendClick"
-                >
-                  <BkButton
-                    size="small"
-                    text
-                  >
-                    {{ t("停用") }}
-                  </BkButton>
-                </BkDropdownItem>
-                <BkDropdownItem @click.stop="handleDeleteClick">
-                  <BkButton
-                    v-bk-tooltips="{
-                      content: t('请先停用再删除'),
-                      disabled: server.status === 0,
-                    }"
-                    :disabled="server.status === 1"
-                    text
-                  >
-                    {{ t("删除") }}
-                  </BkButton>
-                </BkDropdownItem>
-              </BkDropdownMenu>
-            </template>
-          </BkDropdown>
-        </div>
-      </div>
-    </header>
-
-    <AgDescription
-      class="color-#979ba5 text-12px lh-20px mt-2px break-all"
-      :show-expand-icon="false"
-      :max-lines="1"
-      :font-size="12"
-      :line-height="'20px'"
-    >
-      <template #description>
-        {{ server.name }}
-      </template>
-    </AgDescription>
-
-    <div class="flex items-baseline mt-12px">
-      <BkOverflowTitle
-        type="tips"
-        class="max-w-56px mr-8px"
-      >
-        <BkTag
-          class="bg-#e1ecff color-#1768ef hover:bg-#e1ecff"
-        >
-          {{ server?.stage?.name }}
-        </BkTag>
-      </BkOverflowTitle>
-
-      <BkTag
-        v-if="showPublic"
-        class="mr-8px"
-        :theme="server?.is_public ? 'success' : 'warning'"
-      >
-        {{ t(server?.is_public ? '公开' : '不公开') }}
-      </BkTag>
-
-      <template v-if="categoriesFilter?.length">
-        <template
-          v-for="category of categoriesFilter"
-          :key="category.id"
-        >
-          <BkOverflowTitle
-            type="tips"
-            class="mr-8px"
+          <div class="mx-8px button-group">
+            <BkButton
+              v-if="server.status"
+              size="small"
+              text
+              class="edit-icon"
+              @click.stop="handleEditClick"
+            >
+              <AgIcon
+                name="edit-small"
+                size="24"
+              />
+              {{ t("编辑") }}
+            </BkButton>
+            <BkButton
+              v-else
+              size="small"
+              text
+              class="text-12px! color-#979ba5!"
+              @click.stop="handleEnableClick"
+            >
+              <AgIcon
+                name="down"
+                size="14"
+                class="mr-4px"
+              />
+              {{ t("启用") }}
+            </BkButton>
+          </div>
+          <div
+            class="dropdown-wrapper"
+            @click.stop="preventDefault"
           >
-            <BkTag class="color-#313238">
-              {{ category.display_name }}
-            </BkTag>
-          </BkOverflowTitle>
-        </template>
-      </template>
-    </div>
+            <BkDropdown
+              trigger="hover"
+              :popover-options="{
+                trigger: 'hover',
+              }"
+            >
+              <AgIcon
+                class="flex items-center justify-center w-16px h-16px cursor-pointer dropdown-wrapper-icon"
+                name="more-fill"
+                size="18"
+              />
+              <template #content>
+                <BkDropdownMenu
+                  :popover-options="{
+                    clickContentAutoHide: true,
+                    hideIgnoreReference: true,
+                  }"
+                >
+                  <BkDropdownItem
+                    v-if="server.status === 1"
+                    @click.stop="handleSuspendClick"
+                  >
+                    <BkButton
+                      size="small"
+                      text
+                    >
+                      {{ t("停用") }}
+                    </BkButton>
+                  </BkDropdownItem>
+                  <BkDropdownItem @click.stop="handleDeleteClick">
+                    <BkButton
+                      v-bk-tooltips="{
+                        content: t('请先停用再删除'),
+                        disabled: !server.status,
+                      }"
+                      :disabled="server.status === 1"
+                      text
+                    >
+                      {{ t("删除") }}
+                    </BkButton>
+                  </BkDropdownItem>
+                  <BkDropdownItem
+                    v-if="server.status === 1"
+                    @click.stop="handleCopyConfigClick"
+                  >
+                    <BkButton
+                      size="small"
+                      text
+                    >
+                      {{ t("复制配置") }}
+                    </BkButton>
+                  </BkDropdownItem>
+                </BkDropdownMenu>
+              </template>
+            </BkDropdown>
+          </div>
+        </div>
+      </header>
 
-    <div class="divider" />
-
-    <div class="mb-57px card-main">
       <AgDescription
-        v-if="server?.description"
-        class="color-#4d4f56 text-12px lh-20px break-all"
+        class="color-#979ba5 text-12px lh-20px mt-2px break-all"
         :show-expand-icon="false"
-        :line-height="'20px'"
+        :max-lines="1"
         :font-size="12"
+        :line-height="'20px'"
       >
         <template #description>
-          {{ server?.description }}
+          {{ server.name }}
         </template>
       </AgDescription>
-    </div>
 
-    <div class="text-14px lh-20px color-#979ba5 absolute bottom-24px left-24px right-24px mcp-footer-content">
-      <div class="flex items-center justify-between text-12px content-item">
-        <div
-          v-bk-tooltips="{
-            content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time)}`,
-            disabled: !isOverflow,
-          }"
-          class="flex items-baseline gap-8px min-w-100px item-label"
-          :style="{ maxWidth: `calc(100% - ${operateIconWidth}px)` }"
+      <div class="flex flex-wrap gap-8px items-baseline mt-12px">
+        <BkOverflowTitle
+          type="tips"
+          class="max-w-full"
         >
-          <i class="apigateway-icon icon-ag-time-circle color-#979ba5 text-14px" />
-          <div
-            class="truncate"
-            @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
-            @mouseleave="handleMouseleave"
+          <BkTag class="w-full bg-#e1ecff color-#1768ef hover:bg-#e1ecff">
+            {{ server?.stage?.name }}
+          </BkTag>
+        </BkOverflowTitle>
+
+        <BkTag
+          v-if="showPublic"
+          :theme="server?.is_public ? 'success' : 'warning'"
+        >
+          {{ t(server?.is_public ? '公开' : '不公开') }}
+        </BkTag>
+
+        <template v-if="categoriesFilter?.length">
+          <template
+            v-for="category of categoriesFilter"
+            :key="category.id"
           >
-            {{ t("发布于") }} {{ getUtcTimeAgo(server?.updated_time) }}
-          </div>
-        </div>
-        <div
-          :ref="(el: any) => setMapRefs(el, operateIconRefs, 'item-value-')"
-          class="flex items-center item-value"
+            <BkOverflowTitle
+              type="tips"
+              class="max-w-full"
+            >
+              <BkTag class="w-full color-#313238">
+                {{ category.display_name }}
+              </BkTag>
+            </BkOverflowTitle>
+          </template>
+        </template>
+      </div>
+
+      <div class="divider" />
+
+      <div class="mb-57px card-main">
+        <AgDescription
+          v-if="server?.description"
+          class="color-#4d4f56 text-12px lh-20px break-all"
+          :show-expand-icon="false"
+          :line-height="'20px'"
+          :font-size="12"
         >
+          <template #description>
+            {{ server?.description }}
+          </template>
+        </AgDescription>
+      </div>
+
+      <div class="text-14px lh-20px color-#979ba5 absolute bottom-24px left-24px right-24px mcp-footer-content">
+        <div class="flex items-center justify-between text-12px content-item">
           <div
             v-bk-tooltips="{
-              content: `${t('工具数量')}: ${String(server?.tools_count)}`,
+              content: `${t('发布于')} ${getUtcTimeAgo(server?.updated_time)}`,
+              disabled: !isOverflow,
             }"
-            class="flex items-baseline gap-8px"
+            class="flex items-baseline gap-8px min-w-100px item-label"
+            :style="{ maxWidth: `calc(100% - ${operateIconWidth}px)` }"
           >
-            <i class="apigateway-icon icon-ag-manual-shoudongchuli color-#979ba5 text-14px" />
-            <div class="truncate max-w-60px">
-              {{ server?.tools_count }}
+            <i class="apigateway-icon icon-ag-time-circle color-#979ba5 text-14px" />
+            <div
+              class="truncate"
+              @mouseenter="handleMouseenter"
+              @mouseleave="handleMouseleave"
+            >
+              {{ t("发布于") }} {{ getUtcTimeAgo(server?.updated_time) }}
             </div>
           </div>
           <div
-            v-if="isEnablePrompt"
-            v-bk-tooltips="{
-              content: `${t('Prompt数量')}: ${String(server?.prompts_count)}`,
-              disabled: !isEnablePrompt,
-            }"
-            class="flex items-baseline gap-8px ml-24px"
+            :ref="(el) => setMapRefs(el, operateIconRefs, 'item-value-')"
+            class="flex items-center item-value"
           >
-            <i class="apigateway-icon icon-ag-tishici color-#979ba5 text-14px" />
-            <div class="truncate max-w-60px">
-              {{ server?.prompts_count }}
+            <div
+              v-bk-tooltips="{
+                content: `${t('工具数量')}: ${String(server?.tools_count)}`,
+              }"
+              class="flex items-baseline gap-8px"
+            >
+              <i class="apigateway-icon icon-ag-manual-shoudongchuli color-#979ba5 text-14px" />
+              <div class="truncate max-w-60px">
+                {{ server?.tools_count }}
+              </div>
+            </div>
+            <div
+              v-if="isEnablePrompt"
+              v-bk-tooltips="{
+                content: `${t('Prompt数量')}: ${String(server?.prompts_count)}`,
+                disabled: !isEnablePrompt,
+              }"
+              class="flex items-baseline gap-8px ml-24px"
+            >
+              <i class="apigateway-icon icon-ag-tishici color-#979ba5 text-14px" />
+              <div class="truncate max-w-60px">
+                {{ server?.prompts_count }}
+              </div>
             </div>
           </div>
         </div>
@@ -232,23 +277,25 @@
 <script lang="ts" setup>
 // @ts-nocheck
 import { locale, t } from '@/locales';
-import { type IMCPServer } from '@/services/source/mcp-server';
+import type { IMCPServerCategory, IMCPServerWithUIState } from '@/services/source/mcp-server';
 import { useFeatureFlag } from '@/stores';
 import { getUtcTimeAgo, setupDayjsLocale } from '@/utils/dayUtc';
 import AgDescription from '@/components/ag-description/Index.vue';
 
 interface IProps {
-  server?: IMCPServer
+  server?: IMCPServerWithUIState
   showActions?: boolean
   showPublic?: boolean
   oauth2Tooltip?: string
 }
 
 interface IEmits {
-  edit: [id: number]
-  suspend: [id: number]
-  enable: [id: number]
-  delete: [id: number]
+  'edit': [id: number]
+  'suspend': [id: number]
+  'enable': [id: number]
+  'delete': [id: number]
+  'copy-config': [row: IMCPServerWithUIState]
+  'checked': [value: boolean]
 }
 
 const {
@@ -262,15 +309,20 @@ const emit = defineEmits<IEmits>();
 
 const featureFlagStore = useFeatureFlag();
 
-const isEnablePrompt = computed(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0);
+const isOverflow = ref(false);
+const operateIconWidth = ref(0);
+const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
+
+const isChecked = computed(() => server?.is_checked ?? false);
+const isEnablePrompt = computed(() =>
+  featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT && server?.prompts_count > 0,
+);
 const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && server?.oauth2_public_client_enabled,
 );
-const categoriesFilter = computed(() => server?.categories?.filter((cg: any) => !['Official', 'Featured'].includes(cg.name)));
-
-const operateIconRefs: Ref<Map<string, HTMLElement | null>> = ref(new Map());
-const isOverflow = ref(false);
-const operateIconWidth = ref(0);
+const categoriesFilter = computed(() =>
+  server?.categories?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name)) || [],
+);
 
 setupDayjsLocale(locale.value);
 
@@ -295,29 +347,33 @@ const handleSuspendClick = () => {
   emit('suspend', server.id);
 };
 
+const handleCopyConfigClick = () => {
+  emit('copy-config', server);
+};
+
 const handleEnableClick = () => {
   emit('enable', server.id);
 };
 
 const handleDeleteClick = () => {
-  if (server.status === 1) {
-    return;
-  }
+  if (server.status === 1) return;
   emit('delete', server.id);
 };
 
+const handleChecked = (value: boolean) => {
+  emit('checked', value);
+};
+
 const handleMouseenter = (e: MouseEvent) => {
-  const cell = (e.target as HTMLElement).closest('.truncate');
-  if (cell) {
-    isOverflow.value = cell.scrollWidth > cell.clientWidth;
-  }
+  const cell = e.target.closest('.truncate');
+  isOverflow.value = cell ? cell.scrollWidth > cell.clientWidth : false;
 };
 
 const handleMouseleave = () => {
   isOverflow.value = false;
 };
 
-const preventDefault = (e: MouseEvent) => {
+const preventDefault = (e) => {
   e.preventDefault();
 };
 
@@ -329,18 +385,23 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .ag-mcp-card-wrapper {
   position: relative;
-  padding: 24px;
   background-color: #ffffff;
+  border: 1px solid transparent;
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
   box-sizing: border-box;
   cursor: pointer;
 
-  .card-header {
+  .ag-mcp-card-checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
 
-    :deep(.bk-tag-text) {
-      font-size: 12px !important;
-    }
+  .card-header {
 
     .header-actions {
       display: flex;
@@ -365,6 +426,19 @@ onUnmounted(() => {
           }
         }
       }
+    }
+
+    :deep(.bk-tag-text) {
+      font-size: 12px !important;
+    }
+  }
+
+  .edit-icon {
+    font-size: 12px;
+    color: #979ba5;
+
+    &:hover {
+      color: #699df4;
     }
   }
 
@@ -406,9 +480,29 @@ onUnmounted(() => {
   }
 
   &:hover {
-    background: linear-gradient(149deg, #d7e8ff 0%, #fff 57.14%);
+    border-left-color: #d7e8ff;
+  }
+
+  &:hover,
+  &.is-checked {
+    background: linear-gradient(149deg, #d7e8ff 0%, #ffffff 57.14%);
     box-shadow: 0 4px 6px 0 #1919291f;
     border-radius: 0 2px 2px 2px;
+
+    &.is-open {
+
+      .ag-mcp-card-checkbox {
+        opacity: 1;
+      }
+    }
+  }
+
+  &.is-checked {
+    border-color: #3a84ff;
+
+    .edit-icon {
+      color: #3a84ff;
+    }
   }
 }
 </style>

@@ -94,3 +94,22 @@ export interface IMCPServerToolDocOutput {
   updated_time: string
   schema: Record<string, string | null>
 }
+
+/**
+ * MCP 服务器配置项类型
+ */
+export interface IServerConfig {
+  type: string
+  url: string
+}
+
+/**
+ * MCP 顶层配置类型
+ */
+export interface IMcpClientConfig {
+  client_type: string
+  display_name: string
+  config: {
+    servers: Record<string, IServerConfig>
+  }
+}

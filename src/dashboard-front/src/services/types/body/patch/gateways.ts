@@ -1,3 +1,5 @@
+import type { IAuthConfig } from '@/types/resource';
+
 // PATCH /gateways/{gateway_id}/ - 更新网关部分信息
 export interface IGatewayUpdateInputSLZ {
   description?: string // 网关描述
@@ -180,11 +182,7 @@ export interface IResourceInputSLZ {
   enable_websocket?: boolean // 是否启用 websocket
   is_public?: boolean // 是否公开，true：公开，false：不公开
   allow_apply_permission?: boolean // 是否允许应用在开发者中心申请访问资源的权限
-  auth_config: {
-    auth_verified_required?: boolean // 是否需要认证用户，true：需要，false：不需要
-    app_verified_required?: boolean // 是否需要认证应用，true：需要，false：不需要
-    resource_perm_required?: boolean // 是否需要校验资源权限，true：需要，false：不需要
-  }
+  auth_config: IAuthConfig
   backend: {
     id: number // 后端服务 ID
     config: {

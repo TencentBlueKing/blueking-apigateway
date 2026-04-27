@@ -41,3 +41,9 @@ export interface IMCPMarketplaceServersGetQuery {
     | 'name'
     | '-name'
 }
+
+// 批量复制请求参数
+export interface IMcpBatchConfigQuery {
+  client_type: string
+  mcp_server_ids: number[]
+}

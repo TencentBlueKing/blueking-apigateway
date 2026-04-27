@@ -18,16 +18,18 @@
 
 <template>
   <div class="custom-configure-wrapper">
-    <div class="color-#313238 text-16px font-700 pl-24px pt-10px lh-22px configure-title">
+    <div
+      v-if="showTitle"
+      class="color-#313238 text-16px font-700 pl-24px pt-10px lh-32px configure-title"
+    >
       {{ t('配置') }}
     </div>
-
     <BkTab
-      v-model:active="activeTab"
-      :type="tabType"
+      v-model:active="manualActiveTab"
       class="server-config-tab flex-1"
+      :type="tabType"
+      :label-height="tabHeight"
       :border="false"
-      @change="handleConfigChange"
     >
       <BkTabPanel
         v-for="tab of list"
@@ -40,25 +42,29 @@
     <Guide
       :markdown-html="selectedConfigContent"
       :install-url="installUrl"
-      class="p-16px bg-white"
+      class="p-16px bg-white ag-mcp-agent-guide"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import { type IMCPAIConfig } from '@/services/source/mcp-server';
+import type { IMCPAIConfig } from '@/services/source/mcp-server';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import Guide from '@/components/guide/Index.vue';
 
 interface IProps {
   tabType?: string
+  tabHeight?: number
+  showTitle?: boolean
   list?: IMCPAIConfig[]
 }
 
 const {
   tabType = 'unborder-card',
+  tabHeight = 40,
+  showTitle = true,
   list = [],
 } = defineProps<IProps>();
 
@@ -67,44 +73,44 @@ const installUrl = ref('');
 
 const activeTab = computed(() => {
   if (list.length > 0 && !manualActiveTab.value) {
-    return list[0].name;
+    return list?.[0]?.name;
   }
   return manualActiveTab.value;
 });
 
-// 根据激活的tab自动计算对应的配置内容
-const selectedConfigContent = computed(() => {
-  if (!activeTab.value) return '';
-  const curTab = list.find((item: any) => item.name === activeTab.value);
-  installUrl.value = curTab?.install_url ?? '';
-  if (!curTab || !curTab.content) return '';
-  // 初始化markdown解析器
-  const md = new MarkdownIt({
-    linkify: false,
-    html: true,
-    breaks: true,
-    highlight(str: string, lang: string) {
-      try {
-        if (lang && hljs.getLanguage(lang)) {
-          return hljs.highlight(str, {
-            language: lang,
-            ignoreIllegals: true,
-          }).value;
-        }
-      }
-      catch {
-        return str;
-      }
-      return hljs.highlightAuto(str).value;
-    },
-  });
-
-  return md.render(curTab.content);
+const currentTab = computed<IMCPAIConfig | null>(() => {
+  if (!activeTab.value) return null;
+  return list.find((item: IMCPAIConfig) => item.name === activeTab.value) || null;
 });
 
-const handleConfigChange = (tab: any) => {
-  manualActiveTab.value = tab;
-};
+const selectedConfigContent = computed(() => {
+  if (!currentTab.value?.content) return '';
+  return md.render(currentTab.value.content);
+});
+
+const md = new MarkdownIt({
+  linkify: false,
+  html: true,
+  breaks: true,
+  highlight(str: string, lang: string) {
+    try {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(str, {
+          language: lang,
+          ignoreIllegals: true,
+        }).value;
+      }
+    }
+    catch {
+      return str;
+    }
+    return hljs.highlightAuto(str).value;
+  },
+});
+
+watch(currentTab, (newTab) => {
+  installUrl.value = newTab?.install_url ?? '';
+}, { immediate: true });
 </script>
 
 <style lang="scss" scoped>
@@ -117,6 +123,8 @@ const handleConfigChange = (tab: any) => {
     &-nav {
       display: flex;
       gap: 32px;
+      scrollbar-width: thin;
+      scrollbar-color: #dcdee5 transparent;
 
       &::-webkit-scrollbar {
         width: 6px;
@@ -136,16 +144,16 @@ const handleConfigChange = (tab: any) => {
         background-color: transparent;
         border-radius: 3px;
       }
-
-      // 兼容非webkit内核浏览器
-      scrollbar-width: thin;
-      scrollbar-color: #dcdee5 transparent;
     }
 
     &-item {
       padding: 0 8px;
       flex-shrink: 0;
     }
+  }
+
+  .bk-tab-content {
+    padding: 0;
   }
 }
 </style>

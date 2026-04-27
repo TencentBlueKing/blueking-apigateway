@@ -1,3 +1,5 @@
+import type { IAuthConfig } from '@/types/resource';
+
 // POST /gateways/ - 创建网关
 export interface IGatewayCreateInputSLZ {
   name: string
@@ -142,6 +144,8 @@ export interface IMCPServerCreateInputSLZ {
   description: string
   stage_id: number
   is_public?: boolean
+  oauth2_public_client_enabled: boolean
+  raw_response_enabled: boolean
   labels?: string[]
   resource_names: string[]
   tool_names: string[]
@@ -292,11 +296,7 @@ export interface IResourceInputSLZ {
   enable_websocket?: boolean
   is_public?: boolean
   allow_apply_permission?: boolean
-  auth_config: {
-    auth_verified_required?: boolean
-    app_verified_required?: boolean
-    resource_perm_required?: boolean
-  }
+  auth_config: IAuthConfig
   backend: {
     id: number
     config: {
@@ -356,11 +356,7 @@ export interface IResourceImportInputSLZ {
     enable_websocket?: boolean
     is_public?: boolean
     allow_apply_permission?: boolean
-    auth_config: {
-      auth_verified_required?: boolean
-      app_verified_required?: boolean
-      resource_perm_required?: boolean
-    }
+    auth_config: IAuthConfig
     backend_name: string
     backend_config: {
       method: string
@@ -407,11 +403,7 @@ export interface IResourceImportDocPreviewInputSLZ {
     enable_websocket?: boolean
     is_public?: boolean
     allow_apply_permission?: boolean
-    auth_config: {
-      auth_verified_required?: boolean
-      app_verified_required?: boolean
-      resource_perm_required?: boolean
-    }
+    auth_config: IAuthConfig
     backend_name: string
     backend_config: {
       method: string

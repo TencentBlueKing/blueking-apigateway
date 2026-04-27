@@ -23,6 +23,7 @@ import type {
   IMCPServerListOutput,
   IMCPServerToolDocOutput,
   IMCPServerToolOutput,
+  IMcpClientConfig,
 } from '@/services/types/responses/mcp-marketplace.ts';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
@@ -34,6 +35,7 @@ import type {
 import type {
   IMCPMarketplaceCategoriesGetQuery,
   IMCPMarketplaceServersGetQuery,
+  IMcpBatchConfigQuery,
 } from '@/services/types/query/mcp-marketplace.ts';
 import type {
   IGatewaysMcpServersAppPermissionApplyListQuery,
@@ -113,10 +115,10 @@ export interface IMarketplaceDetails extends IMarketplaceItem {
 export interface IMCPMarketCategory {
   name: string
   display_name: string
-  description: string
+  description?: string
   id: number
-  sort_order: number
-  mcp_server_count: number
+  sort_order?: number
+  mcp_server_count?: number
 }
 
 // MCP配置
@@ -126,6 +128,9 @@ export interface IMarketplaceConfig {
   content: string
   install_url: string
 }
+
+//  UI 扩展类型
+export type IMarketplaceItemWithUIState = IMarketplaceItem & { is_checked?: boolean };
 
 /**
  *  获取网关的 MCPServer 列表
@@ -236,3 +241,11 @@ export const getMcpMarketplaceCategories = (data: IMCPMarketplaceCategoriesGetQu
  */
 export const getMcpAIConfigList = (mcp_server_id: number) =>
   http.get<IMCPServerConfigListOutput>(`/mcp-marketplace/servers/${mcp_server_id}/configs/`);
+
+/**
+ * MCP 市场批量获取 MCPServer 配置 API（支持指定客户端类型：cursor, codebuddy, claude, vscode 等）
+ * @param {String} data.client_type 客户端类型
+ * @param {Number[]} data.mcp_server_ids  McpServerID组
+ */
+export const getMcpBatchCopyConfigList = (data: IMcpBatchConfigQuery): Promise<{ data: IMcpClientConfig }> =>
+  http.post('/mcp-marketplace/batch-configs/', data);
