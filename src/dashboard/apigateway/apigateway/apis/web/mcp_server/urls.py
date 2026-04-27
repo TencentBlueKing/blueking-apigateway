@@ -61,7 +61,7 @@ urlpatterns = [
     path(
         "-/permissions/app-permission-apply/applicant/",
         MCPServerAppPermissionApplyApplicantListApi.as_view(),
-        name="mcp_server.app-permission-apply.applicant_list",
+        name="mcp_server.app-permission-apply.gateway_applicant_list",
     ),
     path(
         "<int:mcp_server_id>/",
