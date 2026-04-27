@@ -818,7 +818,16 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
+class MCPServerAppPermissionApplyApplicantListApi(generics.ListAPIView):
+    def get_queryset(self):
+        queryset = MCPServerAppPermissionApply.objects.filter(
+            mcp_server__gateway=self.request.gateway,
+        )
+        mcp_server_id = self.kwargs.get("mcp_server_id")
+        if mcp_server_id is not None:
+            queryset = queryset.filter(mcp_server_id=mcp_server_id)
+        return queryset
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         applied_by_list = list(queryset.values_list("applied_by", flat=True).distinct().order_by("applied_by"))

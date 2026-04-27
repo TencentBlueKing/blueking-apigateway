@@ -57,6 +57,12 @@ urlpatterns = [
         MCPServerAppPermissionApplyListApi.as_view(),
         name="mcp_server.app-permission-apply.list",
     ),
+    # 授权审批申请人列表（网关级别，返回网关下所有申请人）
+    path(
+        "-/permissions/app-permission-apply/applicant/",
+        MCPServerAppPermissionApplyApplicantListApi.as_view(),
+        name="mcp_server.app-permission-apply.applicant_list",
+    ),
     path(
         "<int:mcp_server_id>/",
         include(
