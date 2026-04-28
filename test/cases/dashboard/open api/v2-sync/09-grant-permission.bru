@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/permissions/grant/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/permissions/grant/
   body: json
   auth: none
 }
@@ -17,7 +17,7 @@ headers {
 
 body:json {
   {
-    "target_app_code": "bk_apigw_test",
+    "target_app_code": "{{test_bk_app_code}}",
     "expire_days": 360,
     "grant_dimension": "gateway"
   }

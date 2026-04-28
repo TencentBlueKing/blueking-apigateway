@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/permissions/?grant_dimension=gateway
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/permissions/?grant_dimension=gateway
   body: none
   auth: none
 }

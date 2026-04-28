@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/resource_versions/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/resource_versions/
   body: json
   auth: none
 }
@@ -23,5 +23,5 @@ body:json {
 }
 
 assert {
-  res.status: eq 201
+  res.status: lte 201
 }

@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/related-apps/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/related-apps/
   body: json
   auth: none
 }

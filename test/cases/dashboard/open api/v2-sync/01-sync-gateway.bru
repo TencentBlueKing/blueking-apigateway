@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/
   body: json
   auth: none
 }
@@ -18,12 +18,13 @@ headers {
 body:json {
   {
     "description": "e2e test gateway",
-    "is_public": true
+    "is_public": true,
+    "maintainers": ["admin"]
   }
 }
 
 assert {
   res.status: eq 200
   res.body.data.id: isDefined
-  res.body.data.name: eq bk-apigateway
+  res.body.data.name: eq {{gateway_name}}
 }

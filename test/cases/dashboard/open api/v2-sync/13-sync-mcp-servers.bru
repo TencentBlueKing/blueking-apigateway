@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/stages/prod/mcp-servers/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/stages/prod/mcp-servers/
   body: json
   auth: none
 }
@@ -32,6 +32,5 @@ body:json {
 }
 
 assert {
-  res.status: gte 200
-  res.status: lte 400
+  res.status: eq 200
 }

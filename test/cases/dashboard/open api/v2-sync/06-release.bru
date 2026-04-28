@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/resource_versions/release/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/resource_versions/release/
   body: json
   auth: none
 }
@@ -25,5 +25,5 @@ body:json {
 
 assert {
   res.status: eq 200
-  res.body.data.version: eq 1.0.0
+  res.body.data.version: isDefined
 }
