@@ -1,0 +1,45 @@
+meta {
+  name: sync-stages
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/stages/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "prod",
+    "description": "生产环境",
+    "description_en": "Production",
+    "backends": [
+      {
+        "name": "default",
+        "config": {
+          "timeout": 60,
+          "loadbalance": "roundrobin",
+          "hosts": [
+            {
+              "host": "http://bk-apigateway-dashboard:6000",
+              "weight": 100
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: eq prod
+}
