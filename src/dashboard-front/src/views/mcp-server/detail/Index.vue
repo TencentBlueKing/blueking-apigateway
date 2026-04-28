@@ -21,7 +21,7 @@
   <div class="page-wrapper">
     <section class="server-info">
       <div
-        :class="{ 'no-release': server.status === 0 }"
+        :class="{ 'no-release': !server.status }"
         class="server-name"
       >
         <div class="flex status-tag">
@@ -36,8 +36,8 @@
               color="white"
             />
           </div>
-          <BkTag :theme="server.status === 1 ? 'success' : 'warning'">
-            {{ t(server.status === 1 ? '启用中' : '未启用') }}
+          <BkTag :theme="Boolean(server.status) ? 'success' : 'warning'">
+            {{ t(Boolean(server.status) ? '启用中' : '未启用') }}
           </BkTag>
         </div>
         <div class="mt-8px flex items-center flex-col">
@@ -143,17 +143,12 @@
                   v-for="label of server.labels"
                   :key="label"
                 >
-                  <BkOverflowTitle
-                    type="tips"
-                    class="max-w-full break-all"
-                    :popover-options="{
-                      extCls: 'break-all',
-                    }"
+                  <BkTag
+                    class="max-w-full break-all truncate"
+                    :title="label"
                   >
-                    <BkTag class="w-full truncate">
-                      {{ label }}
-                    </BkTag>
-                  </BkOverflowTitle>
+                    {{ label }}
+                  </BkTag>
                 </template>
               </div>
               <template v-else>
@@ -176,7 +171,7 @@
           class="mr-10px"
           @click="handleSuspendToggle"
         >
-          {{ t(server.status === 1 ? '停用' : '启用') }}
+          {{ t(Boolean(server.status) ? '停用' : '启用') }}
         </BkButton>
         <BkDropdown
           v-model:is-show="showDropdown"
@@ -190,13 +185,16 @@
           </BkButton>
           <template #content>
             <BkDropdownMenu ext-cls="stage-more-actions">
-              <BkDropdownItem @click="handleDelete">
+              <BkDropdownItem
+                v-bk-tooltips="{
+                  content: t('请先停用再删除'),
+                  disabled: !server.status,
+                }"
+                :class="[{'cursor-not-allowed!': Boolean(server.status) }]"
+                @click="handleDelete"
+              >
                 <BkButton
-                  v-bk-tooltips="{
-                    content: t('请先停用再删除'),
-                    disabled: server.status === 0,
-                  }"
-                  :disabled="server.status === 1"
+                  :disabled="Boolean(server.status)"
                   text
                 >
                   {{ t('删除') }}
@@ -530,7 +528,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
     :deep(.bk-tab-content) {
       padding: 0;
-      background-color: #fff;
+      background-color: #ffffff;
     }
 
     .bk-resize-layout-right {
@@ -548,7 +546,7 @@ const updateCount = (count?: number, panelName?: string) => {
           display: block;
 
           .bk-resize-trigger {
-            background-color: #fff;
+            background-color: #ffffff;
           }
         }
       }
@@ -567,10 +565,9 @@ const updateCount = (count?: number, panelName?: string) => {
 
 .server-info {
   display: flex;
-  align-items: center;
   padding: 24px;
   margin-bottom: 16px;
-  background-color: #fff;
+  background-color: #ffffff;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .server-name {
@@ -629,7 +626,7 @@ const updateCount = (count?: number, panelName?: string) => {
       font-size: 14px;
       color: #979ba5;
       cursor: pointer;
-      background-color: #fff;
+      background-color: #ffffff;
       border-radius: 4px;
     }
   }

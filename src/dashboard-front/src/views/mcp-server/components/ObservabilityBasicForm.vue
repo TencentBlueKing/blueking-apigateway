@@ -185,6 +185,7 @@ const { apiGatewayId, mode } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
+const route = useRoute();
 const queryHistory = useStorage<string[]>('observability-flow-log-query-history', []);
 const accessLogStore = useAccessLog();
 
@@ -403,6 +404,25 @@ const syncDateFromChart = (dateInfo: any) => {
 
   handlePickerConfirm();
 };
+
+watch(
+  () => [
+    route.query.mcp_server_name as string | undefined,
+    route.query.request_id as string | undefined,
+  ],
+  ([mcpServerName, requestId]) => {
+    const validParams = [mcpServerName, requestId].filter(Boolean);
+
+    if (validParams.length) {
+      searchParams.value = {
+        ...searchParams.value,
+        mcp_server_name: mcpServerName ?? '',
+        query: requestId ?? '',
+      };
+    }
+  },
+  { immediate: true },
+);
 
 onMounted(() => {
   handleSearchTimeRange();

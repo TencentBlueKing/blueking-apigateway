@@ -69,8 +69,9 @@
           <slot name="popoverContent">
             <div class="flex flex-col gap-4px">
               <BkTag
-                v-for="(item, index) in overflowData"
+                v-for="(item, index) of overflowData"
                 :key="index"
+                :title="item"
                 class="render-row-item mb-4px max-w-400px"
               >
                 {{ item }}
