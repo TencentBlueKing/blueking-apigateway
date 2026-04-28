@@ -1,0 +1,28 @@
+meta {
+  name: grant-permission
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/permissions/grant/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target_app_code": "bk_apigw_test",
+    "expire_days": 360,
+    "grant_dimension": "gateway"
+  }
+}
+
+assert {
+  res.status: eq 201
+}

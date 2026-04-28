@@ -1,0 +1,29 @@
+meta {
+  name: release
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/resource_versions/release/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "version": "1.0.0",
+    "stage_names": ["prod"],
+    "comment": "e2e test release"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.version: eq 1.0.0
+}

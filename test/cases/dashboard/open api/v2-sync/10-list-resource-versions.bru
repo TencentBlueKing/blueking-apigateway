@@ -1,0 +1,25 @@
+meta {
+  name: list-resource-versions
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/resource_versions/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+query {
+  limit: 10
+  offset: 0
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}

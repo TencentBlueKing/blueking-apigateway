@@ -1,0 +1,29 @@
+meta {
+  name: sync-gateway
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/bk-apigateway/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "description": "e2e test gateway",
+    "is_public": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: eq bk-apigateway
+}
