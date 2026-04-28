@@ -2472,6 +2472,7 @@
   "查看子命令action的帮助": "查看子命令action的帮助",
   "是否返回原始响应": "是否返回原始响应",
   "开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息": "开启后 mcp-proxy 将直接返回 API 响应结果，不添加 request_id 等额外信息",
+  "文件大小超过{size}MB": "文件大小超过{size}MB",
   "复制配置": "复制配置",
   "批量复制": "批量复制",
   "复制 MCP Server 接入配置": "复制 MCP Server 接入配置",
