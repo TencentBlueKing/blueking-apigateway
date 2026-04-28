@@ -20,14 +20,14 @@
   <div
     class="ag-mcp-card-wrapper"
     :class="[{
-      'is-open': server.status,
+      'is-open': Boolean(server.status),
       'is-checked': isChecked
     }]"
   >
     <section @click.stop>
       <BkCheckbox
-        :checked="isChecked"
         class="ag-mcp-card-checkbox"
+        :checked="isChecked"
         @change="handleChecked"
       />
     </section>
@@ -118,7 +118,7 @@
                   }"
                 >
                   <BkDropdownItem
-                    v-if="server.status === 1"
+                    v-if="Boolean(server.status)"
                     @click.stop="handleSuspendClick"
                   >
                     <BkButton
@@ -128,20 +128,23 @@
                       {{ t("停用") }}
                     </BkButton>
                   </BkDropdownItem>
-                  <BkDropdownItem @click.stop="handleDeleteClick">
+                  <BkDropdownItem
+                    v-bk-tooltips="{
+                      content: t('请先停用再删除'),
+                      disabled: !server.status,
+                    }"
+                    :class="[{'cursor-not-allowed!': Boolean(server.status) }]"
+                    @click.stop="handleDeleteClick"
+                  >
                     <BkButton
-                      v-bk-tooltips="{
-                        content: t('请先停用再删除'),
-                        disabled: !server.status,
-                      }"
-                      :disabled="server.status === 1"
+                      :disabled="Boolean(server.status)"
                       text
                     >
                       {{ t("删除") }}
                     </BkButton>
                   </BkDropdownItem>
                   <BkDropdownItem
-                    v-if="server.status === 1"
+                    v-if="Boolean(server.status)"
                     @click.stop="handleCopyConfigClick"
                   >
                     <BkButton
@@ -149,6 +152,14 @@
                       text
                     >
                       {{ t("复制配置") }}
+                    </BkButton>
+                  </BkDropdownItem>
+                  <BkDropdownItem @click.stop="handleNavObservability">
+                    <BkButton
+                      size="small"
+                      text
+                    >
+                      {{ t("可观测") }}
                     </BkButton>
                   </BkDropdownItem>
                 </BkDropdownMenu>
@@ -308,6 +319,7 @@ const {
 const emit = defineEmits<IEmits>();
 
 const featureFlagStore = useFeatureFlag();
+const router = useRouter();
 
 const isOverflow = ref(false);
 const operateIconWidth = ref(0);
@@ -339,6 +351,15 @@ const getOperateWidth = () => {
 };
 getOperateWidth();
 
+const handleNavObservability = () => {
+  router.push({
+    name: 'MCPServerObservability',
+    query: {
+      mcp_server_name: server.name,
+    },
+  });
+};
+
 const handleEditClick = () => {
   emit('edit', server.id);
 };
@@ -356,7 +377,7 @@ const handleEnableClick = () => {
 };
 
 const handleDeleteClick = () => {
-  if (server.status === 1) return;
+  if (Boolean(server.status)) return;
   emit('delete', server.id);
 };
 
@@ -366,7 +387,7 @@ const handleChecked = (value: boolean) => {
 
 const handleMouseenter = (e: MouseEvent) => {
   const cell = e.target.closest('.truncate');
-  isOverflow.value = cell ? cell.scrollWidth > cell.clientWidth : false;
+  isOverflow.value = cell?.scrollWidth > cell?.clientWidth;
 };
 
 const handleMouseleave = () => {
