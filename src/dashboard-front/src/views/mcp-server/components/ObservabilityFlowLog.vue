@@ -330,7 +330,6 @@ const handleClearFilter = () => {
   includeQuery.value = [];
   excludeQuery.value = [];
   componentRefs?.get('Query')?.handleClearFilter();
-  fetchFlowLog();
 };
 
 onMounted(() => {

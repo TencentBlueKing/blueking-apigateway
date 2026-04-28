@@ -102,6 +102,7 @@ const emit = defineEmits<IEmits>();
 const { handleTableFilterChange } = useTableFilterChange();
 const featureFlagStore = useFeatureFlag();
 const gatewayStore = useGateway();
+const router = useRouter();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableData = ref<IMCPServer[]>([]);
@@ -134,8 +135,8 @@ const tableColumns = shallowRef<TableColumn[]>([
           <div
             class={[
               'mr-12px ag-dot',
-              { 'border-#2caf5e bg-#daf6e5': row.status === 1 },
-              { 'border-#c4c6cc bg-#f5f7fa': row.status === 0 },
+              { 'border-#2caf5e bg-#daf6e5': Boolean(row.status) },
+              { 'border-#c4c6cc bg-#f5f7fa': !row.status },
             ]}
           />
           <div
@@ -259,12 +260,40 @@ const tableColumns = shallowRef<TableColumn[]>([
         };
       }),
     },
-    cell: (_: VNode, { row }: { row: IMCPServer }) => (
-      row?.categories?.length
+    cell: (_: VNode, { row }: { row: IMCPServer }) => {
+      const categoriesFilters = row.categories?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
+      return categoriesFilters.length
         ? (
           <div class="w-160px">
             <RenderTagOverflow
-              data={row.categories.map((cg: IMCPServerCategory) => cg.display_name)}
+              data={categoriesFilters.map((cg: IMCPServerCategory) => cg.display_name)}
+            />
+          </div>
+        )
+        : <span>--</span>;
+    },
+  },
+  {
+    title: t('标签'),
+    colKey: 'label',
+    width: 200,
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: (filterCondition?.labels ?? []).map((label: string) => {
+        return {
+          label,
+          value: label,
+        };
+      }),
+    },
+    cell: (_: VNode, { row }: { row: IMCPServer }) => (
+      row?.labels?.length
+        ? (
+          <div class="w-160px">
+            <RenderTagOverflow
+              data={row.labels}
             />
           </div>
         )
@@ -345,9 +374,9 @@ const tableColumns = shallowRef<TableColumn[]>([
         <Button
           text
           theme="primary"
-          onClick={() => row.status === 1 ? handleEditClick(row) : handleEnableClick(row)}
+          onClick={() => Boolean(row.status) ? handleEditClick(row) : handleEnableClick(row)}
         >
-          {t(row.status === 1 ? '编辑' : '启用')}
+          {t(Boolean(row.status) ? '编辑' : '启用')}
         </Button>
         <div
           class="ml-12px"
@@ -370,7 +399,7 @@ const tableColumns = shallowRef<TableColumn[]>([
               ),
               content: () => (
                 <bk-dropdown-menu>
-                  {row?.status === 1 && (
+                  {Boolean(row?.status) && (
                     <div>
                       <bk-dropdown-item onClick={() => handleSuspendClick(row)}>
                         <Button
@@ -391,21 +420,34 @@ const tableColumns = shallowRef<TableColumn[]>([
                     </div>
                   )}
                   <bk-dropdown-item
-                    class={{ 'cursor-not-allowed!': row?.status }}
+                    class={{ 'cursor-not-allowed!': Boolean(row?.status) }}
+                    v-bk-tooltips={{
+                      content: t('请先停用再删除'),
+                      disabled: !row?.status,
+                    }}
                     onClick={(e: MouseEvent) => {
                       e?.stopPropagation();
                       handleDeleteClick(row);
                     }}
                   >
                     <Button
-                      v-bk-tooltips={{
-                        content: t('请先停用再删除'),
-                        disabled: !row?.status,
-                      }}
-                      disabled={row?.status === 1}
+                      disabled={Boolean(row?.status)}
                       text
                     >
                       { t('删除') }
+                    </Button>
+                  </bk-dropdown-item>
+                  <bk-dropdown-item
+                    onClick={(e: MouseEvent) => {
+                      e?.stopPropagation();
+                      handleNavObservability(row);
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      text
+                    >
+                      { t('可观测') }
                     </Button>
                   </bk-dropdown-item>
                 </bk-dropdown-menu>
@@ -444,6 +486,15 @@ const disabledSelection = (row: IMCPServer) => {
   }
 
   return !row.status;
+};
+
+const handleNavObservability = (row: IMCPServer) => {
+  router.push({
+    name: 'MCPServerObservability',
+    query: {
+      mcp_server_name: row.name,
+    },
+  });
 };
 
 const handleView = (id: number) => {

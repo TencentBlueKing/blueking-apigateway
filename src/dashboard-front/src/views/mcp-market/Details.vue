@@ -134,7 +134,7 @@
               v-bk-tooltips="{
                 content: mcpDetails?.description ?? '',
                 disabled: !mcpDetails?.isOverflow,
-                extCls: 'max-w-[calc(100%-100px)]'
+                extCls: 'max-w-[calc(100%-100px)] break-all'
               }"
               class="truncate value"
               @mouseenter="(e: MouseEvent) => handleMouseenter(e, mcpDetails)"
@@ -147,16 +147,23 @@
             <div class="label">
               {{ t('标签') }}:
             </div>
-            <div class="value">
-              <template v-if="mcpDetails?.labels?.length">
-                <BkTag
-                  v-for="label in mcpDetails?.labels"
+            <div class="value lh-22px">
+              <div
+                v-if="mcpDetails?.labels?.length"
+                class="flex flex-wrap gap-8px w-full"
+              >
+                <template
+                  v-for="label of mcpDetails.labels"
                   :key="label"
-                  class="mt-8px mr-8px"
                 >
-                  {{ label }}
-                </BkTag>
-              </template>
+                  <BkTag
+                    class="flex-shrink-0 max-w-full break-all"
+                    :title="label"
+                  >
+                    {{ label }}
+                  </BkTag>
+                </template>
+              </div>
               <template v-else>
                 --
               </template>
@@ -166,7 +173,7 @@
             <div class="label">
               {{ t('分类') }}:
             </div>
-            <div class="value lh-22px!">
+            <div class="value lh-22px">
               <template v-if="mcpDetails?.categories?.length">
                 <BkTag
                   v-for="category of mcpDetails?.categories"
@@ -373,7 +380,7 @@ const { divideRatio } = useMcpConfigDivideRatio([
 ]);
 
 const active = ref('tools');
-const toolsCount = ref<number>(0);
+const toolsCount = ref(0);
 const promptCount = ref(0);
 const mcpDetails = ref<IMarketplaceDetailsWithOverflow>();
 const defaultMarkdownStr = ref('');
@@ -512,6 +519,7 @@ watch(
             line-height: 22px;
             color: #313238;
             flex: 1;
+            min-width: 0;
 
             .icon {
               color: #3a84ff;

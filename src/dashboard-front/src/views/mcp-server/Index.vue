@@ -152,7 +152,7 @@
                     },
                   ]"
                 >
-                  {{ t(server?.status === 1 ? "已启用" : "已停用") }}
+                  {{ t(Boolean(server.status) ? "已启用" : "已停用") }}
                 </div>
               </template>
               <template
