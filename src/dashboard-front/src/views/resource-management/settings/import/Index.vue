@@ -45,7 +45,8 @@
             :custom-request="handleReq"
             class="upload-cls"
             accept=".yaml,.json,.yml"
-            :size="5"
+            :size="uploadMaxSize"
+            @error="handleUploadError"
           >
             <div>
               <AgIcon
@@ -736,7 +737,7 @@ import { InfoBox, Message, ResizeLayout } from 'bkui-vue';
 // import useTsxRouter from './hooks/useTsxRouter';
 import EditorMonaco from '@/components/ag-editor/Index.vue';
 import { RESOURCE_IMPORT_EXAMPLE } from '@/constants';
-import { getStrFromFile } from '@/utils';
+import { getStrFromFile, messageError } from '@/utils';
 import { checkResourceImport, importResource } from '@/services/source/resource';
 import TmplExampleSideslider from '../components/TmplExampleSideslider.vue';
 import {
@@ -909,6 +910,9 @@ const msgAsErrorNum = computed(() => {
 //   return errorReasons.value.filter(r => r.level === 'Warning').length;
 // });
 
+// 上传文件大小限制，单位 mb
+const uploadMaxSize = 10;
+
 // 代码有变化时重置校验状态
 watch(editorText, () => {
   isCodeValid.value = false;
@@ -1010,6 +1014,12 @@ const handleReq = (res: any) => {
     .then(() => {
       handleCheckData({ changeView: false });
     });
+};
+
+const handleUploadError = (_1: any, _2: any, error: { message: string }) => {
+  if (error.message === 'invalid file size') {
+    messageError(t('文件大小超过{size}MB', { size: uploadMaxSize }));
+  }
 };
 
 // 下一步需要检查数据
