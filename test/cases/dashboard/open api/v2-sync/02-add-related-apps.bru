@@ -1,0 +1,26 @@
+meta {
+  name: add-related-apps
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/related-apps/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "related_app_codes": ["bk_apigateway"]
+  }
+}
+
+assert {
+  res.status: eq 201
+}

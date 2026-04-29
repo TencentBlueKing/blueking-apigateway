@@ -1,0 +1,27 @@
+meta {
+  name: create-resource-version
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/resource_versions/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "version": "1.0.0",
+    "comment": "e2e test version"
+  }
+}
+
+assert {
+  res.status: lte 201
+}

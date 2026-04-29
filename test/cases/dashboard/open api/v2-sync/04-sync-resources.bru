@@ -1,0 +1,30 @@
+meta {
+  name: sync-resources
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/resources/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "content": "openapi: '3.0.0'\ninfo:\n  title: {{gateway_name}}\n  version: '1.0.0'\npaths:\n  /api/v2/sync/test/:\n    get:\n      operationId: v2_sync_test\n      description: e2e test resource\n      tags:\n        - v2_sync\n      parameters:\n        - name: test_param\n          in: query\n          required: false\n          schema:\n            type: string\n      responses:\n        '200':\n          description: success\n      x-bk-apigateway-resource:\n        isPublic: true\n        allowApplyPermission: false\n        matchSubpath: false\n        enableWebsocket: false\n        backend:\n          name: default\n          method: get\n          path: /backend/api/v2/sync/test/\n          matchSubpath: false\n          timeout: 0\n        pluginConfigs: []\n        authConfig:\n          userVerifiedRequired: false\n          appVerifiedRequired: true\n          resourcePermissionRequired: false",
+    "delete": false
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.added: isDefined
+  res.body.data.updated: isDefined
+  res.body.data.deleted: isDefined
+}

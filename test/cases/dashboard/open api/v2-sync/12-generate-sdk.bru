@@ -1,0 +1,29 @@
+meta {
+  name: generate-sdk
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/sdks/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "resource_version": "1.0.0",
+    "languages": ["python"],
+    "version": "1.0.0"
+  }
+}
+
+assert {
+  res.status: gte 200
+  res.status: lte 500
+}

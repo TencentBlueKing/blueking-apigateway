@@ -1,0 +1,38 @@
+meta {
+  name: sync-mcp-servers
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/stages/prod/mcp-servers/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mcp_servers": [
+      {
+        "name": "e2e-test-server",
+        "description": "e2e test mcp server",
+        "resource_names": ["v2_sync_test"],
+        "tool_names": ["v2_sync_test"],
+        "is_public": true,
+        "status": 1,
+        "labels": ["e2e"],
+        "protocol_type": "sse",
+        "oauth2_public_client_enabled": true
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
