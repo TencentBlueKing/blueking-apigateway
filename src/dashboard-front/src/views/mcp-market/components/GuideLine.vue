@@ -98,7 +98,7 @@ import {
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import Guide from '@/components/guide/Index.vue';
-import CustomMdGuideSlider from '@/views/mcp-market/components/CustomMdGuideSlider.vue';
+import CustomMdGuideSlider from '@/views/mcp-server/components/CustomMdGuideSlider.vue';
 
 interface IProps {
   markdownStr?: string

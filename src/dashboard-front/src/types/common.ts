@@ -146,3 +146,37 @@ export interface ISearchSelectData {
   multiple?: boolean
   children?: ISearchSelect[]
 }
+
+// mavon-editor 类型定义
+export interface IMavonEditorToolbars {
+  bold?: boolean
+  italic?: boolean
+  header?: boolean
+  underline?: boolean
+  strikethrough?: boolean
+  mark?: boolean
+  quote?: boolean
+  ol?: boolean
+  ul?: boolean
+  link?: boolean
+  image?: boolean
+  table?: boolean
+  fullscreen?: boolean
+  subfield?: boolean
+  preview?: boolean
+  code?: boolean
+  undo?: boolean
+  redo?: boolean
+}
+
+export interface IMavonEditorProps {
+  toolbars?: IMavonEditorToolbars
+  defaultOpen?: 'edit' | 'preview'
+  language?: 'zh' | 'en'
+  subfield?: boolean
+  boxShadow?: boolean
+  tabSize?: number
+  fontSize?: string | number
+  scrollStyle?: boolean
+  toolbarsFlag?: boolean
+}
