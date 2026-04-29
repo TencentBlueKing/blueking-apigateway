@@ -1,0 +1,21 @@
+meta {
+  name: get-public-key
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/public_key/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.issuer: eq APIGW
+  res.body.data.public_key: isDefined
+}

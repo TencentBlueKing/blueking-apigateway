@@ -1,0 +1,21 @@
+meta {
+  name: list-permissions
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/sync/gateways/{{gateway_name}}/permissions/?grant_dimension=gateway
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.count: isDefined
+  res.body.data.results: isDefined
+}
