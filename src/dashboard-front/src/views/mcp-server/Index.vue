@@ -147,7 +147,7 @@
                   class="card-header-status"
                   :class="[
                     {
-                      'bg-#65c389': server?.status,
+                      'bg-#65c389': Boolean(server?.status),
                       'bg-#c4c6cc': !server?.status ,
                     },
                   ]"

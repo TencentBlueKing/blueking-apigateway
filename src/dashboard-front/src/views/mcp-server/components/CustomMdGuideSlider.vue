@@ -1,3 +1,21 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2026 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
 <template>
   <AgSideSlider
     v-model="isShow"
@@ -61,12 +79,15 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
-import mavonEditor from 'mavon-editor';
-import type { IFormMethod } from '@/types/common';
+import type { IFormMethod, IMavonEditorProps } from '@/types/common';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
-type MavonEditorProps = any;
+interface IProps {
+  gatewayId?: number
+  guideType?: string
+  markdownText?: string
+}
 
 const isShow = defineModel('isShow', {
   type: Boolean,
@@ -91,12 +112,6 @@ enum GuideType {
   CUSTOM = 'CUSTOM',
 }
 
-interface IProps {
-  gatewayId?: number
-  guideType?: string
-  markdownText?: string
-}
-
 const route = useRoute();
 const { t } = useI18n();
 
@@ -118,7 +133,7 @@ const rules = reactive({
 });
 
 // 自定义工具栏配置
-const customToolbars: MavonEditorProps['toolbars'] = ({
+const customToolbars: IMavonEditorProps['toolbars'] = {
   bold: true,
   italic: true,
   header: true,
@@ -137,7 +152,7 @@ const customToolbars: MavonEditorProps['toolbars'] = ({
   code: true,
   undo: true,
   redo: true,
-});
+};
 
 const serverId = computed(() => Number(route.params.serverId));
 
