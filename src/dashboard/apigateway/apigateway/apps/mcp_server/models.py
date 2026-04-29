@@ -289,6 +289,8 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
     comment = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=16, choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
     is_deleted = models.BooleanField(default=False)
+    itsm_ticket_id = models.CharField(max_length=64, blank=True, default="", help_text=_("关联的 ITSM 工单 ID"))
+    itsm_callback_token = models.CharField(max_length=128, blank=True, default="", help_text=_("ITSM 回调校验 token"))
     objects: ClassVar[managers.MCPServerAppPermissionApplyManager] = managers.MCPServerAppPermissionApplyManager()
 
     def __str__(self):

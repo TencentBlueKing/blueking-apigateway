@@ -135,6 +135,11 @@ grant_permissions:
       - v2_open_list_gateways
       - v2_open_list_gateway_resources
       - v2_open_list_mcp_server
+  # bk-itsm4 (ITSM v4 工单回调)
+  - bk_app_code: bk-itsm4
+    grant_dimension: "resource"
+    resource_names:
+      - v2_open_itsm_callback
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"

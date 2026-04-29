@@ -16,9 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import logging
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.permission.constants import (
@@ -36,10 +38,33 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway, Resource
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
+
+logger = logging.getLogger(__name__)
 
 
 class PermissionDimensionManager(metaclass=ABCMeta):
+    @staticmethod
+    def _build_itsm_ticket_apply_resources(
+        grant_dimension: str,
+        gateway: Gateway,
+        resource_ids: List[int],
+    ) -> Tuple[str, List[str]]:
+        """构建 ITSM 提单所需的授权维度与资源名称列表"""
+        itsm_grant_dimension = grant_dimension
+        resource_names: List[str] = []
+
+        if grant_dimension == GrantDimensionEnum.API.value:
+            itsm_grant_dimension = "gateway"
+            resource_names = [gateway.name]
+        elif grant_dimension == GrantDimensionEnum.RESOURCE.value and resource_ids:
+            resource_names = list(
+                Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("name", flat=True)
+            )
+
+        return itsm_grant_dimension, resource_names
+
     @classmethod
     def get_manager(cls, grant_dimension: str) -> "PermissionDimensionManager":
         if grant_dimension == GrantDimensionEnum.API.value:
@@ -143,7 +168,77 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             resources=Resource.objects.filter(gateway=gateway, id__in=resource_ids),
         )
 
+        # 如果启用了 ITSM 权限申请工单，创建 ITSM 工单
+        if getattr(settings, "BK_ITSM4_PERMISSION_APPLY_ENABLED", False):
+            self._create_itsm_ticket(
+                record=record,
+                gateway=gateway,
+                bk_app_code=bk_app_code,
+                grant_dimension=grant_dimension,
+                resource_ids=resource_ids,
+                reason=reason,
+                expire_days=expire_days,
+                username=username,
+            )
+
         return record
+
+    def _create_itsm_ticket(
+        self,
+        record: AppPermissionRecord,
+        gateway: Gateway,
+        bk_app_code: str,
+        grant_dimension: str,
+        resource_ids: List[int],
+        reason: str,
+        expire_days: int,
+        username: str,
+    ):
+        """创建 ITSM 权限申请工单"""
+        try:
+            helper = ItsmPermissionApplyHelper()
+            if not helper.is_ready():
+                return
+
+            itsm_grant_dimension, resource_names = self._build_itsm_ticket_apply_resources(
+                grant_dimension=grant_dimension,
+                gateway=gateway,
+                resource_ids=resource_ids,
+            )
+            callback_token = helper.generate_callback_token()
+
+            resp = helper.create_permission_apply_ticket(
+                bk_app_code=bk_app_code,
+                gateway_name=gateway.name,
+                grant_dimension=itsm_grant_dimension,
+                apply_resource_names=resource_names,
+                reason=reason,
+                expire_days=expire_days,
+                applied_by=username,
+                apply_record_id=record.id,
+                approvers=gateway.maintainers,
+                callback_token=callback_token,
+            )
+
+            # 保存 ITSM 工单 ID 到申请记录
+            ticket_id = helper.extract_ticket_id(resp)
+            if ticket_id:
+                record.itsm_ticket_id = ticket_id
+                record.save(update_fields=["itsm_ticket_id"])
+
+                AppPermissionApply.objects.filter(apply_record_id=record.id).update(
+                    itsm_ticket_id=ticket_id,
+                    itsm_callback_token=callback_token,
+                )
+
+                logger.info(
+                    "ITSM ticket created: record_id=%s, ticket_id=%s",
+                    record.id,
+                    ticket_id,
+                )
+        except Exception:
+            # ITSM 工单创建失败不应阻塞主流程
+            logger.exception("Failed to create ITSM ticket for permission apply, record_id=%s", record.id)
 
 
 class GatewayPermissionDimensionManager(PermissionDimensionManager):

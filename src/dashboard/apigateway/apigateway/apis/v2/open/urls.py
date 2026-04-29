@@ -18,7 +18,7 @@
 #
 from django.urls import include, path
 
-from . import views
+from . import itsm_views, views
 
 urlpatterns = [
     # /api/v2/open/ 用于第三方系统调用查询一些网关信息，正常情况禁止提供`写`接口，避免非网关的 related_app 对网关进行了修改
@@ -204,5 +204,11 @@ urlpatterns = [
                 ),
             ]
         ),
+    ),
+    # ITSM callback endpoint
+    path(
+        "itsm/callback/",
+        itsm_views.ItsmCallbackApi.as_view(),
+        name="openapi.v2.open.itsm.callback",
     ),
 ]

@@ -18,14 +18,18 @@
 
 from unittest.mock import patch
 
+import pytest
 from ddf import G
 
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
+from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.core.models import Resource
-from apigateway.utils.time import NeverExpiresTime
+from apigateway.utils.time import NeverExpiresTime, now_datetime
+
+pytestmark = pytest.mark.django_db
 
 
 class TestMCPServerPermissionHandler:
@@ -235,3 +239,56 @@ class TestMCPServerPermissionHandler:
         # Verify permissions for both apps
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app1").count() == 2
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app2").count() == 2
+
+
+class TestMCPServerPermissionHandlerItsm:
+    def test_create_itsm_tickets_for_applies(self, mocker, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        apply = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+            itsm_ticket_id="",
+        )
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = True
+        helper.generate_callback_token.return_value = "cb-token-mcp-001"
+        helper.create_permission_apply_ticket.return_value = {"ticket": {"id": "itsm-001"}}
+        helper.extract_ticket_id.return_value = "itsm-001"
+        mocker.patch("apigateway.biz.mcp_server.permission.ItsmPermissionApplyHelper", return_value=helper)
+
+        MCPServerPermissionHandler._create_itsm_tickets_for_applies(
+            MCPServerAppPermissionApply.objects.filter(id=apply.id)
+        )
+
+        apply.refresh_from_db()
+        assert apply.itsm_ticket_id == "itsm-001"
+        helper.create_permission_apply_ticket.assert_called_once()
+
+    def test_create_itsm_tickets_for_applies_when_not_ready(self, mocker, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        apply = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+            itsm_ticket_id="",
+        )
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = False
+        mocker.patch("apigateway.biz.mcp_server.permission.ItsmPermissionApplyHelper", return_value=helper)
+
+        MCPServerPermissionHandler._create_itsm_tickets_for_applies(
+            MCPServerAppPermissionApply.objects.filter(id=apply.id)
+        )
+
+        apply.refresh_from_db()
+        assert apply.itsm_ticket_id == ""
+        helper.create_permission_apply_ticket.assert_not_called()
