@@ -293,15 +293,14 @@ const clearDecorations = () => {
 };
 
 const genMarkers = (errors: any[]) => {
-  // console.log(errors);
   errors.forEach((error: any) => {
     markers.push({
       severity: monaco.MarkerSeverity.Error,
       message: error.message,
-      startLineNumber: error.position.lineNumber,
-      startColumn: error.position.column,
-      endLineNumber: error.position.lineNumber,
-      endColumn: editor!.getModel()?.getLineLastNonWhitespaceColumn(error.position.lineNumber) ?? 1,
+      startLineNumber: error.position?.lineNumber ?? 0,
+      startColumn: error.position?.column ?? 0,
+      endLineNumber: error.position?.lineNumber ?? 0,
+      endColumn: editor!.getModel()?.getLineLastNonWhitespaceColumn(error.position?.lineNumber) ?? 1,
     });
   });
 };
