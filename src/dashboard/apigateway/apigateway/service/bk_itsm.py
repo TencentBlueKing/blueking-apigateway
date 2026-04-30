@@ -187,4 +187,10 @@ class ItsmPermissionApplyHelper:
         bk_apigateway_url = getattr(settings, "BK_API_URL_TMPL", "").format(api_name="bk-apigateway")
         if not bk_apigateway_url:
             return ""
-        return url_join(bk_apigateway_url, "/prod/api/v2/open/itsm/callback/")
+
+        callback_path = getattr(settings, "BK_ITSM4_CALLBACK_PATH", "")
+        if not callback_path:
+            callback_stage = getattr(settings, "BK_ITSM4_CALLBACK_STAGE", "prod")
+            callback_path = f"/{callback_stage}/api/v2/open/itsm/callback/"
+
+        return url_join(bk_apigateway_url, callback_path)

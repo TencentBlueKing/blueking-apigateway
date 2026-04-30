@@ -58,3 +58,22 @@ class TestItsmPermissionApplyHelper:
     def test_is_ready_false_when_config_not_exists(self):
         helper = ItsmPermissionApplyHelper(system_code="not-exists")
         assert helper.is_ready() is False
+
+    def test_build_callback_url_uses_configured_path(self, settings):
+        settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"
+        settings.BK_ITSM4_CALLBACK_PATH = "/stag/api/v2/open/itsm/callback/"
+
+        helper = ItsmPermissionApplyHelper()
+        callback_url = helper._build_callback_url()
+
+        assert callback_url == "https://bkapi.example.com/api/bk-apigateway/stag/api/v2/open/itsm/callback/"
+
+    def test_build_callback_url_fallback_to_callback_stage(self, settings):
+        settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"
+        settings.BK_ITSM4_CALLBACK_PATH = ""
+        settings.BK_ITSM4_CALLBACK_STAGE = "gray"
+
+        helper = ItsmPermissionApplyHelper()
+        callback_url = helper._build_callback_url()
+
+        assert callback_url == "https://bkapi.example.com/api/bk-apigateway/gray/api/v2/open/itsm/callback/"

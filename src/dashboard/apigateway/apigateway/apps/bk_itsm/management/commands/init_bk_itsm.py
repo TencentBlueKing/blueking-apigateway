@@ -192,13 +192,70 @@ class Command(BaseCommand):
                 },
                 system_token=config.system_token,
             )
-            config.workflow_key = str(resp.get("key") or resp.get("workflow_key") or resp.get("id") or "")
+            workflow_key = self._extract_workflow_key(resp)
+            if not workflow_key:
+                self.stdout.write(self.style.ERROR(f"Failed to parse workflow key from response: {resp}"))
+                return False
+
+            config.workflow_key = workflow_key
+            config.save(update_fields=["workflow_key", "updated_time"])
             self.stdout.write(self.style.SUCCESS(f"Workflow created: {config.workflow_key}"))
             return True
         except Exception as e:
             logger.exception("Failed to create ITSM workflow")
             self.stdout.write(self.style.ERROR(f"Failed to create workflow: {e}"))
             return False
+
+    @staticmethod
+    def _extract_system_id(resp: dict, default: str = "") -> str:
+        if not isinstance(resp, dict):
+            return default
+
+        value = resp.get("id") or resp.get("system_id")
+        if value not in (None, ""):
+            return str(value)
+
+        data = resp.get("data")
+        if isinstance(data, dict):
+            value = data.get("id") or data.get("system_id")
+            if value not in (None, ""):
+                return str(value)
+
+        return default
+
+    @staticmethod
+    def _extract_system_token(resp: dict, default: str = "") -> str:
+        if not isinstance(resp, dict):
+            return default
+
+        value = resp.get("token") or resp.get("system_token")
+        if value not in (None, ""):
+            return str(value)
+
+        data = resp.get("data")
+        if isinstance(data, dict):
+            value = data.get("token") or data.get("system_token")
+            if value not in (None, ""):
+                return str(value)
+
+        return default
+
+    @staticmethod
+    def _extract_workflow_key(resp: dict) -> str:
+        if not isinstance(resp, dict):
+            return ""
+
+        value = resp.get("key") or resp.get("workflow_key")
+        if value not in (None, ""):
+            return str(value)
+
+        data = resp.get("data")
+        if isinstance(data, dict):
+            value = data.get("key") or data.get("workflow_key")
+            if value not in (None, ""):
+                return str(value)
+
+        return ""
 
     def _build_form_schema(self) -> dict:
         """

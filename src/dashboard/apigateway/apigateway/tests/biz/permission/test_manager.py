@@ -461,3 +461,33 @@ class TestPermissionDimensionManagerItsmIntegration:
         record.refresh_from_db()
         assert record.itsm_ticket_id == ""
         helper.create_permission_apply_ticket.assert_not_called()
+
+    def test_create_apply_record_persists_callback_token_before_ticket_id(
+        self, settings, mocker, fake_gateway, fake_resource
+    ):
+        settings.BK_ITSM4_PERMISSION_APPLY_ENABLED = True
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = True
+        helper.generate_callback_token.return_value = "cb-token-001"
+        helper.create_permission_apply_ticket.return_value = {"ticket": {}}
+        helper.extract_ticket_id.return_value = ""
+        mocker.patch("apigateway.biz.permission.manager.ItsmPermissionApplyHelper", return_value=helper)
+
+        manager = GatewayPermissionDimensionManager()
+        record = manager.create_apply_record(
+            "test-app",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "reason",
+            180,
+            "admin",
+        )
+
+        record.refresh_from_db()
+        apply = AppPermissionApply.objects.get(apply_record_id=record.id)
+
+        assert record.itsm_ticket_id == ""
+        assert apply.itsm_ticket_id == ""
+        assert apply.itsm_callback_token == "cb-token-001"

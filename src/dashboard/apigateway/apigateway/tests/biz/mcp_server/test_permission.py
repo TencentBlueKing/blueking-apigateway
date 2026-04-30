@@ -292,3 +292,50 @@ class TestMCPServerPermissionHandlerItsm:
         apply.refresh_from_db()
         assert apply.itsm_ticket_id == ""
         helper.create_permission_apply_ticket.assert_not_called()
+
+    def test_create_itsm_tickets_persists_callback_token_before_ticket_id(self, mocker, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        apply = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+            itsm_ticket_id="",
+            itsm_callback_token="",
+        )
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = True
+        helper.generate_callback_token.return_value = "cb-token-mcp-001"
+        helper.create_permission_apply_ticket.return_value = {"ticket": {}}
+        helper.extract_ticket_id.return_value = ""
+        mocker.patch("apigateway.biz.mcp_server.permission.ItsmPermissionApplyHelper", return_value=helper)
+
+        MCPServerPermissionHandler._create_itsm_tickets_for_applies(
+            MCPServerAppPermissionApply.objects.filter(id=apply.id)
+        )
+
+        apply.refresh_from_db()
+        assert apply.itsm_ticket_id == ""
+        assert apply.itsm_callback_token == "cb-token-mcp-001"
+
+    def test_save_permission_updates_grant_type_for_existing_record(self, fake_gateway, fake_stage):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.APPLY.value,
+            expire_days=30,
+        )
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.SYNC.value,
+            expire_days=None,
+        )
+
+        permission = MCPServerAppPermission.objects.get(mcp_server_id=mcp_server.id, bk_app_code="test-app")
+        assert permission.grant_type == GrantTypeEnum.SYNC.value

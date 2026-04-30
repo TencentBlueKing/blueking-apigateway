@@ -100,6 +100,9 @@ class MCPServerPermissionHandler:
                 try:
                     gateway = apply.mcp_server.gateway
                     callback_token = helper.generate_callback_token()
+                    apply.itsm_callback_token = callback_token
+                    apply.save(update_fields=["itsm_callback_token"])
+
                     resp = helper.create_permission_apply_ticket(
                         bk_app_code=apply.bk_app_code,
                         gateway_name=gateway.name,
@@ -116,8 +119,7 @@ class MCPServerPermissionHandler:
                     ticket_id = helper.extract_ticket_id(resp)
                     if ticket_id:
                         apply.itsm_ticket_id = ticket_id
-                        apply.itsm_callback_token = callback_token
-                        apply.save(update_fields=["itsm_ticket_id", "itsm_callback_token"])
+                        apply.save(update_fields=["itsm_ticket_id"])
                         logger.info(
                             "ITSM ticket created for mcp server apply: apply_id=%s, ticket_id=%s",
                             apply.id,

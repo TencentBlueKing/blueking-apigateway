@@ -206,6 +206,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 resource_ids=resource_ids,
             )
             callback_token = helper.generate_callback_token()
+            AppPermissionApply.objects.filter(apply_record_id=record.id).update(itsm_callback_token=callback_token)
 
             resp = helper.create_permission_apply_ticket(
                 bk_app_code=bk_app_code,
@@ -226,10 +227,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 record.itsm_ticket_id = ticket_id
                 record.save(update_fields=["itsm_ticket_id"])
 
-                AppPermissionApply.objects.filter(apply_record_id=record.id).update(
-                    itsm_ticket_id=ticket_id,
-                    itsm_callback_token=callback_token,
-                )
+                AppPermissionApply.objects.filter(apply_record_id=record.id).update(itsm_ticket_id=ticket_id)
 
                 logger.info(
                     "ITSM ticket created: record_id=%s, ticket_id=%s",

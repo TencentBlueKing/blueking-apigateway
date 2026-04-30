@@ -35,8 +35,9 @@ class MCPServerAppPermissionManager(models.Manager):
         )
 
         if not created:
+            instance.grant_type = grant_type
             instance.expires = calculate_renew_time(expire_days)
-            instance.save(update_fields=["expires"])
+            instance.save(update_fields=["grant_type", "expires"])
 
 
 class MCPServerAppPermissionApplyManager(models.Manager):

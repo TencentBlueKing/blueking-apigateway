@@ -121,6 +121,7 @@ class ItsmCallbackApi(generics.CreateAPIView):
         if callback_token:
             return callback_token
 
+        # 兼容 ITSM 回调只回传 query 参数 verify_token 的场景
         callback_token = request.query_params.get("verify_token", "")
         if callback_token:
             return callback_token
@@ -172,7 +173,7 @@ class ItsmCallbackApi(generics.CreateAPIView):
                 log_prefix,
                 log_id_field,
                 log_id_value,
-                local_callback_token,
+                ItsmCallbackApi._mask_token(local_callback_token),
             )
             raise error_codes.INVALID_ARGUMENT.format("invalid callback_token")
 
@@ -201,6 +202,10 @@ class ItsmCallbackApi(generics.CreateAPIView):
             if not apply:
                 logger.info("Gateway apply already consumed or not found, record_id=%s", apply_record_id)
                 return
+
+            if not apply.itsm_ticket_id:
+                apply.itsm_ticket_id = ticket_id
+                apply.save(update_fields=["itsm_ticket_id"])
 
             self._validate_callback_token_and_ticket_id(
                 local_callback_token=apply.itsm_callback_token,
