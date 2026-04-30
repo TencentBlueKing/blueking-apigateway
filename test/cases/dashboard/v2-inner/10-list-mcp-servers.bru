@@ -1,0 +1,118 @@
+meta {
+  name: v2-inner-list-mcp-servers
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-servers/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  var results = data.data.results || data.data;
+  test("response has results", function() {
+    expect(results).to.be.an('array');
+  });
+
+  if (results && results.length > 0) {
+    var item = results[0];
+
+    // 顶层字段
+    test("field id exists", function() {
+      expect(item).to.have.property('id');
+    });
+    test("field name exists", function() {
+      expect(item).to.have.property('name');
+    });
+    test("field title exists", function() {
+      expect(item).to.have.property('title');
+    });
+    test("field description exists", function() {
+      expect(item).to.have.property('description');
+    });
+    test("field is_public exists", function() {
+      expect(item).to.have.property('is_public');
+    });
+    test("field labels exists", function() {
+      expect(item).to.have.property('labels');
+    });
+    test("field resource_names exists", function() {
+      expect(item).to.have.property('resource_names');
+    });
+    test("field tool_names exists", function() {
+      expect(item).to.have.property('tool_names');
+    });
+    test("field status exists", function() {
+      expect(item).to.have.property('status');
+    });
+    test("field protocol_type exists", function() {
+      expect(item).to.have.property('protocol_type');
+    });
+    test("field oauth2_public_client_enabled exists", function() {
+      expect(item).to.have.property('oauth2_public_client_enabled');
+    });
+    test("field tools_count exists", function() {
+      expect(item).to.have.property('tools_count');
+    });
+    test("field prompts_count exists", function() {
+      expect(item).to.have.property('prompts_count');
+    });
+    test("field url exists", function() {
+      expect(item).to.have.property('url');
+    });
+    test("field detail_url exists", function() {
+      expect(item).to.have.property('detail_url');
+    });
+    test("field updated_by exists", function() {
+      expect(item).to.have.property('updated_by');
+    });
+    test("field created_by exists", function() {
+      expect(item).to.have.property('created_by');
+    });
+    test("field updated_time exists", function() {
+      expect(item).to.have.property('updated_time');
+    });
+    test("field created_time exists", function() {
+      expect(item).to.have.property('created_time');
+    });
+
+    // 嵌套对象
+    test("field stage exists", function() {
+      expect(item).to.have.property('stage');
+    });
+    test("field stage.id exists", function() {
+      expect(item.stage).to.have.property('id');
+    });
+    test("field stage.name exists", function() {
+      expect(item.stage).to.have.property('name');
+    });
+
+    test("field gateway exists", function() {
+      expect(item).to.have.property('gateway');
+    });
+    test("field gateway.id exists", function() {
+      expect(item.gateway).to.have.property('id');
+    });
+    test("field gateway.name exists", function() {
+      expect(item.gateway).to.have.property('name');
+    });
+    test("field gateway.maintainers exists", function() {
+      expect(item.gateway).to.have.property('maintainers');
+    });
+    test("field gateway.is_official exists", function() {
+      expect(item.gateway).to.have.property('is_official');
+    });
+  }
+}
