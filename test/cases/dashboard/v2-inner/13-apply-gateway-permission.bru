@@ -1,0 +1,35 @@
+meta {
+  name: v2-inner-apply-gateway-permission
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/permissions/app-permissions/apply/?target_app_code={{test_bk_app_code}}
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target_app_code": "{{test_bk_app_code}}",
+    "grant_dimension": "api",
+    "expire_days": 180,
+    "reason": "e2e test"
+  }
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("response has data with record_id", function() {
+    expect(data.data).to.have.property('record_id');
+  });
+}

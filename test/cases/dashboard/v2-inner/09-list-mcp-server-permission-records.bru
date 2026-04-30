@@ -28,7 +28,6 @@ tests {
   if (data.data && data.data.length > 0) {
     var item = data.data[0];
 
-    // mcp_server 嵌套字段
     test("field mcp_server exists", function() {
       expect(item).to.have.property('mcp_server');
     });
@@ -57,7 +56,6 @@ tests {
       expect(item.mcp_server).to.have.property('doc_link');
     });
 
-    // record 嵌套字段
     test("field record exists", function() {
       expect(item).to.have.property('record');
     });

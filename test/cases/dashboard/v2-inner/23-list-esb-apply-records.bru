@@ -1,0 +1,38 @@
+meta {
+  name: GET /esb/systems/permissions/apply-records/
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/permissions/apply-records/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response has count and results", function() {
+    expect(data.data).to.have.property('count');
+    expect(data.data).to.have.property('results');
+    expect(data.data.results).to.be.an('array');
+  });
+  if (data.data.results.length > 0) {
+    var item = data.data.results[0];
+    test("field id exists", function() { expect(item).to.have.property('id'); });
+    test("field bk_app_code exists", function() { expect(item).to.have.property('bk_app_code'); });
+    test("field applied_by exists", function() { expect(item).to.have.property('applied_by'); });
+    test("field applied_time exists", function() { expect(item).to.have.property('applied_time'); });
+    test("field apply_status exists", function() { expect(item).to.have.property('apply_status'); });
+    test("field apply_status_display exists", function() { expect(item).to.have.property('apply_status_display'); });
+    test("field expire_days exists", function() { expect(item).to.have.property('expire_days'); });
+    test("field system_name exists", function() { expect(item).to.have.property('system_name'); });
+  }
+}

@@ -1,0 +1,35 @@
+meta {
+  name: GET app permission record detail
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/permissions/apply-records/7?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response has data", function() {
+    expect(data).to.have.property('data');
+  });
+  var r = data.data;
+  test("field id exists", function() { expect(r).to.have.property('id'); });
+  test("field bk_app_code exists", function() { expect(r).to.have.property('bk_app_code'); });
+  test("field applied_by exists", function() { expect(r).to.have.property('applied_by'); });
+  test("field applied_time exists", function() { expect(r).to.have.property('applied_time'); });
+  test("field handled_by exists", function() { expect(r).to.have.property('handled_by'); });
+  test("field apply_status exists", function() { expect(r).to.have.property('apply_status'); });
+  test("field grant_dimension exists", function() { expect(r).to.have.property('grant_dimension'); });
+  test("field expire_days exists", function() { expect(r).to.have.property('expire_days'); });
+  test("field gateway_name exists", function() { expect(r).to.have.property('gateway_name'); });
+}

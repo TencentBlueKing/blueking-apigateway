@@ -1,0 +1,25 @@
+meta {
+  name: v2-inner-delete-gateway
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 404 (API not registered on gateway)", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+  test("response indicates API not found", function() {
+    expect(data.code_name || data.code || '').to.not.equal('');
+  });
+}

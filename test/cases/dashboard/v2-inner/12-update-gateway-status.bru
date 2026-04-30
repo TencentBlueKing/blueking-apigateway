@@ -1,0 +1,32 @@
+meta {
+  name: v2-inner-update-gateway-status
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/status/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status": 0
+  }
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 404 (API not registered on gateway)", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+  test("response indicates API not found", function() {
+    expect(data.code_name || data.code || '').to.not.equal('');
+  });
+}

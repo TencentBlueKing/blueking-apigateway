@@ -29,7 +29,6 @@ tests {
   if (results && results.length > 0) {
     var item = results[0];
 
-    // 顶层字段
     test("field id exists", function() {
       expect(item).to.have.property('id');
     });
@@ -88,7 +87,6 @@ tests {
       expect(item).to.have.property('created_time');
     });
 
-    // 嵌套对象
     test("field stage exists", function() {
       expect(item).to.have.property('stage');
     });

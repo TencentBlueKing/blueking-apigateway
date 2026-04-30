@@ -1,0 +1,50 @@
+meta {
+  name: v2-inner-apply-mcp-server-permission
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/apply/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target_app_code": "{{test_bk_app_code}}",
+    "mcp_server_ids": [198],
+    "applied_by": "admin",
+    "reason": "e2e test"
+  }
+}
+
+tests {
+  var data = res.getBody();
+  var status = res.getStatus();
+  test("status is 200 (new apply) or 400 (already exists)", function() {
+    expect([200, 400]).to.include(status);
+  });
+  if (status === 200) {
+    test("response has data as array", function() {
+      expect(data.data).to.be.an('array');
+    });
+    if (data.data && data.data.length > 0) {
+      var item = data.data[0];
+      test("field record_id exists", function() { expect(item).to.have.property('record_id'); });
+      test("field bk_app_code exists", function() { expect(item).to.have.property('bk_app_code'); });
+      test("field mcp_server_id exists", function() { expect(item).to.have.property('mcp_server_id'); });
+    }
+  }
+  if (status === 400) {
+    test("error indicates existing record", function() {
+      var body = JSON.stringify(data);
+      expect(body).to.contain("INVALID_ARGUMENT");
+    });
+  }
+}

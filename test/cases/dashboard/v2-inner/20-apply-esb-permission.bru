@@ -1,0 +1,35 @@
+meta {
+  name: v2-inner-apply-esb-permission
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/1/permissions/apply/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "target_app_code": "{{test_bk_app_code}}",
+    "component_ids": [291],
+    "reason": "e2e test",
+    "expire_days": 180
+  }
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("response has record_id", function() {
+    expect(data.data).to.have.property('record_id');
+  });
+}
