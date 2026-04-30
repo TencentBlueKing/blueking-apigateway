@@ -81,7 +81,17 @@ class TestAppRequestAlerter:
         assert result == ["admin"]
 
     def test_get_message(self, mocker, faker):
+        mocker.patch(
+            "apigateway.service.alert_flow.handlers.app_request.Resource.objects.filter"
+        ).return_value.values_list.return_value.first.return_value = "test-resource"
+
         event = mocker.MagicMock(
+            event_dimensions={
+                "api_id": 1,
+                "resource_id": 2,
+                "stage": "prod",
+                "app_code": faker.pystr(),
+            },
             extend={
                 "log_records": [
                     {
@@ -107,7 +117,7 @@ class TestAppRequestAlerter:
         assert result != ""
 
     @pytest.mark.parametrize(
-        "record_source, expected",
+        "record_source, resource_name, expected",
         [
             (
                 {
@@ -115,7 +125,8 @@ class TestAppRequestAlerter:
                     "http_host": "bkapi.example.com",
                     "http_path": "/",
                 },
-                "GET, bkapi.example.com, /",
+                "my-resource",
+                "资源 my-resource, GET, bkapi.example.com, /",
             ),
             (
                 {
@@ -123,7 +134,8 @@ class TestAppRequestAlerter:
                     "http_host": "bkapi.example.com",
                     "http_path": "/foo",
                 },
-                "GET, bkapi.example.com, /foo",
+                "my-resource",
+                "资源 my-resource, GET, bkapi.example.com, /foo",
             ),
             (
                 {
@@ -131,10 +143,20 @@ class TestAppRequestAlerter:
                     "http_host": "bkapi.example.com",
                     "http_path": "/foo?color=red&size=large",
                 },
-                "GET, bkapi.example.com, /foo",
+                "my-resource",
+                "资源 my-resource, GET, bkapi.example.com, /foo",
+            ),
+            (
+                {
+                    "method": "POST",
+                    "http_host": "bkapi.example.com",
+                    "http_path": "/bar",
+                },
+                "",
+                "资源 , POST, bkapi.example.com, /bar",
             ),
         ],
     )
-    def test_get_request_info(self, record_source, expected):
-        result = self.alerter._get_request_info(record_source)
+    def test_get_request_info(self, record_source, resource_name, expected):
+        result = self.alerter._get_request_info(record_source, resource_name)
         assert result == expected

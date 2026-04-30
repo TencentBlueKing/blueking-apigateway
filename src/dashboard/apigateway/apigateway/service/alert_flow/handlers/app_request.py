@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from apigateway.apps.monitor.constants import AlarmStatusEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_app_developers
+from apigateway.core.models import Resource
 from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
 from apigateway.utils import time as time_utils
 
@@ -72,6 +73,9 @@ class AppRequestAlerter(Alerter):
     def get_message(self, event: MonitorEvent) -> str:
         log_records = event.extend["log_records"]
         record_source = log_records[0]["_source"]
+        dimension = AppRequestDimension.model_validate(event.event_dimensions)
+
+        resource_name = Resource.objects.filter(id=dimension.resource_id).values_list("name", flat=True).first() or ""
 
         template = """
         [蓝鲸 API Gateway 告警]
@@ -96,7 +100,7 @@ class AppRequestAlerter(Alerter):
             app_code=record_source["app_code"],
             api_name=record_source["api_name"],
             stage=record_source["stage"],
-            request_info=self._get_request_info(record_source),
+            request_info=self._get_request_info(record_source, resource_name),
             client_ip=record_source["client_ip"],
             error=record_source["error"],
             request_id=record_source["request_id"],
@@ -104,11 +108,12 @@ class AppRequestAlerter(Alerter):
             event_create_time=time_utils.format(event.event_create_time),
         )
 
-    def _get_request_info(self, record_source: Dict[str, Any]) -> str:
+    def _get_request_info(self, record_source: Dict[str, Any], resource_name: str = "") -> str:
         parsed_path = urlparse(record_source["http_path"])
         path_without_querystring = urlunparse((parsed_path.scheme, parsed_path.netloc, parsed_path.path, "", "", ""))
 
-        return "{}, {}, {}".format(
+        return "资源 {}, {}, {}, {}".format(
+            resource_name,
             record_source["method"],
             record_source["http_host"],
             path_without_querystring,
