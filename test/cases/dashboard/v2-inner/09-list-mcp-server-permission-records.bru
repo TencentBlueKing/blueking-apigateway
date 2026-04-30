@@ -1,0 +1,96 @@
+meta {
+  name: v2-inner-list-mcp-server-permission-records
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/apply-records/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  test("response data is array", function() {
+    expect(data.data).to.be.an('array');
+  });
+
+  if (data.data && data.data.length > 0) {
+    var item = data.data[0];
+
+    test("field mcp_server exists", function() {
+      expect(item).to.have.property('mcp_server');
+    });
+    test("field mcp_server.id exists", function() {
+      expect(item.mcp_server).to.have.property('id');
+    });
+    test("field mcp_server.name exists", function() {
+      expect(item.mcp_server).to.have.property('name');
+    });
+    test("field mcp_server.title exists", function() {
+      expect(item.mcp_server).to.have.property('title');
+    });
+    test("field mcp_server.description exists", function() {
+      expect(item.mcp_server).to.have.property('description');
+    });
+    test("field mcp_server.tools_count exists", function() {
+      expect(item.mcp_server).to.have.property('tools_count');
+    });
+    test("field mcp_server.tool_names exists", function() {
+      expect(item.mcp_server).to.have.property('tool_names');
+    });
+    test("field mcp_server.protocol_type exists", function() {
+      expect(item.mcp_server).to.have.property('protocol_type');
+    });
+    test("field mcp_server.doc_link exists", function() {
+      expect(item.mcp_server).to.have.property('doc_link');
+    });
+
+    test("field record exists", function() {
+      expect(item).to.have.property('record');
+    });
+    test("field record.id exists", function() {
+      expect(item.record).to.have.property('id');
+    });
+    test("field record.applied_by exists", function() {
+      expect(item.record).to.have.property('applied_by');
+    });
+    test("field record.applied_time exists", function() {
+      expect(item.record).to.have.property('applied_time');
+    });
+    test("field record.handled_by exists", function() {
+      expect(item.record).to.have.property('handled_by');
+    });
+    test("field record.handled_time exists", function() {
+      expect(item.record).to.have.property('handled_time');
+    });
+    test("field record.apply_status exists", function() {
+      expect(item.record).to.have.property('apply_status');
+    });
+    test("field record.apply_status_display exists", function() {
+      expect(item.record).to.have.property('apply_status_display');
+    });
+    test("field record.comment exists", function() {
+      expect(item.record).to.have.property('comment');
+    });
+    test("field record.reason exists", function() {
+      expect(item.record).to.have.property('reason');
+    });
+    test("field record.expire_days exists", function() {
+      expect(item.record).to.have.property('expire_days');
+    });
+    test("field record.approval_url exists", function() {
+      expect(item.record).to.have.property('approval_url');
+    });
+  }
+}

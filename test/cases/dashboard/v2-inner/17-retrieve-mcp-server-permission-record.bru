@@ -1,0 +1,36 @@
+meta {
+  name: GET mcp server permission record detail
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/apply-records/7?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response has data", function() {
+    expect(data).to.have.property('data');
+  });
+  var d = data.data;
+  test("has mcp_server field", function() { expect(d).to.have.property('mcp_server'); });
+  test("has record field", function() { expect(d).to.have.property('record'); });
+  var srv = d.mcp_server;
+  var rec = d.record;
+  test("mcp_server.id exists", function() { expect(srv).to.have.property('id'); });
+  test("mcp_server.name exists", function() { expect(srv).to.have.property('name'); });
+  test("mcp_server.title exists", function() { expect(srv).to.have.property('title'); });
+  test("record.id exists", function() { expect(rec).to.have.property('id'); });
+  test("record.apply_status exists", function() { expect(rec).to.have.property('apply_status'); });
+  test("record.approval_url exists", function() { expect(rec).to.have.property('approval_url'); });
+}

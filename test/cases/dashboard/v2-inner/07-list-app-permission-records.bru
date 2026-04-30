@@ -1,0 +1,71 @@
+meta {
+  name: v2-inner-list-app-permission-records
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/permissions/apply-records/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  var results = data.data.results || data.data;
+  test("response has results", function() {
+    expect(results).to.be.an('array');
+  });
+
+  if (results && results.length > 0) {
+    var item = results[0];
+    test("field id exists", function() {
+      expect(item).to.have.property('id');
+    });
+    test("field bk_app_code exists", function() {
+      expect(item).to.have.property('bk_app_code');
+    });
+    test("field applied_by exists", function() {
+      expect(item).to.have.property('applied_by');
+    });
+    test("field applied_time exists", function() {
+      expect(item).to.have.property('applied_time');
+    });
+    test("field handled_by exists", function() {
+      expect(item).to.have.property('handled_by');
+    });
+    test("field handled_time exists", function() {
+      expect(item).to.have.property('handled_time');
+    });
+    test("field apply_status exists", function() {
+      expect(item).to.have.property('apply_status');
+    });
+    test("field apply_status_display exists", function() {
+      expect(item).to.have.property('apply_status_display');
+    });
+    test("field grant_dimension exists", function() {
+      expect(item).to.have.property('grant_dimension');
+    });
+    test("field comment exists", function() {
+      expect(item).to.have.property('comment');
+    });
+    test("field reason exists", function() {
+      expect(item).to.have.property('reason');
+    });
+    test("field expire_days exists", function() {
+      expect(item).to.have.property('expire_days');
+    });
+    test("field gateway_name exists", function() {
+      expect(item).to.have.property('gateway_name');
+    });
+  }
+}

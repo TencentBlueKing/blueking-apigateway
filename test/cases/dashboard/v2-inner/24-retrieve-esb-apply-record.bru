@@ -1,0 +1,37 @@
+meta {
+  name: GET /esb/systems/permissions/apply-records/{id}
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/permissions/apply-records/4?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response has data", function() {
+    expect(data).to.have.property('data');
+  });
+  var r = data.data;
+  test("field id exists", function() { expect(r).to.have.property('id'); });
+  test("field bk_app_code exists", function() { expect(r).to.have.property('bk_app_code'); });
+  test("field apply_status exists", function() { expect(r).to.have.property('apply_status'); });
+  test("field system_name exists", function() { expect(r).to.have.property('system_name'); });
+  test("field components exists", function() { expect(r).to.have.property('components'); });
+  if (r.components && r.components.length > 0) {
+    var c = r.components[0];
+    test("component.id exists", function() { expect(c).to.have.property('id'); });
+    test("component.name exists", function() { expect(c).to.have.property('name'); });
+    test("component.apply_status exists", function() { expect(c).to.have.property('apply_status'); });
+  }
+}
