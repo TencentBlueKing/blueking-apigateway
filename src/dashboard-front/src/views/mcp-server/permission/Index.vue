@@ -194,7 +194,7 @@
                     class="mr-10px"
                     @click="() => handleApprove(row, 'approved')"
                   >
-                    {{ t('通过') }}
+                    {{ t('通过') }}6666
                   </BkButton>
                   <BkButton
                     text
