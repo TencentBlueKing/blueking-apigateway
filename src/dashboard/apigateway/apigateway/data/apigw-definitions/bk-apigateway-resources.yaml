@@ -3982,6 +3982,63 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Get OAuth Protected Resource Metadata
+  /api/v2/open/itsm/callback/:
+    post:
+      operationId: v2_open_itsm_callback
+      description: ITSM 工单审批结果回调
+      tags:
+        - v2_open
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticket
+              properties:
+                callback_token:
+                  type: string
+                  description: 回调 token
+                ticket:
+                  type: object
+                  description: 工单详情
+      responses:
+        '200':
+          description: 成功处理回调
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: ""
+                  data:
+                    type: object
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/open/itsm/callback/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: false
+        descriptionEn: ITSM ticket callback
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
       operationId: v2_sync_get_gateway_public_key_new

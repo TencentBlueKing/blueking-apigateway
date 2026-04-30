@@ -822,3 +822,13 @@ class OAuthProtectedResourceInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.OAuthProtectedResourceInputSLZ"
+
+
+class ItsmCallbackInputSLZ(serializers.Serializer):
+    callback_token = serializers.CharField(required=False, allow_blank=True, default="", help_text="回调 token")
+    ticket = serializers.DictField(required=True, help_text="工单详情")
+
+    def validate_ticket(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("ticket must be a dict")
+        return value

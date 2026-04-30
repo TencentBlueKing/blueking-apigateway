@@ -121,6 +121,7 @@ INSTALLED_APPS = [
     "apigateway.apps.docs",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
+    "apigateway.apps.bk_itsm",
     "apigateway.apps.data_plane",
     "apigw_manager.apigw",
     "apigateway.controller",
@@ -561,6 +562,24 @@ AIDEV_AGENT_CREATE_URL = env.str("AIDEV_AGENT_CREATE_URL", "")
 
 # MCP Server OAuth2 公开客户端模式开启后自动授权的 bk_app_code
 MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE", "public")
+
+# ==============================================================================
+# ITSM v4 配置
+# ==============================================================================
+BK_ITSM4_GATEWAY_NAME = env.str("BK_ITSM4_GATEWAY_NAME", "bk-itsm4")
+BK_ITSM4_URL_PREFIX = (
+    BK_API_URL_TMPL.format(api_name=BK_ITSM4_GATEWAY_NAME) + "/" + env.str("BK_ITSM4_GATEWAY_STAGE", "prod")
+)
+BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
+BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
+BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = env.list("BK_ITSM4_CALLBACK_ALLOWED_APP_CODES", default=["bk-itsm4", "cw_aitsm"])
+BK_ITSM4_CALLBACK_STAGE = env.str("BK_ITSM4_CALLBACK_STAGE", "prod")
+BK_ITSM4_CALLBACK_PATH = env.str(
+    "BK_ITSM4_CALLBACK_PATH",
+    f"/{BK_ITSM4_CALLBACK_STAGE}/api/v2/open/itsm/callback/",
+)
+# ITSM 权限申请工单回调 URL，为空时不启用 ITSM 工单
+BK_ITSM4_PERMISSION_APPLY_ENABLED = env.bool("BK_ITSM4_PERMISSION_APPLY_ENABLED", default=False)
 
 # ==============================================================================
 # 网关全局配置

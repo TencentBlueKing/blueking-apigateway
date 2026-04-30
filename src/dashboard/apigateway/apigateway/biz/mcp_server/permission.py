@@ -30,6 +30,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -80,7 +81,54 @@ class MCPServerPermissionHandler:
         )
         MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
         # 对于自增 ID，bulk_create 检索不到 Mysql 的主键，所以需要手动查询数据
-        return MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).exclude(id__in=before_ids)
+        new_applies = MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).exclude(id__in=before_ids)
+
+        # 创建 ITSM 工单（不阻塞主流程）
+        MCPServerPermissionHandler._create_itsm_tickets_for_applies(new_applies)
+
+        return new_applies
+
+    @staticmethod
+    def _create_itsm_tickets_for_applies(applies):
+        """为 MCP Server 权限申请创建 ITSM 工单"""
+        try:
+            helper = ItsmPermissionApplyHelper()
+            if not helper.is_ready():
+                return
+
+            for apply in applies.select_related("mcp_server__gateway"):
+                try:
+                    gateway = apply.mcp_server.gateway
+                    callback_token = helper.generate_callback_token()
+                    apply.itsm_callback_token = callback_token
+                    apply.save(update_fields=["itsm_callback_token"])
+
+                    resp = helper.create_permission_apply_ticket(
+                        bk_app_code=apply.bk_app_code,
+                        gateway_name=gateway.name,
+                        grant_dimension="mcp_server",
+                        apply_resource_names=[apply.mcp_server.name],
+                        reason=apply.reason,
+                        expire_days=apply.expire_days,
+                        applied_by=apply.applied_by,
+                        apply_record_id=apply.id,
+                        approvers=gateway.maintainers,
+                        callback_token=callback_token,
+                    )
+
+                    ticket_id = helper.extract_ticket_id(resp)
+                    if ticket_id:
+                        apply.itsm_ticket_id = ticket_id
+                        apply.save(update_fields=["itsm_ticket_id"])
+                        logger.info(
+                            "ITSM ticket created for mcp server apply: apply_id=%s, ticket_id=%s",
+                            apply.id,
+                            ticket_id,
+                        )
+                except Exception:
+                    logger.exception("Failed to create ITSM ticket for mcp server apply, apply_id=%s", apply.id)
+        except Exception:
+            logger.exception("Failed to create ITSM tickets for mcp server applies")
 
     @staticmethod
     def filter_records(
