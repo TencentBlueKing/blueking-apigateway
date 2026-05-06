@@ -26,6 +26,7 @@ tests {
   });
   if (data.data.results.length > 0) {
     var item = data.data.results[0];
+    bru.setVar("esb_apply_record_id", String(item.id));
     test("field id exists", function() { expect(item).to.have.property('id'); });
     test("field bk_app_code exists", function() { expect(item).to.have.property('bk_app_code'); });
     test("field applied_by exists", function() { expect(item).to.have.property('applied_by'); });

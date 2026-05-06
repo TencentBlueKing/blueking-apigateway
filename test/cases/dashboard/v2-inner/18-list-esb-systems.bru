@@ -24,6 +24,7 @@ tests {
   });
   if (data.data.length > 0) {
     var item = data.data[0];
+    bru.setVar("esb_system_id", String(item.id));
     test("field id exists", function() { expect(item).to.have.property('id'); });
     test("field name exists", function() { expect(item).to.have.property('name'); });
     test("field description exists", function() { expect(item).to.have.property('description'); });

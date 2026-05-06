@@ -27,6 +27,7 @@ tests {
 
   if (data.data && data.data.length > 0) {
     var item = data.data[0];
+    bru.setVar("mcp_permission_record_id", String(item.record.id));
 
     test("field mcp_server exists", function() {
       expect(item).to.have.property('mcp_server');

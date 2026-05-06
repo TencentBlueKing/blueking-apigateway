@@ -28,6 +28,7 @@ tests {
 
   if (results && results.length > 0) {
     var item = results[0];
+    bru.setVar("mcp_server_id", String(item.id));
 
     test("field id exists", function() {
       expect(item).to.have.property('id');

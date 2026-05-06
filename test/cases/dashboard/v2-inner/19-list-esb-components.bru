@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/1/permissions/components/?target_app_code={{test_bk_app_code}}
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/{{esb_system_id}}/permissions/components/?target_app_code={{test_bk_app_code}}
   body: none
   auth: none
 }
@@ -24,6 +24,7 @@ tests {
   });
   if (data.data.length > 0) {
     var item = data.data[0];
+    bru.setVar("esb_component_id", String(item.id));
     test("field id exists", function() { expect(item).to.have.property('id'); });
     test("field name exists", function() { expect(item).to.have.property('name'); });
     test("field system_name exists", function() { expect(item).to.have.property('system_name'); });

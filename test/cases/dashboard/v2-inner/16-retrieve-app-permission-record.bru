@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/permissions/apply-records/7?target_app_code={{test_bk_app_code}}
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/permissions/apply-records/{{app_permission_record_id}}?target_app_code={{test_bk_app_code}}
   body: none
   auth: none
 }
