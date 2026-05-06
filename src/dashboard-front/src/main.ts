@@ -22,6 +22,9 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import './styles/index.scss';
+// 引入 iconcool / bk-icon-font 样式
+import './assets/bk_icon_font/style.css';
+import './assets/bk_icon_font/iconcool.js';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
