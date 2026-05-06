@@ -22,6 +22,7 @@ export default defineConfigWithVueTs(
     '**/coverage/**',
     '**/lib/**',
     '**/public/**',
+    '**/src/assets/**',
     './.agents',
     './AGENTS.md',
   ]),
