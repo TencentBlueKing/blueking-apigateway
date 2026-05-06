@@ -1396,6 +1396,35 @@ class TestMCPServerAppPermissionApplyApplicantListApi:
         assert resp.status_code == 200
         assert len(result["data"]["applicants"]) == 2
 
+    def test_gateway_level_list(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="test-app",
+            applied_by="user1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="test-app2",
+            applied_by="user2",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.gateway_applicant_list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["applicants"] == ["user1", "user2"]
+
 
 class TestMCPServerAppPermissionApplyUpdateStatusApi:
     def test_approve(self, mocker, request_view, fake_gateway, fake_mcp_server):
