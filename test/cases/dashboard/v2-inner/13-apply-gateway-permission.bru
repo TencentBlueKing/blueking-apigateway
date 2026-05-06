@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/permissions/app-permissions/apply/?target_app_code={{test_bk_app_code}}
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/permissions/app-permissions/apply/
   body: json
   auth: none
 }
@@ -13,6 +13,11 @@ post {
 headers {
   X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
   Content-Type: application/json
+}
+
+assert {
+  res.status: eq 201
+  res.body.data: isDefined
 }
 
 body:json {

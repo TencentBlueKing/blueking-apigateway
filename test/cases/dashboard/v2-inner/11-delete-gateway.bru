@@ -14,6 +14,10 @@ headers {
   X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
 }
 
+assert {
+  res.status: eq 404
+}
+
 tests {
   var data = res.getBody();
   test("status is 404 (API not registered on gateway)", function() {

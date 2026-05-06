@@ -15,6 +15,10 @@ headers {
   Content-Type: application/json
 }
 
+assert {
+  res.status: eq 404
+}
+
 body:json {
   {
     "status": 0

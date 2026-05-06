@@ -14,6 +14,11 @@ headers {
   X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
 }
 
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
 tests {
   var data = res.getBody();
   test("status is 200", function() {

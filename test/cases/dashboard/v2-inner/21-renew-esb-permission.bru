@@ -15,6 +15,10 @@ headers {
   Content-Type: application/json
 }
 
+assert {
+  res.status: eq 204
+}
+
 body:json {
   {
     "target_app_code": "{{test_bk_app_code}}",
