@@ -1116,10 +1116,20 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
           // 判断 jsonpath 指向的是否为数组成员，是的话传入倒数第二个 path
           const isInteger = Number.isInteger(Number(lastPath)) && lastPath.trim() !== '';
           const objKey = isInteger ? paths[paths.length - 2] : lastPath;
-          regex = getRegexFromObj({
-            objKey,
-            objValue: pathValue,
-          });
+
+          try {
+            regex = getRegexFromObj({
+              objKey,
+              objValue: pathValue,
+            });
+          }
+          catch {
+            return {
+              json_path: err.json_path,
+              message: err.message ?? t('未知错误'),
+              level: 'Error',
+            };
+          }
 
           offset = resourceEditorRef.value?.getValue()
             .search(regex);
