@@ -191,7 +191,7 @@
                   disabled: !server.status,
                 }"
                 :class="[{'cursor-not-allowed!': Boolean(server.status) }]"
-                @click="handleDelete"
+                @click.stop="handleDelete"
               >
                 <BkButton
                   :disabled="Boolean(server.status)"
@@ -467,7 +467,9 @@ const handleSuspendToggle = async () => {
   });
 };
 
-const handleDelete = async () => {
+const handleDelete = () => {
+  if (Boolean(server.value.status)) return;
+
   usePopInfoBox({
     isShow: true,
     type: 'warning',
