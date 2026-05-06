@@ -581,6 +581,7 @@ const handleInChange = (row: ITableRow) => {
       else {
         _row.body = [genBodyRow()];
       }
+      expandedRowKeys.value.push(_row.id);
     }
     else {
       if (row.in === 'path') {
@@ -591,7 +592,6 @@ const handleInChange = (row: ITableRow) => {
       }
       delete _row.body;
     }
-    expandedRowKeys.value.push(_row.id);
   }
 };
 
