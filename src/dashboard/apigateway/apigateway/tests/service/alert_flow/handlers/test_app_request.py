@@ -126,7 +126,7 @@ class TestAppRequestAlerter:
                     "http_path": "/",
                 },
                 "my-resource",
-                "资源 my-resource, GET, bkapi.example.com, /",
+                "my-resource, GET, bkapi.example.com, /",
             ),
             (
                 {
@@ -135,7 +135,7 @@ class TestAppRequestAlerter:
                     "http_path": "/foo",
                 },
                 "my-resource",
-                "资源 my-resource, GET, bkapi.example.com, /foo",
+                "my-resource, GET, bkapi.example.com, /foo",
             ),
             (
                 {
@@ -144,7 +144,7 @@ class TestAppRequestAlerter:
                     "http_path": "/foo?color=red&size=large",
                 },
                 "my-resource",
-                "资源 my-resource, GET, bkapi.example.com, /foo",
+                "my-resource, GET, bkapi.example.com, /foo",
             ),
             (
                 {
@@ -153,7 +153,7 @@ class TestAppRequestAlerter:
                     "http_path": "/bar",
                 },
                 "",
-                "资源 , POST, bkapi.example.com, /bar",
+                "POST, bkapi.example.com, /bar",
             ),
         ],
     )

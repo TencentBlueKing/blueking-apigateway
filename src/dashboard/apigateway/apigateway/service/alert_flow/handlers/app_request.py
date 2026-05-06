@@ -112,8 +112,14 @@ class AppRequestAlerter(Alerter):
         parsed_path = urlparse(record_source["http_path"])
         path_without_querystring = urlunparse((parsed_path.scheme, parsed_path.netloc, parsed_path.path, "", "", ""))
 
-        return "资源 {}, {}, {}, {}".format(
-            resource_name,
+        if resource_name:
+            return "{}, {}, {}, {}".format(
+                resource_name,
+                record_source["method"],
+                record_source["http_host"],
+                path_without_querystring,
+            )
+        return "{}, {}, {}".format(
             record_source["method"],
             record_source["http_host"],
             path_without_querystring,
