@@ -1,0 +1,28 @@
+meta {
+  name: openapi-v2-mcp-server-list
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{scheme}}://{{host}}/backend/api/v2/open/mcp-servers/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.count: isDefined
+  res.body.data.results: isDefined
+}
+
+script:post-response {
+  const results = res.body.data.results;
+  if (Array.isArray(results) && results.length > 0) {
+    bru.setVar('mcp_server_id', results[0].id);
+  }
+}

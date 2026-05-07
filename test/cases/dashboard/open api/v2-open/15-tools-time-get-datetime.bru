@@ -1,0 +1,20 @@
+meta {
+  name: openapi-v2-tools-time-get-datetime
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{scheme}}://{{host}}/backend/api/v2/open/tools/time/get_datetime/?tz_name=Asia/Shanghai
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.datetime: isDefined
+}

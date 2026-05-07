@@ -1,0 +1,33 @@
+meta {
+  name: openapi-v2-mcp-server-retrieve
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{scheme}}://{{host}}/backend/api/v2/open/mcp-servers/{{mcp_server_id}}/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: isDefined
+  res.body.data.title: isDefined
+  res.body.data.description: isDefined
+  res.body.data.is_public: isDefined
+  res.body.data.status: isDefined
+  res.body.data.protocol_type: isDefined
+  res.body.data.oauth2_public_client_enabled: isDefined
+  res.body.data.url: isDefined
+  res.body.data.guideline: isDefined
+  res.body.data.tools: isDefined
+  res.body.data.maintainers: isDefined
+  res.body.data.updated_time: isDefined
+  res.body.data.created_time: isDefined
+}

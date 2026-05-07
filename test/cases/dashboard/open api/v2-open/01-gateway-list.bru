@@ -1,0 +1,20 @@
+meta {
+  name: openapi-v2-gateway-list
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/backend/api/v2/open/gateways/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
