@@ -1,0 +1,46 @@
+meta {
+  name: v2-inner-list-gateways
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  test("response data is array", function() {
+    expect(data.data).to.be.an('array');
+  });
+
+  if (data.data && data.data.length > 0) {
+    var item = data.data[0];
+    test("field id exists", function() {
+      expect(item).to.have.property('id');
+    });
+    test("field name exists", function() {
+      expect(item).to.have.property('name');
+    });
+    test("field description exists", function() {
+      expect(item).to.have.property('description');
+    });
+    test("field maintainers exists", function() {
+      expect(item).to.have.property('maintainers');
+    });
+    test("field doc_maintainers exists", function() {
+      expect(item).to.have.property('doc_maintainers');
+    });
+  }
+}
