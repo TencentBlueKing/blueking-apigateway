@@ -1,11 +1,11 @@
 meta {
   name: openapi-v2-well-known-oauth-protected-resource
   type: http
-  seq: 21
+  seq: 18
 }
 
 get {
-  url: {{scheme}}://{{host}}/backend/api/v2/open/.well-known/oauth-protected-resource?resource={{scheme}}://{{host}}/backend/api/v2/open/gateways/
+  url: {{scheme}}://{{host}}/api/{{gateway_name}}/prod/api/v2/open/.well-known/oauth-protected-resource?resource={{scheme}}://{{host}}/api/{{gateway_name}}/prod/api/v2/open/gateways/
   body: none
   auth: none
 }

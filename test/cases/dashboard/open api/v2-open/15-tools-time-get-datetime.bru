@@ -1,11 +1,11 @@
 meta {
   name: openapi-v2-tools-time-get-datetime
   type: http
-  seq: 17
+  seq: 15
 }
 
 get {
-  url: {{scheme}}://{{host}}/backend/api/v2/open/tools/time/get_datetime/?tz_name=Asia/Shanghai
+  url: {{scheme}}://{{host}}/api/{{gateway_name}}/prod/api/v2/open/tools/time/get_datetime/?tz_name=Asia/Shanghai
   body: none
   auth: none
 }

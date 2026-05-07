@@ -1,11 +1,11 @@
 meta {
   name: openapi-v2-mcp-server-permission-list
   type: http
-  seq: 12
+  seq: 11
 }
 
 get {
-  url: {{scheme}}://{{host}}/backend/api/v2/open/mcp-servers/{{mcp_server_id}}/permissions/
+  url: {{scheme}}://{{host}}/api/{{gateway_name}}/prod/api/v2/open/mcp-servers/{{mcp_server_id}}/permissions/
   body: none
   auth: none
 }
