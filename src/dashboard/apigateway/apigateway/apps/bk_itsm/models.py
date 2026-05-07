@@ -29,7 +29,7 @@ class ItsmSystemConfig(TimestampedModelMixin):
     保存提单所需的系统与流程关键信息
     """
 
-    # 系统标识（如 bk_apigateway）
+    # 系统标识（如 bk-apigateway）
     system_code = models.CharField(max_length=64, unique=True, help_text=_("系统标识"))
     # ITSM 返回的系统标识
     itsm_system_id = models.CharField(max_length=64, blank=True, default="", help_text=_("ITSM 系统 ID"))

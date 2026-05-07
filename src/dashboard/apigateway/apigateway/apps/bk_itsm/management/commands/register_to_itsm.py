@@ -36,7 +36,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--template-file",
             type=str,
-            default=os.path.join(os.path.dirname(__file__), "system_bk-apigateway.json"),
+            default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "system_bk-apigateway.json"),
             help="ITSM workflow template json file path",
         )
         parser.add_argument(

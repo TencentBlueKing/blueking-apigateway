@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 
+from apigateway.apps.bk_itsm.constants import DEFAULT_ITSM_SYSTEM_CODE
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import create_ticket
@@ -36,7 +37,7 @@ class ItsmPermissionApplyHelper:
     用于在权限申请时创建 ITSM 工单
     """
 
-    def __init__(self, system_code: str = "bk_apigateway"):
+    def __init__(self, system_code: str = DEFAULT_ITSM_SYSTEM_CODE):
         self.system_code = system_code
         self._config: Optional[ItsmSystemConfig] = None
 
@@ -141,7 +142,7 @@ class ItsmPermissionApplyHelper:
         return create_ticket(
             workflow_key=workflow_key,
             form_data=form_data,
-            operator=applied_by,
+            operator=normalized_applied_by,
             callback_url=callback_url,
             callback_token=callback_token,
             system_id=self.config.itsm_system_id,

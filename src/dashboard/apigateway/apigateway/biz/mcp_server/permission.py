@@ -63,25 +63,21 @@ class MCPServerPermissionHandler:
                 _(f"mcp server name：{existing_names} 已经存在待审批或已审批的记录")
             )
 
-        add_app_permissions_apply_list = [
-            MCPServerAppPermissionApply(
+        current_time = now_datetime()
+        created_apply_ids = []
+        for obj in queryset:
+            apply = MCPServerAppPermissionApply.objects.create(
                 bk_app_code=bk_app_code,
                 mcp_server=obj,
                 reason=reason,
                 applied_by=applied_by,
-                applied_time=now_datetime(),
+                applied_time=current_time,
                 expire_days=MCPServerAppPermissionApplyExpireDaysEnum.FOREVER.value,
                 status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
             )
-            for obj in queryset
-        ]
+            created_apply_ids.append(apply.id)
 
-        before_ids = list(
-            MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).values_list("id", flat=True)
-        )
-        MCPServerAppPermissionApply.objects.bulk_create(add_app_permissions_apply_list)
-        # 对于自增 ID，bulk_create 检索不到 Mysql 的主键，所以需要手动查询数据
-        new_applies = MCPServerAppPermissionApply.objects.filter(bk_app_code=bk_app_code).exclude(id__in=before_ids)
+        new_applies = MCPServerAppPermissionApply.objects.filter(id__in=created_apply_ids)
 
         # 创建 ITSM 工单（不阻塞主流程）
         MCPServerPermissionHandler._create_itsm_tickets_for_applies(new_applies)

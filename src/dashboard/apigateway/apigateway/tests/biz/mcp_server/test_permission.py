@@ -21,7 +21,7 @@ from unittest.mock import patch
 import pytest
 from ddf import G
 
-from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
+from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum, MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
@@ -239,6 +239,42 @@ class TestMCPServerPermissionHandler:
         # Verify permissions for both apps
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app1").count() == 2
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app2").count() == 2
+
+    def test_create_apply_should_only_dispatch_newly_created_applies(self, mocker, fake_gateway, fake_stage):
+        mcp_server_1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
+        mcp_server_2 = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
+
+        unrelated_mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=unrelated_mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+        )
+
+        mock_dispatch = mocker.patch.object(MCPServerPermissionHandler, "_create_itsm_tickets_for_applies")
+
+        applies = MCPServerPermissionHandler.create_apply(
+            bk_app_code="test-app",
+            mcp_server_ids=[mcp_server_1.id, mcp_server_2.id],
+            reason="for test",
+            applied_by="tester",
+        )
+
+        apply_ids = sorted(applies.values_list("id", flat=True))
+        assert len(apply_ids) == 2
+
+        mock_dispatch.assert_called_once()
+        dispatched_applies = mock_dispatch.call_args[0][0]
+        dispatched_ids = sorted(dispatched_applies.values_list("id", flat=True))
+        assert dispatched_ids == apply_ids
 
 
 class TestMCPServerPermissionHandlerItsm:
