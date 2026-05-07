@@ -201,7 +201,7 @@ export const deleteMcpPermissions = (apigwId: number, mcp_server_id: number, id:
  * @param data
  */
 export const getMcpAppPermissionApply = (apigwId: number, data: IGatewaysMcpServersAppPermissionApplyListQuery) =>
-  http.get<ICountAndResults<IMCPServerAppPermissionApplyListOutput>>(`${path}/${apigwId}/mcp-servers/-/app-permission-apply/`, data);
+  http.get<ICountAndResults<IMCPServerAppPermissionApplyListOutput>>(`${path}/${apigwId}/mcp-servers/-/permissions/app-permission-apply/`, data);
 
 /**
  *  授权审批申请人列表
@@ -210,7 +210,7 @@ export const getMcpAppPermissionApply = (apigwId: number, data: IGatewaysMcpServ
  */
 export const getMcpPermissionsApplicant = (
   apigwId: number,
-  mcp_server_id: number,
+  mcp_server_id: number | string,
   query: IGatewaysMcpServersPermissionsAppPermissionApplyApplicantListQuery,
 ) =>
   http.get<IMCPServerAppPermissionApplyApplicantOutput>(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/applicant/`, query);
