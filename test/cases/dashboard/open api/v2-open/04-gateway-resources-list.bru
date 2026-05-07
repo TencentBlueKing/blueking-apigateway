@@ -23,5 +23,7 @@ script:post-response {
   const data = res.body.data;
   if (Array.isArray(data) && data.length > 0) {
     bru.setVar('resource_name', data[0].name);
+  } else {
+    throw new Error('No gateway resources found, cannot set resource_name for downstream tests');
   }
 }

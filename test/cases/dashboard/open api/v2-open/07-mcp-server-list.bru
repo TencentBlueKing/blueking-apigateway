@@ -24,5 +24,7 @@ script:post-response {
   const results = res.body.data.results;
   if (Array.isArray(results) && results.length > 0) {
     bru.setVar('mcp_server_id', results[0].id);
+  } else {
+    throw new Error('No MCP servers found, cannot set mcp_server_id for downstream tests');
   }
 }
