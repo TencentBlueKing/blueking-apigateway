@@ -70,7 +70,7 @@
             >
               <BkSelect
                 v-model="filterData.mcp_server_id"
-                :clearable="false"
+                clearable
               >
                 <BkOption
                   v-for="option of mcpList"
@@ -376,7 +376,7 @@ getMcpList();
 const getApplicant = async () => {
   const response = await getMcpPermissionsApplicant(
     gatewayStore.apigwId,
-    filterData.value.mcp_server_id as number,
+    filterData.value.mcp_server_id || '-',
     {} as any,
   );
   applicantList.value = response?.applicants || [];
@@ -524,12 +524,9 @@ watch(
 
 watch(
   () => filterData.value.mcp_server_id,
-  (val: any) => {
-    if (val && !featureFlagStore.isTenantMode) {
+  () => {
+    if (!featureFlagStore.isTenantMode) {
       getApplicant();
-    }
-    if (!val) {
-      applicantList.value = [];
     }
     filterData.value.applied_by = '';
   },

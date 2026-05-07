@@ -383,7 +383,7 @@ export const fetchExportFlowLog = (gatewayId: number, params: IObservabilityBasi
  * @param params  搜索参数
  */
 export const fetchObservabilityAppCode = (gatewayId: number) => {
-  return http.get(`${path}/${gatewayId}/mcp-servers/-/app-permission-app-codes/`);
+  return http.get(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-app-codes/`);
 };
 
 /**
