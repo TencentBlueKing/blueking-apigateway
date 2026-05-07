@@ -36,38 +36,6 @@ class ItsmPermissionApplyHelper:
     用于在权限申请时创建 ITSM 工单
     """
 
-    _TICKET_ID_KEYS = ("id", "ticket_id", "ticketId")
-
-    @classmethod
-    def _extract_id_from_dict(cls, data: Optional[Dict[str, Any]]) -> str:
-        if not isinstance(data, dict):
-            return ""
-
-        for key in cls._TICKET_ID_KEYS:
-            value = data.get(key)
-            if value not in (None, ""):
-                return str(value)
-
-        return ""
-
-    @classmethod
-    def extract_ticket_id(cls, resp: Optional[Dict[str, Any]]) -> str:
-        """从 ticket_create 响应中提取工单 ID，兼容不同返回结构"""
-        if not isinstance(resp, dict):
-            return ""
-
-        for candidate in (resp, resp.get("ticket"), resp.get("data")):
-            ticket_id = cls._extract_id_from_dict(candidate)
-            if ticket_id:
-                return ticket_id
-
-            if isinstance(candidate, dict):
-                ticket_id = cls._extract_id_from_dict(candidate.get("ticket"))
-                if ticket_id:
-                    return ticket_id
-
-        return ""
-
     def __init__(self, system_code: str = "bk_apigateway"):
         self.system_code = system_code
         self._config: Optional[ItsmSystemConfig] = None
@@ -79,7 +47,7 @@ class ItsmPermissionApplyHelper:
                 self._config = ItsmSystemConfig.objects.get(system_code=self.system_code)
             except ItsmSystemConfig.DoesNotExist:
                 raise error_codes.FAILED_PRECONDITION.format(
-                    f"ITSM system config not found for {self.system_code}, please run init_bk_itsm command first."
+                    f"ITSM system config not found for {self.system_code}, please run register_to_itsm command first."
                 )
         return self._config
 
@@ -87,7 +55,10 @@ class ItsmPermissionApplyHelper:
         """检查 ITSM 集成是否已就绪"""
         try:
             cfg = self.config
-            return cfg.is_registered and bool(cfg.workflow_key)
+            workflow_key_map = cfg.workflow_key_map or {}
+            return (
+                cfg.is_registered and bool(workflow_key_map.get("gateway")) and bool(workflow_key_map.get("resource"))
+            )
         except Exception:
             return False
 
@@ -102,8 +73,6 @@ class ItsmPermissionApplyHelper:
         gateway_name: str,
         grant_dimension: str,
         apply_resource_names: List[str],
-        reason: str = "",
-        expire_days: int = 0,
         applied_by: str = "",
         apply_record_id: int = 0,
         approvers: Optional[List[str]] = None,
@@ -116,11 +85,9 @@ class ItsmPermissionApplyHelper:
         :param gateway_name: 网关名称
         :param grant_dimension: 授权维度 (gateway/resource/mcp_server)
         :param apply_resource_names: 申请的资源名称列表
-        :param reason: 申请理由
-        :param expire_days: 过期天数
         :param applied_by: 申请人
         :param apply_record_id: 权限申请记录 ID
-        :param approvers: 审批人列表
+        :param approvers: 审批人列表（必填且不能为空）
         :return: ITSM 工单创建响应
         """
         if not self.is_ready():
@@ -128,10 +95,16 @@ class ItsmPermissionApplyHelper:
                 "ITSM integration is not ready, please check system registration."
             )
 
-        # 构建权限对象描述
-        apply_resources = self._build_apply_resources_display(grant_dimension, apply_resource_names)
+        normalized_approvers = [str(username).strip() for username in (approvers or []) if str(username).strip()]
+        if not normalized_approvers:
+            raise error_codes.FAILED_PRECONDITION.format("ITSM approvers is required and cannot be empty.")
 
-        # 构建表单数据
+        apply_resources = self._build_apply_resources_display(
+            grant_dimension=grant_dimension,
+            gateway_name=gateway_name,
+            apply_resource_names=apply_resource_names,
+        )
+
         form_data = {
             "ticket__title": f"网关权限申请-{gateway_name}-{bk_app_code}",
             "gateway_name": gateway_name,
@@ -139,58 +112,109 @@ class ItsmPermissionApplyHelper:
             "apply_resources": apply_resources,
             "bk_app_code": bk_app_code,
             "apply_record_id": apply_record_id,
-            "reason": reason,
-            "expire_days": expire_days,
+            "instance_approvers": normalized_approvers,
         }
 
-        if approvers:
-            form_data["approvers"] = approvers
-
-        # 构建回调 URL
         callback_url = self._build_callback_url()
         callback_token = callback_token or self.generate_callback_token()
+        options = self._build_form_options(grant_dimension)
+
+        workflow_key = self._get_workflow_key(grant_dimension)
+        if not workflow_key:
+            raise error_codes.FAILED_PRECONDITION.format(
+                f"ITSM workflow key not configured for grant_dimension={grant_dimension}."
+            )
 
         logger.info(
-            "Creating ITSM ticket for permission apply: gateway=%s, app=%s, record_id=%s, workflow_key=%s",
+            "Creating ITSM ticket for permission apply: gateway=%s, app=%s, record_id=%s, grant_dimension=%s, workflow_key=%s",
             gateway_name,
             bk_app_code,
             apply_record_id,
-            self.config.workflow_key,
+            grant_dimension,
+            workflow_key,
         )
 
         return create_ticket(
-            workflow_key=self.config.workflow_key,
+            workflow_key=workflow_key,
             form_data=form_data,
             operator=applied_by,
             callback_url=callback_url,
             callback_token=callback_token,
             system_id=self.config.itsm_system_id,
             system_token=self.config.system_token,
+            options=options,
         )
+
+    def _get_workflow_key(self, grant_dimension: str) -> str:
+        workflow_key_map = self.config.workflow_key_map or {}
+        workflow_key = str(workflow_key_map.get(grant_dimension, "")).strip()
+        return self._normalize_workflow_key(workflow_key)
+
+    @staticmethod
+    def _normalize_workflow_key(workflow_key: str) -> str:
+        workflow_key = str(workflow_key or "").strip()
+        if workflow_key.startswith("$Workflow"):
+            return workflow_key[len("$Workflow") :]
+        return workflow_key
+
+    @staticmethod
+    def _build_form_options(grant_dimension: str) -> Dict[str, List[Dict[str, Optional[str]]]]:
+        """构建 ITSM ticket_create 所需 options（选项型字段明细）"""
+        grant_dimension_option_name_map = {
+            "gateway": "gateway",
+            "resource": "resource",
+            "mcp_server": "MCP Server",
+        }
+        return {
+            "grant_dimension": [
+                {
+                    "name": grant_dimension_option_name_map.get(grant_dimension, grant_dimension),
+                    "key": grant_dimension,
+                    "parent": None,
+                }
+            ]
+        }
 
     def _build_apply_resources_display(
         self,
         grant_dimension: str,
+        gateway_name: str,
         apply_resource_names: List[str],
     ) -> str:
         """构建申请资源的展示文本"""
         if grant_dimension == "gateway":
-            return "该网关所有资源"
+            return gateway_name
 
-        if apply_resource_names:
-            return ", ".join(apply_resource_names)
+        normalized_names = [str(name).strip() for name in (apply_resource_names or []) if str(name).strip()]
+        if normalized_names:
+            return ", ".join(normalized_names)
 
-        return "该网关所有资源"
+        return gateway_name
 
     def _build_callback_url(self) -> str:
         """构建 ITSM 回调 URL"""
-        bk_apigateway_url = getattr(settings, "BK_API_URL_TMPL", "").format(api_name="bk-apigateway")
-        if not bk_apigateway_url:
-            return ""
+        bk_api_url_tmpl = getattr(settings, "BK_API_URL_TMPL", "")
+        if not bk_api_url_tmpl:
+            raise error_codes.FAILED_PRECONDITION.format(
+                "BK_API_URL_TMPL is not configured, unable to build ITSM callback URL."
+            )
 
         callback_path = getattr(settings, "BK_ITSM4_CALLBACK_PATH", "")
         if not callback_path:
-            callback_stage = getattr(settings, "BK_ITSM4_CALLBACK_STAGE", "prod")
-            callback_path = f"/{callback_stage}/api/v2/open/itsm/callback/"
+            raise error_codes.FAILED_PRECONDITION.format(
+                "BK_ITSM4_CALLBACK_PATH is not configured, unable to build ITSM callback URL."
+            )
+
+        try:
+            bk_apigateway_url = bk_api_url_tmpl.format(api_name="bk-apigateway")
+        except Exception:
+            raise error_codes.FAILED_PRECONDITION.format(
+                "BK_API_URL_TMPL is invalid, unable to build ITSM callback URL."
+            )
+
+        if not bk_apigateway_url.startswith(("http://", "https://")):
+            raise error_codes.FAILED_PRECONDITION.format(
+                "BK_API_URL_TMPL must render absolute URL, unable to build ITSM callback URL."
+            )
 
         return url_join(bk_apigateway_url, callback_path)

@@ -257,7 +257,7 @@ class TestMCPServerPermissionHandlerItsm:
         helper = mocker.MagicMock()
         helper.is_ready.return_value = True
         helper.generate_callback_token.return_value = "cb-token-mcp-001"
-        helper.create_permission_apply_ticket.return_value = {"ticket": {"id": "itsm-001"}}
+        helper.create_permission_apply_ticket.return_value = {"id": "itsm-001"}
         helper.extract_ticket_id.return_value = "itsm-001"
         mocker.patch("apigateway.biz.mcp_server.permission.ItsmPermissionApplyHelper", return_value=helper)
 

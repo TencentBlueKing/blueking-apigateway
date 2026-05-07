@@ -174,8 +174,16 @@ def do_blueking_http_request(
     headers: Optional[Dict] = None,
     timeout: Optional[int] = None,
     request_session=None,
+    **kwargs,
 ) -> List | Dict:
-    kwargs = {"url": url, "data": data, "headers": headers, "timeout": timeout, "request_session": request_session}
+    kwargs = {
+        "url": url,
+        "data": data,
+        "headers": headers,
+        "timeout": timeout,
+        "request_session": request_session,
+        **kwargs,
+    }
 
     ok, resp_data = http_func(**kwargs)
     if not ok:

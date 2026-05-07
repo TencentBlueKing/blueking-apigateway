@@ -176,8 +176,6 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 bk_app_code=bk_app_code,
                 grant_dimension=grant_dimension,
                 resource_ids=resource_ids,
-                reason=reason,
-                expire_days=expire_days,
                 username=username,
             )
 
@@ -190,8 +188,6 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         bk_app_code: str,
         grant_dimension: str,
         resource_ids: List[int],
-        reason: str,
-        expire_days: int,
         username: str,
     ):
         """创建 ITSM 权限申请工单"""
@@ -213,8 +209,6 @@ class PermissionDimensionManager(metaclass=ABCMeta):
                 gateway_name=gateway.name,
                 grant_dimension=itsm_grant_dimension,
                 apply_resource_names=resource_names,
-                reason=reason,
-                expire_days=expire_days,
                 applied_by=username,
                 apply_record_id=record.id,
                 approvers=gateway.maintainers,
@@ -222,18 +216,17 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             )
 
             # 保存 ITSM 工单 ID 到申请记录
-            ticket_id = helper.extract_ticket_id(resp)
-            if ticket_id:
-                record.itsm_ticket_id = ticket_id
-                record.save(update_fields=["itsm_ticket_id"])
+            ticket_id = str(resp["id"])
+            record.itsm_ticket_id = ticket_id
+            record.save(update_fields=["itsm_ticket_id"])
 
-                AppPermissionApply.objects.filter(apply_record_id=record.id).update(itsm_ticket_id=ticket_id)
+            AppPermissionApply.objects.filter(apply_record_id=record.id).update(itsm_ticket_id=ticket_id)
 
-                logger.info(
-                    "ITSM ticket created: record_id=%s, ticket_id=%s",
-                    record.id,
-                    ticket_id,
-                )
+            logger.info(
+                "ITSM ticket created: record_id=%s, ticket_id=%s",
+                record.id,
+                ticket_id,
+            )
         except Exception:
             # ITSM 工单创建失败不应阻塞主流程
             logger.exception("Failed to create ITSM ticket for permission apply, record_id=%s", record.id)

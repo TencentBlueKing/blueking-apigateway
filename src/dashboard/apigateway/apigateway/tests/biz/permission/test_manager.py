@@ -416,7 +416,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         helper = mocker.MagicMock()
         helper.is_ready.return_value = True
         helper.generate_callback_token.return_value = "cb-token-001"
-        helper.create_permission_apply_ticket.return_value = {"ticket": {"id": "ticket-001"}}
+        helper.create_permission_apply_ticket.return_value = {"id": "ticket-001"}
         helper.extract_ticket_id.return_value = "ticket-001"
         mocker.patch("apigateway.biz.permission.manager.ItsmPermissionApplyHelper", return_value=helper)
 

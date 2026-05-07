@@ -3982,12 +3982,12 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Get OAuth Protected Resource Metadata
-  /api/v2/open/itsm/callback/:
+  /api/v2/inner/itsm/callback/:
     post:
-      operationId: v2_open_itsm_callback
+      operationId: v2_inner_itsm_callback
       description: ITSM 工单审批结果回调
       tags:
-        - v2_open
+        - v2_inner
       requestBody:
         required: true
         content:
@@ -4023,14 +4023,14 @@ paths:
                   data:
                     type: object
       x-bk-apigateway-resource:
-        isPublic: true
+        isPublic: false
         allowApplyPermission: false
         matchSubpath: false
         enableWebsocket: false
         backend:
           name: default
           method: post
-          path: /backend/api/v2/open/itsm/callback/
+          path: /backend/api/v2/inner/itsm/callback/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

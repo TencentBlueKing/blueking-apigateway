@@ -108,23 +108,20 @@ class MCPServerPermissionHandler:
                         gateway_name=gateway.name,
                         grant_dimension="mcp_server",
                         apply_resource_names=[apply.mcp_server.name],
-                        reason=apply.reason,
-                        expire_days=apply.expire_days,
                         applied_by=apply.applied_by,
                         apply_record_id=apply.id,
                         approvers=gateway.maintainers,
                         callback_token=callback_token,
                     )
 
-                    ticket_id = helper.extract_ticket_id(resp)
-                    if ticket_id:
-                        apply.itsm_ticket_id = ticket_id
-                        apply.save(update_fields=["itsm_ticket_id"])
-                        logger.info(
-                            "ITSM ticket created for mcp server apply: apply_id=%s, ticket_id=%s",
-                            apply.id,
-                            ticket_id,
-                        )
+                    ticket_id = str(resp["id"])
+                    apply.itsm_ticket_id = ticket_id
+                    apply.save(update_fields=["itsm_ticket_id"])
+                    logger.info(
+                        "ITSM ticket created for mcp server apply: apply_id=%s, ticket_id=%s",
+                        apply.id,
+                        ticket_id,
+                    )
                 except Exception:
                     logger.exception("Failed to create ITSM ticket for mcp server apply, apply_id=%s", apply.id)
         except Exception:

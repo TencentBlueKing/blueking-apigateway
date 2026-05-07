@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import logging
 from typing import Any, Dict, Optional
 
@@ -36,17 +37,21 @@ def _call_bkitsm_api(
     data: Optional[Dict[str, Any]] = None,
     more_headers: Optional[Dict[str, str]] = None,
     timeout: int = 30,
+    keep_json_content_type: bool = True,
+    **kwargs,
 ) -> Any:
     """
     统一调用 bk-itsm4 网关 API
     """
     headers = gen_gateway_headers(with_operation_tenant_headers=True)
+    if not keep_json_content_type:
+        headers.pop("Content-Type", None)
     if more_headers:
         headers.update(more_headers)
 
     url = url_join(settings.BK_ITSM4_URL_PREFIX, path)
 
-    return do_blueking_http_request("bkitsm", http_func, url, data, headers, timeout)
+    return do_blueking_http_request("bkitsm", http_func, url, data, headers, timeout, **kwargs)
 
 
 def create_system(name: str, code: str, token: str, desc: str = "") -> Dict[str, Any]:
@@ -68,6 +73,28 @@ def create_system(name: str, code: str, token: str, desc: str = "") -> Dict[str,
         data["desc"] = desc
 
     return _call_bkitsm_api(http_post, "/api/v1/system/create/", data, timeout=settings.BK_ITSM4_API_TIMEOUT)
+
+
+def system_migrate(workflow_template: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    在 ITSM 中通过模板导入系统初始化资源
+
+    调用接口: system_migrate (POST)
+    路径: /api/v1/system/migrate/
+    """
+    if not settings.BK_ITSM4_URL_PREFIX:
+        raise error_codes.REMOTE_REQUEST_ERROR.format("BK_ITSM4_URL_PREFIX is not configured")
+
+    template_content = json.dumps(workflow_template, ensure_ascii=False, indent=2).encode("utf-8")
+
+    return _call_bkitsm_api(
+        http_post,
+        "/api/v1/system/migrate/",
+        data=None,
+        timeout=180,
+        keep_json_content_type=False,
+        files={"file": template_content},
+    )
 
 
 def create_system_workflow(
@@ -152,7 +179,7 @@ def create_ticket(
     more_headers = {}
     if system_token:
         more_headers["SYSTEM-TOKEN"] = system_token
-    elif system_id and getattr(settings, "BK_ITSM4_SYSTEM_TOKEN", ""):
+    elif system_id and settings.BK_ITSM4_SYSTEM_TOKEN:
         more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
 
     return _call_bkitsm_api(

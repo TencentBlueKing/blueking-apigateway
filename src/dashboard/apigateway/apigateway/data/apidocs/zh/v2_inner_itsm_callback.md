@@ -64,8 +64,9 @@ ITSM 单据结束后会向回调地址发送 POST 请求，网关据此处理权
 方式二：query 传 `verify_token`（请求体不传 `callback_token`）
 
 ```http
-POST /api/v2/open/itsm/callback/?verify_token=verify-token-001
+POST /api/v2/inner/itsm/callback/?verify_token=verify-token-001
 Content-Type: application/json
+X-Bk-Tenant-Id: tenant-001  # 多租户模式必填
 ```
 
 ```json

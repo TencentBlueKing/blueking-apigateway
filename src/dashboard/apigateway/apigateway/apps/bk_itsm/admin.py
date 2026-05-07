@@ -26,15 +26,11 @@ class ItsmSystemConfigAdmin(admin.ModelAdmin):
     list_display = [
         "id",
         "system_code",
-        "system_name",
         "itsm_system_id",
-        "workflow_key",
-        "workflow_name",
-        "portal_id",
         "is_registered",
         "created_time",
         "updated_time",
     ]
-    list_filter = ["is_registered", "portal_id"]
-    search_fields = ["system_code", "system_name", "itsm_system_id", "workflow_key", "workflow_name"]
+    list_filter = ["is_registered"]
+    search_fields = ["system_code", "itsm_system_id"]
     readonly_fields = ["created_time", "updated_time"]

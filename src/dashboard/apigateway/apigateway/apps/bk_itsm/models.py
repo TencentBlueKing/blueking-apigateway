@@ -26,28 +26,18 @@ from apigateway.common.mixins.models import TimestampedModelMixin
 class ItsmSystemConfig(TimestampedModelMixin):
     """
     ITSM 系统配置
-    保存 system_create 和 system_workflow_create 返回的 ID
+    保存提单所需的系统与流程关键信息
     """
 
     # 系统标识（如 bk_apigateway）
     system_code = models.CharField(max_length=64, unique=True, help_text=_("系统标识"))
-    # 系统名称
-    system_name = models.CharField(max_length=256, help_text=_("系统名称"))
-    # 系统描述
-    system_desc = models.CharField(max_length=1024, blank=True, default="", help_text=_("系统描述"))
     # ITSM 返回的系统标识
     itsm_system_id = models.CharField(max_length=64, blank=True, default="", help_text=_("ITSM 系统 ID"))
     # 系统 token，用于调用需要 SYSTEM-TOKEN 的接口
     system_token = models.CharField(max_length=256, blank=True, default="", help_text=_("系统调用 Token"))
 
-    # 流程标识（ITSM 返回的 workflow key）
-    workflow_key = models.CharField(max_length=64, blank=True, default="", help_text=_("ITSM 流程标识"))
-    # 流程名称
-    workflow_name = models.CharField(max_length=256, blank=True, default="", help_text=_("流程名称"))
-    # 流程分类
-    workflow_category = models.CharField(max_length=64, blank=True, default="", help_text=_("流程分类"))
-    # 门户 ID
-    portal_id = models.CharField(max_length=64, blank=True, default="DEFAULT", help_text=_("门户 ID"))
+    # 按授权维度存储流程标识，如 {"gateway": "wf1", "resource": "wf1", "mcp_server": "wf2"}
+    workflow_key_map = models.JSONField(blank=True, default=dict, help_text=_("按授权维度映射的 ITSM 流程标识"))
 
     # 是否已注册
     is_registered = models.BooleanField(default=False, help_text=_("是否已完成系统+流程注册"))

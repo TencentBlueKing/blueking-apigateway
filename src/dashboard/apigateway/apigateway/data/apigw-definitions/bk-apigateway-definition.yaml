@@ -139,7 +139,7 @@ grant_permissions:
   - bk_app_code: bk-itsm4
     grant_dimension: "resource"
     resource_names:
-      - v2_open_itsm_callback
+      - v2_inner_itsm_callback
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
