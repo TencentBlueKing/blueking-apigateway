@@ -166,6 +166,33 @@ class TestItsmPermissionApplyHelper:
 
         mock_create_ticket.assert_not_called()
 
+    def test_create_permission_apply_ticket_raise_when_applied_by_empty(self, mocker):
+        config = G(
+            ItsmSystemConfig,
+            system_code="bk_apigateway",
+            itsm_system_id="bk_apigateway",
+            system_token="token-001",
+            workflow_key_map={"gateway": "wf-001", "resource": "wf-001"},
+            is_registered=True,
+        )
+        helper = ItsmPermissionApplyHelper(system_code=config.system_code)
+
+        mock_create_ticket = mocker.patch("apigateway.service.bk_itsm.create_ticket", return_value={"id": "t-001"})
+        mocker.patch.object(helper, "_build_callback_url", return_value="http://example.com/callback")
+
+        with pytest.raises(Exception, match="ITSM applied_by is required"):
+            helper.create_permission_apply_ticket(
+                bk_app_code="bk-test",
+                gateway_name="demo-gateway",
+                grant_dimension="resource",
+                apply_resource_names=["resource-a"],
+                applied_by="  ",
+                apply_record_id=123,
+                approvers=["u1"],
+            )
+
+        mock_create_ticket.assert_not_called()
+
     def test_is_ready_false_when_config_not_exists(self):
         helper = ItsmPermissionApplyHelper(system_code="not-exists")
         assert helper.is_ready() is False

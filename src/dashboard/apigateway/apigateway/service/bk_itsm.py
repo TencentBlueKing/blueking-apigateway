@@ -85,7 +85,7 @@ class ItsmPermissionApplyHelper:
         :param gateway_name: 网关名称
         :param grant_dimension: 授权维度 (gateway/resource/mcp_server)
         :param apply_resource_names: 申请的资源名称列表
-        :param applied_by: 申请人
+        :param applied_by: 申请人（必填且不能为空）
         :param apply_record_id: 权限申请记录 ID
         :param approvers: 审批人列表（必填且不能为空）
         :return: ITSM 工单创建响应
@@ -94,6 +94,10 @@ class ItsmPermissionApplyHelper:
             raise error_codes.FAILED_PRECONDITION.format(
                 "ITSM integration is not ready, please check system registration."
             )
+
+        normalized_applied_by = str(applied_by).strip()
+        if not normalized_applied_by:
+            raise error_codes.FAILED_PRECONDITION.format("ITSM applied_by is required and cannot be empty.")
 
         normalized_approvers = [str(username).strip() for username in (approvers or []) if str(username).strip()]
         if not normalized_approvers:
