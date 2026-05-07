@@ -1,0 +1,31 @@
+meta {
+  name: v2-inner-check-allow-apply-by-gateway
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/permissions/app-permissions/allow-apply-by-gateway/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  var item = data.data;
+  test("field allow_apply_by_gateway exists", function() {
+    expect(item).to.have.property('allow_apply_by_gateway');
+  });
+  test("field reason exists", function() {
+    expect(item).to.have.property('reason');
+  });
+}

@@ -1,0 +1,34 @@
+meta {
+  name: v2-inner-renew-esb-permission
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/permissions/renew/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+body:json {
+  {
+    "target_app_code": "{{test_bk_app_code}}",
+    "component_ids": [{{esb_component_id}}],
+    "expire_days": 180
+  }
+}
+
+tests {
+  test("status is 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
