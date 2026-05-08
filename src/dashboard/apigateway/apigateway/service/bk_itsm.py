@@ -198,28 +198,5 @@ class ItsmPermissionApplyHelper:
 
     def _build_callback_url(self) -> str:
         """构建 ITSM 回调 URL"""
-        bk_api_url_tmpl = getattr(settings, "BK_API_URL_TMPL", "")
-        if not bk_api_url_tmpl:
-            raise error_codes.FAILED_PRECONDITION.format(
-                "BK_API_URL_TMPL is not configured, unable to build ITSM callback URL."
-            )
-
-        callback_path = getattr(settings, "BK_ITSM4_CALLBACK_PATH", "")
-        if not callback_path:
-            raise error_codes.FAILED_PRECONDITION.format(
-                "BK_ITSM4_CALLBACK_PATH is not configured, unable to build ITSM callback URL."
-            )
-
-        try:
-            bk_apigateway_url = bk_api_url_tmpl.format(api_name="bk-apigateway")
-        except Exception:
-            raise error_codes.FAILED_PRECONDITION.format(
-                "BK_API_URL_TMPL is invalid, unable to build ITSM callback URL."
-            )
-
-        if not bk_apigateway_url.startswith(("http://", "https://")):
-            raise error_codes.FAILED_PRECONDITION.format(
-                "BK_API_URL_TMPL must render absolute URL, unable to build ITSM callback URL."
-            )
-
-        return url_join(bk_apigateway_url, callback_path)
+        bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+        return url_join(bk_apigateway_url, settings.BK_ITSM4_CALLBACK_PATH)

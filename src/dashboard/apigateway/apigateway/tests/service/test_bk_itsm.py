@@ -230,19 +230,3 @@ class TestItsmPermissionApplyHelper:
         callback_url = helper._build_callback_url()
 
         assert callback_url == "https://bkapi.example.com/api/bk-apigateway/gray/api/v2/inner/itsm/callback/"
-
-    def test_build_callback_url_raise_when_bk_api_url_tmpl_empty(self, settings):
-        settings.BK_API_URL_TMPL = ""
-        settings.BK_ITSM4_CALLBACK_PATH = "/prod/api/v2/inner/itsm/callback/"
-
-        helper = ItsmPermissionApplyHelper()
-        with pytest.raises(Exception, match="BK_API_URL_TMPL is not configured"):
-            helper._build_callback_url()
-
-    def test_build_callback_url_raise_when_bk_api_url_tmpl_renders_relative_url(self, settings):
-        settings.BK_API_URL_TMPL = "/api/{api_name}"
-        settings.BK_ITSM4_CALLBACK_PATH = "/prod/api/v2/inner/itsm/callback/"
-
-        helper = ItsmPermissionApplyHelper()
-        with pytest.raises(Exception, match="must render absolute URL"):
-            helper._build_callback_url()

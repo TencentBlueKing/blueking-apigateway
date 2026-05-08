@@ -673,7 +673,7 @@ class ItsmCallbackTicketSLZ(serializers.Serializer):
 
 
 class ItsmCallbackInputSLZ(serializers.Serializer):
-    callback_token = serializers.CharField(required=False, allow_blank=True, default="", help_text="回调 token")
+    callback_token = serializers.CharField(required=True, allow_blank=False, help_text="回调 token")
     ticket = ItsmCallbackTicketSLZ(required=True, help_text="工单详情")
 
 

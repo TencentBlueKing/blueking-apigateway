@@ -50,11 +50,10 @@ class ItsmCallbackApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         self._validate_callback_request_context(request)
-        callback_token = self._get_callback_token(request, slz.validated_data)
 
         ItsmCallbackResultHandler().handle(
             ticket=slz.validated_data["ticket"],
-            callback_token=callback_token,
+            callback_token=slz.validated_data["callback_token"],
         )
 
         return OKJsonResponse(data={"result": True, "message": "success"})
@@ -65,22 +64,3 @@ class ItsmCallbackApi(generics.CreateAPIView):
         if app_code not in settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES:
             logger.warning("ITSM callback app_code not allowed, app_code=%s", app_code)
             raise error_codes.INVALID_ARGUMENT.format("invalid callback source app")
-
-        if settings.ENABLE_MULTI_TENANT_MODE:
-            tenant_id = request.headers.get("X-Bk-Tenant-Id")
-            if not tenant_id:
-                logger.warning("ITSM callback missing X-Bk-Tenant-Id in multi-tenant mode, app_code=%s", app_code)
-                raise error_codes.INVALID_ARGUMENT.format("X-Bk-Tenant-Id is required")
-
-    @staticmethod
-    def _get_callback_token(request, data):
-        callback_token = data.get("callback_token", "")
-        if callback_token:
-            return callback_token
-
-        # ITSM 支持通过 query 参数 verify_token 回传 callback token
-        callback_token = request.query_params.get("verify_token", "")
-        if callback_token:
-            return callback_token
-
-        raise error_codes.INVALID_ARGUMENT.format("callback_token or verify_token is required")

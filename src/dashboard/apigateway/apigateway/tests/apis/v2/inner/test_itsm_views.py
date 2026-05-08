@@ -35,7 +35,7 @@ class TestItsmCallbackApi:
             data["callback_token"] = callback_token
         return data
 
-    def test_fallback_to_verify_token_from_query(self, request_to_view, request_factory, settings, mocker):
+    def test_reject_when_callback_token_only_in_query(self, request_to_view, request_factory, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
         mock_handle = mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
 
@@ -47,8 +47,8 @@ class TestItsmCallbackApi:
         request.app = mock.MagicMock(app_code="bk-itsm4")
 
         response = request_to_view(request, view_name="openapi.v2.inner.itsm.callback")
-        assert response.status_code == 200
-        assert mock_handle.call_args.kwargs["callback_token"] == "verify-token-001"
+        assert response.status_code == 400
+        assert mock_handle.call_count == 0
 
     def test_reject_when_no_callback_token_and_verify_token(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
@@ -78,7 +78,7 @@ class TestItsmCallbackApi:
 
         assert response.status_code == 400
 
-    def test_reject_when_missing_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
+    def test_allow_when_missing_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
         mock_handle = mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
@@ -91,8 +91,8 @@ class TestItsmCallbackApi:
             format="json",
         )
 
-        assert response.status_code == 400
-        assert mock_handle.call_count == 0
+        assert response.status_code == 200
+        assert mock_handle.call_count == 1
 
     def test_allow_with_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
