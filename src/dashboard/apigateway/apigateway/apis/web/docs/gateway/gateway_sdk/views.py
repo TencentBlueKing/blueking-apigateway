@@ -22,6 +22,7 @@ from django.utils.decorators import method_decorator
 from django.utils.timezone import now as timezone_now
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
@@ -47,7 +48,7 @@ from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExamp
     ),
 )
 class SDKListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
@@ -72,7 +73,7 @@ class SDKListApi(generics.ListAPIView):
     ),
 )
 class SDKUsageExampleApi(generics.RetrieveAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK示例"""

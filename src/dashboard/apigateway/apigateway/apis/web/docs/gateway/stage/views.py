@@ -19,6 +19,7 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.core.constants import StageStatusEnum
@@ -37,7 +38,7 @@ from .serializers import StageOutputSLZ
     ),
 )
 class StageListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关公开、可用的环境列表"""

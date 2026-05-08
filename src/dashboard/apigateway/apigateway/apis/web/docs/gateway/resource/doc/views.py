@@ -19,6 +19,7 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
@@ -41,7 +42,7 @@ from .serializers import DocInputSLZ, DocOutputSLZ
     ),
 )
 class DocRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def retrieve(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""

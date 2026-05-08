@@ -19,6 +19,7 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceLabelHandler
@@ -38,7 +39,7 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
     ),
 )
 class ResourceListApi(generics.ListAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
