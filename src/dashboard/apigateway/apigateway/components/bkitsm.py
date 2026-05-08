@@ -22,7 +22,6 @@ from typing import Any, Dict, Optional
 
 from django.conf import settings
 
-from apigateway.common.error_codes import error_codes
 from apigateway.utils.url import url_join
 
 from .http import http_post
@@ -61,9 +60,6 @@ def create_system(name: str, code: str, token: str, desc: str = "") -> Dict[str,
     调用接口: system_create (POST)
     路径: /api/v1/system/create/
     """
-    if not settings.BK_ITSM4_URL_PREFIX:
-        raise error_codes.REMOTE_REQUEST_ERROR.format("BK_ITSM4_URL_PREFIX is not configured")
-
     data = {
         "name": name,
         "code": code,
@@ -82,9 +78,6 @@ def system_migrate(workflow_template: Dict[str, Any]) -> Dict[str, Any]:
     调用接口: system_migrate (POST)
     路径: /api/v1/system/migrate/
     """
-    if not settings.BK_ITSM4_URL_PREFIX:
-        raise error_codes.REMOTE_REQUEST_ERROR.format("BK_ITSM4_URL_PREFIX is not configured")
-
     template_content = json.dumps(workflow_template, ensure_ascii=False, indent=2).encode("utf-8")
 
     return _call_bkitsm_api(
@@ -113,9 +106,6 @@ def create_system_workflow(
     调用接口: system_workflow_create (POST)
     路径: /api/v1/system_workflow/create/
     """
-    if not settings.BK_ITSM4_URL_PREFIX:
-        raise error_codes.REMOTE_REQUEST_ERROR.format("BK_ITSM4_URL_PREFIX is not configured")
-
     data: Dict[str, Any] = {
         "system_id": system_id,
         "name": name,
@@ -158,9 +148,6 @@ def create_ticket(
     调用接口: ticket_create (POST)
     路径: /api/v1/ticket/create/
     """
-    if not settings.BK_ITSM4_URL_PREFIX:
-        raise error_codes.REMOTE_REQUEST_ERROR.format("BK_ITSM4_URL_PREFIX is not configured")
-
     data: Dict[str, Any] = {
         "workflow_key": workflow_key,
         "form_data": form_data,

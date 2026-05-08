@@ -572,14 +572,21 @@ BK_ITSM4_URL_PREFIX = (
 )
 BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
 BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
-BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = env.list("BK_ITSM4_CALLBACK_ALLOWED_APP_CODES", default=["bk-itsm4"])
+BK_ITSM4_CALLBACK_APP_CODE = env.str(
+    "BK_ITSM4_CALLBACK_APP_CODE",
+    default="cw_aitsm" if ENABLE_MULTI_TENANT_MODE else "bk-itsm4",
+)
+BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = env.list(
+    "BK_ITSM4_CALLBACK_ALLOWED_APP_CODES",
+    default=[BK_ITSM4_CALLBACK_APP_CODE],
+)
 BK_ITSM4_CALLBACK_STAGE = env.str("BK_ITSM4_CALLBACK_STAGE", "prod")
 BK_ITSM4_CALLBACK_PATH = env.str(
     "BK_ITSM4_CALLBACK_PATH",
     f"/{BK_ITSM4_CALLBACK_STAGE}/api/v2/inner/itsm/callback/",
 )
-# ITSM 权限申请工单回调 URL，为空时不启用 ITSM 工单
-BK_ITSM4_PERMISSION_APPLY_ENABLED = env.bool("BK_ITSM4_PERMISSION_APPLY_ENABLED", default=False)
+# 是否启用 ITSM 权限申请工单（环境变量名保持兼容）
+ENABLE_ITSM4_PERMISSION_APPLY = env.bool("BK_ITSM4_PERMISSION_APPLY_ENABLED", default=False)
 
 # ==============================================================================
 # 网关全局配置
@@ -834,6 +841,7 @@ DEFAULT_FEATURE_FLAG = get_default_feature_flags(
     ai_open_api_base_url=AI_OPEN_API_BASE_URL,
     enable_gateway_operation_status=ENABLE_GATEWAY_OPERATION_STATUS,
     enable_run_data_metrics=ENABLE_RUN_DATA_METRICS,
+    enable_itsm4_permission_apply=ENABLE_ITSM4_PERMISSION_APPLY,
 )
 
 # 用户功能开关，将与 DEFAULT_FEATURE_FLAG 合并

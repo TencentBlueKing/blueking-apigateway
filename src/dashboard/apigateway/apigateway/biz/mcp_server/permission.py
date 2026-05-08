@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
@@ -102,7 +103,7 @@ class MCPServerPermissionHandler:
                     resp = helper.create_permission_apply_ticket(
                         bk_app_code=apply.bk_app_code,
                         gateway_name=gateway.name,
-                        grant_dimension="mcp_server",
+                        grant_dimension=FormattedGrantDimensionEnum.MCP_SERVER.value,
                         apply_resource_names=[apply.mcp_server.name],
                         applied_by=apply.applied_by,
                         apply_record_id=apply.id,

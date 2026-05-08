@@ -26,6 +26,7 @@ from django.utils.translation import gettext as _
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
+    FormattedGrantDimensionEnum,
     GrantDimensionEnum,
     GrantTypeEnum,
 )
@@ -52,13 +53,16 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         resource_ids: List[int],
     ) -> Tuple[str, List[str]]:
         """构建 ITSM 提单所需的授权维度与资源名称列表"""
+        if grant_dimension not in [GrantDimensionEnum.API.value, GrantDimensionEnum.RESOURCE.value]:
+            raise error_codes.INVALID_ARGUMENT.format(f"unsupported grant_dimension: {grant_dimension}")
+
         itsm_grant_dimension = grant_dimension
         resource_names: List[str] = []
 
         if grant_dimension == GrantDimensionEnum.API.value:
-            itsm_grant_dimension = "gateway"
+            itsm_grant_dimension = FormattedGrantDimensionEnum.GATEWAY.value
             resource_names = [gateway.name]
-        elif grant_dimension == GrantDimensionEnum.RESOURCE.value and resource_ids:
+        elif resource_ids:
             resource_names = list(
                 Resource.objects.filter(gateway=gateway, id__in=resource_ids).values_list("name", flat=True)
             )
@@ -169,7 +173,11 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         )
 
         # 如果启用了 ITSM 权限申请工单，创建 ITSM 工单
-        if getattr(settings, "BK_ITSM4_PERMISSION_APPLY_ENABLED", False):
+        if getattr(
+            settings,
+            "ENABLE_ITSM4_PERMISSION_APPLY",
+            getattr(settings, "BK_ITSM4_PERMISSION_APPLY_ENABLED", False),
+        ):
             self._create_itsm_ticket(
                 record=record,
                 gateway=gateway,

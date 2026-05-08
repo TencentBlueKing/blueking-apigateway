@@ -2787,7 +2787,7 @@ paths:
           timeout: 0
         pluginConfigs: [ ]
         authConfig:
-          userVerifiedRequired: true
+          userVerifiedRequired: false
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None

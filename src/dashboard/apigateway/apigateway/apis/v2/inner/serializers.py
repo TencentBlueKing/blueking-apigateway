@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
+    FormattedGrantDimensionEnum,
     GrantDimensionEnum,
     PermissionActionEnum,
     PermissionApplyExpireDaysEnum,
@@ -659,9 +660,8 @@ class MCPServerListOutputSLZ(serializers.Serializer):
 class ItsmCallbackTicketFormDataSLZ(serializers.Serializer):
     apply_record_id = serializers.IntegerField(required=True, help_text="权限申请记录 ID")
     grant_dimension = serializers.ChoiceField(
-        required=False,
-        default="gateway",
-        choices=["gateway", "resource", "mcp_server"],
+        required=True,
+        choices=FormattedGrantDimensionEnum.get_choices(),
         help_text="授权维度",
     )
 

@@ -411,7 +411,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert resource_names == [fake_gateway.name]
 
     def test_create_apply_record_with_itsm_ticket(self, settings, mocker, fake_gateway, fake_resource):
-        settings.BK_ITSM4_PERMISSION_APPLY_ENABLED = True
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 
         helper = mocker.MagicMock()
         helper.is_ready.return_value = True
@@ -441,7 +441,7 @@ class TestPermissionDimensionManagerItsmIntegration:
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
 
     def test_create_apply_record_with_itsm_not_ready(self, settings, mocker, fake_gateway, fake_resource):
-        settings.BK_ITSM4_PERMISSION_APPLY_ENABLED = True
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 
         helper = mocker.MagicMock()
         helper.is_ready.return_value = False
@@ -465,7 +465,7 @@ class TestPermissionDimensionManagerItsmIntegration:
     def test_create_apply_record_persists_callback_token_before_ticket_id(
         self, settings, mocker, fake_gateway, fake_resource
     ):
-        settings.BK_ITSM4_PERMISSION_APPLY_ENABLED = True
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 
         helper = mocker.MagicMock()
         helper.is_ready.return_value = True

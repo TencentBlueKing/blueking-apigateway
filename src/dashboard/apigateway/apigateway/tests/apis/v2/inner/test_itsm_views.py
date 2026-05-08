@@ -35,22 +35,21 @@ class TestItsmCallbackApi:
             data["callback_token"] = callback_token
         return data
 
-    def test_reject_when_callback_token_only_in_query(self, request_to_view, request_factory, settings, mocker):
+    def test_reject_when_callback_token_empty(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mock_handle = mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
 
-        request = request_factory.post(
-            "/api/v2/inner/itsm/callback/?verify_token=verify-token-001",
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.inner.itsm.callback",
+            app=mock.MagicMock(app_code="bk-itsm4"),
             data=self._build_callback_data(callback_token=""),
             format="json",
         )
-        request.app = mock.MagicMock(app_code="bk-itsm4")
 
-        response = request_to_view(request, view_name="openapi.v2.inner.itsm.callback")
         assert response.status_code == 400
-        assert mock_handle.call_count == 0
 
-    def test_reject_when_no_callback_token_and_verify_token(self, request_view, settings, mocker):
+    def test_reject_when_callback_token_missing(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
         mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
 

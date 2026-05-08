@@ -19,7 +19,6 @@
 import logging
 from typing import Any, Dict
 
-from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.db import transaction
 
 from apigateway.apps.mcp_server.constants import (
@@ -27,9 +26,8 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionGrantTypeEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServerAppPermission, MCPServerAppPermissionApply
-from apigateway.apps.permission.constants import ApplyStatusEnum
+from apigateway.apps.permission.constants import ApplyStatusEnum, FormattedGrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply
-from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.common.error_codes import error_codes
@@ -44,11 +42,11 @@ class ItsmCallbackResultHandler:
     def handle(self, *, ticket: Dict[str, Any], callback_token: str):
         form_data = ticket["form_data"]
         apply_record_id = form_data["apply_record_id"]
-        grant_dimension = form_data.get("grant_dimension", "gateway")
+        grant_dimension = form_data["grant_dimension"]
         ticket_id = ticket["id"]
         approve_result = ticket["approve_result"]
 
-        if grant_dimension == "mcp_server":
+        if grant_dimension == FormattedGrantDimensionEnum.MCP_SERVER.value:
             self._handle_mcp_server_approval(
                 apply_record_id=apply_record_id,
                 approve_result=approve_result,
@@ -83,7 +81,16 @@ class ItsmCallbackResultHandler:
         log_id_field: str,
         log_id_value: int,
     ):
-        if not local_callback_token or local_callback_token != callback_token:
+        if not local_callback_token:
+            logger.warning(
+                "%s callback token missing, %s=%s",
+                log_prefix,
+                log_id_field,
+                log_id_value,
+            )
+            raise error_codes.INVALID_ARGUMENT.format("invalid callback_token")
+
+        if local_callback_token != callback_token:
             logger.warning(
                 "%s callback token mismatch, %s=%s, local_callback_token=%s",
                 log_prefix,
@@ -142,7 +149,7 @@ class ItsmCallbackResultHandler:
 
             status_value = ApplyStatusEnum.APPROVED.value if approve_result else ApplyStatusEnum.REJECTED.value
             manager = PermissionDimensionManager.get_manager(apply.grant_dimension)
-            record = manager.handle_permission_apply(
+            manager.handle_permission_apply(
                 gateway=apply.gateway,
                 apply=apply,
                 status=status_value,
@@ -150,11 +157,6 @@ class ItsmCallbackResultHandler:
                 handled_by="itsm",
                 part_resource_ids=None,
             )
-
-            try:
-                apply_async_on_commit(send_mail_for_perm_handle, args=[record.id])
-            except Exception:  # pylint: disable=broad-except
-                logger.exception("send mail to applicant fail. record_id=%s", record.id)
 
             apply.delete()
 
