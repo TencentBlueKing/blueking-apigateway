@@ -1,0 +1,21 @@
+meta {
+  name: openapi-v2-user-mcp-server-list
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/user/mcp-servers/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "access_token": "{{access_token}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.count: isDefined
+  res.body.data.results: isDefined
+}

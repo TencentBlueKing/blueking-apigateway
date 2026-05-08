@@ -1,0 +1,20 @@
+meta {
+  name: openapi-v2-tools-time-get-current-unix-timestamp
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/tools/time/get_current_unix_timestamp/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.unix_timestamp: isDefined
+}
