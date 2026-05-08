@@ -24,6 +24,16 @@ body:json {
 }
 
 assert {
-  res.status: gte 200
-  res.status: lte 500
+  res.status: eq 201
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("response has sdk data", function() {
+    expect(data.data).to.not.be.undefined;
+  });
 }

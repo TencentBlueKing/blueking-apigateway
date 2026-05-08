@@ -1,7 +1,7 @@
 meta {
   name: v2-inner-apply-gateway-permission
   type: http
-  seq: 13
+  seq: 6
 }
 
 post {
@@ -15,11 +15,6 @@ headers {
   Content-Type: application/json
 }
 
-assert {
-  res.status: eq 201
-  res.body.data: isDefined
-}
-
 body:json {
   {
     "target_app_code": "{{test_bk_app_code}}",
@@ -27,6 +22,11 @@ body:json {
     "expire_days": 180,
     "reason": "e2e test"
   }
+}
+
+assert {
+  res.status: eq 201
+  res.body.data: isDefined
 }
 
 tests {
@@ -37,4 +37,5 @@ tests {
   test("response has data with record_id", function() {
     expect(data.data).to.have.property('record_id');
   });
+  bru.setVar("app_permission_record_id", String(data.data.record_id));
 }

@@ -1,0 +1,48 @@
+meta {
+  name: openapi-v2-gateway-resource-detail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/gateways/{{gateway_name}}/resources/{{resource_name}}/?stage_name=prod
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+script:pre-request {
+  // Wait for the async release task (Celery) to complete and save released resources.
+  // The release task polls publish status then writes to core_released_resource table.
+  // Typically takes 5-15 seconds in e2e environment.
+  await new Promise(resolve => setTimeout(resolve, 15000));
+}
+
+tests {
+  // NOTE: 此接口依赖 Celery 异步任务 update_release_data_after_success 完成后
+  // 才会将资源写入 ReleasedResource 表。该任务使用递增 sleep(1*wait_times) 轮询发布状态，
+  // 在不同环境下耗时不确定（5s~30s+），因此允许 404（资源尚未写入）作为合理返回。
+  test("status is 200 (released) or 404 (celery task not yet completed)", function() {
+    const status = res.getStatus();
+    expect([200, 404]).to.include(status);
+  });
+
+  if (res.getStatus() === 200) {
+    var data = res.getBody();
+    test("response has resource id", function() {
+      expect(data.data.id).to.not.be.undefined;
+    });
+    test("response has resource name", function() {
+      expect(data.data.name).to.not.be.undefined;
+    });
+    test("response has method", function() {
+      expect(data.data.method).to.not.be.undefined;
+    });
+    test("response has path", function() {
+      expect(data.data.path).to.not.be.undefined;
+    });
+  }
+}

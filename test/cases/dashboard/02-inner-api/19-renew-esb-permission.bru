@@ -1,11 +1,11 @@
 meta {
-  name: v2-inner-renew-app-permission
+  name: v2-inner-renew-esb-permission
   type: http
-  seq: 14
+  seq: 19
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/permissions/renew/
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/permissions/renew/
   body: json
   auth: none
 }
@@ -22,7 +22,7 @@ assert {
 body:json {
   {
     "target_app_code": "{{test_bk_app_code}}",
-    "resource_ids": [{{resource_id}}],
+    "component_ids": [{{esb_component_id}}],
     "expire_days": 180
   }
 }

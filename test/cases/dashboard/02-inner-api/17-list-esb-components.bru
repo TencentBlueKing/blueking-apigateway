@@ -1,11 +1,11 @@
 meta {
-  name: GET /esb/systems/
+  name: GET /esb/systems/{id}/permissions/components/
   type: http
-  seq: 18
+  seq: 17
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/?target_app_code={{test_bk_app_code}}&user_auth_type=default
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/esb/systems/{{esb_system_id}}/permissions/components/?target_app_code={{test_bk_app_code}}
   body: none
   auth: none
 }
@@ -29,12 +29,15 @@ tests {
   });
   if (data.data.length > 0) {
     var item = data.data[0];
-    bru.setVar("esb_system_id", String(item.id));
+    bru.setVar("esb_component_id", String(item.id));
     test("field id exists", function() { expect(item).to.have.property('id'); });
     test("field name exists", function() { expect(item).to.have.property('name'); });
+    test("field system_name exists", function() { expect(item).to.have.property('system_name'); });
+    test("field system_id exists", function() { expect(item).to.have.property('system_id'); });
     test("field description exists", function() { expect(item).to.have.property('description'); });
-    test("field description_en exists", function() { expect(item).to.have.property('description_en'); });
-    test("field maintainers exists", function() { expect(item).to.have.property('maintainers'); });
+    test("field permission_level exists", function() { expect(item).to.have.property('permission_level'); });
+    test("field permission_status exists", function() { expect(item).to.have.property('permission_status'); });
+    test("field doc_link exists", function() { expect(item).to.have.property('doc_link'); });
     test("field tag exists", function() { expect(item).to.have.property('tag'); });
   }
 }
