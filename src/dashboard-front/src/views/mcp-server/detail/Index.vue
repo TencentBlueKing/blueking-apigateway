@@ -255,12 +255,12 @@
                 <ServerTools
                   v-if="item.name === 'tools'"
                   :server="server"
-                  @update-count="(count: any) => updateCount(count, item.name)"
+                  @update-count="(count: number) => updateCount(count, item.name)"
                 />
                 <ServerPrompts
                   v-if="item.name === 'prompts'"
                   :server="server"
-                  @update-count="(count: any) => updateCount(count, item.name)"
+                  @update-count="(count: number) => updateCount(count, item.name)"
                 />
                 <AuthApplications
                   v-if="item.name === 'auth'"
@@ -292,6 +292,8 @@
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
 import { copy } from '@/utils';
+import type { IExtractApiReturn } from '@/services/types/utils.ts';
+import { getGatewayDetail } from '@/services/source/gateway';
 import {
   type IMCPAIConfig,
   deleteServer,
@@ -317,6 +319,15 @@ type ExtendedMCPServer = Awaited<ReturnType<typeof getServer>> & {
   [key: string]: any
 };
 
+type IGatewayDetailType = IExtractApiReturn<typeof getGatewayDetail>;
+
+type IPanelType = {
+  name: string
+  label: string
+  count: number
+  show: boolean
+};
+
 interface IProps { gatewayId?: number }
 
 const { gatewayId = 0 } = defineProps<IProps>();
@@ -327,7 +338,7 @@ const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const { divideRatio } = useMcpConfigDivideRatio();
 
-const createSliderRef = ref();
+const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverId = ref(0);
 const server = ref<ExtendedMCPServer>({
   id: 0,
@@ -349,7 +360,7 @@ const showDropdown = ref(false);
 const isExistCustomGuide = ref(false);
 const markdownStr = ref('');
 const active = ref('tools');
-const panels = ref(MCP_TAB_LIST);
+const panels = ref<IPanelType[]>(MCP_TAB_LIST);
 const mcpConfigList = ref<IMCPAIConfig[]>([]);
 const editingServerId = ref<number>();
 
@@ -360,9 +371,9 @@ const isEnabledOAuth = computed(() =>
 );
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
-    panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
+    panels.value = panels.value.filter((item: TPanelType) => !['prompts'].includes(item.name));
   }
-  return panels.value.filter((item: any) => item.show);
+  return panels.value.filter((item: IPanelType) => item.show);
 });
 
 const fetchServer = async () => {
@@ -417,7 +428,7 @@ watch(() => route.params, async () => {
   deep: true,
 });
 
-watch(() => gatewayStore.currentGateway, (newGateway: any, oldGateway: any) => {
+watch(() => gatewayStore.currentGateway, (newGateway: IGatewayDetailType, oldGateway: IGatewayDetailType) => {
   // 切换了网关，需要返回列表页
   if (!oldGateway || (newGateway?.id === oldGateway.id)) {
     return;
@@ -495,13 +506,13 @@ const handleDelete = () => {
  * @param panelName - 目标面板名称
  */
 const updateCount = (count?: number, panelName?: string) => {
-  const { tools_count, prompts } = server.value ?? {} as any;
+  const { tools_count, prompts } = server.value ?? {} as IMCPServer;
   const panelCountMap: Record<string, () => number> = {
     tools: () => tools_count ?? 0,
-    prompts: () => (prompts as unknown as any[])?.length ?? 0,
+    prompts: () => (prompts as IMCPServerPrompt[])?.length ?? 0,
     ...(panelName ? { [panelName]: () => count ?? 0 } : {}),
   };
-  panels.value.forEach((item: any) => {
+  panels.value.forEach((item: IPanelType) => {
     const getCount = panelCountMap[item.name];
     if (getCount) {
       item.count = getCount?.();

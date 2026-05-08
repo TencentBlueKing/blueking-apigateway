@@ -74,9 +74,13 @@ export interface IMCPServer {
   categories?: string | string[]
   is_official?: boolean
   is_featured?: boolean
+  raw_response_enabled: boolean
   prompts_count?: number
   oauth2_public_client_enabled?: boolean
-  app_permission_risk?: any
+  app_permission_risk?: {
+    has_risk: boolean
+    risk_tools: string[]
+  }
   tools?: IMCPServerTool[]
   prompts?: IMCPServerPrompt[] | string
   order_by?: string
