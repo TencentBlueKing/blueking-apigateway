@@ -1,0 +1,28 @@
+meta {
+  name: openapi-v2-mcp-server-batch-query
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/mcp-servers/batch-query/
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+body:json {
+  {
+    "ids": [{{mcp_server_id}}],
+    "fields": "id,name,title,description,categories"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}

@@ -1,0 +1,20 @@
+meta {
+  name: openapi-v2-mcp-server-categories-list
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/mcp-servers/categories/
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}

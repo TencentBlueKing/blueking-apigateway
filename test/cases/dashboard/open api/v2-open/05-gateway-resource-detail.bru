@@ -1,0 +1,26 @@
+meta {
+  name: openapi-v2-gateway-resource-detail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/gateways/{{gateway_name}}/resources/{{resource_name}}/?stage_name=prod
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: isDefined
+  res.body.data.description: isDefined
+  res.body.data.method: isDefined
+  res.body.data.path: isDefined
+  res.body.data.schema: isDefined
+  res.body.data.auth_config: isDefined
+}

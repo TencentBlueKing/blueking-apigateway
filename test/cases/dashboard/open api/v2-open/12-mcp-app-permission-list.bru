@@ -1,0 +1,21 @@
+meta {
+  name: openapi-v2-mcp-app-permission-list
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/mcp-servers/permissions/?bk_app_code={{bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.count: isDefined
+  res.body.data.results: isDefined
+}
