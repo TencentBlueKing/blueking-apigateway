@@ -440,6 +440,35 @@ class TestPermissionDimensionManagerItsmIntegration:
         helper.create_permission_apply_ticket.assert_called_once()
         assert helper.create_permission_apply_ticket.call_args.kwargs["callback_token"] == "cb-token-001"
 
+    def test_create_apply_record_with_itsm_ticket_fallback_applicant(
+        self, settings, mocker, fake_gateway, fake_resource
+    ):
+        settings.ENABLE_ITSM4_PERMISSION_APPLY = True
+
+        helper = mocker.MagicMock()
+        helper.is_ready.return_value = True
+        helper.generate_callback_token.return_value = "cb-token-001"
+        helper.create_permission_apply_ticket.return_value = {"id": "ticket-001"}
+        mocker.patch("apigateway.biz.permission.manager.ItsmPermissionApplyHelper", return_value=helper)
+
+        get_app_maintainers = mocker.patch(
+            "apigateway.biz.permission.manager.get_app_maintainers", return_value=["app-owner"]
+        )
+
+        manager = GatewayPermissionDimensionManager()
+        manager.create_apply_record(
+            "test-app",
+            fake_gateway,
+            [fake_resource.id],
+            GrantDimensionEnum.API.value,
+            "reason",
+            180,
+            "",
+        )
+
+        get_app_maintainers.assert_called_once_with("test-app")
+        assert helper.create_permission_apply_ticket.call_args.kwargs["applied_by"] == "app-owner"
+
     def test_create_apply_record_with_itsm_not_ready(self, settings, mocker, fake_gateway, fake_resource):
         settings.ENABLE_ITSM4_PERMISSION_APPLY = True
 

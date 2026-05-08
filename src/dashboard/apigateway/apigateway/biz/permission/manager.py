@@ -38,6 +38,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.common.error_codes import error_codes
+from apigateway.components.bkpaas import get_app_maintainers
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
@@ -189,6 +190,17 @@ class PermissionDimensionManager(metaclass=ABCMeta):
 
         return record
 
+    @staticmethod
+    def _get_itsm_ticket_applicant(username: str, bk_app_code: str) -> str:
+        if username:
+            return username
+
+        app_maintainers = get_app_maintainers(bk_app_code)
+        if app_maintainers:
+            return app_maintainers[0]
+
+        return ""
+
     def _create_itsm_ticket(
         self,
         record: AppPermissionRecord,
@@ -212,12 +224,13 @@ class PermissionDimensionManager(metaclass=ABCMeta):
             callback_token = helper.generate_callback_token()
             AppPermissionApply.objects.filter(apply_record_id=record.id).update(itsm_callback_token=callback_token)
 
+            ticket_applicant = self._get_itsm_ticket_applicant(username=username, bk_app_code=bk_app_code)
             resp = helper.create_permission_apply_ticket(
                 bk_app_code=bk_app_code,
                 gateway_name=gateway.name,
                 grant_dimension=itsm_grant_dimension,
                 apply_resource_names=resource_names,
-                applied_by=username,
+                applied_by=ticket_applicant,
                 apply_record_id=record.id,
                 approvers=gateway.maintainers,
                 callback_token=callback_token,
