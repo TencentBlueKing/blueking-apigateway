@@ -42,12 +42,19 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Tag } from 'bkui-vue';
-import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
 import { locale, t } from '@/locales';
-import type { ITableMethod } from '@/types/common';
+import { Button, Tag } from 'bkui-vue';
 import type { FilterValue, PrimaryTableProps, TableColumnProps } from '@blueking/tdesign-ui';
-import { type IMCPServerCategory, type IMCPServerFilterOptions, getServers } from '@/services/source/mcp-server';
+import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
+import type { ITableMethod } from '@/types/common';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import {
+  type IMCPFilterParams,
+  type IMCPServerCategory,
+  type IMCPServerFilterOptions,
+  getServers,
+} from '@/services/source/mcp-server';
+import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
@@ -467,7 +474,7 @@ const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: t
  * @param params - 请求参数，默认值为空对象
  * @returns 接口返回的表格数据，兜底返回空数组
  */
-const getTableData = async (params: Record<string, any> = {}): Promise<any[]> => {
+const getTableData = async (params: IMCPFilterParams): Promise<ICountAndResults<IMCPServerListOutput>> => {
   const requestParams = { ...params };
   const fieldsToJoin = ['categories'];
   fieldsToJoin.forEach((field) => {
