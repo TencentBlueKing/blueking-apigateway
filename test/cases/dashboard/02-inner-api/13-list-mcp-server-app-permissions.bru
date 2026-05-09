@@ -1,11 +1,11 @@
 meta {
-  name: v2-inner-list-mcp-server-permissions
+  name: v2-inner-list-mcp-server-app-permissions
   type: http
-  seq: 3
+  seq: 13
 }
 
 get {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/?target_app_code={{test_bk_app_code}}
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/app-permissions/?target_app_code={{test_bk_app_code}}
   body: none
   auth: none
 }

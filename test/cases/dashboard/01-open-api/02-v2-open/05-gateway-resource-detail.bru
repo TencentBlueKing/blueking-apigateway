@@ -1,0 +1,71 @@
+meta {
+  name: openapi-v2-gateway-resource-detail
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/gateways/{{gateway_name}}/resources/{{resource_name}}/?stage_name=prod
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+script:pre-request {
+  // Poll until the resource detail API returns 200.
+  // The Celery task `update_release_data_after_success` writes to ReleasedResource table
+  // after confirming publish success (with incremental sleep: 0s, 1s, 3s, 6s, ...).
+  // We poll every 3 seconds with a 60-second timeout to handle environment variance.
+  const scheme = bru.getEnvVar("scheme");
+  const host = bru.getEnvVar("host");
+  const gatewayName = bru.getEnvVar("gateway_name");
+  const resourceName = bru.getVar("resource_name");
+  const bkAppCode = bru.getEnvVar("bk_app_code");
+  const bkAppSecret = bru.getEnvVar("bk_app_secret");
+  const url = scheme + "://" + host + "/api/bk-apigateway/prod/api/v2/open/gateways/" + gatewayName + "/resources/" + resourceName + "/?stage_name=prod";
+  const authHeader = JSON.stringify({ bk_app_code: bkAppCode, bk_app_secret: bkAppSecret });
+
+  const maxAttempts = 20;
+  const intervalMs = 3000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    let pollStatus = 0;
+    try {
+      const pollRes = await bru.sendRequest({
+        method: "GET",
+        url: url,
+        headers: { "X-Bkapi-Authorization": authHeader }
+      });
+      pollStatus = pollRes.status;
+    } catch (e) {
+      // bru.sendRequest throws on non-2xx; extract status from error
+      if (e && e.response && e.response.status) {
+        pollStatus = e.response.status;
+      } else {
+        pollStatus = 0;
+      }
+    }
+    if (pollStatus === 200) {
+      return;
+    }
+    await bru.sleep(intervalMs);
+  }
+  throw new Error(
+    "Resource detail still returning non-200 after " + maxAttempts + " attempts (" +
+    (maxAttempts * intervalMs / 1000) + "s). Celery task may have failed."
+  );
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: isDefined
+  res.body.data.description: isDefined
+  res.body.data.method: isDefined
+  res.body.data.path: isDefined
+  res.body.data.schema: isDefined
+  res.body.data.auth_config: isDefined
+}
