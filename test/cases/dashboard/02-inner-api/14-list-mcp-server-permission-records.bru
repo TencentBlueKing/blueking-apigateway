@@ -48,5 +48,17 @@ tests {
     test("field record.apply_status exists", function() {
       expect(item.record).to.have.property('apply_status');
     });
+    test("field record.applied_by exists", function() {
+      expect(item.record).to.have.property('applied_by');
+    });
+    test("field record.applied_time exists", function() {
+      expect(item.record).to.have.property('applied_time');
+    });
+    test("field record.handled_by exists", function() {
+      expect(item.record).to.have.property('handled_by');
+    });
+    test("field record.approval_url exists", function() {
+      expect(item.record).to.have.property('approval_url');
+    });
   }
 }

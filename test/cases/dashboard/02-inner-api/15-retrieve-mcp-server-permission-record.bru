@@ -34,4 +34,8 @@ tests {
   test("mcp_server.name exists", function() { expect(d.mcp_server).to.have.property('name'); });
   test("record.id exists", function() { expect(d.record).to.have.property('id'); });
   test("record.apply_status exists", function() { expect(d.record).to.have.property('apply_status'); });
+  test("record.applied_by exists", function() { expect(d.record).to.have.property('applied_by'); });
+  test("record.applied_time exists", function() { expect(d.record).to.have.property('applied_time'); });
+  test("record.handled_by exists", function() { expect(d.record).to.have.property('handled_by'); });
+  test("record.approval_url exists", function() { expect(d.record).to.have.property('approval_url'); });
 }

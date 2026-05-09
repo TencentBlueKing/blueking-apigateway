@@ -15,34 +15,57 @@ headers {
 }
 
 script:pre-request {
-  // Wait for the async release task (Celery) to complete and save released resources.
-  // The release task polls publish status then writes to core_released_resource table.
-  // Typically takes 5-15 seconds in e2e environment.
-  await new Promise(resolve => setTimeout(resolve, 15000));
+  // Poll until the resource detail API returns 200.
+  // The Celery task `update_release_data_after_success` writes to ReleasedResource table
+  // after confirming publish success (with incremental sleep: 0s, 1s, 3s, 6s, ...).
+  // We poll every 3 seconds with a 60-second timeout to handle environment variance.
+  const scheme = bru.getEnvVar("scheme");
+  const host = bru.getEnvVar("host");
+  const gatewayName = bru.getEnvVar("gateway_name");
+  const resourceName = bru.getVar("resource_name");
+  const bkAppCode = bru.getEnvVar("bk_app_code");
+  const bkAppSecret = bru.getEnvVar("bk_app_secret");
+  const url = scheme + "://" + host + "/api/bk-apigateway/prod/api/v2/open/gateways/" + gatewayName + "/resources/" + resourceName + "/?stage_name=prod";
+  const authHeader = JSON.stringify({ bk_app_code: bkAppCode, bk_app_secret: bkAppSecret });
+
+  const maxAttempts = 20;
+  const intervalMs = 3000;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    let pollStatus = 0;
+    try {
+      const pollRes = await bru.sendRequest({
+        method: "GET",
+        url: url,
+        headers: { "X-Bkapi-Authorization": authHeader }
+      });
+      pollStatus = pollRes.status;
+    } catch (e) {
+      // bru.sendRequest throws on non-2xx; extract status from error
+      if (e && e.response && e.response.status) {
+        pollStatus = e.response.status;
+      } else {
+        pollStatus = 0;
+      }
+    }
+    if (pollStatus === 200) {
+      return;
+    }
+    await bru.sleep(intervalMs);
+  }
+  throw new Error(
+    "Resource detail still returning non-200 after " + maxAttempts + " attempts (" +
+    (maxAttempts * intervalMs / 1000) + "s). Celery task may have failed."
+  );
 }
 
-tests {
-  // NOTE: 此接口依赖 Celery 异步任务 update_release_data_after_success 完成后
-  // 才会将资源写入 ReleasedResource 表。该任务使用递增 sleep(1*wait_times) 轮询发布状态，
-  // 在不同环境下耗时不确定（5s~30s+），因此允许 404（资源尚未写入）作为合理返回。
-  test("status is 200 (released) or 404 (celery task not yet completed)", function() {
-    const status = res.getStatus();
-    expect([200, 404]).to.include(status);
-  });
-
-  if (res.getStatus() === 200) {
-    var data = res.getBody();
-    test("response has resource id", function() {
-      expect(data.data.id).to.not.be.undefined;
-    });
-    test("response has resource name", function() {
-      expect(data.data.name).to.not.be.undefined;
-    });
-    test("response has method", function() {
-      expect(data.data.method).to.not.be.undefined;
-    });
-    test("response has path", function() {
-      expect(data.data.path).to.not.be.undefined;
-    });
-  }
+assert {
+  res.status: eq 200
+  res.body.data.id: isDefined
+  res.body.data.name: isDefined
+  res.body.data.description: isDefined
+  res.body.data.method: isDefined
+  res.body.data.path: isDefined
+  res.body.data.schema: isDefined
+  res.body.data.auth_config: isDefined
 }
