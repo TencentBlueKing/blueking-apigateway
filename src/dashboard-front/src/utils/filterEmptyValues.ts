@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import { isEmpty, isNull, isUndefined, omitBy } from 'lodash-es';
+import { isEmpty, isNull, isObject, isUndefined, omitBy } from 'lodash-es';
 
 // 过滤：null / undefined / 空字符串 / 空数组 / 空对象
 export const filterSimpleEmpty = (obj: Record<string, any>) => {
@@ -25,7 +25,8 @@ export const filterSimpleEmpty = (obj: Record<string, any>) => {
       isNull(value)
       || isUndefined(value)
       || value === ''
-      || (typeof value !== 'number' && isEmpty(value))
+      || (isObject(value) && !Array.isArray(value) && isEmpty(value))
+      || (Array.isArray(value) && isEmpty(value))
     );
   });
 };

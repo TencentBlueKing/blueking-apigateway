@@ -1,0 +1,28 @@
+meta {
+  name: openapi-v2-gateway-batch-query
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/gateways/batch-query/
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+body:json {
+  {
+    "names": ["{{gateway_name}}"],
+    "fields": "id,name,description"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}

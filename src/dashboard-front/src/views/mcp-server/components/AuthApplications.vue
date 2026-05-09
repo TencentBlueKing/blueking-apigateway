@@ -123,6 +123,7 @@
       <template #footer>
         <BkButton
           theme="primary"
+          class="mr-8px"
           :loading="authLoading"
           @click="submitAuth"
         >

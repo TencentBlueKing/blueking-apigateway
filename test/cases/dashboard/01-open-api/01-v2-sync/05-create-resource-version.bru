@@ -25,3 +25,7 @@ body:json {
 assert {
   res.status: lte 201
 }
+
+script:post-response {
+  bru.setVar("resource_version", "1.0.0");
+}

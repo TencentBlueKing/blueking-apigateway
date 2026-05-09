@@ -1,0 +1,28 @@
+meta {
+  name: openapi-v2-tools-time-parse-datetime-to-timestamp
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/tools/time/parse_datetime_str_to_timestamp/
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+body:json {
+  {
+    "datetime": "2025-01-07 15:30:45",
+    "datetime_format": "%Y-%m-%d %H:%M:%S"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.timestamp: isDefined
+}

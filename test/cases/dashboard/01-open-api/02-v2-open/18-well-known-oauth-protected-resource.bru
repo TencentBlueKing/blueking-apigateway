@@ -1,0 +1,18 @@
+meta {
+  name: openapi-v2-well-known-oauth-protected-resource
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/.well-known/oauth-protected-resource?resource={{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/open/gateways/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.resource: isDefined
+  res.body.authorization_servers: isDefined
+  res.body.bearer_methods_supported: isDefined
+}

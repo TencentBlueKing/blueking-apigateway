@@ -1,0 +1,25 @@
+meta {
+  name: v2-inner-delete-gateway
+  type: http
+  seq: 24
+}
+
+delete {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("status is 204 (gateway deleted successfully)", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

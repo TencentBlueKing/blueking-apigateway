@@ -1,0 +1,41 @@
+meta {
+  name: GET mcp server permission record detail
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/mcp-server/permissions/apply-records/{{mcp_permission_record_id}}?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+}
+
+tests {
+  var data = res.getBody();
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response has data", function() {
+    expect(data).to.have.property('data');
+  });
+  var d = data.data;
+  test("has mcp_server field", function() { expect(d).to.have.property('mcp_server'); });
+  test("has record field", function() { expect(d).to.have.property('record'); });
+  test("mcp_server.id exists", function() { expect(d.mcp_server).to.have.property('id'); });
+  test("mcp_server.name exists", function() { expect(d.mcp_server).to.have.property('name'); });
+  test("record.id exists", function() { expect(d.record).to.have.property('id'); });
+  test("record.apply_status exists", function() { expect(d.record).to.have.property('apply_status'); });
+  test("record.applied_by exists", function() { expect(d.record).to.have.property('applied_by'); });
+  test("record.applied_time exists", function() { expect(d.record).to.have.property('applied_time'); });
+  test("record.handled_by exists", function() { expect(d.record).to.have.property('handled_by'); });
+  test("record.approval_url exists", function() { expect(d.record).to.have.property('approval_url'); });
+}

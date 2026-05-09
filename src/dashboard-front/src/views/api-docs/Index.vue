@@ -492,7 +492,14 @@ watch(
   { deep: true },
 );
 
-const getTableData = async (params: Record<string, any> = {}) => getGatewaysDocs(params);
+const getTableData = async (params: {
+  offset: number
+  limit: number
+} = {},
+) => getGatewaysDocs({
+  ...params,
+  show_plugin_gateway: filterData.value.show_plugin_gateway,
+});
 
 const gotoDetails = (row: IApiGatewayBasics | ISystem, systemBoard?: string) => {
   const params = {

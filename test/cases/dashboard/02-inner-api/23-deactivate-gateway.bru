@@ -1,0 +1,32 @@
+meta {
+  name: v2-inner-deactivate-gateway
+  type: http
+  seq: 23
+}
+
+put {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/{{gateway_name}}/status/
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "status": 0
+  }
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("status is 204 (gateway deactivated)", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -79,7 +79,9 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
+import type MavonEditor from 'mavon-editor';
 import type { IFormMethod, IMavonEditorProps } from '@/types/common';
+import type { IMCPServerRetrieveOutput } from '@/services/types/body/gateways';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
@@ -116,7 +118,7 @@ const route = useRoute();
 const { t } = useI18n();
 
 const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const markdownRef = ref<any>(null);
+const markdownRef = ref<InstanceType<typeof MavonEditor> | null>(null);
 const submitLoading = ref(false);
 const isSubfield = ref(true);
 const isFullscreen = ref(false);
@@ -164,7 +166,7 @@ watch(() => markdownText, (newVal: string) => {
   setFormData({ content: newVal });
 }, { immediate: true });
 
-const handleCompare = (callback: any) => {
+const handleCompare = (callback: (data: Partial<IMCPServerRetrieveOutput>) => void) => {
   callback(cloneDeep(formData.value));
 };
 
