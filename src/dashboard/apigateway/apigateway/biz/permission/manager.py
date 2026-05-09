@@ -197,6 +197,7 @@ class PermissionDimensionManager(metaclass=ABCMeta):
 
         app_maintainers = get_app_maintainers(bk_app_code)
         if app_maintainers:
+            # TODO: 这里取的是第一个用户选择，用户可能已经转岗或者离职，后续需要优化，选择最近操作人
             return app_maintainers[0]
 
         return ""
