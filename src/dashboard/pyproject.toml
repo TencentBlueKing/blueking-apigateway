@@ -293,6 +293,7 @@ ignore_imports = [
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.constants",
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
+    "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
@@ -368,6 +369,7 @@ ignore_imports = [
     "apigateway.apps.data_plane.management.commands.* -> apigateway.controller.tasks.*",
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
+    "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",
     "apigateway.apps.esb.*.* -> apigateway.core.constants",
