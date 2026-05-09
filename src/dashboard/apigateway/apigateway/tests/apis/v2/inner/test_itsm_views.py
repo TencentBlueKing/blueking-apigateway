@@ -91,6 +91,7 @@ class TestItsmCallbackApi:
         )
 
         assert response.status_code == 200
+        assert response.json() == {"result": True, "message": "success"}
         assert mock_handle.call_count == 1
 
     def test_allow_with_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
@@ -108,4 +109,5 @@ class TestItsmCallbackApi:
         )
 
         assert response.status_code == 200
+        assert response.json() == {"result": True, "message": "success"}
         assert mock_handle.call_count == 1
