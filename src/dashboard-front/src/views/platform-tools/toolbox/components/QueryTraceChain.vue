@@ -84,7 +84,6 @@ import { Message } from 'bkui-vue';
 import { useTrace } from '@/stores';
 import { t } from '@/locales';
 import {
-  type ITraceLog,
   fetchObservabilityLogInfo,
   fetchObservabilityLogSummary,
   fetchObservabilityTraceChain,
@@ -97,7 +96,7 @@ const route = useRoute();
 const traceStore = useTrace();
 
 const searchKeyword = ref('');
-const traceData = ref<ITraceLog>(cloneDeep(DEFAULT_TRACE_DATA));
+const traceData = ref<any>(cloneDeep(DEFAULT_TRACE_DATA));
 
 // 空状态配置
 const emptyConfig = ref<{

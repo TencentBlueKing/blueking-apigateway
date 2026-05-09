@@ -25,7 +25,7 @@
     >
       <Component
         :is="dashboardFormCompMap[com.name as keyof typeof dashboardFormCompMap]"
-        :ref="(el: HTMLElement) => setComponentRef(el, com.name)"
+        :ref="(el) => setComponentRef(el, com.name)"
         v-model:search-params="searchParams"
         mode="Dashboard"
         :api-gateway-id="apigwId"
@@ -70,7 +70,7 @@ const componentList = shallowRef([
 const apigwId = computed(() => gatewayStore.apigwId);
 
 // 设置仪表盘所有动态组件实例
-const setComponentRef = (el: HTMLElement | null, name: string) => {
+const setComponentRef = (el: any, name: string) => {
   if (el) {
     componentRefs?.set(name, el);
   }
@@ -103,8 +103,8 @@ onUnmounted(() => {
   box-sizing: border-box;
 
   .observability-basic-form {
-    background-color: #ffffff;
     padding-left: 24px;
+    background-color: #fff;
 
     :deep(.collapse-panel-form) {
       padding: 24px 0;

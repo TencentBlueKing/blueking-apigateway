@@ -48,7 +48,6 @@
 <script lang="tsx" setup>
 import dayjs from 'dayjs';
 import { t } from '@/locales';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ITraceDetail } from '@/services/source/observability';
 import { useTrace } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
@@ -91,22 +90,22 @@ const tableData = computed(() => {
   return traceChainDetail?.logList ?? [];
 });
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<any>([
   {
     title: t('时间'),
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
-      return row?.timestamp ? <span>{dayjs.unix(row?.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
+    cell: (_: VNode, { row }: { row: any }) => {
+      return row.timestamp ? <span>{dayjs.unix(row.timestamp).format('YYYY-MM-DD HH:mm:ss ZZ')}</span> : '--';
     },
   },
   {
     title: t('服务'),
     colKey: 'service',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
-      return row?.service || '--';
+    cell: (_: VNode, { row }: { row: any }) => {
+      return row.service || '--';
     },
   },
   {
@@ -118,8 +117,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('方法'),
     colKey: 'method',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
-      return row?.mcp_method || row?.method;
+    cell: (_: VNode, { row }: { row: any }) => {
+      return row.mcp_method || row.method;
     },
   },
   {
@@ -127,24 +126,24 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     colKey: 'path',
     ellipsis: true,
     width: 260,
-    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
-      return row?.http_path || row?.path || row?.operation;
+    cell: (_: VNode, { row }: { row: any }) => {
+      return row.http_path || row.path || row.operation;
     },
   },
   {
     title: t('状态码'),
     colKey: 'status',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row?: IFlowLogTable }) => {
-      return row?.status || '--';
+    cell: (_: VNode, { row }: { row: any }) => {
+      return row.status || '--';
     },
   },
   {
     title: t('耗时'),
     colKey: 'latency',
     ellipsis: true,
-    cell: (_, { row }: { row?: IFlowLogTable }) => {
-      const duration = row?.latency || `${row?.request_duration}ms`;
+    cell: (_: any, { row }: { row: any }) => {
+      const duration = row.latency || `${row.request_duration}ms`;
       if (!duration) {
         return '--';
       }

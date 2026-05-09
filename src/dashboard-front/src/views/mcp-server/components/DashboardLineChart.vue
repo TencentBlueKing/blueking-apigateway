@@ -70,8 +70,14 @@ import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { ILegendItem, ISearchParamsType, ISeriesItemType } from '@/services/source/observability';
+import type { ISearchParamsType, ISeriesItemType } from '@/services/source/observability';
 import TableEmpty from '@/components/table-empty/Index.vue';
+
+type ILegendItem = {
+  color: string
+  name: string
+  selected: string
+};
 
 interface IProps {
   instanceId?: string
@@ -133,7 +139,7 @@ const chartResize = () => {
 };
 
 // 计算x轴时间间隔配置
-const getChartMoreOption = (seriesList: IDataPoint[]) => {
+const getChartMoreOption = (seriesList: any[]) => {
   const xAxisData = seriesList.map(item => Math.round(item[1]));
   xAxisData.sort((a, b) => a - b);
 
@@ -170,7 +176,7 @@ const generateChartColor = (seriesList: ISeriesItemType[]): string[] => {
 
 // 设置Tooltip格式化
 const setChartTooltip = (
-  chartOption: echarts.EChartsOption,
+  chartOption: any,
   multipleList: readonly string[],
   displayMSList: readonly string[],
   displayBytesList: readonly string[],
@@ -209,9 +215,9 @@ const setChartTooltip = (
 };
 
 // 获取图表核心配置
-const getChartOption = (): echarts.EChartsOption => {
+const getChartOption = (): any => {
   // 基础配置
-  const baseOption: echarts.EChartsOption = {
+  const baseOption: any = {
     grid: {
       top: '15%',
       left: '2%',
@@ -265,7 +271,7 @@ const getChartOption = (): echarts.EChartsOption => {
     tooltip: { trigger: 'axis' },
   };
 
-  const chartOption: echarts.EChartsOption = {
+  const chartOption: any = {
     xAxis: {},
     yAxis: {},
     series: [],
@@ -278,29 +284,29 @@ const getChartOption = (): echarts.EChartsOption => {
 
   // 处理业务数据
   seriesData.forEach((item) => {
-    const IDataPoints = (item.IDataPoints || [])
-      .filter((value): value is IDataPoint =>
+    const dataPoints = (item.datapoints || [])
+      .filter((value: any) =>
         !isNaN(Math.round(value[1])) && value[0] !== null,
       );
 
-    const formatData = IDataPoints.map(point => [
+    const formatData = dataPoints.map((point: any) => [
       point[1],
       Number((point[0] as number).toFixed(2)),
     ] as [number, number]);
 
-    const baseSeries = (baseOption.series as echarts.LineSeries[])[0];
-    (chartOption.series as echarts.LineSeries[]).push(merge({}, baseSeries, {
+    const baseSeries = (baseOption.series as any[])[0];
+    (chartOption.series as any[]).push(merge({}, baseSeries, {
       name: item.dimensions?.resource_name || item.target?.split('=')[1]?.replace(/"/g, ''),
       data: formatData,
     }));
 
-    const moreOption = getChartMoreOption(IDataPoints);
-    const dataLength = IDataPoints.length;
+    const moreOption = getChartMoreOption(dataPoints);
+    const dataLength = dataPoints.length;
 
     // 动态调整x轴刻度
-    if (!displayMSList.includes(instanceId) && moreOption.xAxis) {
-      if (multipleList.includes(instanceId)) {
-        (moreOption.xAxis as echarts.XAXisOption).axisLabel = dataLength <= 20
+    if (!displayMSList.includes(instanceId as any) && moreOption.xAxis) {
+      if (multipleList.includes(instanceId as any)) {
+        (moreOption.xAxis as any).axisLabel = dataLength <= 20
           ? { interval: 0,
             rotate: 0,
             fontSize: 12 }
@@ -310,7 +316,7 @@ const getChartOption = (): echarts.EChartsOption => {
             fontSize: 10 };
       }
       else {
-        (moreOption.xAxis as echarts.XAXisOption).axisLabel = dataLength <= 30
+        (moreOption.xAxis as any).axisLabel = dataLength <= 30
           ? { interval: 0,
             rotate: 0,
             fontSize: 12 }
@@ -331,24 +337,24 @@ const getChartOption = (): echarts.EChartsOption => {
   setChartTooltip(chartOption, multipleList, displayMSList, displayBytesList);
 
   // 响应式处理
-  if (multipleList.includes(instanceId) && document.body.clientWidth < 1550) {
-    (chartOption.xAxis as echarts.XAXisOption).axisLabel = {
-      ...(chartOption.xAxis as echarts.XAXisOption).axisLabel,
+  if (multipleList.includes(instanceId as any) && document.body.clientWidth < 1550) {
+    (chartOption.xAxis as any).axisLabel = {
+      ...(chartOption.xAxis as any).axisLabel,
       rotate: 35,
     };
   }
 
   // 单位配置
-  if (displayMSList.includes(instanceId)) {
-    (chartOption.yAxis as echarts.YAXisOption).axisLabel = {
-      ...(chartOption.yAxis as echarts.YAXisOption).axisLabel,
+  if (displayMSList.includes(instanceId as any)) {
+    (chartOption.yAxis as any).axisLabel = {
+      ...(chartOption.yAxis as any).axisLabel,
       formatter: '{value} ms',
     };
   }
 
-  if (displayBytesList.includes(instanceId)) {
-    (chartOption.yAxis as echarts.YAXisOption).axisLabel = {
-      ...(chartOption.yAxis as echarts.YAXisOption).axisLabel,
+  if (displayBytesList.includes(instanceId as any)) {
+    (chartOption.yAxis as any).axisLabel = {
+      ...(chartOption.yAxis as any).axisLabel,
       formatter: '{value} bytes',
     };
   }
@@ -358,13 +364,13 @@ const getChartOption = (): echarts.EChartsOption => {
 
 // 生成自定义图例
 const generateChartLegend = () => {
-  const option = myChart.value?.getOption();
+  const option = myChart.value?.getOption() as any;
   if (!option || !option.series || option.series.length <= 1) {
     chartLegend.value[instanceId] = null;
     return;
   }
 
-  const seriesList = option.series as echarts.LineSeries[];
+  const seriesList = option.series as any[];
   const colors = option.color as string[] || [];
 
   chartLegend.value[instanceId] = seriesList.map((ser, index) => ({
@@ -405,7 +411,7 @@ const renderChart = () => {
 
   nextTick(() => {
     const option = getChartOption();
-    myChart.value!.setOption(option, {
+    (myChart.value as any).setOption(option, {
       notMerge: true,
       animation: { duration: 300 },
     });
@@ -540,6 +546,7 @@ defineExpose({
   }
 
   .custom-scroll-bar {
+
     &::-webkit-scrollbar {
       width: 4px;
       background-color: color.scale(#C4C6CC, $lightness: 80%);

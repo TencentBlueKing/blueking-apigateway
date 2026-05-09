@@ -476,8 +476,8 @@ const formatCellValue = (value: string | undefined, field: string) => {
 
 // 统一控制字段是否展示
 const isShowField = ({ row, field }: {
-  row: IFlowLogTable
-  field: string
+  row: any
+  field: any
 }) => {
   const EXCLUDE_LOG_PATH = '/app/logs/mcp_proxy_api.log';
   // path 字段且不是指定日志路径才显示
@@ -511,7 +511,7 @@ const handleShowCallChain = (row: IFlowLogTable) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleRowCopy = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
+const handleRowCopy = (field: any, row: any) => {
   const copyContent = formatCellValue(row[field], field);
   copy(copyContent);
 };
@@ -521,7 +521,7 @@ const handleRowCopy = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleInclude = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
+const handleInclude = (field: any, row: any) => {
   if (!row[field]) return;
   const fieldStr = `${field}:${row[field]}`;
   // 去重后添加
@@ -541,7 +541,7 @@ const handleInclude = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleExclude = (field: keyof IFlowLogTable, row: IFlowLogTable) => {
+const handleExclude = (field: any, row: any) => {
   if (!row[field]) return;
   const fieldStr = `${field}:${row[field]}`;
   // 去重后添加
@@ -596,8 +596,8 @@ const handleClearFilter = () => {
  * 判断是否显示检索按钮
  * @param field 字段名
  */
-const isShowRetrieveBtn = (field: keyof IFlowLogTable) => {
-  const allowFields: Array<keyof IFlowLogTable> = ['request_id'];
+const isShowRetrieveBtn = (field: any) => {
+  const allowFields: Array<any> = ['request_id'];
   return allowFields.includes(field);
 };
 

@@ -12,6 +12,7 @@
     "type-check": "vue-tsc --build",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
+    "lint:ci": "eslint .",
     "lint": "run-s lint:*",
     "symlink-dot-agents:codebuddy": "node create-codebuddy-symlink.js",
     "postinstall": "node create-codebuddy-symlink.js"
