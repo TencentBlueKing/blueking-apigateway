@@ -168,6 +168,13 @@ class AppPermissionApply(TimestampedModelMixin):
     )
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     apply_record_id = models.IntegerField(null=True, blank=True)
+    itsm_ticket_id = models.CharField(max_length=64, blank=True, default="", help_text=_("关联的 ITSM 工单 ID"))
+    itsm_callback_token = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text=_("ITSM 回调校验 token"),
+    )
 
     def __str__(self):
         return f"<AppPermissionApply: {self.id}>"
@@ -211,6 +218,7 @@ class AppPermissionRecord(models.Model):
     )
     status = models.CharField(max_length=16, choices=ApplyStatusEnum.get_choices(), db_index=True)
     comment = models.CharField(max_length=512, blank=True, default="")
+    itsm_ticket_id = models.CharField(max_length=64, blank=True, default="", help_text=_("关联的 ITSM 工单 ID"))
 
     objects: ClassVar[managers.AppPermissionRecordManager] = managers.AppPermissionRecordManager()
 

@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
+    FormattedGrantDimensionEnum,
     GrantDimensionEnum,
     PermissionActionEnum,
     PermissionApplyExpireDaysEnum,
@@ -654,6 +655,26 @@ class MCPServerListOutputSLZ(serializers.Serializer):
 
 
 # ===================== Gateway 下架/删除相关序列化器 =====================
+
+
+class ItsmCallbackTicketFormDataSLZ(serializers.Serializer):
+    apply_record_id = serializers.IntegerField(required=True, help_text="权限申请记录 ID")
+    grant_dimension = serializers.ChoiceField(
+        required=True,
+        choices=FormattedGrantDimensionEnum.get_choices(),
+        help_text="授权维度",
+    )
+
+
+class ItsmCallbackTicketSLZ(serializers.Serializer):
+    id = serializers.CharField(required=True, help_text="ITSM 工单 ID")
+    approve_result = serializers.BooleanField(required=True, help_text="审批结果")
+    form_data = ItsmCallbackTicketFormDataSLZ(required=True, help_text="工单表单数据")
+
+
+class ItsmCallbackInputSLZ(serializers.Serializer):
+    callback_token = serializers.CharField(required=True, allow_blank=False, help_text="回调 token")
+    ticket = ItsmCallbackTicketSLZ(required=True, help_text="工单详情")
 
 
 class GatewayUpdateStatusInputSLZ(serializers.Serializer):

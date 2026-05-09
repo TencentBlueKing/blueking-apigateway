@@ -87,6 +87,7 @@ class FormattedGrantDimensionEnum(StructuredEnum):
 
     GATEWAY = EnumField("gateway", label=_("网关"))
     RESOURCE = EnumField("resource", label=_("资源"))
+    MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
 
 
 # 默认的权限有效期天数

@@ -19,9 +19,14 @@
 from django.conf import settings
 from django.urls import include, path
 
-from . import views
+from . import itsm_views, views
 
 urlpatterns = [
+    path(
+        "itsm/callback/",
+        itsm_views.ItsmCallbackApi.as_view(),
+        name="openapi.v2.inner.itsm.callback",
+    ),
     # /api/v2/inner/ 用于 paasv3 内部调用; 鉴权：来自于网关（主动授权）
     # 所有的接口必须隐藏 + 不允许申请权限（需主动授权）
     # 作为 resource 注册到网关时

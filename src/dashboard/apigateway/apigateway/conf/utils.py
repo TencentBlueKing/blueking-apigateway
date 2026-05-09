@@ -169,6 +169,7 @@ def get_default_feature_flags(
     ai_open_api_base_url: str,
     enable_gateway_operation_status: bool,
     enable_run_data_metrics: bool,
+    enable_itsm4_permission_apply: bool,
 ) -> dict:
     return {
         # 是否展示"监控告警"子菜单
@@ -217,6 +218,8 @@ def get_default_feature_flags(
         ),
         # 是否开启 BK CLI 展示
         "ENABLE_BK_CLI": env.bool("FEATURE_FLAG_ENABLE_BK_CLI", False),
+        # 是否开启 ITSM 权限申请
+        "ENABLE_ITSM4_PERMISSION_APPLY": enable_itsm4_permission_apply,
     }
 
 
