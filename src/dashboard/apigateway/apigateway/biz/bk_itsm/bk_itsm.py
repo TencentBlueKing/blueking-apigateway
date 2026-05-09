@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class ItsmCallbackResultHandler:
     """处理 ITSM 回调审批结果"""
 
-    def handle(self, *, ticket: Dict[str, Any], callback_token: str):
+    def handle(self, ticket: Dict[str, Any], callback_token: str):
         form_data = ticket["form_data"]
         apply_record_id = form_data["apply_record_id"]
         grant_dimension = form_data["grant_dimension"]
