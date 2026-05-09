@@ -292,8 +292,6 @@
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
 import { copy } from '@/utils';
-import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import { getGatewayDetail } from '@/services/source/gateway';
 import {
   type IMCPAIConfig,
   deleteServer,
@@ -315,12 +313,6 @@ import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
 
-type ExtendedMCPServer = Awaited<ReturnType<typeof getServer>> & {
-  [key: string]: any
-};
-
-type IGatewayDetailType = IExtractApiReturn<typeof getGatewayDetail>;
-
 type IPanelType = {
   name: string
   label: string
@@ -340,7 +332,7 @@ const { divideRatio } = useMcpConfigDivideRatio();
 
 const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverId = ref(0);
-const server = ref<ExtendedMCPServer>({
+const server = ref<any>({
   id: 0,
   name: '',
   description: '',
@@ -371,7 +363,7 @@ const isEnabledOAuth = computed(() =>
 );
 const filteredPanels = computed(() => {
   if (!isEnablePrompt.value) {
-    panels.value = panels.value.filter((item: TPanelType) => !['prompts'].includes(item.name));
+    panels.value = panels.value.filter((item: any) => !['prompts'].includes(item.name));
   }
   return panels.value.filter((item: IPanelType) => item.show);
 });
@@ -428,7 +420,7 @@ watch(() => route.params, async () => {
   deep: true,
 });
 
-watch(() => gatewayStore.currentGateway, (newGateway: IGatewayDetailType, oldGateway: IGatewayDetailType) => {
+watch(() => gatewayStore.currentGateway, (newGateway, oldGateway) => {
   // 切换了网关，需要返回列表页
   if (!oldGateway || (newGateway?.id === oldGateway.id)) {
     return;
@@ -506,10 +498,10 @@ const handleDelete = () => {
  * @param panelName - 目标面板名称
  */
 const updateCount = (count?: number, panelName?: string) => {
-  const { tools_count, prompts } = server.value ?? {} as IMCPServer;
+  const { tools_count, prompts } = server.value ?? {} as any;
   const panelCountMap: Record<string, () => number> = {
     tools: () => tools_count ?? 0,
-    prompts: () => (prompts as IMCPServerPrompt[])?.length ?? 0,
+    prompts: () => (prompts as any[])?.length ?? 0,
     ...(panelName ? { [panelName]: () => count ?? 0 } : {}),
   };
   panels.value.forEach((item: IPanelType) => {
@@ -541,7 +533,7 @@ const updateCount = (count?: number, panelName?: string) => {
 
     :deep(.bk-tab-content) {
       padding: 0;
-      background-color: #ffffff;
+      background-color: #fff;
     }
 
     .bk-resize-layout-right {
@@ -559,7 +551,7 @@ const updateCount = (count?: number, panelName?: string) => {
           display: block;
 
           .bk-resize-trigger {
-            background-color: #ffffff;
+            background-color: #fff;
           }
         }
       }
@@ -580,7 +572,7 @@ const updateCount = (count?: number, panelName?: string) => {
   display: flex;
   padding: 24px;
   margin-bottom: 16px;
-  background-color: #ffffff;
+  background-color: #fff;
   box-shadow: 0 2px 4px 0 #1919290d;
 
   .server-name {
@@ -639,7 +631,7 @@ const updateCount = (count?: number, panelName?: string) => {
       font-size: 14px;
       color: #979ba5;
       cursor: pointer;
-      background-color: #ffffff;
+      background-color: #fff;
       border-radius: 4px;
     }
   }
@@ -656,8 +648,8 @@ const updateCount = (count?: number, panelName?: string) => {
     min-width: 0;
 
     .column {
-      width: 100%;
       display: flex;
+      width: 100%;
       flex-direction: column;
       gap: 8px;
     }
@@ -675,8 +667,8 @@ const updateCount = (count?: number, panelName?: string) => {
       }
 
       .value {
-        margin-left: 8px;
         min-width: 0;
+        margin-left: 8px;
         word-break: break-all;
       }
 

@@ -412,7 +412,6 @@ import {
   ResizeLayout,
 } from 'bkui-vue';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { IFormMethod, ITableMethod } from '@/types/common';
 import { getStageList } from '@/services/source/stage';
 import { getVersionDetail } from '@/services/source/resource';
@@ -422,7 +421,6 @@ import {
   type IMCPServerPrompt,
   type IMCPServerTool,
   type IMCPToolSelections,
-  type ToolNameRowType,
   createServer,
   getMcpCategoryList,
   getServer,
@@ -430,13 +428,6 @@ import {
   getServerPromptsDetail,
   patchServer,
 } from '@/services/source/mcp-server';
-import type {
-  IMCPServerRemotePromptsOutput,
-  IMCPServerRetrieveOutput,
-  IStageListOutput,
-} from '@/services/types/body/gateways';
-import type { IMCPServerCreateInputSLZ } from '@/services/types/responses/post/gateways';
-import type { IAuthConfig } from '@/types/resource';
 import { usePopInfoBox, useSidebar } from '@/hooks';
 import { HTTP_METHODS } from '@/constants';
 import {
@@ -451,7 +442,6 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
 type TabType = 'tool' | 'prompt';
-type TableEmptyType = 'empty' | 'search-empty' | 'searchEmpty';
 
 export interface IResourceTabItem {
   label: string
@@ -493,7 +483,7 @@ let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 持久化实例，仅创建一次
 const resourceNameToIndexMap = new Map<string, number>();
-const authorizedPromptIds = new Set<number>();
+const authorizedPromptIds = new Set<number | string>();
 
 const footerRef = ref<HTMLDivElement | null>(null);
 const resourceRef = ref<HTMLDivElement | null>(null);
@@ -504,7 +494,7 @@ const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
 const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
-const defaultFormData = ref<Partial<IMCPServerRetrieveOutput>>({
+const defaultFormData = ref<any>({
   name: '',
   title: '',
   url: '',
@@ -524,24 +514,24 @@ const promptDetailLoading = ref(false);
 const isOverflow = ref(false);
 const filterKeyword = ref('');
 const activeTab = ref<TabType>('tool');
-const promptTableEmptyType = ref<TableEmptyType>('empty');
+const promptTableEmptyType = ref<any>('empty');
 const resizePreviewWidth = ref('100%');
-const formData = ref<Partial<IMCPServerRetrieveOutput>>(cloneDeep(defaultFormData.value));
+const formData = ref<any>(cloneDeep(defaultFormData.value));
 const toolFilterData = ref<Record<string, any>>({});
-const curPromptData = ref<Partial<IMCPServerPrompt>>({});
-const stageList = ref<IStageListOutput[]>([]);
-const resourceList = ref<IMCPServerTool[]>([]);
-const promptTableData = ref<IMCPServerPrompt[]>([]);
-const toolSelections = ref<IMCPToolSelections[]>([]);
-const promptSelections = ref<IMCPServerPrompt[]>([]);
-const allSelections = ref<Array<IMCPServerTool | IMCPServerPrompt>>([]);
-const noPermPrompt = ref<IMCPServerPrompt[]>([]);
-const promptLabels = ref<ISearchItem[]>([]);
-const filterPromptValues = ref<ISearchItem[]>([]);
-const categoriesList = ref<IMCPServerCategory[]>([]);
-const hiddenCategoriesList = ref<IMCPServerCategory[]>([]);
+const curPromptData = ref<any>({});
+const stageList = ref<any>([]);
+const resourceList = ref<any>([]);
+const promptTableData = ref<any>([]);
+const toolSelections = ref<any>([]);
+const promptSelections = ref<any>([]);
+const allSelections = ref<any>([]);
+const noPermPrompt = ref<any>([]);
+const promptLabels = ref<any>([]);
+const filterPromptValues = ref<any>([]);
+const categoriesList = ref<any>([]);
+const hiddenCategoriesList = ref<any>([]);
 
-const customMethodsList = computed<IMethodFilterItem[]>(() => {
+const customMethodsList = computed<any>(() => {
   const methods = HTTP_METHODS.map(item => ({
     label: item.name,
     value: item.id,
@@ -556,7 +546,7 @@ const customMethodsList = computed<IMethodFilterItem[]>(() => {
   ];
 });
 
-const toolNameRowData = shallowRef<ToolNameRowType>({} as ToolNameRowType);
+const toolNameRowData = shallowRef<any>({});
 const resourceTabList = shallowRef<IResourceTabItem[]>([
   {
     label: t('工具'),
@@ -569,12 +559,12 @@ const resourceTabList = shallowRef<IResourceTabItem[]>([
     required: false,
   },
 ]);
-const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const toolTableColumns = shallowRef<any>([
   {
     title: t('资源名称'),
     colKey: 'name',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: IMCPServerTool }) => {
+    cell: (_: VNode, { row }: { row: any }) => {
       if (!row.name) {
         return '--';
       }
@@ -598,7 +588,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
             onMouseleave={(e: MouseEvent) =>
               toolTableRef.value?.handleCellLeave({
@@ -606,7 +596,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
             onClick={() => handleToolNameClick(row)}
           >
@@ -620,7 +610,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('工具名称'),
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: IMCPServerTool }) => {
+    cell: (_: VNode, { row }: { row: any }) => {
       row.tool_name = row.tool_name ?? row.name;
       if (!row.tool_name) {
         return '--';
@@ -645,7 +635,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
             onMouseleave={(e: MouseEvent) =>
               toolTableRef.value?.handleCellLeave({
@@ -653,7 +643,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
           >
             { row.tool_name }
@@ -661,7 +651,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
           { row.has_openapi_schema && (
             <PopConfirm
               ref={popoverConfirmRef}
-              trigger={'manual' as S}
+              trigger="click"
               width="400"
               placement="right"
               extCls="tool-name-popover"
@@ -753,9 +743,9 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
       placements: ['right'],
       list: customMethodsList.value,
     },
-    cell: (_: VNode, { row }: { row: IMCPServerTool }) => (
+    cell: (_: VNode, { row }: { row: any }) => (
       <BkTag
-        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap] as string}
+        theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
       >
         {row.method}
       </BkTag>
@@ -772,7 +762,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     ellipsis: true,
   },
 ]);
-const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const promptTableColumns = shallowRef<any>([
   {
     title: t('Prompt 名称'),
     colKey: 'name',
@@ -796,7 +786,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
             onMouseleave={(e: MouseEvent) =>
               promptTableRef.value?.handleCellLeave({
@@ -804,7 +794,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 row,
               } as {
                 e: MouseEvent
-                row: IMCPServer
+                row: any
               })}
           >
             { row.name }
@@ -824,7 +814,7 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
-const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
+const privatePromptColumns = shallowRef<any>([
   {
     title: 'Prompt',
     colKey: 'name',
@@ -873,7 +863,7 @@ const toolNameRules = {
   ],
 };
 
-const methodTagThemeMap: Record<string, string> = {
+const methodTagThemeMap: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
   POST: 'info',
   GET: 'success',
   DELETE: 'danger',
@@ -890,8 +880,8 @@ let resizeLayoutConfig: IResizeLayoutConfig = {
 const gatewayId = computed<number | undefined>(() => gatewayStore.currentGateway?.id);
 const isEditMode = computed<boolean>(() => !!serverId);
 const isEnablePrompt = computed<boolean>(() => featureFlagStore?.flags?.ENABLE_MCP_SERVER_PROMPT);
-const stage = computed<IStageListOutput | undefined>(() =>
-  stageList.value.find(sg => sg.id === formData.value.stage_id),
+const stage = computed<any>(() =>
+  stageList.value.find((sg: any) => sg.id === formData.value.stage_id),
 );
 const stageName = computed<string>(() => stage.value?.name || '');
 const serverNamePrefix = computed<string>(() => `${gatewayStore.currentGateway?.name}-${stageName.value}-`);
@@ -900,7 +890,7 @@ const sliderTitle = computed<string>(() => {
     ? t('编辑 {n}', { n: formData.value.name })
     : t('创建 MCP Server');
 });
-const toolTableEmptyType = computed<TableEmptyType>(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
+const toolTableEmptyType = computed<any>(() => filterKeywordDebounced.value?.trim()?.toLowerCase()
   || toolFilterData.value?.method?.length > 0
   ? 'searchEmpty'
   : 'empty');
@@ -939,10 +929,10 @@ const filteredPromptList = computed<IMCPServerPrompt[]>(() => {
   }
 
   const searchConditions = {
-    name: filterPromptValues.value.find(item => item.id === 'name')?.values[0]?.id ?? '',
-    content: filterPromptValues.value.find(item => item.id === 'content')?.values[0]?.id ?? '',
-    updated_by: filterPromptValues.value.find(item => item.id === 'updated_by')?.values[0]?.id ?? [],
-    labels: filterPromptValues.value.find(item => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
+    name: filterPromptValues.value.find((item: any) => item.id === 'name')?.values[0]?.id ?? '',
+    content: filterPromptValues.value.find((item: any) => item.id === 'content')?.values[0]?.id ?? '',
+    updated_by: filterPromptValues.value.find((item: any) => item.id === 'updated_by')?.values[0]?.id ?? [],
+    labels: filterPromptValues.value.find((item: any) => item.id === 'labels')?.values.map((v: { id: string }) => v.id) ?? [],
   };
   const results = promptTableData.value?.filter((item: IMCPServerPrompt) => {
     const { name, code, content, updated_by = '', labels = [] } = item;
@@ -980,8 +970,8 @@ const filteredPromptList = computed<IMCPServerPrompt[]>(() => {
 
   return results;
 });
-const renderPreviewByTab = computed<Array<IMCPServerTool | IMCPServerPrompt>>(() => {
-  return allSelections.value.filter(item => item.mode_type === activeTab.value);
+const renderPreviewByTab = computed<Array<any>>(() => {
+  return allSelections.value.filter((item: any) => item.mode_type === activeTab.value);
 });
 const filterPromptConditions = computed<ISearchItem[]>(() => [
   {
@@ -1008,9 +998,9 @@ const filterPromptConditions = computed<ISearchItem[]>(() => [
   },
 ]);
 const noValidStage = computed<boolean>(() =>
-  stageList.value.length > 0 && stageList.value.every(sg => sg.status === 0));
+  stageList.value.length > 0 && stageList.value.every((sg: any) => sg.status === 0));
 const isCurrentStageValid = computed<boolean>(() =>
-  stageList.value.find(sg => sg.id === formData.value.stage_id)?.status === 1);
+  stageList.value.find((sg: any) => sg.id === formData.value.stage_id)?.status === 1);
 // 处理工具oauth态
 const isEnabledOAuth = computed<boolean>(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && formData.value.oauth2_public_client_enabled,
@@ -1018,21 +1008,21 @@ const isEnabledOAuth = computed<boolean>(() =>
 // 选中的应用态工具数据
 const appAuthStatusList = computed<IMCPServerTool[]>(() => {
   if (!isEnabledOAuth.value) return [];
-  return toolSelections.value.filter(item => renderOAuthConfig(item)?.app_verified_required);
+  return toolSelections.value.filter((item: any) => renderOAuthConfig(item)?.app_verified_required);
 });
 // 选中工具项是否存在应用态或用户态数据
 const isExistOAuthData = computed<boolean>(() =>
-  isEnabledOAuth.value && toolSelections.value.some(auth =>
+  isEnabledOAuth.value && toolSelections.value.some((auth: any) =>
     renderOAuthConfig(auth).auth_verified_required || renderOAuthConfig(auth).app_verified_required,
   ),
 );
 
 // 开启OAuth2 公开客户端模式才展示工具应用态或用户态
-const isEnabledOAuthTag = (payload: IMCPServerTool | IMCPServerPrompt): boolean => {
+const isEnabledOAuthTag = (payload: any): boolean => {
   return payload.mode_type === 'tool' && isEnabledOAuth.value;
 };
 
-const renderOAuthConfig = (payload: IMCPServerTool | IMCPServerPrompt): IAuthConfig => {
+const renderOAuthConfig = (payload: any) => {
   try {
     const config = payload.contexts?.resource_auth?.config;
     return config ? JSON.parse(config) : {};
@@ -1133,9 +1123,9 @@ const resetResizeLayout = () => {
   });
 };
 
-const toolDisabledSelection = (row: IMCPServerTool) => {
+const toolDisabledSelection = (row: any) => {
   // 先判断当前行是否已被勾选（存在于 toolSelections 中）
-  const isSelected = toolSelections.value.some(item => item.id === row.id);
+  const isSelected = toolSelections.value.some((item: any) => item.id === row.id);
 
   // 设置禁用提示语
   row.selectionTip = isSelected
@@ -1163,7 +1153,7 @@ const clearValidate = () => {
   formRef.value?.clearValidate();
 };
 
-const handleSetToolRowClass = ({ row }: { row: IMCPServerTool }) => {
+const handleSetToolRowClass = ({ row }: { row: any }) => {
   if (!row.has_openapi_schema) {
     return 'is-disabled-tool';
   }
@@ -1188,7 +1178,7 @@ const handleResizeLayout = (resizeWidth: number) => {
 const isExistPrivatePrompt = (): Promise<boolean> => {
   // 此处逻辑是为了强制触发 categories 的 blur 事件以关闭 TagInput 下拉
   serverBasicFormRef.value?.handleCategoriesBlur();
-  const privateData = promptSelections.value.filter(item => !item.is_public);
+  const privateData = promptSelections.value.filter((item: any) => !item.is_public);
   if (!privateData.length) {
     // @ts-expect-error 返回 true 代表无私有 Prompt，可继续
     return true;
@@ -1265,14 +1255,14 @@ const handleSubmit = async (): Promise<void> => {
   try {
     submitLoading.value = true;
     let categoryIds = categoriesList.value
-      .filter(cg => formData.value.categories.includes(cg.name))
-      .map(cname => cname.id);
+      .filter((cg: any) => formData.value.categories.includes(cg.name))
+      .map((cname: any) => cname.id);
     if (hiddenCategoriesList.value.length) {
-      categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map(item => item.id)];
+      categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map((item: any) => item.id)];
     }
-    let params: Partial<IMCPServerCreateInputSLZ> = {
-      resource_names: toolSelections.value.map(item => item.name),
-      tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
+    let params: any = {
+      resource_names: toolSelections.value.map((item: any) => item.name),
+      tool_names: toolSelections.value.map((item: any) => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
       category_ids: categoryIds,
     };
@@ -1326,7 +1316,7 @@ const fetchStageList = async () => {
   const response = await getStageList(gatewayId.value!);
   stageList.value = response || [];
   if (!formData.value.stage_id) {
-    formData.value.stage_id = stageList.value.find(sg => sg.status === 1)?.id ?? 0;
+    formData.value.stage_id = stageList.value.find((sg: any) => sg.status === 1)?.id ?? 0;
   }
   if (formData.value.stage_id) {
     await fetchStageResources();
@@ -1399,7 +1389,7 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
       resourceList.value = updatedResourceList;
 
       // 过滤出匹配的资源项
-      const resourceToolData = updatedResourceList.filter(item =>
+      const resourceToolData = updatedResourceList.filter((item: any) =>
         resourceNameToIndexMap.has(item.name),
       );
         // 分片更新：先更20条，快速渲染
@@ -1475,7 +1465,7 @@ const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
         // 处理无权限数据
         noPermPrompt.value = prompts
           .filter((item: IMCPServerPrompt) => !authorizedPromptIds.has(item.id))
-          .map((item: string) => ({
+          .map((item: any) => ({
             ...item,
             mode_type: 'prompt',
             is_no_perm: true,
@@ -1535,7 +1525,7 @@ const fetchServer = async () => {
       tool_names = [],
       prompts = [],
       categories = [],
-    } = (response ?? {}) as IMCPServerRetrieveOutput;
+    } = (response ?? {});
 
     formData.value = {
       ...formData.value,
@@ -1561,7 +1551,7 @@ const fetchServer = async () => {
     finally {
       // 启动资源渲染（微任务执行，不阻塞主线程）
       queueMicrotask(() => renderToolResource(resource_names, tool_names));
-      queueMicrotask(() => renderPromptResource(prompts as IMCPServerPrompt));
+      queueMicrotask(() => renderPromptResource(prompts as any));
       // 统一更新全选数据
       updateAllSelections();
     }
@@ -1599,13 +1589,13 @@ const fetchStageResources = async () => {
 };
 
 const fetchPromptResources = async () => {
-  const res: IMCPServerRemotePromptsOutput = await getServerPrompts(gatewayId.value!);
+  const res = await getServerPrompts(gatewayId.value!);
   promptTableData.value = res?.prompts ?? [];
 
   if (promptTableData.value.length) {
     curPromptData.value = promptTableData.value[0];
     const allLabels = promptTableData.value.map((item: IMCPServerPrompt) => item?.labels ?? []).flat(1);
-    promptLabels.value = uniq(allLabels).map((item: string) => {
+    promptLabels.value = uniq(allLabels).map((item: any) => {
       return {
         name: item,
         id: item,
@@ -1618,7 +1608,7 @@ const fetchPromptResources = async () => {
 const fetchPromptResourcesDetail = async () => {
   promptDetailLoading.value = true;
   try {
-    const res: IMCPServerRemotePromptsOutput = await getServerPromptsDetail(
+    const res: any = await getServerPromptsDetail(
       gatewayId.value!,
       {
         ids: [curPromptData.value.id],
@@ -1685,23 +1675,23 @@ const handleRemoveResource = ({
 }) => {
   const removeData = `${mode_type}&${name}&${id}`;
   if (['tool'].includes(mode_type!)) {
-    toolSelections.value = toolSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+    toolSelections.value = toolSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
     toolTableRef.value?.setSelectionData(toolSelections.value);
   }
   else {
-    promptSelections.value = promptSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+    promptSelections.value = promptSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
     promptTableRef.value?.setSelectionData(promptSelections.value);
   }
-  allSelections.value = allSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+  allSelections.value = allSelections.value.filter((item: any) => `${mode_type}&${item.name}&${item.id}` !== removeData);
 };
 
-const handleToolSelectionChange = ({ selections }: IMCPServerTool[]) => {
+const handleToolSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     toolSelections.value = selections;
     // 保留 Prompt 项，替换工具项
-    const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
-    const toolItems = selections.map(item => ({
+    const promptItems = allSelections.value.filter((item: any) => item.mode_type === 'prompt');
+    const toolItems = selections.map((item: any) => ({
       ...item,
       mode_type: 'tool',
     }));
@@ -1710,13 +1700,13 @@ const handleToolSelectionChange = ({ selections }: IMCPServerTool[]) => {
   }, 0);
 };
 
-const handlePromptSelectionChange = ({ selections }: IMCPServerPrompt[]) => {
+const handlePromptSelectionChange = ({ selections }: any) => {
   // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
   setTimeout(() => {
     promptSelections.value = selections;
     // 保留工具项，替换 Prompt 项
-    const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
-    const promptItems = selections.map(item => ({
+    const toolItems = allSelections.value.filter((item: any) => item.mode_type === 'tool');
+    const promptItems = selections.map((item: any) => ({
       ...item,
       mode_type: 'prompt',
     }));
@@ -1728,7 +1718,7 @@ const handleToolFilterChange = (filters: Record<string, unknown>): void => {
   toolFilterData.value = { ...filters };
 };
 
-const handleEditToolName = (row: IMCPServerTool) => {
+const handleEditToolName = (row: any) => {
   toolNameRowData.value = {
     ...row,
     tool_name: row.tool_name ?? row.name,
@@ -1736,10 +1726,10 @@ const handleEditToolName = (row: IMCPServerTool) => {
   };
 };
 
-const handleConfirmToolName = async (row: IMCPServerTool) => {
+const handleConfirmToolName = async (row: any) => {
   try {
     await toolNameRef.value?.validate();
-    const toolData: IMCPServerTool | undefined = resourceList.value.find(item => item.id === row.id);
+    const toolData: IMCPServerTool | undefined = resourceList.value.find((item: any) => item.id === row.id);
     if (toolData) {
       (toolData as IMCPServerTool).tool_name = toolNameRowData.value.tool_name;
     }
@@ -1802,12 +1792,12 @@ const handleClearSelections = (type?: string) => {
 
 const handleToolClearSelection = () => {
   toolSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
+  allSelections.value = allSelections.value.filter((item: any) => item.mode_type !== 'tool');
 };
 
 const handlePromptClearSelection = () => {
   promptSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
+  allSelections.value = allSelections.value.filter((item: any) => item.mode_type !== 'prompt');
 };
 
 const handleToolClearFilter = () => {
@@ -1829,8 +1819,8 @@ const handleRefreshClick = async () => {
   toolNameRowData.value = {};
   searchLoading.value = true;
   await fetchStageList();
-  toolSelections.value = toolSelections.value.filter(item =>
-    resourceList.value.some(resource => resource.id === item.id),
+  toolSelections.value = toolSelections.value.filter((item: any) =>
+    resourceList.value.some((resource: any) => resource.id === item.id),
   );
   searchLoading.value = false;
 };
@@ -1841,7 +1831,7 @@ const handleStageSelectChange = () => {
   fetchStageResources();
 };
 
-const handleToolNameClick = (row: IMCPServerTool) => {
+const handleToolNameClick = (row: any) => {
   if (gatewayStore.currentGateway?.kind === 1) return;
   const routeData = router.resolve({
     name: 'ResourceEdit',

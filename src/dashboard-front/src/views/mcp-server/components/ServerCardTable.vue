@@ -44,14 +44,12 @@
 <script lang="tsx" setup>
 import { locale, t } from '@/locales';
 import { Button, Tag } from 'bkui-vue';
-import type { FilterValue, PrimaryTableProps, TableColumnProps } from '@blueking/tdesign-ui';
-import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
+import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import {
   type IMCPFilterParams,
   type IMCPServerCategory,
-  type IMCPServerFilterOptions,
   getServers,
 } from '@/services/source/mcp-server';
 import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
@@ -61,9 +59,8 @@ import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number] & { is_checked: boolean };
-type TableColumn = TableColumnProps<MCPServerItem>;
 
-interface IProps { filterCondition?: IMCPServerFilterOptions }
+interface IProps { filterCondition?: any }
 
 interface IEmits {
   'view': [id: number]
@@ -86,9 +83,8 @@ const searchValue = defineModel('searchValue', {
   type: Array,
 });
 
-const mcpSelections = defineModel('mcpSelections', {
+const mcpSelections = defineModel<any>('mcpSelections', {
   required: true,
-  type: [Map, Array],
 });
 
 const filterData = defineModel<Partial<IMCPServer>>('filterData', {
@@ -130,7 +126,7 @@ const hiddenColumn = computed(() => {
   return hiddenColumns;
 });
 
-const tableColumns = shallowRef<TableColumn[]>([
+const tableColumns = shallowRef<any>([
   {
     title: t('名称'),
     colKey: 'name',
@@ -268,7 +264,7 @@ const tableColumns = shallowRef<TableColumn[]>([
       }),
     },
     cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      const categoriesFilters = row.categories?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
+      const categoriesFilters = (row.categories as unknown as any[])?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
       return categoriesFilters.length
         ? (
           <div class="w-160px">
@@ -300,7 +296,7 @@ const tableColumns = shallowRef<TableColumn[]>([
         ? (
           <div class="w-160px">
             <RenderTagOverflow
-              data={row.labels}
+              data={row.labels as string[]}
             />
           </div>
         )
@@ -483,11 +479,11 @@ const getTableData = async (params: IMCPFilterParams): Promise<ICountAndResults<
     }
   });
 
-  const res: IMCPServer = await getServers(apigwId.value, requestParams);
+  const res: any = await getServers(apigwId.value, requestParams as any);
   return res;
 };
 
-const disabledSelection = (row: IMCPServer) => {
+const disabledSelection = (row: any): any => {
   if (!row.status) {
     row.selectionTip = t('已停用的MCP无法批量操作');
   }
@@ -533,7 +529,7 @@ const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
   return '';
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: {
+const handleSortChange: any = (sort: {
   sortBy: string
   descending: boolean
 } | null) => {
@@ -551,9 +547,9 @@ const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: {
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   handleTableFilterChange({
     filterItem,
-    filterData: filterData as Partial<IMCPServer>,
-    searchOptions: searchData as ISearchItem[],
-    searchParams: searchValue as ISearchValue[],
+    filterData: filterData as any,
+    searchOptions: searchData as any,
+    searchParams: searchValue as any,
   });
   getList();
 };
@@ -564,7 +560,7 @@ const handleCopyConfig = (row: IMCPServer) => {
 };
 
 // 处理复选框
-const handleSelectionChange: PrimaryTableProps['onSelectChange'] = ({ selections }: Partial<IMCPServer[]>) => {
+const handleSelectionChange: any = ({ selections }: any) => {
   emit('selection-change', selections);
 };
 

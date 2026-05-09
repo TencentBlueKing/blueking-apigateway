@@ -3,7 +3,7 @@
     v-model="isShow"
     v-bind="$attrs"
     :width="960"
-    :title="$t('默认使用指引')"
+    :title="t('默认使用指引')"
   >
     <template #default>
       <div class="p-l-40px p-r-24px">
@@ -27,6 +27,8 @@ const isShow = defineModel('isShow', {
 const { markdownText = '' } = defineProps<IProps>();
 
 interface IProps { markdownText?: string }
+
+const { t } = useI18n();
 
 const md = new MarkdownIt({
   linkify: true,

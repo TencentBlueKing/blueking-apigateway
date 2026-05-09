@@ -139,7 +139,7 @@ import TableEmpty from '@/components/table-empty/Index.vue';
 import type { ShallowRef } from 'vue';
 
 interface IProps {
-  apiMethod?: (params?: Record<string, any>) => Promise<unknown>
+  apiMethod?: (params?: any) => Promise<unknown>
   disabledCheckSelection?: (row: TableRowData) => boolean
   columns?: PrimaryTableProps['columns']
   tableRowKey?: string

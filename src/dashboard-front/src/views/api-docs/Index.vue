@@ -493,8 +493,8 @@ watch(
 );
 
 const getTableData = async (params: {
-  offset: number
-  limit: number
+  offset?: number
+  limit?: number
 } = {},
 ) => getGatewaysDocs({
   ...params,
