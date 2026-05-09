@@ -139,7 +139,7 @@
               @suspend="handleSuspend"
               @copy-config="handleCopyConfig"
               @selection-change="handleSelectionChange"
-              @checked="(isChecked: boolean) => handleChecked(isChecked, server)"
+              @checked="(isChecked) => handleChecked(isChecked, server)"
               @click.stop="() => handleView(server.id)"
             >
               <template #mcpStatus>
@@ -212,7 +212,6 @@ import { vIntersectionObserver } from '@vueuse/components';
 import {
   type IMCPFilterParams,
   type IMCPServerCategory,
-  type IMCPServerFilterOptions,
   type IMCPServerWithUIState,
   deleteServer,
   getMcpBatchCopyConfigList,
@@ -231,8 +230,6 @@ import AgMcpCard from '@/components/ag-mcp-card/Index.vue';
 import AgMcpCopyConfigDialog from '@/components/ag-mcp-card/components/CopyConfigDialog.vue';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
-type MCPServerType = Awaited<ReturnType<typeof getServers>>['results'][number];
-
 interface IProps { gatewayId?: number }
 
 const { gatewayId = 0 } = defineProps<IProps>();
@@ -244,7 +241,7 @@ const featureFlagStore = useFeatureFlag();
 const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
 const serverCardTableRef = ref<InstanceType<typeof ServerCardTable>>();
 const mcpListRef = ref<HTMLDivElement | null>(null);
-const mcpList = ref<MCPServerType[]>([]);
+const mcpList = ref<any[]>([]);
 const editingServerId = ref();
 const activeStatusTab = ref('all');
 const activeViewTab = ref('card');
@@ -257,18 +254,18 @@ const pagination = ref({
   count: 0,
   hasNoMore: false,
 });
-const filterData = ref<IMCPFilterParams>({
+const filterData = ref<any>({
   order_by: '-updated_time',
   status: activeStatusTab.value,
 });
-const mcpFilterOptions = ref<IMCPServerFilterOptions & Record<string, any>>({
+const mcpFilterOptions = ref<any>({
   stages: [],
   labels: [],
   categories: [],
 });
 const searchValue = ref([]);
 // 批量复制内容
-const selections = ref<Map<number, IMCPServerWithUIState>>(new Map());
+const selections = ref<any>(new Map());
 
 // 批量复制配置hooks
 const {
@@ -276,7 +273,7 @@ const {
   mcpConfigList,
   fetchMcpBatchCopyConfigList,
 } = useMcpBatchCopyConfig({
-  fetchApi: getMcpBatchCopyConfigList,
+  fetchApi: getMcpBatchCopyConfigList as any,
   gatewayId,
 });
 
@@ -430,7 +427,7 @@ const fetchMcpServerList = async () => {
         ? filterData.value.categories.join()
         : filterData.value?.categories,
     };
-    const res = await getServers(gatewayId, params as IGatewaysMcpServersListQuery);
+    const res = await getServers(gatewayId, params as any);
     const { results = [], count = 0 } = res ?? {};
     mcpList.value = current === 1 ? results : [...mcpList.value, ...results];
     pagination.value = {
@@ -452,7 +449,7 @@ const fetchMcpServerList = async () => {
 
 // 获取 MCPServer 搜索过滤选项（环境、标签、分类）
 const fetchMcpServerFilterOptions = async () => {
-  const res: IMCPServerFilterOptionsOutput = await getMcpServerFilterOptions(gatewayId);
+  const res: any = await getMcpServerFilterOptions(gatewayId);
   if (res?.categories?.length) {
     // MCPServer筛选掉官方和精选分类
     res.categories = res?.categories.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
@@ -568,7 +565,7 @@ const handleDelete = async (id: number) => {
   }
 };
 
-const handleCopyConfig = async (row: IMCPServerWithUIState) => {
+const handleCopyConfig = async (row: any) => {
   isShowConfig.value = true;
   await fetchMcpBatchCopyConfigList({ row });
 };
@@ -583,7 +580,7 @@ const handleChecked = (isChecked: boolean, row: IMCPServerWithUIState) => {
   }
 };
 
-const handleSelectionChange = (selection: IMCPServerWithUIState[]) => {
+const handleSelectionChange = (selection: any[]) => {
   selections.value.clear();
   selection.forEach(item => selections.value.set(item.id, item));
 };
@@ -651,13 +648,13 @@ const handleSearch = () => {
   const params: IMCPFilterParams = { order_by: filterData.value.order_by || '-updated_time' };
   searchValue.value.forEach((option: ISearchSelect) => {
     if (option.values) {
-      params[option.id] = !['categories'].includes(option.id)
+      params[option.id] = !['categories'].includes(option.id as unknown as string)
         ? option.values?.[0]?.id
         : option.values.map((item: {
           name: string
           id: number | string
         }) => item.id);
-    };
+    }
   });
   filterData.value = params;
   cardEmptyType.value = Object.keys(params).length > 0 ? 'searchEmpty' : undefined;
@@ -668,9 +665,6 @@ const handleClearFilter = () => {
   filterData.value = {
     order_by: '-updated_time',
     status: activeStatusTab.value,
-  } as {
-    order_by: string
-    status: number
   };
   searchValue.value = [];
   cardEmptyType.value = undefined;

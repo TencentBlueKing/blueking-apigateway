@@ -21,7 +21,7 @@
     v-model="isShow"
     v-bind="$attrs"
     :width="960"
-    :title="$t('自定义使用指引')"
+    :title="t('自定义使用指引')"
     :init-data="defaultFormData"
     @compare="handleCompare"
     @closed="handleCancel"
@@ -81,7 +81,6 @@ import { cloneDeep } from 'lodash-es';
 import { Form, Message } from 'bkui-vue';
 import type MavonEditor from 'mavon-editor';
 import type { IFormMethod, IMavonEditorProps } from '@/types/common';
-import type { IMCPServerRetrieveOutput } from '@/services/types/body/gateways';
 import { addCustomServerGuideDoc, updateCustomServerGuideDoc } from '@/services/source/mcp-server';
 import AgSideSlider from '@/components/ag-sideslider/Index.vue';
 
@@ -166,7 +165,7 @@ watch(() => markdownText, (newVal: string) => {
   setFormData({ content: newVal });
 }, { immediate: true });
 
-const handleCompare = (callback: (data: Partial<IMCPServerRetrieveOutput>) => void) => {
+const handleCompare = (callback: (data: any) => void) => {
   callback(cloneDeep(formData.value));
 };
 

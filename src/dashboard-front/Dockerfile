@@ -1,16 +1,16 @@
 # npm part
-FROM node:20.19.4-bookworm AS builder
+FROM node:24.15.0-bookworm AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json /app/
 
 ENV NODE_OPTIONS=--max_old_space_size=8192
 
-RUN npm install -g npm@11.5.2
+RUN npm install -g npm@11.12.1
 RUN npm install --force
 
 COPY . /app
-RUN npm run build-only
+RUN npm run build
 
 # nginx part
 FROM tencentos/tencentos4-minimal:4.4-v20250922

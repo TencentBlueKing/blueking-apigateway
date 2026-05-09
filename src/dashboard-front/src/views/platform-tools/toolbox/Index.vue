@@ -129,7 +129,7 @@ const handleToolNavClick = (tool: ITool) => {
   curTool.value = tool;
 };
 
-watch(() => route.query.toolbox_id, (value: string) => {
+watch(() => route.query.toolbox_id, (value) => {
   if (value) {
     curTool.value = toolList.value.find(item => item.id === Number(value)) ?? toolList.value[0];
     router.replace({
@@ -146,8 +146,8 @@ watch(() => route.query.toolbox_id, (value: string) => {
 <style lang="scss" scoped>
 
 .toolbox-page-wrapper {
-  background-color: #f5f7fa;
   height: calc(100vh - 106px);
+  background-color: #f5f7fa;
 }
 
 .resize-left-wrapper {
@@ -162,11 +162,11 @@ watch(() => route.query.toolbox_id, (value: string) => {
   .tool-nav-item {
     width: 288px;
     height: 58px;
-    background: #fff;
-    box-shadow: 0 2px 4px 0 #1919290d;
-    border-radius: 2px;
     padding: 8px 16px;
     cursor: pointer;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 2px 4px 0 #1919290d;
 
     &:hover {
       background: #e1ecff;
@@ -185,30 +185,31 @@ watch(() => route.query.toolbox_id, (value: string) => {
     }
 
     .tool-nav-item-name {
-      font-weight: 700;
       font-size: 14px;
-      color: #313238;
+      font-weight: 700;
       line-height: 22px;
+      color: #313238;
     }
 
     .tool-nav-item-desc {
-      font-size: 12px;
-      color: #979ba5;
-      line-height: 20px;
-      white-space: nowrap;
       overflow: hidden;
+      font-size: 12px;
+      line-height: 20px;
+      color: #979ba5;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 }
 
 .main-content-wrap {
+  height: 100%;
   padding: 20px 24px 0 32px;
   background-color: #fff;
-  height: 100%;
 }
 
 // 变更伸缩线样式
+
 :deep(.bk-resizeLayout-left > .bk-resizeLayout-aside) {
   border-right: none;
 }
