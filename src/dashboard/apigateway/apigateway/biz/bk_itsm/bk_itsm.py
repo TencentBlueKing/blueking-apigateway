@@ -72,7 +72,6 @@ class ItsmCallbackResultHandler:
 
     @staticmethod
     def _validate_callback_token_and_ticket_id(
-        *,
         local_callback_token: str,
         callback_token: str,
         local_ticket_id: str,
@@ -81,16 +80,8 @@ class ItsmCallbackResultHandler:
         log_id_field: str,
         log_id_value: int,
     ):
-        if not local_callback_token:
-            logger.warning(
-                "%s callback token missing, %s=%s",
-                log_prefix,
-                log_id_field,
-                log_id_value,
-            )
-            raise error_codes.INVALID_ARGUMENT.format("invalid callback_token")
-
-        if local_callback_token != callback_token:
+        # 校验回调token: 为空或不一致，则抛出异常
+        if not local_callback_token or local_callback_token != callback_token:
             logger.warning(
                 "%s callback token mismatch, %s=%s, local_callback_token=%s",
                 log_prefix,
@@ -100,6 +91,7 @@ class ItsmCallbackResultHandler:
             )
             raise error_codes.INVALID_ARGUMENT.format("invalid callback_token")
 
+        # 校验回调ticket_id: 为空或不一致，则抛出异常
         if not local_ticket_id or local_ticket_id != callback_ticket_id:
             logger.warning(
                 "%s callback ticket mismatch, %s=%s, local_ticket_id=%s, callback_ticket_id=%s",

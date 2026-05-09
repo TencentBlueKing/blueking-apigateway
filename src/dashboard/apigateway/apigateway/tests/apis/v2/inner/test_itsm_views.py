@@ -37,7 +37,7 @@ class TestItsmCallbackApi:
 
     def test_reject_when_callback_token_empty(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.ItsmCallbackResultHandler.handle")
 
         response = request_view(
             method="POST",
@@ -51,7 +51,7 @@ class TestItsmCallbackApi:
 
     def test_reject_when_callback_token_missing(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.ItsmCallbackResultHandler.handle")
 
         response = request_view(
             method="POST",
@@ -65,7 +65,7 @@ class TestItsmCallbackApi:
 
     def test_reject_invalid_source_app(self, request_view, settings, mocker):
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mocker.patch("apigateway.biz.bk_itsm.bk_itsm.ItsmCallbackResultHandler.handle")
 
         response = request_view(
             method="POST",
@@ -80,7 +80,7 @@ class TestItsmCallbackApi:
     def test_allow_when_missing_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mock_handle = mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mock_handle = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.ItsmCallbackResultHandler.handle")
 
         response = request_view(
             method="POST",
@@ -96,7 +96,7 @@ class TestItsmCallbackApi:
     def test_allow_with_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
         settings.BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = ["bk-itsm4"]
-        mock_handle = mocker.patch("apigateway.biz.itsm.ItsmCallbackResultHandler.handle")
+        mock_handle = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.ItsmCallbackResultHandler.handle")
 
         response = request_view(
             method="POST",

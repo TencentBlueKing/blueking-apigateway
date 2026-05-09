@@ -24,7 +24,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2Permission
-from apigateway.biz.itsm import ItsmCallbackResultHandler
+from apigateway.biz.bk_itsm import ItsmCallbackResultHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
 

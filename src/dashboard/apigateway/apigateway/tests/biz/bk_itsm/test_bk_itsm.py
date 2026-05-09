@@ -27,7 +27,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply
-from apigateway.biz.itsm import ItsmCallbackResultHandler
+from apigateway.biz.bk_itsm import ItsmCallbackResultHandler
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -101,7 +101,7 @@ class TestItsmCallbackResultHandler:
             itsm_ticket_id="itsm-ticket-003",
             itsm_callback_token="cb-token-003",
         )
-        mock_get_manager = mocker.patch("apigateway.biz.itsm.PermissionDimensionManager.get_manager")
+        mock_get_manager = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.PermissionDimensionManager.get_manager")
 
         ItsmCallbackResultHandler().handle(
             ticket={
@@ -132,8 +132,10 @@ class TestItsmCallbackResultHandler:
             itsm_callback_token="cb-mcp-001",
         )
 
-        mock_save_permission = mocker.patch("apigateway.biz.itsm.MCPServerAppPermission.objects.save_permission")
-        mock_sync_permissions = mocker.patch("apigateway.biz.itsm.MCPServerHandler.sync_permissions")
+        mock_save_permission = mocker.patch(
+            "apigateway.biz.bk_itsm.bk_itsm.MCPServerAppPermission.objects.save_permission"
+        )
+        mock_sync_permissions = mocker.patch("apigateway.biz.bk_itsm.bk_itsm.MCPServerHandler.sync_permissions")
 
         ItsmCallbackResultHandler().handle(
             ticket={
