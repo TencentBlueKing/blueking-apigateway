@@ -214,6 +214,12 @@ class PermissionDimensionManager(metaclass=ABCMeta):
         try:
             helper = ItsmPermissionApplyHelper()
             if not helper.is_ready():
+                logger.info(
+                    "Skip creating ITSM ticket for permission apply because ITSM helper is not ready, record_id=%s, gateway_id=%s, bk_app_code=%s",
+                    record.id,
+                    gateway.id,
+                    bk_app_code,
+                )
                 return
 
             itsm_grant_dimension, resource_names = self._build_itsm_ticket_apply_resources(

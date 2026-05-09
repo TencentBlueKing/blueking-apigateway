@@ -91,6 +91,10 @@ class MCPServerPermissionHandler:
         try:
             helper = ItsmPermissionApplyHelper()
             if not helper.is_ready():
+                logger.info(
+                    "Skip creating ITSM tickets for mcp server applies because ITSM helper is not ready, apply_count=%s",
+                    applies.count(),
+                )
                 return
 
             for apply in applies.select_related("mcp_server__gateway"):
