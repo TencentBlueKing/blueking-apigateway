@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -332,29 +333,43 @@ func Load(v *viper.Viper) (*Config, error) {
 		return nil, err
 	}
 
-	// parse the list to map
-	// 1. database
+	if err := initAndValidateDatabases(cfg); err != nil {
+		return nil, err
+	}
+
+	applyMcpServerDefaults(cfg)
+	applyBkAIDevTraceDefaults(v, cfg)
+	applyMetricDefaults(cfg)
+	applyPProfDefaults(cfg)
+
+	G = cfg
+	return cfg, nil
+}
+
+func initAndValidateDatabases(cfg *Config) error {
 	cfg.DatabaseMap = make(map[string]Database)
 	for _, db := range cfg.Databases {
 		cfg.DatabaseMap[db.ID] = db
 	}
 
 	if len(cfg.DatabaseMap) == 0 {
-		return nil, errors.New("database cannot be empty")
+		return errors.New("database cannot be empty")
 	}
 
-	// 验证所有数据库配置
 	for _, db := range cfg.Databases {
 		if err := db.ValidateDatabase(); err != nil {
-			return nil, err
+			return err
 		}
 	}
+	return nil
+}
 
+func applyMcpServerDefaults(cfg *Config) {
 	if cfg.McpServer.Interval == 0 {
 		cfg.McpServer.Interval = 60 * time.Second
 	}
-	if cfg.McpServer.BkApiUrlTmpl == "" {
-		cfg.McpServer.BkApiUrlTmpl = os.Getenv("BK_API_URL_TMPL")
+	if env := os.Getenv("BK_API_URL_TMPL"); env != "" {
+		cfg.McpServer.BkApiUrlTmpl = env
 	}
 	if cfg.McpServer.MessageUrlFormat == "" {
 		cfg.McpServer.MessageUrlFormat = "/api/bk-apigateway/prod/api/v2/mcp-servers/%s/sse/message"
@@ -366,11 +381,11 @@ func Load(v *viper.Viper) (*Config, error) {
 	if cfg.McpServer.InnerJwtExpireTime == 0 {
 		cfg.McpServer.InnerJwtExpireTime = time.Minute * 5
 	}
-	if cfg.McpServer.EncryptKey == "" {
-		cfg.McpServer.EncryptKey = os.Getenv("ENCRYPT_KEY")
+	if env := os.Getenv("ENCRYPT_KEY"); env != "" {
+		cfg.McpServer.EncryptKey = env
 	}
-	if cfg.McpServer.CryptoNonce == "" {
-		cfg.McpServer.CryptoNonce = os.Getenv("BK_APIGW_CRYPTO_NONCE")
+	if env := os.Getenv("BK_APIGW_CRYPTO_NONCE"); env != "" {
+		cfg.McpServer.CryptoNonce = env
 	}
 	// Transport defaults for upstream tool calls
 	if cfg.McpServer.Transport.MaxIdleConns == 0 {
@@ -405,28 +420,47 @@ func Load(v *viper.Viper) (*Config, error) {
 	if cfg.McpServer.LogTruncate.APILogErrorResponseSize == 0 {
 		cfg.McpServer.LogTruncate.APILogErrorResponseSize = defaultAPILogErrorRespSize
 	}
-	if cfg.Metric.NamePrefix == "" {
-		cfg.Metric.NamePrefix = os.Getenv("PROMETHEUS_METRIC_NAME_PREFIX")
-		if cfg.Metric.NamePrefix == "" {
-			cfg.Metric.NamePrefix = "bk_apigateway_"
+}
+
+func applyBkAIDevTraceDefaults(_ *viper.Viper, cfg *Config) {
+	if env := os.Getenv("BKAI_DEV_TRACE_ENABLE"); env != "" {
+		if enabled, err := strconv.ParseBool(env); err == nil {
+			cfg.BkAIDevTrace.Enable = enabled
 		}
 	}
+	if env := os.Getenv("BKAI_DEV_TRACE_ENDPOINT"); env != "" {
+		cfg.BkAIDevTrace.Endpoint = env
+	}
+	if env := os.Getenv("BKAI_DEV_TRACE_SERVICE_NAME"); env != "" {
+		cfg.BkAIDevTrace.ServiceName = env
+	}
+	if env := os.Getenv("BKAI_DEV_TRACE_TOKEN"); env != "" {
+		cfg.BkAIDevTrace.Token = env
+	}
+}
 
+func applyMetricDefaults(cfg *Config) {
+	if env := os.Getenv("PROMETHEUS_METRIC_NAME_PREFIX"); env != "" {
+		cfg.Metric.NamePrefix = env
+	}
+	if cfg.Metric.NamePrefix == "" {
+		cfg.Metric.NamePrefix = "bk_apigateway_"
+	}
+}
+
+func applyPProfDefaults(cfg *Config) {
+	if env := os.Getenv("PPROF_USERNAME"); env != "" {
+		cfg.PProf.Username = env
+	}
 	if cfg.PProf.Username == "" {
-		cfg.PProf.Username = os.Getenv("PPROF_USERNAME")
-		if cfg.PProf.Username == "" {
-			cfg.PProf.Username = "bk-mcp" // 默认用户名
-		}
+		cfg.PProf.Username = "bk-mcp" // 默认用户名
+	}
+	if env := os.Getenv("PPROF_PASSWORD"); env != "" {
+		cfg.PProf.Password = env
 	}
 	if cfg.PProf.Password == "" {
-		cfg.PProf.Password = os.Getenv("PPROF_PASSWORD")
-		if cfg.PProf.Password == "" {
-			cfg.PProf.Password = "DebugModel@bk" // 默认密码，生产环境应该修改
-		}
+		cfg.PProf.Password = "DebugModel@bk" // 默认密码，生产环境应该修改
 	}
-
-	G = cfg
-	return cfg, nil
 }
 
 // GinAPIEnabled get gin api trace switch
