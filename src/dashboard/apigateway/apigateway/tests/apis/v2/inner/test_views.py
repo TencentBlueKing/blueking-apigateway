@@ -246,8 +246,65 @@ class TestMCPServerAppPermissionApplyCreateApi:
         apply_record = result["data"][0]
         assert apply_record["bk_app_code"] == "test-app"
         assert apply_record["mcp_server_id"] == mcp_server.id
+        assert "itsm_ticket_id" in apply_record
         assert "approval_url" in apply_record
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in apply_record["approval_url"]
+
+    def test_create_with_itsm_ticket_returns_itsm_url(self, request_view, fake_gateway, fake_stage, settings, mocker):
+        """测试创建 MCP Server 权限申请时，若存在 itsm_ticket_id 且 ITSM 模板已配置，则 approval_url 返回 ITSM 链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+            reason="Test reason",
+            itsm_ticket_id="102025092210362600001802",
+        )
+
+        mocker.patch(
+            "apigateway.apis.v2.inner.views.MCPServerPermissionHandler.create_apply",
+            return_value=MCPServerAppPermissionApply.objects.filter(id=apply_record.id),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.inner.mcp_server.permission.apply",
+            data={
+                "target_app_code": "test-app",
+                "mcp_server_ids": [mcp_server.id],
+                "applied_by": "test-user",
+                "reason": "Test reason",
+            },
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        apply_record_data = result["data"][0]
+        assert apply_record_data["itsm_ticket_id"] == "102025092210362600001802"
+        assert "itsm.example.com/ticket/102025092210362600001802" in apply_record_data["approval_url"]
 
 
 class TestMCPServerAppPermissionListApi:
@@ -374,6 +431,7 @@ class TestMCPServerAppPermissionRecordListApi:
         settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
             "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
         )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
 
         mcp_server = G(
             MCPServer,
@@ -392,6 +450,7 @@ class TestMCPServerAppPermissionRecordListApi:
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
             applied_by="test-user",
             reason="Test reason",
+            itsm_ticket_id="102025092210362600001802",
         )
 
         resp = request_view(
@@ -407,8 +466,51 @@ class TestMCPServerAppPermissionRecordListApi:
 
         record_data = result["data"][0]["record"]
         assert record_data["id"] == apply_record.id
+        assert record_data["itsm_ticket_id"] == "102025092210362600001802"
         assert "approval_url" in record_data
-        assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
+        assert "102025092210362600001802" in record_data["approval_url"]
+
+    def test_list_with_itsm_ticket_fallback_to_dashboard_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试 ITSM 模板未配置时，approval_url 回退到 dashboard 审批链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+        # 不设置 BK_ITSM4_TICKET_URL_TEMPLATE
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        )
+
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test-user",
+            reason="Test reason",
+            itsm_ticket_id="102025092210362600001802",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.apply-records",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        record_data = result["data"][0]["record"]
+        assert record_data["itsm_ticket_id"] == "102025092210362600001802"
+        assert "dashboard.example.com" in record_data["approval_url"]
 
     def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
         """测试申请记录列表包含 tool_names 字段（重命名后的工具名称）"""
@@ -455,6 +557,7 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
         settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
             "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
         )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
 
         mcp_server = G(
             MCPServer,
@@ -472,6 +575,7 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             applied_by="test-user",
             handled_by="admin",
+            itsm_ticket_id="102025092210362600001803",
         )
 
         resp = request_view(
@@ -487,8 +591,9 @@ class TestMCPServerAppPermissionRecordRetrieveApi:
 
         record_data = result["data"]["record"]
         assert record_data["id"] == apply_record.id
+        assert record_data["itsm_ticket_id"] == "102025092210362600001803"
         assert "approval_url" in record_data
-        assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in record_data["approval_url"]
+        assert "102025092210362600001803" in record_data["approval_url"]
 
     def test_retrieve_with_tool_names(self, request_view, fake_gateway, fake_stage):
         """测试申请记录详情包含 tool_names 字段（重命名后的工具名称）"""
@@ -688,8 +793,9 @@ class TestGatewayDestroyApi:
 class TestAppPermissionRecordListApi:
     """测试申请记录列表 API 分页响应"""
 
-    def test_list_with_pagination(self, request_view, fake_gateway):
+    def test_list_with_pagination(self, request_view, fake_gateway, settings):
         """测试申请记录列表返回分页参数"""
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
         # 创建申请记录
         record = G(
             AppPermissionRecord,
@@ -699,6 +805,7 @@ class TestAppPermissionRecordListApi:
             applied_time=timezone.now(),
             handled_time=timezone.now(),
             status="approved",
+            itsm_ticket_id="102025092210362600001802",
         )
 
         resp = request_view(
@@ -717,6 +824,9 @@ class TestAppPermissionRecordListApi:
         assert result["data"]["count"] == 1
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == record.id
+        assert result["data"]["results"][0]["itsm_ticket_id"] == "102025092210362600001802"
+        assert "itsm_ticket_url" in result["data"]["results"][0]
+        assert "102025092210362600001802" in result["data"]["results"][0]["itsm_ticket_url"]
 
     def test_list_empty_with_pagination(self, request_view, fake_gateway):
         """测试空列表返回分页参数"""
