@@ -226,6 +226,11 @@ const {
   parent,
 } = defineProps<IProps>();
 
+const emit = defineEmits<{
+  // 当最后一行被移除时
+  'last-row-removed': [void]
+}>();
+
 const { t } = useI18n();
 
 const recursiveSubTableRef = useTemplateRef('recursive-sub-table-refs');
@@ -321,6 +326,10 @@ const removeField = (row: IBodyRow) => {
   const index = tableData.value!.findIndex(data => data.id === row.id);
   if (index !== -1) {
     tableData.value!.splice(index, 1);
+  }
+  // 如果所有行都被删除了，通知父组件
+  if (!tableData.value?.length) {
+    emit('last-row-removed');
   }
 };
 
