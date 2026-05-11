@@ -260,6 +260,7 @@
             v-model="row.body"
             :parent="row"
             :readonly="readonly"
+            @last-row-removed="() => handleRowBodyEmptied(row)"
           />
         </div>
       </template>
@@ -286,7 +287,7 @@
 
 <script lang="ts" setup>
 import { Message } from 'bkui-vue';
-import { isBoolean, isNil, uniqueId } from 'lodash-es';
+import { isBoolean, isNil, pull, uniqueId } from 'lodash-es';
 import RequestParamsTable from './RequestParamsTable.vue';
 import {
   type JSONSchema7,
@@ -639,6 +640,7 @@ const addField = (row: ITableRow) => {
     else {
       bodyRow.body = [genBodyRow()];
     }
+    expandedRowKeys.value.push(bodyRow.id);
   }
 };
 
@@ -766,6 +768,7 @@ const handleEditorConfirm = (jsonObject: Record<string, any>) => {
     // 插入新行
     else {
       tableData.value.push(row);
+      expandedRowKeys.value.push(row.id);
     }
   }
   catch {
@@ -800,6 +803,11 @@ const setInvalidRowId = () => {
 
 const clearInvalidState = (rowId: string) => {
   delete invalidRowIdMap.value[rowId];
+};
+
+// 表格行中没有子内容后，把这一行折叠起来
+const handleRowBodyEmptied = (row: ITableRow) => {
+  pull(expandedRowKeys.value, row.id);
 };
 
 defineExpose({
