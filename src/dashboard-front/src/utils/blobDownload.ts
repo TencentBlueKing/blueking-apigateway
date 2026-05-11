@@ -21,7 +21,7 @@
  * @param {Object} res 接口返回值
  */
 export const blobDownLoad = async (res: any) => {
-  if (res.ok) {
+  if (res?.ok) {
     const blob: any = await res.blob();
     const disposition = res.headers.get('Content-Disposition') || '';
     const url = URL.createObjectURL(blob);

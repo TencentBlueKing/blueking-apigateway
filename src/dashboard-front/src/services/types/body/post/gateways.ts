@@ -282,7 +282,7 @@ export interface IResourceVersionCreateInputSLZ {
 export interface IResourceVersionExportInputSLZ {
   id?: number
   export_type: string
-  file_type: string
+  file_type: 'yaml' | 'json' | 'zip'
 }
 
 // POST /gateways/{gateway_id}/resources/ - 新建资源
