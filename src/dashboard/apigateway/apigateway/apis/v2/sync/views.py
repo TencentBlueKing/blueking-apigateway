@@ -115,6 +115,11 @@ class GatewaySyncApi(generics.CreateAPIView):
         slz = self.get_serializer(gateway, data=request.data)
         slz.is_valid(raise_exception=True)
 
+        # assign the tenant_mode and tenant_id based on the calling app
+        tenant_mode, tenant_id = get_app_tenant_info(request.app.app_code)
+        slz.validated_data["tenant_mode"] = tenant_mode
+        slz.validated_data["tenant_id"] = tenant_id
+
         # save gateway
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
