@@ -696,6 +696,7 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "comment": obj.comment,
                     "reason": obj.reason,
                     "expire_days": obj.expire_days,
+                    "itsm_ticket_id": obj.itsm_ticket_id,
                     "mcp_server_id": obj.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
                     "gateway_id": obj.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
                     "tenant_mode": obj.mcp_server.gateway.tenant_mode,
@@ -769,6 +770,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "comment": instance.comment,
                 "reason": instance.reason,
                 "expire_days": instance.expire_days,
+                "itsm_ticket_id": instance.itsm_ticket_id,
                 "mcp_server_id": instance.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
                 "gateway_id": instance.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
             },

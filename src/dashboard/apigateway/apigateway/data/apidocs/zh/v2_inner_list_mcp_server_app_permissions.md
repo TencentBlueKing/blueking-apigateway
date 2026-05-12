@@ -2,15 +2,13 @@
 
 mcp_server 已申请权限列表
 
-
 ### 输入参数
 
 #### 请求参数
 
-| 参数名称              | 参数类型    | 必选 | 描述                  |
-|-------------------|---------|----|---------------------|
-| target_app_code   | string  | 是  | 申请权限的应用，应于当前请求的应用一致 |
-
+| 参数名称 | 参数类型 | 必选 | 描述 |
+|---|---|---|---|
+| target_app_code | string | 是 | 申请权限的应用，应与当前请求应用一致 |
 
 ### 响应示例
 
@@ -23,7 +21,7 @@ mcp_server 已申请权限列表
         "name": "bk-apigateway-prod-test",
         "title": "测试服务",
         "description": "test",
-        "tools_count": "1",
+        "tools_count": 1,
         "doc_link": "",
         "categories": [
           {"name": "official", "display_name": "官方"},
@@ -33,7 +31,9 @@ mcp_server 已申请权限列表
       "permission": {
         "status": "owned",
         "action": "",
-        "expires_in": null
+        "expires_in": null,
+        "handled_by": ["admin"],
+        "approval_url": "http://dashboard.example.com/gateways/1/mcp-servers/1/permissions/"
       }
     }
   ]
@@ -42,35 +42,35 @@ mcp_server 已申请权限列表
 
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-| ------- | ------ | ---------------------------------- |
-| data    | array  | 结果数据，详细信息请见下面说明     |
+| 字段 | 类型 | 描述 |
+|---|---|---|
+| data | array | 结果数据，详细信息见下文 |
 
 #### data
 
-| 参数名称             | 参数类型   | 描述                           |
-|------------------|--------|------------------------------|
-| mcp_server       | object | mcp_server 数据，详细信息请见下面说明     |
-| permission       | object | mcp_server 权限数据，详细信息请见下面说明   |
-
+| 参数名称 | 参数类型 | 描述 |
+|---|---|---|
+| mcp_server | object | mcp_server 数据，详细信息见 `data.mcp_server` |
+| permission | object | mcp_server 权限数据，详细信息见 `data.permission` |
 
 #### data.mcp_server
 
-| 参数名称            | 参数类型   | 描述                |
-|-----------------|--------|-------------------|
-| id              | int    | mcp_server ID     |
-| name            | string | mcp_server 名称     |
-| title           | string | mcp_server 中文名/显示名称 |
-| description     | string | mcp_server 描述     |
-| tools_count     | int    | mcp_server 工具数量   |
-| doc_link        | string | mcp_server 文档访问地址 |
-| categories      | array  | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
-
+| 参数名称 | 参数类型 | 描述 |
+|---|---|---|
+| id | int | mcp_server ID |
+| name | string | mcp_server 名称 |
+| title | string | mcp_server 中文名/显示名称 |
+| description | string | mcp_server 描述 |
+| tools_count | int | mcp_server 工具数量 |
+| doc_link | string | mcp_server 文档访问地址 |
+| categories | array | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 
 #### data.permission
 
-| 参数名称           | 参数类型     | 描述                                                                        |
-|----------------|----------|---------------------------------------------------------------------------|
-| expires_in     | int      | 有效期                                                                       |
-| status         | string   | 权限状态（approved：已审批，rejected：已拒绝，pending：申请中，need_apply：待申请，owned：已申请，且未过期） |
-| action         | string   | 权限操作                                                                      |
+| 参数名称 | 参数类型 | 描述 |
+|---|---|---|
+| expires_in | int | 有效期 |
+| status | string | 权限状态（approved：已审批，rejected：已拒绝，pending：申请中，need_apply：待申请，owned：已申请且未过期） |
+| action | string | 权限操作 |
+| handled_by | array[string] | 处理人 |
+| approval_url | string | 权限审批 URL；当存在 `itsm_ticket_id` 时返回 ITSM 单据中心链接，否则返回 MCPServer 权限审批页 URL |

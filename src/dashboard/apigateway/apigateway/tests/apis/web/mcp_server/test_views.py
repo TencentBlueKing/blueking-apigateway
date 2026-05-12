@@ -1268,8 +1268,12 @@ class TestMCPServerAppPermissionDestroyApi:
 
 
 class TestMCPServerAppPermissionApplyListApi:
-    def test_list_pending_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server):
+    def test_list_pending_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server, settings):
         """测试按 mcp_server_id 查询"""
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = (
+            "https://example.com/#/ticket/ticketInfo?type=ticket&ticketId={ticket_id}"
+        )
+
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
@@ -1277,6 +1281,7 @@ class TestMCPServerAppPermissionApplyListApi:
             applied_by="admin",
             applied_time=now_datetime(),
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            itsm_ticket_id="102025092210362600001802",
         )
 
         resp = request_view(
@@ -1290,6 +1295,11 @@ class TestMCPServerAppPermissionApplyListApi:
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["itsm_ticket_id"] == "102025092210362600001802"
+        assert (
+            result["data"]["results"][0]["itsm_ticket_url"]
+            == "https://example.com/#/ticket/ticketInfo?type=ticket&ticketId=102025092210362600001802"
+        )
 
     def test_list_processed_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server):
         """测试按 mcp_server_id 查询已处理的审批"""

@@ -65,4 +65,6 @@
 | comment              | string | 审批内容                      |
 | reason               | string | 申请理由                      |
 | expire_days          | int    | 过期时间                      |
+| itsm_ticket_id       | string | 关联的 ITSM 工单 ID             |
+| itsm_ticket_url      | string | ITSM 单据中心链接                |
 | gateway_name         | string | 网关名称                      |
