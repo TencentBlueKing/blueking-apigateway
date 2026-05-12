@@ -16,7 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django.test import Client
+from django.urls import reverse
+
+
 class TestDocListApi:
+    def test_list_without_login(self, fake_gateway, fake_released_resource):
+        resp = Client().get(
+            reverse(
+                "docs.gateway.resource.doc.retrieve",
+                kwargs={"gateway_name": fake_gateway.name, "resource_name": fake_released_resource.resource_name},
+            ),
+            data={
+                "stage_name": "prod",
+            },
+        )
+
+        assert resp.status_code == 401
+
     def test_list(
         self,
         request_view,
