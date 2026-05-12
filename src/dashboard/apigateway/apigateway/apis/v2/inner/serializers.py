@@ -584,9 +584,21 @@ class MCPServerListInputSLZ(serializers.Serializer):
         default="-updated_time",
         help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
     )
+    mcp_server_ids = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer ID 列表，多个以逗号 , 分割"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
+
+    def validate_mcp_server_ids(self, value):
+        if not value:
+            return []
+        try:
+            ids = [int(x.strip()) for x in value.split(",")]
+        except ValueError:
+            raise serializers.ValidationError(_("MCPServer ID 必须为整数，多个以逗号分割"))
+        return ids
 
 
 class MCPServerListOutputSLZ(serializers.Serializer):
