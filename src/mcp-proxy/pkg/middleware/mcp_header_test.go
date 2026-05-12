@@ -93,7 +93,7 @@ var _ = Describe("MCPHeader", func() {
 			c, _ := gin.CreateTestContext(w)
 			c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 
-			itsmFlexJSON := `{"agent.info.code":"ai-test-appcode","agent.info.name":"AgentName","agent.session.caller_executor":"judge-caller","agent.session.executor":"judge-executor"}`
+			itsmFlexJSON := `{"agent.info.code":"ai-test-appcode","agent.info.name":"AgentName","agent.info.service_catalogue":"test1/test2/test3","agent.session.caller_bk_biz_env":"public","agent.session.caller_bk_biz_id":"6000086","agent.session.caller_executor":"judge-caller","agent.session.executor":"judge-executor"}`
 			c.Request.Header.Set(constant.BkApiItsmFlexKey, itsmFlexJSON)
 
 			mw := middleware.MCPServerHeaderMiddleware()
@@ -103,6 +103,9 @@ var _ = Describe("MCPHeader", func() {
 			Expect(data).NotTo(BeNil())
 			Expect(data.AgentCode).To(Equal("ai-test-appcode"))
 			Expect(data.AgentName).To(Equal("AgentName"))
+			Expect(data.ServiceCatalogue).To(Equal("test1/test2/test3"))
+			Expect(data.CallerBizEnv).To(Equal("public"))
+			Expect(data.CallerBizID).To(Equal("6000086"))
 			Expect(data.CallerExecutor).To(Equal("judge-caller"))
 			Expect(data.Executor).To(Equal("judge-executor"))
 		})

@@ -49,6 +49,7 @@ import (
 	"mcp_proxy/pkg/cacheimpls"
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/metric"
@@ -642,6 +643,64 @@ func setupToolCallSpan(
 	return ctx, span
 }
 
+// setupBkAIDevToolCallSpan starts a dedicated BKAIDev span for tools/call.
+// tools/call is handled inside tool handler and may bypass MCP receiving middleware,
+// so we must report this span here.
+func setupBkAIDevToolCallSpan(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	serverName,
+	toolName string,
+) (context.Context, oteltrace.Span) {
+	if !bkaidevtrace.Enabled() {
+		return ctx, nil
+	}
+
+	ctx, span := bkaidevtrace.StartSpan(ctx, fmt.Sprintf("mcp_gw.%s.tools/call", serverName))
+	if span == nil {
+		return ctx, nil
+	}
+
+	appCode := util.GetAppCodeFromContext(ctx)
+	username := util.GetUsernameFromContext(ctx)
+	clientIP := util.GetClientIPFromContext(ctx)
+	clientID := util.GetClientIDFromContext(ctx)
+	gatewayName := util.GetGatewayNameFromContext(ctx)
+	requestID := util.GetRequestIDFromContext(ctx)
+	xRequestID := util.GetXRequestIDFromContext(ctx)
+	traceID := bkaidevtrace.GetTraceIDFromContext(ctx)
+
+	span.SetAttributes(
+		attribute.String("app_code", appCode),
+		attribute.String("bk_username", username),
+		attribute.String("client_ip", clientIP),
+		attribute.String("client_id", clientID),
+		attribute.String("gateway_name", gatewayName),
+		attribute.String("mcp_server_name", serverName),
+		attribute.String("request_id", requestID),
+		attribute.String("x_request_id", xRequestID),
+		attribute.String("trace_id", traceID),
+		attribute.String("tool_name", toolName),
+	)
+	if req != nil {
+		if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+			span.SetAttributes(attribute.String("session_id", ss.ID()))
+		}
+	}
+
+	if itsmFlex := util.GetBkApiItsmFlexData(ctx); itsmFlex != nil {
+		span.SetAttributes(
+			attribute.String("caller_executor", itsmFlex.CallerExecutor),
+			attribute.String("agent_code", itsmFlex.AgentCode),
+			attribute.String("service_catalogue", itsmFlex.ServiceCatalogue),
+			attribute.String("caller_bk_biz_env", itsmFlex.CallerBizEnv),
+			attribute.String("caller_bk_biz_id", itsmFlex.CallerBizID),
+		)
+	}
+
+	return ctx, span
+}
+
 // prepareToolCallAuditLog prepares audit logger with request context information.
 func prepareToolCallAuditLog(
 	ctx context.Context,
@@ -752,6 +811,24 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
 		start := time.Now()
+
+		// tools/call may bypass MCP receiving middleware, so create BKAIDev span here.
+		ctx, bkAIDevSpan := setupBkAIDevToolCallSpan(ctx, req, serverName, toolApiConfig.Name)
+		if bkAIDevSpan != nil {
+			defer func() {
+				hasError := err != nil || (result != nil && result.IsError)
+				status := "success"
+				if hasError {
+					status = "failed"
+					bkAIDevSpan.SetStatus(codes.Error, "tools/call failed")
+				}
+				bkAIDevSpan.SetAttributes(
+					attribute.String("status", status),
+					attribute.Float64("latency_ms", time.Since(start).Seconds()*1000),
+				)
+				bkAIDevSpan.End()
+			}()
+		}
 
 		// Start a trace span for the actual upstream tool invocation
 		ctx, span := setupToolCallSpan(

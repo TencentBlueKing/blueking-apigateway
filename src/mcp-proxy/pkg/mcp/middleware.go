@@ -600,12 +600,20 @@ func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
 				attribute.String("x_request_id", xRequestID),
 				attribute.String("trace_id", traceID),
 			)
+			if req != nil {
+				if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+					span.SetAttributes(attribute.String("session_id", ss.ID()))
+				}
+			}
 
 			// ItsmFlex fields
 			if itsmFlex := util.GetBkApiItsmFlexData(ctx); itsmFlex != nil {
 				span.SetAttributes(
 					attribute.String("caller_executor", itsmFlex.CallerExecutor),
 					attribute.String("agent_code", itsmFlex.AgentCode),
+					attribute.String("service_catalogue", itsmFlex.ServiceCatalogue),
+					attribute.String("caller_bk_biz_env", itsmFlex.CallerBizEnv),
+					attribute.String("caller_bk_biz_id", itsmFlex.CallerBizID),
 				)
 			}
 

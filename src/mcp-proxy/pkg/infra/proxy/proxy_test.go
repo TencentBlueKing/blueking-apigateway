@@ -41,7 +41,9 @@ import (
 
 	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
+	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/trace"
+	"mcp_proxy/pkg/util"
 )
 
 var _ = Describe("MCPProxy", func() {
@@ -658,6 +660,57 @@ var _ = Describe("MCPProxy", func() {
 			// Second call should be a no-op
 			InitSharedTransport(config.Transport{MaxIdleConns: 200})
 			Expect(sharedTransport.MaxIdleConns).To(Equal(50))
+		})
+	})
+
+	Describe("setupBkAIDevToolCallSpan", func() {
+		It("should create tools/call span with expected attributes", func() {
+			bkaidevtrace.ResetForTest()
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			defer func() {
+				_ = tp.Shutdown(context.Background())
+				bkaidevtrace.ResetForTest()
+			}()
+			bkaidevtrace.SetTestProvider(tp, propagation.NewCompositeTextMapPropagator(
+				propagation.TraceContext{},
+				propagation.Baggage{},
+			))
+
+			ctx := context.Background()
+			ctx = context.WithValue(ctx, constant.BkAppCode, "test-app")
+			ctx = context.WithValue(ctx, constant.BkUsername, "tester")
+			ctx = context.WithValue(ctx, constant.ClientIP, "127.0.0.1")
+			ctx = context.WithValue(ctx, constant.ClientID, "client-a")
+			ctx = context.WithValue(ctx, constant.GatewayName, "gw-a")
+			ctx = context.WithValue(ctx, constant.RequestID, "req-1")
+			ctx = context.WithValue(ctx, constant.XRequestID, "x-req-1")
+			ctx = context.WithValue(ctx, constant.BkApiItsmFlexData, &util.ItsmFlexData{
+				CallerExecutor:   "judge-caller",
+				AgentCode:        "ai-test-appcode",
+				ServiceCatalogue: "test1/test2/test3",
+				CallerBizEnv:     "public",
+				CallerBizID:      "6000086",
+			})
+
+			_, span := setupBkAIDevToolCallSpan(ctx, nil, "test-server", "test-tool")
+			Expect(span).NotTo(BeNil())
+			span.End()
+
+			spans := exporter.GetSpans()
+			Expect(spans).To(HaveLen(1))
+			Expect(spans[0].Name).To(Equal("mcp_gw.test-server.tools/call"))
+
+			attrMap := make(map[string]interface{})
+			for _, attr := range spans[0].Attributes {
+				attrMap[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrMap["mcp_server_name"]).To(Equal("test-server"))
+			Expect(attrMap["tool_name"]).To(Equal("test-tool"))
+			Expect(attrMap["app_code"]).To(Equal("test-app"))
+			Expect(attrMap["service_catalogue"]).To(Equal("test1/test2/test3"))
+			Expect(attrMap["caller_bk_biz_env"]).To(Equal("public"))
+			Expect(attrMap["caller_bk_biz_id"]).To(Equal("6000086"))
 		})
 	})
 

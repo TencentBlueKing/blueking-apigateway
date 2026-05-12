@@ -296,10 +296,13 @@ func GetBkApiAllowedHeaders(ctx context.Context) map[string]string {
 
 // ItsmFlexData holds fields extracted from X-Bkapi-ItsmFlex header.
 type ItsmFlexData struct {
-	AgentCode      string `json:"agent.info.code"`
-	AgentName      string `json:"agent.info.name"`
-	CallerExecutor string `json:"agent.session.caller_executor"`
-	Executor       string `json:"agent.session.executor"`
+	AgentCode        string `json:"agent.info.code"`
+	AgentName        string `json:"agent.info.name"`
+	ServiceCatalogue string `json:"agent.info.service_catalogue"`
+	CallerBizEnv     string `json:"agent.session.caller_bk_biz_env"`
+	CallerBizID      string `json:"agent.session.caller_bk_biz_id"`
+	CallerExecutor   string `json:"agent.session.caller_executor"`
+	Executor         string `json:"agent.session.executor"`
 }
 
 // SetBkApiItsmFlexData stores the parsed ItsmFlex data into context.
