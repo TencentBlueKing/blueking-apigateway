@@ -584,6 +584,15 @@ func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
 			username := util.GetUsernameFromContext(ctx)
 			clientIP := util.GetClientIPFromContext(ctx)
 			clientID := util.GetClientIDFromContext(ctx)
+			// Enrich client_id with ClientInfo from session, consistent with LoggingMiddleware
+			if req != nil {
+				if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+					if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
+						clientID = initParams.ClientInfo.Name
+					}
+					span.SetAttributes(attribute.String("session_id", ss.ID()))
+				}
+			}
 			gatewayName := util.GetGatewayNameFromContext(ctx)
 			requestID := util.GetRequestIDFromContext(ctx)
 			xRequestID := util.GetXRequestIDFromContext(ctx)
@@ -600,11 +609,6 @@ func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
 				attribute.String("x_request_id", xRequestID),
 				attribute.String("trace_id", traceID),
 			)
-			if req != nil {
-				if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
-					span.SetAttributes(attribute.String("session_id", ss.ID()))
-				}
-			}
 
 			// ItsmFlex fields
 			if itsmFlex := util.GetBkApiItsmFlexData(ctx); itsmFlex != nil {

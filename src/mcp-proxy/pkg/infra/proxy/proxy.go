@@ -670,6 +670,16 @@ func setupBkAIDevToolCallSpan(
 	xRequestID := util.GetXRequestIDFromContext(ctx)
 	traceID := bkaidevtrace.GetTraceIDFromContext(ctx)
 
+	// Enrich client_id with ClientInfo from session, consistent with LoggingMiddleware
+	if req != nil {
+		if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
+			if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
+				clientID = initParams.ClientInfo.Name
+			}
+			span.SetAttributes(attribute.String("session_id", ss.ID()))
+		}
+	}
+
 	span.SetAttributes(
 		attribute.String("app_code", appCode),
 		attribute.String("bk_username", username),
@@ -682,11 +692,6 @@ func setupBkAIDevToolCallSpan(
 		attribute.String("trace_id", traceID),
 		attribute.String("tool_name", toolName),
 	)
-	if req != nil {
-		if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
-			span.SetAttributes(attribute.String("session_id", ss.ID()))
-		}
-	}
 
 	if itsmFlex := util.GetBkApiItsmFlexData(ctx); itsmFlex != nil {
 		span.SetAttributes(
