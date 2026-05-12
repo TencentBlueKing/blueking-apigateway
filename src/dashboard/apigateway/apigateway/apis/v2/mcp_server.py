@@ -26,12 +26,37 @@ v2 MCP Server 公共函数模块
     - validate_and_enrich_mcp_server_for_retrieve -> MCPServerHandler.build_retrieve_context
 """
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from django.db.models import QuerySet
 
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.service.mcp.mcp_server import build_mcp_server_url
+
+
+def get_mcp_server_url_from_context(context: dict, obj: Union[dict, MCPServer]) -> str:
+    """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
+
+    统一 inner/open 序列化器中 get_url 方法的公共逻辑，避免重复实现。
+    支持 dict 和 model 实例两种 obj 格式。
+
+    Args:
+        context: serializer 的 context 字典，应包含 "least_privileges" 键
+        obj: MCPServer 数据，可以是 dict 或 model 实例
+
+    Returns:
+        MCP Server 访问 URL
+    """
+    if isinstance(obj, dict):
+        # dict 格式无法获取 gateway/stage 信息，回退到默认 URL
+        name = obj.get("name", "")
+        protocol_type = obj.get("protocol_type", "")
+        return build_mcp_server_url(name, protocol_type)
+
+    least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
 
 def get_categories_from_context(context: dict, obj: Union[dict, MCPServer]) -> List[Dict[str, str]]:

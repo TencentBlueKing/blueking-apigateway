@@ -485,7 +485,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value)
+        queryset = MCPServer.objects.filter(is_public=True, status=MCPServerStatusEnum.ACTIVE.value).select_related(
+            "gateway", "stage"
+        )
 
         keyword = data.get("keyword")
         if keyword:
@@ -512,6 +514,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         # Build categories map for queryset
         categories_map = MCPServerHandler.build_categories_map([obj.id for obj in queryset])
 
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        least_privileges = MCPServerHandler.get_least_privileges(list(queryset))
+
         for obj in queryset:
             permission_status = mcp_server_permission_status.get(
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
@@ -528,15 +533,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
 
             mcp_server_permissions.append(
                 {
-                    "mcp_server": {
-                        "id": obj.id,
-                        "name": obj.name,
-                        "title": obj.title or obj.name,
-                        "description": obj.description,
-                        "tools_count": obj.tools_count,
-                        "tool_names": obj.tool_names,
-                        "protocol_type": obj.protocol_type,
-                    },
+                    "mcp_server": obj,
                     "permission": {
                         "status": permission_status,
                         "action": action,
@@ -549,7 +546,12 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             )
 
         slz = serializers.MCPServerPermissionListOutputSLZ(
-            mcp_server_permissions, many=True, context={"categories": categories_map}
+            mcp_server_permissions,
+            many=True,
+            context={
+                "categories": categories_map,
+                "least_privileges": least_privileges,
+            },
         )
         return OKJsonResponse(data=slz.data)
 
@@ -607,22 +609,26 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = MCPServerAppPermissionApply.objects.filter(
-            bk_app_code=slz.validated_data["target_app_code"],
-            status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
-        ).order_by("-applied_time")
+        queryset = (
+            MCPServerAppPermissionApply.objects.filter(
+                bk_app_code=slz.validated_data["target_app_code"],
+                status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
+            )
+            .select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+            .order_by("-applied_time")
+        )
+
+        mcp_servers = [obj.mcp_server for obj in queryset]
+
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
+
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
 
         mcp_server_permissions = [
             {
-                "mcp_server": {
-                    "id": obj.mcp_server_id,
-                    "name": obj.mcp_server.name,
-                    "title": obj.mcp_server.title or obj.mcp_server.name,
-                    "description": obj.mcp_server.description,
-                    "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": obj.mcp_server.tool_names,
-                    "protocol_type": obj.mcp_server.protocol_type,
-                },
+                "mcp_server": obj.mcp_server,
                 "permission": {
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
                     "action": "",
@@ -635,11 +641,13 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
             for obj in queryset
         ]
 
-        # Build categories map
-        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
-
         slz = serializers.MCPServerAppPermissionListOutputSLZ(
-            mcp_server_permissions, many=True, context={"categories": categories_map}
+            mcp_server_permissions,
+            many=True,
+            context={
+                "categories": categories_map,
+                "least_privileges": least_privileges,
+            },
         )
         return OKJsonResponse(data=slz.data)
 
@@ -818,6 +826,9 @@ class MCPServerListApi(generics.ListAPIView):
 
         # Add categories map
         context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
+
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        context["least_privileges"] = MCPServerHandler.get_least_privileges(page)
 
         output_slz = serializers.MCPServerListOutputSLZ(page, many=True, context=context)
         return self.get_paginated_response(output_slz.data)
