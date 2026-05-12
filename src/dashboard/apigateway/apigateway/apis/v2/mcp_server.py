@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from django.conf import settings
 from django.db.models import Q, QuerySet
@@ -34,6 +34,30 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
+
+
+def get_mcp_server_url_from_context(context: dict, obj: Union[dict, MCPServer]) -> str:
+    """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
+
+    统一 inner/open 序列化器中 get_url 方法的公共逻辑，避免重复实现。
+    支持 dict 和 model 实例两种 obj 格式。
+
+    Args:
+        context: serializer 的 context 字典，应包含 "least_privileges" 键
+        obj: MCPServer 数据，可以是 dict 或 model 实例
+
+    Returns:
+        MCP Server 访问 URL
+    """
+    if isinstance(obj, dict):
+        # dict 格式无法获取 gateway/stage 信息，回退到默认 URL
+        name = obj.get("name", "")
+        protocol_type = obj.get("protocol_type", "")
+        return build_mcp_server_url(name, protocol_type)
+
+    least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
 
 logger = logging.getLogger(__name__)
 
