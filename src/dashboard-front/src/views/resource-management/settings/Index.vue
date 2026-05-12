@@ -239,7 +239,7 @@
                 :columns="columns"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
-                :table-row-key="'id'"
+                table-row-key="id"
                 show-settings
                 resizable
                 @filter-change="handleFilterChange"
@@ -1194,13 +1194,15 @@ watch(
         });
       }
     }
-    if (resourceSettingStore.previousPagination) {
+    // 从资源详情页返回时，恢复翻页位置
+    if (!Object.keys(route.query).length && resourceSettingStore.previousPagination) {
       nextTick(() => {
         const { current, pageSize } = resourceSettingStore.previousPagination;
         tableRef.value?.setPagination({
           current,
           pageSize,
         });
+        resourceSettingStore.setPagination(null);
       });
     }
   },
