@@ -37,6 +37,18 @@ class ItsmPermissionApplyHelper:
     用于在权限申请时创建 ITSM 工单
     """
 
+    @staticmethod
+    def build_ticket_url(ticket_id: str) -> str:
+        ticket_id = str(ticket_id or "").strip()
+        if not ticket_id:
+            return ""
+
+        template = settings.BK_ITSM4_TICKET_URL_TEMPLATE
+        if not template:
+            return ""
+
+        return template.format(ticket_id=ticket_id)
+
     def __init__(self, system_code: str = DEFAULT_ITSM_SYSTEM_CODE):
         self.system_code = system_code
         self._config: Optional[ItsmSystemConfig] = None

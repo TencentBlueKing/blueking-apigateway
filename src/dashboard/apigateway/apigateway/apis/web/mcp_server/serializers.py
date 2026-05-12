@@ -43,6 +43,7 @@ from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPS
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 logger = logging.getLogger(__name__)
 
@@ -727,6 +728,8 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(
         read_only=True, choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), help_text="审批状态"
     )
+    itsm_ticket_id = serializers.CharField(read_only=True, help_text="关联的 ITSM 工单 ID")
+    itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
     mcp_server = MCPServerBaseSLZ()
 
     class Meta:
@@ -739,6 +742,9 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
             self.context.get("gateway_tenant_mode"),
             self.context.get("gateway_tenant_id"),
         )
+
+    def get_itsm_ticket_url(self, obj):
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
 class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
