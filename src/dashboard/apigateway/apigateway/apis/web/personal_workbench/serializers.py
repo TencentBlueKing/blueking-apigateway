@@ -161,8 +161,6 @@ class WorkbenchMCPServerBaseSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerBaseSLZ"
 
     def get_title(self, obj) -> str:
-        if isinstance(obj, dict):
-            return obj.get("title") or obj.get("name", "")
         return obj.title if obj.title else obj.name
 
 

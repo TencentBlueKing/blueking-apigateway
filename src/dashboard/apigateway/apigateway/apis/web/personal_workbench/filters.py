@@ -19,6 +19,7 @@
 from django.db.models import Q
 from django_filters import rest_framework as filters
 
+from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
@@ -61,11 +62,12 @@ class WorkbenchMCPPermissionApplyFilter(filters.FilterSet):
 
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter(lookup_expr="icontains")
+    status = filters.ChoiceFilter(choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = MCPServerAppPermissionApply
-        fields = ["bk_app_code", "applied_by", "keyword"]
+        fields = ["bk_app_code", "applied_by", "status", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(mcp_server__name__icontains=value))

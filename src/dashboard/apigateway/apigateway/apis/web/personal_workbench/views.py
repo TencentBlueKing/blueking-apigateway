@@ -16,17 +16,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import List
-
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
-from apigateway.core.models import Gateway
+from apigateway.biz.gateway.gateway import GatewayHandler
+from apigateway.common.tenant.request import get_user_tenant_id
 
 from .filters import (
     WorkbenchGatewayPermissionApplyFilter,
@@ -43,28 +43,30 @@ from .serializers import (
 )
 
 
-def _get_user_maintainer_gateway_ids(username: str) -> List[int]:
+def _get_user_maintainer_gateway_ids(username: str, tenant_id: str = "") -> list[int]:
     """获取当前用户作为 maintainer 的所有网关 ID
 
-    _maintainers 是以 `;` 拼接的字符串，contains 查询可能匹配到子串（如 admin 匹配 superadmin），
-    因此先用 contains 粗筛，再通过 has_permission 做精确过滤，与 GatewayHandler.list_gateways_by_user 逻辑保持一致。
+    复用 GatewayHandler.list_gateways_by_user，该方法内部已处理：
+    1. _maintainers__contains 粗筛 + has_permission 精确过滤（避免子串误匹配）
+    2. tenant_id 维度的数据隔离（多租户场景）
     """
-    gateways = Gateway.objects.filter(_maintainers__contains=username)
-    return [gw.id for gw in gateways if gw.has_permission(username)]
+    if not username:
+        return []
+    gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+    return [gw.id for gw in gateways]
 
 
 class BaseWorkbenchListApi(generics.ListAPIView):
     """个人工作台列表接口基类
 
     子类只需声明 filterset_class / serializer_class / get_queryset()，
-    list 的分页+序列化逻辑统一在此处理，减少重复代码。
+    分页+序列化逻辑由 DRF ListAPIView 默认 list() 处理。
+
+    个人工作台接口无需网关级别权限校验（URL 不含 gateway_id），
+    仅需登录认证，因此显式声明 permission_classes = [IsAuthenticated]。
     """
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
-        return self.get_paginated_response(serializer.data)
+    permission_classes = [IsAuthenticated]
 
 
 # ========== 我的代办 ==========
@@ -90,7 +92,8 @@ class WorkbenchPendingGatewayPermissionListApi(BaseWorkbenchListApi):
 
     def get_queryset(self):
         username = self.request.user.username
-        gateway_ids = _get_user_maintainer_gateway_ids(username)
+        tenant_id = get_user_tenant_id(self.request)
+        gateway_ids = _get_user_maintainer_gateway_ids(username, tenant_id)
         return (
             AppPermissionApply.objects.filter(
                 gateway_id__in=gateway_ids,
@@ -121,7 +124,8 @@ class WorkbenchPendingMCPPermissionListApi(BaseWorkbenchListApi):
 
     def get_queryset(self):
         username = self.request.user.username
-        gateway_ids = _get_user_maintainer_gateway_ids(username)
+        tenant_id = get_user_tenant_id(self.request)
+        gateway_ids = _get_user_maintainer_gateway_ids(username, tenant_id)
         return (
             MCPServerAppPermissionApply.objects.filter(
                 mcp_server__gateway_id__in=gateway_ids,
@@ -243,12 +247,9 @@ class WorkbenchHandledMCPPermissionListApi(BaseWorkbenchListApi):
         return (
             MCPServerAppPermissionApply.objects.filter(
                 handled_by=username,
-                status__in=[
-                    MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-                    MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
-                ],
                 is_deleted=False,
             )
+            .exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-handled_time")
         )
