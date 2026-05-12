@@ -3,10 +3,10 @@ name: core-api ci
 on:
   push:
     branches: [ master, pre_*, ft_*, release/* ]
-    paths: ['src/core-api/**']
+    paths: ['src/core-api/**', '.github/workflows/core-api.yml']
   pull_request:
     branches: [ master, pre_*, ft_*, release/* ]
-    paths: ['src/core-api/**']
+    paths: ['src/core-api/**', '.github/workflows/core-api.yml']
 
 jobs:
   build:
@@ -17,22 +17,26 @@ jobs:
         os: [ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v6
       with:
-        go-version: '1.20'
+        go-version: '1.25.5'
         cache-dependency-path: src/core-api/go.sum
+
+    - name: Sync dependencies
+      run: make dep && git diff --exit-code -- go.mod go.sum vendor
+      working-directory: src/core-api
 
     - name: Build
       run: make build
       working-directory: src/core-api
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v9
       with:
-        version: v1.52.2
+        version: v2.11.2
         working-directory: src/core-api
     
     - name: Aqua Security Trivy
@@ -43,5 +47,9 @@ jobs:
         scan-ref: 'src/core-api'
 
     - name: Test
-      run: make dep && make test
+      run: make test
+      working-directory: src/core-api
+
+    - name: Docker Build
+      run: docker build --build-arg VERSION=ci --build-arg COMMIT=${GITHUB_SHA} -f Dockerfile . -t bk-apigateway-core-api:ci
       working-directory: src/core-api

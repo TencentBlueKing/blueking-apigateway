@@ -1,12 +1,13 @@
 VERSION = `git describe --tags --abbrev=0`
 COMMIT=`git rev-parse HEAD`
+GOLANGCI_LINT ?= $(shell go env GOPATH)/bin/golangci-lint
 
 .PHONY: init
 init:
 	pip install pre-commit
 	pre-commit install
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.46.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v2.11.2
 	# for ginkgo
 	go install github.com/onsi/ginkgo/v2/ginkgo@latest
 	# for make mock
@@ -35,7 +36,8 @@ mock:
 .PHONY: lint
 lint:
 	export GOFLAGS=-mod=vendor
-	golangci-lint run
+	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) fmt --diff
 	find . -name "*.go" -not -path "./vendor/*" | xargs -n 1 grep -L 'TencentBlueKing is pleased to ' | grep -v '/mock/' | wc -l | xargs -I {} bash -c '[[ {} -eq 0 ]] && exit 0 || exit 1'
 
 .PHONY: check-license

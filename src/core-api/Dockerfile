@@ -1,4 +1,4 @@
-FROM golang:1.20.4 AS builder
+FROM golang:1.25.5-bookworm AS builder
 
 COPY ./ /app
 WORKDIR /app
@@ -9,9 +9,9 @@ ARG COMMIT=HEAD
 RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ${BINARY}
 
 # install dlv
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.21.0
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.26.3
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG BINARY=bk-apigateway-core-api
 
