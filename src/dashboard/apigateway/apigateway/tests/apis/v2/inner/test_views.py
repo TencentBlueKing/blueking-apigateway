@@ -967,6 +967,112 @@ class TestMCPServerListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == mcp_server1.id
 
+    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway, mocker):
+        """测试使用 mcp_server_ids 筛选 MCPServer"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+
+        mcp_server1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-one",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-two",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server3 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-three",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
+            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
+        )
+
+        # 只筛选 server1 和 server3
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": f"{mcp_server1.id},{mcp_server3.id}"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        result_ids = [item["id"] for item in result["data"]["results"]]
+        assert mcp_server1.id in result_ids
+        assert mcp_server3.id in result_ids
+        assert mcp_server2.id not in result_ids
+
+    def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway, mocker):
+        """测试 mcp_server_ids 为空时返回所有"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-empty-ids-test",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
+            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
+        )
+
+        # mcp_server_ids 为空字符串，应返回所有
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": ""},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        result_ids = [item["id"] for item in result["data"]["results"]]
+        assert mcp_server.id in result_ids
+
+    def test_list_with_mcp_server_ids_invalid(self, request_view, fake_gateway, mocker):
+        """测试 mcp_server_ids 包含非法值时返回 400"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": "abc,def"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
+
     def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value

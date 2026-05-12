@@ -1335,6 +1335,77 @@ class TestMCPServerHandler:
         result = MCPServerHandler.build_list_queryset()
         assert server.id not in set(result.values_list("id", flat=True))
 
+    def test_build_list_queryset_with_ids(self, fake_gateway, fake_stage):
+        """按 ID 列表批量筛选"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server_a = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_b = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_c = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 只筛选 server_a 和 server_c
+        result = MCPServerHandler.build_list_queryset(ids=[server_a.id, server_c.id])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_a.id in result_ids
+        assert server_c.id in result_ids
+        assert server_b.id not in result_ids
+
+    def test_build_list_queryset_with_ids_empty_list(self, fake_gateway, fake_stage):
+        """ids 为空列表时不做筛选，返回所有"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # ids=[] (falsy) 不应过滤
+        result = MCPServerHandler.build_list_queryset(ids=[])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server.id in result_ids
+
+    def test_build_list_queryset_with_ids_nonexistent(self, fake_gateway, fake_stage):
+        """ids 中包含不存在的 ID 时，只返回存在的"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = MCPServerHandler.build_list_queryset(ids=[server.id, 999999])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server.id in result_ids
+        assert 999999 not in result_ids
+
     # ========== build_list_context 测试 ==========
 
     def test_build_list_context_basic(self, fake_gateway, fake_stage):
