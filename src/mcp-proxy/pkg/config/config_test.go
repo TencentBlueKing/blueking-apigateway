@@ -561,6 +561,66 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("Load defaults", func() {
+		It("should load bkAIDevTrace config from env when values are empty", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+
+			Expect(os.Setenv("BKAI_DEV_TRACE_ENABLE", "true")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_ENDPOINT", "127.0.0.1:4318")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_SERVICE_NAME", "env-trace-service")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_TOKEN", "env-trace-token")).To(Succeed())
+			DeferCleanup(func() {
+				_ = os.Unsetenv("BKAI_DEV_TRACE_ENABLE")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_ENDPOINT")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_SERVICE_NAME")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_TOKEN")
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.BkAIDevTrace.Enable).To(BeTrue())
+			Expect(cfg.BkAIDevTrace.Endpoint).To(Equal("127.0.0.1:4318"))
+			Expect(cfg.BkAIDevTrace.ServiceName).To(Equal("env-trace-service"))
+			Expect(cfg.BkAIDevTrace.Token).To(Equal("env-trace-token"))
+		})
+
+		It("should override config file values with env vars for bkAIDevTrace", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]interface{}{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+			v.Set("bkAIDevTrace.enable", false)
+			v.Set("bkAIDevTrace.endpoint", "from-config:4318")
+			v.Set("bkAIDevTrace.serviceName", "from-config-service")
+			v.Set("bkAIDevTrace.token", "from-config-token")
+
+			Expect(os.Setenv("BKAI_DEV_TRACE_ENABLE", "true")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_ENDPOINT", "from-env:4318")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_SERVICE_NAME", "from-env-service")).To(Succeed())
+			Expect(os.Setenv("BKAI_DEV_TRACE_TOKEN", "from-env-token")).To(Succeed())
+			DeferCleanup(func() {
+				_ = os.Unsetenv("BKAI_DEV_TRACE_ENABLE")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_ENDPOINT")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_SERVICE_NAME")
+				_ = os.Unsetenv("BKAI_DEV_TRACE_TOKEN")
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.BkAIDevTrace.Enable).To(BeTrue())
+			Expect(cfg.BkAIDevTrace.Endpoint).To(Equal("from-env:4318"))
+			Expect(cfg.BkAIDevTrace.ServiceName).To(Equal("from-env-service"))
+			Expect(cfg.BkAIDevTrace.Token).To(Equal("from-env-token"))
+		})
+
 		It("should set Transport defaults", func() {
 			v := viper.New()
 			v.Set("databases", []map[string]interface{}{
