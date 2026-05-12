@@ -546,10 +546,50 @@ var _ = Describe("Middleware", func() {
 			Expect(attrs["tool_name"]).To(Equal("test-tool"))
 		})
 
-		It("should include caller_executor and agent_code when ItsmFlex is present", func() {
+		It("should include session_id when request has server session", func() {
+			server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test-server", Version: "1.0.0"}, nil)
+			serverTransport, clientTransport := sdkmcp.NewInMemoryTransports()
+
+			testCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			serverSession, err := server.Connect(testCtx, serverTransport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer serverSession.Close()
+
+			client := sdkmcp.NewClient(&sdkmcp.Implementation{Name: "client", Version: "1.0.0"}, nil)
+			clientSession, err := client.Connect(testCtx, clientTransport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer clientSession.Close()
+
+			req := &sdkmcp.ServerRequest[*sdkmcp.InitializeParams]{
+				Session: serverSession,
+				Params:  &sdkmcp.InitializeParams{},
+			}
+
+			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
+			handler := middleware(func(ctx context.Context, method string, req sdkmcp.Request) (sdkmcp.Result, error) {
+				return successResult, nil
+			})
+			_, err = handler(ctx, "initialize", req)
+			Expect(err).NotTo(HaveOccurred())
+
+			spans := exporter.GetSpans()
+			Expect(len(spans)).To(Equal(1))
+			attrs := make(map[string]any)
+			for _, attr := range spans[0].Attributes {
+				attrs[string(attr.Key)] = attr.Value.AsInterface()
+			}
+			Expect(attrs["session_id"]).To(Equal(serverSession.ID()))
+		})
+
+		It("should include ItsmFlex attributes when ItsmFlex is present", func() {
 			testCtx := context.WithValue(ctx, constant.BkApiItsmFlexData, &util.ItsmFlexData{
-				CallerExecutor: "judge-caller",
-				AgentCode:      "ai-test-appcode",
+				CallerExecutor:   "judge-caller",
+				AgentCode:        "ai-test-appcode",
+				ServiceCatalogue: "test1/test2/test3",
+				CallerBizEnv:     "public",
+				CallerBizID:      "6000086",
 			})
 
 			middleware := mcppkg.BkAIDevTraceMiddleware(serverName)
@@ -567,6 +607,9 @@ var _ = Describe("Middleware", func() {
 			}
 			Expect(attrs["caller_executor"]).To(Equal("judge-caller"))
 			Expect(attrs["agent_code"]).To(Equal("ai-test-appcode"))
+			Expect(attrs["service_catalogue"]).To(Equal("test1/test2/test3"))
+			Expect(attrs["caller_bk_biz_env"]).To(Equal("public"))
+			Expect(attrs["caller_bk_biz_id"]).To(Equal("6000086"))
 		})
 
 		It("should record latency_ms as float with sub-millisecond precision", func() {
