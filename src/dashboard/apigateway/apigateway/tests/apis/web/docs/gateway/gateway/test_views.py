@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from ddf import G
+from django.test import Client
+from django.urls import reverse
 
 from apigateway.core.models import Release
 
@@ -36,6 +38,11 @@ class TestGatewayListApi:
 
 
 class TestGatewayRetrieveApi:
+    def test_retrieve_without_login(self, fake_gateway):
+        resp = Client().get(reverse("docs.gateway.retrieve", kwargs={"gateway_name": fake_gateway.name}))
+
+        assert resp.status_code == 401
+
     def test_retrieve(self, request_view, fake_gateway, fake_sdk):
         resp = request_view(
             method="GET",

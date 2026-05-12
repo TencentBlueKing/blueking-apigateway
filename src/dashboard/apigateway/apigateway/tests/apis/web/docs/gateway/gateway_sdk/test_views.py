@@ -16,8 +16,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.test import Client
+from django.urls import reverse
+
 
 class TestSDKListApi:
+    def test_list_without_login(self, fake_gateway, fake_sdk):
+        resp = Client().get(
+            reverse("docs.gateway.gateway_sdk.list", kwargs={"gateway_name": fake_gateway.name}),
+            data={
+                "language": fake_sdk.language,
+            },
+        )
+
+        assert resp.status_code == 401
+
     def test_list(self, request_view, fake_gateway, fake_stage, fake_sdk, fake_release):
         resp = request_view(
             method="GET",
@@ -40,6 +53,18 @@ class TestSDKListApi:
 
 
 class TestSDKUsageExampleApi:
+    def test_retrieve_without_login(self, fake_gateway):
+        resp = Client().get(
+            reverse("docs.gateway.gateway_sdk.retrieve_usage_example", kwargs={"gateway_name": fake_gateway.name}),
+            data={
+                "language": "python",
+                "stage_name": "prod",
+                "resource_name": "get_color",
+            },
+        )
+
+        assert resp.status_code == 401
+
     def test_retrieve(self, request_view, fake_gateway, fake_sdk):
         resp = request_view(
             method="GET",
