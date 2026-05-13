@@ -35,6 +35,8 @@ from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp.mcp_server import build_mcp_server_url
 
+logger = logging.getLogger(__name__)
+
 
 def get_mcp_server_url_from_context(context: dict, obj: MCPServer) -> str:
     """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
@@ -66,9 +68,6 @@ def get_categories_from_context(context: dict, obj: MCPServer) -> List[Dict[str,
         categories 列表，如 [{"name": "official", "display_name": "官方"}]
     """
     return context.get("categories", {}).get(obj.id, [])
-
-
-logger = logging.getLogger(__name__)
 
 
 def build_mcp_server_list_queryset(
