@@ -606,6 +606,7 @@ class MCPServerHandler:
         categories: Optional[List[str]] = None,
         is_public: Optional[bool] = None,
         order_by: str = "-updated_time",
+        ids: Optional[List[int]] = None,
     ) -> QuerySet:
         """构建 MCPServer 列表的通用 queryset
 
@@ -617,6 +618,7 @@ class MCPServerHandler:
             categories: 多个分类名称列表筛选（支持 AND/OR 逻辑）
             is_public: 是否公开
             order_by: 排序字段
+            ids: MCPServer ID 列表，用于批量筛选
 
         Returns:
             构建好的 queryset
@@ -624,6 +626,9 @@ class MCPServerHandler:
         queryset = MCPServer.objects.filter(status=MCPServerStatusEnum.ACTIVE.value)
         queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
         queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
+
+        if ids:
+            queryset = queryset.filter(id__in=ids)
 
         if is_public is not None:
             queryset = queryset.filter(is_public=is_public)
