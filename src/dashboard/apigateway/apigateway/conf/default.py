@@ -566,7 +566,7 @@ MCP_SERVER_OAUTH2_PUBLIC_CLIENT_APP_CODE = env.str("MCP_SERVER_OAUTH2_PUBLIC_CLI
 # ==============================================================================
 # ITSM v4 配置
 # ==============================================================================
-BK_ITSM4_GATEWAY_NAME = env.str("BK_ITSM4_GATEWAY_NAME", "bk-itsm4")
+BK_ITSM4_GATEWAY_NAME = env.str("BK_ITSM4_GATEWAY_NAME", "bk-itsm4" if EDITION == "te" else "cw-aitsm")
 BK_ITSM4_URL_PREFIX = (
     BK_API_URL_TMPL.format(api_name=BK_ITSM4_GATEWAY_NAME) + "/" + env.str("BK_ITSM4_GATEWAY_STAGE", "prod")
 )
@@ -574,7 +574,7 @@ BK_ITSM4_API_TIMEOUT = env.int("BK_ITSM4_API_TIMEOUT", 30)
 BK_ITSM4_SYSTEM_TOKEN = env.str("BK_ITSM4_SYSTEM_TOKEN", default="")
 BK_ITSM4_CALLBACK_APP_CODE = env.str(
     "BK_ITSM4_CALLBACK_APP_CODE",
-    default="cw_aitsm" if ENABLE_MULTI_TENANT_MODE else "bk-itsm4",
+    default="bk-itsm4" if EDITION == "te" else "cw_aitsm",
 )
 BK_ITSM4_CALLBACK_ALLOWED_APP_CODES = env.list(
     "BK_ITSM4_CALLBACK_ALLOWED_APP_CODES",

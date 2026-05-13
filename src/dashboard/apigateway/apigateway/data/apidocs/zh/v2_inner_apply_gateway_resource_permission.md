@@ -39,7 +39,9 @@
 ```json
 {
   "data": {
-    "record_id": 6
+    "record_id": 6,
+    "itsm_ticket_id": "102025051310362600001802",
+    "itsm_ticket_url": "https://itsm.example.com/#/ticket/102025051310362600001802"
   }
 }
 
@@ -56,4 +58,6 @@
 | 参数名称          | 参数类型   | 描述         |
 |---------------|--------|------------|
 | record_id     | int    | 权限申请单的单据ID |
+| itsm_ticket_id | string | 关联的 ITSM 工单 ID，未关联时为空字符串 |
+| itsm_ticket_url | string | ITSM 工单 URL，未关联时为空字符串 |
 
