@@ -30,6 +30,7 @@ from apigateway.apps.permission.constants import (
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, ResourceIDValidator
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now
 
 
@@ -230,6 +231,7 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
     expire_days_display = serializers.SerializerMethodField(help_text="过期天数")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
+    itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
 
     class Meta:
         ref_name = "apigateway.apis.web.permission.serializers.AppPermissionApplyOutputSLZ"
@@ -242,6 +244,8 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
             "reason",
             "expire_days",
             "grant_dimension",
+            "itsm_ticket_id",
+            "itsm_ticket_url",
             "created_time",
             "expire_days_display",
             "grant_dimension_display",
@@ -263,6 +267,9 @@ class AppPermissionApplyOutputSLZ(serializers.ModelSerializer):
             self.context.get("gateway_tenant_mode"),
             self.context.get("gateway_tenant_id"),
         )
+
+    def get_itsm_ticket_url(self, obj):
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
 class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):

@@ -230,3 +230,21 @@ class TestItsmPermissionApplyHelper:
         callback_url = helper._build_callback_url()
 
         assert callback_url == "https://bkapi.example.com/api/bk-apigateway/gray/api/v2/inner/itsm/callback/"
+
+    def test_build_ticket_url_with_valid_template(self, settings):
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        url = ItsmPermissionApplyHelper.build_ticket_url("102025092210362600001802")
+        assert url == "http://itsm.example.com/ticket/102025092210362600001802"
+
+    def test_build_ticket_url_returns_empty_when_template_not_set(self, settings):
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = ""
+
+        url = ItsmPermissionApplyHelper.build_ticket_url("102025092210362600001802")
+        assert url == ""
+
+    def test_build_ticket_url_returns_empty_when_ticket_id_empty(self, settings):
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        assert ItsmPermissionApplyHelper.build_ticket_url("") == ""
+        assert ItsmPermissionApplyHelper.build_ticket_url(None) == ""
