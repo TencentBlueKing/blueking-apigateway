@@ -433,6 +433,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
+        max_length=50,
+        help_text="MCPServer ID 列表，最多 50 个",
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
@@ -598,6 +600,8 @@ class MCPServerListInputSLZ(serializers.Serializer):
             ids = [int(x.strip()) for x in value.split(",")]
         except ValueError:
             raise serializers.ValidationError(_("MCPServer ID 必须为整数，多个以逗号分割"))
+        if len(ids) > 50:
+            raise serializers.ValidationError(_("MCPServer ID 列表最多支持 50 个"))
         return ids
 
 

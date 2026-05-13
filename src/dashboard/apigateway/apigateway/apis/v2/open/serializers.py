@@ -334,6 +334,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
+        max_length=50,
+        help_text="MCPServer ID 列表，最多 50 个",
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
