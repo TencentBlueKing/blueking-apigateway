@@ -97,7 +97,7 @@
 | gateway      | object | MCPServer 网关信息        |
 | tools_count  | int    | MCPServer 工具数量        |
 | prompts_count | int    | MCPServer Prompts 数量  |
-| url          | string | MCPServer 访问 URL      |
+| url          | string | MCPServer 访问 URL，根据最低权限级别自适应返回普通 URL 或应用态 URL |
 | detail_url   | string | MCPServer 网关站点详情 URL  |
 | updated_by   | string | 更新人                   |
 | created_by   | string | 创建人                   |
