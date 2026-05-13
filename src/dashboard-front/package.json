@@ -14,8 +14,7 @@
     "lint:eslint": "eslint . --fix",
     "lint:ci": "eslint .",
     "lint": "run-s lint:*",
-    "symlink-dot-agents:codebuddy": "node create-codebuddy-symlink.js",
-    "postinstall": "node create-codebuddy-symlink.js"
+    "symlink-dot-agents:codebuddy": "node create-codebuddy-symlink.js"
   },
   "dependencies": {
     "@blueking/bk-user-display-name": "1.0.3-beta.7",
