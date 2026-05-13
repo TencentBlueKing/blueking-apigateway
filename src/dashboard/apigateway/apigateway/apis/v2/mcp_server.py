@@ -26,7 +26,7 @@ v2 MCP Server 公共函数模块
     - validate_and_enrich_mcp_server_for_retrieve -> MCPServerHandler.build_retrieve_context
 """
 
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from django.db.models import QuerySet
 
@@ -34,20 +34,36 @@ from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.mcp_server import MCPServerHandler
 
 
-def get_categories_from_context(context: dict, obj: Union[dict, MCPServer]) -> List[Dict[str, str]]:
+def get_mcp_server_url_from_context(context: dict, obj: MCPServer) -> str:
+    """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
+
+    统一 inner/open 序列化器中 get_url 方法的公共逻辑，避免重复实现。
+
+    Args:
+        context: serializer 的 context 字典，应包含 "least_privileges" 键
+        obj: MCPServer model 实例
+
+    Returns:
+        MCP Server 访问 URL
+    """
+    least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
+
+
+def get_categories_from_context(context: dict, obj: MCPServer) -> List[Dict[str, str]]:
     """从 serializer context 中获取 obj 对应的 categories 列表
 
-    支持 dict 和 model 实例两种 obj 格式，统一 inner/open 序列化器中的 categories 获取逻辑。
+    统一 inner/open 序列化器中的 categories 获取逻辑。
 
     Args:
         context: serializer 的 context 字典，应包含 "categories" 键
-        obj: MCPServer 数据，可以是 dict（含 "id" 键）或 model 实例（含 id 属性）
+        obj: MCPServer model 实例
 
     Returns:
         categories 列表，如 [{"name": "official", "display_name": "官方"}]
     """
-    obj_id = obj.get("id") if isinstance(obj, dict) else obj.id
-    return context.get("categories", {}).get(obj_id, [])
+    return context.get("categories", {}).get(obj.id, [])
 
 
 def build_mcp_server_list_queryset(
