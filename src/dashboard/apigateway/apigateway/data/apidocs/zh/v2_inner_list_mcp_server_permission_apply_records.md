@@ -29,10 +29,15 @@ mcp_server 申请记录列表
         "name": "bk-apigateway-prod-s1",
         "title": "测试服务",
         "description": "test",
-        "tools_count": "1",
-        "tool_names": ["tool1"],
+        "tools_count": 1,
+        "tool_names": ["tool1", "tool2"],
         "protocol_type": "sse",
-        "doc_link": ""
+        "url": "https://mcp.example.com/bk-apigateway-prod-s1/sse",
+        "doc_link": "",
+        "categories": [
+          {"name": "official", "display_name": "官方"},
+          {"name": "ai", "display_name": "AI"}
+        ]
       },
       "record": {
         "id": 1,
@@ -75,7 +80,8 @@ mcp_server 申请记录列表
 | description     | string | mcp_server 描述        |
 | tools_count     | int    | mcp_server 工具数量      |
 | tool_names      | array  | mcp_server 工具名称列表    |
-| protocol_type   | string | mcp_server 协议类型      |
+| protocol_type   | string | MCPServer 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
+| url             | string | mcp_server 访问 URL，根据最低权限级别自适应返回普通 URL 或应用态 URL |
 | doc_link        | string | mcp_server 文档访问地址    |
 
 

@@ -675,20 +675,11 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
             data.get("query"),
             data.get("applied_time_start"),
             data.get("applied_time_end"),
-        )
+        ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
 
         mcp_server_permission_records = [
             {
-                "mcp_server": {
-                    "id": obj.mcp_server_id,
-                    "name": obj.mcp_server.name,
-                    "title": obj.mcp_server.title or obj.mcp_server.name,
-                    "description": obj.mcp_server.description,
-                    "tools_count": obj.mcp_server.tools_count,
-                    "tool_names": obj.mcp_server.tool_names,
-                    "protocol_type": obj.mcp_server.protocol_type,
-                    "gateway_id": obj.mcp_server.gateway_id,  # 添加 gateway_id 用于构建审批 URL
-                },
+                "mcp_server": obj.mcp_server,
                 "record": {
                     "id": obj.id,
                     "applied_by": obj.applied_by,
@@ -702,12 +693,28 @@ class MCPServerAppPermissionRecordListApi(generics.ListAPIView):
                     "expire_days": obj.expire_days,
                     "mcp_server_id": obj.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
                     "gateway_id": obj.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
+                    "tenant_mode": obj.mcp_server.gateway.tenant_mode,
+                    "tenant_id": obj.mcp_server.gateway.tenant_id,
                 },
             }
             for obj in queryset
         ]
 
-        slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(mcp_server_permission_records, many=True)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        mcp_servers = [obj.mcp_server for obj in queryset]
+        least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
+
+        slz = serializers.MCPServerAppPermissionRecordListOutputSLZ(
+            mcp_server_permission_records,
+            many=True,
+            context={
+                "categories": categories_map,
+                "least_privileges": least_privileges,
+            },
+        )
 
         return OKJsonResponse(data=slz.data)
 
@@ -735,7 +742,9 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         data = slz.validated_data
 
         try:
-            return MCPServerAppPermissionApply.objects.get(bk_app_code=data["target_app_code"], id=record_id)
+            return MCPServerAppPermissionApply.objects.select_related(
+                "mcp_server", "mcp_server__gateway", "mcp_server__stage"
+            ).get(bk_app_code=data["target_app_code"], id=record_id)
         except MCPServerAppPermissionApply.DoesNotExist:
             raise error_codes.NOT_FOUND
 
@@ -743,16 +752,7 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
         instance = self.get_object()
 
         mcp_server_permission_record = {
-            "mcp_server": {
-                "id": instance.mcp_server_id,
-                "name": instance.mcp_server.name,
-                "title": instance.mcp_server.title or instance.mcp_server.name,
-                "description": instance.mcp_server.description,
-                "tools_count": instance.mcp_server.tools_count,
-                "tool_names": instance.mcp_server.tool_names,
-                "protocol_type": instance.mcp_server.protocol_type,
-                "gateway_id": instance.mcp_server.gateway_id,  # 添加 gateway_id 用于构建审批 URL
-            },
+            "mcp_server": instance.mcp_server,
             "record": {
                 "id": instance.id,
                 "applied_by": instance.applied_by,
@@ -766,12 +766,23 @@ class MCPServerAppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
                 "comment": instance.comment,
                 "reason": instance.reason,
                 "expire_days": instance.expire_days,
-                "mcp_server_id": instance.mcp_server_id,  # 添加 mcp_server_id 用于构建审批 URL
-                "gateway_id": instance.mcp_server.gateway_id,  # 在 record 中也添加 gateway_id
+                "mcp_server_id": instance.mcp_server_id,
+                "gateway_id": instance.mcp_server.gateway_id,
             },
         }
 
-        slz = self.get_serializer(mcp_server_permission_record)
+        # Build categories map
+        categories_map = MCPServerHandler.build_categories_map([instance.mcp_server_id])
+
+        # 计算最低权限级别，用于判断是否展示应用态 URL
+        least_privileges = MCPServerHandler.get_least_privileges([instance.mcp_server])
+
+        context = {
+            **self.get_serializer_context(),
+            "categories": categories_map,
+            "least_privileges": least_privileges,
+        }
+        slz = self.get_serializer(mcp_server_permission_record, context=context)
         return OKJsonResponse(data=slz.data)
 
 
