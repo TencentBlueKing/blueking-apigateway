@@ -21,6 +21,7 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.permissions import GatewayDisplayablePermission
@@ -99,7 +100,7 @@ class GatewayListApi(generics.ListAPIView):
     ),
 )
 class GatewayRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [GatewayDisplayablePermission]
+    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
 
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""

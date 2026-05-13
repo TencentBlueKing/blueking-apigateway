@@ -23,7 +23,7 @@ from typing import Dict, List
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.v2.mcp_server import get_categories_from_context
+from apigateway.apis.v2.mcp_server import get_categories_from_context, get_mcp_server_url_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
@@ -43,10 +43,10 @@ from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import GatewayStatusEnum
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
-    build_mcp_server_url,
 )
 from apigateway.utils import time
 
@@ -252,6 +252,7 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
     handled_by = serializers.SerializerMethodField()
     comment = serializers.SerializerMethodField()
     applied_by = serializers.SerializerMethodField()
+    itsm_ticket_url = serializers.SerializerMethodField()
 
     class Meta:
         model = AppPermissionRecord
@@ -268,6 +269,8 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             "comment",
             "reason",
             "expire_days",
+            "itsm_ticket_id",
+            "itsm_ticket_url",
             "gateway_name",
         ]
         ref_name = "apigateway.apis.v2.inner.serializers.AppPermissionRecordBaseSLZ"
@@ -296,6 +299,9 @@ class AppPermissionRecordBaseSLZ(serializers.ModelSerializer):
             obj.gateway.tenant_mode,
             obj.gateway.tenant_id,
         )
+
+    def get_itsm_ticket_url(self, obj):
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
 class AppPermissionRecordListOutputSLZ(AppPermissionRecordBaseSLZ):
@@ -370,16 +376,17 @@ class MCPServerBaseSLZ(serializers.Serializer):
         help_text="MCPServer 协议类型",
         choices=MCPServerProtocolTypeEnum.get_choices(),
     )
+    url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
 
     def get_title(self, obj) -> str:
-        title = obj.get("title", "") if isinstance(obj, dict) else getattr(obj, "title", "")
-        name = obj.get("name", "") if isinstance(obj, dict) else getattr(obj, "name", "")
-        return title if title else name
+        return obj.title if obj.title else obj.name
+
+    def get_url(self, obj) -> str:
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_doc_link(self, obj):
-        obj_id = obj.get("id") if isinstance(obj, dict) else obj.id
-        return build_mcp_server_detail_url(obj_id)
+        return build_mcp_server_detail_url(obj.id)
 
     def get_categories(self, obj) -> List[Dict[str, str]]:
         return get_categories_from_context(self.context, obj)
@@ -398,17 +405,19 @@ class MCPServerPermissionBaseSLZ(serializers.Serializer):
     def get_approval_url(self, obj) -> str:
         """获取审批 URL"""
         try:
-            # 如果是字典格式（来自视图构造的数据）
             if isinstance(obj, dict):
                 mcp_server_id = obj.get("mcp_server_id")
                 gateway_id = obj.get("gateway_id")
+                itsm_ticket_id = obj.get("itsm_ticket_id", "")
 
                 if gateway_id and mcp_server_id:
-                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id)
+                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
 
             # 如果是模型实例
             if hasattr(obj, "mcp_server"):
-                return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+                return build_mcp_server_permission_approval_url(
+                    obj.mcp_server.gateway_id, obj.mcp_server_id, getattr(obj, "itsm_ticket_id", "")
+                )
         except Exception:
             # 记录错误但不中断响应
             logger.warning("Failed to build approval URL for object: %s", obj)
@@ -447,10 +456,13 @@ class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    itsm_ticket_id = serializers.CharField(read_only=True, help_text="关联的 ITSM 工单 ID")
     approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
     def get_approval_url(self, obj) -> str:
-        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+        return build_mcp_server_permission_approval_url(
+            obj.mcp_server.gateway_id, obj.mcp_server_id, obj.itsm_ticket_id or ""
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"
@@ -499,22 +511,25 @@ class MCPServerAppPermissionRecordBaseSLZ(serializers.Serializer):
     comment = serializers.CharField(read_only=True, help_text="备注")
     reason = serializers.CharField(read_only=True, help_text="申请原因")
     expire_days = serializers.IntegerField(read_only=True, help_text="过期天数")
+    itsm_ticket_id = serializers.CharField(read_only=True, help_text="关联的 ITSM 工单 ID")
     approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
     def get_approval_url(self, obj) -> str:
         """获取审批 URL"""
         try:
-            # 如果是字典格式（来自视图构造的数据）
             if isinstance(obj, dict):
                 mcp_server_id = obj.get("mcp_server_id")
                 gateway_id = obj.get("gateway_id")
+                itsm_ticket_id = obj.get("itsm_ticket_id", "")
 
                 if gateway_id and mcp_server_id:
-                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id)
+                    return build_mcp_server_permission_approval_url(gateway_id, mcp_server_id, itsm_ticket_id)
 
             # 如果是模型实例
             if hasattr(obj, "mcp_server"):
-                return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+                return build_mcp_server_permission_approval_url(
+                    obj.mcp_server.gateway_id, obj.mcp_server_id, getattr(obj, "itsm_ticket_id", "")
+                )
         except Exception:
             # 记录错误但不中断响应
             logger.warning("Failed to build approval URL for object: %s", obj)
@@ -657,7 +672,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name, obj.protocol_type)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)

@@ -402,11 +402,16 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
 
 
 class TestAppPermissionApplyViewSet:
-    def test_list(self, request_factory, fake_gateway):
+    def test_list(self, request_factory, fake_gateway, settings):
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = (
+            "https://example.com/#/ticket/ticketInfo?type=ticket&ticketId={ticket_id}"
+        )
+
         G(
             models.AppPermissionApply,
             gateway=fake_gateway,
             bk_app_code="test",
+            itsm_ticket_id="102025092210362600001802",
         )
 
         data = [
@@ -431,6 +436,11 @@ class TestAppPermissionApplyViewSet:
             result = get_response_json(response)
             assert response.status_code == 200
             assert result["data"]["count"] == test["expected"]["count"]
+            assert result["data"]["results"][0]["itsm_ticket_id"] == "102025092210362600001802"
+            assert (
+                result["data"]["results"][0]["itsm_ticket_url"]
+                == "https://example.com/#/ticket/ticketInfo?type=ticket&ticketId=102025092210362600001802"
+            )
 
 
 class TestAppPermissionApplyBatchViewSet:

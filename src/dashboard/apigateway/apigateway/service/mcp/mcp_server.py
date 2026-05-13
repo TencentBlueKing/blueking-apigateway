@@ -23,6 +23,7 @@ from django.conf import settings
 from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import ResourceVersion
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 
 def update_stage_mcp_server_related_resource_names(
@@ -105,16 +106,22 @@ def build_mcp_server_detail_url(mcp_server_id: int) -> str:
     return f"{settings.DASHBOARD_FE_URL}/mcp-market-details/{mcp_server_id}/"
 
 
-def build_mcp_server_permission_approval_url(gateway_id: int, mcp_server_id: int) -> str:
+def build_mcp_server_permission_approval_url(gateway_id: int, mcp_server_id: int, itsm_ticket_id: str = "") -> str:
     """构建 MCP Server 权限审批 URL
 
     Args:
         gateway_id: 网关 ID
         mcp_server_id: MCP Server ID
+        itsm_ticket_id: ITSM 工单 ID，若提供且 ITSM 模板已配置，则返回 ITSM 单据链接
 
     Returns:
         MCP Server 权限审批 URL
     """
+    if itsm_ticket_id:
+        itsm_url = ItsmPermissionApplyHelper.build_ticket_url(itsm_ticket_id)
+        if itsm_url:
+            return itsm_url
+
     return settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL.format(
         gateway_id=gateway_id, mcp_server_id=mcp_server_id
     )

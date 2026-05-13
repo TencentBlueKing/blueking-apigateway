@@ -17,8 +17,21 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.test import Client
+from django.urls import reverse
+
 
 class TestResourceListApi:
+    def test_list_without_login(self, fake_gateway, fake_stage, fake_release):
+        resp = Client().get(
+            reverse("docs.gateway.resource.list", kwargs={"gateway_name": fake_gateway.name}),
+            data={
+                "stage_name": fake_stage.name,
+            },
+        )
+
+        assert resp.status_code == 401
+
     def test_list(self, fake_gateway, fake_stage, fake_release, request_view):
         resp = request_view(
             method="GET",
