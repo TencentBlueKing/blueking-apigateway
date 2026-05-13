@@ -23,6 +23,9 @@ mcp_server 申请权限列表
         "title": "测试服务1",
         "description": "test",
         "tools_count": 1,
+        "tool_names": ["tool1", "tool2"],
+        "protocol_type": "sse",
+        "url": "https://mcp.example.com/bk-apigateway-prod-test1/sse",
         "doc_link": "",
         "categories": [
           {"name": "official", "display_name": "官方"},
@@ -35,6 +38,27 @@ mcp_server 申请权限列表
         "expires_in": null,
         "handled_by": ["admin"],
         "approval_url": "https://itsm.example.com/#/ticket/102025092210362600001802"
+      }
+    },
+    {
+      "mcp_server": {
+        "id": 2,
+        "name": "bk-esb-prod-test2",
+        "title": "测试服务2",
+        "description": "test",
+        "tools_count": 1,
+        "tool_names": ["tool3"],
+        "protocol_type": "sse",
+        "url": "https://mcp.example.com/bk-esb-prod-test2/sse",
+        "doc_link": "",
+        "categories": []
+      },
+      "permission": {
+        "status": "need_apply",
+        "action": "apply",
+        "expires_in": null,
+        "handled_by": ["admin"],
+        "approval_url": "http://dashboard.example.com/gateways/1/mcp-servers/2/permissions/"
       }
     }
   ]
@@ -56,15 +80,18 @@ mcp_server 申请权限列表
 
 #### data.mcp_server
 
-| 参数名称 | 参数类型 | 描述 |
-|---|---|---|
-| id | int | mcp_server ID |
-| name | string | mcp_server 名称 |
-| title | string | mcp_server 中文名/显示名称 |
-| description | string | mcp_server 描述 |
-| tools_count | int | mcp_server 工具数量 |
-| doc_link | string | mcp_server 文档访问地址 |
-| categories | array | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
+| 参数名称            | 参数类型   | 描述                |
+|-----------------|--------|-------------------|
+| id              | int    | mcp_server ID     |
+| name            | string | mcp_server 名称     |
+| title           | string | mcp_server 中文名/显示名称 |
+| description     | string | mcp_server 描述     |
+| tools_count     | int    | mcp_server 工具数量   |
+| tool_names      | array  | mcp_server 工具名称列表 |
+| protocol_type   | string | MCPServer 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
+| url             | string | mcp_server 访问 URL，根据最低权限级别自适应返回普通 URL 或应用态 URL |
+| doc_link        | string | mcp_server 文档访问地址 |
+| categories      | array  | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 
 #### data.permission
 
