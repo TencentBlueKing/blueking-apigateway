@@ -21,6 +21,7 @@ from unittest.mock import patch
 import pytest
 from ddf import G
 
+from apigateway.apis.v2.mcp_server import build_mcp_server_list_queryset
 from apigateway.apps.mcp_server.constants import (
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
@@ -29,6 +30,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime
@@ -880,3 +882,76 @@ class TestMCPServerHandler:
         MCPServerHandler._sync_mcp_server_categories(mcp_server, None)
 
         assert mcp_server.categories.count() == 1
+
+    # ========== build_mcp_server_list_queryset ids 测试 ==========
+
+    def test_build_mcp_server_list_queryset_with_ids(self, fake_gateway, fake_stage):
+        """按 ID 列表批量筛选"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server_a = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_b = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_c = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 只筛选 server_a 和 server_c
+        result = build_mcp_server_list_queryset(ids=[server_a.id, server_c.id])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_a.id in result_ids
+        assert server_c.id in result_ids
+        assert server_b.id not in result_ids
+
+    def test_build_mcp_server_list_queryset_with_ids_empty_list(self, fake_gateway, fake_stage):
+        """ids 为空列表时不做筛选，返回所有"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # ids=[] (falsy) 不应过滤
+        result = build_mcp_server_list_queryset(ids=[])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server.id in result_ids
+
+    def test_build_mcp_server_list_queryset_with_ids_nonexistent(self, fake_gateway, fake_stage):
+        """ids 中包含不存在的 ID 时，只返回存在的"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        result = build_mcp_server_list_queryset(ids=[server.id, 999999])
+        result_ids = set(result.values_list("id", flat=True))
+        assert server.id in result_ids
+        assert 999999 not in result_ids
