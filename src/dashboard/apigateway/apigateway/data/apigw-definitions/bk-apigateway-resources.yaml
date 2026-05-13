@@ -3456,7 +3456,8 @@ paths:
                   type: array
                   items:
                     type: integer
-                  description: mcp_server ID 列表
+                  maxItems: 50
+                  description: mcp_server ID 列表，最多 50 个
                   example: [1, 2, 3]
                 applied_by:
                   type: string
@@ -6381,7 +6382,8 @@ paths:
                   type: array
                   items:
                     type: integer
-                  description: mcp_server ID 列表
+                  maxItems: 50
+                  description: mcp_server ID 列表，最多 50 个
                   example: [1, 2]
                 applied_by:
                   type: string
@@ -6627,6 +6629,24 @@ paths:
       description: 获取全量的 MCPServer 列表（应用态接口）
       tags:
       - v2_inner
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述
+        - name: order_by
+          in: query
+          schema:
+            type: string
+          description: 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time
+          example: -updated_time
+        - name: mcp_server_ids
+          in: query
+          schema:
+            type: string
+          description: MCPServer ID 列表，多个以逗号分割，最多 50 个
+          example: "1,2,3"
       responses:
         default:
           description: ''

@@ -9,7 +9,7 @@ MCPServer 申请权限/批量申请权限
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
 | target_app_code | string | 是 | 申请权限的应用，应与当前请求应用一致 |
-| mcp_server_ids | array[int] | 是 | MCPServer ID 列表 |
+| mcp_server_ids | array[int] | 是 | MCPServer ID 列表，最多 50 个 |
 | applied_by | string | 是 | 申请人 |
 | reason | string | 是 | 申请理由 |
 
