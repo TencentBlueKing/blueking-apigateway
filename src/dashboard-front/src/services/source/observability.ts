@@ -380,7 +380,6 @@ export const fetchExportFlowLog = (gatewayId: number, params: IObservabilityBasi
 /**
  *  查询有MCPServer调用权限的 bk_app_code 列表（网关级别）
  * @param gatewayId 网关id
- * @param params  搜索参数
  */
 export const fetchObservabilityAppCode = (gatewayId: number) => {
   return http.get(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-app-codes/`);
@@ -390,7 +389,6 @@ export const fetchObservabilityAppCode = (gatewayId: number) => {
  *  查询 MCP Server 时序图 metrics
  * @param gatewayId 网关id
  * @param {IObservabilitySearchParams} params 查询参数
- * @param extraStr 检索项
  */
 export const fetchMetricsQueryRange = (
   gatewayId: number,
@@ -403,7 +401,6 @@ export const fetchMetricsQueryRange = (
  *  查询 MCP Server 瞬时值 metrics
  * @param gatewayId 网关id
  * @param {IObservabilitySearchParams} params 查询参数
- * @param extraStr 检索项
  */
 export const fetchMetricsQueryInstant = (
   gatewayId: number,

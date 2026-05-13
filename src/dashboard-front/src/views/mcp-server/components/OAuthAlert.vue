@@ -76,9 +76,10 @@
 
 <script lang="ts" setup>
 import { locale, t } from '@/locales';
-import { type IMCPServerTool } from '@/services/source/mcp-server';
+import type { IAuthConfig } from '@/types/resource';
+import type { IMCPToolSelections } from '@/services/source/mcp-server';
 
-interface IProps { appAuthStatusList?: IMCPServerTool[] }
+interface IProps { appAuthStatusList?: IMCPToolSelections[] }
 
 const { appAuthStatusList = [] } = defineProps<IProps>();
 
@@ -97,12 +98,10 @@ const renderAlertStyles = computed(() => {
   };
 });
 const renderToolData = computed(() => {
-  const results = appAuthStatusList.map((item: IMCPServerTool & {
-    contexts?: any
-    tool_name?: string
-  }) => {
-    if (item.contexts?.resource_auth?.config?.length) {
-      const authConfig = JSON.parse(item.contexts?.resource_auth?.config);
+  const results = appAuthStatusList.map((item: IMCPToolSelections) => {
+    const config = item?.contexts?.resource_auth?.config as string;
+    if (config?.length) {
+      const authConfig = JSON.parse(config) as IAuthConfig;
       const displayName = item.tool_name || item.name;
       if (authConfig?.auth_verified_required && !authConfig?.app_verified_required) {
         return { name: `${displayName} (${t('仅用户态')})` };
@@ -116,7 +115,7 @@ const renderToolData = computed(() => {
     }
     return item;
   });
-  return results.map((item: any) => item.name).join('、');
+  return results.map((item: IMCPToolSelections) => item.name).join('、');
 });
 </script>
 
