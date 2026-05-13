@@ -947,3 +947,115 @@ class TestMCPServerListApi:
         )
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
+
+    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway, mocker):
+        """测试使用 mcp_server_ids 筛选 MCPServer"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+
+        mcp_server1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-one",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-two",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+        mcp_server3 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-three",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
+            return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
+        )
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
+            return_value=True,
+        )
+
+        # 只筛选 server1 和 server3
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": f"{mcp_server1.id},{mcp_server3.id}"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        result_ids = [item["id"] for item in result["data"]["results"]]
+        assert mcp_server1.id in result_ids
+        assert mcp_server3.id in result_ids
+        assert mcp_server2.id not in result_ids
+
+    def test_list_with_empty_mcp_server_ids(self, request_view, fake_gateway, mocker):
+        """测试 mcp_server_ids 为空字符串时返回所有"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.maintainers = ["admin"]
+        fake_gateway.save()
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+
+        mcp_server1 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="server-one",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
+            return_value={fake_gateway.id: mock.MagicMock(gateway_type=None)},
+        )
+        mocker.patch(
+            "apigateway.apis.v2.mcp_server.GatewayTypeHandler.is_official",
+            return_value=True,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": ""},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]["results"]) >= 1
+
+    def test_list_with_mcp_server_ids_invalid(self, request_view, fake_gateway, mocker):
+        """测试 mcp_server_ids 包含非法值时返回 400"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.list",
+            data={"mcp_server_ids": "abc,def"},
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 400
