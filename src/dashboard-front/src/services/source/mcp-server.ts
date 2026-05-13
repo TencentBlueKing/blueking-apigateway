@@ -42,14 +42,13 @@ import type {
   IMCPServerRemotePromptsBatchInputSLZ,
   IMCPServerUserCustomDocInputSLZ,
 } from '@/services/types/body/post/gateways.ts';
-import type {
-  IMCPServerUpdateInputSLZ,
-  IMCPServerUpdateStatusInputSLZ,
-} from '@/services/types/body/patch/gateways.ts';
+import type { IMCPServerUpdateStatusInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import type { IMcpBatchConfigQuery } from '@/services/types/query/mcp-marketplace.ts';
 import type { IMcpClientConfig } from '@/services/types/responses/mcp-marketplace.ts';
 
 const path = '/gateways';
+
+export type IMCPTabType = 'tool' | 'prompt';
 
 // MCPServer列表
 export interface IMCPServer {
@@ -58,7 +57,7 @@ export interface IMCPServer {
   title?: string
   description: string
   is_public: boolean
-  labels: (string | null)[]
+  labels: string[]
   resource_names: string[]
   tool_names?: string[]
   tools_count: number
@@ -87,39 +86,194 @@ export interface IMCPServer {
   [key: string]: any
 }
 
+// 工具schema
+export interface IMCPServerToolSchema {
+  properties: {
+    data: {
+      properties: {
+        resource_info: {
+          properties: {
+            auth_config: {
+              properties: {
+                app_verified_required: {
+                  type: string
+                  description: string
+                }
+                resource_perm_required: {
+                  type: string
+                  description: string
+                }
+                user_verified_required: {
+                  type: string
+                  description: string
+                }
+              }
+              type: string
+            }
+            description: {
+              type: string
+              description: string
+            }
+            enable_websocket: {
+              type: string
+              description: string
+            }
+            id: {
+              type: string
+              description: string
+            }
+            is_public: {
+              type: string
+              description: string
+            }
+            labels: {
+              type: string
+              description: string
+              properties: {
+                label: {
+                  properties: {
+                    id: {
+                      type: string
+                      description: string
+                    }
+                    name: {
+                      type: string
+                      description: string
+                    }
+                  }
+                  type: string
+                }
+              }
+            }
+            match_subpath: {
+              type: string
+              description: string
+            }
+            method: {
+              type: string
+              description: string
+            }
+            name: {
+              type: string
+              description: string
+            }
+            path: {
+              type: string
+              description: string
+            }
+          }
+          type: string
+        }
+      }
+      type: string
+    }
+  }
+  type: string
+}
+
 // MCPServer工具
 export interface IMCPServerTool {
   id: number
   name: string
+  description?: string
+  description_en?: string
+  method?: string
+  path?: string
+  mode_type?: IMCPTabType
   tool_name?: string
-  description: string
-  method: string
-  path: string
   isOverflow?: boolean
-  verified_user_required: boolean
-  verified_app_required: boolean | string[]
-  resource_perm_required: boolean | string[]
-  allow_apply_permission: boolean | string[]
-  labels: string | {
+  has_openapi_schema?: boolean
+  verified_user_required?: boolean
+  verified_app_required?: boolean | string[]
+  resource_perm_required?: boolean | string[]
+  allow_apply_permission?: boolean | string[]
+  labels?: string | {
     id: number
     name: string
   }[]
+  gateway_label_ids?: number[]
+  match_subpath: boolean
+  enable_websocket: boolean
+  is_public: boolean
+  doc_updated_time?: {
+    zh: string
+  }
+  proxy: {
+    config: string
+    backend: {
+      id: number
+      name: string
+      config: {
+        type: string
+        timeout: number
+        loadbalance: string
+        hosts: {
+          scheme: string
+          host: string
+          weight: number
+        }[]
+        checks: {
+          passive: {
+            type: string
+            healthy: {
+              http_statuses: number[]
+              successes: number
+            }
+            unhealthy: {
+              http_statuses: number[]
+              http_failures: number
+              timeouts: number
+            }
+          }
+        }
+      }
+    }
+  }
+  contexts?: IResourceAuthResponse
+  plugins: {
+    binding_type: string
+    config: Record<string, any>
+    id: number
+    name: string
+    priority: number
+    type: string
+  }[]
+  openapi_schema?: {
+    version: string
+    parameters: {
+      description: string
+      in: string
+      name: string
+      required: boolean
+      schema: {
+        type: string
+      }
+    }[]
+    none_schema: boolean
+    responses?: {
+      default?: {
+        content?: Record<string, IMCPServerToolSchema>
+        description?: string
+      }
+    }
+  }
 }
 
 // MCPServerPrompt
 export interface IMCPServerPrompt {
-  id: string
+  id: number
   name: string
   code: string
-  content: string
-  space_name: string
-  space_code: string
-  updated_by: string
-  updated_time: string
+  content?: string
+  mode_type?: IMCPTabType
+  space_name?: string
+  space_code?: string
+  updated_by?: string
+  updated_time?: string
   is_public: boolean
   is_no_perm?: boolean
   isOverflow?: boolean
-  labels: string[]
+  labels?: string[]
 }
 
 // MCP分类
@@ -144,7 +298,7 @@ export interface IMCPFormData {
   name: string
   title: string
   description: string
-  stage_id: number | null
+  stage_id: number
   is_public: boolean
   oauth2_public_client_enabled: boolean
   raw_response_enabled: boolean
@@ -165,24 +319,46 @@ export interface IMCPFilterParams {
   [key: string]: any
 }
 
+// config 是 JSON 字符串，解析后对应的对象结构
+export interface IResourceAuthConfig {
+  skip_auth_verification: boolean
+  auth_verified_required: boolean
+  app_verified_required: boolean
+  resource_perm_required: boolean
+}
+
+export interface IResourceAuthResponse {
+  resource_auth: {
+    id: number
+    scope_type: string
+    scope_id: number
+    type: string
+    config: string | IResourceAuthConfig | undefined
+    schema?: {
+      id: number
+      name: string
+      type: string
+      version: string
+    }
+  }
+}
+
 // tool工具勾选项
 export interface IMCPToolSelections {
   name: string
-  tool_name: string
-  id: number
-  contexts: {
-    [key: string]: string | null
-  }
+  tool_name?: string
+  id?: number
+  contexts?: IResourceAuthResponse
 }
 
 //  UI 扩展类型
 export type IMCPServerWithUIState = IMCPServer & { is_checked?: boolean };
 
 // 重命名tool_name
-export type ToolNameRowType = IMCPServerTool & {
+export type ToolNameRowType = Partial<IMCPServerTool & {
   tool_name: string
   isShow: boolean
-};
+}>;
 
 // 列表
 export const getServers = (apigwId: number, data: IGatewaysMcpServersListQuery) =>
@@ -193,14 +369,14 @@ export const getServer = (apigwId: number, serverId: number) =>
   http.get<IMCPServerRetrieveOutput>(`${path}/${apigwId}/mcp-servers/${serverId}/`);
 
 // 创建
-export const createServer = (apigwId: number, data: IMCPServerCreateInputSLZ) =>
+export const createServer = (apigwId: number, data: Partial<IMCPServerCreateInputSLZ>) =>
   http.post(`${path}/${apigwId}/mcp-servers/`, data);
 
 // 部分更新
 export const patchServer = (
   apigwId: number,
   serverId: number,
-  data: IMCPServerUpdateInputSLZ,
+  data: Partial<IMCPServerCreateInputSLZ>,
 ) => http.patch(`${path}/${apigwId}/mcp-servers/${serverId}/`, data);
 
 // 删除
@@ -280,7 +456,7 @@ export const getServerPrompts = (apigwId: number, query: IGatewaysMcpServersRemo
  * @param {Number[]} data.ids 当前PromptID组
  */
 export const getServerPromptsDetail = (apigwId: number, data: IMCPServerRemotePromptsBatchInputSLZ) =>
-  http.post<IMCPServerPrompt>(`${path}/${apigwId}/mcp-servers/-/remote-prompts/batch/`, data);
+  http.post<IMCPServerRemotePromptsOutput>(`${path}/${apigwId}/mcp-servers/-/remote-prompts/batch/`, data);
 
 /**
  * 获取 MCPServer 搜索过滤选项（环境、标签、分类）

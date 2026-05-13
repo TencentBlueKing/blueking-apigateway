@@ -105,6 +105,7 @@
           <TableEmpty
             :error="error"
             :empty-type="tableEmptyType"
+            :no-search-fields="noSearchFields"
             :query-list-params="params"
             @clear-filter="handlerClearFilter"
             @refresh="handleRefresh"
@@ -152,11 +153,12 @@ interface IProps {
   isExistUniqueKey?: boolean
   bordered?: string | boolean
   tableLayout?: string
-  tableEmptyType?: 'empty' | 'search-empty'
+  tableEmptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'error'
   maxLimitConfig?: Record<string, any> | null
   hiddenColumn?: string[]
+  noSearchFields?: string[]
   resizable?: boolean
-  maxHeight?: string | number
+  maxHeight?: string | number | undefined
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
@@ -175,7 +177,7 @@ const {
   localPage = false,
   // 是否显示自定义首行内容
   showFirstFullRow = false,
-  // 本地筛选查询状态
+  // 自定义处理筛选查询状态
   tableEmptyType = 'empty',
   // 是否展示自定义表格复选框
   showSelection = false,
@@ -195,6 +197,8 @@ const {
   isExistUniqueKey = true,
   // 默认不显示的表格列
   hiddenColumn = [],
+  // 不需要处理成搜索状态的字段
+  noSearchFields = [],
   resizable = true,
   maxHeight = undefined,
 } = defineProps<IProps>();
