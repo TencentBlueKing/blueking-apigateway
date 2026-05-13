@@ -1,3 +1,4 @@
+import type { IMCPTabType } from '@/services/source/mcp-server';
 import type { IAuthConfig } from '@/types/resource';
 
 // POST /gateways/ - 创建网关
@@ -142,8 +143,11 @@ export interface IMCPServerCreateInputSLZ {
   name: string
   title?: string
   description: string
-  stage_id: number
+  stage_id?: number
+  mode_type?: IMCPTabType
   is_public?: boolean
+  is_no_perm?: boolean
+  isOverflow?: boolean
   oauth2_public_client_enabled: boolean
   raw_response_enabled: boolean
   labels?: string[]
