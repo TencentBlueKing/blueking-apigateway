@@ -33,6 +33,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import (
@@ -56,7 +57,7 @@ from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
@@ -371,7 +372,31 @@ class MCPServerHandler:
             AppResourcePermission.objects.filter(id__in=to_delete).delete()
 
     @staticmethod
-    def get_app_permission_risks(mcp_servers: list) -> Dict[int, List[str]]:
+    def _get_releases_for_mcp_servers(mcp_servers) -> Dict[Tuple[int, int], Release]:
+        """批量获取 MCP Server 列表对应的 Release 记录
+
+        Args:
+            mcp_servers: MCPServer 实例列表
+
+        Returns:
+            {(gateway_id, stage_id): Release} 映射
+        """
+        gateway_stage_pairs = {(mcp_server.gateway_id, mcp_server.stage_id) for mcp_server in mcp_servers}
+        if not gateway_stage_pairs:
+            return {}
+
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).select_related("resource_version")
+        return {(r.gateway_id, r.stage_id): r for r in releases}
+
+    @staticmethod
+    def get_app_permission_risks(
+        mcp_servers: list,
+        releases: Optional[Dict[Tuple[int, int], Release]] = None,
+    ) -> Dict[int, List[str]]:
         """检测开启了 oauth2_public_client_enabled 的 MCPServer 是否存在应用态权限安全风险。
 
         当 oauth2_public_client_enabled=True 时，public 应用被自动授权；
@@ -379,6 +404,7 @@ class MCPServerHandler:
 
         Args:
             mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+            releases: 可选，预查询的 Release 映射，避免重复查询
 
         Returns:
             {mcp_server_id: [risk_tool_name, ...]} 映射，仅包含存在风险的 MCPServer
@@ -387,22 +413,11 @@ class MCPServerHandler:
         if not risk_mcp_servers:
             return {}
 
-        gateway_stage_pairs = set()
-        mcp_server_gateway_stage: Dict[int, tuple] = {}
-        for mcp_server in risk_mcp_servers:
-            key = (mcp_server.gateway_id, mcp_server.stage_id)
-            gateway_stage_pairs.add(key)
-            mcp_server_gateway_stage[mcp_server.id] = key
+        if releases is None:
+            releases = MCPServerHandler._get_releases_for_mcp_servers(risk_mcp_servers)
 
-        release_filters = Q()
-        for gateway_id, stage_id in gateway_stage_pairs:
-            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
-
-        releases = Release.objects.filter(release_filters).select_related("resource_version")
-
-        release_resource_auth: Dict[tuple, Dict[str, bool]] = {}
-        for release in releases:
-            key = (release.gateway_id, release.stage_id)
+        release_resource_auth: Dict[Tuple[int, int], Dict[str, bool]] = {}
+        for key, release in releases.items():
             resource_auth: Dict[str, bool] = {}
             for resource in release.resource_version.data:
                 auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
@@ -411,7 +426,7 @@ class MCPServerHandler:
 
         risks: Dict[int, List[str]] = {}
         for mcp_server in risk_mcp_servers:
-            gateway_stage_key = mcp_server_gateway_stage[mcp_server.id]
+            gateway_stage_key = (mcp_server.gateway_id, mcp_server.stage_id)
             resource_auth = release_resource_auth.get(gateway_stage_key, {})
             tool_name_map = mcp_server.gen_tool_name_map()
             risk_tools = [
@@ -423,6 +438,99 @@ class MCPServerHandler:
                 risks[mcp_server.id] = risk_tools
 
         return risks
+
+    @staticmethod
+    def get_least_privileges(
+        mcp_servers,
+        releases: Optional[Dict[Tuple[int, int], Release]] = None,
+    ) -> Dict[Tuple[int, int], str]:
+        """批量计算 MCP Server 的最低权限级别
+
+        遍历每个 MCP Server 的 (gateway_id, stage_id) 对，检查 Release 中对应工具资源
+        是否需要用户认证。如果所有工具都不需要用户认证，则为 APPLICATION；
+        否则为 APPLICATION_AND_USER。
+
+        Args:
+            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+            releases: 可选，预查询的 Release 映射，避免重复查询
+
+        Returns:
+            {(gateway_id, stage_id): least_privilege} 映射
+        """
+        gateway_stage_tools: Dict[Tuple[int, int], List[str]] = {}
+        for mcp_server in mcp_servers:
+            gateway_stage_tools[(mcp_server.gateway_id, mcp_server.stage_id)] = mcp_server.resource_names
+
+        if not gateway_stage_tools:
+            return {}
+
+        if releases is None:
+            releases = MCPServerHandler._get_releases_for_mcp_servers(mcp_servers)
+
+        least_privileges: Dict[Tuple[int, int], str] = {}
+        for gateway_stage_key, release in releases.items():
+            tool_names = gateway_stage_tools.get(gateway_stage_key, [])
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                if resource["name"] not in tool_names:
+                    continue
+                auth_config = json.loads(resource.get("contexts", {}).get("resource_auth", {}).get("config", "{}"))
+                verified_user_required = not auth_config.get("skip_auth_verification", False) and bool(
+                    auth_config.get("auth_verified_required", False)
+                )
+                if verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                    break
+            least_privileges[gateway_stage_key] = least_privilege
+
+        return least_privileges
+
+    @staticmethod
+    def get_mcp_server_url(instance: MCPServer, least_privilege: str = "") -> str:
+        """根据 MCP Server 的应用态条件返回合适的访问 URL
+
+        当未开启公共客户端模式且所有工具都是应用态时，返回应用态 URL。
+
+        Args:
+            instance: MCPServer 实例
+            least_privilege: 最低权限级别
+
+        Returns:
+            MCP Server 访问 URL
+        """
+        if (
+            not instance.oauth2_public_client_enabled
+            and least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value
+        ):
+            return build_mcp_server_application_url(instance.name, instance.protocol_type)
+        return build_mcp_server_url(instance.name, instance.protocol_type)
+
+    @staticmethod
+    def build_categories_map(mcp_server_ids: List[int]) -> Dict[int, List[Dict[str, str]]]:
+        """批量查询 MCPServer 的分类信息，返回 {mcp_server_id: [{"name": ..., "display_name": ...}]} 映射
+
+        使用单次查询替代 N+1 的 categories.filter() 调用。
+
+        Args:
+            mcp_server_ids: MCPServer ID 列表
+
+        Returns:
+            以 mcp_server_id 为 key 的分类字典映射
+        """
+        if not mcp_server_ids:
+            return {}
+
+        categories_qs = MCPServerCategory.objects.filter(
+            mcp_servers__id__in=mcp_server_ids,
+            is_active=True,
+        ).values("mcp_servers__id", "name", "display_name")
+
+        categories_map: Dict[int, List[Dict[str, str]]] = {}
+        for cat in categories_qs:
+            categories_map.setdefault(cat["mcp_servers__id"], []).append(
+                {"name": cat["name"], "display_name": cat["display_name"]}
+            )
+        return categories_map
 
     @staticmethod
     def disable_servers(gateway_id: int, stage_id: int = 0) -> None:

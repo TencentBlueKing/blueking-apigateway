@@ -366,6 +366,9 @@ class MCPServerBaseSLZ(serializers.Serializer):
     def get_url(self, obj) -> str:
         return get_mcp_server_url_from_context(self.context, obj)
 
+    def get_categories(self, obj) -> list:
+        return get_categories_from_context(self.context, obj)
+
     def get_doc_link(self, obj):
         return build_mcp_server_detail_url(obj.id)
 

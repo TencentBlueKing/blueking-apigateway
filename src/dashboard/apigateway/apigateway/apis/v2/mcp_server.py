@@ -120,7 +120,9 @@ def build_mcp_server_list_context(mcp_servers: Sequence[MCPServer]) -> Dict[str,
         for s in Stage.objects.filter(id__in=stage_ids)
     }
 
-    return {"gateways": gateways, "stages": stages}
+    least_privileges = MCPServerHandler.get_least_privileges(list(mcp_servers))
+
+    return {"gateways": gateways, "stages": stages, "least_privileges": least_privileges}
 
 
 def validate_and_enrich_mcp_server_for_retrieve(
@@ -190,6 +192,8 @@ def validate_and_enrich_mcp_server_for_retrieve(
         {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)
     ]
 
+    least_privileges = MCPServerHandler.get_least_privileges([instance])
+
     return {
         "labels": labels,
         "tool_name_map": instance.gen_tool_name_map(),
@@ -198,4 +202,5 @@ def validate_and_enrich_mcp_server_for_retrieve(
         "prompts_count_map": prompts_count_map,
         "prompts": prompts,
         "user_custom_doc": user_custom_doc,
+        "least_privileges": least_privileges,
     }

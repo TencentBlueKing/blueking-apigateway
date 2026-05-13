@@ -21,7 +21,7 @@ from typing import Any, Dict
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.v2.mcp_server import get_categories_from_context, get_mcp_server_url_from_context
+from apigateway.apis.v2.mcp_server import get_mcp_server_url_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
