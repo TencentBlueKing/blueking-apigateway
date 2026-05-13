@@ -100,7 +100,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
         )
         result = resp.json()
 
@@ -121,7 +121,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
         )
         result = resp.json()
 
@@ -140,7 +140,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
         )
         result = resp.json()
 
@@ -159,7 +159,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
         )
         result = resp.json()
 
@@ -185,7 +185,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
             data={"bk_app_code": "target"},
         )
         result = resp.json()
@@ -198,7 +198,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
         """测试我的代办 - 空数据"""
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.gateway_permissions",
+            view_name="workbench.permissions.gateway.pending",
         )
         result = resp.json()
 
@@ -225,7 +225,7 @@ class TestWorkbenchPendingMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.mcp_permissions",
+            view_name="workbench.permissions.mcp.pending",
         )
         result = resp.json()
 
@@ -261,7 +261,7 @@ class TestWorkbenchPendingMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.mcp_permissions",
+            view_name="workbench.permissions.mcp.pending",
         )
         result = resp.json()
 
@@ -282,7 +282,7 @@ class TestWorkbenchPendingMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.mcp_permissions",
+            view_name="workbench.permissions.mcp.pending",
         )
         result = resp.json()
 
@@ -293,7 +293,7 @@ class TestWorkbenchPendingMCPPermissionListApi:
         """测试我的代办 - MCP Server 空数据"""
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.pending.mcp_permissions",
+            view_name="workbench.permissions.mcp.pending",
         )
         result = resp.json()
 
@@ -319,7 +319,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.my_apply.gateway_permissions",
+            view_name="workbench.permissions.gateway.applied",
         )
         result = resp.json()
 
@@ -339,7 +339,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.my_apply.gateway_permissions",
+            view_name="workbench.permissions.gateway.applied",
         )
         result = resp.json()
 
@@ -359,7 +359,7 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.my_apply.gateway_permissions",
+            view_name="workbench.permissions.gateway.applied",
         )
         result = resp.json()
 
@@ -385,7 +385,7 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.my_apply.mcp_permissions",
+            view_name="workbench.permissions.mcp.applied",
         )
         result = resp.json()
 
@@ -407,7 +407,7 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.my_apply.mcp_permissions",
+            view_name="workbench.permissions.mcp.applied",
         )
         result = resp.json()
 
@@ -435,7 +435,7 @@ class TestWorkbenchHandledGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.gateway_permissions",
+            view_name="workbench.permissions.gateway.handled",
         )
         result = resp.json()
 
@@ -459,7 +459,7 @@ class TestWorkbenchHandledGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.gateway_permissions",
+            view_name="workbench.permissions.gateway.handled",
         )
         result = resp.json()
 
@@ -481,7 +481,7 @@ class TestWorkbenchHandledGatewayPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.gateway_permissions",
+            view_name="workbench.permissions.gateway.handled",
         )
         result = resp.json()
 
@@ -492,7 +492,7 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         """测试我的已办 - 空数据"""
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.gateway_permissions",
+            view_name="workbench.permissions.gateway.handled",
         )
         result = resp.json()
 
@@ -521,7 +521,7 @@ class TestWorkbenchHandledMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.mcp_permissions",
+            view_name="workbench.permissions.mcp.handled",
         )
         result = resp.json()
 
@@ -546,7 +546,7 @@ class TestWorkbenchHandledMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.mcp_permissions",
+            view_name="workbench.permissions.mcp.handled",
         )
         result = resp.json()
 
@@ -569,7 +569,7 @@ class TestWorkbenchHandledMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.mcp_permissions",
+            view_name="workbench.permissions.mcp.handled",
         )
         result = resp.json()
 
@@ -592,7 +592,7 @@ class TestWorkbenchHandledMCPPermissionListApi:
 
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.mcp_permissions",
+            view_name="workbench.permissions.mcp.handled",
         )
         result = resp.json()
 
@@ -603,7 +603,7 @@ class TestWorkbenchHandledMCPPermissionListApi:
         """测试我的已办 - MCP Server 空数据"""
         resp = request_view(
             method="GET",
-            view_name="personal_workbench.handled.mcp_permissions",
+            view_name="workbench.permissions.mcp.handled",
         )
         result = resp.json()
 

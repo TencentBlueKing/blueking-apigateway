@@ -29,10 +29,12 @@ from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 # ========== 查询输入序列化器 ==========
+# NOTE: 以下 Input SLZ 仅用于 swagger 文档生成，实际查询过滤由 filters.py 中的 FilterSet 生效。
+# 修改查询参数时需同步修改对应的 FilterSet 以保持一致性。
 
 
 class WorkbenchGatewayPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - API 网关权限查询输入"""
+    """个人工作台 - API 网关权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
@@ -48,7 +50,7 @@ class WorkbenchGatewayPermissionQueryInputSLZ(serializers.Serializer):
 
 
 class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - MCP Server 权限查询输入"""
+    """个人工作台 - MCP Server 权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
@@ -93,7 +95,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_gateway_name(self, obj) -> str:
-        return obj.gateway.name if obj.gateway else ""
+        return obj.gateway.name
 
     def get_expire_days_display(self, obj) -> str:
         return PermissionApplyExpireDaysEnum.get_choice_label(obj.expire_days)
@@ -102,12 +104,11 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
     def get_applied_by(self, obj) -> str:
-        gateway = obj.gateway
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
             obj.bk_app_code,
             obj.applied_by,
-            gateway.tenant_mode if gateway else "",
-            gateway.tenant_id if gateway else "",
+            obj.gateway.tenant_mode,
+            obj.gateway.tenant_id,
         )
 
     def get_itsm_ticket_url(self, obj) -> str:
@@ -147,7 +148,7 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_gateway_name(self, obj) -> str:
-        return obj.gateway.name if obj.gateway else ""
+        return obj.gateway.name
 
     def get_expire_days_display(self, obj) -> str:
         return PermissionApplyExpireDaysEnum.get_choice_label(obj.expire_days)
@@ -156,12 +157,11 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(serializers.ModelSerializer):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
 
     def get_applied_by(self, obj) -> str:
-        gateway = obj.gateway
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
             obj.bk_app_code,
             obj.applied_by,
-            gateway.tenant_mode if gateway else "",
-            gateway.tenant_id if gateway else "",
+            obj.gateway.tenant_mode,
+            obj.gateway.tenant_id,
         )
 
     def get_itsm_ticket_url(self, obj) -> str:
@@ -212,12 +212,12 @@ class WorkbenchMCPPermissionApplyOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_applied_by(self, obj) -> str:
-        gateway = obj.mcp_server.gateway if obj.mcp_server else None
+        gateway = obj.mcp_server.gateway
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
             obj.bk_app_code,
             obj.applied_by,
-            gateway.tenant_mode if gateway else "",
-            gateway.tenant_id if gateway else "",
+            gateway.tenant_mode,
+            gateway.tenant_id,
         )
 
     def get_itsm_ticket_url(self, obj) -> str:
@@ -257,12 +257,12 @@ class WorkbenchMCPPermissionHandledOutputSLZ(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_applied_by(self, obj) -> str:
-        gateway = obj.mcp_server.gateway if obj.mcp_server else None
+        gateway = obj.mcp_server.gateway
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
             obj.bk_app_code,
             obj.applied_by,
-            gateway.tenant_mode if gateway else "",
-            gateway.tenant_id if gateway else "",
+            gateway.tenant_mode,
+            gateway.tenant_id,
         )
 
     def get_itsm_ticket_url(self, obj) -> str:

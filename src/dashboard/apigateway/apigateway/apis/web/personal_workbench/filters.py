@@ -70,4 +70,8 @@ class WorkbenchMCPPermissionApplyFilter(filters.FilterSet):
         fields = ["bk_app_code", "applied_by", "status", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
-        return queryset.filter(Q(bk_app_code__icontains=value) | Q(mcp_server__name__icontains=value))
+        return queryset.filter(
+            Q(bk_app_code__icontains=value)
+            | Q(mcp_server__name__icontains=value)
+            | Q(mcp_server__title__icontains=value)
+        )

@@ -43,24 +43,8 @@ from .serializers import (
 )
 
 
-def _get_user_maintainer_gateway_ids(username: str, tenant_id: str = "") -> list[int]:
-    """获取当前用户作为 maintainer 的所有网关 ID
-
-    复用 GatewayHandler.list_gateways_by_user，该方法内部已处理：
-    1. _maintainers__contains 粗筛 + has_permission 精确过滤（避免子串误匹配）
-    2. tenant_id 维度的数据隔离（多租户场景）
-    """
-    if not username:
-        return []
-    gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
-    return [gw.id for gw in gateways]
-
-
-class BaseWorkbenchListApi(generics.ListAPIView):
-    """个人工作台列表接口基类
-
-    子类只需声明 filterset_class / serializer_class / get_queryset()，
-    分页+序列化逻辑由 DRF ListAPIView 默认 list() 处理。
+class WorkbenchPermissionMixin:
+    """个人工作台权限接口 Mixin
 
     个人工作台接口无需网关级别权限校验（URL 不含 gateway_id），
     仅需登录认证，因此显式声明 permission_classes = [IsAuthenticated]。
@@ -81,7 +65,7 @@ class BaseWorkbenchListApi(generics.ListAPIView):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchPendingGatewayPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchPendingGatewayPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的代办 - API 网关
 
     展示当前用户作为网关管理员（maintainer）待审批的权限申请单
@@ -93,7 +77,8 @@ class WorkbenchPendingGatewayPermissionListApi(BaseWorkbenchListApi):
     def get_queryset(self):
         username = self.request.user.username
         tenant_id = get_user_tenant_id(self.request)
-        gateway_ids = _get_user_maintainer_gateway_ids(username, tenant_id)
+        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+        gateway_ids = [gw.id for gw in gateways]
         return (
             AppPermissionApply.objects.filter(
                 gateway_id__in=gateway_ids,
@@ -113,7 +98,7 @@ class WorkbenchPendingGatewayPermissionListApi(BaseWorkbenchListApi):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchPendingMCPPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的代办 - MCP Server
 
     展示当前用户作为 MCP Server 所属网关管理员待审批的申请单
@@ -125,7 +110,8 @@ class WorkbenchPendingMCPPermissionListApi(BaseWorkbenchListApi):
     def get_queryset(self):
         username = self.request.user.username
         tenant_id = get_user_tenant_id(self.request)
-        gateway_ids = _get_user_maintainer_gateway_ids(username, tenant_id)
+        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+        gateway_ids = [gw.id for gw in gateways]
         return (
             MCPServerAppPermissionApply.objects.filter(
                 mcp_server__gateway_id__in=gateway_ids,
@@ -149,7 +135,7 @@ class WorkbenchPendingMCPPermissionListApi(BaseWorkbenchListApi):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyGatewayPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchMyApplyGatewayPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的申请 - API 网关
 
     展示当前用户自己提交的权限申请
@@ -172,7 +158,7 @@ class WorkbenchMyApplyGatewayPermissionListApi(BaseWorkbenchListApi):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchMyApplyMCPPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的申请 - MCP Server
 
     展示当前用户自己提交的 MCP Server 权限申请
@@ -205,7 +191,7 @@ class WorkbenchMyApplyMCPPermissionListApi(BaseWorkbenchListApi):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchHandledGatewayPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchHandledGatewayPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的已办 - API 网关
 
     展示当前用户已处理过的权限申请记录
@@ -233,7 +219,7 @@ class WorkbenchHandledGatewayPermissionListApi(BaseWorkbenchListApi):
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
-class WorkbenchHandledMCPPermissionListApi(BaseWorkbenchListApi):
+class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
     """我的已办 - MCP Server
 
     展示当前用户已处理的 MCP Server 权限申请
