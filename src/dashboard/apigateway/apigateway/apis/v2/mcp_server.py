@@ -76,11 +76,15 @@ def build_mcp_server_list_queryset(
     category: Optional[str] = None,
     is_public: Optional[bool] = None,
     order_by: str = "-updated_time",
+    ids: Optional[List[int]] = None,
 ) -> QuerySet:
     """构建 MCPServer 列表的通用 queryset（不含分页）"""
     queryset = MCPServer.objects.filter(status=MCPServerStatusEnum.ACTIVE.value)
     queryset = queryset.filter(gateway__status=GatewayStatusEnum.ACTIVE.value)
     queryset = queryset.filter(stage__status=StageStatusEnum.ACTIVE.value)
+
+    if ids:
+        queryset = queryset.filter(id__in=ids)
 
     if is_public is not None:
         queryset = queryset.filter(is_public=is_public)
