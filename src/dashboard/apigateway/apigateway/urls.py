@@ -127,16 +127,17 @@ if not settings.ENABLE_MULTI_TENANT_MODE:
         path("backend/esb/", include("apigateway.apps.esb.urls")),
     ]
 
-# backend/docs/
-urlpatterns += [
-    # drf-yasg automatically generated documents
-    re_path(
-        r"^backend/docs/auto/swagger(?P<format>\.json|\.yaml)$",
-        schema_view.without_ui(cache_timeout=0),
-        name="schema-json",
-    ),
-    re_path(
-        r"^backend/docs/auto/swagger/$", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"
-    ),
-    re_path(r"^backend/docs/auto/redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
-]
+if settings.DEBUG:
+    # backend/docs/
+    urlpatterns += [
+        # drf-yasg automatically generated documents
+        re_path(
+            r"^backend/docs/auto/swagger(?P<format>\.json|\.yaml)$",
+            schema_view.without_ui(cache_timeout=0),
+            name="schema-json",
+        ),
+        re_path(
+            r"^backend/docs/auto/swagger/$", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"
+        ),
+        re_path(r"^backend/docs/auto/redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    ]

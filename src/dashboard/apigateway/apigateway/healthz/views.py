@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import logging
+
 import redis
 from django.conf import settings
 from django.http import HttpResponse
@@ -23,6 +25,8 @@ from django.views.generic import View
 
 from apigateway.utils.redis_utils import get_redis_pool
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+
+logger = logging.getLogger(__name__)
 
 
 class CheckError(Exception):
@@ -50,11 +54,9 @@ class HealthzView(View):
             try:
                 checker()
             except CheckError as err:
-                return FailJsonResponse(status=500, code="UNKNOWN", messge=f"Error: {err}")
+                return FailJsonResponse(status=500, code="UNKNOWN", message=str(err))
             except CheckWarning as err:
-                return OKJsonResponse(
-                    data={"message": f"Warning: some checks fail and do not affect core functions. {err}"}
-                )
+                return OKJsonResponse(data={"message": f"Warning: {err}"})
 
         return OKJsonResponse()
 
@@ -68,15 +70,16 @@ class HealthzView(View):
         ]
         empty_keys = [key for key in not_allow_empty_keys if not getattr(settings, key, None)]
         if empty_keys:
-            raise CheckError(f"These django settings should not be empty: {', '.join(empty_keys)}")
+            raise CheckError("check settings failed")
 
     def _check_database(self):
         from apigateway.core.models import Gateway  # noqa
 
         try:
             Gateway.objects.exists()
-        except Exception as err:  # pylint: disable=broad-except
-            raise CheckError(f"Query from database failed, error: {err}")
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("healthz database check failed")
+            raise CheckError("check database failed")
 
     def _check_redis(self):
         config = getattr(settings, "CHANNEL_REDIS_CONFIG", None)
@@ -88,5 +91,6 @@ class HealthzView(View):
             client.set(key, "apigateway")
             client.expire(key, 60)
             client.get(key)
-        except Exception as err:  # pylint: disable=broad-except
-            raise CheckError(f"Redis check failed [{config['host']}:{config['port']}], error: {err}")
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("healthz redis check failed")
+            raise CheckError("check redis failed")
