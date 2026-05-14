@@ -1,17 +1,17 @@
 meta {
-  name: app-sse-initialize
+  name: user-streamable-http-initialize
   type: http
-  seq: 9
+  seq: 4
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-mcp-server-sse/application/sse
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-prod-httpbin-mcp-server/mcp
   body: json
   auth: none
 }
 
 headers {
-  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "access_token": "{{access_token}}"}
   Content-Type: application/json
   Accept: application/json, text/event-stream
 }
@@ -44,5 +44,5 @@ script:post-response {
   if (!sessionId) {
     throw new Error('No mcp-session-id found in response headers');
   }
-  bru.setVar("app_sse_session_id", sessionId);
+  bru.setVar("user_streamable_session_id", sessionId);
 }

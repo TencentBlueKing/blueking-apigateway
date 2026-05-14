@@ -47,6 +47,8 @@ stages:
         status: 1
         protocol_type: "streamable_http"
         oauth2_public_client_enabled: true
+        target_app_codes:
+          - "bk_apigateway"
         category_names:
           - "Official"
       - name: "httpbin-mcp-server-sse"
@@ -68,6 +70,8 @@ stages:
         status: 1
         protocol_type: "sse"
         oauth2_public_client_enabled: true
+        target_app_codes:
+          - "bk_apigateway"
         category_names:
           - "Official"
 

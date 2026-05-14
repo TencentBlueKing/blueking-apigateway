@@ -1,20 +1,20 @@
 meta {
-  name: app-sse-tools-list
+  name: user-streamable-http-tools-list
   type: http
-  seq: 10
+  seq: 5
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-mcp-server-sse/application/sse
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-prod-httpbin-mcp-server/mcp
   body: json
   auth: none
 }
 
 headers {
-  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "access_token": "{{access_token}}"}
   Content-Type: application/json
   Accept: application/json, text/event-stream
-  Mcp-Session-Id: {{app_sse_session_id}}
+  Mcp-Session-Id: {{user_streamable_session_id}}
 }
 
 body:json {

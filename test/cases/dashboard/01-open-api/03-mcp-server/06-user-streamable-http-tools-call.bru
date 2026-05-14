@@ -1,11 +1,11 @@
 meta {
-  name: user-streamable-http-tools-list
+  name: user-streamable-http-tools-call
   type: http
   seq: 6
 }
 
 post {
-  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-mcp-server/mcp
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-prod-httpbin-mcp-server/mcp
   body: json
   auth: none
 }
@@ -20,14 +20,17 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 2,
-    "method": "tools/list",
-    "params": {}
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "httpbin_get",
+      "arguments": {}
+    }
   }
 }
 
 assert {
   res.status: eq 200
   res.body.jsonrpc: eq 2.0
-  res.body.result.tools: isDefined
+  res.body.result.content: isDefined
 }
