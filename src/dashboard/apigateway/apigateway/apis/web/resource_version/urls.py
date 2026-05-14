@@ -40,7 +40,7 @@ urlpatterns = [
     path(
         "<int:id>/export-docs/",
         ResourceVersionDocExportApi.as_view(),
-        name="gateway.resource_version.export-docs",
+        name="gateway.resource_version.export_docs",
     ),
     path(
         "<int:id>/",
