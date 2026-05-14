@@ -11,6 +11,7 @@
 |---------|--------|----|-----------------------------------------|
 | keyword | string | 否  | MCPServer 筛选条件，支持模糊匹配 MCPServer 名称或描述 |
 | order_by | string | 否  | 排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time |
+| mcp_server_ids | string | 否  | MCPServer ID 列表，多个以逗号分割，最多 50 个。例如：1,2,3 |
 
 
 ### 响应示例

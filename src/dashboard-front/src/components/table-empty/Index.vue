@@ -50,11 +50,13 @@
 <script lang="ts" setup>
 import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
+import type { ITableEmptyType } from '@/types/common';
 
 interface IProps {
-  emptyType?: 'empty' | 'search-empty' | 'searchEmpty' | 'error'
+  emptyType?: ITableEmptyType
   error?: Record<string, any> | null
   queryListParams?: any[]
+  noSearchFields?: string[]
   background?: string
   description?: string
 }
@@ -65,6 +67,7 @@ const {
   description = '',
   error = null,
   queryListParams = [],
+  noSearchFields = [],
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -81,10 +84,8 @@ const exceptionAttrs = computed<any>(() => {
   }
 
   const queryParams = cloneDeep(queryListParams?.[0] ?? {});
-  delete queryParams.limit;
-  delete queryParams.offset;
   Object.keys(queryParams).forEach((key) => {
-    if ((typeof queryParams[key] === 'string' && !queryParams[key]) || ['offset', 'limit'].includes(key)) {
+    if ((typeof queryParams[key] === 'string' && !queryParams[key]) || ['offset', 'limit', ...noSearchFields].includes(key)) {
       delete queryParams[key];
     }
   });

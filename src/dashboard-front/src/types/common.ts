@@ -62,10 +62,10 @@ export interface IDropList {
 }
 
 export interface ISearchSelect {
-  id: number
+  id: number | string
   name: string
   values: {
-    id: number
+    id: number | string
     name: string
   }[]
 }
@@ -180,3 +180,21 @@ export interface IMavonEditorProps {
   scrollStyle?: boolean
   toolbarsFlag?: boolean
 }
+
+export type ITableEmptyType = 'empty' | 'search-empty' | 'searchEmpty' | 'error';
+
+export type IMethodFilterItem = {
+  label: string
+  value?: string
+  checkAll?: boolean
+};
+
+export type ISearchSelectFilter = {
+  id: number | string // 过滤器ID
+  name: string // 过滤器名称
+  values: {
+    id: number | string // 过滤器值ID
+    name: string // 过滤器值名称
+  }[]
+  type?: string // 过滤器类型
+};

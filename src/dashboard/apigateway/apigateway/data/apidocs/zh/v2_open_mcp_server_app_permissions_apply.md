@@ -9,7 +9,7 @@
 | 参数名称               | 参数类型       | 必选 | 描述               |
 |--------------------|------------|----|------------------|
 | bk_app_code        | string     | 是  | 蓝鲸应用编码           |
-| mcp_server_ids     | array[int] | 是  | mcp_server ID 列表 |
+| mcp_server_ids     | array[int] | 是  | mcp_server ID 列表，最多 50 个 |
 | applied_by         | string     | 是  | 申请人              |
 | reason             | string     | 是  | 申请原因             |
 

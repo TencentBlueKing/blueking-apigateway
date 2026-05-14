@@ -56,6 +56,7 @@ export function getFeatureFlags(params: {
     ENABLE_RUN_DATA_METRICS: boolean
     ENABLE_SDK: boolean
     ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT: boolean
+    ENABLE_ITSM4_PERMISSION_APPLY: boolean
     GATEWAY_APP_BINDING_ENABLED: boolean
     MENU_ITEM_ESB_API: boolean
     MENU_ITEM_ESB_API_DOC: boolean
