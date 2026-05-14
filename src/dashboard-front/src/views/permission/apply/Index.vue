@@ -465,6 +465,20 @@ const getTableColumns = computed((): any[] => {
       fixed: 'right',
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id)) {
+          return (
+            <Button
+              text
+              theme="primary"
+              onClick={() => {
+                window.open(row?.itsm_ticket_url);
+              }}
+            >
+              {t('审批')}
+            </Button>
+          );
+        }
+
         if (
           expandableConfig.value.expandedRowKeys.includes(row.id!)
           && !row.selection?.length
@@ -474,7 +488,7 @@ const getTableColumns = computed((): any[] => {
             <div>
               <Popover content={t('请选择资源')}>
                 <Button
-                  class="m-r-10px is-disabled"
+                  class="mr-8px is-disabled"
                   theme="primary"
                   text
                   onClick={(e: Event) => {
@@ -496,35 +510,35 @@ const getTableColumns = computed((): any[] => {
             </div>
           );
         }
-        else {
-          return (
-            <div>
-              <Button
-                class="mr-10px"
-                theme="primary"
-                text
-                onClick={(e: Event) => {
-                  handleApplyApprove(e, row);
-                }}
-              >
-                {row.isSelectAll ? t('全部通过') : t('部分通过')}
-              </Button>
-              <Button
-                theme="primary"
-                text
-                onClick={(e: Event) => {
-                  handleApplyReject(e, row);
-                }}
-              >
-                {t('全部驳回')}
-              </Button>
-            </div>
-          );
-        }
+
+        return (
+          <div>
+            <Button
+              class="mr-8px"
+              theme="primary"
+              text
+              onClick={(e: Event) => {
+                handleApplyApprove(e, row);
+              }}
+            >
+              {row.isSelectAll ? t('全部通过') : t('部分通过')}
+            </Button>
+            <Button
+              theme="primary"
+              text
+              onClick={(e: Event) => {
+                handleApplyReject(e, row);
+              }}
+            >
+              {t('全部驳回')}
+            </Button>
+          </div>
+        );
       },
     },
   ];
 });
+const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getPermissionApplyList(apigwId.value, params);

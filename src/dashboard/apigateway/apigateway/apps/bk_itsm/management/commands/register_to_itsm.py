@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 from django.db.utils import OperationalError, ProgrammingError
 
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
-from apigateway.components.bkitsm import system_migrate
+from apigateway.components.bkitsm import system_migrate, system_workflow_list
 
 logger = logging.getLogger(__name__)
 
@@ -58,65 +58,60 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Start register_to_itsm, system_code={system_code}")
 
-        resp = None
+        # 先查询 ITSM 侧该系统是否已注册过流程，避免重复 migrate 导致 400 报错
+        if self._is_system_registered_in_itsm(system_code):
+            self.stdout.write(f"System {system_code} already registered in ITSM, skip migrate")
+            self._ensure_config_from_template(system_code, template_data)
+            return
+
         try:
-            resp = system_migrate(template_data)
+            system_migrate(template_data)
         except Exception as err:
-            existing_config = self._load_existing_config(system_code)
-            if (
-                not strict_mode
-                and self._can_fallback_to_existing_config(existing_config)
-                and self._is_idempotent_migrate_error(err)
-            ):
+            if not strict_mode and self._is_idempotent_migrate_error(err):
                 self.stdout.write(self.style.WARNING(f"system_migrate skipped by idempotent fallback: {err}"))
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"register_to_itsm success(reuse): system_id={existing_config.itsm_system_id}, workflow_key_map={existing_config.workflow_key_map}"
-                    )
-                )
+                self._ensure_config_from_template(system_code, template_data)
                 return
             raise
 
-        if self._is_migrate_accepted_response(resp):
-            existing_config = self._load_existing_config(system_code)
-            if existing_config and self._can_fallback_to_existing_config(existing_config):
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"register_to_itsm success(reuse): system_id={existing_config.itsm_system_id}, workflow_key_map={existing_config.workflow_key_map}"
-                    )
+        # ITSM system_migrate 是异步接口，不会返回 system_id / workflow_keys，
+        # 直接从模板配置中提取并写入本地配置表
+        self._ensure_config_from_template(system_code, template_data)
+
+    @staticmethod
+    def _is_system_registered_in_itsm(system_code: str) -> bool:
+        """通过 system_workflow_list 接口查询系统是否已在 ITSM 注册"""
+        try:
+            resp = system_workflow_list(system_id=system_code)
+        except Exception:
+            logger.warning("failed to query system_workflow_list, assume not registered", exc_info=True)
+            return False
+
+        return resp.get("count", 0) > 0
+
+    def _ensure_config_from_template(self, system_code: str, template_data):
+        """确保配置表有完整数据，有则复用，无则从模板写入"""
+        existing_config = self._load_existing_config(system_code)
+        if existing_config and self._can_fallback_to_existing_config(existing_config):
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"register_to_itsm success(reuse): system_id={existing_config.itsm_system_id}, "
+                    f"workflow_key_map={existing_config.workflow_key_map}"
                 )
-            else:
-                self.stdout.write(self.style.SUCCESS(f"register_to_itsm success(accepted): response={resp}"))
+            )
             return
 
-        system_id = str(resp.get("system_id", "")).strip()
-        system_token = str(resp.get("system_token", "")).strip()
-        workflow_keys = resp.get("workflow_keys")
-
-        if not system_id or not isinstance(workflow_keys, list) or not workflow_keys:
-            existing_config = self._load_existing_config(system_code)
-            if not strict_mode and self._can_fallback_to_existing_config(existing_config):
-                self.stdout.write(self.style.WARNING(f"invalid migrate response, fallback to existing config: {resp}"))
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"register_to_itsm success(reuse): system_id={existing_config.itsm_system_id}, workflow_key_map={existing_config.workflow_key_map}"
-                    )
-                )
-                return
-            raise RuntimeError(f"invalid system_migrate response: {resp}")
-
+        workflow_keys = self._extract_workflow_keys_from_template(template_data)
         workflow_key_map = self._build_workflow_key_map(template_data, workflow_keys)
 
         config, _ = ItsmSystemConfig.objects.get_or_create(system_code=system_code)
-        config.itsm_system_id = system_id
-        config.system_token = system_token
+        config.itsm_system_id = system_code
         config.workflow_key_map = workflow_key_map
         config.is_registered = True
         config.save()
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"register_to_itsm success: system_id={config.itsm_system_id}, "
+                f"register_to_itsm success(from template): system_id={config.itsm_system_id}, "
                 f"workflow_key_map={config.workflow_key_map}"
             )
         )
@@ -175,12 +170,20 @@ class Command(BaseCommand):
         }
 
     @staticmethod
-    def _is_migrate_accepted_response(resp) -> bool:
-        if not isinstance(resp, dict):
-            return False
+    def _extract_workflow_keys_from_template(template_data) -> list:
+        """从模板配置中提取 workflow keys（与 _build_workflow_key_map 中的逻辑一致）"""
+        workflows = template_data.get("workflows", [])
+        workflow_keys = []
+        for workflow_item in workflows:
+            workflow = workflow_item.get("workflow", {})
+            key = str(workflow.get("key", "")).strip()
+            if key:
+                workflow_keys.append(key)
 
-        message = str(resp.get("message", "")).strip().lower()
-        return message == "ok"
+        if not workflow_keys:
+            raise RuntimeError("invalid template: no workflow keys found in template")
+
+        return workflow_keys
 
     @staticmethod
     def _normalize_workflow_key(workflow_key: str) -> str:

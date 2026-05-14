@@ -276,6 +276,7 @@ class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
     handled_resources = serializers.SerializerMethodField(help_text="已处理的资源列表")
     expire_days_display = serializers.SerializerMethodField(help_text="过期天数")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度")
+    itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
 
     class Meta:
         ref_name = "apigateway.apis.web.permission.serializers.AppPermissionRecordOutputSLZ"
@@ -296,6 +297,8 @@ class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
             "handled_resources",
             "expire_days_display",
             "grant_dimension_display",
+            "itsm_ticket_id",
+            "itsm_ticket_url",
         ]
         lookup_field = "id"
 
@@ -322,6 +325,9 @@ class AppPermissionRecordOutputSLZ(serializers.ModelSerializer):
 
     def get_grant_dimension_display(self, obj):
         return GrantDimensionEnum.get_choice_label(obj.grant_dimension)
+
+    def get_itsm_ticket_url(self, obj):
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
 class AppPermissionApplyApprovalInputSLZ(serializers.Serializer):

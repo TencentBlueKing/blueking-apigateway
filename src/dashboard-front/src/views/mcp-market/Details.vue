@@ -59,7 +59,7 @@
                 ({{ mcpDetails?.name }})
               </BkOverflowTitle>
             </div>
-            <div class="flex items-baseline flex-shrink-0">
+            <div class="flex items-center flex-shrink-0">
               <BkTag
                 v-if="mcpDetails?.is_official"
                 theme="success"

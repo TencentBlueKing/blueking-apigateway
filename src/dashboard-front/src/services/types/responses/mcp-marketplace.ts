@@ -15,7 +15,7 @@ export interface IMCPServerListOutput {
   title: string | null
   description: string
   is_public: boolean
-  labels: (string | null)[]
+  labels: string[]
   resource_names: (string | null)[]
   tool_names: (string | null)[]
   status: 0 | 1
@@ -53,7 +53,7 @@ export interface IMCPServerRetrieveOutput {
   title: string | null
   description: string
   is_public: boolean
-  labels: (string | null)[]
+  labels: string[]
   resource_names: (string | null)[]
   tool_names: (string | null)[]
   status: 0 | 1

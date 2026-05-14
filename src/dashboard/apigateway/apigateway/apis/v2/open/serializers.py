@@ -184,6 +184,8 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
 
 class GatewayAppPermissionApplyOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(help_text="申请记录ID")
+    itsm_ticket_id = serializers.CharField(help_text="关联的 ITSM 工单 ID", allow_blank=True, default="")
+    itsm_ticket_url = serializers.CharField(help_text="ITSM 工单 URL", allow_blank=True, default="")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyOutputSLZ"
@@ -333,6 +335,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
+        max_length=50,
+        help_text="MCPServer ID 列表，最多 50 个",
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
@@ -345,10 +349,13 @@ class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
     mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    itsm_ticket_id = serializers.CharField(read_only=True, help_text="关联的 ITSM 工单 ID")
     approval_url = serializers.SerializerMethodField(help_text="权限审批 URL")
 
     def get_approval_url(self, obj) -> str:
-        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+        return build_mcp_server_permission_approval_url(
+            obj.mcp_server.gateway_id, obj.mcp_server_id, obj.itsm_ticket_id or ""
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"

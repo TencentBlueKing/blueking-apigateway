@@ -264,6 +264,7 @@ import {
   getServerToolDoc,
   getServerTools,
 } from '@/services/source/mcp-server';
+import type { IMCPServerToolOutput } from '@/services/types/responses/gateways.ts';
 import { getMcpServerToolDoc } from '@/services/source/mcp-market';
 import { copy } from '@/utils';
 import MarkdownIt from 'markdown-it';
@@ -314,10 +315,10 @@ const md = new MarkdownIt({
 });
 
 const descriptionRef = ref<InstanceType<typeof AgDescription> | null>(null);
-const toolList = ref<IMCPServerTool[]>([]);
+const toolList = ref<IMCPServerToolOutput[]>([]);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel
-const selectedTool = ref<IMCPServerTool | null>(null); // 当前选中的 tool
+const selectedTool = ref<IMCPServerToolOutput | null>(null); // 当前选中的 tool
 const selectedToolName = ref('');
 const selectedToolMarkdownHtml = ref('');
 const selectedToolSchema = ref();

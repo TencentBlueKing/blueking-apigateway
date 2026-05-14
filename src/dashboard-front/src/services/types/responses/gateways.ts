@@ -1,4 +1,5 @@
 import type { IHealthCheck } from '@/services/source/backend-services.ts';
+import type { IMCPServerToolSchema, IResourceAuthResponse } from '@/services/source/mcp-server.ts';
 
 /**
  * GET /gateways/
@@ -334,7 +335,7 @@ export interface IMCPServerListOutput {
   title: string
   description: string
   is_public: boolean
-  labels: (string | null)[]
+  labels: string[]
   resource_names: string[]
   tool_names: string[]
   tools_count: number
@@ -365,6 +366,8 @@ export interface IMCPServerAppPermissionApplyListOutput {
   applied_by: string
   applied_time: string
   status: string
+  itsm_ticket_id: string
+  itsm_ticket_url: string
   mcp_server: {
     id: number
     name: string
@@ -460,7 +463,7 @@ export interface IMCPServerRetrieveOutput {
   is_featured: boolean
   oauth2_public_client_enabled: boolean
   raw_response_enabled: boolean
-  labels: (string | null)[]
+  labels: string[]
   resource_names: string[]
   tool_names: string[]
   tools_count: number
@@ -1137,11 +1140,41 @@ export interface IResourceVersionRetrieveOutput {
     enable_websocket: boolean
     is_public: boolean
     allow_apply_permission: boolean
-    doc_updated_time: string
-    proxy: string
-    contexts: {
-      [key: string]: string | null
+    doc_updated_time: {
+      zh: string
     }
+    proxy: {
+      config: string
+      backend: {
+        id: number
+        name: string
+        config: {
+          type: string
+          timeout: number
+          loadbalance: string
+          hosts: {
+            scheme: string
+            host: string
+            weight: number
+          }[]
+          checks: {
+            passive: {
+              type: string
+              healthy: {
+                http_statuses: number[]
+                successes: number
+              }
+              unhealthy: {
+                http_statuses: number[]
+                http_failures: number
+                timeouts: number
+              }
+            }
+          }
+        }
+      }
+    }
+    contexts?: IResourceAuthResponse
     plugins: {
       binding_type: string
       config: Record<string, any>
@@ -1151,7 +1184,25 @@ export interface IResourceVersionRetrieveOutput {
       type: string
     }[]
     has_openapi_schema: boolean
-    openapi_schema: string
+    openapi_schema?: {
+      version: string
+      parameters: {
+        description: string
+        in: string
+        name: string
+        required: boolean
+        schema: {
+          type: string
+        }
+      }[]
+      none_schema: boolean
+      responses?: {
+        default?: {
+          content?: Record<string, IMCPServerToolSchema>
+          description?: string
+        }
+      }
+    }
   }[]
   created_time: string
   created_by: string

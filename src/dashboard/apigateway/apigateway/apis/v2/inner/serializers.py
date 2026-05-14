@@ -347,6 +347,8 @@ class AppPermissionRecordOutputSLZ(AppPermissionRecordBaseSLZ):
 
 class GatewayAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(read_only=True)
+    itsm_ticket_id = serializers.CharField(read_only=True, allow_blank=True, default="")
+    itsm_ticket_url = serializers.CharField(read_only=True, allow_blank=True, default="")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateOutputSLZ"
@@ -442,6 +444,8 @@ class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
+        max_length=50,
+        help_text="MCPServer ID 列表，最多 50 个",
     )
     applied_by = serializers.CharField(required=True, help_text="申请人")
     reason = serializers.CharField(required=True, help_text="申请原因")
@@ -599,9 +603,23 @@ class MCPServerListInputSLZ(serializers.Serializer):
         default="-updated_time",
         help_text="排序字段，支持 id, name, updated_time, created_time，前缀 - 表示降序，默认 -updated_time",
     )
+    mcp_server_ids = serializers.CharField(
+        allow_blank=True, required=False, help_text="MCPServer ID 列表，多个以逗号 , 分割"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerListInputSLZ"
+
+    def validate_mcp_server_ids(self, value):
+        if not value:
+            return []
+        try:
+            ids = [int(x.strip()) for x in value.split(",")]
+        except ValueError:
+            raise serializers.ValidationError(_("MCPServer ID 必须为整数，多个以逗号分割"))
+        if len(ids) > 50:
+            raise serializers.ValidationError(_("MCPServer ID 列表最多支持 50 个"))
+        return ids
 
 
 class MCPServerListOutputSLZ(serializers.Serializer):
