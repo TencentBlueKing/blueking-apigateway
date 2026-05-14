@@ -8,6 +8,7 @@ from ddf import G
 
 from apigateway.apps.bk_itsm.management.commands.register_to_itsm import Command as RegisterToItsmCommand
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 pytestmark = pytest.mark.django_db
@@ -248,3 +249,53 @@ class TestItsmPermissionApplyHelper:
 
         assert ItsmPermissionApplyHelper.build_ticket_url("") == ""
         assert ItsmPermissionApplyHelper.build_ticket_url(None) == ""
+
+    def test_build_ticket_title_for_gateway(self):
+        title = ItsmPermissionApplyHelper._build_ticket_title(
+            FormattedGrantDimensionEnum.GATEWAY.value, "demo-gateway", "bk-test", "demo-gateway"
+        )
+        assert title == "网关权限申请【demo-gateway】【bk-test】"
+
+    def test_build_ticket_title_for_mcp_server(self):
+        title = ItsmPermissionApplyHelper._build_ticket_title(
+            FormattedGrantDimensionEnum.MCP_SERVER.value, "demo-gateway", "bk-test", "mcp-a"
+        )
+        assert title == "MCP Server 权限申请【bk-test】【demo-gateway】【mcp-a】"
+
+    def test_build_apply_resources_display_for_gateway(self):
+        helper = ItsmPermissionApplyHelper()
+        result = helper._build_apply_resources_display(
+            FormattedGrantDimensionEnum.GATEWAY.value, "demo-gateway", ["res-a", "res-b"]
+        )
+        assert result == "demo-gateway"
+
+    def test_build_apply_resources_display_within_limit(self):
+        helper = ItsmPermissionApplyHelper()
+        result = helper._build_apply_resources_display(
+            FormattedGrantDimensionEnum.RESOURCE.value, "demo-gateway", ["res-a", "res-b"]
+        )
+        assert result == "res-a, res-b"
+
+    def test_build_apply_resources_display_truncated(self):
+        helper = ItsmPermissionApplyHelper()
+        result = helper._build_apply_resources_display(
+            FormattedGrantDimensionEnum.RESOURCE.value,
+            "demo-gateway",
+            ["res-a", "res-b", "res-c", "res-d", "res-e", "res-f"],
+            max_display=5,
+        )
+        assert result == "res-a, res-b, res-c, res-d, res-e 等 6 个资源"
+
+    def test_build_apply_resources_display_fallback_to_gateway_when_empty(self):
+        helper = ItsmPermissionApplyHelper()
+        result = helper._build_apply_resources_display(FormattedGrantDimensionEnum.RESOURCE.value, "demo-gateway", [])
+        assert result == "demo-gateway"
+
+    def test_build_form_options_uses_enum(self):
+        options = ItsmPermissionApplyHelper._build_form_options(FormattedGrantDimensionEnum.GATEWAY.value)
+        assert options["grant_dimension"][0]["name"] == "gateway"
+        assert options["grant_dimension"][0]["key"] == FormattedGrantDimensionEnum.GATEWAY.value
+
+        options = ItsmPermissionApplyHelper._build_form_options(FormattedGrantDimensionEnum.MCP_SERVER.value)
+        assert options["grant_dimension"][0]["name"] == "MCP Server"
+        assert options["grant_dimension"][0]["key"] == FormattedGrantDimensionEnum.MCP_SERVER.value

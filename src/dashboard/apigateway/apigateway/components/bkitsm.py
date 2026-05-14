@@ -24,7 +24,7 @@ from django.conf import settings
 
 from apigateway.utils.url import url_join
 
-from .http import http_post
+from .http import http_get, http_post
 from .utils import do_blueking_http_request, gen_gateway_headers
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,39 @@ def system_migrate(workflow_template: Dict[str, Any]) -> Dict[str, Any]:
         timeout=180,
         keep_json_content_type=False,
         files={"file": template_content},
+    )
+
+
+def system_workflow_list(
+    system_id: str,
+    system_token: str = "",
+    page: int = 1,
+    page_size: int = 100,
+) -> Dict[str, Any]:
+    """
+    获取 ITSM 系统下的流程列表
+
+    调用接口: system_workflow_list (GET)
+    路径: /api/v1/system_workflow/list/
+    """
+    data = {
+        "system_id": system_id,
+        "page": page,
+        "page_size": page_size,
+    }
+
+    more_headers = {}
+    if system_token:
+        more_headers["SYSTEM-TOKEN"] = system_token
+    elif settings.BK_ITSM4_SYSTEM_TOKEN:
+        more_headers["SYSTEM-TOKEN"] = settings.BK_ITSM4_SYSTEM_TOKEN
+
+    return _call_bkitsm_api(
+        http_get,
+        "/api/v1/system_workflow/list/",
+        data,
+        more_headers=more_headers,
+        timeout=settings.BK_ITSM4_API_TIMEOUT,
     )
 
 
