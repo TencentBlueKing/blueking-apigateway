@@ -215,7 +215,7 @@
         placement="right"
         :border="false"
         :initial-divide="isShowConfig ? divideRatio : 0"
-        :class="isShowConfig ? 'gap-16px' : ''"
+        :class="isShowConfig ? 'w-full gap-16px' : ''"
       >
         <template
           v-if="isShowConfig"

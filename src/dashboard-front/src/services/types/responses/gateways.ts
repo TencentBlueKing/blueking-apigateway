@@ -366,6 +366,8 @@ export interface IMCPServerAppPermissionApplyListOutput {
   applied_by: string
   applied_time: string
   status: string
+  itsm_ticket_id: string
+  itsm_ticket_url: string
   mcp_server: {
     id: number
     name: string
