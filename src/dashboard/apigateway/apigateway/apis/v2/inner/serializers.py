@@ -357,15 +357,20 @@ class MCPServerBaseSLZ(serializers.Serializer):
         help_text="MCPServer 协议类型",
         choices=MCPServerProtocolTypeEnum.get_choices(),
     )
+    url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
+    categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
 
     def get_title(self, obj) -> str:
-        title = obj.get("title", "") if isinstance(obj, dict) else getattr(obj, "title", "")
-        name = obj.get("name", "") if isinstance(obj, dict) else getattr(obj, "name", "")
-        return title if title else name
+        return obj.title if obj.title else obj.name
+
+    def get_url(self, obj) -> str:
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_doc_link(self, obj):
-        obj_id = obj.get("id") if isinstance(obj, dict) else obj.id
-        return build_mcp_server_detail_url(obj_id)
+        return build_mcp_server_detail_url(obj.id)
+
+    def get_categories(self, obj):
+        return self.context.get("categories", {}).get(obj.id, [])
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
