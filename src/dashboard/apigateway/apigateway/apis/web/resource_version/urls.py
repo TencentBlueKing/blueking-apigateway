@@ -23,6 +23,7 @@ from .views import (
     NextResourceVersionRetrieveApi,
     ResourceVersionBatchDeleteApi,
     ResourceVersionDiffRetrieveApi,
+    ResourceVersionDocExportApi,
     ResourceVersionExportApi,
     ResourceVersionListCreateApi,
     ResourceVersionNeedNewVersionRetrieveApi,
@@ -35,6 +36,11 @@ urlpatterns = [
         "<int:id>/export/",
         ResourceVersionExportApi.as_view(),
         name="gateway.resource_version.export",
+    ),
+    path(
+        "<int:id>/export_docs/",
+        ResourceVersionDocExportApi.as_view(),
+        name="gateway.resource_version.export_docs",
     ),
     path(
         "<int:id>/",

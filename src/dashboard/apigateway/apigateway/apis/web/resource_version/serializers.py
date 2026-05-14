@@ -20,7 +20,7 @@ from rest_framework import serializers
 
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.support.constants import OpenAPIFormatEnum
+from apigateway.apps.support.constants import DocArchiveTypeEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
@@ -257,3 +257,14 @@ class ResourceVersionBatchDeleteInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionBatchDeleteInputSLZ"
+
+
+class ResourceVersionDocExportInputSLZ(serializers.Serializer):
+    file_type = serializers.ChoiceField(
+        choices=DocArchiveTypeEnum.get_choices(),
+        default=DocArchiveTypeEnum.TGZ.value,
+        help_text="导出的文件类型，如 tgz/zip",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource_version.serializers.ResourceVersionDocExportInputSLZ"
