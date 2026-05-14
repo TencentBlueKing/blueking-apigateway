@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from tempfile import TemporaryDirectory
+
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -34,8 +36,12 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
+from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
 from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
@@ -48,6 +54,7 @@ from .serializers import (
     ResourceVersionCreateInputSLZ,
     ResourceVersionDiffOutputSLZ,
     ResourceVersionDiffQueryInputSLZ,
+    ResourceVersionDocExportInputSLZ,
     ResourceVersionExportInputSLZ,
     ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
@@ -400,6 +407,39 @@ class ResourceVersionExportApi(generics.CreateAPIView):
         # 导出的文件名，需满足规范：bk_产品名_功能名_文件名.后缀
         export_filename = f"bk_apigw_resources_{self.request.gateway.name}_{instance.version}.{file_type}"
         return DownloadableResponse(content, filename=export_filename)
+
+
+class ResourceVersionDocExportApi(generics.CreateAPIView):
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return ResourceVersion.objects.filter(gateway=self.request.gateway)
+
+    @swagger_auto_schema(
+        operation_description="导出资源版本对应的文档",
+        request_body=ResourceVersionDocExportInputSLZ,
+        responses={status.HTTP_200_OK: ""},
+        tags=["WebAPI.ResourceVersion"],
+    )
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        slz = ResourceVersionDocExportInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        file_type = slz.validated_data["file_type"]
+
+        with TemporaryDirectory() as output_dir:
+            archive_name = f"bk_apigw_docs_{request.gateway.name}_{instance.version}.{file_type}"
+            archivefile = ArchiveFileFactory.from_file_type(file_type)
+
+            try:
+                generator = ResourceVersionDocArchiveGenerator()
+                files = generator.generate(output_dir, instance)
+                archive_path = archivefile.archive(output_dir, archive_name, files)
+            except NoResourceDocError:
+                raise error_codes.INVALID_ARGUMENT.format(_("该资源版本没有对应的资源文档。"))
+
+            return DownloadableResponse(open(archive_path, "rb"), filename=archive_name)
 
 
 class ResourceVersionBatchDeleteApi(generics.DestroyAPIView):

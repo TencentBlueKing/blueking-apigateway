@@ -15,13 +15,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import os
-from typing import List
+from typing import Dict, List
 
-from apigateway.apps.support.models import ResourceDoc
+from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.core.models import Resource
+from apigateway.core.models import Resource, ResourceVersion
 from apigateway.utils.file import write_to_file
+
+logger = logging.getLogger(__name__)
 
 
 class DocArchiveGenerator:
@@ -48,6 +51,69 @@ class DocArchiveGenerator:
 
             filename = f"{resource_doc.language}/{resource_name}.md"
             write_to_file(resource_doc.content, os.path.join(output_dir, filename))
+            files.append(filename)
+
+        if not files:
+            raise NoResourceDocError()
+
+        return files
+
+
+class ResourceVersionDocArchiveGenerator:
+    """从 ResourceDocVersion 的快照数据生成文档归档文件"""
+
+    def generate(
+        self,
+        output_dir: str,
+        resource_version: ResourceVersion,
+    ) -> List[str]:
+        """根据资源版本对应的文档版本快照生成文档文件
+
+        :param output_dir: 输出目录
+        :param resource_version: 资源版本实例
+        :return: 生成的文件路径列表（相对于 output_dir）
+        """
+        # 查询对应的文档版本
+        try:
+            doc_version = ResourceDocVersion.objects.get(
+                gateway=resource_version.gateway,
+                resource_version=resource_version,
+            )
+        except ResourceDocVersion.DoesNotExist:
+            raise NoResourceDocError()
+
+        doc_data = doc_version.data
+        if not doc_data:
+            raise NoResourceDocError()
+
+        # 从 resource_version.data 构建 resource_id -> resource_name 映射
+        resource_id_to_name: Dict[int, str] = {resource["id"]: resource["name"] for resource in resource_version.data}
+
+        return self._generate_docs(output_dir, doc_data, resource_id_to_name)
+
+    def _generate_docs(
+        self,
+        output_dir: str,
+        doc_data: list,
+        resource_id_to_name: Dict[int, str],
+    ) -> List[str]:
+        files = []
+        for doc in doc_data:
+            resource_id = doc.get("resource_id")
+            resource_name = resource_id_to_name.get(resource_id)
+            if not resource_name:
+                logger.warning("resource_id %s not found in resource_id_to_name, skip doc generation", resource_id)
+                continue
+
+            language = doc.get("language", "zh")
+            content = doc.get("content", "")
+
+            dirname = os.path.join(output_dir, language)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+
+            filename = f"{language}/{resource_name}.md"
+            write_to_file(content, os.path.join(output_dir, filename))
             files.append(filename)
 
         if not files:

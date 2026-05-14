@@ -570,3 +570,109 @@ class TestResourceVersionBatchDeleteApi:
         assert not ResourceVersion.objects.filter(id=rv_id).exists()
         assert not ReleasedResourceDoc.objects.filter(resource_version_id=rv_id).exists()
         assert not ReleasedResource.objects.filter(resource_version_id=rv_id).exists()
+
+
+class TestResourceVersionExportApi:
+    def test_export_resource_yaml(self, request_view, fake_gateway, mocker):
+        """导出资源配置（yaml 格式）"""
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data=json.dumps([]))
+
+        mock_export = mocker.patch(
+            "apigateway.apis.web.resource_version.views.OpenAPIExportManager.export_resource_version_openapi",
+            return_value="openapi: '2.0'",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.export",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": rv.id},
+            data={"file_type": "yaml"},
+        )
+        assert resp.status_code == 200
+        assert "bk_apigw_resources_" in resp["Content-Disposition"]
+        assert ".yaml" in resp["Content-Disposition"]
+        mock_export.assert_called_once()
+
+    def test_export_resource_json(self, request_view, fake_gateway, mocker):
+        """导出资源配置（json 格式）"""
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data=json.dumps([]))
+
+        mocker.patch(
+            "apigateway.apis.web.resource_version.views.OpenAPIExportManager.export_resource_version_openapi",
+            return_value='{"openapi": "2.0"}',
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.export",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": rv.id},
+            data={"file_type": "json"},
+        )
+        assert resp.status_code == 200
+        assert ".json" in resp["Content-Disposition"]
+
+    def test_export_resource_default(self, request_view, fake_gateway, mocker):
+        """不传 file_type 时，默认导出资源配置（yaml）"""
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data=json.dumps([]))
+
+        mocker.patch(
+            "apigateway.apis.web.resource_version.views.OpenAPIExportManager.export_resource_version_openapi",
+            return_value="openapi: '2.0'",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.export",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": rv.id},
+            data={},
+        )
+        assert resp.status_code == 200
+        assert ".yaml" in resp["Content-Disposition"]
+
+
+class TestResourceVersionDocExportApi:
+    def test_export_docs_zip(self, request_view, fake_gateway):
+        """导出文档（zip 格式）"""
+        rv = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            version="1.0.0",
+            _data=json.dumps([{"id": 1, "name": "get_user"}]),
+        )
+        G(
+            ResourceDocVersion,
+            gateway=fake_gateway,
+            resource_version=rv,
+            _data=json.dumps(
+                [
+                    {"resource_id": 1, "language": "zh", "content": "# 获取用户"},
+                ]
+            ),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.export_docs",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": rv.id},
+            data={"file_type": "zip"},
+        )
+        assert resp.status_code == 200
+        assert "bk_apigw_docs_" in resp["Content-Disposition"]
+        assert ".zip" in resp["Content-Disposition"]
+
+    def test_export_docs_no_doc_version(self, request_view, fake_gateway):
+        """没有文档版本数据时返回错误"""
+        rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0", _data=json.dumps([]))
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.export_docs",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": rv.id},
+            data={"file_type": "zip"},
+        )
+        assert resp.status_code == 400
