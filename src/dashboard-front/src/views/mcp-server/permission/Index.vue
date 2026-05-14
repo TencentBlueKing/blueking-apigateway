@@ -164,6 +164,11 @@
       </BkButton>
     </template>
   </BkDialog>
+
+  <ApprovalDetailSlider
+    v-model:approval-slider-conf="approvalSliderConf"
+    :approval-detail="approvalSliderDetail"
+  />
 </template>
 
 <script lang="tsx" setup>
@@ -172,32 +177,22 @@ import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tde
 import type { ITableEmptyType, ITableMethod } from '@/types/common';
 import { useFeatureFlag } from '@/stores';
 import {
+  type IPermissionApprovalAction,
+  type IPermissionApprovalFilterValue,
   getMcpAppPermissionApply,
   getMcpPermissionsApplicant,
   updateMcpPermissions,
 } from '@/services/source/mcp-market.ts';
 import { getServers } from '@/services/source/mcp-server';
 import type { IGatewaysMcpServersAppPermissionApplyListQuery } from '@/services/types/query/gateways.ts';
+import type { IMCPServerAppPermissionApplyListOutput } from '@/services/types/responses/gateways.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
 import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { gatewayId?: number }
-
-interface IFilterValue {
-  bk_app_code: string
-  applied_by: string
-  mcp_server_id: string | number
-  state: string
-}
-
-interface IApplyAction {
-  id: number
-  mcp_server_id: number | string
-  status: 'approved' | 'rejected' | ''
-  comment: string
-}
 
 const { gatewayId = 0 } = defineProps<IProps>();
 
@@ -207,7 +202,7 @@ const route = useRoute();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableEmptyType = ref<ITableEmptyType>('empty');
-const filterData = ref<FilterValue | IFilterValue>({
+const filterData = ref<FilterValue | IPermissionApprovalFilterValue>({
   bk_app_code: '',
   applied_by: '',
   mcp_server_id: '',
@@ -239,7 +234,25 @@ const applyActionDialogConf = reactive({
   isLoading: false,
   title: t('通过申请'),
 });
-const curAction = ref<IApplyAction>({
+const approvalSliderConf = ref({
+  isShow: false,
+  title: '',
+});
+const approvalSliderDetail = ref<IMCPServerAppPermissionApplyListOutput>({
+  id: 0,
+  bk_app_code: '',
+  applied_by: '',
+  applied_time: '',
+  status: '',
+  itsm_ticket_id: '',
+  itsm_ticket_url: '',
+  mcp_server: {
+    id: 0,
+    name: '',
+    title: '',
+  },
+});
+const curAction = ref<IPermissionApprovalAction>({
   id: 0,
   mcp_server_id: '',
   status: '',
@@ -343,57 +356,72 @@ const tableColumns = computed(() => {
         );
       },
     },
-  ];
-
-  const operateColumn: PrimaryTableProps['columns'] = [
     {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right' as const,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        if (isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id)) {
+        const isItsm = isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id);
+
+        if (filterData.value.state === 'unprocessed') {
+          if (isItsm) {
+            return (
+              <Button
+                text
+                theme="primary"
+                onClick={() => {
+                  window.open(row?.itsm_ticket_url);
+                }}
+              >
+                {t('审批')}
+              </Button>
+            );
+          }
+
+          return (
+            <div>
+              <Button
+                text
+                theme="primary"
+                class="mr-8px"
+                onClick={() => handleApprove(row, 'approved')}
+              >
+                { t('通过') }
+              </Button>
+              <Button
+                text
+                theme="primary"
+                onClick={() => handleApprove(row, 'rejected')}
+              >
+                { t('驳回') }
+              </Button>
+            </div>
+          );
+        }
+        else {
           return (
             <Button
               text
               theme="primary"
               onClick={() => {
-                window.open(row?.itsm_ticket_url);
+                if (isItsm) {
+                  window.open(row?.itsm_ticket_url);
+                  return;
+                }
+                approvalSliderConf.value = {
+                  isShow: true,
+                  title: `${t('申请应用：')}${row.bk_app_code}`,
+                };
+                approvalSliderDetail.value = { ...row } as IMCPServerAppPermissionApplyListOutput;
               }}
             >
-              {t('审批')}
+              {t('详情')}
             </Button>
           );
         }
-
-        return (
-          <div>
-            <Button
-              text
-              theme="primary"
-              class="mr-8px"
-              onClick={() => handleApprove(row, 'approved')}
-            >
-              { t('通过') }
-            </Button>
-            <Button
-              text
-              theme="primary"
-              onClick={() => handleApprove(row, 'rejected')}
-            >
-              { t('驳回') }
-            </Button>
-          </div>
-        );
       },
     },
   ];
-
-  if (filterData.value.state === 'unprocessed') {
-    return [
-      ...columns,
-      ...operateColumn,
-    ];
-  }
 
   return columns;
 });
