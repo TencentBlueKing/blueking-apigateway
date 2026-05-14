@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import os
 from typing import Dict, List
 
@@ -22,6 +23,8 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.core.models import Resource, ResourceVersion
 from apigateway.utils.file import write_to_file
+
+logger = logging.getLogger(__name__)
 
 
 class DocArchiveGenerator:
@@ -99,6 +102,7 @@ class ResourceVersionDocArchiveGenerator:
             resource_id = doc.get("resource_id")
             resource_name = resource_id_to_name.get(resource_id)
             if not resource_name:
+                logger.warning("resource_id %s not found in resource_id_to_name, skip doc generation", resource_id)
                 continue
 
             language = doc.get("language", "zh")
