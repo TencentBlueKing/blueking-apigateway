@@ -26,8 +26,8 @@ export interface IApprovalListItem {
   status: string
   comment: string
   grant_dimension_display: string
-  itsm_ticket_url?: string
-  itsm_ticket_id?: string
+  itsm_ticket_url: string
+  itsm_ticket_id: string
   expire_days_display: number
   resourceList: any[]
   resource_ids: any[]

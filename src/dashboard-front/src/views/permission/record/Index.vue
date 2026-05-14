@@ -352,6 +352,8 @@ const curRecord = ref<IApprovalListItem>({
   expire_days_display: 0,
   reason: '',
   handled_resources: [],
+  itsm_ticket_id: '',
+  itsm_ticket_url: '',
 });
 const detailSliderConf = reactive({
   title: '',
@@ -370,7 +372,7 @@ const {
 } = useDatePicker(filterData);
 
 const apigwId = computed(() => gatewayStore.apigwId);
-
+const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
 const getTableColumns = computed((): any[] => {
   return [
     {
@@ -421,7 +423,7 @@ const getTableColumns = computed((): any[] => {
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
         !featureFlagStore.isEnableDisplayName
-          ? <span>{row.applied_by}</span>
+          ? <span>{row.applied_by || '--'}</span>
           : <span><bk-user-display-name user-id={row.applied_by} /></span>,
     },
     {
@@ -554,6 +556,11 @@ const handleSetRowClass = ({ row }: { row: any }) => {
 // 展示详情
 const handleShowRecord = (e: MouseEvent, data: IApprovalListItemExt) => {
   e.stopPropagation();
+  // 如果是itsm单据，跳转去itsm查看详情
+  if (isEnabledITSMApply.value && Boolean(data?.itsm_ticket_url) && Boolean(data?.itsm_ticket_id)) {
+    window.open(data.itsm_ticket_url);
+    return;
+  }
   const results: any[] = [];
   detailSliderConf.title = `${t('申请应用：')}${data.bk_app_code}`;
   curRecord.value = Object.assign({}, {

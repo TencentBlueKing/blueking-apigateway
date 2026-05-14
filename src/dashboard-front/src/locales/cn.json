@@ -2477,5 +2477,7 @@
   "复制配置": "复制配置",
   "批量复制": "批量复制",
   "复制 MCP Server 接入配置": "复制 MCP Server 接入配置",
-  "已停用的MCP无法批量操作": "已停用的MCP无法批量操作"
+  "已停用的MCP无法批量操作": "已停用的MCP无法批量操作",
+  "MCPServer 名称：": "MCPServer 名称：",
+  "MCPServer 中文名：": "MCPServer 中文名："
 }

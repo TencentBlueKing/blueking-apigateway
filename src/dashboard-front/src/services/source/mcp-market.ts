@@ -129,6 +129,20 @@ export interface IMarketplaceConfig {
   install_url: string
 }
 
+export interface IPermissionApprovalFilterValue {
+  bk_app_code: string
+  applied_by: string
+  mcp_server_id: string | number
+  state: string
+}
+
+export interface IPermissionApprovalAction {
+  id: number
+  mcp_server_id: number | string
+  status: 'approved' | 'rejected' | ''
+  comment: string
+}
+
 //  UI 扩展类型
 export type IMarketplaceItemWithUIState = IMarketplaceItem & { is_checked?: boolean };
 
