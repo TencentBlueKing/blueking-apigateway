@@ -1,0 +1,31 @@
+meta {
+  name: app-streamable-http-tools-list
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-mcp-server/application/mcp
+  body: json
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+  Content-Type: application/json
+  Accept: application/json, text/event-stream
+  Mcp-Session-Id: {{app_streamable_session_id}}
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list",
+    "params": {}
+  }
+}
+
+assert {
+  res.status: eq 200
+}

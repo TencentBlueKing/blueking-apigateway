@@ -1,0 +1,20 @@
+meta {
+  name: user-streamable-http-delete-session
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-mcp-server/mcp
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "access_token": "{{access_token}}"}
+  Mcp-Session-Id: {{user_streamable_session_id}}
+}
+
+assert {
+  res.status: eq 200
+}
