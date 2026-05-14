@@ -31,4 +31,6 @@ body:json {
 
 assert {
   res.status: eq 200
+  res.body.jsonrpc: eq 2.0
+  res.body.result.content: isDefined
 }

@@ -34,11 +34,15 @@ body:json {
 
 assert {
   res.status: eq 200
+  res.body.jsonrpc: eq 2.0
+  res.body.result.protocolVersion: isDefined
+  res.body.result.serverInfo.name: isDefined
 }
 
 script:post-response {
   var sessionId = res.headers['mcp-session-id'];
-  if (sessionId) {
-    bru.setVar("user_sse_session_id", sessionId);
+  if (!sessionId) {
+    throw new Error('No mcp-session-id found in response headers');
   }
+  bru.setVar("user_sse_session_id", sessionId);
 }
