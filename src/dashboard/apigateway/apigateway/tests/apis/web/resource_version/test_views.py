@@ -655,7 +655,7 @@ class TestResourceVersionDocExportApi:
 
         resp = request_view(
             method="POST",
-            view_name="gateway.resource_version.export_docs",
+            view_name="gateway.resource_version.export-docs",
             gateway=fake_gateway,
             path_params={"gateway_id": fake_gateway.id, "id": rv.id},
             data={"file_type": "zip"},
@@ -670,7 +670,7 @@ class TestResourceVersionDocExportApi:
 
         resp = request_view(
             method="POST",
-            view_name="gateway.resource_version.export_docs",
+            view_name="gateway.resource_version.export-docs",
             gateway=fake_gateway,
             path_params={"gateway_id": fake_gateway.id, "id": rv.id},
             data={"file_type": "zip"},
