@@ -15,13 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+from django.urls import NoReverseMatch, reverse
+
+
 class TestUrls:
-    def test_urls(self, request_view):
-        resp = request_view(
-            method="GET",
-            view_name="schema-swagger-ui",
-            data={
-                "format": "openapi",
-            },
-        )
-        assert resp.status_code == 200
+    def test_urls_disabled_when_debug_is_false(self):
+        with pytest.raises(NoReverseMatch):
+            reverse("schema-swagger-ui")

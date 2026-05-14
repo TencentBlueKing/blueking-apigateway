@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import logging
 
 import redis
 import requests
@@ -26,6 +27,8 @@ from requests.exceptions import HTTPError, RequestException
 
 from apigateway.utils.redis_utils import get_redis_pool
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
+
+logger = logging.getLogger(__name__)
 
 
 class CheckError(Exception):
@@ -53,11 +56,9 @@ class HealthzView(View):
             try:
                 checker()
             except CheckError as err:
-                return FailJsonResponse(status=500, code="UNKNOWN", messge=f"Error: {err}")
+                return FailJsonResponse(status=500, code="UNKNOWN", message=str(err))
             except CheckWarning as err:
-                return OKJsonResponse(
-                    data={"message": f"Warning: some checks fail and do not affect core functions. {err}"}
-                )
+                return OKJsonResponse(data={"message": f"Warning: {err}"})
 
         return OKJsonResponse()
 
@@ -73,7 +74,7 @@ class HealthzView(View):
         ]
         empty_keys = [key for key in not_allow_empty_keys if not getattr(settings, key, None)]
         if empty_keys:
-            raise CheckError(f"These django settings should not be empty: {', '.join(empty_keys)}")
+            raise CheckError("check settings failed")
 
     def _check_database(self):
         from apigateway.core.models import Gateway
@@ -81,7 +82,8 @@ class HealthzView(View):
         try:
             Gateway.objects.exists()
         except Exception as err:
-            raise CheckError(f"Query from database failed, error: {err}")
+            logger.exception("healthz database check failed")
+            raise CheckError("check database failed")
 
     def _check_redis(self):
         config = getattr(settings, "CHANNEL_REDIS_CONFIG", None)
@@ -94,7 +96,8 @@ class HealthzView(View):
             client.expire(key, 60)
             client.get(key)
         except Exception as err:
-            raise CheckError(f"Redis check failed [{config['host']}:{config['port']}], error: {err}")
+            logger.exception("healthz redis check failed")
+            raise CheckError("check redis failed")
 
     def _check_external_dependency_url(self):
         url_keys = [
@@ -106,13 +109,11 @@ class HealthzView(View):
             try:
                 resp = requests.get(url, timeout=3, verify=False)
             except RequestException as err:
-                raise CheckError(f"Request api error, url: {url}, error: {err}")
+                logger.exception("healthz external dependency url check failed")
+                raise CheckError("check external dependency url failed")
 
             if resp.status_code >= 500:
-                raise CheckError(
-                    f"Request api status_code >= 500, url: {url}, "
-                    f"status_code: {resp.status_code}, response content: {resp.text}"
-                )
+                raise CheckError("check external dependency url failed")
 
     def _check_bk_paasv3(self):
         url = settings.BK_PAAS3_API_URL.rstrip("/") + "/prod/system/uni_applications/query/by_id/"
@@ -136,21 +137,17 @@ class HealthzView(View):
                 verify=False,
             )
         except RequestException as err:
-            raise CheckWarning(f"Request paas3.0 api to get application error, url: {url}, error: {err}")
+            logger.exception("healthz bk_paasv3 check failed")
+            raise CheckWarning("check bk_paasv3 failed")
 
         try:
             result = resp.json()
         except (TypeError, json.JSONDecodeError):
-            raise CheckWarning(
-                "The response to paas3.0 api is not a valid json, "
-                "please check django settings: BK_APP_CODE, BK_APP_SECRET, "
-                f"url: {url}, response content: {resp.text}, "
-            )
+            logger.exception("healthz bk_paasv3 check failed")
+            raise CheckWarning("check bk_paasv3 failed")
 
         try:
             resp.raise_for_status()
-        except HTTPError:
-            raise CheckWarning(
-                f"Request paas3.0 api to get application fail, request url: {url}, response: {resp.text}, "
-                "please check django settings: BK_APP_CODE, BK_APP_SECRET"
-            )
+        except HTTPError as err:
+            logger.exception("healthz bk_paasv3 check failed")
+            raise CheckWarning("check bk_paasv3 failed")
