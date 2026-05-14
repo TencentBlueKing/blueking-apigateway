@@ -166,6 +166,20 @@
                     {{ t('精选') }}
                   </div>
                 </template>
+                <template #mcpCopyConfig>
+                  <BkButton
+                    text
+                    class="mr-24px color-#979ba5!"
+                    @click.stop="handleCopyConfig(server)"
+                  >
+                    <AgIcon
+                      name="copy"
+                      class="mr-8px"
+                      size="16"
+                    />
+                    {{ t("复制配置") }}
+                  </BkButton>
+                </template>
               </AgMcpCard>
             </template>
           </div>
@@ -502,6 +516,11 @@ const handleChecked = (isChecked: boolean, row: IMarketplaceItemWithUIState) => 
   else {
     selections.value.delete(row.id);
   }
+};
+
+const handleCopyConfig = (row: IMarketplaceItemWithUIState) => {
+  isShowConfig.value = true;
+  fetchMcpBatchCopyConfigList({ row });
 };
 
 const handleBatchCopy = () => {
