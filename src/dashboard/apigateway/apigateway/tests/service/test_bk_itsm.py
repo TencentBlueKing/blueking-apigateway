@@ -254,13 +254,13 @@ class TestItsmPermissionApplyHelper:
         title = ItsmPermissionApplyHelper._build_ticket_title(
             FormattedGrantDimensionEnum.GATEWAY.value, "demo-gateway", "bk-test", "demo-gateway"
         )
-        assert title == "网关权限申请-demo-gateway-bk-test"
+        assert title == "网关权限申请【demo-gateway】【bk-test】"
 
     def test_build_ticket_title_for_mcp_server(self):
         title = ItsmPermissionApplyHelper._build_ticket_title(
             FormattedGrantDimensionEnum.MCP_SERVER.value, "demo-gateway", "bk-test", "mcp-a"
         )
-        assert title == "MCP Server 权限申请-demo-gateway-mcp-a-bk-test"
+        assert title == "MCP Server 权限申请【bk-test】【demo-gateway】【mcp-a】"
 
     def test_build_apply_resources_display_for_gateway(self):
         helper = ItsmPermissionApplyHelper()
