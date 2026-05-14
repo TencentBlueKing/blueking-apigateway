@@ -55,8 +55,8 @@
               {{ t("申请人：") }}
             </div>
             <div class="value">
-              <span v-if="!featureFlagStore.isEnableDisplayName">{{ approvalDetail.applied_by }}</span>
-              <span v-else><bk-user-display-name :user-id="approvalDetail.applied_by" /></span>
+              <span v-if="!featureFlagStore.isEnableDisplayName">{{ approvalDetail?.applied_by }}</span>
+              <span v-else><bk-user-display-name :user-id="approvalDetail?.applied_by" /></span>
             </div>
           </div>
           <div class="item">
@@ -64,7 +64,7 @@
               {{ t("申请时间：") }}
             </div>
             <div class="value">
-              {{ approvalDetail.applied_time }}
+              {{ approvalDetail?.applied_time }}
             </div>
           </div>
           <div class="item">
@@ -72,7 +72,7 @@
               {{ t("审批状态：") }}
             </div>
             <div class="value">
-              {{ approvalDetail.status === 'approved' ? t('通过') : t('驳回') }}
+              {{ approvalDetail?.status === 'approved' ? t('通过') : t('驳回') }}
             </div>
           </div>
         </div>

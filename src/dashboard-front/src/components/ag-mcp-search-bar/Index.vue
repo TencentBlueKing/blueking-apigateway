@@ -20,16 +20,23 @@
   <div class="w-full flex items-center gap-12px mcp-server-top-bar">
     <!-- 新建按钮模板 -->
     <slot name="mcpServerBtn" />
-    <BkButton
-      :disabled="selections?.size < 1"
-      @click="handleBatchCopy"
+    <BkPopover
+      placement="top"
+      :content="t('请先在下方卡片左上角 勾选 至少1个MCP Server, 然后即可点击此按钮进行批量复制。')"
+      :popover-delay="0"
+      :disabled="selections?.size > 0"
     >
-      <AgIcon
-        name="copy"
-        class="mr-4px"
-      />
-      {{ t("批量复制") }}
-    </BkButton>
+      <BkButton
+        :disabled="selections?.size < 1"
+        @click="handleBatchCopy"
+      >
+        <AgIcon
+          name="copy"
+          class="mr-4px"
+        />
+        {{ t("批量复制") }}
+      </BkButton>
+    </BkPopover>
     <!-- tab选项模板 -->
     <slot name="mcpServerTab" />
     <!-- 搜索组件 -->

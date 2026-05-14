@@ -29,7 +29,7 @@ export const CLIENT_TYPE_ENUMS = ['codebuddy', 'cursor', 'claude', 'vscode'] as 
 type ClientType = typeof CLIENT_TYPE_ENUMS[number];
 
 // 通用的MCP Server行数据类型（兼容列表和市场两种场景）
-type IMCPServerItem = IMCPServerWithUIState & IMarketplaceItemWithUIState;
+type IMCPServerItem = IMCPServerWithUIState | IMarketplaceItemWithUIState;
 
 type IMcpBatchConfigQuery = {
   client_type: string
