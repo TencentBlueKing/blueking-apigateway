@@ -177,16 +177,18 @@ def validate_and_enrich_mcp_server_for_retrieve(
     }
 
 
-def get_mcp_server_url_from_context(obj: MCPServer, context: Dict[str, Any]) -> str:
-    """从序列化器 context 中获取 least_privileges 并返回适配后的 MCPServer URL。
+def get_mcp_server_url_from_context(context: dict, obj: MCPServer) -> str:
+    """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
+
+    统一 inner/open 序列化器中 get_url 方法的公共逻辑，避免重复实现。
 
     Args:
-        obj: MCPServer 实例
-        context: 序列化器 context 字典，需包含 least_privileges
+        context: serializer 的 context 字典，应包含 "least_privileges" 键
+        obj: MCPServer model 实例
 
     Returns:
-        MCPServer 访问 URL
+        MCP Server 访问 URL
     """
     least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
-    least_privilege = least_privileges.get((obj.gateway_id, obj.stage_id), "")
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
     return MCPServerHandler.get_mcp_server_url(obj, least_privilege)

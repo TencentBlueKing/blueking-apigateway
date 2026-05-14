@@ -976,7 +976,8 @@ class TestMCPServerHandler:
 
         result = MCPServerHandler.get_least_privileges([server_a, server_b])
 
-        # 合并后应包含 tool_a 和 tool_b，因为 tool_b 需要用户认证，所以结果为 APPLICATION_AND_USER
+        # 后一个 server 的 resource_names 会覆盖前一个（与 upstream/master 行为一致）
+        # server_b 的 tool_b 需要用户认证，所以结果为 APPLICATION_AND_USER
         assert result[(fake_gateway.id, fake_stage.id)] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
 
     @staticmethod

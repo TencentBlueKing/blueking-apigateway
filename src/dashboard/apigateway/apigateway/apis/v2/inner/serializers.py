@@ -607,7 +607,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return get_mcp_server_url_from_context(obj, self.context)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)

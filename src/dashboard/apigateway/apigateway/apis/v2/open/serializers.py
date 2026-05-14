@@ -234,7 +234,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return get_mcp_server_url_from_context(obj, self.context)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)
@@ -543,7 +543,7 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
         return self.context.get("categories", [])
 
     def get_url(self, obj) -> str:
-        return get_mcp_server_url_from_context(obj, self.context)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_user_custom_doc(self, obj) -> str:
         return self.context.get("user_custom_doc", "")
