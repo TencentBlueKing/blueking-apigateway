@@ -2479,5 +2479,6 @@
   "复制 MCP Server 接入配置": "Copy MCP Server Access Configuration",
   "已停用的MCP无法批量操作": "Deactivated MCP cannot perform batch operations",
   "MCPServer 名称：": "MCPServer name: ",
-  "MCPServer 中文名：": "MCPServer chinese name: "
+  "MCPServer 中文名：": "MCPServer chinese name: ",
+  "请先在下方卡片左上角 勾选 至少1个MCP Server, 然后即可点击此按钮进行批量复制。": "Please select at least one MCP Server in the upper left corner of the card below, then click this button to batch copy."
 }

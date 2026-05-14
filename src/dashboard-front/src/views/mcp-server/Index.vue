@@ -565,7 +565,7 @@ const handleDelete = async (id: number) => {
   }
 };
 
-const handleCopyConfig = async (row: any) => {
+const handleCopyConfig = async (row: IMCPServerWithUIState) => {
   isShowConfig.value = true;
   await fetchMcpBatchCopyConfigList({ row });
 };

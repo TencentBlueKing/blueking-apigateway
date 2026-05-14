@@ -254,6 +254,7 @@
             :ref="(el) => setMapRefs(el, operateIconRefs, 'item-value-')"
             class="flex items-center item-value"
           >
+            <slot name="mcpCopyConfig" />
             <div
               v-bk-tooltips="{
                 content: `${t('工具数量')}: ${String(server?.tools_count)}`,

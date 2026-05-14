@@ -44,12 +44,13 @@
 <script lang="tsx" setup>
 import { locale, t } from '@/locales';
 import { Button, Tag } from 'bkui-vue';
-import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import {
   type IMCPFilterParams,
   type IMCPServerCategory,
+  type IMCPServerWithUIState,
   getServers,
 } from '@/services/source/mcp-server';
 import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
@@ -68,8 +69,8 @@ interface IEmits {
   'suspend': [id: number]
   'enable': [id: number]
   'delete': [id: number]
-  'copy-config': [row: Partial<IMCPServer>]
-  'selection-change': [selection: Partial<IMCPServer[]>]
+  'copy-config': [row: IMCPServerWithUIState]
+  'selection-change': [selection: IMCPServerWithUIState[]]
   'clear-filter': [void]
 };
 
@@ -555,13 +556,18 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
 };
 
 // 复制配置
-const handleCopyConfig = (row: IMCPServer) => {
+const handleCopyConfig = (row: IMCPServerWithUIState) => {
   emit('copy-config', row);
 };
 
 // 处理复选框
-const handleSelectionChange: any = ({ selections }: any) => {
-  emit('selection-change', selections);
+const handleSelectionChange = ({
+  selections,
+}: {
+  selections: TableRowData[]
+  selectionsRowKeys: (string | number)[]
+}) => {
+  emit('selection-change', selections as IMCPServerWithUIState[]);
 };
 
 const handleClearFilter = () => {
