@@ -66,6 +66,7 @@ from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
+from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
@@ -242,12 +243,20 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
             request.user.username,
         )
 
-        try:
-            apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
-        except Exception:  # pylint: disable=broad-except
-            logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
+        # ITSM 单据创建成功后，不再发送邮件通知
+        if not record.itsm_ticket_id:
+            try:
+                apply_async_on_commit(send_mail_for_perm_apply, args=[record.id])
+            except Exception:  # pylint: disable=broad-except
+                logger.exception("send mail to gateway manager fail. apply_record_id=%s", record.id)
 
-        output_slz = GatewayAppPermissionApplyOutputSLZ({"record_id": record.id})
+        output_slz = GatewayAppPermissionApplyOutputSLZ(
+            {
+                "record_id": record.id,
+                "itsm_ticket_id": record.itsm_ticket_id or "",
+                "itsm_ticket_url": ItsmPermissionApplyHelper.build_ticket_url(record.itsm_ticket_id),
+            }
+        )
 
         return OKJsonResponse(data=output_slz.data)
 

@@ -347,6 +347,8 @@ class AppPermissionRecordOutputSLZ(AppPermissionRecordBaseSLZ):
 
 class GatewayAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
     record_id = serializers.IntegerField(read_only=True)
+    itsm_ticket_id = serializers.CharField(read_only=True, allow_blank=True, default="")
+    itsm_ticket_url = serializers.CharField(read_only=True, allow_blank=True, default="")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayAppPermissionApplyCreateOutputSLZ"

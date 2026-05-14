@@ -24,6 +24,7 @@ from django.conf import settings
 
 from apigateway.apps.bk_itsm.constants import DEFAULT_ITSM_SYSTEM_CODE
 from apigateway.apps.bk_itsm.models import ItsmSystemConfig
+from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkitsm import create_ticket
 from apigateway.utils.url import url_join
@@ -122,8 +123,9 @@ class ItsmPermissionApplyHelper:
             apply_resource_names=apply_resource_names,
         )
 
+        title = self._build_ticket_title(grant_dimension, gateway_name, bk_app_code, apply_resources)
         form_data = {
-            "ticket__title": f"网关权限申请-{gateway_name}-{bk_app_code}",
+            "ticket__title": title,
             "gateway_name": gateway_name,
             "grant_dimension": grant_dimension,
             "apply_resources": apply_resources,
@@ -178,9 +180,9 @@ class ItsmPermissionApplyHelper:
     def _build_form_options(grant_dimension: str) -> Dict[str, List[Dict[str, Optional[str]]]]:
         """构建 ITSM ticket_create 所需 options（选项型字段明细）"""
         grant_dimension_option_name_map = {
-            "gateway": "gateway",
-            "resource": "resource",
-            "mcp_server": "MCP Server",
+            FormattedGrantDimensionEnum.GATEWAY.value: "gateway",
+            FormattedGrantDimensionEnum.RESOURCE.value: "resource",
+            FormattedGrantDimensionEnum.MCP_SERVER.value: "MCP Server",
         }
         return {
             "grant_dimension": [
@@ -192,21 +194,38 @@ class ItsmPermissionApplyHelper:
             ]
         }
 
+    @staticmethod
+    def _build_ticket_title(
+        grant_dimension: str,
+        gateway_name: str,
+        bk_app_code: str,
+        apply_resources: str,
+    ) -> str:
+        """根据授权维度构建工单标题"""
+        if grant_dimension == FormattedGrantDimensionEnum.MCP_SERVER.value:
+            return f"MCP Server 权限申请【{bk_app_code}】【{gateway_name}】【{apply_resources}】"
+        return f"网关权限申请【{gateway_name}】【{bk_app_code}】"
+
     def _build_apply_resources_display(
         self,
         grant_dimension: str,
         gateway_name: str,
         apply_resource_names: List[str],
+        max_display: int = 5,
     ) -> str:
         """构建申请资源的展示文本"""
-        if grant_dimension == "gateway":
+        if grant_dimension == FormattedGrantDimensionEnum.GATEWAY.value:
             return gateway_name
 
         normalized_names = [str(name).strip() for name in (apply_resource_names or []) if str(name).strip()]
-        if normalized_names:
+        if not normalized_names:
+            return gateway_name
+
+        total = len(normalized_names)
+        if total <= max_display:
             return ", ".join(normalized_names)
 
-        return gateway_name
+        return ", ".join(normalized_names[:max_display]) + f" 等 {total} 个资源"
 
     def _build_callback_url(self) -> str:
         """构建 ITSM 回调 URL"""

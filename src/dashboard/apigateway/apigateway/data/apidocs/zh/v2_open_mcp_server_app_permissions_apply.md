@@ -34,18 +34,21 @@
       "record_id": 10,
       "bk_app_code": "bk-001",
       "mcp_server_id": 1,
-      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=1"
+      "itsm_ticket_id": "102025051310362600001802",
+      "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001802"
     },
     {
       "record_id": 11,
       "bk_app_code": "bk-001",
       "mcp_server_id": 2,
-      "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=2"
+      "itsm_ticket_id": "102025051310362600001803",
+      "approval_url": "https://itsm.example.com/#/ticket/102025051310362600001803"
     },
     {
       "record_id": 12,
       "bk_app_code": "bk-001",
       "mcp_server_id": 3,
+      "itsm_ticket_id": "",
       "approval_url": "http://dashboard.example.com/123/mcp/permission?serverId=3"
     }
   ]
@@ -59,4 +62,5 @@
 | record_id     | int      | 申请记录 ID             |
 | bk_app_code   | string   | 蓝鲸应用编码              |
 | mcp_server_id | int      | mcp_server ID       |
-| approval_url  | string   | 权限审批 URL            |
+| itsm_ticket_id | string  | 关联的 ITSM 工单 ID，未关联时为空字符串 |
+| approval_url  | string   | 权限审批 URL；当存在 ITSM 工单时返回 ITSM 单据中心链接，否则返回 MCPServer 权限审批页 URL |
