@@ -33,6 +33,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import (
@@ -56,7 +57,7 @@ from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource
-from apigateway.service.mcp.mcp_server import build_mcp_server_url
+from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 logger = logging.getLogger(__name__)
@@ -423,6 +424,76 @@ class MCPServerHandler:
                 risks[mcp_server.id] = risk_tools
 
         return risks
+
+    @staticmethod
+    def get_least_privileges(mcp_servers: list) -> Dict[Tuple[int, int], str]:
+        """计算 MCPServer 列表中每个 (gateway_id, stage_id) 的最低权限等级。
+
+        遍历每个 MCPServer 关联的 Release 资源版本，检查工具对应的 API 是否需要用户认证
+        (verified_user_required)：
+        - 如果所有工具都不需要用户认证，则最低权限为 APPLICATION
+        - 如果任意工具需要用户认证，则最低权限为 APPLICATION_AND_USER
+
+        Args:
+            mcp_servers: MCPServer 实例列表（需已 select_related gateway/stage）
+
+        Returns:
+            {(gateway_id, stage_id): "application" | "application_and_user"} 映射
+        """
+        gateway_stage_pairs = set()
+        gateway_stage_resource_names: Dict[Tuple[int, int], set] = {}
+        for mcp_server in mcp_servers:
+            key = (mcp_server.gateway_id, mcp_server.stage_id)
+            gateway_stage_pairs.add(key)
+            gateway_stage_resource_names.setdefault(key, set()).update(mcp_server.resource_names)
+
+        if not gateway_stage_pairs:
+            return {}
+
+        # 批量查询所有相关的 Release 记录
+        release_filters = Q()
+        for gateway_id, stage_id in gateway_stage_pairs:
+            release_filters |= Q(gateway_id=gateway_id, stage_id=stage_id)
+
+        releases = Release.objects.filter(release_filters).select_related("resource_version")
+
+        # 获取资源的最低权限
+        least_privileges: Dict[Tuple[int, int], str] = {}
+        for release in releases:
+            gateway_stage_key = (release.gateway_id, release.stage_id)
+            resource_names = gateway_stage_resource_names.get(gateway_stage_key, set())
+            least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION.value
+            for resource in release.resource_version.data:
+                if resource["name"] not in resource_names:
+                    continue
+                release_resource_data = ReleasedResourceData.from_data(resource)
+                if release_resource_data.verified_user_required:
+                    least_privilege = MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+                    break
+            least_privileges[gateway_stage_key] = least_privilege
+
+        return least_privileges
+
+    @staticmethod
+    def get_mcp_server_url(instance: MCPServer, least_privilege: str = "") -> str:
+        """根据最低权限等级获取 MCPServer 的访问 URL。
+
+        当 MCPServer 未开启 oauth2_public_client_enabled 且最低权限为 APPLICATION 时，
+        返回应用态 URL；否则返回标准 URL。
+
+        Args:
+            instance: MCPServer 实例
+            least_privilege: 最低权限等级
+
+        Returns:
+            MCPServer 访问 URL
+        """
+        if (
+            not instance.oauth2_public_client_enabled
+            and least_privilege == MCPServerLeastPrivilegeEnum.APPLICATION.value
+        ):
+            return build_mcp_server_application_url(instance.name, instance.protocol_type)
+        return build_mcp_server_url(instance.name, instance.protocol_type)
 
     @staticmethod
     def disable_servers(gateway_id: int, stage_id: int = 0) -> None:

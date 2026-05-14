@@ -22,6 +22,7 @@ import math
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.mcp_server import get_mcp_server_url_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
@@ -42,7 +43,6 @@ from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.mcp.mcp_server import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
-    build_mcp_server_url,
 )
 from apigateway.utils import time
 
@@ -607,7 +607,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name, obj.protocol_type)
+        return get_mcp_server_url_from_context(obj, self.context)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)

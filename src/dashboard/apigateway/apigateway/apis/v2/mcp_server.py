@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from django.conf import settings
 from django.db.models import Q, QuerySet
@@ -91,7 +91,9 @@ def build_mcp_server_list_context(mcp_servers: Sequence[MCPServer]) -> Dict[str,
         for s in Stage.objects.filter(id__in=stage_ids)
     }
 
-    return {"gateways": gateways, "stages": stages}
+    least_privileges = MCPServerHandler.get_least_privileges(list(mcp_servers))
+
+    return {"gateways": gateways, "stages": stages, "least_privileges": least_privileges}
 
 
 def validate_and_enrich_mcp_server_for_retrieve(
@@ -161,6 +163,8 @@ def validate_and_enrich_mcp_server_for_retrieve(
         {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)
     ]
 
+    least_privileges = MCPServerHandler.get_least_privileges([instance])
+
     return {
         "labels": labels,
         "tool_name_map": instance.gen_tool_name_map(),
@@ -169,4 +173,20 @@ def validate_and_enrich_mcp_server_for_retrieve(
         "prompts_count_map": prompts_count_map,
         "prompts": prompts,
         "user_custom_doc": user_custom_doc,
+        "least_privileges": least_privileges,
     }
+
+
+def get_mcp_server_url_from_context(obj: MCPServer, context: Dict[str, Any]) -> str:
+    """从序列化器 context 中获取 least_privileges 并返回适配后的 MCPServer URL。
+
+    Args:
+        obj: MCPServer 实例
+        context: 序列化器 context 字典，需包含 least_privileges
+
+    Returns:
+        MCPServer 访问 URL
+    """
+    least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway_id, obj.stage_id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)

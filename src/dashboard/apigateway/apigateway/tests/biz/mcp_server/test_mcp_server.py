@@ -24,6 +24,7 @@ from ddf import G
 from apigateway.apis.v2.mcp_server import build_mcp_server_list_queryset
 from apigateway.apps.mcp_server.constants import (
     MCPServerExtendTypeEnum,
+    MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory, MCPServerExtend
@@ -882,6 +883,198 @@ class TestMCPServerHandler:
         MCPServerHandler._sync_mcp_server_categories(mcp_server, None)
 
         assert mcp_server.categories.count() == 1
+
+    # ========== get_least_privileges 测试 ==========
+
+    def test_get_least_privileges_empty_list(self):
+        """空列表返回空字典"""
+        result = MCPServerHandler.get_least_privileges([])
+        assert result == {}
+
+    def test_get_least_privileges_all_application(self, fake_gateway, fake_stage):
+        """所有工具都不需要用户认证时，返回 APPLICATION"""
+        rv = self._make_resource_version_with_auth_verified(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": False},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a;tool_b",
+        )
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        assert result[(fake_gateway.id, fake_stage.id)] == MCPServerLeastPrivilegeEnum.APPLICATION.value
+
+    def test_get_least_privileges_application_and_user(self, fake_gateway, fake_stage):
+        """任一工具需要用户认证时，返回 APPLICATION_AND_USER"""
+        rv = self._make_resource_version_with_auth_verified(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a;tool_b",
+        )
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        assert result[(fake_gateway.id, fake_stage.id)] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+
+    def test_get_least_privileges_no_release(self, fake_gateway, fake_stage):
+        """没有 Release 时，返回空字典"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+
+        result = MCPServerHandler.get_least_privileges([mcp_server])
+
+        assert (fake_gateway.id, fake_stage.id) not in result
+
+    def test_get_least_privileges_multiple_servers_same_gateway_stage(self, fake_gateway, fake_stage):
+        """同一 (gateway_id, stage_id) 下多个 MCP Server 的 resource_names 应合并计算"""
+        rv = self._make_resource_version_with_auth_verified(
+            fake_gateway,
+            [
+                {"name": "tool_a", "auth_verified_required": False},
+                {"name": "tool_b", "auth_verified_required": True},
+            ],
+        )
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=rv)
+
+        # server_a 只关联不需要用户认证的 tool_a
+        server_a = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_a",
+        )
+        # server_b 只关联需要用户认证的 tool_b
+        server_b = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="tool_b",
+        )
+
+        result = MCPServerHandler.get_least_privileges([server_a, server_b])
+
+        # 合并后应包含 tool_a 和 tool_b，因为 tool_b 需要用户认证，所以结果为 APPLICATION_AND_USER
+        assert result[(fake_gateway.id, fake_stage.id)] == MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value
+
+    @staticmethod
+    def _make_resource_version_with_auth_verified(gateway, resources):
+        """构造带有 auth_verified_required 的 ResourceVersion（用于 get_least_privileges 测试）"""
+        rv = G(ResourceVersion, gateway=gateway)
+        data = []
+        for i, res in enumerate(resources):
+            data.append(
+                {
+                    "id": i + 1,
+                    "name": res["name"],
+                    "description": f"test resource {res['name']}",
+                    "description_en": f"test resource {res['name']}",
+                    "method": "GET",
+                    "path": f"/test/{res['name']}/",
+                    "match_subpath": False,
+                    "is_public": True,
+                    "allow_apply_permission": True,
+                    "api_labels": [],
+                    "contexts": {
+                        "resource_auth": {
+                            "config": json.dumps(
+                                {
+                                    "auth_verified_required": res.get("auth_verified_required", True),
+                                    "app_verified_required": True,
+                                    "resource_perm_required": True,
+                                }
+                            )
+                        }
+                    },
+                }
+            )
+        rv._data = json.dumps(data)
+        rv.save()
+        return rv
+
+    # ========== get_mcp_server_url 测试 ==========
+
+    def test_get_mcp_server_url_standard(self, fake_gateway, fake_stage, settings):
+        """oauth2 开启时，始终返回标准 URL"""
+        settings.BK_API_URL_TMPL = "http://bkapi.example.com/api/{api_name}"
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-server",
+            oauth2_public_client_enabled=True,
+        )
+
+        url = MCPServerHandler.get_mcp_server_url(mcp_server, MCPServerLeastPrivilegeEnum.APPLICATION.value)
+        assert "/application/" not in url
+        assert "test-server" in url
+
+    def test_get_mcp_server_url_application(self, fake_gateway, fake_stage, settings):
+        """oauth2 关闭且最低权限为 APPLICATION 时，返回应用态 URL"""
+        settings.BK_API_URL_TMPL = "http://bkapi.example.com/api/{api_name}"
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-server",
+            oauth2_public_client_enabled=False,
+        )
+
+        url = MCPServerHandler.get_mcp_server_url(mcp_server, MCPServerLeastPrivilegeEnum.APPLICATION.value)
+        assert "/application/" in url
+        assert "test-server" in url
+
+    def test_get_mcp_server_url_no_privilege_fallback(self, fake_gateway, fake_stage, settings):
+        """oauth2 关闭但无 least_privilege 时，返回标准 URL"""
+        settings.BK_API_URL_TMPL = "http://bkapi.example.com/api/{api_name}"
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-server",
+            oauth2_public_client_enabled=False,
+        )
+
+        url = MCPServerHandler.get_mcp_server_url(mcp_server, "")
+        assert "/application/" not in url
+        assert "test-server" in url
+
+    def test_get_mcp_server_url_application_and_user(self, fake_gateway, fake_stage, settings):
+        """oauth2 关闭但最低权限为 APPLICATION_AND_USER 时，返回标准 URL"""
+        settings.BK_API_URL_TMPL = "http://bkapi.example.com/api/{api_name}"
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-server",
+            oauth2_public_client_enabled=False,
+        )
+
+        url = MCPServerHandler.get_mcp_server_url(mcp_server, MCPServerLeastPrivilegeEnum.APPLICATION_AND_USER.value)
+        assert "/application/" not in url
+        assert "test-server" in url
 
     # ========== build_mcp_server_list_queryset ids 测试 ==========
 
