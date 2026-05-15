@@ -1,3 +1,45 @@
+<!-- 2026-05-15 -->
+# V1.22.0 Release Log
+
+### Features
+
+- Gateway data plane split, support unified control plane management of multiple data planes
+- Add bk-cli
+- MCP Server: add observability page (logs and dashboards)
+- MCP Server authentication adds bkoauth2 support
+- Email push: gateways with no access in the past year are offline
+- Resource version: support delete/batch delete
+- Online debugging: support debugging multiple interfaces at the same time
+- Plugin: support traffic coloring
+- Alarm policy supports keyword filtering
+
+### Enhancements
+
+- Permission approval: refresh list after approval operation
+- Import resource document file limit increased to 10M and added reminder
+- Documentation center: support hiding go sdk
+- Version comparison: performance optimization for large-scale resource comparison
+- Plugin: frequency control configuration supports cloning
+- Optimization: programming gateway deployment adds version verification to avoid user non-standard process error operation
+- MCP Server supports batch copy configuration
+
+### Bug Fixes
+
+- Fix: resource editing - verify and view address rendering error
+- Fix: [frontend] icon file not cached causing new icons to not display properly
+- Fix: [frontend] alarm record details cannot be displayed properly
+- Fix: version resource comparison, slide disappeared and cannot be operated again
+- Fix: [backend] mcp-proxy restart
+
+### Other
+
+- Security ticket processing, upgrade some dependency libraries
+- Refactor: remove frontend plugin dynamic form interface and all components
+- Upgrade: all go modules upgraded to go1.25
+- Add frontend automated testing
+
+---
+
 <!-- 2026-03-10 -->
 # V1.21.0 Release Log
 
