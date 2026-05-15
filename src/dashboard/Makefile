@@ -180,6 +180,25 @@ dump_fixtures: apigateway/fixtures/plugins.yaml
 load_fixtures:
 	cd apigateway && python manage.py loaddata -i apigateway/fixtures/*.yaml
 
+# ====== OpenAPI Consistency Check ======
+#
+# Usage:
+#   make check-openapi                    # Check all APIs
+#   make check-openapi SCOPE=v2_sync      # Check only v2 sync APIs
+#   make check-openapi API=v2_sync_stages # Check a single API
+#   make check-openapi JSON=1             # JSON output
+#   make check-openapi FIX=1              # Generate missing doc templates
+
+OPENAPI_CHECK_SCRIPT := ../../.agents/skills/bk-apigateway-openapi-check/scripts/check_api_consistency.py
+SCOPE ?= all
+
+.PHONY: check-openapi
+check-openapi:
+	@python3 $(OPENAPI_CHECK_SCRIPT) \
+		$(if $(API),--api $(API),--scope $(SCOPE)) \
+		$(if $(JSON),--json) \
+		$(if $(FIX),--fix)
+
 # ====== others ======
 
 # make messages of python file and django template file to django.po

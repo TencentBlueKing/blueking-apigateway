@@ -89,6 +89,27 @@ make lint-check
 
 RUN `make lint` every time you finish coding.
 
+### OpenAPI Consistency Check
+
+Checks that API code (Views + Serializers), YAML gateway resource definitions, and API docs are in sync. 8 checks: existence, path, HTTP method, YAML↔doc params, YAML↔serializer params, auth config, grant_permissions, MCP server.
+
+```bash
+# Check all APIs
+make check-openapi
+
+# Check by scope (v2_open / v2_sync / v2_inner)
+make check-openapi SCOPE=v2_sync
+
+# Check a single API
+make check-openapi API=v2_sync_gateway
+
+# JSON output
+make check-openapi JSON=1
+
+# Generate missing doc templates
+make check-openapi FIX=1
+```
+
 ### Testing
 
 ```bash
