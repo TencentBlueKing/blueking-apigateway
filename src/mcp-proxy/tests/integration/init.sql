@@ -278,3 +278,41 @@ VALUES (2, 2, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
 -- 权限给带工具名映射的 MCP Server
 INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
 VALUES (3, 3, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- ==================== 补充测试数据 ====================
+
+-- 测试用 MCP Server (Streamable HTTP 协议，带工具名映射)
+INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
+VALUES (4, 'test-renamed-http-server', 'Test HTTP MCP Server with Tool Rename', 1, '', 'echo@echo_message;ping', 1, 1, 'streamable_http', 1, NOW(), NOW());
+
+-- 权限给 Streamable HTTP renamed server
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (4, 4, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- 测试用 MCP Server (SSE 协议，无 Prompts)
+INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
+VALUES (5, 'test-no-prompts-sse', 'Test SSE MCP Server without Prompts', 1, '', 'echo;ping', 1, 1, 'sse', 1, NOW(), NOW());
+
+-- 权限给无 Prompts 的 SSE server
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (5, 5, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- 测试用 MCP Server (Streamable HTTP 协议，无 Prompts)
+INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
+VALUES (6, 'test-no-prompts-http', 'Test HTTP MCP Server without Prompts', 1, '', 'echo;ping', 1, 1, 'streamable_http', 1, NOW(), NOW());
+
+-- 权限给无 Prompts 的 HTTP server
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (6, 6, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- 权限过期的 app 对 SSE server 的权限（expires 为过去时间）
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (7, 1, 'expired-app', 'grant', '2020-01-01 00:00:00', NOW(), NOW());
+
+-- 权限过期的 app 对 HTTP server 的权限（expires 为过去时间）
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (8, 2, 'expired-app', 'grant', '2020-01-01 00:00:00', NOW(), NOW());
+
+-- Prompts for renamed HTTP server
+INSERT INTO `mcp_server_extend` (`id`, `mcp_server_id`, `type`, `content`, `created_by`, `updated_by`, `created_time`, `updated_time`)
+VALUES (3, 4, 'prompts', '[{"id":3,"name":"Renamed HTTP Test Prompt","code":"renamed-http-test-prompt","content":"This is a test prompt for renamed HTTP MCP server.","labels":[],"is_public":true,"space_code":"","space_name":""}]', 'admin', 'admin', NOW(), NOW());

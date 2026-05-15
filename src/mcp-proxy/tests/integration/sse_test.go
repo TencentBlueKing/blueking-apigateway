@@ -518,6 +518,482 @@ var _ = Describe("SSE Protocol", func() {
 			Expect(result.Content).NotTo(BeEmpty())
 		})
 	})
+
+	Describe("SSE Permission", func() {
+		It("should reject connection with expired permission via SSE", func() {
+			// 使用 expired-app 的 JWT，其权限已过期
+			expiredToken, err := client.GenerateJWT("expired-app", "expired-user")
+			Expect(err).NotTo(HaveOccurred())
+
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: expiredToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, sseURL, nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Set("Accept", "text/event-stream")
+			req.Header.Set(constant.BkGatewayJWTHeaderKey, expiredToken)
+
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+
+		It("should reject connection with unauthorized app via SSE", func() {
+			// 使用完全没有权限记录的 app_code
+			unauthorizedToken, err := client.GenerateJWT("unauthorized-app", "some-user")
+			Expect(err).NotTo(HaveOccurred())
+
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: unauthorizedToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, sseURL, nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Set("Accept", "text/event-stream")
+			req.Header.Set(constant.BkGatewayJWTHeaderKey, unauthorizedToken)
+
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+		})
+	})
+
+	Describe("SSE Trace Context Propagation", func() {
+		It("should propagate traceparent through SSE protocol", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			incomingTraceID := "abcdef1234567890abcdef1234567890"
+			incomingSpanID := "1234567890abcdef"
+			traceparent := fmt.Sprintf("00-%s-%s-01", incomingTraceID, incomingSpanID)
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"Traceparent": traceparent,
+					},
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello SSE with trace context",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should propagate both traceparent and X-Request-ID via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			incomingTraceID := "11223344556677889900aabbccddeeff"
+			incomingSpanID := "aabbccddeeff0011"
+			traceparent := fmt.Sprintf("00-%s-%s-01", incomingTraceID, incomingSpanID)
+			xRequestID := "sse-trace-and-request-id-combined"
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+					extraHeaders: map[string]string{
+						"Traceparent":  traceparent,
+						"X-Request-Id": xRequestID,
+					},
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello SSE with both trace and request ID",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("SSE Client Info Propagation", func() {
+		It("should preserve clientInfo through initialize and subsequent tool calls via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "sse-integration-test-client",
+				Version: "2.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			err = session.Ping(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello from sse-integration-test-client",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+
+		It("should work with different client names via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "claude-code",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"message": "Hello from claude-code via SSE",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("SSE GET Tool Call", func() {
+		It("should call GET type tool (ping) via SSE protocol", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 调用 GET 类型的 ping 工具
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "ping",
+				Arguments: map[string]any{},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("SSE Tools List Validation", func() {
+		It("should list exactly the expected tools with correct names via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			// test-sse-server 有 echo 和 ping 两个工具
+			Expect(result.Tools).To(HaveLen(2))
+
+			toolNames := make([]string, len(result.Tools))
+			for i, tool := range result.Tools {
+				toolNames[i] = tool.Name
+			}
+			Expect(toolNames).To(ContainElement("echo"))
+			Expect(toolNames).To(ContainElement("ping"))
+		})
+	})
+
+	Describe("SSE Prompts Validation", func() {
+		It("should list prompts with correct names via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Prompts).To(HaveLen(1))
+			// Prompt 注册时使用 code 字段作为 MCP prompt name
+			Expect(result.Prompts[0].Name).To(Equal("test-prompt"))
+		})
+
+		It("should get prompt with correct content via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 使用 code 字段作为 prompt name
+			result, err := session.GetPrompt(ctx, &mcp.GetPromptParams{
+				Name: "test-prompt",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Messages).To(HaveLen(1))
+			textContent, ok := result.Messages[0].Content.(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			Expect(textContent.Text).To(Equal("This is a test prompt for integration testing."))
+		})
+
+		It("should return error for non-existent prompt via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			_, err = session.GetPrompt(ctx, &mcp.GetPromptParams{
+				Name: "non-existent-prompt-xyz",
+			})
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should return empty prompts list for MCP server without prompts via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-no-prompts-sse")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Prompts).To(BeEmpty())
+		})
+	})
+
+	Describe("SSE Multiple Calls in Same Session", func() {
+		It("should handle multiple consecutive tool calls in the same session via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 连续调用 3 次
+			for i := 0; i < 3; i++ {
+				result, err := session.CallTool(ctx, &mcp.CallToolParams{
+					Name: "echo",
+					Arguments: map[string]any{
+						"message": fmt.Sprintf("SSE call #%d", i+1),
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+				Expect(result.Content).NotTo(BeEmpty())
+			}
+		})
+	})
 })
 
 // jwtRoundTripper 是一个自定义的 http.RoundTripper，用于在每个请求中添加 JWT 认证头
