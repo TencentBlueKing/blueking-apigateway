@@ -135,6 +135,7 @@
                     />
                     <AgDropdown
                       :dropdown-list="exportDropData"
+                      :is-disabled="!tableData.length"
                       is-text
                       :text="t('导出')"
                       placement="right-start"
@@ -154,6 +155,7 @@
                   />
                   <AgDropdown
                     :dropdown-list="exportDropData"
+                    :is-disabled="!tableData.length"
                     :text="t('导出')"
                     @on-change="handleExport"
                   />
