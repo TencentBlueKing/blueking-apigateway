@@ -691,4 +691,398 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(result.Content).NotTo(BeEmpty())
 		})
 	})
+
+	Describe("Permission", func() {
+		It("should reject connection with expired permission", func() {
+			// 使用 expired-app 的 JWT，其权限已过期
+			expiredToken, err := client.GenerateJWT("expired-app", "expired-user")
+			Expect(err).NotTo(HaveOccurred())
+
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: expiredToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			// 连接应该失败
+			_, err = mcpClient.Connect(ctx, transport, nil)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should reject connection with unauthorized app", func() {
+			// 使用完全没有权限记录的 app_code
+			unauthorizedToken, err := client.GenerateJWT("unauthorized-app", "some-user")
+			Expect(err).NotTo(HaveOccurred())
+
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 10 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: unauthorizedToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			// 连接应该失败
+			_, err = mcpClient.Connect(ctx, transport, nil)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Describe("Tool Name Mapping", func() {
+		It("should list tools with renamed tool names via Streamable HTTP", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-renamed-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Tools).NotTo(BeNil())
+
+			// echo 映射为 echo_message, ping 保持原名
+			toolNames := make([]string, len(result.Tools))
+			for i, tool := range result.Tools {
+				toolNames[i] = tool.Name
+			}
+			Expect(toolNames).To(ContainElement("echo_message"))
+			Expect(toolNames).To(ContainElement("ping"))
+			Expect(toolNames).NotTo(ContainElement("echo"))
+		})
+
+		It("should call renamed tool via Streamable HTTP", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-renamed-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo_message",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"message": "Hello from renamed HTTP tool",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("GET Tool Call", func() {
+		It("should call GET type tool (ping) via Streamable HTTP", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "ping",
+				Arguments: map[string]any{},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+		})
+	})
+
+	Describe("Tools List Validation", func() {
+		It("should list exactly the expected tools with correct names", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			// test-http-server 有 echo 和 ping 两个工具
+			Expect(result.Tools).To(HaveLen(2))
+
+			toolNames := make([]string, len(result.Tools))
+			for i, tool := range result.Tools {
+				toolNames[i] = tool.Name
+			}
+			Expect(toolNames).To(ContainElement("echo"))
+			Expect(toolNames).To(ContainElement("ping"))
+		})
+	})
+
+	Describe("Prompts Validation", func() {
+		It("should list prompts with correct names", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Prompts).To(HaveLen(1))
+			// Prompt 注册时使用 code 字段作为 MCP prompt name
+			Expect(result.Prompts[0].Name).To(Equal("http-test-prompt"))
+		})
+
+		It("should get prompt with correct content", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 使用 code 字段作为 prompt name
+			result, err := session.GetPrompt(ctx, &mcp.GetPromptParams{
+				Name: "http-test-prompt",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Messages).To(HaveLen(1))
+			textContent, ok := result.Messages[0].Content.(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			Expect(textContent.Text).To(Equal("This is a test prompt for HTTP MCP server."))
+		})
+
+		It("should return error for non-existent prompt", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			_, err = session.GetPrompt(ctx, &mcp.GetPromptParams{
+				Name: "non-existent-prompt-xyz",
+			})
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should return empty prompts list for MCP server without prompts", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-no-prompts-http")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListPrompts(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Prompts).To(BeEmpty())
+		})
+	})
+
+	Describe("Multiple Calls in Same Session", func() {
+		It("should handle multiple consecutive tool calls in the same session", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// 连续调用 3 次
+			for i := 0; i < 3; i++ {
+				result, err := session.CallTool(ctx, &mcp.CallToolParams{
+					Name: "echo",
+					Arguments: map[string]any{
+						"message": fmt.Sprintf("HTTP call #%d", i+1),
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).NotTo(BeNil())
+				Expect(result.Content).NotTo(BeEmpty())
+			}
+		})
+	})
 })

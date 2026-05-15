@@ -114,6 +114,33 @@ func connectStreamableHTTP(
 	return mcpClient.Connect(ctx, transport, nil)
 }
 
+// connectStreamableHTTPApplication creates a streamable HTTP MCP session using the application route.
+func connectStreamableHTTPApplication(
+	ctx context.Context, baseURL, serverName, jwtToken string,
+) (*mcp.ClientSession, error) {
+	mcpURL := fmt.Sprintf("%s/%s/application/mcp", baseURL, serverName)
+
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &jwtRoundTripper{
+			token: jwtToken,
+			base:  http.DefaultTransport,
+		},
+	}
+
+	transport := &mcp.StreamableClientTransport{
+		Endpoint:   mcpURL,
+		HTTPClient: httpClient,
+	}
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{
+		Name:    "test-client",
+		Version: "1.0.0",
+	}, nil)
+
+	return mcpClient.Connect(ctx, transport, nil)
+}
+
 // connectSSE creates an SSE MCP session for the given server name.
 func connectSSE(
 	ctx context.Context, baseURL, serverName, jwtToken string,
@@ -136,6 +163,87 @@ func connectSSE(
 	mcpClient := mcp.NewClient(&mcp.Implementation{
 		Name:    "test-client",
 		Version: "1.0.0",
+	}, nil)
+
+	return mcpClient.Connect(ctx, transport, nil)
+}
+
+// connectSSEApplication creates an SSE MCP session using the application route.
+func connectSSEApplication(
+	ctx context.Context, baseURL, serverName, jwtToken string,
+) (*mcp.ClientSession, error) {
+	sseURL := fmt.Sprintf("%s/%s/application/sse", baseURL, serverName)
+
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &jwtRoundTripper{
+			token: jwtToken,
+			base:  http.DefaultTransport,
+		},
+	}
+
+	transport := &mcp.SSEClientTransport{
+		Endpoint:   sseURL,
+		HTTPClient: httpClient,
+	}
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{
+		Name:    "test-client",
+		Version: "1.0.0",
+	}, nil)
+
+	return mcpClient.Connect(ctx, transport, nil)
+}
+
+// connectSSEWithClientInfo creates an SSE MCP session with custom client info.
+func connectSSEWithClientInfo(
+	ctx context.Context, baseURL, serverName, jwtToken, clientName, clientVersion string,
+) (*mcp.ClientSession, error) {
+	sseURL := fmt.Sprintf("%s/%s/sse", baseURL, serverName)
+
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &jwtRoundTripper{
+			token: jwtToken,
+			base:  http.DefaultTransport,
+		},
+	}
+
+	transport := &mcp.SSEClientTransport{
+		Endpoint:   sseURL,
+		HTTPClient: httpClient,
+	}
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{
+		Name:    clientName,
+		Version: clientVersion,
+	}, nil)
+
+	return mcpClient.Connect(ctx, transport, nil)
+}
+
+// connectStreamableHTTPWithClientInfo creates a streamable HTTP MCP session with custom client info.
+func connectStreamableHTTPWithClientInfo(
+	ctx context.Context, baseURL, serverName, jwtToken, clientName, clientVersion string,
+) (*mcp.ClientSession, error) {
+	mcpURL := fmt.Sprintf("%s/%s/mcp", baseURL, serverName)
+
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &jwtRoundTripper{
+			token: jwtToken,
+			base:  http.DefaultTransport,
+		},
+	}
+
+	transport := &mcp.StreamableClientTransport{
+		Endpoint:   mcpURL,
+		HTTPClient: httpClient,
+	}
+
+	mcpClient := mcp.NewClient(&mcp.Implementation{
+		Name:    clientName,
+		Version: clientVersion,
 	}, nil)
 
 	return mcpClient.Connect(ctx, transport, nil)
