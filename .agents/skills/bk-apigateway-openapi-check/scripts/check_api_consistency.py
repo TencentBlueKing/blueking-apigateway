@@ -839,11 +839,24 @@ class APIConsistencyChecker:
                 yaml_params = self._get_yaml_param_names(yapi)
                 doc_info = self.docs[op_id]
                 doc_all = set(doc_info.get("params", []))
+                doc_path_params = set(doc_info.get("path_params", []))
 
-                # 4a: YAML 有但文档缺少的参数
+                # 4a-path: 路径参数一致性检查（YAML path params vs 文档路径参数）
+                yaml_path_set = set(yaml_params["path"])
+                missing_path_in_doc = yaml_path_set - doc_path_params
+                extra_path_in_doc = doc_path_params - yaml_path_set
+                if missing_path_in_doc:
+                    self._log("warning", "CHECK-4", op_id,
+                              f"YAML 定义了路径参数但文档「路径参数」中缺少: {sorted(missing_path_in_doc)}",
+                              f"在 {op_id}.md 的「路径参数」表格中补充")
+                if extra_path_in_doc:
+                    self._log("warning", "CHECK-4", op_id,
+                              f"文档「路径参数」中有但 YAML 未定义: {sorted(extra_path_in_doc)}",
+                              "确认是否需要在 resources.yaml 补充路径参数定义，或从文档中移除")
+
+                # 4a: YAML 有但文档缺少的参数（query + body）
                 yaml_all = set(yaml_params["query"]) | set(yaml_params["body"])
                 missing_in_doc = yaml_all - doc_all
-                # 排除路径参数（文档中路径参数的写法不统一，有些文档不在表格中列）
                 if missing_in_doc:
                     self._log("warning", "CHECK-4", op_id,
                               f"YAML 定义了参数但文档中缺少: {sorted(missing_in_doc)}",
