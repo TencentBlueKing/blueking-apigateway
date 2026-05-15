@@ -1,0 +1,29 @@
+meta {
+  name: user-sse-initialize
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/mcp-servers/httpbin-prod-httpbin-mcp-server-sse/sse
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}", "access_token": "{{access_token}}"}
+  Accept: text/event-stream
+}
+
+assert {
+  res.status: eq 200
+  res.body: contains event: endpoint
+  res.body: contains sessionid=
+}
+
+script:post-response {
+  var sessionIdMatch = res.body.match(/sessionid=([A-Z0-9]+)/);
+  if (!sessionIdMatch || !sessionIdMatch[1]) {
+    throw new Error('No sessionid found in SSE endpoint event');
+  }
+  bru.setVar("user_sse_session_id", sessionIdMatch[1]);
+}

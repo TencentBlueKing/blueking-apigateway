@@ -69,6 +69,7 @@ paths:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        noneSchema: true
         backend:
           name: default
           method: get
@@ -908,6 +909,7 @@ paths:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        noneSchema: true
         backend:
           name: default
           method: get
@@ -958,6 +960,7 @@ paths:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        noneSchema: true
         backend:
           name: default
           method: get
@@ -1158,6 +1161,7 @@ paths:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        noneSchema: true
         backend:
           name: default
           method: get
@@ -1258,6 +1262,7 @@ paths:
         isPublic: true
         allowApplyPermission: true
         matchSubpath: false
+        noneSchema: true
         backend:
           name: default
           method: post
