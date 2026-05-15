@@ -37,6 +37,7 @@
     "target_app_code": "my-app",
     "expire_days": 360,
     "grant_dimension": "gateway",
+    "applicant": "username",
     "reason": "test"
 }
 ```
@@ -49,6 +50,7 @@
     "expire_days": 360,
     "grant_dimension": "resource",
     "resource_names": ["user_query", "user_create"],
+    "applicant": "username",
     "reason": "test"
 }
 ```
