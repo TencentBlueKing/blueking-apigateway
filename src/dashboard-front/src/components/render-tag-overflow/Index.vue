@@ -17,163 +17,77 @@
 */
 
 <template>
-  <div
-    ref="rowRef"
-    class="render-row-wrapper"
-  >
-    <p
-      ref="textRef"
-      class="render-row"
+  <div class="render-row-wrapper">
+    <!-- 第一个标签：自适应宽度，超长省略 -->
+    <BkTag
+      v-if="visibleData.length > 0"
+      :title="visibleData?.[0]"
+      class="render-row-item flex-1 truncate"
+      @click="emits('click')"
+    >
+      {{ visibleData?.[0] }}
+    </BkTag>
+
+    <!-- 超过1个显示 +n 标签+气泡 -->
+    <BkPopover
+      v-if="overflowData.length > 0"
+      ext-cls="render-row-overflow-popover-main"
+      :max-height="500"
+      placement="left"
+      theme="light"
+      arrow
+      v-bind="popoverProps"
     >
       <BkTag
-        v-for="(item, index) in data"
-        :key="index"
-        class="render-row-item"
-        @click="emits('click')"
-      >
-        {{ item }}
-      </BkTag>
-      <BkTag
-        v-if="overflowData.length > 0"
         class="overflow-tag"
         @click="emits('click')"
       >
         +{{ overflowData.length }}
       </BkTag>
-    </p>
-    <p class="visible-content">
-      <BkTag
-        v-for="(item, index) in visibleData"
-        :key="index"
-        class="render-row-item"
-        @click="emits('click')"
-      >
-        {{ item }}
-      </BkTag>
-      <BkPopover
-        v-if="overflowData.length > 0"
-        ext-cls="render-row-overflow-popover-main"
-        :max-height="500"
-        placement="left"
-        theme="light"
-        arrow
-        v-bind="popoverProps"
-      >
-        <BkTag
-          class="overflow-tag"
-          @click="emits('click')"
-        >
-          +{{ overflowData.length }}
-        </BkTag>
-        <template #content>
-          <slot name="popoverContent">
-            <div class="flex flex-col gap-4px">
-              <BkTag
-                v-for="(item, index) of overflowData"
-                :key="index"
-                :title="item"
-                class="render-row-item mb-4px max-w-400px"
-              >
-                {{ item }}
-              </BkTag>
-            </div>
-          </slot>
-        </template>
-      </BkPopover>
-    </p>
+      <template #content>
+        <slot name="popoverContent">
+          <div class="flex flex-col gap-4px">
+            <BkTag
+              v-for="(item, index) of overflowData"
+              :key="index"
+              :title="item"
+              class="render-row-item mb-4px max-w-400px"
+            >
+              {{ item }}
+            </BkTag>
+          </div>
+        </slot>
+      </template>
+    </BkPopover>
   </div>
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'lodash-es';
-
-import { useResizeObserver } from '@vueuse/core';
-
-interface Props {
+interface IProps {
   data: string[]
-  // 容器右侧不能占用的预留空间
-  right?: number
   popoverProps?: Record<string, any>
 }
 
-const { data, right = 0, popoverProps = {} } = defineProps<Props>();
-
+const { data, popoverProps = {} } = defineProps<IProps>();
 const emits = defineEmits<{ click: [void] }>();
 
-const findOverflowIndex = () => {
-  overflowIndex.value = null;
-
-  nextTick(() => {
-    if (textRef.value) {
-      const { left, width } = textRef.value.getBoundingClientRect();
-      // 计算可用宽度，需要减去右侧预留的空间
-      const max = left + width - right;
-      const htmlArr: Element[] = Array.from(textRef.value.getElementsByClassName('render-row-item'));
-
-      for (let i = 0; i < htmlArr.length; i++) {
-        const item = htmlArr[i];
-        const { left: itemLeft, width: itemWidth } = item.getBoundingClientRect();
-        if (itemLeft + itemWidth > max) {
-          overflowIndex.value = i;
-          break;
-        }
-      }
-      const colTag = textRef.value.getElementsByClassName('overflow-tag');
-      if (colTag.length) {
-        const { left: colTagLeft, width: colTagWidth } = colTag[0].getBoundingClientRect();
-        if (colTagLeft + colTagWidth > max && overflowIndex.value) {
-          overflowIndex.value = overflowIndex.value - 1;
-        }
-      }
-    }
-  });
-};
-
-const rowRef = ref<HTMLDivElement>();
-useResizeObserver(rowRef, debounce(findOverflowIndex, 300));
-
-const textRef = ref<HTMLParagraphElement>();
-const overflowIndex = ref<number | null>(null);
-
-const overflowData = computed(() => {
-  if (overflowIndex.value === null) {
-    return [];
-  }
-  return data.slice(overflowIndex.value);
-});
-const visibleData = computed(() => {
-  if (overflowIndex.value === null) {
-    return data;
-  }
-
-  return data.slice(0, overflowIndex.value);
-});
-
-watch(() => data, findOverflowIndex, { immediate: true });
+// 只显示第一个
+const visibleData = computed(() => data?.length > 1 ? data.slice(0, 1) : data);
+// 溢出的全部收起
+const overflowData = computed(() => data?.length > 1 ? data.slice(1) : []);
 </script>
 
 <style lang="scss" scoped>
 .render-row-wrapper {
-  position: relative;
   display: inline-flex;
-  max-width: 100%;
   align-items: center;
-
-  .render-row {
-    display: flex;
-    overflow: hidden;
-    opacity: 0%;
-    gap: 4px;
-  }
-
-  .visible-content {
-    position: absolute;
-    display: flex;
-    gap: 4px;
-  }
+  gap: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
 
   .render-row-item {
     padding: 0 10px;
+    flex-shrink: 0;
   }
 }
 </style>

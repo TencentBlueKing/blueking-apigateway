@@ -25,7 +25,7 @@
     >
       <Component
         :is="dashboardFormCompMap[com.name as keyof typeof dashboardFormCompMap]"
-        :ref="(el) => setComponentRef(el, com.name)"
+        :ref="(el) => setComponentRef(el as MethodsComponent | null, com.name)"
         v-model:search-params="searchParams"
         mode="Dashboard"
         :api-gateway-id="apigwId"
@@ -40,10 +40,16 @@
 </template>
 
 <script lang="ts" setup>
+import type { ComponentPublicInstance } from 'vue';
 import { useGateway } from '@/stores';
 import { useObservabilityDashboard } from '@/hooks';
 import DashboardBasicForm from '@/views/mcp-server/components/ObservabilityBasicForm.vue';
 import DashboardQuestMonitor from '@/views/mcp-server/components/DashboardQuestMonitor.vue';
+
+type MethodsComponent = ComponentPublicInstance<{
+  syncParamsToCharts: () => void
+  handleClearFilter: () => void
+}>;
 
 const dashboardFormCompMap = {
   Query: DashboardBasicForm,
@@ -60,7 +66,7 @@ const {
   handleResetTime,
 } = useObservabilityDashboard();
 
-const componentRefs = reactive(new Map());
+const componentRefs = shallowRef<Map<string, MethodsComponent> | null>(new Map());
 
 const componentList = shallowRef([
   { name: 'Query' },
@@ -70,22 +76,22 @@ const componentList = shallowRef([
 const apigwId = computed(() => gatewayStore.apigwId);
 
 // 设置仪表盘所有动态组件实例
-const setComponentRef = (el: any, name: string) => {
+const setComponentRef = (el: Element | MethodsComponent | null, name: string) => {
   if (el) {
-    componentRefs?.set(name, el);
+    componentRefs.value?.set(name, el as MethodsComponent);
   }
   else {
-    componentRefs?.delete(name);
+    componentRefs.value?.delete(name);
   }
 };
 
 const handleRequestDone = async () => {
   await fetchInitData();
-  componentRefs?.get('Request')?.syncParamsToCharts();
+  (componentRefs.value?.get('Request') as MethodsComponent)?.syncParamsToCharts();
 };
 
 const handleClearFilter = () => {
-  componentRefs?.get('Query')?.handleClearFilter();
+  (componentRefs.value?.get('Query') as MethodsComponent)?.handleClearFilter();
   handleResetTime();
 };
 
@@ -94,7 +100,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  componentRefs?.clear();
+  componentRefs.value?.clear();
 });
 </script>
 

@@ -57,6 +57,11 @@ const { loading = false, list = [] } = defineProps<IProps>();
 </script>
 
 <style lang="scss" scoped>
+:deep(.bk-modal-content) {
+  height: 500px !important;
+  overflow-y: auto;
+}
+
 :deep(.custom-configure-wrapper) {
 
   .bk-tab-header {

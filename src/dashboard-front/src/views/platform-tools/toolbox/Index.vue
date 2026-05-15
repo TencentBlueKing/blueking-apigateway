@@ -20,9 +20,8 @@
   <div class="toolbox-page-wrapper">
     <BkResizeLayout
       placement="left"
-      initial-divide="320px"
-      :max="320"
-      :min="320"
+      :max="880"
+      :min="locale === 'en' ? 472 : 360"
       :border="false"
       collapsible
       style="height: 100%;"
@@ -34,6 +33,7 @@
             :key="tool.id"
             class="tool-nav-item"
             :class="{ active: tool.id === curTool.id }"
+            :style="{ width: locale === 'en' ? '440px' : '328px'}"
             @click="() => handleToolNavClick(tool)"
           >
             <header class="tool-nav-item-name">
@@ -58,6 +58,7 @@
 </template>
 
 <script lang="ts" setup>
+import { locale, t } from '@/locales';
 import QueryLog from './components/QueryLog.vue';
 import QueryTraceChain from './components/QueryTraceChain.vue';
 import JwtDecoder from './components/JwtDecoder.vue';
@@ -72,7 +73,6 @@ interface ITool {
   comp: string
 }
 
-const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -160,7 +160,6 @@ watch(() => route.query.toolbox_id, (value) => {
   overflow-y: auto;
 
   .tool-nav-item {
-    width: 288px;
     height: 58px;
     padding: 8px 16px;
     cursor: pointer;
