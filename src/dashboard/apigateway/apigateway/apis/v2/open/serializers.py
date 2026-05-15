@@ -34,7 +34,7 @@ from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
     PermissionApplyExpireDaysEnum,
 )
-from apigateway.biz.constants import RTX_USERNAME_PATTERN
+from apigateway.biz.constants import BK_USERNAME_PATTERN
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
@@ -120,7 +120,7 @@ class GatewayAppPermissionApplyInputSLZ(serializers.Serializer):
         required=False,
     )
 
-    applicant = serializers.RegexField(regex=RTX_USERNAME_PATTERN, required=True, help_text="申请人 rtx 名")
+    applicant = serializers.RegexField(regex=BK_USERNAME_PATTERN, required=True, help_text="申请人用户名")
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayAppPermissionApplyInputSLZ"

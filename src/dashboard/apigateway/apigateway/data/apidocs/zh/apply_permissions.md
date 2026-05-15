@@ -22,7 +22,7 @@
 | expire_days     | int      | 否   | 过期时间，0 或未提供 表示永久，180 表示 6 个月，360 表示 12 个月 |
 | grant_dimension | string   | 是   | 授权维度，gateway 表示按网关申请，resource 表示按资源申请        |
 | resource_names  | array    | 否   | 资源名称列表，按资源申请时必传                                   |
-| applicant       | string   | 是   | 申请人用户名，包含小写字母或下划线，长度1-11个字符                   |
+| applicant       | string   | 是   | 申请人用户名，由 3-32 位字母、数字、下划线(_)、点(.)、连接符(-)字符组成，以字母或数字开头及结尾 |
 | reason          | string   | 否   | 申请原因                                                         |
 
 
