@@ -22,8 +22,8 @@ from django.conf import settings
 # bk app code
 APP_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
-# rtx username
-RTX_USERNAME_PATTERN = re.compile(r"^[a-z][a-z_]{0,10}$")
+# bk username
+BK_USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{1,30}[a-zA-Z0-9]$")
 
 # Semver
 SEMVER_PATTERN = re.compile(
