@@ -475,20 +475,29 @@ const handleStatusTabChange = ({ id }: { id: string }) => {
   resetPagination();
 };
 
+const handleResetPageScroll = () => {
+  nextTick(() => {
+    // 表格视图不需要页面滚动条
+    const mcpEl = document.querySelector('.default-header-view');
+    if (mcpEl) {
+      if (activeViewTab.value.includes('card')) {
+        (mcpEl as HTMLElement).classList.remove('overflow-y-hidden!');
+      }
+      else {
+        (mcpEl as HTMLElement).classList.add('overflow-y-hidden!');
+      }
+    }
+  });
+};
+
 const handlePreviewTabChange = ({ id }: { id: string }) => {
   if (activeViewTab.value === id) return;
   const oldViewType = activeViewTab.value;
   activeViewTab.value = id;
   // 仅当视图从卡片→表格 或 表格→卡片 时，才重置分页（避免重复请求）
   if (oldViewType.includes('card') !== id.includes('card')) {
-    nextTick(() => {
-      // 表格视图不需要页面滚动条
-      const mcpEl = document.querySelector('.MCPServer-navigation-content .default-header-view');
-      if (mcpEl) {
-        (mcpEl as HTMLElement).style.overflowY = id.includes('card') ? 'auto' : 'hidden';
-      }
-      resetPagination();
-    });
+    handleResetPageScroll();
+    resetPagination();
   }
 };
 
@@ -688,6 +697,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  activeViewTab.value = 'card';
+  handleResetPageScroll();
   window.removeEventListener('resize', handleResize);
   handleResize?.cancel();
 });

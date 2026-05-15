@@ -19,7 +19,7 @@
 <template>
   <div class="query-trace-chain">
     <!-- 查询输入区域 -->
-    <div class="flex items-center justify-center mb-24px">
+    <div class="flex items-center justify-center mb-24px pt-36px">
       <BkInput
         v-model.trim="searchKeyword"
         class="w-640px mr-8px"
@@ -42,8 +42,7 @@
     <div class="query-trace-chain-body">
       <!-- 查询结果标题 -->
       <div
-        v-show="!isEmptyResult"
-        class="body-header"
+        class="body-header lh-22px mb-12px"
       >
         <span class="color-#4d4f56 font-bold">{{ t('查询结果') }}</span>
       </div>
@@ -60,7 +59,6 @@
           <TableEmpty
             :empty-type="emptyConfig.emptyType"
             :abnormal="emptyConfig.isAbnormal"
-            :description="t('请输入 request_id 或 x_request_id 进行查询')"
             @refresh="handleQueryTrace"
             @clear-filter="handleReset"
           />
@@ -84,6 +82,7 @@ import { Message } from 'bkui-vue';
 import { useTrace } from '@/stores';
 import { t } from '@/locales';
 import {
+  type IGatewayLog,
   fetchObservabilityLogInfo,
   fetchObservabilityLogSummary,
   fetchObservabilityTraceChain,
@@ -155,7 +154,7 @@ const handleQueryTrace = async () => {
     const { upstream_log, downstream_log } = traceStore.parseTraceChainLogs(traceChain);
 
     const logList = [
-      ...(logInfo.results ?? []),
+      ...(logInfo.results ?? []).filter((logs: IGatewayLog) => !['gateway_upstream', 'gateway_downstream'].includes(logs.layer)),
       upstream_log,
       downstream_log,
     ].filter(Boolean);
@@ -203,6 +202,7 @@ onMounted(() => {
   box-sizing: border-box;
 
   .query-trace-chain-body {
+    padding: 0 76px 26px 68px;
 
     :deep(.body-content) {
       height: calc(100vh - 240px);
@@ -210,7 +210,6 @@ onMounted(() => {
 
       .ag-trace-chain-info {
         padding: 16px;
-        margin-top: 16px;
         border: 1px solid #dcdee5;
         box-shadow: none;
       }
