@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 
@@ -147,6 +147,10 @@ class MCPServerLogChainSearchClient:
             downstream_gateway_log is not None,
         )
 
+        # 9. 修正总耗时：SSE / Streamable HTTP 场景下 mcp-proxy 的 HTTP span latency 极短，
+        # 应取上游网关 request_duration 和 span 最大结束时间的最大值
+        total_latency_ms = _correct_total_latency(total_latency_ms, upstream_gateway_log)
+
         return {
             "request_id": self._request_id,
             "x_request_id": x_request_id,
@@ -223,6 +227,9 @@ class MCPServerLogChainSearchClient:
             upstream_request_id,
             downstream_gateway_log is not None,
         )
+
+        # 9. 修正总耗时
+        total_latency_ms = _correct_total_latency(total_latency_ms, upstream_gateway_log)
 
         return {
             "request_id": request_id,
@@ -332,3 +339,20 @@ def _extract_timestamp(http_logs: List[Dict], all_logs: List[Dict]):
     if all_logs and all_logs[0].get("timestamp"):
         return all_logs[0]["timestamp"]
     return None
+
+
+def _correct_total_latency(span_latency_ms: float, upstream_gateway_log: Optional[Dict]) -> float:
+    """修正总耗时
+
+    SSE / Streamable HTTP 场景下，mcp-proxy 的 HTTP span latency 极短（仅连接建立耗时），
+    而上游网关 (bk-apigateway) 记录的 request_duration 包含了整个请求的完整耗时。
+    取两者的最大值作为总耗时。
+    """
+    if not upstream_gateway_log:
+        return span_latency_ms
+
+    gateway_duration = upstream_gateway_log.get("request_duration")
+    if gateway_duration is not None:
+        return max(span_latency_ms, float(gateway_duration))
+
+    return span_latency_ms

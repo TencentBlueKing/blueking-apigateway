@@ -62,6 +62,35 @@ def _find_first_mcp_span(span_list: List[Dict]) -> Optional[Dict]:
     return None
 
 
+def _check_has_error(span_list: List[Dict]) -> bool:
+    """递归检查 span 列表中是否存在错误
+
+    判断依据：
+    1. detail 中有 error 字段（MCP 层错误）
+    2. HTTP 状态码 >= 400（HTTP 层错误）
+    """
+    for span in span_list:
+        # 检查 detail.error
+        if span.get("detail", {}).get("error"):
+            return True
+        # 检查 HTTP 状态码（status 字段在 HTTP 层 span 中是 HTTP 状态码）
+        http_status = span.get("status")
+        if http_status is not None and _is_http_error_status(http_status):
+            return True
+        # 递归检查子 span
+        if _check_has_error(span.get("children", [])):
+            return True
+    return False
+
+
+def _is_http_error_status(status) -> bool:
+    """判断 HTTP 状态码是否为错误（>= 400）"""
+    try:
+        return int(status) >= 400
+    except (ValueError, TypeError):
+        return False
+
+
 def _collect_latencies(span_list: List[Dict], total_latency_ms: float, latency_distribution: list) -> None:
     """递归收集各服务的耗时信息"""
     for span in span_list:
@@ -97,12 +126,15 @@ def build_chain_summary(chain_data: dict) -> dict:
     _collect_services(spans, services)
     span_count = _count_spans(spans)
 
-    # 计算状态：如果有任何 error 则为 failed
+    # 计算状态：递归检查所有 span（含子 span）是否存在错误，同时检查上游网关状态
     status = "success"
-    for span in spans:
-        if span.get("detail", {}).get("error"):
+    if _check_has_error(spans):
+        status = "failed"
+    else:
+        # 检查上游网关日志的状态
+        upstream_log = chain_data.get("upstream_gateway_log")
+        if upstream_log and (_is_http_error_status(upstream_log.get("status")) or upstream_log.get("error")):
             status = "failed"
-            break
 
     # 从 HTTP 入口 span 提取公共信息，从第一个 MCP 子 span 提取 MCP 特有信息
     first_span = spans[0] if spans else {}
