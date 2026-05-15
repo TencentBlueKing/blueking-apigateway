@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from django.conf import settings
 from django.db.models import Q, QuerySet
@@ -91,7 +91,9 @@ def build_mcp_server_list_context(mcp_servers: Sequence[MCPServer]) -> Dict[str,
         for s in Stage.objects.filter(id__in=stage_ids)
     }
 
-    return {"gateways": gateways, "stages": stages}
+    least_privileges = MCPServerHandler.get_least_privileges(list(mcp_servers))
+
+    return {"gateways": gateways, "stages": stages, "least_privileges": least_privileges}
 
 
 def validate_and_enrich_mcp_server_for_retrieve(
@@ -161,6 +163,8 @@ def validate_and_enrich_mcp_server_for_retrieve(
         {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)
     ]
 
+    least_privileges = MCPServerHandler.get_least_privileges([instance])
+
     return {
         "labels": labels,
         "tool_name_map": instance.gen_tool_name_map(),
@@ -169,4 +173,22 @@ def validate_and_enrich_mcp_server_for_retrieve(
         "prompts_count_map": prompts_count_map,
         "prompts": prompts,
         "user_custom_doc": user_custom_doc,
+        "least_privileges": least_privileges,
     }
+
+
+def get_mcp_server_url_from_context(context: dict, obj: MCPServer) -> str:
+    """从 serializer context 中获取 least_privilege 并生成 MCP Server URL
+
+    统一 inner/open 序列化器中 get_url 方法的公共逻辑，避免重复实现。
+
+    Args:
+        context: serializer 的 context 字典，应包含 "least_privileges" 键
+        obj: MCPServer model 实例
+
+    Returns:
+        MCP Server 访问 URL
+    """
+    least_privileges: Dict[Tuple[int, int], str] = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)

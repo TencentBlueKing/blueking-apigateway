@@ -21,6 +21,7 @@ from typing import Any, Dict
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.v2.mcp_server import get_mcp_server_url_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -36,7 +37,6 @@ from apigateway.service.mcp.mcp_server import (
     build_mcp_server_application_url,
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
-    build_mcp_server_url,
 )
 
 
@@ -234,7 +234,7 @@ class MCPServerBaseOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name, obj.protocol_type)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)
@@ -543,7 +543,7 @@ class MCPServerRetrieveOutputSLZ(serializers.Serializer):
         return self.context.get("categories", [])
 
     def get_url(self, obj) -> str:
-        return build_mcp_server_url(obj.name, obj.protocol_type)
+        return get_mcp_server_url_from_context(self.context, obj)
 
     def get_user_custom_doc(self, obj) -> str:
         return self.context.get("user_custom_doc", "")

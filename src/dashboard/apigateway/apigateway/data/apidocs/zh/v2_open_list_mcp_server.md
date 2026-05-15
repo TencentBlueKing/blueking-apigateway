@@ -32,6 +32,10 @@
         "status": 1,
         "protocol_type": "sse",
         "oauth2_public_client_enabled": false,
+        "categories": [
+          {"name": "official", "display_name": "官方"},
+          {"name": "ai", "display_name": "AI"}
+        ],
         "stage": {
           "id": 3,
           "name": "prod"
@@ -78,8 +82,9 @@
 | status           | int     | mcp_server 状态（0：已停用，1：启用中）                             |
 | protocol_type    | string  | MCP 协议类型（sse：SSE 协议，streamable_http：Streamable HTTP 协议） |
 | oauth2_public_client_enabled   | boolean | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权                                         |
+| categories      | array  | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | tools_count      | int     | mcp_server 工具数量                                        |
-| url              | string  | mcp_server 访问地址                                        |
+| url              | string  | mcp_server 访问 URL，根据最低权限级别自适应返回普通 URL 或应用态 URL |
 | detail_url       | string  | mcp_server 网关站点详情地址                                    |
 | updated_by       | string  | 更新人                                                    |
 | created_by       | string  | 创建人                                                    |
