@@ -19,13 +19,19 @@
 from django.conf import settings
 from django.urls import include, path
 
-from . import itsm_views, views
+from . import itsm_views, monitor_views, views
 
 urlpatterns = [
     path(
         "itsm/callback/",
         itsm_views.ItsmCallbackApi.as_view(),
         name="openapi.v2.inner.itsm.callback",
+    ),
+    # POST /api/v2/inner/monitor/alarm-types/{alarm_type}/callback/
+    path(
+        "monitor/alarm-types/<slug:alarm_type>/callback/",
+        monitor_views.AlarmCallbackApi.as_view(),
+        name="openapi.v2.inner.monitor.alarm_callback",
     ),
     # /api/v2/inner/ 用于 paasv3 内部调用; 鉴权：来自于网关（主动授权）
     # 所有的接口必须隐藏 + 不允许申请权限（需主动授权）

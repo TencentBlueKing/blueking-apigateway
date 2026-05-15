@@ -20,6 +20,7 @@ import logging
 import math
 from typing import Dict, List
 
+from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
@@ -720,3 +721,14 @@ class GatewayUpdateStatusInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayUpdateStatusInputSLZ"
+
+
+class MonitorCallbackInputSLZ(serializers.Serializer):
+    """监控告警回调参数校验（query params 中的 token）"""
+
+    token = serializers.CharField(max_length=64, required=True, allow_blank=False)
+
+    def validate_token(self, value: str) -> str:
+        if value != getattr(settings, "BKMONITOR_CALLBACK_TOKEN", None):
+            raise serializers.ValidationError("token 验证失败")
+        return value
