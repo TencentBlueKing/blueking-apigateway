@@ -1,4 +1,4 @@
-spec_version: 1
+spec_version: 2
 
 release:
   version: 1.0.0
@@ -14,17 +14,66 @@ apigateway:
   maintainers:
     - "admin"
 
-stage:
-  name: "prod"
-  description: "描述"
-  description_en: "English description"
-  proxy_http:
-    timeout: 60
-    upstreams:
-      loadbalance: "roundrobin"
-      hosts:
-        - host: "http://httpbin"
-          weight: 100
+stages:
+  - name: "prod"
+    description: "描述"
+    description_en: "English description"
+    backends:
+      - name: "default"
+        config:
+          timeout: 60
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "http://httpbin"
+              weight: 100
+
+    mcp_servers:
+      - name: "httpbin-mcp-server"
+        title: "Httpbin MCP Server"
+        description: "MCP Server for httpbin e2e testing, provides HTTP utility tools (Streamable HTTP)"
+        resource_names:
+          - get
+          - post
+          - anything_get
+          - request_headers
+          - request_ip
+        tool_names:
+          - httpbin_get
+          - httpbin_post
+          - httpbin_anything
+          - httpbin_headers
+          - httpbin_ip
+        is_public: true
+        status: 1
+        protocol_type: "streamable_http"
+        oauth2_public_client_enabled: true
+        target_app_codes:
+          - "bk_apigateway"
+        category_names:
+          - "Official"
+      - name: "httpbin-mcp-server-sse"
+        title: "Httpbin MCP Server (SSE)"
+        description: "MCP Server for httpbin e2e testing, provides HTTP utility tools (SSE)"
+        resource_names:
+          - get
+          - post
+          - anything_get
+          - request_headers
+          - request_ip
+        tool_names:
+          - httpbin_get
+          - httpbin_post
+          - httpbin_anything
+          - httpbin_headers
+          - httpbin_ip
+        is_public: true
+        status: 1
+        protocol_type: "sse"
+        oauth2_public_client_enabled: true
+        target_app_codes:
+          - "bk_apigateway"
+        category_names:
+          - "Official"
 
 related_apps:
   - "bk_apigateway"
