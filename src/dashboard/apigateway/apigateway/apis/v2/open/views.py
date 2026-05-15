@@ -240,7 +240,7 @@ class GatewayAppPermissionApplyAPI(generics.CreateAPIView):
             data["grant_dimension"],
             data["reason"],
             data.get("expire_days", PermissionApplyExpireDaysEnum.FOREVER.value),
-            request.user.username,
+            data["applicant"],
         )
 
         # ITSM 单据创建成功后，不再发送邮件通知

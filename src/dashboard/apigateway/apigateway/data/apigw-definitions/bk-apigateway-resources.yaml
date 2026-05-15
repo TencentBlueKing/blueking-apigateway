@@ -2723,6 +2723,7 @@ paths:
               required:
                 - target_app_code
                 - grant_dimension
+                - applicant
               properties:
                 target_app_code:
                   type: string
@@ -2747,6 +2748,8 @@ paths:
                   example:
                     - user_query
                     - user_create
+                applicant:
+                  type: string
                 reason:
                   type: string
                   description: 申请原因
@@ -2755,6 +2758,7 @@ paths:
               target_app_code: my-app
               expire_days: 360
               grant_dimension: gateway
+              applicant: username
               reason: test
       responses:
         '200':
