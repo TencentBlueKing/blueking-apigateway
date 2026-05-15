@@ -36,7 +36,7 @@
         <!-- mcp启用、停用、精选状态 -->
         <slot name="mcpStatus" />
         <div class="flex items-center header-title-wrapper">
-          <div class="w-full flex items-baseline">
+          <div class="w-full flex items-center">
             <AgDescription
               class="color-#313238 text-16px font-700 lh-24px break-all mcp-card-title"
               :max-lines="2"

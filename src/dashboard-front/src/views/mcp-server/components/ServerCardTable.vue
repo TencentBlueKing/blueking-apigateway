@@ -59,7 +59,7 @@ import { useFeatureFlag, useGateway } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
-type IMCPServer = Awaited<ReturnType<typeof getServers>>['results'][number] & { is_checked: boolean };
+type IMCPServer = IMCPServerWithUIState | TableRowData;
 
 interface IProps { filterCondition?: any }
 
@@ -127,342 +127,337 @@ const hiddenColumn = computed(() => {
   return hiddenColumns;
 });
 
-const tableColumns = shallowRef<any>([
-  {
-    title: t('名称'),
-    colKey: 'name',
-    width: 300,
-    ellipsis: true,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      return (
-        <div class="flex items-baseline">
-          <div
-            class={[
-              'mr-12px ag-dot',
-              { 'border-#2caf5e bg-#daf6e5': Boolean(row.status) },
-              { 'border-#c4c6cc bg-#f5f7fa': !row.status },
-            ]}
-          />
-          <div
-            v-bk-tooltips={{
-              content: row?.name,
-              placement: 'top',
-              disabled: !row?.isOverflow,
-              extCls: 'max-w-480px',
-            }}
-            class={[
-              'hover-cursor-pointer truncate',
-              { 'color-#3a84ff': Boolean(row.status) },
-              { 'color-#c4c6cc hover:color-#3a84ff': !row.status },
-            ]}
-            onClick={(e: MouseEvent) => {
-              e?.stopPropagation();
-              handleView(row.id);
-            }}
-            onMouseenter={(e: MouseEvent) =>
-              tableRef.value?.handleCellEnter({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: IMCPServer
-              })}
-            onMouseleave={(e: MouseEvent) =>
-              tableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: IMCPServer
-              })}
-          >
-            {row.name}
-          </div>
-          { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
-            && (
-              <Tag
-                theme="danger"
-                class="ml-4px hover-cursor-pointer"
-                v-slots={{
-                  icon: () => (
-                    <ag-icon name="zhiming" />
-                  ),
-                }}
-                v-bk-tooltips={{
-                  content: () => (
-                    <div class="break-all">
-                      { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
-                        {
-                          count: row?.app_permission_risk?.risk_tools?.length,
-                          content: row?.app_permission_risk?.risk_tools?.join('、'),
-                        })}
-                      <div class="h-24px" />
-                      { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
-                    </div>
-                  ),
-                  extCls: 'max-w-300px',
-                  allowHtml: true,
-                }}
-              >
-                { t('应用态风险') }
-              </Tag>
-            )}
-        </div>
-      );
-    },
-  },
-  {
-    title: t('展示名'),
-    colKey: 'title',
-    width: 200,
-    ellipsis: true,
-  },
-  {
-    title: t('环境'),
-    colKey: 'stage_id',
-    ellipsis: true,
-    width: 130,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      return (
-        <Tag
-          class={[
-            'max-w-100px truncate border-transparent',
-            { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
-          ]}
-        >
-          {row?.stage?.name || '--'}
-        </Tag>
-      );
-    },
-    filter: {
-      type: 'single',
-      showConfirmAndReset: true,
-      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: (filterCondition.stages ?? []).map((item: {
-        name: string
-        id: number
-      }) => {
-        return {
-          label: item.name,
-          value: item.id,
-        };
-      }),
-    },
-  },
-  {
-    title: t('分类'),
-    colKey: 'categories',
-    width: 200,
-    filter: {
-      type: 'multiple',
-      showConfirmAndReset: true,
-      resetValue: [],
-      list: (filterCondition.categories ?? []).map((item: IMCPServerCategory) => {
-        return {
-          label: item.display_name,
-          value: item.name,
-        };
-      }),
-    },
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      const categoriesFilters = (row.categories as unknown as any[])?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
-      return categoriesFilters.length
-        ? (
-          <div class="w-160px">
-            <RenderTagOverflow
-              data={categoriesFilters.map((cg: IMCPServerCategory) => cg.display_name)}
-            />
-          </div>
-        )
-        : <span>--</span>;
-    },
-  },
-  {
-    title: t('标签'),
-    colKey: 'label',
-    width: 200,
-    filter: {
-      type: 'single',
-      showConfirmAndReset: true,
-      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: (filterCondition?.labels ?? []).map((label: string) => {
-        return {
-          label,
-          value: label,
-        };
-      }),
-    },
-    cell: (_: VNode, { row }: { row: IMCPServer }) => (
-      row?.labels?.length
-        ? (
-          <div class="w-160px">
-            <RenderTagOverflow
-              data={row.labels as string[]}
-            />
-          </div>
-        )
-        : <span>--</span>
+const isExistLabel = computed(() => tableData.value.find(item => item?.labels?.length > 0));
 
-    ),
-  },
-  {
-    title: t('工具数量'),
-    colKey: 'tools_count',
-    align: 'right',
-    ellipsis: true,
-  },
-  {
-    title: t('是否公开'),
-    colKey: 'is_public',
-    width: 110,
-    ellipsis: true,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      return (
-        <Tag
-          class="border-transparent"
-          theme={row?.is_public ? 'success' : 'warning'}
-        >
-          {t(row?.is_public ? '公开' : '不公开')}
-        </Tag>
-      );
+const tableColumns = computed(() => {
+  const columns: PrimaryTableProps['columns'] = [
+    {
+      title: t('名称'),
+      colKey: 'name',
+      width: 200,
+      ellipsis: true,
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        return (
+          <div class="flex items-baseline">
+            <div
+              class={[
+                'mr-12px ag-dot',
+                { 'border-#2caf5e bg-#daf6e5': Boolean(row.status) },
+                { 'border-#c4c6cc bg-#f5f7fa': !row.status },
+              ]}
+            />
+            <div
+              v-bk-tooltips={{
+                placement: 'top',
+                content: row?.isOverflow
+                  ? `${t('名称')}: ${row.name}
+                  ${t('展示名')}: ${row.title}`
+                  : ` ${t('展示名')}: ${row.title}`,
+                extCls: 'max-w-480px',
+              }}
+              class={[
+                'hover-cursor-pointer truncate',
+                { 'color-#3a84ff': Boolean(row.status) },
+                { 'color-#c4c6cc hover:color-#3a84ff': !row.status },
+              ]}
+              onClick={(e: MouseEvent) => {
+                e?.stopPropagation();
+                handleView(row.id);
+              }}
+              onMouseenter={(e: MouseEvent) =>
+                tableRef.value?.handleCellEnter({
+                  e,
+                  row,
+                } as {
+                  e: MouseEvent
+                  row: IMCPServer
+                })}
+              onMouseleave={(e: MouseEvent) =>
+                tableRef.value?.handleCellLeave({
+                  e,
+                  row,
+                } as {
+                  e: MouseEvent
+                  row: IMCPServer
+                })}
+            >
+              {row.name}
+            </div>
+            { isEnabledOAuth.value && row?.app_permission_risk?.has_risk
+              && (
+                <Tag
+                  theme="danger"
+                  class="ml-4px hover-cursor-pointer"
+                  v-slots={{
+                    icon: () => (
+                      <ag-icon name="zhiming" />
+                    ),
+                  }}
+                  v-bk-tooltips={{
+                    content: () => (
+                      <div class="break-all">
+                        { t('此 MCP Server 已开启 OAuth2 公开客户端模式，且包含{count}个应用态鉴权工具（{content}）。',
+                          {
+                            count: row?.app_permission_risk?.risk_tools?.length,
+                            content: row?.app_permission_risk?.risk_tools?.join('、'),
+                          })}
+                        <div class="h-24px" />
+                        { t('该工具通过 public 应用身份调用，所有 OAuth2 授权用户均可访问。') }
+                      </div>
+                    ),
+                    extCls: 'max-w-300px',
+                    allowHtml: true,
+                  }}
+                >
+                  { t('应用态风险') }
+                </Tag>
+              )}
+          </div>
+        );
+      },
     },
-  },
-  {
-    title: t('Prompt数量'),
-    colKey: 'prompts_count',
-    align: 'right',
-    ellipsis: true,
-  },
-  {
-    title: t('OAuth2 公开客户端'),
-    colKey: 'oauth2_public_client_enabled',
-    ellipsis: true,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      return (
-        <Tag
-          class={
-            [
-              'border-transparent',
-              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
-            ]
-          }
-        >
-          {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
-        </Tag>
-      );
-    },
-  },
-  {
-    title: t('发布时间'),
-    colKey: 'updated_time',
-    ellipsis: true,
-    sorter: true,
-    width: 260,
-  },
-  {
-    title: t('描述'),
-    colKey: 'description',
-    ellipsis: true,
-    width: 200,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => {
-      return row?.description || '--';
-    },
-  },
-  {
-    title: t('操作'),
-    colKey: 'operate',
-    fixed: 'right',
-    width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
-    cell: (_: VNode, { row }: { row: IMCPServer }) => (
-      <div class="flex">
-        <Button
-          text
-          theme="primary"
-          onClick={() => Boolean(row.status) ? handleEditClick(row) : handleEnableClick(row)}
-        >
-          {t(Boolean(row.status) ? '编辑' : '启用')}
-        </Button>
-        <div
-          class="ml-12px"
-          onClick={(e: MouseEvent) => e?.preventDefault()}
-        >
-          <bk-dropdown
-            trigger="click"
-            popoverOptions={{
-              clickContentAutoHide: true,
-              hideIgnoreReference: true,
-            }}
+    {
+      title: t('环境'),
+      colKey: 'stage_id',
+      ellipsis: true,
+      width: 100,
+      filter: {
+        type: 'single',
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: (filterCondition.stages ?? []).map((item: {
+          name: string
+          id: number
+        }) => {
+          return {
+            label: item.name,
+            value: item.id,
+          };
+        }),
+      },
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        return (
+          <Tag
+            class={[
+              'max-w-100px truncate border-transparent',
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
+            ]}
           >
-            {{
-              default: () => (
-                <ag-icon
-                  class="flex items-center justify-center w-16px h-16px color-#4d4f56 cursor-pointer"
-                  name="more-fill"
-                  size="16"
-                />
-              ),
-              content: () => (
-                <bk-dropdown-menu>
-                  {Boolean(row?.status) && (
-                    <div>
-                      <bk-dropdown-item onClick={() => handleSuspendClick(row)}>
-                        <Button
-                          size="small"
-                          text
-                        >
-                          { t('停用') }
-                        </Button>
-                      </bk-dropdown-item>
-                      <bk-dropdown-item onClick={() => handleCopyConfig(row)}>
-                        <Button
-                          size="small"
-                          text
-                        >
-                          { t('复制配置') }
-                        </Button>
-                      </bk-dropdown-item>
-                    </div>
-                  )}
-                  <bk-dropdown-item
-                    class={{ 'cursor-not-allowed!': Boolean(row?.status) }}
-                    v-bk-tooltips={{
-                      content: t('请先停用再删除'),
-                      disabled: !row?.status,
-                    }}
-                    onClick={(e: MouseEvent) => {
-                      e?.stopPropagation();
-                      handleDeleteClick(row);
-                    }}
-                  >
-                    <Button
-                      disabled={Boolean(row?.status)}
-                      text
+            {row?.stage?.name || '--'}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: t('分类'),
+      colKey: 'categories',
+      width: 100,
+      filter: {
+        type: 'multiple',
+        showConfirmAndReset: true,
+        resetValue: [],
+        list: (filterCondition.categories ?? []).map((item: IMCPServerCategory) => {
+          return {
+            label: item.display_name,
+            value: item.name,
+          };
+        }),
+      },
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        const categoriesFilters = (row.categories as unknown as any[])?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
+        return categoriesFilters.length
+          ? (
+            <div class="w-full">
+              <RenderTagOverflow
+                data={categoriesFilters.map((cg: IMCPServerCategory) => cg.display_name)}
+              />
+            </div>
+          )
+          : <span>--</span>;
+      },
+    },
+    {
+      title: t('标签'),
+      colKey: 'label',
+      width: isExistLabel.value ? 140 : 80,
+      filter: {
+        type: 'single',
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: (filterCondition?.labels ?? []).map((label: string) => {
+          return {
+            label,
+            value: label,
+          };
+        }),
+      },
+      cell: (_: unknown, { row }: { row: IMCPServer }) => (
+        row?.labels?.length
+          ? (
+            <div class="w-full">
+              <RenderTagOverflow
+                data={row.labels as string[]}
+              />
+            </div>
+          )
+          : <span>--</span>
+      ),
+    },
+    {
+      title: t('工具数量'),
+      colKey: 'tools_count',
+      align: 'right',
+      width: 80,
+      ellipsis: true,
+    },
+    {
+      title: t('是否公开'),
+      colKey: 'is_public',
+      ellipsis: true,
+      width: 100,
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        return (
+          <Tag
+            class="border-transparent"
+            theme={row?.is_public ? 'success' : 'warning'}
+          >
+            {t(row?.is_public ? '公开' : '不公开')}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: t('Prompt数量'),
+      colKey: 'prompts_count',
+      align: 'right',
+      width: 100,
+      ellipsis: true,
+    },
+    {
+      title: t('OAuth2 公开客户端'),
+      colKey: 'oauth2_public_client_enabled',
+      ellipsis: true,
+      width: 100,
+      cell: (_: unknown, { row }: { row: IMCPServer }) => {
+        return (
+          <Tag
+            class={
+              [
+                'border-transparent',
+                { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.oauth2_public_client_enabled },
+              ]
+            }
+          >
+            {t(row?.oauth2_public_client_enabled ? '已开启' : '未开启')}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: t('发布时间'),
+      colKey: 'updated_time',
+      ellipsis: true,
+      sorter: true,
+      width: 240,
+    },
+    {
+      title: t('操作'),
+      colKey: 'operate',
+      fixed: 'right',
+      width: locale.value?.toLowerCase()?.indexOf('en') > -1 ? 102 : 80,
+      cell: (_: unknown, { row }: { row: IMCPServer }) => (
+        <div class="flex">
+          <Button
+            text
+            theme="primary"
+            onClick={() => Boolean(row.status) ? handleEditClick(row) : handleEnableClick(row)}
+          >
+            {t(Boolean(row.status) ? '编辑' : '启用')}
+          </Button>
+          <div
+            class="ml-12px"
+            onClick={(e: MouseEvent) => e?.preventDefault()}
+          >
+            <bk-dropdown
+              trigger="click"
+              popoverOptions={{
+                clickContentAutoHide: true,
+                hideIgnoreReference: true,
+              }}
+            >
+              {{
+                default: () => (
+                  <ag-icon
+                    class="flex items-center justify-center w-16px h-16px color-#4d4f56 cursor-pointer"
+                    name="more-fill"
+                    size="16"
+                  />
+                ),
+                content: () => (
+                  <bk-dropdown-menu>
+                    {Boolean(row?.status) && (
+                      <div>
+                        <bk-dropdown-item onClick={() => handleSuspendClick(row)}>
+                          <Button
+                            size="small"
+                            text
+                          >
+                            { t('停用') }
+                          </Button>
+                        </bk-dropdown-item>
+                        <bk-dropdown-item onClick={() => handleCopyConfig(row as IMCPServerWithUIState)}>
+                          <Button
+                            size="small"
+                            text
+                          >
+                            { t('复制配置') }
+                          </Button>
+                        </bk-dropdown-item>
+                      </div>
+                    )}
+                    <bk-dropdown-item
+                      class={{ 'cursor-not-allowed!': Boolean(row?.status) }}
+                      v-bk-tooltips={{
+                        content: t('请先停用再删除'),
+                        disabled: !row?.status,
+                      }}
+                      onClick={(e: MouseEvent) => {
+                        e?.stopPropagation();
+                        handleDeleteClick(row);
+                      }}
                     >
-                      { t('删除') }
-                    </Button>
-                  </bk-dropdown-item>
-                  <bk-dropdown-item
-                    onClick={(e: MouseEvent) => {
-                      e?.stopPropagation();
-                      handleNavObservability(row);
-                    }}
-                  >
-                    <Button
-                      size="small"
-                      text
+                      <Button
+                        disabled={Boolean(row?.status)}
+                        text
+                      >
+                        { t('删除') }
+                      </Button>
+                    </bk-dropdown-item>
+                    <bk-dropdown-item
+                      onClick={(e: MouseEvent) => {
+                        e?.stopPropagation();
+                        handleNavObservability(row);
+                      }}
                     >
-                      { t('可观测') }
-                    </Button>
-                  </bk-dropdown-item>
-                </bk-dropdown-menu>
-              ),
-            }}
-          </bk-dropdown>
+                      <Button
+                        size="small"
+                        text
+                      >
+                        { t('可观测') }
+                      </Button>
+                    </bk-dropdown-item>
+                  </bk-dropdown-menu>
+                ),
+              }}
+            </bk-dropdown>
+          </div>
         </div>
-      </div>
-    ),
-  },
-]);
+      ),
+    },
+  ];
+
+  return columns;
+});
 
 const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: true });
 

@@ -68,6 +68,7 @@ import { t } from '@/locales';
 import { copy } from '@/utils';
 import { useTrace } from '@/stores';
 import {
+  type IGatewayLog,
   type ITraceDetail,
   fetchObservabilityLogInfoByGateway,
   fetchObservabilityTraceChainByGateway,
@@ -109,7 +110,7 @@ const getTraceChainDetail = async () => {
     const { upstream_log, downstream_log } = traceStore.parseTraceChainLogs(traceChain);
 
     const logList = [
-      ...(logInfo.results ?? []),
+      ...(logInfo.results ?? []).filter((logs: IGatewayLog) => !['gateway_upstream', 'gateway_downstream'].includes(logs.layer)),
       upstream_log,
       downstream_log,
     ].filter(Boolean);
