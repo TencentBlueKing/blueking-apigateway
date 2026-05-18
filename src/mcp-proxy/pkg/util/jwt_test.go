@@ -81,7 +81,7 @@ var _ = Describe("JWT", func() {
 			parsedToken, err := jwt.ParseWithClaims(
 				tokenString,
 				&util.InnerJWTClaims{},
-				func(token *jwt.Token) (interface{}, error) {
+				func(token *jwt.Token) (any, error) {
 					return &privateKey.PublicKey, nil
 				},
 			)
@@ -130,7 +130,7 @@ var _ = Describe("JWT", func() {
 			parsedToken, err := jwt.ParseWithClaims(
 				tokenString,
 				&util.InnerJWTClaims{},
-				func(token *jwt.Token) (interface{}, error) {
+				func(token *jwt.Token) (any, error) {
 					return &privateKey.PublicKey, nil
 				},
 			)
@@ -155,7 +155,7 @@ var _ = Describe("JWT", func() {
 			tokenString, err := util.SignInnerJWT(claims, privateKeyPEM, 123)
 			Expect(err).NotTo(HaveOccurred())
 
-			parsedToken, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			parsedToken, _ := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 				return &privateKey.PublicKey, nil
 			})
 
@@ -195,7 +195,7 @@ var _ = Describe("JWT", func() {
 			parsedToken, err := jwt.ParseWithClaims(
 				tokenString,
 				&util.InnerJWTClaims{},
-				func(token *jwt.Token) (interface{}, error) {
+				func(token *jwt.Token) (any, error) {
 					return &privateKey.PublicKey, nil
 				},
 			)

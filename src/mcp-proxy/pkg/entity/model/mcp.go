@@ -142,7 +142,7 @@ func (m *MCPServer) TableName() string {
 type ArrayString []string
 
 // Scan 实现 Scanner 接口用于从数据库读取
-func (r *ArrayString) Scan(value interface{}) error {
+func (r *ArrayString) Scan(value any) error {
 	str, ok := value.([]byte)
 	if !ok {
 		return errors.New("invalid resource_ids type")

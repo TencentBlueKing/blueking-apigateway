@@ -19,7 +19,9 @@
 package cacheimpls
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
+	mathrand "math/rand/v2"
 	"time"
 
 	"github.com/TencentBlueKing/gopkg/cache/memory"
@@ -28,7 +30,14 @@ import (
 
 func newRandomDuration(seconds int) backend.RandomExtraExpirationDurationFunc {
 	return func() time.Duration {
-		return time.Duration(rand.Intn(seconds*1000)) * time.Millisecond
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(seconds*1000)))
+		if err != nil {
+			// fallback to math/rand/v2 to preserve randomness and avoid thundering herd
+			return time.Duration(
+				mathrand.IntN(seconds*1000), //nolint:gosec // fallback when crypto/rand fails
+			) * time.Millisecond
+		}
+		return time.Duration(n.Int64()) * time.Millisecond
 	}
 }
 

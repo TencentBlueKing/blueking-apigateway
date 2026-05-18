@@ -31,7 +31,7 @@ import (
 )
 
 // AESGCMDecrypt decrypts AES-GCM ciphertext using the given key.
-func AESGCMDecrypt(key string, nonce string, encryptedText string) (string, error) {
+func AESGCMDecrypt(key, nonce, encryptedText string) (string, error) {
 	keyBytes, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func ParsePrivateKey(privateKeyText []byte) (any, error) {
 		return nil, errors.New("failed to decode PEM block: no PEM data found")
 	}
 	// Declare a variable to hold the private key
-	var privateKey interface{}
+	var privateKey any
 	// Declare a variable to hold any error that occurs
 	var err error
 	// Switch on the type of the PEM block

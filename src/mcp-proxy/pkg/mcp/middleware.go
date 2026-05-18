@@ -153,7 +153,10 @@ func logMCPRequest(
 		if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 			responseBodySize = int64(len(resultBytes))
 			if hasError {
-				response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
+				response = stringx.Truncate(
+					string(resultBytes),
+					logTruncate.GetAPILogErrorResponseSize(),
+				)
 			} else {
 				response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
 			}
@@ -273,7 +276,7 @@ func logMCPRequest(
 					"gateway_name":    gatewayName,
 					"app_code":        appCode,
 				},
-				map[string]interface{}{
+				map[string]any{
 					"request_id":    requestID,
 					"x_request_id":  xRequestID,
 					"session_id":    sessionID,
@@ -320,7 +323,8 @@ func MetricMiddleware(serverName string) mcp.Middleware {
 				}
 
 				// For tools/call: only record metrics if there's an error (tool not found, etc.)
-				// Successful tool calls are recorded in the tool handler to capture tool-specific breakdown
+				// Successful tool calls are recorded in the tool handler to capture tool-specific
+				// breakdown
 				if method == "tools/call" && err == nil {
 					return
 				}
@@ -381,8 +385,20 @@ func recordMCPMetrics(
 	// 5. MCPRequestBodySize and MCPResponseBodySize: body size distribution
 	if metric.MCPRequestBodySize != nil && metric.MCPResponseBodySize != nil {
 		requestBodySize, responseBodySize := calcBodySize(req, result)
-		metric.MCPRequestBodySize.WithLabelValues(gatewayName, serverName, method).Observe(float64(requestBodySize))
-		metric.MCPResponseBodySize.WithLabelValues(gatewayName, serverName, method).Observe(float64(responseBodySize))
+		metric.MCPRequestBodySize.WithLabelValues(
+			gatewayName,
+			serverName,
+			method,
+		).Observe(
+			float64(requestBodySize),
+		)
+		metric.MCPResponseBodySize.WithLabelValues(
+			gatewayName,
+			serverName,
+			method,
+		).Observe(
+			float64(responseBodySize),
+		)
 	}
 }
 
@@ -505,7 +521,7 @@ func TracingMiddleware(serverName string) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			// Replace "/" with "." in method names to avoid issues with some trace backends
-			spanName := fmt.Sprintf("mcp.%s", strings.ReplaceAll(method, "/", "."))
+			spanName := "mcp." + strings.ReplaceAll(method, "/", ".")
 			ctx, span := trace.StartTrace(ctx, spanName)
 			if span != nil {
 				defer span.End()
@@ -587,7 +603,8 @@ func BkAIDevTraceMiddleware(serverName string) mcp.Middleware {
 			// Enrich client_id with ClientInfo from session, consistent with LoggingMiddleware
 			if req != nil {
 				if ss, ok := req.GetSession().(*mcp.ServerSession); ok && ss != nil {
-					if initParams := ss.InitializeParams(); initParams != nil && initParams.ClientInfo != nil {
+					if initParams := ss.InitializeParams(); initParams != nil &&
+						initParams.ClientInfo != nil {
 						clientID = initParams.ClientInfo.Name
 					}
 					span.SetAttributes(attribute.String("session_id", ss.ID()))

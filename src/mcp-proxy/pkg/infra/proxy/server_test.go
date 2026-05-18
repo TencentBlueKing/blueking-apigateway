@@ -272,7 +272,8 @@ var _ = Describe("MCPServer", func() {
 
 		Describe("AddPrompt and RemovePrompt", func() {
 			It("should add prompt to internal map", func() {
-				// Directly add to internal map (since we can't call AddPrompt without a real mcp.Server)
+				// Directly add to internal map (since we can't call AddPrompt without a real
+				// mcp.Server)
 				server.rwLock.Lock()
 				server.prompts["test-prompt"] = struct{}{}
 				server.rwLock.Unlock()

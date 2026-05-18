@@ -58,16 +58,16 @@ type TestClient struct {
 
 // MCPRequest MCP 请求结构
 type MCPRequest struct {
-	JSONRPC string      `json:"jsonrpc"`
-	ID      interface{} `json:"id"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params,omitempty"`
+	JSONRPC string `json:"jsonrpc"`
+	ID      any    `json:"id"`
+	Method  string `json:"method"`
+	Params  any    `json:"params,omitempty"`
 }
 
 // MCPResponse MCP 响应结构
 type MCPResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
-	ID      interface{}     `json:"id"`
+	ID      any             `json:"id"`
 	Result  json.RawMessage `json:"result,omitempty"`
 	Error   *MCPError       `json:"error,omitempty"`
 }
@@ -103,9 +103,9 @@ type PromptInfo struct {
 
 // InitializeResult initialize 响应结果
 type InitializeResult struct {
-	ProtocolVersion string                 `json:"protocolVersion"`
-	ServerInfo      map[string]interface{} `json:"serverInfo"`
-	Capabilities    map[string]interface{} `json:"capabilities"`
+	ProtocolVersion string         `json:"protocolVersion"`
+	ServerInfo      map[string]any `json:"serverInfo"`
+	Capabilities    map[string]any `json:"capabilities"`
 }
 
 // CustomClaims JWT claims

@@ -56,7 +56,10 @@ func APILogger() gin.HandlerFunc {
 		if mcpName != "" {
 			mcp, err := cacheimpls.GetMCPServerByName(c.Request.Context(), mcpName)
 			if err != nil {
-				util.BadRequestErrorJSONResponse(c, fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err))
+				util.BadRequestErrorJSONResponse(
+					c,
+					fmt.Sprintf("get mcp by name %s failed: %v", mcpName, err),
+				)
 				c.Abort()
 				return
 			}
@@ -69,7 +72,11 @@ func APILogger() gin.HandlerFunc {
 			if gatewayErr == nil && gateway != nil {
 				util.SetGatewayName(c, gateway.Name)
 			} else {
-				logging.GetLogger().Warnf("get gateway[id:%d] name failed: %v, using fallback", mcp.GatewayID, gatewayErr)
+				logging.GetLogger().Warnf(
+					"get gateway[id:%d] name failed: %v, using fallback",
+					mcp.GatewayID,
+					gatewayErr,
+				)
 				util.SetGatewayName(c, "unknown")
 			}
 		}
@@ -129,7 +136,7 @@ func APILogger() gin.HandlerFunc {
 					"http_path":       c.Request.URL.Path,
 					"gateway_name":    util.GetGatewayName(c),
 				},
-				map[string]interface{}{
+				map[string]any{
 					"status":        status,
 					"gateway_id":    util.GetGatewayID(c),
 					"mcp_server_id": util.GetMCPServerID(c),

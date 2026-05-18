@@ -1,4 +1,4 @@
-FROM golang:1.24.4-bullseye AS builder
+FROM golang:1.25.5 AS builder
 
 COPY ./ /app
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 ARG BINARY=bk-apigateway-mcp-proxy
 ARG VERSION=latest
 ARG COMMIT=HEAD
-RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} -e GO_BUILD_FLAGS=-buildvcs=false && chmod +x ${BINARY}
+RUN CGO_ENABLED=0 make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} -e GO_BUILD_FLAGS="-buildvcs=false" && chmod +x ${BINARY}
 
 # install dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2

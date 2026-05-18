@@ -251,7 +251,13 @@ var _ = Describe("MCP", func() {
 				newOpenapiSpec.Paths.Set("/users", newPathItem)
 
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 2, newOpenapiSpec, []string{"getUsers", "createUser"}, nil, false,
+					server,
+					"test-server",
+					2,
+					newOpenapiSpec,
+					[]string{"getUsers", "createUser"},
+					nil,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(server.GetResourceVersionID()).To(Equal(2))
@@ -350,7 +356,11 @@ var _ = Describe("MCP", func() {
 
 				newServer := mcpProxy.GetMCPServer("switch-server")
 				Expect(newServer).NotTo(BeNil())
-				Expect(newServer.GetProtocolType()).To(Equal(constant.MCPServerProtocolTypeStreamableHTTP))
+				Expect(
+					newServer.GetProtocolType(),
+				).To(
+					Equal(constant.MCPServerProtocolTypeStreamableHTTP),
+				)
 				Expect(newServer.IsStreamableHTTP()).To(BeTrue())
 				Expect(newServer.GetResourceVersionID()).To(Equal(2))
 			})
@@ -819,7 +829,13 @@ var _ = Describe("MCP", func() {
 				}
 
 				err = mcpProxy.UpdateMCPServerFromOpenApiSpec(
-					server, "test-server", 2, openapiSpec, []string{"getUsers", "createUser"}, toolNameMap, false,
+					server,
+					"test-server",
+					2,
+					openapiSpec,
+					[]string{"getUsers", "createUser"},
+					toolNameMap,
+					false,
 				)
 				Expect(err).NotTo(HaveOccurred())
 

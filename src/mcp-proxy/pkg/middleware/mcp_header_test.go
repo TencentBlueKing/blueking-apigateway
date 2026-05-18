@@ -38,7 +38,7 @@ var _ = Describe("MCPHeader", func() {
 
 	Describe("MCPServerHeaderMiddleware", func() {
 		DescribeTable("handles timeout header correctly",
-			func(timeout string, allowedHeaders string, expectedTimeoutSeconds int) {
+			func(timeout, allowedHeaders string, expectedTimeoutSeconds int) {
 				w := httptest.NewRecorder()
 				c, _ := gin.CreateTestContext(w)
 				c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)

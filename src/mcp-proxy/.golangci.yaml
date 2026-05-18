@@ -5,17 +5,44 @@ run:
   tests: false
 linters:
   enable:
-    - revive
+    # bug catchers
+    - staticcheck
+    - govet
+    - errcheck
+    - errchkjson
+    - bodyclose
+    - sqlclosecheck
+    - rowserrcheck
+    - nilerr
+    - nilnesserr
+    - ineffassign
+    - unused
+    - durationcheck
+    - errorlint
+    - noctx
+    - forcetypeassert
+    - fatcontext
+    # modernization (Go 1.25.5)
+    - modernize
+    - exptostd
+    - intrange
+    - usestdlibvars
+    # code quality
     - gocritic
     - gocyclo
+    - unconvert
+    - copyloopvar
+    - reassign
+    - mirror
+    - perfsprint
+    # style
+    - revive
     - lll
+    - whitespace
     - misspell
     - nakedret
-    - nilerr
-    - staticcheck
-    - whitespace
-  disable:
-    - errcheck
+    # security
+    - gosec
   settings:
     staticcheck:
       checks:
@@ -38,26 +65,48 @@ linters:
           exclude: []
           arguments:
             - "check-private-receivers"
-            - "disableStutteringCheck"
+            - "disable-stuttering-check"
             - "disable-checks-on-constants"
             - "disable-checks-on-types"
             - "disable-checks-on-variables"
-
     lll:
-      # Max line length, lines longer will be reported.
-      # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
-      # Default: 120.
       line-length: 120
-      # Tab width in spaces.
-      # Default: 1
       tab-width: 1
-
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+    errorlint:
+      errorf: true
+      errorf-multi: true
+      asserts: true
+      comparison: true
+    modernize:
+      disable:
+        - omitzero
+        - stringsbuilder
+        - waitgroup
+    perfsprint:
+      err-error: false
+      errorf: false
+      int-conversion: false
+    gosec:
+      excludes:
+        - G104
+        - G115
+        - G304
+        - G307
+      confidence: medium
   exclusions:
     generated: lax
     paths:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - forcetypeassert
+        path: '\.gen\.go$'
+
 issues:
   uniq-by-line: false
   # Show only new issues: if there are unstaged changes or untracked files,
@@ -88,6 +137,8 @@ formatters:
   enable:
     - gofmt
     - goimports
+    - golines
+    - gofumpt
   settings:
     gofmt:
       # Simplify code: gofmt with `-s` option.
@@ -97,11 +148,35 @@ formatters:
       # https://pkg.go.dev/cmd/gofmt
       # Default: []
       rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
         - pattern: 'a[b:len(a)]'
           replacement: 'a[b:]'
     goimports:
       local-prefixes:
         - mcp_proxy
+    gofumpt:
+      # Module path which contains the source code being formatted.
+      # Default: ""
+      module-path: mcp_proxy
+      # Choose whether to use the extra rules.
+      # Default: false
+      extra-rules: true
+    golines:
+      # Target maximum line length.
+      # Default: 100
+      max-len: 120
+      # Length of a tabulation.
+      # Default: 4
+      tab-len: 8
+      # Shorten single-line comments.
+      # Default: false
+      shorten-comments: true
+      # Default: true
+      reformat-tags: false
+      # Split chained methods on the dots as opposed to the arguments.
+      # Default: true
+      chain-split-dots: false
   exclusions:
     generated: lax
     paths:

@@ -40,8 +40,11 @@ func (k GatewayIDKey) Key() string {
 	return cast.ToString(k.ID)
 }
 
-func retrieveGatewayByID(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(GatewayIDKey)
+func retrieveGatewayByID(ctx context.Context, k cache.Key) (any, error) {
+	key, ok := k.(GatewayIDKey)
+	if !ok {
+		return nil, errors.New("invalid cache key type for GatewayIDKey")
+	}
 	r := repo.Gateway
 	return repo.Gateway.WithContext(ctx).Where(r.ID.Eq(key.ID)).Take()
 }
@@ -51,18 +54,18 @@ func GetGatewayByID(ctx context.Context, id int) (gateway *model.Gateway, err er
 	key := GatewayIDKey{
 		ID: id,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, gatewayIDCache, key)
 	if err != nil {
-		return
+		return gateway, err
 	}
 	var ok bool
 	gateway, ok = value.(*model.Gateway)
 	if !ok {
 		err = errors.New("not model.Gateway in cache")
-		return
+		return gateway, err
 	}
-	return
+	return gateway, err
 }
 
 // GatewayNameKey is the key of gateway
@@ -77,8 +80,11 @@ func (k GatewayNameKey) Key() string {
 	return k.Name
 }
 
-func retrieveGatewayByName(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(GatewayNameKey)
+func retrieveGatewayByName(ctx context.Context, k cache.Key) (any, error) {
+	key, ok := k.(GatewayNameKey)
+	if !ok {
+		return nil, errors.New("invalid cache key type for GatewayNameKey")
+	}
 	r := repo.Gateway
 	return repo.Gateway.WithContext(ctx).Where(r.Name.Eq(key.Name)).Take()
 }
@@ -88,16 +94,16 @@ func GetGatewayByName(ctx context.Context, name string) (gateway *model.Gateway,
 	key := GatewayNameKey{
 		Name: name,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, gatewayNameCache, key)
 	if err != nil {
-		return
+		return gateway, err
 	}
 	var ok bool
 	gateway, ok = value.(*model.Gateway)
 	if !ok {
 		err = errors.New("not model.Gateway in cache")
-		return
+		return gateway, err
 	}
-	return
+	return gateway, err
 }
