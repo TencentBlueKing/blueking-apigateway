@@ -55,7 +55,7 @@ var _ = Describe("JWTPublicKey", func() {
 				PrivateKey: "test-private-key",
 			}
 
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return expectedJWT, nil
 			}
 			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
@@ -69,7 +69,7 @@ var _ = Describe("JWTPublicKey", func() {
 		})
 
 		It("should return error when record not found", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return nil, errors.New("record not found")
 			}
 			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)
@@ -80,7 +80,7 @@ var _ = Describe("JWTPublicKey", func() {
 		})
 
 		It("should return error for invalid type", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return "invalid type", nil
 			}
 			mockCache := memory.NewCache("mockJWTCache", retrieveFunc, expiration, nil)

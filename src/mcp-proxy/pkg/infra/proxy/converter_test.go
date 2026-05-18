@@ -289,16 +289,23 @@ var _ = Describe("Converter", func() {
 											Properties: openapi3.Schemas{
 												"name": &openapi3.SchemaRef{
 													Value: &openapi3.Schema{
-														Type: &openapi3.Types{"string"},
+														Type: &openapi3.Types{
+															"string",
+														},
 													},
 												},
 												"email": &openapi3.SchemaRef{
 													Value: &openapi3.Schema{
-														Type: &openapi3.Types{"string"},
+														Type: &openapi3.Types{
+															"string",
+														},
 													},
 												},
 											},
-											Required: []string{"name", "email"},
+											Required: []string{
+												"name",
+												"email",
+											},
 										},
 									},
 								},
@@ -407,7 +414,9 @@ var _ = Describe("Converter", func() {
 								In:       "path",
 								Required: true,
 								Schema: &openapi3.SchemaRef{
-									Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"string"},
+									},
 								},
 							},
 						},
@@ -417,7 +426,9 @@ var _ = Describe("Converter", func() {
 								In:       "query",
 								Required: false,
 								Schema: &openapi3.SchemaRef{
-									Value: &openapi3.Schema{Type: &openapi3.Types{"integer"}},
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"integer"},
+									},
 								},
 							},
 						},
@@ -427,7 +438,9 @@ var _ = Describe("Converter", func() {
 								In:       "header",
 								Required: false,
 								Schema: &openapi3.SchemaRef{
-									Value: &openapi3.Schema{Type: &openapi3.Types{"string"}},
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"string"},
+									},
 								},
 							},
 						},

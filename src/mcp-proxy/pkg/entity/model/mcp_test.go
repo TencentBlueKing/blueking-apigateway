@@ -90,14 +90,19 @@ var _ = Describe("MCP Models", func() {
 		})
 
 		Describe("IsStreamableHTTP", func() {
-			DescribeTable("returns correct streamable HTTP status",
+			DescribeTable(
+				"returns correct streamable HTTP status",
 				func(protocolType string, expected bool) {
 					server := &model.MCPServer{ProtocolType: protocolType}
 					Expect(server.IsStreamableHTTP()).To(Equal(expected))
 				},
 				Entry("empty protocol type", "", false),
 				Entry("SSE protocol type", constant.MCPServerProtocolTypeSSE, false),
-				Entry("Streamable HTTP protocol type", constant.MCPServerProtocolTypeStreamableHTTP, true),
+				Entry(
+					"Streamable HTTP protocol type",
+					constant.MCPServerProtocolTypeStreamableHTTP,
+					true,
+				),
 				Entry("unknown protocol type", "unknown", false),
 			)
 		})
@@ -250,7 +255,7 @@ var _ = Describe("MCP Models", func() {
 	Describe("ArrayString", func() {
 		Describe("Scan", func() {
 			DescribeTable("scans values correctly",
-				func(input interface{}, expected model.ArrayString, hasError bool) {
+				func(input any, expected model.ArrayString, hasError bool) {
 					var arr model.ArrayString
 					err := arr.Scan(input)
 					if hasError {

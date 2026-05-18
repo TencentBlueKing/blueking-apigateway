@@ -44,7 +44,7 @@ var _ = Describe("Stage", func() {
 		expiration := 5 * time.Minute
 
 		It("should return stage successfully", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return &model.Stage{}, nil
 			}
 			mockCache := memory.NewCache("mockCache", retrieveFunc, expiration, nil)
@@ -55,7 +55,7 @@ var _ = Describe("Stage", func() {
 		})
 
 		It("should return error when retrieval fails", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return false, errors.New("error here")
 			}
 			mockCache := memory.NewCache("mockCache", retrieveFunc, expiration, nil)

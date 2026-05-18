@@ -35,7 +35,7 @@ import (
 var _ = Describe("MCPServerPermission", func() {
 	Describe("MCPPermissionCacheKey", func() {
 		DescribeTable("should return correct key",
-			func(mcpServerID int, appCode string, expectedKey string) {
+			func(mcpServerID int, appCode, expectedKey string) {
 				key := cacheimpls.MCPPermissionCacheKey{MCPServerID: mcpServerID, AppCode: appCode}
 				Expect(key.Key()).To(Equal(expectedKey))
 			},
@@ -57,7 +57,7 @@ var _ = Describe("MCPServerPermission", func() {
 				Expires:     time.Now().Add(24 * time.Hour),
 			}
 
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return expectedPermission, nil
 			}
 			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
@@ -72,7 +72,7 @@ var _ = Describe("MCPServerPermission", func() {
 		})
 
 		It("should return error when record not found", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return nil, errors.New("record not found")
 			}
 			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
@@ -83,7 +83,7 @@ var _ = Describe("MCPServerPermission", func() {
 		})
 
 		It("should return error for invalid type", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return "invalid type", nil
 			}
 			mockCache := memory.NewCache("mockPermissionCache", retrieveFunc, expiration, nil)
@@ -91,7 +91,11 @@ var _ = Describe("MCPServerPermission", func() {
 
 			_, err := cacheimpls.GetMCPServerPermission(context.Background(), "test-app", 123)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("invalid cache value: expected *model.MCPServerAppPermission"))
+			Expect(
+				err.Error(),
+			).To(
+				ContainSubstring("invalid cache value: expected *model.MCPServerAppPermission"),
+			)
 		})
 	})
 })

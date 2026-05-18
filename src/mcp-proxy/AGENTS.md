@@ -125,11 +125,11 @@ bk-apigateway (generates X-Request-Id=abc, X-Bkapi-Request-ID=seg1)
 
 ## Code Conventions
 
-- **Go version**: 1.24.4 (from `go.mod`)
+- **Go version**: 1.25.5 (from `go.mod`)
 - **Module name**: `mcp_proxy`
 - **Max line length**: 120 characters
 - **Formatter chain**: golines -> gofumpt -> goimports-reviser (local prefix: `mcp_proxy`)
 - **Test framework**: Ginkgo v2 + Gomega (BDD style, `_suite_test.go` convention)
-- **Linter**: golangci-lint v2 with `.golangci.yaml` (errcheck disabled; revive + staticcheck enabled)
+- **Linter**: golangci-lint v2 with `.golangci.yaml` (25+ linters including errcheck, staticcheck, revive, gosec, forcetypeassert, govet, etc.)
 - **License header**: required for all `.go` files (except `vendor/` and `mock/`)
 - **Vendor mode**: use `-mod=vendor`; run `make dep` after changing dependencies

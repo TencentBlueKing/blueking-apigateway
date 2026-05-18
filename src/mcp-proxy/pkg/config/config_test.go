@@ -280,7 +280,11 @@ var _ = Describe("Config", func() {
 				func(tracing config.Tracing, expected bool) {
 					Expect(tracing.GinAPIEnabled()).To(Equal(expected))
 				},
-				Entry("both enabled", config.Tracing{Enable: true, Instrument: config.Instrument{GinAPI: true}}, true),
+				Entry(
+					"both enabled",
+					config.Tracing{Enable: true, Instrument: config.Instrument{GinAPI: true}},
+					true,
+				),
 				Entry(
 					"tracing disabled",
 					config.Tracing{Enable: false, Instrument: config.Instrument{GinAPI: true}},
@@ -305,7 +309,11 @@ var _ = Describe("Config", func() {
 				func(tracing config.Tracing, expected bool) {
 					Expect(tracing.DBAPIEnabled()).To(Equal(expected))
 				},
-				Entry("both enabled", config.Tracing{Enable: true, Instrument: config.Instrument{DbAPI: true}}, true),
+				Entry(
+					"both enabled",
+					config.Tracing{Enable: true, Instrument: config.Instrument{DbAPI: true}},
+					true,
+				),
 				Entry(
 					"tracing disabled",
 					config.Tracing{Enable: false, Instrument: config.Instrument{DbAPI: true}},
@@ -337,7 +345,7 @@ var _ = Describe("Config", func() {
 
 		It("should load valid config", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -362,11 +370,11 @@ var _ = Describe("Config", func() {
 
 		It("should fail with invalid TLS config", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
-					"tls": map[string]interface{}{"enabled": true, "certcafile": "/non/existent/ca.pem"},
+					"tls": map[string]any{"enabled": true, "certcafile": "/non/existent/ca.pem"},
 				},
 			})
 
@@ -376,7 +384,7 @@ var _ = Describe("Config", func() {
 
 		It("should set global config", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -391,7 +399,7 @@ var _ = Describe("Config", func() {
 
 		It("should create database map", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "primary", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb1",
@@ -429,7 +437,9 @@ var _ = Describe("Config", func() {
 				Buffered: true,
 				Desensitization: config.DesensitizationConfig{
 					Enabled: true,
-					Fields:  []config.DesensitizationFiled{{Key: "password", JsonPath: []string{"$.password"}}},
+					Fields: []config.DesensitizationFiled{
+						{Key: "password", JsonPath: []string{"$.password"}},
+					},
 				},
 			}
 			Expect(logConfig.Level).To(Equal("info"))
@@ -563,7 +573,7 @@ var _ = Describe("Config", func() {
 	Describe("Load defaults", func() {
 		It("should load bkAIDevTrace config from env when values are empty", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -591,7 +601,7 @@ var _ = Describe("Config", func() {
 
 		It("should override config file values with env vars for bkAIDevTrace", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -623,7 +633,7 @@ var _ = Describe("Config", func() {
 
 		It("should set Transport defaults", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -640,7 +650,7 @@ var _ = Describe("Config", func() {
 
 		It("should set LogTruncate defaults", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -659,7 +669,7 @@ var _ = Describe("Config", func() {
 
 		It("should set MaxConcurrentPrefetch default", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -674,7 +684,7 @@ var _ = Describe("Config", func() {
 
 		It("should preserve custom Transport values", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",
@@ -694,7 +704,7 @@ var _ = Describe("Config", func() {
 
 		It("should preserve custom LogTruncate values", func() {
 			v := viper.New()
-			v.Set("databases", []map[string]interface{}{
+			v.Set("databases", []map[string]any{
 				{
 					"id": "default", "host": "localhost", "port": 3306,
 					"user": "root", "password": "password", "name": "testdb",

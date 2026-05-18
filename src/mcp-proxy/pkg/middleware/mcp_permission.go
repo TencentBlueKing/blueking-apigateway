@@ -38,8 +38,14 @@ func MCPServerPermissionMiddleware() func(c *gin.Context) {
 		appCode := util.GetBkAppCode(c)
 		permission, err := cacheimpls.GetMCPServerPermission(c, appCode, id)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			util.ForbiddenJSONResponse(c,
-				fmt.Sprintf("appCode[%s] has no permission  to call mcp server[%s]", appCode, c.Param("name")))
+			util.ForbiddenJSONResponse(
+				c,
+				fmt.Sprintf(
+					"appCode[%s] has no permission  to call mcp server[%s]",
+					appCode,
+					c.Param("name"),
+				),
+			)
 			c.Abort()
 			return
 		}

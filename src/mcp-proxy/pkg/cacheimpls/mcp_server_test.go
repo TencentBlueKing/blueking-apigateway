@@ -35,7 +35,7 @@ import (
 var _ = Describe("MCPServer", func() {
 	Describe("MCPServerKey", func() {
 		DescribeTable("should return correct key",
-			func(name string, expectedKey string) {
+			func(name, expectedKey string) {
 				key := cacheimpls.MCPServerKey{Name: name}
 				Expect(key.Key()).To(Equal(expectedKey))
 			},
@@ -57,7 +57,7 @@ var _ = Describe("MCPServer", func() {
 				Status:    model.McpServerStatusActive,
 			}
 
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return expectedServer, nil
 			}
 			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
@@ -71,7 +71,7 @@ var _ = Describe("MCPServer", func() {
 		})
 
 		It("should return error when record not found", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return nil, errors.New("record not found")
 			}
 			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
@@ -82,7 +82,7 @@ var _ = Describe("MCPServer", func() {
 		})
 
 		It("should return error for invalid type", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return "invalid type", nil
 			}
 			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)
@@ -107,7 +107,7 @@ var _ = Describe("MCPServer", func() {
 			}
 
 			callCount := 0
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				callCount++
 				return expectedServer, nil
 			}
@@ -135,7 +135,7 @@ var _ = Describe("MCPServer", func() {
 		})
 
 		It("should not error when deleting non-existent cache", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return nil, errors.New("record not found")
 			}
 			mockCache := memory.NewCache("mockMCPServerCache", retrieveFunc, expiration, nil)

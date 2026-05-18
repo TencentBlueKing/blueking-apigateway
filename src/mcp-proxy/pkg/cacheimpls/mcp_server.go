@@ -38,8 +38,11 @@ func (k MCPServerKey) Key() string {
 	return k.Name
 }
 
-func retrieveMCPServerByName(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(MCPServerKey)
+func retrieveMCPServerByName(ctx context.Context, k cache.Key) (any, error) {
+	key, ok := k.(MCPServerKey)
+	if !ok {
+		return nil, errors.New("invalid cache key type for MCPServerKey")
+	}
 	r := repo.MCPServer
 	return repo.MCPServer.WithContext(ctx).Where(r.Name.Eq(key.Key())).Take()
 }
@@ -49,19 +52,19 @@ func GetMCPServerByName(ctx context.Context, name string) (mcp *model.MCPServer,
 	key := MCPServerKey{
 		Name: name,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, mcpServerCache, key)
 	if err != nil {
-		return
+		return mcp, err
 	}
 
 	var ok bool
 	mcp, ok = value.(*model.MCPServer)
 	if !ok {
 		err = errors.New("not model.mcp in cache")
-		return
+		return mcp, err
 	}
-	return
+	return mcp, err
 }
 
 // DeleteMCPServerCache will delete mcp server cache by name

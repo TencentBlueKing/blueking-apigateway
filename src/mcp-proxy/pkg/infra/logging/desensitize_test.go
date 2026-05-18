@@ -70,7 +70,7 @@ var _ = Describe("Desensitize", func() {
 				"body": {"data.#.bk_app_secret"},
 			}))
 
-			body := map[string]interface{}{
+			body := map[string]any{
 				"data": []struct {
 					BkAppSecret string `json:"bk_app_secret"`
 					BkAppCode   string `json:"bk_app_code"`

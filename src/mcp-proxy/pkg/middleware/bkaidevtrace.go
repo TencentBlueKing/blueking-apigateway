@@ -61,7 +61,7 @@ func (h headerCarrier) Get(key string) string {
 }
 
 // Set stores the key-value pair.
-func (h headerCarrier) Set(key string, value string) {
+func (h headerCarrier) Set(key, value string) {
 	http.Header(h).Set(key, value)
 }
 

@@ -176,7 +176,12 @@ var _ = Describe("Application Mode Routes", func() {
 
 	Describe("Streamable HTTP Application Mode", func() {
 		It("should initialize via Streamable HTTP application route", func() {
-			session, err := connectStreamableHTTPApplication(ctx, client.BaseURL, "test-http-server", jwtToken)
+			session, err := connectStreamableHTTPApplication(
+				ctx,
+				client.BaseURL,
+				"test-http-server",
+				jwtToken,
+			)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -185,7 +190,12 @@ var _ = Describe("Application Mode Routes", func() {
 		})
 
 		It("should list tools via Streamable HTTP application route", func() {
-			session, err := connectStreamableHTTPApplication(ctx, client.BaseURL, "test-http-server", jwtToken)
+			session, err := connectStreamableHTTPApplication(
+				ctx,
+				client.BaseURL,
+				"test-http-server",
+				jwtToken,
+			)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -203,7 +213,12 @@ var _ = Describe("Application Mode Routes", func() {
 		})
 
 		It("should call tool via Streamable HTTP application route", func() {
-			session, err := connectStreamableHTTPApplication(ctx, client.BaseURL, "test-http-server", jwtToken)
+			session, err := connectStreamableHTTPApplication(
+				ctx,
+				client.BaseURL,
+				"test-http-server",
+				jwtToken,
+			)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 
@@ -219,7 +234,12 @@ var _ = Describe("Application Mode Routes", func() {
 		})
 
 		It("should list prompts via Streamable HTTP application route", func() {
-			session, err := connectStreamableHTTPApplication(ctx, client.BaseURL, "test-http-server", jwtToken)
+			session, err := connectStreamableHTTPApplication(
+				ctx,
+				client.BaseURL,
+				"test-http-server",
+				jwtToken,
+			)
 			Expect(err).NotTo(HaveOccurred())
 			defer session.Close()
 

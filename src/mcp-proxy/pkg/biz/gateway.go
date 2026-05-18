@@ -28,13 +28,13 @@ import (
 )
 
 // GetRelease ...
-func GetRelease(ctx context.Context, gatewayID int, stageID int) (*model.Release, error) {
+func GetRelease(ctx context.Context, gatewayID, stageID int) (*model.Release, error) {
 	r := repo.Release
 	return repo.Release.WithContext(ctx).Where(r.GatewayID.Eq(gatewayID), r.StageID.Eq(stageID)).First()
 }
 
 // GetOpenapiGatewayResourceVersionSpec ...
-func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID int, resourceVersionID int) (
+func GetOpenapiGatewayResourceVersionSpec(ctx context.Context, gatewayID, resourceVersionID int) (
 	*model.OpenapiGatewayResourceVersionSpec, error,
 ) {
 	r := repo.OpenapiGatewayResourceVersionSpec

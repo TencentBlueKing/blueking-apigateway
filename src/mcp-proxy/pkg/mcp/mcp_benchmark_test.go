@@ -338,7 +338,8 @@ func BenchmarkFullLoadCycle(b *testing.B) {
 				p.Run(ctx)
 
 				// Build results simulating:
-				// - first half: new servers to add (won't hit prompts because conf has no openapiFileData)
+				// - first half: new servers to add (won't hit prompts because conf has no
+				// openapiFileData)
 				// - second half: errors
 				results := make([]*mcppkg.ServerLoadResult, totalServers)
 				half := totalServers / 2
@@ -395,7 +396,15 @@ func BenchmarkAddMultipleServers(b *testing.B) {
 				p := proxy.NewMCPProxy("", "")
 				for j := 0; j < numServers; j++ {
 					_ = p.AddMCPServerFromOpenAPISpec(
-						fmt.Sprintf("server_%d", j), 1, spec, ops, nil, constant.MCPServerProtocolTypeSSE,
+						fmt.Sprintf(
+							"server_%d",
+							j,
+						),
+						1,
+						spec,
+						ops,
+						nil,
+						constant.MCPServerProtocolTypeSSE,
 						false,
 					)
 				}
@@ -440,7 +449,10 @@ func BenchmarkRegisterPrompts(b *testing.B) {
 				prompts[i] = &proxy.PromptConfig{
 					Name:        fmt.Sprintf("prompt_%d", i),
 					Description: fmt.Sprintf("Benchmark prompt %d", i),
-					Content:     fmt.Sprintf("This is the content for prompt %d used in benchmarking", i),
+					Content: fmt.Sprintf(
+						"This is the content for prompt %d used in benchmarking",
+						i,
+					),
 				}
 			}
 

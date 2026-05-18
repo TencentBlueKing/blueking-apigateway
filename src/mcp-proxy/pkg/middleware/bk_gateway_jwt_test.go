@@ -252,8 +252,16 @@ var _ = Describe("BkGatewayJWT", func() {
 			Expect(middleware.ErrExpired.Error()).To(Equal("jwtauth: token is expired"))
 			Expect(middleware.ErrNBFInvalid.Error()).To(Equal("jwtauth: token nbf validation failed"))
 			Expect(middleware.ErrIATInvalid.Error()).To(Equal("jwtauth: token iat validation failed"))
-			Expect(middleware.ErrAPIGatewayJWTAppInfoNoAppCode.Error()).To(Equal("app_code not in app info"))
-			Expect(middleware.ErrAPIGatewayJWTUserInfoNoUsername.Error()).To(Equal("username not in user info"))
+			Expect(
+				middleware.ErrAPIGatewayJWTAppInfoNoAppCode.Error(),
+			).To(
+				Equal("app_code not in app info"),
+			)
+			Expect(
+				middleware.ErrAPIGatewayJWTUserInfoNoUsername.Error(),
+			).To(
+				Equal("username not in user info"),
+			)
 			Expect(middleware.ErrAPIGatewayJWTAppNotVerified.Error()).To(Equal("app not verified"))
 			Expect(middleware.ErrAPIGatewayJWTUserNotVerified.Error()).To(Equal("user not verified"))
 		})

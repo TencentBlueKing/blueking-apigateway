@@ -39,8 +39,11 @@ func (k StageKey) Key() string {
 	return cast.ToString(k.ID)
 }
 
-func retrieveStageByID(ctx context.Context, k cache.Key) (interface{}, error) {
-	key := k.(StageKey)
+func retrieveStageByID(ctx context.Context, k cache.Key) (any, error) {
+	key, ok := k.(StageKey)
+	if !ok {
+		return nil, errors.New("invalid cache key type for StageKey")
+	}
 	r := repo.Stage
 	return repo.Stage.WithContext(ctx).Where(r.ID.Eq(key.ID)).Take()
 }
@@ -50,17 +53,17 @@ func GetStageByID(ctx context.Context, id int) (stage *model.Stage, err error) {
 	key := StageKey{
 		ID: id,
 	}
-	var value interface{}
+	var value any
 	value, err = cacheGet(ctx, stageCache, key)
 	if err != nil {
-		return
+		return stage, err
 	}
 
 	var ok bool
 	stage, ok = value.(*model.Stage)
 	if !ok {
 		err = errors.New("not model.Stage in cache")
-		return
+		return stage, err
 	}
-	return
+	return stage, err
 }

@@ -56,7 +56,7 @@ var _ = Describe("MCPServerPrompt", func() {
 				Content:     `[{"id":1,"name":"test-prompt","code":"test","content":"Hello World"}]`,
 			}
 
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return expectedExtend, nil
 			}
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
@@ -74,7 +74,7 @@ var _ = Describe("MCPServerPrompt", func() {
 		})
 
 		It("should return error when record not found", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return nil, errors.New("record not found")
 			}
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)
@@ -89,7 +89,7 @@ var _ = Describe("MCPServerPrompt", func() {
 		})
 
 		It("should return error for invalid type", func() {
-			retrieveFunc := func(ctx context.Context, key cache.Key) (interface{}, error) {
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
 				return "invalid type", nil
 			}
 			mockCache := memory.NewCache("mockMCPServerPromptCache", retrieveFunc, expiration, nil)

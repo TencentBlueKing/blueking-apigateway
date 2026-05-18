@@ -488,7 +488,8 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should return raw API response directly when rawResponseEnabled is enabled", func() {
-			// When rawResponseEnabled is true, the response result is the raw API response (not wrapped in envelope)
+			// When rawResponseEnabled is true, the response result is the raw API response (not wrapped in
+			// envelope)
 			rawBody := map[string]any{
 				"timezone": "Asia/Shanghai",
 				"datetime": "2026-03-19T15:04:05+08:00",
@@ -701,7 +702,7 @@ var _ = Describe("MCPProxy", func() {
 			Expect(spans).To(HaveLen(1))
 			Expect(spans[0].Name).To(Equal("mcp_gw.test-server.tools/call"))
 
-			attrMap := make(map[string]interface{})
+			attrMap := make(map[string]any)
 			for _, attr := range spans[0].Attributes {
 				attrMap[string(attr.Key)] = attr.Value.AsInterface()
 			}
@@ -818,7 +819,12 @@ var _ = Describe("MCPProxy", func() {
 
 			// Verify traceparent header was NOT injected
 			traceparent := capturedHeaders.Get("Traceparent")
-			Expect(traceparent).To(BeEmpty(), "traceparent header should NOT be injected when tracing is disabled")
+			Expect(
+				traceparent,
+			).To(
+				BeEmpty(),
+				"traceparent header should NOT be injected when tracing is disabled",
+			)
 		})
 
 		It("should NOT inject traceparent when McpAPI is false but tracing is enabled", func() {
@@ -917,7 +923,7 @@ var _ = Describe("MCPProxy", func() {
 			span := spans[0]
 			Expect(span.Name).To(Equal("mcp.upstream_http"))
 
-			attrMap := make(map[string]interface{})
+			attrMap := make(map[string]any)
 			for _, attr := range span.Attributes {
 				attrMap[string(attr.Key)] = attr.Value.AsInterface()
 			}
@@ -972,7 +978,7 @@ var _ = Describe("MCPProxy", func() {
 			spans := exporter.GetSpans()
 			Expect(spans).To(HaveLen(1))
 
-			attrMap := make(map[string]interface{})
+			attrMap := make(map[string]any)
 			for _, attr := range spans[0].Attributes {
 				attrMap[string(attr.Key)] = attr.Value.AsInterface()
 			}

@@ -26,9 +26,8 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	mrand "math/rand"
+	mathrand "math/rand/v2"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -149,26 +148,33 @@ func NewSpanContext() tc.SpanContext {
 	var spanID tc.SpanID
 
 	// Try crypto/rand first for both traceID and spanID.
-	// If crypto/rand fails (extremely rare), fallback to a single math/rand instance
-	// to avoid seed collision when two separate instances are created with the same
-	// time-based seed under high concurrency.
+	// If crypto/rand fails (extremely rare), fallback to math/rand/v2 which
+	// uses a properly seeded global source without collision risk.
 	traceOK := true
+	spanOK := true
 	if _, err := rand.Read(traceID[:]); err != nil {
 		traceOK = false
 	}
 	if _, err := rand.Read(spanID[:]); err != nil {
-		if traceOK {
-			// Only traceID succeeded via crypto/rand; generate spanID with math/rand
-			r := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-			binary.BigEndian.PutUint64(spanID[:], uint64(r.Int63()))
-		}
+		spanOK = false
 	}
 	if !traceOK {
-		// crypto/rand failed for traceID; use a single math/rand instance for both
-		r := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-		binary.BigEndian.PutUint64(traceID[:8], uint64(r.Int63()))
-		binary.BigEndian.PutUint64(traceID[8:], uint64(r.Int63()))
-		binary.BigEndian.PutUint64(spanID[:], uint64(r.Int63()))
+		// crypto/rand failed for traceID; use math/rand/v2 fallback
+		binary.BigEndian.PutUint64(
+			traceID[:8],
+			mathrand.Uint64(), //nolint:gosec // fallback when crypto/rand fails
+		)
+		binary.BigEndian.PutUint64(
+			traceID[8:],
+			mathrand.Uint64(), //nolint:gosec // fallback when crypto/rand fails
+		)
+	}
+	if !spanOK {
+		// crypto/rand failed for spanID; use math/rand/v2 fallback
+		binary.BigEndian.PutUint64(
+			spanID[:],
+			mathrand.Uint64(), //nolint:gosec // fallback when crypto/rand fails
+		)
 	}
 
 	return tc.NewSpanContext(tc.SpanContextConfig{

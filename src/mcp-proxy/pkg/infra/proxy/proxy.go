@@ -23,9 +23,11 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -216,7 +218,7 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 		server := mcp.NewServer(&mcp.Implementation{
 			Name:    config.Name,
 			Title:   config.Title,
-			Version: fmt.Sprintf("%d", config.ResourceVersionID),
+			Version: strconv.Itoa(config.ResourceVersionID),
 		}, nil)
 
 		if config.ProtocolType == constant.MCPServerProtocolTypeStreamableHTTP {
@@ -234,7 +236,13 @@ func (m *MCPProxy) AddMCPServerFromConfigs(configs []*MCPServerConfig) error {
 			sseHandler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 				return server
 			}, nil)
-			mcpServer = NewMCPServer(server, sseHandler, config.Name, config.ResourceVersionID, config.RawResponseEnabled)
+			mcpServer = NewMCPServer(
+				server,
+				sseHandler,
+				config.Name,
+				config.ResourceVersionID,
+				config.RawResponseEnabled,
+			)
 		}
 
 		// register tool
@@ -317,7 +325,10 @@ func (m *MCPProxy) sseHandlerWithPrefix(publicPathPrefix string) gin.HandlerFunc
 		}
 		handler := mcpServer.HandleSSE()
 		if handler == nil {
-			util.BadRequestErrorJSONResponse(c, fmt.Sprintf("mcp server %s does not support SSE protocol", name))
+			util.BadRequestErrorJSONResponse(
+				c,
+				fmt.Sprintf("mcp server %s does not support SSE protocol", name),
+			)
 			return
 		}
 		req := util.RequestWithPublicPathPrefix(c.Request, publicPathPrefix)
@@ -631,7 +642,7 @@ func setupToolCallSpan(
 	if config.G == nil || !config.G.Tracing.McpAPIEnabled() {
 		return ctx, nil
 	}
-	ctx, span := trace.StartTrace(ctx, fmt.Sprintf("mcp.tool.%s", toolName))
+	ctx, span := trace.StartTrace(ctx, "mcp.tool."+toolName)
 	if span != nil {
 		span.SetAttributes(
 			attribute.String("mcp.tool_name", toolName),
@@ -797,7 +808,8 @@ func handleToolCallError(
 		IsError: true,
 	}
 
-	if _, ok := err.(*runtime.APIError); !ok {
+	var apiErr *runtime.APIError
+	if !errors.As(err, &apiErr) {
 		// For non-APIError, append trace_id to the error message for traceability
 		if traceID := trace.GetTraceIDFromContext(ctx); traceID != "" {
 			msg = fmt.Sprintf("%s (trace_id=%s)", msg, traceID)
@@ -884,9 +896,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditStatus        = "success"
 			auditUpstreamReqID string
 			auditHeaderInfo    map[string]string
-			auditQueryParam    map[string]interface{}
-			auditPathParam     map[string]interface{}
-			auditBodyParam     interface{}
+			auditQueryParam    map[string]any
+			auditPathParam     map[string]any
+			auditBodyParam     any
 		)
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段
@@ -895,7 +907,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				auditStatus = "failed"
 			}
 			// 记录完整的调用信息（合并了之前的 "call tool" 和 "call tool request params" 日志）
-			auditLog.Info("call tool complete",
+			auditLog.Info(
+				"call tool complete",
 				zap.String("request", requestBody),
 				zap.String("params", requestBody),
 				zap.String("response", auditResponse),
@@ -907,13 +920,20 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				zap.Any("header", util.MaskSensitiveHeaders(auditHeaderInfo)),
 				zap.Any("query", auditQueryParam),
 				zap.Any("path", auditPathParam),
-				zap.String("body", util.TruncateJSON(auditBodyParam, logTruncate.GetAuditLogMaxBodySize())),
+				zap.String(
+					"body",
+					util.TruncateJSON(auditBodyParam, logTruncate.GetAuditLogMaxBodySize()),
+				),
 			)
 		}()
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
 		if err != nil {
-			auditLog.Error("marshal arguments err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
+			auditLog.Error(
+				"marshal arguments err",
+				zap.Any("arguments", req.Params.Arguments),
+				zap.Error(err),
+			)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		err = json.Unmarshal(argsBytes, &handlerRequest)
@@ -926,49 +946,68 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		client := buildToolCallClient(ctx, toolApiConfig, appCode, username, requestID, xRequestID)
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
-		requestParam := runtime.ClientRequestWriterFunc(func(req runtime.ClientRequest, _ strfmt.Registry) error {
-			// 设置timeout
-			_ = req.SetTimeout(timeout)
-			// 设置innerJwt
-			innerJwtConfig := map[string]string{
-				"inner_jwt": innerJwt,
-			}
-			innerJwtHeaderValue, _ := json.Marshal(innerJwtConfig)
-			headerInfo[constant.BkApiAuthorizationHeaderKey] = string(innerJwtHeaderValue)
-			err = req.SetHeaderParam(constant.BkApiAuthorizationHeaderKey, string(innerJwtHeaderValue))
-			if err != nil {
-				auditLog.Error("set header param err",
-					zap.String(constant.BkApiAuthorizationHeaderKey, innerJwt), zap.Error(err))
-				return err
-			}
-			// 设置request id
-			if requestID != "" {
-				headerInfo[constant.BkGatewayRequestIDKey] = requestID
-				_ = req.SetHeaderParam(constant.BkGatewayRequestIDKey, requestID)
-			}
-			// 透传全链路 X-Request-Id
-			if xRequestID != "" {
-				headerInfo[constant.RequestIDHeaderKey] = xRequestID
-				_ = req.SetHeaderParam(constant.RequestIDHeaderKey, xRequestID)
-			}
+		requestParam := runtime.ClientRequestWriterFunc(
+			func(req runtime.ClientRequest, _ strfmt.Registry) error {
+				// 设置timeout
+				_ = req.SetTimeout(timeout)
+				// 设置innerJwt
+				innerJwtConfig := map[string]string{
+					"inner_jwt": innerJwt,
+				}
+				innerJwtHeaderValue, err := json.Marshal(innerJwtConfig)
+				if err != nil {
+					return err
+				}
+				headerInfo[constant.BkApiAuthorizationHeaderKey] = string(innerJwtHeaderValue)
+				err = req.SetHeaderParam(
+					constant.BkApiAuthorizationHeaderKey,
+					string(innerJwtHeaderValue),
+				)
+				if err != nil {
+					auditLog.Error(
+						"set header param err",
+						zap.String(
+							constant.BkApiAuthorizationHeaderKey,
+							innerJwt,
+						),
+						zap.Error(err),
+					)
+					return err
+				}
+				// 设置request id
+				if requestID != "" {
+					headerInfo[constant.BkGatewayRequestIDKey] = requestID
+					_ = req.SetHeaderParam(constant.BkGatewayRequestIDKey, requestID)
+				}
+				// 透传全链路 X-Request-Id
+				if xRequestID != "" {
+					headerInfo[constant.RequestIDHeaderKey] = xRequestID
+					_ = req.SetHeaderParam(constant.RequestIDHeaderKey, xRequestID)
+				}
 
-			// 设置header
-			headers := util.GetBkApiAllowedHeaders(ctx)
-			for key, value := range headers {
-				_ = req.SetHeaderParam(key, value)
-				headerInfo[key] = value
-			}
-			// 如果没有单独设置 Content-Type，则默认设置为 application/json
-			if _, ok := headers["Content-Type"]; !ok {
-				headerInfo["Content-Type"] = "application/json"
-				_ = req.SetHeaderParam("Content-Type", "application/json")
-			}
+				// 设置header
+				headers := util.GetBkApiAllowedHeaders(ctx)
+				for key, value := range headers {
+					_ = req.SetHeaderParam(key, value)
+					headerInfo[key] = value
+				}
+				// 如果没有单独设置 Content-Type，则默认设置为 application/json
+				if _, ok := headers["Content-Type"]; !ok {
+					headerInfo["Content-Type"] = "application/json"
+					_ = req.SetHeaderParam("Content-Type", "application/json")
+				}
 
-			if err = setHandlerRequestParams(req, &handlerRequest, headerInfo, auditLog); err != nil {
-				return err
-			}
-			return nil
-		})
+				if err = setHandlerRequestParams(
+					req,
+					&handlerRequest,
+					headerInfo,
+					auditLog,
+				); err != nil {
+					return err
+				}
+				return nil
+			},
+		)
 		operation := &runtime.ClientOperation{
 			ID:          toolApiConfig.Name,
 			Method:      toolApiConfig.Method,
@@ -979,7 +1018,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			Reader: runtime.ClientResponseReaderFunc(
 				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 					if response.Body() != nil {
-						defer response.Body().Close()
+						defer func() { _ = response.Body().Close() }()
 					}
 
 					var res any
@@ -1017,7 +1056,11 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						)
 					}
 					if response.Code() < 200 || response.Code() > 299 {
-						return nil, runtime.NewAPIError("call tool err", responseResult, response.Code())
+						return nil, runtime.NewAPIError(
+							"call tool err",
+							responseResult,
+							response.Code(),
+						)
 					}
 					return responseResult, nil
 				},
@@ -1088,7 +1131,14 @@ func recordToolCallMetrics(
 	}
 
 	// Record metrics
-	metric.MCPRequestTotal.WithLabelValues(gatewayName, serverName, "tools/call", appCode, errorCode, errorLabel).Inc()
+	metric.MCPRequestTotal.WithLabelValues(
+		gatewayName,
+		serverName,
+		"tools/call",
+		appCode,
+		errorCode,
+		errorLabel,
+	).Inc()
 	metric.MCPToolCallTotal.WithLabelValues(gatewayName, serverName, toolName, appCode, errorCode, errorLabel).Inc()
 	metric.MCPRequestDuration.WithLabelValues(gatewayName, serverName, "tools/call", appCode).
 		Observe(duration.Seconds() * 1000)
@@ -1363,7 +1413,10 @@ func extractUpstreamRequestID(result *mcp.CallToolResult) string {
 	logging.GetLogger().Debug("extractUpstreamRequestID: envelope keys", zap.Any("keys", getMapKeys(envelope)))
 
 	if requestID, ok := envelope[toolResponseRequestIDField].(string); ok {
-		logging.GetLogger().Debug("extractUpstreamRequestID: found request_id", zap.String("request_id", requestID))
+		logging.GetLogger().Debug(
+			"extractUpstreamRequestID: found request_id",
+			zap.String("request_id", requestID),
+		)
 		return requestID
 	}
 	logging.GetLogger().Debug("extractUpstreamRequestID: request_id not found or not a string")
