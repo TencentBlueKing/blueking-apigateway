@@ -62,7 +62,6 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 	// healthz
 	router.GET("/healthz", func(c *gin.Context) {
 		for _, dbConfig := range cfg.DatabaseMap {
-			dbConfig := dbConfig
 			// reset the options for check
 			dbConfig.MaxIdleConns = 1
 			dbConfig.MaxOpenConns = 1
@@ -83,7 +82,9 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 		pprof.RouteRegister(pprofGroup, "")
 		logging.GetLogger().Infof("pprof enabled with basic auth at /debug/pprof")
 	} else {
-		logging.GetLogger().Warnf("pprof disabled: PPROF_USERNAME and PPROF_PASSWORD environment variables not set")
+		logging.GetLogger().Warnf(
+			"pprof disabled: PPROF_USERNAME and PPROF_PASSWORD environment variables not set",
+		)
 	}
 
 	// metrics

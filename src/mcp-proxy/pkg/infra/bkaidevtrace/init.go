@@ -26,7 +26,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	mrand "math/rand"
 	"sync"
 	"time"
 
@@ -158,17 +157,16 @@ func NewSpanContext() tc.SpanContext {
 	}
 	if _, err := rand.Read(spanID[:]); err != nil {
 		if traceOK {
-			// Only traceID succeeded via crypto/rand; generate spanID with math/rand
-			r := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-			binary.BigEndian.PutUint64(spanID[:], uint64(r.Int63()))
+			// Only traceID succeeded via crypto/rand; generate spanID with fallback
+			binary.BigEndian.PutUint64(spanID[:], uint64(time.Now().UnixNano()))
 		}
 	}
 	if !traceOK {
-		// crypto/rand failed for traceID; use a single math/rand instance for both
-		r := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-		binary.BigEndian.PutUint64(traceID[:8], uint64(r.Int63()))
-		binary.BigEndian.PutUint64(traceID[8:], uint64(r.Int63()))
-		binary.BigEndian.PutUint64(spanID[:], uint64(r.Int63()))
+		// crypto/rand failed for traceID; use time-based fallback for both
+		now := time.Now().UnixNano()
+		binary.BigEndian.PutUint64(traceID[:8], uint64(now))
+		binary.BigEndian.PutUint64(traceID[8:], uint64(now^0x5DEECE66D))
+		binary.BigEndian.PutUint64(spanID[:], uint64(now^0xB))
 	}
 
 	return tc.NewSpanContext(tc.SpanContextConfig{

@@ -68,7 +68,7 @@ func Flush(timeout time.Duration) {
 }
 
 // ReportToSentry reports an error event to sentry with tags, extra data and fingerprint.
-func ReportToSentry(message string, tags map[string]string, extra map[string]interface{}) {
+func ReportToSentry(message string, tags map[string]string, extra map[string]any) {
 	if !enabled.Load() {
 		return
 	}

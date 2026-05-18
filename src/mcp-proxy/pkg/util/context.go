@@ -21,7 +21,7 @@ package util
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,7 +52,11 @@ func GetBkAppCode(c *gin.Context) string {
 	if !ok {
 		return ""
 	}
-	return appCode.(string)
+	s, ok := appCode.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
 
 // GetAppCode is an alias for GetBkAppCode
@@ -99,7 +103,9 @@ func SetInnerJWTToken(c *gin.Context, jwtToken string) {
 func SetMCPServerID(c *gin.Context, mcpServerID int) {
 	c.Set(string(constant.MCPServerID), mcpServerID)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.MCPServerID, mcpServerID))
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), constant.MCPServerID, mcpServerID),
+		)
 	}
 }
 
@@ -107,7 +113,9 @@ func SetMCPServerID(c *gin.Context, mcpServerID int) {
 func SetMCPServerName(c *gin.Context, mcpServerName string) {
 	c.Set(string(constant.MCPServerName), mcpServerName)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.MCPServerName, mcpServerName))
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), constant.MCPServerName, mcpServerName),
+		)
 	}
 }
 
@@ -117,7 +125,11 @@ func GetMCPServerName(c *gin.Context) string {
 	if !ok {
 		return ""
 	}
-	return mcpServerName.(string)
+	s, ok := mcpServerName.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
 
 // GetMCPServerID ...
@@ -126,7 +138,11 @@ func GetMCPServerID(c *gin.Context) int {
 	if !ok {
 		return 0
 	}
-	return mcpServerID.(int)
+	id, ok := mcpServerID.(int)
+	if !ok {
+		return 0
+	}
+	return id
 }
 
 // GetMCPServerIDFromContext gets MCP server ID from context
@@ -151,14 +167,20 @@ func GetGatewayID(c *gin.Context) int {
 	if !ok {
 		return 0
 	}
-	return mcpServerID.(int)
+	id, ok := mcpServerID.(int)
+	if !ok {
+		return 0
+	}
+	return id
 }
 
 // SetGatewayName sets the gateway name to both gin context and request context.
 func SetGatewayName(c *gin.Context, gatewayName string) {
 	c.Set(string(constant.GatewayName), gatewayName)
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.GatewayName, gatewayName))
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), constant.GatewayName, gatewayName),
+		)
 	}
 }
 
@@ -168,7 +190,11 @@ func GetGatewayName(c *gin.Context) string {
 	if !ok {
 		return ""
 	}
-	return gatewayName.(string)
+	s, ok := gatewayName.(string)
+	if !ok {
+		return ""
+	}
+	return s
 }
 
 // GetGatewayNameFromContext retrieves the gateway name from context.
@@ -270,7 +296,7 @@ func GetBkApiTimeout(ctx context.Context) time.Duration {
 // SetBkApiAllowedHeaders ... 设置允许的请求头
 func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 	allowedHeadersMap := make(map[string]string)
-	for _, header := range strings.Split(allowedHeaders, ",") {
+	for header := range strings.SplitSeq(allowedHeaders, ",") {
 		header = strings.TrimSpace(header)
 		if header == "" {
 			continue
@@ -278,7 +304,7 @@ func SetBkApiAllowedHeaders(c *gin.Context, allowedHeaders string) {
 		allowedHeadersMap[header] = c.Request.Header.Get(header)
 	}
 	// 默认添加 mcp-server 相关请求头
-	allowedHeadersMap[constant.BkApiMCPServerIDKey] = fmt.Sprintf("%d", GetMCPServerID(c))
+	allowedHeadersMap[constant.BkApiMCPServerIDKey] = strconv.Itoa(GetMCPServerID(c))
 	allowedHeadersMap[constant.BkApiMCPServerNameKey] = GetMCPServerName(c)
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiAllowedHeaders,
 		allowedHeadersMap))
@@ -308,7 +334,9 @@ type ItsmFlexData struct {
 // SetBkApiItsmFlexData stores the parsed ItsmFlex data into context.
 func SetBkApiItsmFlexData(c *gin.Context, data *ItsmFlexData) {
 	if c.Request != nil {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), constant.BkApiItsmFlexData, data))
+		c.Request = c.Request.WithContext(
+			context.WithValue(c.Request.Context(), constant.BkApiItsmFlexData, data),
+		)
 	}
 }
 

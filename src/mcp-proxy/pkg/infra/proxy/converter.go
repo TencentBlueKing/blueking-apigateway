@@ -105,26 +105,44 @@ func OpenapiToMcpToolConfig(
 						var jsonSchema jsonschema.Schema
 						_ = jsonSchema.UnmarshalJSON(marshalJSON)
 						if param.Value.In == "header" {
-							headerParamSchema.WithPropertiesItem(param.Value.Name, jsonschema.SchemaOrBool{
-								TypeObject: &jsonSchema,
-							})
+							headerParamSchema.WithPropertiesItem(
+								param.Value.Name,
+								jsonschema.SchemaOrBool{
+									TypeObject: &jsonSchema,
+								},
+							)
 							if param.Value.Required {
-								headerParamSchema.Required = append(headerParamSchema.Required, param.Value.Name)
+								headerParamSchema.Required = append(
+									headerParamSchema.Required,
+									param.Value.Name,
+								)
 							}
 						}
 						if param.Value.In == "query" {
-							queryParamSchema.WithPropertiesItem(param.Value.Name, jsonschema.SchemaOrBool{
-								TypeObject: &jsonSchema,
-							})
+							queryParamSchema.WithPropertiesItem(
+								param.Value.Name,
+								jsonschema.SchemaOrBool{
+									TypeObject: &jsonSchema,
+								},
+							)
 							if param.Value.Required {
-								queryParamSchema.Required = append(queryParamSchema.Required, param.Value.Name)
+								queryParamSchema.Required = append(
+									queryParamSchema.Required,
+									param.Value.Name,
+								)
 							}
 						}
 						if param.Value.In == "path" {
-							pathParamSchema.Required = append(pathParamSchema.Required, param.Value.Name)
-							pathParamSchema.WithPropertiesItem(param.Value.Name, jsonschema.SchemaOrBool{
-								TypeObject: &jsonSchema,
-							})
+							pathParamSchema.Required = append(
+								pathParamSchema.Required,
+								param.Value.Name,
+							)
+							pathParamSchema.WithPropertiesItem(
+								param.Value.Name,
+								jsonschema.SchemaOrBool{
+									TypeObject: &jsonSchema,
+								},
+							)
 						}
 					}
 				}
@@ -161,7 +179,8 @@ func OpenapiToMcpToolConfig(
 			}
 
 			if operation.RequestBody != nil && operation.RequestBody.Value != nil {
-				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok && content != nil {
+				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok &&
+					content != nil {
 					schema := content.Schema
 					marshalJSON, _ := schema.MarshalJSON()
 					var jsonSchema jsonschema.Schema

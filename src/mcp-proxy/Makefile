@@ -8,7 +8,7 @@ DOCKER_COMPOSE := $(shell if docker compose version >/dev/null 2>&1; then echo "
 .PHONY: init
 init: install-ginkgo
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) v2.1.6
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCALBIN) v2.11.0
 	# for make mock
 	GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen@v1.6.0
 	# for gofumpt

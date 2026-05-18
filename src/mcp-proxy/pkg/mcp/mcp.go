@@ -83,9 +83,14 @@ func (m *MCP) Run(ctx context.Context) *proxy.MCPProxy {
 						err, time.Since(reloadStart))
 					continue
 				}
-				logging.GetLogger().Infof("reload mcp server success, duration=%s", time.Since(reloadStart))
+				logging.GetLogger().Infof(
+					"reload mcp server success, duration=%s",
+					time.Since(reloadStart),
+				)
 			case <-ctx.Done():
-				logging.GetLogger().Info("mcp server reload goroutine stopped due to context cancellation")
+				logging.GetLogger().Info(
+					"mcp server reload goroutine stopped due to context cancellation",
+				)
 				return // ✅ 响应 context 取消，正确退出
 			}
 		}
@@ -144,8 +149,14 @@ func LoadMCPServer(ctx context.Context, mcpProxy *proxy.MCPProxy) error {
 
 	logging.GetLogger().Infof(
 		"load mcp server complete: total=%d, added=%d, updated=%d, skipped=%d, deleted=%d, error=%d, duration=%s",
-		len(servers), stats.addedCount, stats.updatedCount, stats.skippedCount,
-		deletedCount, stats.errorCount, time.Since(loadStart))
+		len(servers),
+		stats.addedCount,
+		stats.updatedCount,
+		stats.skippedCount,
+		deletedCount,
+		stats.errorCount,
+		time.Since(loadStart),
+	)
 	return nil
 }
 
@@ -457,7 +468,7 @@ func GetMCPServerConfigWithRelease(
 		return nil, err
 	}
 	// 渲染openapi文件的server信息
-	endpoint := fmt.Sprintf("%s/{stage}", strings.TrimSuffix(config.G.McpServer.BkApiUrlTmpl, "/"))
+	endpoint := strings.TrimSuffix(config.G.McpServer.BkApiUrlTmpl, "/") + "/{stage}"
 	gateway, err := cacheimpls.GetGatewayByID(ctx, server.GatewayID)
 	if err != nil {
 		logging.GetLogger().Errorf("get gateway[id:%d] error: %v", server.GatewayID, err)
