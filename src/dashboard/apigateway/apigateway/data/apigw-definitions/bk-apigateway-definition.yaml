@@ -116,14 +116,12 @@ grant_permissions:
     grant_dimension: "resource"
     resource_names:
       - get_apigw_public_key
-      - v2_open_get_gateway_public_key_legacy
       - v2_open_get_gateway_public_key
   # visual-layout
   - bk_app_code: visual-layout
     grant_dimension: "resource"
     resource_names:
       - get_apigw_public_key
-      - v2_open_get_gateway_public_key_legacy
       - v2_open_get_gateway_public_key
   # bk_auth
   - bk_app_code: bk_auth

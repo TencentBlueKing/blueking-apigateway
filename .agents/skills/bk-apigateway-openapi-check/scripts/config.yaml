@@ -1,0 +1,21 @@
+# API 一致性检查工具配置
+# 修改此文件而非脚本代码来调整特殊规则
+
+# 后端为非 dashboard 服务的 backend 名称，这些路由不检查代码一致性
+skip_backends:
+  - core-api
+  - mcp-proxy
+
+# 已知特殊 case（operationId），跳过所有检查
+# 这些 API 因架构特殊性（如 OAuth、公钥接口）不适用常规检查
+known_special_cases:
+  - v2_open_get_gateway_public_key
+  - v2_open_get_gateway_public_key_new
+  - v2_open_oauth_protected_resource
+
+# 分页参数名称，DRF 分页器自动处理，不需要在 Serializer 中声明
+pagination_params:
+  - limit
+  - offset
+  - page
+  - page_size
