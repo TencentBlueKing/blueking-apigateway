@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
@@ -89,6 +90,15 @@ class OpenAPIImportManager:
         """
         进行校验
         """
+        # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
+        unsafe_refs = self._collect_unsafe_refs(self.data)
+        if unsafe_refs:
+            return [
+                SchemaValidateErr(
+                    f"Swagger contains external $ref which is not allowed: {unsafe_refs[:5]}", "$", []
+                )
+            ]
+
         try:
             # 先获取 openapi版本
             spec_version = get_spec_version(self.data)
@@ -143,6 +153,7 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
+        self._validate_refs(self.data)
 
         parse_result = ResolvingParser(
             spec_string=json.dumps(self.data), backend="openapi-spec-validator", strict=False
@@ -154,6 +165,42 @@ class OpenAPIImportManager:
         self.parser = parser
         self._raw_resource_list = parser.get_resources()
         self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
+
+    @staticmethod
+    def _validate_refs(data: Dict[str, Any]) -> None:
+        """校验 openapi 数据中所有 $ref 值，仅允许文档内部引用（以 #/ 开头）。
+
+        防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
+        """
+        unsafe_refs = OpenAPIImportManager._collect_unsafe_refs(data)
+
+        if not unsafe_refs:
+            # 回退：对序列化后的 JSON 做正则匹配，防止结构化遍历遗漏
+            ref_pattern = re.compile(r'"\$ref"\s*:\s*"([^"]+)"')
+            for match in ref_pattern.finditer(json.dumps(data)):
+                ref_val = match.group(1)
+                if not ref_val.startswith("#/"):
+                    unsafe_refs.append(ref_val)
+
+        if unsafe_refs:
+            raise ValueError(
+                f"Swagger contains external $ref which is not allowed: {unsafe_refs[:5]}"
+            )
+
+    @staticmethod
+    def _collect_unsafe_refs(node: Any) -> List[str]:
+        """递归收集所有不以 #/ 开头的 $ref 值。"""
+        unsafe: List[str] = []
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "$ref" and isinstance(value, str) and not value.startswith("#/"):
+                    unsafe.append(value)
+                else:
+                    unsafe.extend(OpenAPIImportManager._collect_unsafe_refs(value))
+        elif isinstance(node, list):
+            for item in node:
+                unsafe.extend(OpenAPIImportManager._collect_unsafe_refs(item))
+        return unsafe
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:

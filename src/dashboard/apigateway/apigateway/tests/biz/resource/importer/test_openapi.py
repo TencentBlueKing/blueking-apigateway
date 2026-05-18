@@ -1136,3 +1136,158 @@ class TestOpenAPIExporter:
         assert len(plugin_configs) == 1
         assert plugin_configs[0]["type"] == "bk-cors"
         assert "allow_origins" in plugin_configs[0]["yaml"]
+
+
+class TestOpenAPIImportManagerValidateRefs:
+    """Tests for _validate_refs — ensures external $ref values are rejected."""
+
+    def test_internal_ref_allowed(self):
+        """Pure internal $ref (starting with #/) should pass validation."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "definitions": {
+                "User": {"type": "object", "properties": {"name": {"type": "string"}}},
+            },
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "#/definitions/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        # Should not raise
+        OpenAPIImportManager._validate_refs(data)
+
+    def test_external_url_ref_rejected(self):
+        """HTTP(S) URL $ref should be rejected to prevent SSRF."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://evil.com/schema.json#/definitions/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_local_file_ref_rejected(self):
+        """Local file path $ref should be rejected to prevent file read."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "/etc/passwd"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_relative_file_ref_rejected(self):
+        """Relative file path $ref should be rejected."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "../common/models.yaml#/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_validate_returns_schema_err_for_unsafe_ref(self):
+        """validate() should return SchemaValidateErr when $ref is external, not raise."""
+        gateway = G(Gateway)
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "description": "test",
+                        "tags": ["test"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://internal-service.local/schema.json"}},
+                        },
+                    }
+                }
+            },
+        }
+        manager = OpenAPIImportManager(gateway=gateway, data=data)
+        validate_err_list = manager.validate()
+        assert len(validate_err_list) > 0
+        assert "external $ref" in validate_err_list[0].message
+
+    def test_no_ref_passes(self):
+        """Document with no $ref at all should pass validation."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {"200": {"description": "success"}},
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        # Should not raise
+        OpenAPIImportManager._validate_refs(data)
