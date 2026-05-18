@@ -26,6 +26,8 @@ stages:
           hosts:
             - host: "http://httpbin"
               weight: 100
+            - host: "http://httpbin:80"
+              weight: 100
 
     mcp_servers:
       - name: "httpbin-mcp-server"
