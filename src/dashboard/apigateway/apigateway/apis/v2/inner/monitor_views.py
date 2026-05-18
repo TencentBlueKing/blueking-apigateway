@@ -34,7 +34,7 @@ from . import serializers
     decorator=swagger_auto_schema(
         operation_description="监控告警回调",
         query_serializer=serializers.MonitorCallbackInputSLZ,
-        request_body=None,
+        request_body=serializers.MonitorCallbackRequestBodySLZ,
         responses={status.HTTP_200_OK: ""},
         tags=["OpenAPI.V2.Inner"],
     ),

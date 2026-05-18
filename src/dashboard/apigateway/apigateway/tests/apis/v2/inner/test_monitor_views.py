@@ -53,7 +53,7 @@ class TestAlarmCallbackApi:
         ["resource_backend", "app_request", "nginx_error"],
     )
     def test_callback_success(self, request_view, setup_settings, mocker, alarm_type):
-        mock_task = mocker.patch(f"apigateway.apps.monitor.tasks.{alarm_type}.apply_async")
+        mock_task = mocker.patch(f"apigateway.apis.v2.inner.monitor_views.monitor_{alarm_type}.apply_async")
 
         response = request_view(
             method="POST",
@@ -70,7 +70,7 @@ class TestAlarmCallbackApi:
         mock_task.assert_called_once()
 
     def test_reject_when_token_missing(self, request_view, setup_settings, mocker):
-        mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
@@ -84,7 +84,7 @@ class TestAlarmCallbackApi:
         assert response.status_code == 400
 
     def test_reject_when_token_empty(self, request_view, setup_settings, mocker):
-        mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
@@ -99,7 +99,7 @@ class TestAlarmCallbackApi:
         assert response.status_code == 400
 
     def test_reject_when_token_invalid(self, request_view, setup_settings, mocker):
-        mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
@@ -114,7 +114,7 @@ class TestAlarmCallbackApi:
         assert response.status_code == 400
 
     def test_reject_when_alarm_type_invalid(self, request_view, setup_settings, mocker):
-        mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
@@ -131,7 +131,7 @@ class TestAlarmCallbackApi:
     def test_allow_with_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
         settings.BKMONITOR_CALLBACK_TOKEN = "my-token"
-        mock_task = mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mock_task = mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
@@ -151,7 +151,7 @@ class TestAlarmCallbackApi:
     def test_allow_when_missing_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
         settings.ENABLE_MULTI_TENANT_MODE = True
         settings.BKMONITOR_CALLBACK_TOKEN = "my-token"
-        mock_task = mocker.patch("apigateway.apps.monitor.tasks.resource_backend.apply_async")
+        mock_task = mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
 
         response = request_view(
             method="POST",
