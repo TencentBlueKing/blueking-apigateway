@@ -24,20 +24,25 @@ except ImportError:
     sys.exit(1)
 
 # ── 颜色输出 ──────────────────────────────────────────────────────────
-RED = "\033[91m"
-YELLOW = "\033[93m"
-GREEN = "\033[92m"
-CYAN = "\033[96m"
-DIM = "\033[2m"
-RESET = "\033[0m"
-BOLD = "\033[1m"
+# 非 TTY 环境（如重定向到文件）时禁用颜色，避免乱码
+_USE_COLOR = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+
+RED = "\033[91m" if _USE_COLOR else ""
+YELLOW = "\033[93m" if _USE_COLOR else ""
+GREEN = "\033[92m" if _USE_COLOR else ""
+CYAN = "\033[96m" if _USE_COLOR else ""
+DIM = "\033[2m" if _USE_COLOR else ""
+RESET = "\033[0m" if _USE_COLOR else ""
+BOLD = "\033[1m" if _USE_COLOR else ""
 
 
 def c(text: str, color: str) -> str:
+    if not color:
+        return text
     return f"{color}{text}{RESET}"
 
 
-# ── Django URL 解析器 ─────────────────────────────────────────────────
+# ── Django URL 解析器（基于 AST） ────────────────────────────────────
 
 def normalize_path(path_str: str) -> str:
     """将 Django URL 参数格式 <type:name> 转换为 YAML 格式 {name}"""
@@ -50,168 +55,105 @@ def normalize_path(path_str: str) -> str:
 
 def parse_django_urls(filepath: Path, prefix: str = "") -> list[dict]:
     """
-    递归解析 Django urls.py，提取所有完整的路由定义。
-    处理嵌套的 include() 和 path() 调用。
+    使用 Python AST 模块解析 Django urls.py，提取所有完整的路由定义。
+    正确处理嵌套的 include() 和 path() 调用，包括 urlpatterns += [...] 形式。
     返回: [{"full_path": "/api/v2/open/gateways/", "view_class": "GatewayListApi", "name": "...", "line": N}, ...]
     """
     content = filepath.read_text(encoding="utf-8")
-    routes = []
-    _parse_urlpatterns_text(content, prefix, filepath, routes)
-    return routes
+    tree = ast.parse(content, filename=str(filepath))
+    routes: list[dict] = []
 
-
-def _parse_urlpatterns_text(content: str, prefix: str, filepath: Path, routes: list):
-    """
-    基于正则的方式解析 Django URL patterns。
-    能处理嵌套的 include([...]) 结构。
-    """
-    # 移除注释行（但保留字符串内的 #）
-    lines = content.splitlines()
-
-    # 使用手动状态机追踪括号层级来解析 path() 调用
-    _extract_paths_recursive(content, prefix, filepath, routes)
-
-
-def _extract_paths_recursive(content: str, prefix: str, filepath: Path, routes: list):
-    """逐层解析 urlpatterns 中的 path() 调用"""
-    # 找到所有 path(...) 调用（顶层的）
-    i = 0
-    while i < len(content):
-        # 找到 path( 的开始
-        match = re.search(r'\bpath\s*\(', content[i:])
-        if not match:
-            break
-
-        start = i + match.start()
-        paren_start = i + match.end() - 1  # 指向 (
-
-        # 找到匹配的右括号
-        paren_end = _find_matching_paren(content, paren_start)
-        if paren_end is None:
-            i = paren_start + 1
-            continue
-
-        path_call = content[paren_start + 1: paren_end]
-        i = paren_end + 1
-
-        # 提取第一个参数（URL pattern）
-        url_pattern = _extract_first_string_arg(path_call)
-        if url_pattern is None:
-            continue
-
-        full_prefix = prefix + url_pattern
-
-        # 检查是否包含 include(
-        if 'include(' in path_call:
-            # 找到 include(...) 内部的内容
-            inc_match = re.search(r'\binclude\s*\(', path_call)
-            if inc_match:
-                inc_paren_start = inc_match.end() - 1
-                inc_paren_end = _find_matching_paren(path_call, inc_paren_start)
-                if inc_paren_end:
-                    inner = path_call[inc_paren_start + 1: inc_paren_end]
-                    # 递归解析 include 内的路由列表
-                    _extract_paths_recursive(inner, full_prefix, filepath, routes)
-        else:
-            # 这是一个叶子路由（有 view 的路由）
-            view_class = _extract_view_ref(path_call)
-            route_name = _extract_name_arg(path_call)
-
-            if view_class:
-                line_num = content[:start].count('\n') + 1
-                routes.append({
-                    "full_path": full_prefix,
-                    "view_class": view_class,
-                    "name": route_name or "",
-                    "line": line_num,
-                    "filepath": str(filepath),
-                })
-
-
-def _find_matching_paren(text: str, start: int) -> int | None:
-    """找到从 start 位置开始的括号的匹配右括号"""
-    if text[start] not in ('(', '['):
+    def _get_str_value(node: ast.AST) -> str | None:
+        """从 AST 节点获取字符串常量值"""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
         return None
 
-    openers = {'(': ')', '[': ']'}
-    closer = openers[text[start]]
-    depth = 1
-    in_string = None
-    i = start + 1
+    def _get_view_class(node: ast.AST) -> str | None:
+        """从 views.XxxApi.as_view() 调用中提取 View 类名"""
+        if isinstance(node, ast.Call):
+            func = node.func
+            # views.XxxApi.as_view() 形式
+            if isinstance(func, ast.Attribute) and func.attr == "as_view":
+                if isinstance(func.value, ast.Attribute):
+                    return func.value.attr
+        return None
 
-    while i < len(text):
-        ch = text[i]
+    def _get_name_kwarg(call_node: ast.Call) -> str | None:
+        """从 path() 调用中提取 name= 关键字参数"""
+        for kw in call_node.keywords:
+            if kw.arg == "name":
+                return _get_str_value(kw.value)
+        return None
 
-        # 处理字符串
-        if in_string:
-            if ch == '\\':
-                i += 2
-                continue
-            if ch == in_string:
-                # 检查三引号
-                if text[i:i + 3] == in_string * 3:
-                    in_string = None
-                    i += 3
-                    continue
-                in_string = None
-            i += 1
-            continue
+    def _get_func_name(node: ast.AST) -> str | None:
+        """获取函数调用的名称"""
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            return node.attr
+        return None
 
-        if ch in ('"', "'"):
-            if text[i:i + 3] == ch * 3:
-                in_string = ch  # 简化：不处理三引号
-            else:
-                in_string = ch
-            i += 1
-            continue
+    def _process_path_call(call_node: ast.Call, current_prefix: str):
+        """处理单个 path() 调用"""
+        if not call_node.args:
+            return
+        url_pattern = _get_str_value(call_node.args[0])
+        if url_pattern is None:
+            return
 
-        if ch == '#':
-            # 跳过注释
-            newline = text.find('\n', i)
-            if newline == -1:
-                return None
-            i = newline + 1
-            continue
+        full_prefix = current_prefix + url_pattern
 
-        if ch in ('(', '['):
-            depth += 1
-        elif ch in (')', ']'):
-            depth -= 1
-            if depth == 0:
-                return i
-        i += 1
+        if len(call_node.args) >= 2:
+            second_arg = call_node.args[1]
 
-    return None
+            if isinstance(second_arg, ast.Call):
+                func_name = _get_func_name(second_arg.func)
 
+                if func_name == "include" and second_arg.args:
+                    # path("prefix/", include([...])) — 递归处理
+                    inner = second_arg.args[0]
+                    if isinstance(inner, ast.List):
+                        _process_list(inner, full_prefix)
+                else:
+                    # path("prefix/", views.XxxApi.as_view(), name="...") — 叶子路由
+                    view_class = _get_view_class(second_arg)
+                    name = _get_name_kwarg(call_node)
+                    if view_class:
+                        routes.append({
+                            "full_path": full_prefix,
+                            "view_class": view_class,
+                            "name": name or "",
+                            "line": call_node.lineno,
+                            "filepath": str(filepath),
+                        })
 
-def _extract_first_string_arg(text: str) -> str | None:
-    """提取函数调用的第一个字符串参数"""
-    text = text.strip()
-    m = re.match(r'''^\s*["']([^"']*)["']''', text)
-    if m:
-        return m.group(1)
-    return None
+    def _process_list(list_node: ast.List, current_prefix: str):
+        """处理 urlpatterns 列表中的所有 path() 调用"""
+        for elt in list_node.elts:
+            if isinstance(elt, ast.Call) and _get_func_name(elt.func) == "path":
+                _process_path_call(elt, current_prefix)
 
+    # 遍历 AST 找到 urlpatterns = [...] 和 urlpatterns += [...]
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "urlpatterns":
+                    if isinstance(node.value, ast.List):
+                        _process_list(node.value, prefix)
+        elif isinstance(node, ast.AugAssign):
+            if isinstance(node.target, ast.Name) and node.target.id == "urlpatterns":
+                if isinstance(node.value, ast.List):
+                    _process_list(node.value, prefix)
+        # 处理条件块中的 urlpatterns += [...]（如 if not settings.XXX:）
+        elif isinstance(node, ast.If):
+            for sub_node in ast.walk(node):
+                if isinstance(sub_node, ast.AugAssign):
+                    if isinstance(sub_node.target, ast.Name) and sub_node.target.id == "urlpatterns":
+                        if isinstance(sub_node.value, ast.List):
+                            _process_list(sub_node.value, prefix)
 
-def _extract_view_ref(path_call: str) -> str | None:
-    """从 path() 调用中提取 view 引用"""
-    # 匹配 views.XxxApi.as_view() 或 views_esb.XxxApi.as_view()
-    m = re.search(r'(\w+)\.(\w+)\.as_view\(\)', path_call)
-    if m:
-        return m.group(2)
-
-    # 匹配 views.XxxApi（无 .as_view()）
-    m = re.search(r'views\w*\.(\w+)', path_call)
-    if m:
-        return m.group(1)
-
-    return None
-
-
-def _extract_name_arg(path_call: str) -> str | None:
-    """提取 name= 参数"""
-    m = re.search(r'name\s*=\s*["\']([^"\']+)["\']', path_call)
-    return m.group(1) if m else None
+    return routes
 
 
 # ── View 方法解析 ────────────────────────────────────────────────────
@@ -295,10 +237,13 @@ def parse_view_serializers(filepath: Path) -> dict[str, dict[str, str]]:
 def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
     """
     从 serializers.py 解析所有 Serializer 类的字段定义。
+    支持基类继承：子类会继承基类中定义的字段。
     返回: {ClassName: [{"name": "field_name", "type": "CharField", "required": True/False}, ...]}
     """
     content = filepath.read_text(encoding="utf-8")
     result: dict[str, list[dict]] = {}
+    # 追踪类继承关系：ClassName → [BaseClass1, BaseClass2, ...]
+    class_bases: dict[str, list[str]] = {}
     current_class = None
     current_fields: list[dict] = []
 
@@ -309,8 +254,8 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
     meta_fields_buffer = ""
 
     for line in content.splitlines():
-        # 类定义
-        class_match = re.match(r'^class\s+(\w+)\s*\(', line)
+        # 类定义：提取类名和基类
+        class_match = re.match(r'^class\s+(\w+)\s*\(([^)]*)\)', line)
         if class_match:
             # 保存上一个类：将 Meta.fields 中未显式声明的字段也加入
             if current_class:
@@ -323,6 +268,10 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
                 if current_fields:
                     result[current_class] = current_fields
             current_class = class_match.group(1)
+            # 提取基类列表
+            bases_str = class_match.group(2)
+            bases = [b.strip().split(".")[-1] for b in bases_str.split(",") if b.strip()]
+            class_bases[current_class] = bases
             current_fields = []
             in_meta = False
             meta_fields = []
@@ -401,6 +350,18 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
         if current_fields:
             result[current_class] = current_fields
 
+    # 继承合并：将基类字段合并到子类中（仅限同文件内的基类）
+    for cls_name, bases in class_bases.items():
+        if cls_name not in result:
+            continue
+        child_field_names = {f["name"] for f in result[cls_name]}
+        for base_name in bases:
+            if base_name in result:
+                for field in result[base_name]:
+                    if field["name"] not in child_field_names:
+                        result[cls_name].append(field)
+                        child_field_names.add(field["name"])
+
     return result
 
 
@@ -437,13 +398,14 @@ class APIConsistencyChecker:
         "v2_sync": {"url_prefix": "/api/v2/sync/", "code_dir": "sync"},
     }
 
+    # 默认值（可被 config.yaml 覆盖）
     SKIP_BACKENDS = {"core-api", "mcp-proxy"}
-
     KNOWN_SPECIAL_CASES = {
         "v2_open_get_gateway_public_key",
         "v2_open_get_gateway_public_key_new",
         "v2_open_oauth_protected_resource",
     }
+    PAGINATION_PARAMS = {"limit", "offset", "page", "page_size"}
 
     def __init__(self, project_dir: str, json_output: bool = False):
         self.project_dir = Path(project_dir).resolve()
@@ -453,6 +415,9 @@ class APIConsistencyChecker:
         self.docs_dir = self.base / "data" / "apidocs" / "zh"
         self.apis_dir = self.base / "apis" / "v2"
         self.json_output = json_output
+
+        # 从 config.yaml 加载配置（覆盖类级别的默认值）
+        self._load_config()
 
         # YAML 中的 API: operationId → info
         self.yaml_apis: dict[str, dict] = {}
@@ -473,6 +438,23 @@ class APIConsistencyChecker:
         self.errors: list[dict] = []
         self.warnings: list[dict] = []
 
+    def _load_config(self):
+        """从 config.yaml 加载配置，覆盖类级别的默认值"""
+        config_path = Path(__file__).resolve().parent / "config.yaml"
+        if not config_path.exists():
+            return
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+            if "skip_backends" in cfg:
+                self.SKIP_BACKENDS = set(cfg["skip_backends"])
+            if "known_special_cases" in cfg:
+                self.KNOWN_SPECIAL_CASES = set(cfg["known_special_cases"])
+            if "pagination_params" in cfg:
+                self.PAGINATION_PARAMS = set(cfg["pagination_params"])
+        except Exception:
+            pass  # 配置文件解析失败时使用默认值
+
     def _log(self, level: str, check: str, op_id: str, msg: str, suggestion: str = ""):
         entry = {"check": check, "operation_id": op_id, "message": msg, "suggestion": suggestion}
         if level == "error":
@@ -488,7 +470,14 @@ class APIConsistencyChecker:
             return
 
         with open(self.resources_yaml, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
+            raw_content = f.read()
+
+        # $ref 检测：当前不支持 $ref 引用，如果发现则警告
+        if "$ref" in raw_content:
+            ref_count = raw_content.count("$ref")
+            print(c(f"⚠️  YAML 中发现 {ref_count} 处 $ref 引用，当前工具不会解析 $ref，可能导致部分定义丢失", YELLOW))
+
+        data = yaml.safe_load(raw_content)
 
         for path_str, methods in data.get("paths", {}).items():
             for method, detail in methods.items():
@@ -900,7 +889,7 @@ class APIConsistencyChecker:
 
                     # 分页参数由 DRF 分页器自动处理（如 paginate_queryset / get_paginated_response），
                     # 不需要在 Serializer 中声明，比较时应排除
-                    pagination_params = {"limit", "offset", "page", "page_size"}
+                    pagination_params = self.PAGINATION_PARAMS
 
                     # 5a: Serializer 有但 YAML 没有的字段
                     missing_in_yaml = slz_input_names - yaml_non_path - pagination_params
@@ -1188,12 +1177,22 @@ def find_project_dir() -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="API 一致性检查工具")
+    parser = argparse.ArgumentParser(
+        description="API 一致性检查工具 — 检查 API 代码、YAML 网关定义、文档三者一致性",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""示例:
+  %(prog)s                              # 检查所有 v2 API
+  %(prog)s --scope v2_sync              # 只检查 v2 sync API
+  %(prog)s --api v2_sync_stages         # 检查单个 API
+  %(prog)s --json                       # JSON 格式输出
+  %(prog)s --fix                        # 生成缺失的文档模板
+  %(prog)s --scope v2_open --fix        # 检查 v2 open 并修复缺失文档
+""")
     parser.add_argument("--scope", default="all",
                         choices=["all", "v2_open", "v2_inner", "v2_sync"],
                         help="检查范围 (默认: all)")
     parser.add_argument("--api", default=None,
-                        help="指定 operationId 检查单个 API")
+                        help="指定 operationId 检查单个 API（与 --scope 互斥）")
     parser.add_argument("--fix", action="store_true",
                         help="自动生成缺失的 API 文档模板")
     parser.add_argument("--json", action="store_true",
@@ -1202,7 +1201,19 @@ def main():
                         help="项目根目录 (默认自动探测)")
     args = parser.parse_args()
 
+    # 参数互斥检测
+    if args.api and args.scope != "all":
+        parser.error("--api 和 --scope 不能同时使用，指定 --api 时会自动确定 scope")
+
     project_dir = args.project_dir or find_project_dir()
+
+    # 验证项目目录
+    expected = Path(project_dir) / "src" / "dashboard" / "apigateway"
+    if not expected.exists():
+        print(c(f"错误: 项目目录 '{project_dir}' 中未找到 src/dashboard/apigateway", RED), file=sys.stderr)
+        print(c("请使用 --project-dir 指定正确的项目根目录", YELLOW), file=sys.stderr)
+        sys.exit(2)
+
     checker = APIConsistencyChecker(project_dir, json_output=args.json)
     sys.exit(checker.run(args.scope, fix=args.fix, target_api=args.api))
 

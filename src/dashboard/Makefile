@@ -188,16 +188,20 @@ load_fixtures:
 #   make check-openapi API=v2_sync_stages # Check a single API
 #   make check-openapi JSON=1             # JSON output
 #   make check-openapi FIX=1              # Generate missing doc templates
+#   make check-openapi-help               # Show detailed help
 
 OPENAPI_CHECK_SCRIPT := ../../.agents/skills/bk-apigateway-openapi-check/scripts/check_api_consistency.py
 SCOPE ?= all
 
-.PHONY: check-openapi
-check-openapi:
+.PHONY: check-openapi check-openapi-help
+check-openapi: ## Check API code/YAML/docs consistency (SCOPE=all|v2_open|v2_inner|v2_sync, API=<operationId>, JSON=1, FIX=1)
 	@python3 $(OPENAPI_CHECK_SCRIPT) \
 		$(if $(API),--api $(API),--scope $(SCOPE)) \
 		$(if $(JSON),--json) \
 		$(if $(FIX),--fix)
+
+check-openapi-help: ## Show detailed help for OpenAPI consistency check
+	@python3 $(OPENAPI_CHECK_SCRIPT) --help
 
 # ====== others ======
 
