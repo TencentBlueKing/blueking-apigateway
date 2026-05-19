@@ -135,6 +135,7 @@ import {
   batchDeleteResourceVersions,
   deleteResourceVersion,
   exportVersion,
+  exportVersionDocs,
   getVersionList,
 } from '@/services/source/resource.ts';
 import { getStageList } from '@/services/source/stage';
@@ -175,18 +176,16 @@ const selections = ref<any[]>([]);
 const versionCount = ref(0);
 
 // 导出配置
-const exportDialogConfig = reactive<IExportDialog>({
+const exportDialogConfig = ref<IExportDialog>({
   isShow: false,
   title: t('请选择导出的格式'),
   loading: false,
   exportFileDocType: 'resource',
-  hiddenExportContent: true,
   hiddenResourceTip: true,
-  hiddenExportTypeLabel: true,
 });
 
 // 导出参数
-const exportParams = reactive<IExportParams & { id?: number }>({
+const exportParams = ref<IExportParams & { id?: number }>({
   export_type: 'all',
   file_type: 'yaml',
   id: 0,
@@ -439,6 +438,20 @@ watch(
   },
 );
 
+// 监听导出弹窗
+watch(
+  exportDialogConfig,
+  () => {
+    if (exportDialogConfig.value.exportFileDocType === 'docs') {
+      exportParams.value.file_type = 'zip';
+    }
+    else {
+      exportParams.value.file_type = 'yaml';
+    }
+  },
+  { deep: true },
+);
+
 const getTableData = async (params: Record<string, any> = {}) => getVersionList(apigwId.value, params);
 
 const handleSelectionChange = (payload: any) => {
@@ -467,23 +480,32 @@ const handleShowDiff = () => {
 
 // 版本导出
 const handleShowExport = ({ id }: { id: number }) => {
-  exportDialogConfig.isShow = true;
-  exportParams.id = id;
+  exportDialogConfig.value.isShow = true;
+  exportParams.value.id = id;
 };
 
 // 版本导出下载
 const handleExportDownload = async () => {
-  const params = { ...exportParams };
+  const params = { ...exportParams.value };
   delete params.export_type;
-  exportDialogConfig.loading = true;
+  exportDialogConfig.value.loading = true;
   try {
-    await exportVersion(apigwId.value, params as any);
+    // 导出为文档的情况
+    if (exportDialogConfig.value.exportFileDocType === 'docs') {
+      await exportVersionDocs(apigwId.value, params as {
+        id?: number
+        file_type: string
+      });
+    }
+    else {
+      await exportVersion(apigwId.value, params as any);
+    }
     Message({
       message: t('导出成功'),
       theme: 'success',
       width: 'auto',
     });
-    exportDialogConfig.isShow = false;
+    exportDialogConfig.value.isShow = false;
   }
   catch (e) {
     const fileReader = new FileReader();
@@ -498,8 +520,8 @@ const handleExportDownload = async () => {
     };
   }
   finally {
-    exportDialogConfig.loading = false;
-    exportDialogConfig.isShow = false;
+    exportDialogConfig.value.loading = false;
+    exportDialogConfig.value.isShow = false;
   }
 };
 

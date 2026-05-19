@@ -234,6 +234,21 @@ export const exportVersion = async (apigwId: number, data: IResourceVersionExpor
   return blobDownLoad(res);
 };
 
+export const exportVersionDocs = async (
+  apigwId: number,
+  data: {
+    id?: number
+    file_type: string
+  }) => {
+  const { id } = data;
+  delete data.id;
+  const res = await http.post(`${path}/${apigwId}/resource-versions/${id}/export-docs/`, data, {
+    responseType: 'blob',
+    catchError: true,
+  });
+  return blobDownLoad(res);
+};
+
 /**
  *  过滤出需要认证用户的资源列表，免用户认证应用白名单插件，需要使用此数据过滤资源
  * @param apigwId 网关id
