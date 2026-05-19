@@ -4044,6 +4044,70 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: ITSM ticket callback
+  /api/v2/inner/monitor/alarm-types/{alarm_type}/callback/:
+    post:
+      operationId: v2_inner_monitor_alarm_callback
+      description: 监控告警回调
+      tags:
+        - v2_inner
+      parameters:
+        - name: alarm_type
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 告警类型
+          example: alarm
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 回调 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 告警内容，透传 BkMonitor 的回调 body
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: post
+          path: /backend/api/v2/inner/monitor/alarm-types/{alarm_type}/callback/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: false
+          resourcePermissionRequired: false
+        descriptionEn: Monitor alarm callback
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
       operationId: v2_sync_get_gateway_public_key_new
