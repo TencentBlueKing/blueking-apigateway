@@ -153,7 +153,7 @@
                   <BkTag
                     v-if="server?.is_official"
                     theme="success"
-                    class="ml-8px"
+                    class="ml-8px h-20px transform-translate-y--1px"
                   >
                     {{ t("官方") }}
                   </BkTag>

@@ -77,7 +77,7 @@
               >
                 <AgIcon
                   name="deqiu"
-                  size="20"
+                  size="22"
                   color="#3a84ff"
                 />
               </div>
