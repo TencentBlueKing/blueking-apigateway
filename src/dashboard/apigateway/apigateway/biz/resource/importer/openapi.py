@@ -171,12 +171,21 @@ class OpenAPIImportManager:
         unsafe_ref_paths = OpenAPIImportManager._collect_unsafe_ref_paths(data)
         if unsafe_ref_paths:
             raise ValueError(
-                f"OpenAPI document contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}"
+                f"OpenAPI document contains external $ref which is not allowed, paths: {', '.join(unsafe_ref_paths[:5])}"
             )
 
     @staticmethod
     def _is_internal_ref(ref: str) -> bool:
         return ref.startswith("#")
+
+    @staticmethod
+    def _escape_json_path_key(key: Any) -> str:
+        escaped = json.dumps(str(key), ensure_ascii=True)
+        return escaped.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026").replace("'", "\\u0027")
+
+    @staticmethod
+    def _append_json_path_key(path: str, key: Any) -> str:
+        return f"{path}[{OpenAPIImportManager._escape_json_path_key(key)}]"
 
     @staticmethod
     def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
@@ -188,10 +197,11 @@ class OpenAPIImportManager:
             current_node, current_path = stack.pop()
             if isinstance(current_node, dict):
                 for key, value in reversed(list(current_node.items())):
+                    next_path = OpenAPIImportManager._append_json_path_key(current_path, key)
                     if key == "$ref" and isinstance(value, str) and not OpenAPIImportManager._is_internal_ref(value):
-                        paths.append(f"{current_path}.$ref")
+                        paths.append(next_path)
                     else:
-                        stack.append((value, f"{current_path}.{key}"))
+                        stack.append((value, next_path))
                 continue
 
             if isinstance(current_node, list):

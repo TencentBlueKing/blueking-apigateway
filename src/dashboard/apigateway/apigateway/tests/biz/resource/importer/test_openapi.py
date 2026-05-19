@@ -1221,7 +1221,7 @@ class TestOpenAPIImportManagerValidateRefs:
             OpenAPIImportManager._validate_refs(data)
 
         assert "http://evil.com/schema.json#/definitions/User" not in str(err.value)
-        assert "$.paths./test/.get.responses.200.schema.$ref" in str(err.value)
+        assert '$["paths"]["/test/"]["get"]["responses"]["200"]["schema"]["$ref"]' in str(err.value)
 
     def test_local_file_ref_rejected(self):
         """Local file path $ref should be rejected to prevent file read."""
@@ -1301,7 +1301,7 @@ class TestOpenAPIImportManagerValidateRefs:
         assert len(validate_err_list) > 0
         assert "OpenAPI document contains external $ref" in validate_err_list[0].message
         assert "http://internal-service.local/schema.json" not in validate_err_list[0].message
-        assert "$.paths./test/.get.responses.200.schema.$ref" in validate_err_list[0].message
+        assert '$["paths"]["/test/"]["get"]["responses"]["200"]["schema"]["$ref"]' in validate_err_list[0].message
 
     def test_validate_and_parse_use_same_unsafe_ref_message(self):
         gateway = G(Gateway)
@@ -1385,7 +1385,38 @@ class TestOpenAPIImportManagerValidateRefs:
             OpenAPIImportManager._validate_refs(data)
 
         assert "<img src=x onerror=alert(1)>" not in str(err.value)
-        assert "$.paths./test/.get.responses.200.schema.$ref" in str(err.value)
+        assert '$["paths"]["/test/"]["get"]["responses"]["200"]["schema"]["$ref"]' in str(err.value)
+
+    def test_xss_like_key_is_escaped_in_error_message(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/<img src=x onerror=alert(1)>/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://evil.com/schema.json#/definitions/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+
+        with pytest.raises(ValueError) as err:
+            OpenAPIImportManager._validate_refs(data)
+
+        assert "/<img src=x onerror=alert(1)>/" not in str(err.value)
+        assert "\\u003cimg src=x onerror=alert(1)\\u003e" in str(err.value)
+        assert (
+            '$["paths"]["/\\u003cimg src=x onerror=alert(1)\\u003e/"]["get"]["responses"]["200"]["schema"]["$ref"]'
+            in str(err.value)
+        )
 
     def test_no_ref_passes(self):
         """Document with no $ref at all should pass validation."""
@@ -1425,4 +1456,6 @@ class TestOpenAPIImportManagerValidateRefs:
             }
         }
 
-        assert OpenAPIImportManager._collect_unsafe_ref_paths(data) == ["$.paths./test/.get.responses.200.schema.$ref"]
+        assert OpenAPIImportManager._collect_unsafe_ref_paths(data) == [
+            '$["paths"]["/test/"]["get"]["responses"]["200"]["schema"]["$ref"]'
+        ]
