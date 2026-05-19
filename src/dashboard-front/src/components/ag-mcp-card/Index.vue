@@ -32,13 +32,13 @@
       />
     </section>
     <div class="p-23px card-header-wrapper">
-      <header class="w-full flex items-baseline justify-between card-header">
+      <header class="w-full flex items-center justify-between lh-1 card-header">
         <!-- mcp启用、停用、精选状态 -->
         <slot name="mcpStatus" />
-        <div class="flex items-center header-title-wrapper">
-          <div class="w-full flex items-center">
+        <div class="flex items-baseline header-title-wrapper">
+          <div class="w-full flex items-baseline">
             <AgDescription
-              class="color-#313238 text-16px font-700 lh-24px break-all mcp-card-title"
+              class="color-#313238 text-16px font-700 break-all mcp-card-title"
               :max-lines="2"
               :font-size="16"
               :line-height="'24px'"
@@ -492,8 +492,8 @@ onUnmounted(() => {
   }
 
   :deep(.external-oauth-tag) {
-    min-width: 18px;
-    min-height: 18px;
+    min-width: 20px;
+    min-height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;

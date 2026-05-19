@@ -149,11 +149,9 @@ const tableColumns = computed(() => {
             <div
               v-bk-tooltips={{
                 placement: 'top',
-                content: row?.isOverflow
-                  ? `${t('名称')}: ${row.name}
-                  ${t('展示名')}: ${row.title}`
-                  : ` ${t('展示名')}: ${row.title}`,
+                content: row.name,
                 extCls: 'max-w-480px',
+                disabled: !row.isOverflow,
               }}
               class={[
                 'hover-cursor-pointer truncate',
@@ -217,10 +215,16 @@ const tableColumns = computed(() => {
       },
     },
     {
+      title: t('展示名'),
+      colKey: 'title',
+      width: 200,
+      ellipsis: true,
+    },
+    {
       title: t('环境'),
       colKey: 'stage_id',
-      ellipsis: true,
       width: 100,
+      ellipsis: true,
       filter: {
         type: 'single',
         showConfirmAndReset: true,
@@ -236,16 +240,16 @@ const tableColumns = computed(() => {
         }),
       },
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
-        return (
-          <Tag
-            class={[
-              'max-w-100px truncate border-transparent',
-              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row.status },
-            ]}
-          >
-            {row?.stage?.name || '--'}
-          </Tag>
-        );
+        return row?.stage?.name
+          ? (
+            <div class="w-full">
+              <RenderTagOverflow
+                data={[row?.stage?.name]}
+                class={[{ stage_name: Boolean(row.status) }]}
+              />
+            </div>
+          )
+          : <span>--</span>;
       },
     },
     {
@@ -583,6 +587,18 @@ defineExpose({ getList });
       color: #c4c6cc;
       background-color: #f5f7fa;
       border-color: transparent;
+    }
+  }
+}
+
+:deep(.stage_name) {
+
+  .bk-tag {
+    color: #1768ef;
+    background-color: #e1ecff;
+
+    &:hover {
+      background-color: #e1ecff;
     }
   }
 }
