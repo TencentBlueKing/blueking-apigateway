@@ -277,30 +277,30 @@ paths:
             SwaggerParser._validate_refs(swagger)
 
 
-class TestSwaggerParserCollectUnsafeRefPaths:
-    """测试 SwaggerParser._collect_unsafe_ref_paths 辅助方法"""
+class TestSwaggerParserHasUnsafeRefs:
+    """测试 SwaggerParser._has_unsafe_refs 辅助方法"""
 
     def test_empty_dict(self):
-        assert SwaggerParser._collect_unsafe_ref_paths({}) == []
+        assert SwaggerParser._has_unsafe_refs({}) is False
 
     def test_empty_list(self):
-        assert SwaggerParser._collect_unsafe_ref_paths([]) == []
+        assert SwaggerParser._has_unsafe_refs([]) is False
 
     def test_safe_ref(self):
         node = {"$ref": "#/definitions/User"}
-        assert SwaggerParser._collect_unsafe_ref_paths(node) == []
+        assert SwaggerParser._has_unsafe_refs(node) is False
 
     def test_unsafe_ref(self):
         node = {"$ref": "http://evil.com/payload"}
-        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$.$ref"]
+        assert SwaggerParser._has_unsafe_refs(node) is True
 
     def test_nested_unsafe_ref(self):
         node = {"paths": {"/test": {"get": {"responses": {"200": {"schema": {"$ref": "/etc/shadow"}}}}}}}
-        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$.paths./test.get.responses.200.schema.$ref"]
+        assert SwaggerParser._has_unsafe_refs(node) is True
 
     def test_list_with_unsafe_ref(self):
         node = [{"$ref": "#/definitions/OK"}, {"$ref": "http://bad.com/x"}]
-        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$[1].$ref"]
+        assert SwaggerParser._has_unsafe_refs(node) is True
 
     def test_multiple_unsafe_refs(self):
         node = {
@@ -308,7 +308,11 @@ class TestSwaggerParserCollectUnsafeRefPaths:
             "b": {"$ref": "/etc/passwd"},
             "c": {"$ref": "#/definitions/Safe"},
         }
-        result = SwaggerParser._collect_unsafe_ref_paths(node)
-        assert "$.a.$ref" in result
-        assert "$.b.$ref" in result
-        assert len(result) == 2
+        assert SwaggerParser._has_unsafe_refs(node) is True
+
+    def test_all_safe_refs(self):
+        node = {
+            "a": {"$ref": "#/definitions/A"},
+            "b": {"$ref": "#/definitions/B"},
+        }
+        assert SwaggerParser._has_unsafe_refs(node) is False

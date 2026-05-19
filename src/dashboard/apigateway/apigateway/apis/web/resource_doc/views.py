@@ -124,8 +124,8 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
                 swagger=slz.validated_data["swagger"],
                 language=DocLanguageEnum(slz.validated_data["language"]),
             )
-        except UnsafeSwaggerRefError as err:
-            raise error_codes.INVALID_ARGUMENT.format(str(err), replace=True)
+        except UnsafeSwaggerRefError:
+            raise error_codes.INVALID_ARGUMENT.format(_("swagger 中包含不安全的外部 $ref 引用。"), replace=True)
         except (ExpandSwaggerError, SchemaValidationError):
             raise error_codes.INVALID_ARGUMENT.format(_("swagger 描述内容不符合规范。"))
         except GenerateMarkdownError:
