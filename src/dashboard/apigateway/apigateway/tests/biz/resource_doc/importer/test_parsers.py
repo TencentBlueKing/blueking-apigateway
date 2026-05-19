@@ -277,30 +277,30 @@ paths:
             SwaggerParser._validate_refs(swagger)
 
 
-class TestSwaggerParserCollectUnsafeRefs:
-    """测试 SwaggerParser._collect_unsafe_refs 辅助方法"""
+class TestSwaggerParserCollectUnsafeRefPaths:
+    """测试 SwaggerParser._collect_unsafe_ref_paths 辅助方法"""
 
     def test_empty_dict(self):
-        assert SwaggerParser._collect_unsafe_refs({}) == []
+        assert SwaggerParser._collect_unsafe_ref_paths({}) == []
 
     def test_empty_list(self):
-        assert SwaggerParser._collect_unsafe_refs([]) == []
+        assert SwaggerParser._collect_unsafe_ref_paths([]) == []
 
     def test_safe_ref(self):
         node = {"$ref": "#/definitions/User"}
-        assert SwaggerParser._collect_unsafe_refs(node) == []
+        assert SwaggerParser._collect_unsafe_ref_paths(node) == []
 
     def test_unsafe_ref(self):
         node = {"$ref": "http://evil.com/payload"}
-        assert SwaggerParser._collect_unsafe_refs(node) == ["http://evil.com/payload"]
+        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$.$ref"]
 
     def test_nested_unsafe_ref(self):
         node = {"paths": {"/test": {"get": {"responses": {"200": {"schema": {"$ref": "/etc/shadow"}}}}}}}
-        assert SwaggerParser._collect_unsafe_refs(node) == ["/etc/shadow"]
+        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$.paths./test.get.responses.200.schema.$ref"]
 
     def test_list_with_unsafe_ref(self):
         node = [{"$ref": "#/definitions/OK"}, {"$ref": "http://bad.com/x"}]
-        assert SwaggerParser._collect_unsafe_refs(node) == ["http://bad.com/x"]
+        assert SwaggerParser._collect_unsafe_ref_paths(node) == ["$[1].$ref"]
 
     def test_multiple_unsafe_refs(self):
         node = {
@@ -308,7 +308,7 @@ class TestSwaggerParserCollectUnsafeRefs:
             "b": {"$ref": "/etc/passwd"},
             "c": {"$ref": "#/definitions/Safe"},
         }
-        result = SwaggerParser._collect_unsafe_refs(node)
-        assert "http://a.com" in result
-        assert "/etc/passwd" in result
+        result = SwaggerParser._collect_unsafe_ref_paths(node)
+        assert "$.a.$ref" in result
+        assert "$.b.$ref" in result
         assert len(result) == 2
