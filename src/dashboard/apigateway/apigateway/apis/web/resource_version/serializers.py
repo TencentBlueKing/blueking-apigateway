@@ -262,8 +262,8 @@ class ResourceVersionBatchDeleteInputSLZ(serializers.Serializer):
 class ResourceVersionDocExportInputSLZ(serializers.Serializer):
     file_type = serializers.ChoiceField(
         choices=DocArchiveTypeEnum.get_choices(),
-        default=DocArchiveTypeEnum.TGZ.value,
-        help_text="导出的文件类型，如 tgz/zip",
+        default=DocArchiveTypeEnum.ZIP.value,
+        help_text="导出的文件类型，支持 zip/tgz",
     )
 
     class Meta:
