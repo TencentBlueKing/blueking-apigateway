@@ -91,11 +91,11 @@ class OpenAPIImportManager:
         进行校验
         """
         # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
-        unsafe_refs = self._collect_unsafe_refs(self.data)
-        if unsafe_refs:
+        unsafe_ref_paths = self._get_unsafe_ref_paths(self.data)
+        if unsafe_ref_paths:
             return [
                 SchemaValidateErr(
-                    f"Swagger contains external $ref which is not allowed: {unsafe_refs[:5]}", "$", []
+                    f"Swagger contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}", "$", []
                 )
             ]
 
@@ -172,35 +172,48 @@ class OpenAPIImportManager:
 
         防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
         """
-        unsafe_refs = OpenAPIImportManager._collect_unsafe_refs(data)
+        unsafe_ref_paths = OpenAPIImportManager._get_unsafe_ref_paths(data)
 
-        if not unsafe_refs:
-            # 回退：对序列化后的 JSON 做正则匹配，防止结构化遍历遗漏
-            ref_pattern = re.compile(r'"\$ref"\s*:\s*"([^"]+)"')
-            for match in ref_pattern.finditer(json.dumps(data)):
-                ref_val = match.group(1)
-                if not ref_val.startswith("#/"):
-                    unsafe_refs.append(ref_val)
-
-        if unsafe_refs:
+        if unsafe_ref_paths:
             raise ValueError(
-                f"Swagger contains external $ref which is not allowed: {unsafe_refs[:5]}"
+                f"Swagger contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}"
             )
 
     @staticmethod
-    def _collect_unsafe_refs(node: Any) -> List[str]:
-        """递归收集所有不以 #/ 开头的 $ref 值。"""
-        unsafe: List[str] = []
+    def _get_unsafe_ref_paths(data: Dict[str, Any]) -> List[str]:
+        paths = OpenAPIImportManager._collect_unsafe_ref_paths(data)
+        if paths:
+            return paths
+
+        if OpenAPIImportManager._has_unsafe_ref_in_serialized_json(data):
+            return ["$"]
+
+        return []
+
+    @staticmethod
+    def _has_unsafe_ref_in_serialized_json(data: Dict[str, Any]) -> bool:
+        """回退扫描序列化后的 JSON，防止结构化遍历遗漏不安全 $ref。"""
+        ref_pattern = re.compile(r'"\$ref"\s*:\s*"([^"]+)"')
+        for match in ref_pattern.finditer(json.dumps(data)):
+            ref_val = match.group(1)
+            if not ref_val.startswith("#/"):
+                return True
+        return False
+
+    @staticmethod
+    def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
+        """递归收集所有不以 #/ 开头的 $ref 所在路径。"""
+        paths: List[str] = []
         if isinstance(node, dict):
             for key, value in node.items():
                 if key == "$ref" and isinstance(value, str) and not value.startswith("#/"):
-                    unsafe.append(value)
+                    paths.append(f"{path}.$ref")
                 else:
-                    unsafe.extend(OpenAPIImportManager._collect_unsafe_refs(value))
+                    paths.extend(OpenAPIImportManager._collect_unsafe_ref_paths(value, f"{path}.{key}"))
         elif isinstance(node, list):
-            for item in node:
-                unsafe.extend(OpenAPIImportManager._collect_unsafe_refs(item))
-        return unsafe
+            for index, item in enumerate(node):
+                paths.extend(OpenAPIImportManager._collect_unsafe_ref_paths(item, f"{path}[{index}]"))
+        return paths
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:
