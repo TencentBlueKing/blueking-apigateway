@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
@@ -91,13 +90,10 @@ class OpenAPIImportManager:
         进行校验
         """
         # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
-        unsafe_ref_paths = self._get_unsafe_ref_paths(self.data)
-        if unsafe_ref_paths:
-            return [
-                SchemaValidateErr(
-                    f"Swagger contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}", "$", []
-                )
-            ]
+        try:
+            self._validate_refs(self.data)
+        except ValueError as err:
+            return [SchemaValidateErr(str(err), "$", [])]
 
         try:
             # 先获取 openapi版本
@@ -168,52 +164,42 @@ class OpenAPIImportManager:
 
     @staticmethod
     def _validate_refs(data: Dict[str, Any]) -> None:
-        """校验 openapi 数据中所有 $ref 值，仅允许文档内部引用（以 #/ 开头）。
+        """校验 openapi 数据中所有 $ref 值，仅允许文档内部引用（以 # 开头）。
 
         防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
         """
-        unsafe_ref_paths = OpenAPIImportManager._get_unsafe_ref_paths(data)
-
+        unsafe_ref_paths = OpenAPIImportManager._collect_unsafe_ref_paths(data)
         if unsafe_ref_paths:
             raise ValueError(
-                f"Swagger contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}"
+                f"OpenAPI document contains external $ref which is not allowed, paths: {unsafe_ref_paths[:5]}"
             )
 
     @staticmethod
-    def _get_unsafe_ref_paths(data: Dict[str, Any]) -> List[str]:
-        paths = OpenAPIImportManager._collect_unsafe_ref_paths(data)
-        if paths:
-            return paths
-
-        if OpenAPIImportManager._has_unsafe_ref_in_serialized_json(data):
-            return ["$"]
-
-        return []
-
-    @staticmethod
-    def _has_unsafe_ref_in_serialized_json(data: Dict[str, Any]) -> bool:
-        """回退扫描序列化后的 JSON，防止结构化遍历遗漏不安全 $ref。"""
-        ref_pattern = re.compile(r'"\$ref"\s*:\s*"([^"]+)"')
-        for match in ref_pattern.finditer(json.dumps(data)):
-            ref_val = match.group(1)
-            if not ref_val.startswith("#/"):
-                return True
-        return False
+    def _is_internal_ref(ref: str) -> bool:
+        return ref.startswith("#")
 
     @staticmethod
     def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
-        """递归收集所有不以 #/ 开头的 $ref 所在路径。"""
+        """迭代收集所有非文档内 fragment $ref 所在路径。"""
         paths: List[str] = []
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if key == "$ref" and isinstance(value, str) and not value.startswith("#/"):
-                    paths.append(f"{path}.$ref")
-                else:
-                    paths.extend(OpenAPIImportManager._collect_unsafe_ref_paths(value, f"{path}.{key}"))
-        elif isinstance(node, list):
-            for index, item in enumerate(node):
-                paths.extend(OpenAPIImportManager._collect_unsafe_ref_paths(item, f"{path}[{index}]"))
-        return paths
+        stack: List[tuple[Any, str]] = [(node, path)]
+
+        while stack:
+            current_node, current_path = stack.pop()
+            if isinstance(current_node, dict):
+                for key, value in reversed(list(current_node.items())):
+                    if key == "$ref" and isinstance(value, str) and not OpenAPIImportManager._is_internal_ref(value):
+                        paths.append(f"{current_path}.$ref")
+                    else:
+                        stack.append((value, f"{current_path}.{key}"))
+                continue
+
+            if isinstance(current_node, list):
+                stack.extend(
+                    (current_node[index], f"{current_path}[{index}]") for index in range(len(current_node) - 1, -1, -1)
+                )
+
+        return sorted(paths)
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:
