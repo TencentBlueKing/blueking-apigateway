@@ -18,6 +18,7 @@
 import json
 
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.biz.resource_doc.exceptions import UnsafeSwaggerRefError
 from apigateway.biz.resource_doc.importer.models import ArchiveDoc
 
 
@@ -97,6 +98,33 @@ class TestDocImportBySwaggerApi:
         )
 
         assert resp.status_code == 204
+
+    def test_post__unsafe_swagger_ref(self, request_view, fake_gateway, mocker, faker):
+        mocker.patch(
+            "apigateway.apis.web.resource_doc.views.SwaggerParser.parse",
+            side_effect=UnsafeSwaggerRefError("swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="resource_doc.import.by_swagger",
+            path_params={"gateway_id": fake_gateway.id},
+            data={
+                "selected_resource_docs": [
+                    {
+                        "language": "zh",
+                        "resource_name": "get_user",
+                    }
+                ],
+                "swagger": faker.pystr(),
+                "language": "zh",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 400
+        assert result["error"]["code"] == "INVALID_ARGUMENT"
+        assert result["error"]["message"] == "swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"
 
 
 class TestDocExportApi:

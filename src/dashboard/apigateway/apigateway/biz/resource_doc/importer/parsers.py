@@ -230,30 +230,30 @@ class SwaggerParser(BaseParser):
         if not isinstance(data, dict):
             raise UnsafeSwaggerRefError(_("swagger 内容无法解析，无法校验 $ref 安全性"))
 
-        unsafe_refs = SwaggerParser._collect_unsafe_refs(data)
+        unsafe_ref_paths = SwaggerParser._collect_unsafe_ref_paths(data)
 
-        if unsafe_refs:
-            # 截断每个 ref 值，防止过长内容注入
-            sanitized = [ref[:120] for ref in unsafe_refs[:5]]
+        if unsafe_ref_paths:
             raise UnsafeSwaggerRefError(
-                _("swagger 中包含不允许的外部 $ref 引用：{refs}").format(refs=", ".join(sanitized))
+                _("swagger 中包含不允许的外部 $ref 引用，位置：{paths}").format(
+                    paths=", ".join(unsafe_ref_paths[:5])
+                )
             )
 
     @staticmethod
-    def _collect_unsafe_refs(node: Any) -> List[str]:
-        """递归收集所有非文档内部的 $ref 值。
+    def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
+        """递归收集所有非文档内部 $ref 所在的 JSON Path。
 
         仅允许以 '#' 开头的纯文档内部引用（如 #/definitions/User）。
         """
-        unsafe: List[str] = []
+        paths: List[str] = []
         if isinstance(node, dict):
             for key, value in node.items():
                 if key == "$ref":
                     if isinstance(value, str) and not value.startswith("#"):
-                        unsafe.append(value)
+                        paths.append(f"{path}.$ref")
                 else:
-                    unsafe.extend(SwaggerParser._collect_unsafe_refs(value))
+                    paths.extend(SwaggerParser._collect_unsafe_ref_paths(value, f"{path}.{key}"))
         elif isinstance(node, list):
-            for item in node:
-                unsafe.extend(SwaggerParser._collect_unsafe_refs(item))
-        return unsafe
+            for i, item in enumerate(node):
+                paths.extend(SwaggerParser._collect_unsafe_ref_paths(item, f"{path}[{i}]"))
+        return paths
