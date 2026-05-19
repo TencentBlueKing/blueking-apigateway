@@ -162,12 +162,12 @@
                 <div
                   v-if="server?.app_permission_risk?.has_risk"
                   v-bk-tooltips="renderRiskToolToolTip(server)"
-                  class="external-oauth-tag bg-#ffebeb ml-8px"
+                  class="external-oauth-tag bg-#ffebeb"
                 >
                   <AgIcon
                     name="zhiming"
-                    size="20"
-                    color="#e71818"
+                    size="14"
+                    color="#ea3636"
                   />
                 </div>
               </template>
