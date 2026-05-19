@@ -18,14 +18,46 @@
 #
 import json
 
+import pytest
 from django_dynamic_fixture import G
 
-from apigateway.apis.web.sdk.serializers import GatewaySDKListOutputSLZ
+from apigateway.apis.web.sdk.serializers import GatewaySDKGenerateInputSLZ, GatewaySDKListOutputSLZ
 from apigateway.apps.support.api_sdk.models import SDKFactory
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
+
+
+class TestGatewaySDKGenerateInputSLZ:
+    @pytest.mark.parametrize(
+        "version, is_valid",
+        [
+            ("", True),
+            ("1.2.3", True),
+            ("1.2.3-beta.1+build.1", True),
+            ("v1.2.3", False),
+            ("1.2", False),
+            ("1.0.0');__import__('os').system('touch /tmp/sdk-version-pwned')#", False),
+        ],
+    )
+    def test_validate_version(self, mocker, fake_gateway, version, is_valid):
+        mocker.patch(
+            "apigateway.apis.web.sdk.serializers.GatewaySDK.objects.get_latest_sdk",
+            return_value=None,
+        )
+        slz = GatewaySDKGenerateInputSLZ(
+            data={
+                "resource_version_id": 1,
+                "language": "python",
+                "version": version,
+            },
+            context={"gateway": fake_gateway},
+        )
+
+        assert slz.is_valid() is is_valid
+        if not is_valid:
+            assert "version" in slz.errors
 
 
 class TestSDKListOutputSLZ:
