@@ -720,6 +720,14 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyListInputSLZ"
 
 
+class MCPServerAppPermissionApplyApplicantListInputSLZ(serializers.Serializer):
+    state = serializers.ChoiceField(
+        choices=MCPServerAppPermissionApplyProcessedStateEnum.get_choices(),
+        required=False,
+        help_text="审批处理状态，不传则返回所有申请人",
+    )
+
+
 class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")

@@ -57,6 +57,7 @@ from apigateway.utils.time import now_datetime
 from .serializers import (
     MCPServerAppPermissionAppCodeListInputSLZ,
     MCPServerAppPermissionAppCodeListOutputSLZ,
+    MCPServerAppPermissionApplyApplicantListInputSLZ,
     MCPServerAppPermissionApplyListInputSLZ,
     MCPServerAppPermissionApplyListOutputSLZ,
     MCPServerAppPermissionApplyUpdateInputSLZ,
@@ -819,13 +820,30 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取授权审批申请人列表",
+        query_serializer=MCPServerAppPermissionApplyApplicantListInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionApplyApplicantListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
         queryset = self.get_queryset()
+
+        state = data.get("state")
+        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
+            queryset = queryset.filter(
+                status__in=[
+                    MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+                    MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+                ]
+            )
+        elif state == MCPServerAppPermissionApplyProcessedStateEnum.UNPROCESSED.value:
+            queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+
         applied_by_list = list(queryset.values_list("applied_by", flat=True).distinct().order_by("applied_by"))
 
         return OKJsonResponse(data={"applicants": applied_by_list})
