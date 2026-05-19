@@ -284,6 +284,25 @@ class TestResourceImportInputSLZ:
         with pytest.raises(ValidationError):
             slz._validate_content(content)
 
+    def test_validate_content__schema_error_escapes_html(self):
+        content = json.dumps(
+            {
+                "swagger": "2.0",
+                "info": {"title": "x", "version": "1.0"},
+                "paths": {
+                    "/<img src=x onerror=alert(1)>": "bad",
+                },
+            }
+        )
+
+        slz = ResourceImportInputSLZ()
+        with pytest.raises(ValidationError) as exc:
+            slz._validate_content(content)
+
+        error = str(exc.value.detail["content"])
+        assert "<img" not in error
+        assert "&lt;img src=x onerror=alert(1)&gt;" in error
+
 
 class TestResourceExportOutputSLZ:
     def test_to_representation(self, fake_resource, echo_plugin_resource_binding):

@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from html import escape as html_escape
 from typing import List, Optional
 
 from django.utils.translation import gettext as _
@@ -564,7 +565,7 @@ class ResourceImportInputSLZ(serializers.Serializer):
             importer.validate()
         except SchemaValidationError as err:
             raise serializers.ValidationError(
-                {"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=err)}
+                {"content": _("导入内容不符合 swagger 2.0 协议，{err}。").format(err=html_escape(str(err)))}
             )
 
         slz = ResourceDataImportSLZ(
