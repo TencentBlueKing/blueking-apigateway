@@ -16,9 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import hashlib
+import json
 import os
 from tempfile import TemporaryDirectory
-from typing import IO, AnyStr, Dict, List, Optional, Union
+from typing import IO, Any, AnyStr, Dict, List, Optional, Union
 
 from bkapi_client_generator import expand_swagger
 from django.utils.translation import gettext as _
@@ -28,9 +29,10 @@ from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.constants import SwaggerFormatEnum
 from apigateway.biz.resource.importer.swagger import SwaggerManager
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError, UnsafeSwaggerRefError
 from apigateway.core.models import Resource
 from apigateway.utils.file import read_file, write_to_file
+from apigateway.utils.yaml import yaml_loads
 
 from .generators import Jinja2ToMarkdownGenerator, SwaggerToMarkdownGenerator
 from .models import ArchiveDoc, SwaggerDoc
@@ -197,6 +199,8 @@ class SwaggerParser(BaseParser):
 
         - 参考：https://goswagger.io/usage/expand.html
         """
+        self._validate_refs(swagger)
+
         swagger_format = SwaggerManager.guess_swagger_format(swagger)
 
         with TemporaryDirectory() as output_dir:
@@ -206,3 +210,50 @@ class SwaggerParser(BaseParser):
             write_to_file(swagger, src)
             expand_swagger(src, swagger_format.value, dst)
             return read_file(dst).decode()
+
+    @staticmethod
+    def _validate_refs(swagger: str) -> None:
+        """校验 swagger 中所有 $ref 值，仅允许文档内部引用（以 # 开头）。
+
+        防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
+        解析失败时直接拒绝，不做回退。
+        """
+        try:
+            data = json.loads(swagger)
+        except (json.JSONDecodeError, ValueError):
+            try:
+                data = yaml_loads(swagger)
+            except Exception:
+                raise UnsafeSwaggerRefError(_("swagger 内容无法解析，无法校验 $ref 安全性"))
+
+        # 合法的 swagger 文档必须是一个 mapping（dict），否则视为非法内容
+        if not isinstance(data, dict):
+            raise UnsafeSwaggerRefError(_("swagger 内容无法解析，无法校验 $ref 安全性"))
+
+        unsafe_refs = SwaggerParser._collect_unsafe_refs(data)
+
+        if unsafe_refs:
+            # 截断每个 ref 值，防止过长内容注入
+            sanitized = [ref[:120] for ref in unsafe_refs[:5]]
+            raise UnsafeSwaggerRefError(
+                _("swagger 中包含不允许的外部 $ref 引用：{refs}").format(refs=", ".join(sanitized))
+            )
+
+    @staticmethod
+    def _collect_unsafe_refs(node: Any) -> List[str]:
+        """递归收集所有非文档内部的 $ref 值。
+
+        仅允许以 '#' 开头的纯文档内部引用（如 #/definitions/User）。
+        """
+        unsafe: List[str] = []
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "$ref":
+                    if isinstance(value, str) and not value.startswith("#"):
+                        unsafe.append(value)
+                else:
+                    unsafe.extend(SwaggerParser._collect_unsafe_refs(value))
+        elif isinstance(node, list):
+            for item in node:
+                unsafe.extend(SwaggerParser._collect_unsafe_refs(item))
+        return unsafe

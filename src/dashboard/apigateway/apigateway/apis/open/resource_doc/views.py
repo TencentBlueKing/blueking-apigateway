@@ -23,7 +23,11 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
+from apigateway.biz.resource_doc.exceptions import (
+    NoResourceDocError,
+    ResourceDocJinja2TemplateError,
+    UnsafeSwaggerRefError,
+)
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, SwaggerParser
 from apigateway.common.error_codes import error_codes
@@ -87,6 +91,8 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
                 swagger=slz.validated_data["swagger"],
                 language=DocLanguageEnum(slz.validated_data["language"]),
             )
+        except UnsafeSwaggerRefError as err:
+            raise error_codes.INVALID_ARGUMENT.format(str(err), replace=True)
         except (ExpandSwaggerError, SchemaValidationError):
             raise error_codes.INVALID_ARGUMENT.format(_("swagger 描述内容不符合规范。"))
         except GenerateMarkdownError:
