@@ -19,6 +19,7 @@
 import pytest
 
 from apigateway.biz.resource.importer.schema import (
+    SchemaValidateErr,
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
     convert_openapi2_response_headers_to_openapi,
@@ -30,6 +31,18 @@ from apigateway.biz.resource.importer.schema import (
 
 
 class TestSchema:
+    def test_schema_validate_err_escapes_html(self):
+        err = SchemaValidateErr(
+            "<img src=x onerror=alert(1)>",
+            "$.paths./<img src=x onerror=alert(1)>",
+            ["paths", "/<img src=x onerror=alert(1)>"],
+        )
+
+        result = err.to_dict()
+        assert result["message"] == "&lt;img src=x onerror=alert(1)&gt;"
+        assert result["json_path"] == "$.paths./&lt;img src=x onerror=alert(1)&gt;"
+        assert result["absolute_path"] == ["paths", "/&lt;img src=x onerror=alert(1)&gt;"]
+
     def test_convert_openapi2_formdata_to_openapi(self):
         formdata_params = [
             {"name": "file", "type": "file", "required": True},

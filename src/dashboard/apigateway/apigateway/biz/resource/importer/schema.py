@@ -17,6 +17,7 @@
 #  to the current version of the project delivered to anyone in the future.
 #  #
 from functools import partial
+from html import escape as html_escape
 from importlib.resources import as_file, files
 from os import path
 from typing import Any, Dict, Hashable, Iterator, List, Mapping, Optional, Tuple
@@ -417,9 +418,9 @@ class SchemaValidateErr:
             json_path (str): 指示错误位置的JSON路径表达式。
             absolute_path (List[str]): 错误的绝对路径列表。
         """
-        self.message = message
-        self.json_path = json_path
-        self.absolute_path = absolute_path
+        self.message = html_escape(message)
+        self.json_path = html_escape(json_path)
+        self.absolute_path = [html_escape(path) if isinstance(path, str) else path for path in absolute_path]
 
     def to_dict(self):
         """将对象转换为字典。"""
