@@ -168,48 +168,27 @@ class OpenAPIImportManager:
 
         防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
         """
-        unsafe_ref_paths = OpenAPIImportManager._collect_unsafe_ref_paths(data)
-        if unsafe_ref_paths:
-            raise ValueError(
-                f"OpenAPI document contains external $ref which is not allowed, paths: {', '.join(unsafe_ref_paths[:5])}"
-            )
+        if OpenAPIImportManager._has_unsafe_refs(data):
+            raise ValueError("OpenAPI document contains external $ref which is not allowed")
 
     @staticmethod
-    def _is_internal_ref(ref: str) -> bool:
-        return ref.startswith("#")
-
-    @staticmethod
-    def _escape_json_path_key(key: Any) -> str:
-        escaped = json.dumps(str(key), ensure_ascii=True)
-        return escaped.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026").replace("'", "\\u0027")
-
-    @staticmethod
-    def _append_json_path_key(path: str, key: Any) -> str:
-        return f"{path}[{OpenAPIImportManager._escape_json_path_key(key)}]"
-
-    @staticmethod
-    def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
-        """迭代收集所有非文档内 fragment $ref 所在路径。"""
-        paths: List[str] = []
-        stack: List[tuple[Any, str]] = [(node, path)]
+    def _has_unsafe_refs(node: Any) -> bool:
+        """迭代检查是否存在非文档内部 $ref 引用。"""
+        stack: List[Any] = [node]
 
         while stack:
-            current_node, current_path = stack.pop()
+            current_node = stack.pop()
             if isinstance(current_node, dict):
-                for key, value in reversed(list(current_node.items())):
-                    next_path = OpenAPIImportManager._append_json_path_key(current_path, key)
-                    if key == "$ref" and isinstance(value, str) and not OpenAPIImportManager._is_internal_ref(value):
-                        paths.append(next_path)
+                for key, value in current_node.items():
+                    if key == "$ref":
+                        if isinstance(value, str) and not value.startswith("#"):
+                            return True
                     else:
-                        stack.append((value, next_path))
-                continue
+                        stack.append(value)
+            elif isinstance(current_node, list):
+                stack.extend(current_node)
 
-            if isinstance(current_node, list):
-                stack.extend(
-                    (current_node[index], f"{current_path}[{index}]") for index in range(len(current_node) - 1, -1, -1)
-                )
-
-        return sorted(paths)
+        return False
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:
