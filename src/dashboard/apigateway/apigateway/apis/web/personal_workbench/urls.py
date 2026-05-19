@@ -19,8 +19,10 @@
 from django.urls import include, path
 
 from .views import (
+    WorkbenchGatewayFilterOptionListApi,
     WorkbenchHandledGatewayPermissionListApi,
     WorkbenchHandledMCPPermissionListApi,
+    WorkbenchMCPServerFilterOptionListApi,
     WorkbenchMyApplyGatewayPermissionListApi,
     WorkbenchMyApplyMCPPermissionListApi,
     WorkbenchPendingGatewayPermissionListApi,
@@ -40,6 +42,16 @@ mcp_permission_patterns = [
 ]
 
 urlpatterns = [
+    path(
+        "filter-options/gateways/",
+        WorkbenchGatewayFilterOptionListApi.as_view(),
+        name="workbench.filter_options.gateways",
+    ),
+    path(
+        "filter-options/mcp-servers/",
+        WorkbenchMCPServerFilterOptionListApi.as_view(),
+        name="workbench.filter_options.mcp_servers",
+    ),
     path("permissions/gateway/", include(gateway_permission_patterns)),
     path("permissions/mcp/", include(mcp_permission_patterns)),
 ]

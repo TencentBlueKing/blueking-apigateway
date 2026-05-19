@@ -30,12 +30,13 @@ class WorkbenchGatewayPermissionApplyFilter(filters.FilterSet):
 
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter(lookup_expr="icontains")
+    gateway_id = filters.NumberFilter(field_name="gateway_id")
     grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = AppPermissionApply
-        fields = ["bk_app_code", "applied_by", "grant_dimension", "keyword"]
+        fields = ["bk_app_code", "applied_by", "gateway_id", "grant_dimension", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
@@ -46,12 +47,13 @@ class WorkbenchGatewayPermissionRecordFilter(filters.FilterSet):
 
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter(lookup_expr="icontains")
+    gateway_id = filters.NumberFilter(field_name="gateway_id")
     grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = AppPermissionRecord
-        fields = ["bk_app_code", "applied_by", "grant_dimension", "keyword"]
+        fields = ["bk_app_code", "applied_by", "gateway_id", "grant_dimension", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
@@ -62,12 +64,13 @@ class WorkbenchMCPPermissionApplyFilter(filters.FilterSet):
 
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter(lookup_expr="icontains")
+    mcp_server_id = filters.NumberFilter(field_name="mcp_server_id")
     status = filters.ChoiceFilter(choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = MCPServerAppPermissionApply
-        fields = ["bk_app_code", "applied_by", "status", "keyword"]
+        fields = ["bk_app_code", "applied_by", "mcp_server_id", "status", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(
