@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import os
+import sys
+
 import pytest
 
 from apigateway.apps.support.api_sdk.distributors.pypi import PypiSourceDistributor
@@ -68,8 +71,17 @@ def sdk_context(sdk_context):
     return sdk_context
 
 
+@pytest.fixture
+def mock_check_call(mocker):
+    return mocker.patch("apigateway.apps.support.api_sdk.distributors.pypi.check_call")
+
+
 def test_pypirc(
-    tmpdir, faker, output_dir, python_setup_script, python_setup_history, sdist, distributor: PypiSourceDistributor
+    tmpdir,
+    output_dir,
+    sdist,
+    distributor: PypiSourceDistributor,
+    mock_check_call,
 ):
     distributor.distribute(output_dir, [sdist])
 
@@ -80,18 +92,44 @@ def test_pypirc(
 def test_distribute(
     output_dir,
     sdk_context,
-    python_setup_script,
     sdist,
-    python_setup_history,
     distributor: PypiSourceDistributor,
     package_searcher_result,
+    mock_check_call,
 ):
     result = distributor.distribute(output_dir, [sdist])
 
-    python_setup_history = python_setup_history.read()
-    assert f"setup.py sdist upload -r {distributor.repository}" in python_setup_history
+    mock_check_call.assert_called_once()
+    args, kwargs = mock_check_call.call_args
+    assert args[0] == [
+        sys.executable,
+        "-m",
+        "twine",
+        "upload",
+        "--repository",
+        distributor.repository,
+        str(sdist),
+    ]
+    assert kwargs["cwd"] == output_dir
+    assert kwargs["env"]["HOME"] == output_dir
 
     assert sdk_context.config["python"]["is_uploaded_to_pypi"]
     assert sdk_context.config["python"]["repository"] == distributor.repository
     assert result.url == package_searcher_result.url
     assert not result.is_local
+
+
+def test_distribute_uses_generated_sdist_when_given_stale_filename(
+    output_dir,
+    sdist,
+    distributor: PypiSourceDistributor,
+    mock_check_call,
+):
+    generated_sdist = os.path.join(output_dir, "dist", "bkapi_bk_default-1.2.1.tar.gz")
+    os.rename(str(sdist), generated_sdist)
+    stale_sdist = os.path.join(output_dir, "dist", "bkapi-bk-default-1.2.1.tar.gz")
+
+    distributor.distribute(output_dir, [stale_sdist])
+
+    args, _ = mock_check_call.call_args
+    assert args[0][-1] == generated_sdist

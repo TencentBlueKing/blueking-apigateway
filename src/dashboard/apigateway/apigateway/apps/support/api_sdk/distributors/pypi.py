@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import glob
 import logging
 import os
 import sys
@@ -65,6 +66,17 @@ class PypiSourceDistributor(Distributor):
 
         return result.url
 
+    def _get_upload_files(self, source_dir: str, files: List[str]) -> List[str]:
+        upload_files = [os.fspath(file) for file in files]
+        if all(os.path.exists(file) for file in upload_files):
+            return upload_files
+
+        dist_files = sorted(glob.glob(os.path.join(source_dir, "dist", "*.tar.gz")))
+        if dist_files:
+            return dist_files
+
+        return upload_files
+
     def distribute(self, output_dir: str, files: List[str]) -> DistributeResult:
         result = DistributeResult(repository=self.repository, is_local=True)
 
@@ -86,10 +98,11 @@ class PypiSourceDistributor(Distributor):
 
         env = os.environ.copy()
         env["HOME"] = source_dir
+        upload_files = self._get_upload_files(source_dir, files)
 
         try:
             check_call(
-                [sys.executable, "setup.py", "sdist", "upload", "-r", self.repository],
+                [sys.executable, "-m", "twine", "upload", "--repository", self.repository, *upload_files],
                 env=env,
                 cwd=source_dir,
             )
