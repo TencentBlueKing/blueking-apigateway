@@ -21,7 +21,6 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.v2.permissions import OpenAPIV2Permission
 from apigateway.apps.monitor.constants import AlarmTypeEnum
 from apigateway.apps.monitor.tasks import monitor_app_request, monitor_nginx_error, monitor_resource_backend
 from apigateway.common.error_codes import error_codes
@@ -40,7 +39,7 @@ from . import serializers
     ),
 )
 class AlarmCallbackApi(generics.CreateAPIView):
-    permission_classes = [OpenAPIV2Permission]
+    permission_classes = []  # type: ignore  # 回调接口由 token 校验保护，不需要应用认证
 
     def create(self, request, alarm_type: str, *args, **kwargs):
         slz = serializers.MonitorCallbackInputSLZ(data=request.query_params)
@@ -55,4 +54,4 @@ class AlarmCallbackApi(generics.CreateAPIView):
         else:
             raise error_codes.INVALID_ARGUMENT.format(f"不支持告警类型 {alarm_type}")
 
-        return JsonResponse({"result": True, "message": "success"})
+        return JsonResponse({"code": 0, "result": True, "message": "OK", "data": None})

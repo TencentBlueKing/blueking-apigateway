@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest import mock
-
 import pytest
 
 from apigateway.apis.v2.inner.serializers import MonitorCallbackInputSLZ
@@ -59,14 +57,13 @@ class TestAlarmCallbackApi:
             method="POST",
             view_name="openapi.v2.inner.monitor.alarm_callback",
             path_params={"alarm_type": alarm_type},
-            app=mock.MagicMock(app_code="bk-monitor"),
             data={"alert_name": "test-alert"},
             format="json",
             QUERY_STRING="token=my-token",
         )
 
         assert response.status_code == 200
-        assert response.json() == {"result": True, "message": "success"}
+        assert response.json() == {"code": 0, "result": True, "message": "OK", "data": None}
         mock_task.assert_called_once()
 
     def test_reject_when_token_missing(self, request_view, setup_settings, mocker):
@@ -76,7 +73,6 @@ class TestAlarmCallbackApi:
             method="POST",
             view_name="openapi.v2.inner.monitor.alarm_callback",
             path_params={"alarm_type": "resource_backend"},
-            app=mock.MagicMock(app_code="bk-monitor"),
             data={"alert_name": "test-alert"},
             format="json",
         )
@@ -90,7 +86,6 @@ class TestAlarmCallbackApi:
             method="POST",
             view_name="openapi.v2.inner.monitor.alarm_callback",
             path_params={"alarm_type": "resource_backend"},
-            app=mock.MagicMock(app_code="bk-monitor"),
             data={"alert_name": "test-alert"},
             format="json",
             QUERY_STRING="token=",
@@ -105,7 +100,6 @@ class TestAlarmCallbackApi:
             method="POST",
             view_name="openapi.v2.inner.monitor.alarm_callback",
             path_params={"alarm_type": "resource_backend"},
-            app=mock.MagicMock(app_code="bk-monitor"),
             data={"alert_name": "test-alert"},
             format="json",
             QUERY_STRING="token=wrong-token",
@@ -120,49 +114,9 @@ class TestAlarmCallbackApi:
             method="POST",
             view_name="openapi.v2.inner.monitor.alarm_callback",
             path_params={"alarm_type": "invalid_type"},
-            app=mock.MagicMock(app_code="bk-monitor"),
             data={"alert_name": "test-alert"},
             format="json",
             QUERY_STRING="token=my-token",
         )
 
         assert response.status_code == 400
-
-    def test_allow_with_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
-        settings.ENABLE_MULTI_TENANT_MODE = True
-        settings.BKMONITOR_CALLBACK_TOKEN = "my-token"
-        mock_task = mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
-
-        response = request_view(
-            method="POST",
-            view_name="openapi.v2.inner.monitor.alarm_callback",
-            path_params={"alarm_type": "resource_backend"},
-            app=mock.MagicMock(app_code="bk-monitor"),
-            data={"alert_name": "test-alert"},
-            format="json",
-            QUERY_STRING="token=my-token",
-            HTTP_X_BK_TENANT_ID="tenant-001",
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"result": True, "message": "success"}
-        mock_task.assert_called_once()
-
-    def test_allow_when_missing_tenant_header_in_multi_tenant_mode(self, request_view, settings, mocker):
-        settings.ENABLE_MULTI_TENANT_MODE = True
-        settings.BKMONITOR_CALLBACK_TOKEN = "my-token"
-        mock_task = mocker.patch("apigateway.apis.v2.inner.monitor_views.monitor_resource_backend.apply_async")
-
-        response = request_view(
-            method="POST",
-            view_name="openapi.v2.inner.monitor.alarm_callback",
-            path_params={"alarm_type": "resource_backend"},
-            app=mock.MagicMock(app_code="bk-monitor"),
-            data={"alert_name": "test-alert"},
-            format="json",
-            QUERY_STRING="token=my-token",
-        )
-
-        assert response.status_code == 200
-        assert response.json() == {"result": True, "message": "success"}
-        mock_task.assert_called_once()

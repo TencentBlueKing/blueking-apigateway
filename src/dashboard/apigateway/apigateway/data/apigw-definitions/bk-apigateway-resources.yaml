@@ -4075,12 +4075,18 @@ paths:
               schema:
                 type: object
                 properties:
+                  code:
+                    type: integer
+                    example: 0
                   result:
                     type: boolean
                     example: true
                   message:
                     type: string
-                    example: success
+                    example: OK
+                  data:
+                    type: object
+                    nullable: true
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -4095,7 +4101,7 @@ paths:
         pluginConfigs: []
         authConfig:
           userVerifiedRequired: false
-          appVerifiedRequired: true
+          appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Monitor alarm callback
   /api/v2/sync/gateways/{gateway_name}/public_key/:
