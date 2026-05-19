@@ -36,7 +36,7 @@
         <!-- mcp启用、停用、精选状态 -->
         <slot name="mcpStatus" />
         <div class="flex items-baseline header-title-wrapper">
-          <div class="w-full flex items-baseline">
+          <div class="w-full flex items-center gap-8px">
             <AgDescription
               class="color-#313238 text-16px font-700 break-all mcp-card-title"
               :max-lines="2"
@@ -51,11 +51,11 @@
             <div
               v-if="isEnabledOAuth"
               v-bk-tooltips="oauth2Tooltip"
-              class="external-oauth-tag bg-#e1ecff ml-8px"
+              class="external-oauth-tag bg-#e1ecff"
             >
               <AgIcon
                 name="deqiu"
-                size="20"
+                size="14"
                 color="#3a84ff"
               />
             </div>
@@ -492,13 +492,21 @@ onUnmounted(() => {
   }
 
   :deep(.external-oauth-tag) {
-    min-width: 20px;
-    min-height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    width: 18px !important;
+    height: 18px !important;
+    position: relative;
+    font-size: 0;
+    line-height: 1;
+    flex-shrink: 0;
     border-radius: 2px;
+    box-sizing: border-box;
+
+    .apigateway-icon {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
   }
 
   &:hover {

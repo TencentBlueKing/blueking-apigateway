@@ -59,25 +59,28 @@
                 ({{ mcpDetails?.name }})
               </BkOverflowTitle>
             </div>
-            <div class="flex items-center flex-shrink-0">
+            <div class="flex items-center gap-8px flex-shrink-0">
               <BkTag
                 v-if="mcpDetails?.is_official"
                 theme="success"
-                class="mr-8px"
+                class="h-18px"
               >
                 {{ t('官方') }}
               </BkTag>
-              <BkTag theme="info">
+              <BkTag
+                theme="info"
+                class="h-18px"
+              >
                 {{ mcpDetails?.stage?.name }}
               </BkTag>
               <div
                 v-if="isEnabledOAuth"
                 v-bk-tooltips="t('已开启 OAuth2 公开客户端模式，用户通过浏览器授权即可使用')"
-                class="external-oauth-tag bg-#e1ecff ml-8px cursor-pointer"
+                class="external-oauth-tag bg-#e1ecff cursor-pointer"
               >
                 <AgIcon
                   name="deqiu"
-                  size="22"
+                  size="14"
                   color="#3a84ff"
                 />
               </div>
@@ -492,7 +495,7 @@ watch(
         border-bottom: 1px solid #eaebf0;
 
         .title {
-          margin-right: 16px;
+          margin-right: 8px;
           font-size: 20px;
           font-weight: 700;
           color: #313238;
@@ -598,14 +601,22 @@ watch(
     }
   }
 
-  .external-oauth-tag {
-    display: flex;
-    min-width: 18px;
-    min-height: 18px;
-    text-align: center;
+  :deep(.external-oauth-tag) {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    font-size: 0;
+    line-height: 1;
+    flex-shrink: 0;
     border-radius: 2px;
-    align-items: center;
-    justify-content: center;
+    box-sizing: border-box;
+
+    .apigateway-icon {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
   }
 }
 
