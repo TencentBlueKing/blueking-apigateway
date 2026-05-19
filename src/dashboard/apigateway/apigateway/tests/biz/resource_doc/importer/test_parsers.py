@@ -18,7 +18,7 @@
 import pytest
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc.exceptions import NoResourceDocError, UnsafeSwaggerRefError
 from apigateway.biz.resource_doc.importer.models import ArchiveDoc
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, BaseParser, SwaggerParser
 from apigateway.core.models import Resource
@@ -180,3 +180,135 @@ class TestSwagger:
         assert docs[0].language == DocLanguageEnum.ZH
         assert docs[0].content != ""
         assert docs[0].swagger != ""
+
+
+class TestSwaggerParserValidateRefs:
+    """测试 SwaggerParser._validate_refs 方法，确保拒绝外部 $ref 引用"""
+
+    def test_valid_internal_ref_json(self):
+        """内部引用（以 #/ 开头）应通过校验"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "#/definitions/User"}}}}}}}'
+        # 不应抛出异常
+        SwaggerParser._validate_refs(swagger)
+
+    def test_valid_internal_ref_yaml(self):
+        """YAML 格式的内部引用应通过校验"""
+        swagger = """
+paths:
+  /user:
+    get:
+      responses:
+        "200":
+          schema:
+            $ref: "#/definitions/User"
+"""
+        SwaggerParser._validate_refs(swagger)
+
+    def test_valid_no_refs(self):
+        """没有 $ref 的 swagger 应通过校验"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"description": "ok"}}}}}}'
+        SwaggerParser._validate_refs(swagger)
+
+    def test_reject_http_url_ref_json(self):
+        """拒绝 HTTP URL 类型的 $ref（SSRF 风险）"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "http://evil.com/payload.json"}}}}}}}'
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_https_url_ref_json(self):
+        """拒绝 HTTPS URL 类型的 $ref"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "https://evil.com/payload.json"}}}}}}}'
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_absolute_file_path_ref(self):
+        """拒绝绝对文件路径类型的 $ref（本地文件读取风险）"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "/etc/passwd"}}}}}}}'
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_relative_file_path_ref(self):
+        """拒绝相对文件路径类型的 $ref"""
+        swagger = '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "../secrets.json"}}}}}}}'
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_http_ref_yaml(self):
+        """YAML 格式中拒绝 HTTP URL 的 $ref"""
+        swagger = """
+paths:
+  /user:
+    get:
+      responses:
+        "200":
+          schema:
+            $ref: "http://internal-service.svc.cluster.local/api/secret"
+"""
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_nested_external_ref(self):
+        """拒绝深层嵌套中的外部 $ref"""
+        swagger = (
+            '{"definitions": {"User": {"properties": {"address": {"$ref": "http://attacker.oastify.com/ex.json"}}}}}'
+        )
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_mixed_refs_reject_if_any_external(self):
+        """混合内部和外部 $ref 时，只要存在外部引用就应拒绝"""
+        swagger = (
+            '{"paths": {"/user": {"get": {"responses": {"200": {"schema": {"$ref": "#/definitions/User"}}}}}},'
+            '"definitions": {"User": {"properties": {"evil": {"$ref": "http://evil.com/x"}}}}}'
+        )
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_unparseable_content_rejected(self):
+        """无法解析的内容应直接拒绝而非放行"""
+        swagger = "this is not valid json or yaml {{{"
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+    def test_reject_file_scheme_ref(self):
+        """拒绝 file:// 协议的 $ref"""
+        swagger = '{"paths": {"/x": {"get": {"responses": {"200": {"schema": {"$ref": "file:///etc/passwd"}}}}}}}'
+        with pytest.raises(UnsafeSwaggerRefError):
+            SwaggerParser._validate_refs(swagger)
+
+
+class TestSwaggerParserCollectUnsafeRefs:
+    """测试 SwaggerParser._collect_unsafe_refs 辅助方法"""
+
+    def test_empty_dict(self):
+        assert SwaggerParser._collect_unsafe_refs({}) == []
+
+    def test_empty_list(self):
+        assert SwaggerParser._collect_unsafe_refs([]) == []
+
+    def test_safe_ref(self):
+        node = {"$ref": "#/definitions/User"}
+        assert SwaggerParser._collect_unsafe_refs(node) == []
+
+    def test_unsafe_ref(self):
+        node = {"$ref": "http://evil.com/payload"}
+        assert SwaggerParser._collect_unsafe_refs(node) == ["http://evil.com/payload"]
+
+    def test_nested_unsafe_ref(self):
+        node = {"paths": {"/test": {"get": {"responses": {"200": {"schema": {"$ref": "/etc/shadow"}}}}}}}
+        assert SwaggerParser._collect_unsafe_refs(node) == ["/etc/shadow"]
+
+    def test_list_with_unsafe_ref(self):
+        node = [{"$ref": "#/definitions/OK"}, {"$ref": "http://bad.com/x"}]
+        assert SwaggerParser._collect_unsafe_refs(node) == ["http://bad.com/x"]
+
+    def test_multiple_unsafe_refs(self):
+        node = {
+            "a": {"$ref": "http://a.com"},
+            "b": {"$ref": "/etc/passwd"},
+            "c": {"$ref": "#/definitions/Safe"},
+        }
+        result = SwaggerParser._collect_unsafe_refs(node)
+        assert "http://a.com" in result
+        assert "/etc/passwd" in result
+        assert len(result) == 2

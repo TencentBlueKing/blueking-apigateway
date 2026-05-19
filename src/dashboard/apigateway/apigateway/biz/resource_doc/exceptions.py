@@ -23,6 +23,10 @@ class NoResourceDocError(Exception):
     """没有资源文档"""
 
 
+class UnsafeSwaggerRefError(Exception):
+    """swagger 中包含不安全的外部 $ref 引用"""
+
+
 class ResourceDocJinja2TemplateError(Exception):
     """资源文档模板错误"""
 
