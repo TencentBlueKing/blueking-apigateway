@@ -15,6 +15,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.biz.resource_doc.exceptions import UnsafeSwaggerRefError
+
+
 class TestDocImportByArchiveApi:
     def test_post(self, request_view, mocker, fake_tgz_file, ignore_related_app_permission, fake_gateway):
         mocker.patch("apigateway.apis.open.resource_doc.views.ArchiveParser.parse", return_value=[])
@@ -38,8 +41,8 @@ class TestDocImportByArchiveApi:
 
 class TestDocImportBySwaggerApi:
     def test_post(self, request_view, mocker, faker, ignore_related_app_permission, fake_gateway):
-        mocker.patch("apigateway.apis.web.resource_doc.views.SwaggerParser.parse", return_value=[])
-        mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
+        mocker.patch("apigateway.apis.open.resource_doc.views.SwaggerParser.parse", return_value=[])
+        mocker.patch("apigateway.apis.open.resource_doc.views.DocImporter.import_docs")
 
         resp = request_view(
             method="POST",
@@ -55,3 +58,26 @@ class TestDocImportBySwaggerApi:
 
         assert resp.status_code == 200
         assert result["code"] == 0
+
+    def test_post__unsafe_swagger_ref(self, request_view, mocker, faker, ignore_related_app_permission, fake_gateway):
+        mocker.patch(
+            "apigateway.apis.open.resource_doc.views.SwaggerParser.parse",
+            side_effect=UnsafeSwaggerRefError("swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.resource_doc.import.by_swagger",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "swagger": faker.pystr(),
+                "language": "zh",
+            },
+            gateway=fake_gateway,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 400
+        assert result["result"] is False
+        assert result["code"] == 40002
+        assert result["message"] == "swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"
