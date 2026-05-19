@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from html import escape as html_escape
 
 from django.conf import settings
 from django.db import transaction
@@ -229,7 +230,9 @@ class GatewayResourceSyncApi(generics.CreateAPIView):
                 need_delete_unspecified_resources=slz.validated_data["delete"],
             )
         except Exception as err:  # pylint: disable=broad-except
-            raise ValidationError({"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)})
+            raise ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
+            )
 
         validate_err_list = openapi_manager.validate()
         if len(validate_err_list) != 0:
@@ -305,7 +308,9 @@ class DocImportByArchiveApi(generics.CreateAPIView):
                 _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
             )
         except ResourceDocJinja2TemplateError as err:
-            raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
+            raise error_codes.INTERNAL.format(
+                _("导入资源文档失败，{err}。").format(err=html_escape(str(err))), replace=True
+            )
 
         importer = DocImporter(gateway_id=request.gateway.id, selected_resource_docs=None)
         importer.import_docs(docs=docs)

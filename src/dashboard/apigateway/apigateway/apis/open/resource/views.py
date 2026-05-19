@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from html import escape as html_escape
 
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -66,7 +67,7 @@ class ResourceSyncApi(generics.CreateAPIView):
             )
         except Exception as err:  # pylint: disable=broad-except
             raise serializers.ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
             )
 
         validate_err_list = openapi_manager.validate()

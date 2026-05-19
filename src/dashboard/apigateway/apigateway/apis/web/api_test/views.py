@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from html import escape as html_escape
 from typing import Any, Dict
 
 import requests
@@ -155,7 +156,7 @@ class APITestApi(generics.CreateAPIView):
             return FailJsonResponse(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 code="UNKNOWN",
-                message=_("请求网关资源失败，错误消息：{err}。").format(err=err),
+                message=_("请求网关资源失败，错误消息：{err}。").format(err=html_escape(str(err))),
             )
 
         return OKJsonResponse(

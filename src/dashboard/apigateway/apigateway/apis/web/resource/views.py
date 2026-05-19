@@ -19,6 +19,7 @@
 import json
 import operator
 import re
+from html import escape as html_escape
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
@@ -444,7 +445,7 @@ class ResourceImportCheckApi(generics.CreateAPIView):
             openapi_manager = OpenAPIImportManager.load_from_content(request.gateway, slz.validated_data["content"])
         except Exception as err:  # pylint: disable=broad-except
             raise serializers.ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
             )
 
         validate_err_list = openapi_manager.validate()
