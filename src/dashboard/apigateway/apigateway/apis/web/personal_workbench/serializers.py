@@ -19,14 +19,58 @@
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
-from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.core.models import Gateway
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+
+from .constants import WorkbenchFilterTypeEnum
+
+# ========== 下拉筛选项序列化器 ==========
+
+
+class WorkbenchFilterOptionQueryInputSLZ(serializers.Serializer):
+    """个人工作台 - 下拉筛选选项查询输入"""
+
+    type = serializers.ChoiceField(
+        choices=WorkbenchFilterTypeEnum.get_choices(),
+        default=WorkbenchFilterTypeEnum.PENDING.value,
+        help_text="数据来源类型：pending（我的待办）、applied（我的申请）、handled（我的已办）",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchFilterOptionQueryInputSLZ"
+
+
+class WorkbenchGatewayFilterOptionSLZ(serializers.ModelSerializer):
+    """个人工作台 - 网关下拉筛选项"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayFilterOptionSLZ"
+        model = Gateway
+        fields = ["id", "name"]
+        read_only_fields = fields
+
+
+class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
+    """个人工作台 - MCP Server 下拉筛选项"""
+
+    title = serializers.SerializerMethodField(help_text="MCP Server 显示名称")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerFilterOptionSLZ"
+        model = MCPServer
+        fields = ["id", "name", "title"]
+        read_only_fields = fields
+
+    def get_title(self, obj) -> str:
+        return obj.title if obj.title else obj.name
+
 
 # ========== 查询输入序列化器 ==========
 # NOTE: 以下 Input SLZ 仅用于 swagger 文档生成，实际查询过滤由 filters.py 中的 FilterSet 生效。

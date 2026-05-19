@@ -22,24 +22,30 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
-from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.gateway.gateway import GatewayHandler
 from apigateway.common.tenant.request import get_user_tenant_id
+from apigateway.core.models import Gateway
+from apigateway.utils.responses import OKJsonResponse
 
+from .constants import WorkbenchFilterTypeEnum
 from .filters import (
     WorkbenchGatewayPermissionApplyFilter,
     WorkbenchGatewayPermissionRecordFilter,
     WorkbenchMCPPermissionApplyFilter,
 )
 from .serializers import (
+    WorkbenchFilterOptionQueryInputSLZ,
+    WorkbenchGatewayFilterOptionSLZ,
     WorkbenchGatewayPermissionApplyOutputSLZ,
     WorkbenchGatewayPermissionQueryInputSLZ,
     WorkbenchGatewayPermissionRecordOutputSLZ,
     WorkbenchMCPPermissionApplyOutputSLZ,
     WorkbenchMCPPermissionHandledOutputSLZ,
     WorkbenchMCPPermissionQueryInputSLZ,
+    WorkbenchMCPServerFilterOptionSLZ,
 )
 
 
@@ -51,6 +57,125 @@ class WorkbenchPermissionMixin:
     """
 
     permission_classes = [IsAuthenticated]
+
+
+# ========== 筛选下拉选项 ==========
+
+
+class WorkbenchFilterOptionMixin:
+    """筛选下拉选项公共逻辑
+
+    根据 type 参数返回不同数据来源的筛选选项：
+    - pending（我的代办）：当前用户作为 maintainer 管理的网关/MCP Server
+    - applied（我的申请）：当前用户提交过申请的网关/MCP Server
+    - handled（我的已办）：当前用户处理过的网关/MCP Server
+    """
+
+    def _get_maintainer_gateway_ids(self):
+        username = self.request.user.username
+        tenant_id = get_user_tenant_id(self.request)
+        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+        return [gw.id for gw in gateways]
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="个人工作台 - 网关下拉筛选选项列表",
+        query_serializer=WorkbenchFilterOptionQueryInputSLZ,
+        responses={status.HTTP_200_OK: WorkbenchGatewayFilterOptionSLZ(many=True)},
+        tags=["WebAPI.PersonalWorkbench"],
+    ),
+)
+class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, WorkbenchFilterOptionMixin, generics.ListAPIView):
+    """网关下拉筛选选项
+
+    根据 type 参数返回对应数据来源中涉及的网关列表，用于筛选条件下拉框
+    """
+
+    serializer_class = WorkbenchGatewayFilterOptionSLZ
+
+    def get_queryset(self):
+        filter_type = self.request.query_params.get("type", WorkbenchFilterTypeEnum.PENDING.value)
+        username = self.request.user.username
+
+        if filter_type == WorkbenchFilterTypeEnum.APPLIED.value:
+            # 我的申请：从用户提交的申请记录中提取去重的网关
+            gateway_ids = (
+                AppPermissionApply.objects.filter(applied_by=username).values_list("gateway_id", flat=True).distinct()
+            )
+            return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+
+        if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
+            # 我的已办：从用户处理过的记录中提取去重的网关
+            gateway_ids = (
+                AppPermissionRecord.objects.filter(handled_by=username)
+                .exclude(status=ApplyStatusEnum.PENDING.value)
+                .values_list("gateway_id", flat=True)
+                .distinct()
+            )
+            return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+
+        # pending（默认）：当前用户作为 maintainer 管理的网关
+        tenant_id = get_user_tenant_id(self.request)
+        return GatewayHandler.list_gateways_by_user(username, tenant_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        slz = self.get_serializer(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="个人工作台 - MCP Server 下拉筛选选项列表",
+        query_serializer=WorkbenchFilterOptionQueryInputSLZ,
+        responses={status.HTTP_200_OK: WorkbenchMCPServerFilterOptionSLZ(many=True)},
+        tags=["WebAPI.PersonalWorkbench"],
+    ),
+)
+class WorkbenchMCPServerFilterOptionListApi(
+    WorkbenchPermissionMixin, WorkbenchFilterOptionMixin, generics.ListAPIView
+):
+    """MCP Server 下拉筛选选项
+
+    根据 type 参数返回对应数据来源中涉及的 MCP Server 列表，用于筛选条件下拉框
+    """
+
+    serializer_class = WorkbenchMCPServerFilterOptionSLZ
+
+    def get_queryset(self):
+        filter_type = self.request.query_params.get("type", WorkbenchFilterTypeEnum.PENDING.value)
+        username = self.request.user.username
+
+        if filter_type == WorkbenchFilterTypeEnum.APPLIED.value:
+            # 我的申请：从用户提交的申请记录中提取去重的 MCP Server
+            mcp_server_ids = (
+                MCPServerAppPermissionApply.objects.filter(applied_by=username, is_deleted=False)
+                .values_list("mcp_server_id", flat=True)
+                .distinct()
+            )
+            return MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+
+        if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
+            # 我的已办：从用户处理过的记录中提取去重的 MCP Server
+            mcp_server_ids = (
+                MCPServerAppPermissionApply.objects.filter(handled_by=username, is_deleted=False)
+                .exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+                .values_list("mcp_server_id", flat=True)
+                .distinct()
+            )
+            return MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+
+        # pending（默认）：当前用户作为 maintainer 管理的网关下的 MCP Server
+        gateway_ids = self._get_maintainer_gateway_ids()
+        return MCPServer.objects.filter(gateway_id__in=gateway_ids).order_by("name")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        slz = self.get_serializer(queryset, many=True)
+        return OKJsonResponse(data=slz.data)
 
 
 # ========== 我的代办 ==========
