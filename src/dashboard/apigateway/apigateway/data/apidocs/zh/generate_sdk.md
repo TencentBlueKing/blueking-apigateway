@@ -16,7 +16,7 @@
 | ---------------- | ------------- | ---- | -------------------------------------------------------- |
 | resource_version | string        | 是   | 资源版本的版本号                                         |
 | languages        | array[string] | 否   | 需要生成SDK的语言列表，可选值：python，默认为 python SDK |
-| version          | string        | 否   | SDK 版本号，未设置时，将使用资源版本的版本号             |
+| version          | string        | 否   | SDK 版本号，需符合 SemVer；未设置时，将使用资源版本的版本号 |
 
 ### 请求参数示例
 
