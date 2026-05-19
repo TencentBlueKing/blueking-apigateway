@@ -102,7 +102,7 @@ class TestDocImportBySwaggerApi:
     def test_post__unsafe_swagger_ref(self, request_view, fake_gateway, mocker, faker):
         mocker.patch(
             "apigateway.apis.web.resource_doc.views.SwaggerParser.parse",
-            side_effect=UnsafeSwaggerRefError("swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"),
+            side_effect=UnsafeSwaggerRefError("any attacker controlled content"),
         )
 
         resp = request_view(
@@ -124,7 +124,9 @@ class TestDocImportBySwaggerApi:
 
         assert resp.status_code == 400
         assert result["error"]["code"] == "INVALID_ARGUMENT"
-        assert result["error"]["message"] == "swagger 中包含不允许的外部 $ref 引用，位置：$.paths./user.get.$ref"
+        # 固定错误消息，不回显异常中的攻击者可控内容
+        assert "any attacker controlled content" not in result["error"]["message"]
+        assert "swagger" in result["error"]["message"]
 
 
 class TestDocExportApi:

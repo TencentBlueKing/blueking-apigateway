@@ -230,30 +230,24 @@ class SwaggerParser(BaseParser):
         if not isinstance(data, dict):
             raise UnsafeSwaggerRefError(_("swagger 内容无法解析，无法校验 $ref 安全性"))
 
-        unsafe_ref_paths = SwaggerParser._collect_unsafe_ref_paths(data)
-
-        if unsafe_ref_paths:
-            raise UnsafeSwaggerRefError(
-                _("swagger 中包含不允许的外部 $ref 引用，位置：{paths}").format(
-                    paths=", ".join(unsafe_ref_paths[:5])
-                )
-            )
+        if SwaggerParser._has_unsafe_refs(data):
+            raise UnsafeSwaggerRefError(_("swagger 中包含不安全的外部 $ref 引用。"))
 
     @staticmethod
-    def _collect_unsafe_ref_paths(node: Any, path: str = "$") -> List[str]:
-        """递归收集所有非文档内部 $ref 所在的 JSON Path。
+    def _has_unsafe_refs(node: Any) -> bool:
+        """迭代检查是否存在非文档内部 $ref 引用。"""
+        stack: List[Any] = [node]
 
-        仅允许以 '#' 开头的纯文档内部引用（如 #/definitions/User）。
-        """
-        paths: List[str] = []
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if key == "$ref":
-                    if isinstance(value, str) and not value.startswith("#"):
-                        paths.append(f"{path}.$ref")
-                else:
-                    paths.extend(SwaggerParser._collect_unsafe_ref_paths(value, f"{path}.{key}"))
-        elif isinstance(node, list):
-            for i, item in enumerate(node):
-                paths.extend(SwaggerParser._collect_unsafe_ref_paths(item, f"{path}[{i}]"))
-        return paths
+        while stack:
+            current_node = stack.pop()
+            if isinstance(current_node, dict):
+                for key, value in current_node.items():
+                    if key == "$ref":
+                        if isinstance(value, str) and not value.startswith("#"):
+                            return True
+                    else:
+                        stack.append(value)
+            elif isinstance(current_node, list):
+                stack.extend(current_node)
+
+        return False
