@@ -39,7 +39,7 @@ type IMcpBatchConfigQuery = {
 // 定义动态接口函数类型
 type FetchConfigFunc = (
   apigwIdOrData?: number | IMcpBatchConfigQuery,
-  data?: IMcpBatchConfigQuery
+  data?: IMcpBatchConfigQuery,
 ) => Promise<IMcpClientConfig>;
 
 /**
