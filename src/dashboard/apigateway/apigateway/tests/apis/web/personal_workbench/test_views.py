@@ -179,6 +179,67 @@ class TestWorkbenchGatewayFilterOptionListApi:
         assert resp.status_code == 200
         assert isinstance(result["data"], list)
 
+    def test_invalid_type_returns_400(self, request_view):
+        """传入无效 type 值应返回 400"""
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.gateways",
+            data={"type": "invalid_value"},
+        )
+        assert resp.status_code == 400
+
+    def test_applied_deduplicates_multiple_applies(self, request_view, fake_gateway, fake_other_gateway):
+        """applied 类型：同一网关多条申请记录应去重"""
+        for _ in range(3):
+            G(
+                AppPermissionApply,
+                gateway=fake_other_gateway,
+                bk_app_code="app1",
+                applied_by=FAKE_USERNAME,
+                status=ApplyStatusEnum.PENDING.value,
+            )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.gateways",
+            data={"type": "applied"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert gateway_ids.count(fake_other_gateway.id) == 1
+
+    def test_pending_sorted_by_name(self, request_view, fake_gateway, faker):
+        """pending 类型：结果应按名称排序"""
+        gw_z = G(
+            Gateway,
+            name="z_gateway",
+            _maintainers=FAKE_USERNAME,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+        )
+        gw_a = G(
+            Gateway,
+            name="a_gateway",
+            _maintainers=FAKE_USERNAME,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.gateways",
+            data={"type": "pending"},
+        )
+        result = resp.json()
+
+        names = [item["name"] for item in result["data"]]
+        assert names.index("a_gateway") < names.index("z_gateway")
+
 
 # ==================== 筛选下拉选项 - MCP Server ====================
 
@@ -264,6 +325,38 @@ class TestWorkbenchMCPServerFilterOptionListApi:
 
         mcp_ids = [item["id"] for item in result["data"]]
         assert fake_mcp_server.id not in mcp_ids
+
+    def test_invalid_type_returns_400(self, request_view):
+        """传入无效 type 值应返回 400"""
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_servers",
+            data={"type": "invalid_value"},
+        )
+        assert resp.status_code == 400
+
+    def test_applied_deduplicates_multiple_applies(self, request_view, fake_gateway, fake_mcp_server):
+        """applied 类型：同一 MCP Server 多条申请记录应去重"""
+        for _ in range(3):
+            G(
+                MCPServerAppPermissionApply,
+                mcp_server=fake_mcp_server,
+                bk_app_code="app1",
+                applied_by=FAKE_USERNAME,
+                applied_time=now_datetime(),
+                status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+                is_deleted=False,
+            )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_servers",
+            data={"type": "applied"},
+        )
+        result = resp.json()
+
+        mcp_ids = [item["id"] for item in result["data"]]
+        assert mcp_ids.count(fake_mcp_server.id) == 1
 
 
 # ==================== 我的代办 - API 网关 ====================

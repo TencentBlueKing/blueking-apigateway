@@ -58,9 +58,15 @@ class WorkbenchGatewayFilterOptionSLZ(serializers.ModelSerializer):
 
 
 class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
-    """个人工作台 - MCP Server 下拉筛选项"""
+    """个人工作台 - MCP Server 下拉筛选项
 
-    title = serializers.SerializerMethodField(help_text="MCP Server 显示名称")
+    输出字段说明：
+    - id: MCP Server 唯一标识
+    - name: MCP Server 内部名称（唯一标识，用于系统间交互）
+    - title: MCP Server 展示名称（为空时回退到 name）
+    """
+
+    title = serializers.SerializerMethodField(help_text="MCP Server 展示名称（为空时回退到 name）")
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerFilterOptionSLZ"
@@ -82,6 +88,7 @@ class WorkbenchGatewayPermissionQueryInputSLZ(serializers.Serializer):
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
+    gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
     grant_dimension = serializers.ChoiceField(
         choices=GrantDimensionEnum.get_choices(), required=False, help_text="授权维度"
     )
@@ -98,6 +105,7 @@ class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
+    mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称或应用ID）"
     )

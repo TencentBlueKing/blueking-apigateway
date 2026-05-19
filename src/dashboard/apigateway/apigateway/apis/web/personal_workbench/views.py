@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
@@ -26,6 +27,11 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import ApplyStatusEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.gateway.gateway import GatewayHandler
+from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
+from apigateway.common.tenant.query import (
+    gateway_filter_by_user_tenant_id,
+    gateway_mcp_server_filter_by_user_tenant_id,
+)
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse
@@ -58,6 +64,13 @@ class WorkbenchPermissionMixin:
 
     permission_classes = [IsAuthenticated]
 
+    def _get_maintainer_gateway_ids(self):
+        """获取当前用户作为 maintainer 管理的网关 ID 列表"""
+        username = self.request.user.username
+        tenant_id = get_user_tenant_id(self.request)
+        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+        return [gw.id for gw in gateways]
+
 
 # ========== 筛选下拉选项 ==========
 
@@ -66,16 +79,10 @@ class WorkbenchFilterOptionMixin:
     """筛选下拉选项公共逻辑
 
     根据 type 参数返回不同数据来源的筛选选项：
-    - pending（我的代办）：当前用户作为 maintainer 管理的网关/MCP Server
+    - pending（我的待办）：当前用户作为 maintainer 管理的网关/MCP Server
     - applied（我的申请）：当前用户提交过申请的网关/MCP Server
     - handled（我的已办）：当前用户处理过的网关/MCP Server
     """
-
-    def _get_maintainer_gateway_ids(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
-        return [gw.id for gw in gateways]
 
 
 @method_decorator(
@@ -94,17 +101,22 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, WorkbenchFil
     """
 
     serializer_class = WorkbenchGatewayFilterOptionSLZ
+    filter_backends = []
 
     def get_queryset(self):
-        filter_type = self.request.query_params.get("type", WorkbenchFilterTypeEnum.PENDING.value)
+        slz = WorkbenchFilterOptionQueryInputSLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
+        filter_type = slz.validated_data.get("type", WorkbenchFilterTypeEnum.PENDING.value)
         username = self.request.user.username
+        tenant_id = get_user_tenant_id(self.request)
 
         if filter_type == WorkbenchFilterTypeEnum.APPLIED.value:
             # 我的申请：从用户提交的申请记录中提取去重的网关
             gateway_ids = (
                 AppPermissionApply.objects.filter(applied_by=username).values_list("gateway_id", flat=True).distinct()
             )
-            return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+            queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的网关
@@ -114,11 +126,12 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, WorkbenchFil
                 .values_list("gateway_id", flat=True)
                 .distinct()
             )
-            return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+            queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
+            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
         # pending（默认）：当前用户作为 maintainer 管理的网关
-        tenant_id = get_user_tenant_id(self.request)
-        return GatewayHandler.list_gateways_by_user(username, tenant_id)
+        gateway_ids = self._get_maintainer_gateway_ids()
+        return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -144,10 +157,14 @@ class WorkbenchMCPServerFilterOptionListApi(
     """
 
     serializer_class = WorkbenchMCPServerFilterOptionSLZ
+    filter_backends = []
 
     def get_queryset(self):
-        filter_type = self.request.query_params.get("type", WorkbenchFilterTypeEnum.PENDING.value)
+        slz = WorkbenchFilterOptionQueryInputSLZ(data=self.request.query_params)
+        slz.is_valid(raise_exception=True)
+        filter_type = slz.validated_data.get("type", WorkbenchFilterTypeEnum.PENDING.value)
         username = self.request.user.username
+        tenant_id = get_user_tenant_id(self.request)
 
         if filter_type == WorkbenchFilterTypeEnum.APPLIED.value:
             # 我的申请：从用户提交的申请记录中提取去重的 MCP Server
@@ -156,7 +173,8 @@ class WorkbenchMCPServerFilterOptionListApi(
                 .values_list("mcp_server_id", flat=True)
                 .distinct()
             )
-            return MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+            queryset = MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+            return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的 MCP Server
@@ -166,7 +184,8 @@ class WorkbenchMCPServerFilterOptionListApi(
                 .values_list("mcp_server_id", flat=True)
                 .distinct()
             )
-            return MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+            queryset = MCPServer.objects.filter(id__in=mcp_server_ids).order_by("name")
+            return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         # pending（默认）：当前用户作为 maintainer 管理的网关下的 MCP Server
         gateway_ids = self._get_maintainer_gateway_ids()
@@ -200,10 +219,7 @@ class WorkbenchPendingGatewayPermissionListApi(WorkbenchPermissionMixin, generic
     filterset_class = WorkbenchGatewayPermissionApplyFilter
 
     def get_queryset(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
-        gateway_ids = [gw.id for gw in gateways]
+        gateway_ids = self._get_maintainer_gateway_ids()
         return (
             AppPermissionApply.objects.filter(
                 gateway_id__in=gateway_ids,
@@ -233,10 +249,7 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     filterset_class = WorkbenchMCPPermissionApplyFilter
 
     def get_queryset(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
-        gateway_ids = [gw.id for gw in gateways]
+        gateway_ids = self._get_maintainer_gateway_ids()
         return (
             MCPServerAppPermissionApply.objects.filter(
                 mcp_server__gateway_id__in=gateway_ids,
@@ -271,7 +284,16 @@ class WorkbenchMyApplyGatewayPermissionListApi(WorkbenchPermissionMixin, generic
 
     def get_queryset(self):
         username = self.request.user.username
-        return AppPermissionApply.objects.filter(applied_by=username).select_related("gateway").order_by("-id")
+        tenant_id = get_user_tenant_id(self.request)
+        queryset = AppPermissionApply.objects.filter(applied_by=username).select_related("gateway")
+        if tenant_id == TENANT_ID_OPERATION:
+            return queryset.filter(
+                Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+                | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=tenant_id)
+            ).order_by("-id")
+        return queryset.filter(
+            gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=tenant_id
+        ).order_by("-id")
 
 
 @method_decorator(
@@ -294,14 +316,23 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
 
     def get_queryset(self):
         username = self.request.user.username
-        return (
-            MCPServerAppPermissionApply.objects.filter(
-                applied_by=username,
-                is_deleted=False,
-            )
-            .select_related("mcp_server", "mcp_server__gateway")
-            .order_by("-id")
-        )
+        tenant_id = get_user_tenant_id(self.request)
+        queryset = MCPServerAppPermissionApply.objects.filter(
+            applied_by=username,
+            is_deleted=False,
+        ).select_related("mcp_server", "mcp_server__gateway")
+        if tenant_id == TENANT_ID_OPERATION:
+            return queryset.filter(
+                Q(mcp_server__gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+                | Q(
+                    mcp_server__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+                    mcp_server__gateway__tenant_id=tenant_id,
+                )
+            ).order_by("-id")
+        return queryset.filter(
+            mcp_server__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+            mcp_server__gateway__tenant_id=tenant_id,
+        ).order_by("-id")
 
 
 # ========== 我的已办 ==========
@@ -327,12 +358,20 @@ class WorkbenchHandledGatewayPermissionListApi(WorkbenchPermissionMixin, generic
 
     def get_queryset(self):
         username = self.request.user.username
-        return (
+        tenant_id = get_user_tenant_id(self.request)
+        queryset = (
             AppPermissionRecord.objects.filter(handled_by=username)
             .exclude(status=ApplyStatusEnum.PENDING.value)
             .select_related("gateway")
-            .order_by("-handled_time")
         )
+        if tenant_id == TENANT_ID_OPERATION:
+            return queryset.filter(
+                Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+                | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=tenant_id)
+            ).order_by("-handled_time")
+        return queryset.filter(
+            gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=tenant_id
+        ).order_by("-handled_time")
 
 
 @method_decorator(
@@ -355,12 +394,24 @@ class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
 
     def get_queryset(self):
         username = self.request.user.username
-        return (
+        tenant_id = get_user_tenant_id(self.request)
+        queryset = (
             MCPServerAppPermissionApply.objects.filter(
                 handled_by=username,
                 is_deleted=False,
             )
             .exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
             .select_related("mcp_server", "mcp_server__gateway")
-            .order_by("-handled_time")
         )
+        if tenant_id == TENANT_ID_OPERATION:
+            return queryset.filter(
+                Q(mcp_server__gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+                | Q(
+                    mcp_server__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+                    mcp_server__gateway__tenant_id=tenant_id,
+                )
+            ).order_by("-handled_time")
+        return queryset.filter(
+            mcp_server__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+            mcp_server__gateway__tenant_id=tenant_id,
+        ).order_by("-handled_time")
