@@ -463,7 +463,9 @@ const getApplicant = async () => {
   const response = await getMcpPermissionsApplicant(
     gatewayId,
     filterData.value.mcp_server_id || '-',
-    {} as any,
+    {
+      state: filterData.value.state,
+    } as any,
   );
   applicantList.value = response?.applicants || [];
 };
