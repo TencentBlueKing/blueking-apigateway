@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
@@ -26,7 +28,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission.permission import ResourcePermissionHandler
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
 from .constants import WorkbenchFilterTypeEnum
@@ -117,7 +119,31 @@ class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
 # ========== API 网关 输出序列化器 ==========
 
 
-class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
+class ResourceDetailMixin:
+    """资源详情 Mixin，提供 get_resources 方法
+
+    使用方式：View 层通过 serializer context 传入 prefetched_resources（批量预取的资源映射），
+    避免 N+1 查询问题。若 context 中无预取数据，则回退到单条查询。
+    """
+
+    context: dict[str, Any]
+
+    def get_resources(self, obj) -> list:
+        if obj.grant_dimension != GrantDimensionEnum.RESOURCE.value:
+            return []
+        resource_ids = obj.resource_ids
+        if not resource_ids:
+            return []
+
+        # 优先使用 View 层预取的资源数据
+        prefetched = self.context.get("prefetched_resources")
+        if prefetched is not None:
+            return [prefetched[rid] for rid in sorted(resource_ids) if rid in prefetched]
+
+        return list(Resource.objects.filter(id__in=resource_ids).values("id", "name", "path", "method").order_by("id"))
+
+
+class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
     """个人工作台 - API 网关代办/我的申请 输出序列化器"""
 
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
@@ -125,6 +151,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
+    resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionApplyOutputSLZ"
@@ -137,6 +164,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
             "grant_dimension_display",
             "expire_days",
             "expire_days_display",
+            "resources",
             "reason",
             "applied_by",
             "created_time",
@@ -167,7 +195,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(serializers.ModelSerializer):
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
-class WorkbenchGatewayPermissionRecordOutputSLZ(serializers.ModelSerializer):
+class WorkbenchGatewayPermissionRecordOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
     """个人工作台 - API 网关已办 输出序列化器"""
 
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
@@ -175,6 +203,7 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(serializers.ModelSerializer):
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
+    resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionRecordOutputSLZ"
@@ -187,6 +216,7 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(serializers.ModelSerializer):
             "grant_dimension_display",
             "expire_days",
             "expire_days_display",
+            "resources",
             "reason",
             "applied_by",
             "applied_time",

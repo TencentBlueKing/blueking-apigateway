@@ -25,7 +25,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, Resource
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -483,6 +483,55 @@ class TestWorkbenchPendingGatewayPermissionListApi:
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
 
+    def test_list_with_resource_dimension_returns_resources(self, request_view, fake_gateway):
+        """资源维度的申请应返回资源详情列表"""
+        resource = G(Resource, gateway=fake_gateway, name="get_apis", path="/api/v1/apis/", method="GET")
+        apply_obj = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        )
+        apply_obj._resource_ids = f"{resource.id}"
+        apply_obj.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.pending",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        resources = result["data"]["results"][0]["resources"]
+        assert len(resources) == 1
+        assert resources[0]["name"] == "get_apis"
+        assert resources[0]["path"] == "/api/v1/apis/"
+        assert resources[0]["method"] == "GET"
+
+    def test_list_with_gateway_dimension_returns_empty_resources(self, request_view, fake_gateway):
+        """网关维度的申请应返回空资源列表"""
+        G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.API.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.pending",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["resources"] == []
+
 
 # ==================== 我的代办 - MCP Server ====================
 
@@ -643,6 +692,55 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 2
 
+    def test_list_with_resource_dimension_returns_resources(self, request_view, fake_gateway):
+        """测试我的申请 - 资源维度应返回资源详情列表"""
+        resource = G(Resource, gateway=fake_gateway, name="get_apps", path="/api/v1/apps/", method="GET")
+        apply_obj = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        )
+        apply_obj.resource_ids = [resource.id]
+        apply_obj.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.applied",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        resources = result["data"]["results"][0]["resources"]
+        assert len(resources) == 1
+        assert resources[0]["name"] == "get_apps"
+        assert resources[0]["path"] == "/api/v1/apps/"
+        assert resources[0]["method"] == "GET"
+
+    def test_list_with_gateway_dimension_returns_empty_resources(self, request_view, fake_gateway):
+        """测试我的申请 - 网关维度应返回空资源列表"""
+        G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+            grant_dimension=GrantDimensionEnum.API.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.applied",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["resources"] == []
+
 
 # ==================== 我的申请 - MCP Server ====================
 
@@ -776,6 +874,37 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+    def test_list_with_resource_dimension_returns_resources(self, request_view, fake_gateway):
+        """已办-资源维度的记录应返回资源详情列表"""
+        resource = G(Resource, gateway=fake_gateway, name="create_user", path="/api/v1/users/", method="POST")
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+            grant_dimension=GrantDimensionEnum.RESOURCE.value,
+        )
+        record._resource_ids = f"{resource.id}"
+        record.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.handled",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        resources = result["data"]["results"][0]["resources"]
+        assert len(resources) == 1
+        assert resources[0]["name"] == "create_user"
+        assert resources[0]["path"] == "/api/v1/users/"
+        assert resources[0]["method"] == "POST"
 
 
 # ==================== 我的已办 - MCP Server ====================
