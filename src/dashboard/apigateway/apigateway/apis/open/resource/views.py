@@ -67,7 +67,7 @@ class ResourceSyncApi(generics.CreateAPIView):
             )
         except Exception as err:  # pylint: disable=broad-except
             raise serializers.ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)}
             )
 
         validate_err_list = openapi_manager.validate()
