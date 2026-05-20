@@ -86,7 +86,7 @@
                 class="bk-collapse-source"
               >
                 <BkCollapsePanel
-                  :name="1"
+                  name="fixed"
                   class="mb-12px"
                 >
                   <span class="log-name">{{ t("版本日志") }}</span>
@@ -99,7 +99,7 @@
                 <BkCollapsePanel
                   v-for="(resource, index) in displayedResources"
                   :key="resource.name"
-                  :name="index + 2"
+                  :name="resource.name"
                   :class="`source-${resource.name}`"
                   class="mb-12px"
                 >
@@ -110,7 +110,7 @@
                     <BkTag :theme="getMethodsTheme(resource.method)">
                       {{ resource.method }}
                     </BkTag>
-                    <span class="log-name">{{ resource.name }}</span>
+                    <span class="log-name">{{ index }}{{ resource.name }}</span>
                   </span>
                   <template #content>
                     <div class="sideslider-rg-content">
@@ -463,7 +463,6 @@ import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vu
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
-import { last } from 'lodash-es';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
@@ -479,7 +478,7 @@ const emits = defineEmits<{ hidden: [void] }>();
 const { t } = useI18n();
 const route = useRoute();
 
-const activeIndex = ref([1]);
+const activeIndex = ref<string[]>(['fixed']);
 const info = ref<any>({});
 const currentSource = ref<any>({});
 const displayedResources = shallowRef<any[]>([]);
@@ -586,8 +585,6 @@ const renderResourceChunk = () => {
     resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
   );
   chunk.forEach((item: any) => {
-    activeIndex.value.push((last(activeIndex.value) ?? 1) + 1);
-
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
         item.proxy.config = JSON.parse(item?.proxy?.config);
@@ -612,15 +609,13 @@ const getInfo = async () => {
   rawResources.value = resources || [];
   currentSource.value = resources[0] || {};
 
-  activeIndex.value = [1];
+  activeIndex.value = ['fixed'].concat(rawResources.value.map(item => item.name));
   isLoading.value = false;
   const chunk = rawResources.value.slice(
     resourceTrunkConfig.index,
     resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
   );
   chunk.forEach((item: any) => {
-    activeIndex.value.push((last(activeIndex.value) ?? 1) + 1);
-
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
         item.proxy.config = JSON.parse(item?.proxy?.config);
