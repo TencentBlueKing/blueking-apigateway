@@ -525,15 +525,15 @@
           {{ t('请求参数') }}
         </div>
         <div>
-          <span
-            v-if="formData.schema?.none_schema"
-            class="text-12px"
-          >{{ t('该资源无请求参数') }}</span>
           <RequestParams
-            v-else
+            v-if="formData.openapi_schema?.parameters || formData.openapi_schema?.requestBody"
             :detail="formData"
             readonly
           />
+          <span
+            v-else
+            class="text-12px"
+          >{{ t('该资源无请求参数') }}</span>
         </div>
       </div>
 

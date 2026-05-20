@@ -79,14 +79,24 @@
 
 <script setup lang="ts">
 import CodeBlock from './CodeBlock.vue';
-import { useEnv } from '@/stores';
+import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
 
 const { t } = useI18n();
 const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
+const userStore = useUserInfo();
 
-const multiContextCode = computed(() => `# ${t('创建不同环境的上下文')}
+const multiContextCode = computed(() => {
+  let firstPart = `# ${t('创建不同环境的上下文')}
 $ bk-cli context create clouds \\
-  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"`;
+
+  if (featureFlagStore.isTenantMode) {
+    firstPart += `
+  --tenant_id=${userStore.info.tenant_id || 'system'}`;
+  }
+
+  const secondPart = `
 
 # ${t('在上下文之间切换')}
 $ bk-cli context use clouds
@@ -95,7 +105,9 @@ $ bk-cli context use clouds
 $ bk-cli context list
 
 # ${t('单个命令覆盖上下文')}
-$ bk-cli api bk-iam GET /api/v2/systems/ --context devops`);
+$ bk-cli api bk-iam GET /api/v2/systems/ --context devops`;
+  return `${firstPart}${secondPart}`;
+});
 
 const dryRunCode = computed(() => `# ${t('预览请求而不实际执行')}
 $ bk-cli api bk-demo POST /api/v2/resources/ \\

@@ -125,10 +125,12 @@
 
 <script setup lang="ts">
 import CodeBlock from './CodeBlock.vue';
-import { useEnv } from '@/stores';
+import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
 
 const { t } = useI18n();
 const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
+const userStore = useUserInfo();
 
 const authTab = ref('app_user');
 
@@ -146,14 +148,24 @@ $ make install
 # ${t('安装 CLI SKILL（必需）')}
 $ ${envStore.env.CLI.SKILL_NPM_INSTALL_CMD}`);
 
-const initContextCode = computed(() => `# ${t('初始化 default 上下文')}
+const initContextCode = computed(() => {
+  let firstCommand = `# ${t('初始化 default 上下文')}
 $ bk-cli context init \\
-  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}"`;
+
+  if (featureFlagStore.isTenantMode) {
+    firstCommand += `
+  --tenant_id=${userStore.info.tenant_id || 'system'}`;
+  }
+
+  const secondCommand = `
 
 # ${t('可选：设置默认请求超时（默认 60s，最大 300s）')}
 $ bk-cli context init \\
   --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}" \\
-  --timeout 90s`);
+  --timeout 90s`;
+  return `${firstCommand}${secondCommand}`;
+});
 
 const authAppUserCode = computed(() => `# ${t('存储应用 + 用户令牌 + {token} 有效期 {day} 天', {
   token: envStore.env.CLI.USER_KEY,

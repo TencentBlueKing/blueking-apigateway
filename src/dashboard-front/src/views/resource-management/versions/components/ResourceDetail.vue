@@ -463,6 +463,7 @@ import ConfigDisplayTable from '@/components/plugin-manage/ConfigDisplayTable.vu
 import RequestParams from '../../components/request-params/Index.vue';
 import ResponseParams from '../../components/response-params/Index.vue';
 import { useInfiniteScroll, useScroll } from '@vueuse/core';
+import { last } from 'lodash-es';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getGatewayLabels>[number];
 
@@ -584,8 +585,8 @@ const renderResourceChunk = () => {
     resourceTrunkConfig.index,
     resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
   );
-  chunk.forEach((item: any, index: number) => {
-    activeIndex.value.push(index + 2);
+  chunk.forEach((item: any) => {
+    activeIndex.value.push((last(activeIndex.value) ?? 1) + 1);
 
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
@@ -617,8 +618,8 @@ const getInfo = async () => {
     resourceTrunkConfig.index,
     resourceTrunkConfig.index + resourceTrunkConfig.chunkSize,
   );
-  chunk.forEach((item: any, index: number) => {
-    activeIndex.value.push(index + 2);
+  chunk.forEach((item: any) => {
+    activeIndex.value.push((last(activeIndex.value) ?? 1) + 1);
 
     if (item?.proxy?.config) {
       if (typeof item?.proxy?.config === 'string') {
