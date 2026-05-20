@@ -29,6 +29,8 @@ from apigateway.biz.gateway.gateway import GatewayHandler
 from apigateway.common.tenant.query import (
     gateway_filter_by_user_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,
+    gateway_related_filter_by_user_tenant_id,
+    mcp_server_related_filter_by_user_tenant_id,
 )
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.models import Gateway, Resource
@@ -308,7 +310,7 @@ class WorkbenchMyApplyGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
         username = self.request.user.username
         tenant_id = get_user_tenant_id(self.request)
         queryset = AppPermissionApply.objects.filter(applied_by=username).select_related("gateway").order_by("-id")
-        return gateway_filter_by_user_tenant_id(queryset, tenant_id, gateway_field_prefix="gateway__")
+        return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
 
 
 @method_decorator(
@@ -340,10 +342,7 @@ class WorkbenchMyApplyMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-id")
         )
-        return gateway_filter_by_user_tenant_id(queryset, tenant_id, gateway_field_prefix="mcp_server__gateway__")
-
-
-# ========== 我的已办 ==========
+        return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
 
 
 @method_decorator(
@@ -373,7 +372,7 @@ class WorkbenchHandledGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
             .select_related("gateway")
             .order_by("-handled_time")
         )
-        return gateway_filter_by_user_tenant_id(queryset, tenant_id, gateway_field_prefix="gateway__")
+        return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
 
 
 @method_decorator(
@@ -406,4 +405,4 @@ class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-handled_time")
         )
-        return gateway_filter_by_user_tenant_id(queryset, tenant_id, gateway_field_prefix="mcp_server__gateway__")
+        return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
