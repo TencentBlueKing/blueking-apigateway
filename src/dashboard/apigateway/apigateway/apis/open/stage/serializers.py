@@ -78,7 +78,12 @@ class StageWithResourceVersionV1SLZ(serializers.Serializer):
 
 
 class HostSLZ(serializers.Serializer):
-    host = serializers.RegexField(DOMAIN_PATTERN)
+    host = serializers.RegexField(
+        DOMAIN_PATTERN,
+        error_messages={
+            "invalid": _("host 格式不正确，需以 http:// 或 https:// 开头，域名为合法格式"),
+        },
+    )
     weight = serializers.IntegerField(min_value=1, required=False)
 
     class Meta:
