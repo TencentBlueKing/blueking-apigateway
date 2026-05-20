@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from html import escape as html_escape
-
 from bkapi_client_generator import ExpandSwaggerError, GenerateMarkdownError
 from django.db import transaction
 from django.utils.translation import gettext as _
