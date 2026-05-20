@@ -19,7 +19,7 @@
 <template>
   <div class="resource-container page-wrapper-padding">
     <BkAlert
-      v-if="!tableData?.length && !gatewayStore.isProgrammableGateway"
+      v-if="!versionCount && !gatewayStore.isProgrammableGateway"
       theme="warning"
       :title="t(`如需生成新版本，请前往'资源配置'页面操作`)"
       class="mb-20px"
@@ -174,6 +174,7 @@ const diffDisabled = ref(true);
 const tableData = ref<any[]>([]);
 const selections = ref<any[]>([]);
 const versionCount = ref(0);
+const isFirstRequest = ref(true);
 
 // 导出配置
 const exportDialogConfig = ref<IExportDialog>({
@@ -656,8 +657,11 @@ const handleBatchDelete = () => {
 };
 
 const handleRequestDone = () => {
-  const pagination = tableRef.value?.getPagination();
-  versionCount.value = pagination?.total ?? 0;
+  if (isFirstRequest.value) {
+    const pagination = tableRef.value?.getPagination();
+    versionCount.value = pagination?.total ?? 0;
+    isFirstRequest.value = false;
+  }
 };
 
 const handleClearFilterKey = () => {
