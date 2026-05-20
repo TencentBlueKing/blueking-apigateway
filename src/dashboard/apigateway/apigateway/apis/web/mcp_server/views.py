@@ -785,13 +785,7 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
         data = slz.validated_data
 
         state = data.get("state")
-        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
-            status_list = [
-                MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-                MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
-            ]
-        else:
-            status_list = [MCPServerAppPermissionApplyStatusEnum.PENDING.value]
+        status_list = MCPServerAppPermissionApplyProcessedStateEnum.get_status_list(state)
 
         # 根据 mcp_server_id 查询参数过滤，不传则查询当前网关下所有
         queryset = MCPServerAppPermissionApply.objects.filter(mcp_server__gateway=request.gateway)
@@ -834,15 +828,8 @@ class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQue
         queryset = self.get_queryset()
 
         state = data.get("state")
-        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
-            queryset = queryset.filter(
-                status__in=[
-                    MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-                    MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
-                ]
-            )
-        elif state == MCPServerAppPermissionApplyProcessedStateEnum.UNPROCESSED.value:
-            queryset = queryset.filter(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+        status_list = MCPServerAppPermissionApplyProcessedStateEnum.get_status_list(state)
+        queryset = queryset.filter(status__in=status_list)
 
         applied_by_list = list(queryset.values_list("applied_by", flat=True).distinct().order_by("applied_by"))
 

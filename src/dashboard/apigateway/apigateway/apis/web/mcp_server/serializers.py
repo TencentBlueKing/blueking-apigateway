@@ -724,7 +724,7 @@ class MCPServerAppPermissionApplyApplicantListInputSLZ(serializers.Serializer):
     state = serializers.ChoiceField(
         choices=MCPServerAppPermissionApplyProcessedStateEnum.get_choices(),
         required=False,
-        help_text="审批处理状态，不传则返回所有申请人",
+        help_text="审批处理状态，不传默认返回待处理的单据",
     )
 
 
