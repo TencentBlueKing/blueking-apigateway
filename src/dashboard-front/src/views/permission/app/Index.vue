@@ -17,7 +17,7 @@
  */
 <template>
   <div class="permission-app-container page-wrapper-padding">
-    <div class="flex justify-between header">
+    <div class="flex justify-between">
       <div class="flex items-center header-btn">
         <BkButton
           v-bk-tooltips="{
@@ -54,6 +54,7 @@
             :key="componentKey"
             v-model="filterValues"
             :data="filterConditions"
+            :validate-values="validateSearchSelect"
             :placeholder="t('搜索')"
             :value-split-code="'+'"
             clearable
@@ -65,7 +66,7 @@
       </BkForm>
     </div>
 
-    <div class="mt-16px app-content">
+    <div class="mt-24px app-content">
       <AgTable
         ref="tableRef"
         v-model:table-data="tableData"
@@ -358,12 +359,14 @@ const filterConditions = ref<ISearchItem[]>([
       },
     ],
     onlyRecommendChildren: true,
+    noValidate: true,
   },
   {
     name: t('蓝鲸应用ID'),
     id: 'bk_app_code',
     children: [],
     onlyRecommendChildren: true,
+    noValidate: true,
   },
   {
     name: t('资源名称'),
@@ -372,10 +375,12 @@ const filterConditions = ref<ISearchItem[]>([
   {
     name: t('请求路径'),
     id: 'resource_path',
+    noValidate: true,
   },
   {
     name: t('模糊搜索'),
     id: 'keyword',
+    noValidate: true,
   },
 ]);
 const tableData = ref([]);
@@ -639,6 +644,30 @@ const init = () => {
   getApigwResources();
 };
 init();
+
+// 校验查询的资源名称，使用户只能从给出的资源选项中选择查询的 resource_id
+const validateSearchSelect = async (item: ISearchItem, values: {
+  id: string
+  name: string
+}[]) => {
+  if (item.id === 'resource_id') {
+    const resourceIdOption = filterConditions.value.find(
+      (condition: ISearchItem) => condition.id === 'resource_id',
+    );
+
+    if (resourceIdOption?.children) {
+      if (resourceIdOption.children.find(option => option.name === values[0].name)) {
+        return true;
+      }
+      else {
+        return t('请从选项中选择资源');
+      }
+    }
+    else {
+      return true;
+    }
+  }
+};
 </script>
 
 <style lang="scss" scoped>

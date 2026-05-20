@@ -526,20 +526,22 @@ watch(() => detail, () => {
     if (resourceSchema!.requestBody) {
       const body = resourceSchema!.requestBody;
       const rootRowSchema = body?.content?.['application/json']?.schema;
-      const row = {
-        id: uniqueId(),
-        name: t('根节点'),
-        in: 'body',
-        type: (rootRowSchema.type || 'object') as JSONSchema7TypeName,
-        required: body.required ?? false,
-        description: body.description ?? '',
-      };
-      const subBody = convertSchemaToBodyRow(rootRowSchema);
-      if (subBody) {
-        Object.assign(row, { body: subBody });
+      if (rootRowSchema) {
+        const row = {
+          id: uniqueId(),
+          name: t('根节点'),
+          in: 'body',
+          type: (rootRowSchema.type || 'object') as JSONSchema7TypeName,
+          required: body.required ?? false,
+          description: body.description ?? '',
+        };
+        const subBody = convertSchemaToBodyRow(rootRowSchema);
+        if (subBody) {
+          Object.assign(row, { body: subBody });
+        }
+        tableData.value.push(row);
+        expandedRowKeys.value.push(row.id);
       }
-      tableData.value.push(row);
-      expandedRowKeys.value.push(row.id);
     }
   }
 }, { immediate: true });
