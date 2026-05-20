@@ -89,6 +89,12 @@ class OpenAPIImportManager:
         """
         进行校验
         """
+        # 在所有解析操作之前校验 $ref，防止外部引用导致 SSRF / 文件读取
+        try:
+            self._validate_refs(self.data)
+        except ValueError as err:
+            return [SchemaValidateErr(str(err), "$", [])]
+
         try:
             # 先获取 openapi版本
             spec_version = get_spec_version(self.data)
@@ -143,6 +149,7 @@ class OpenAPIImportManager:
         """
         解析 openapi
         """
+        self._validate_refs(self.data)
 
         parse_result = ResolvingParser(
             spec_string=json.dumps(self.data), backend="openapi-spec-validator", strict=False
@@ -154,6 +161,34 @@ class OpenAPIImportManager:
         self.parser = parser
         self._raw_resource_list = parser.get_resources()
         self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
+
+    @staticmethod
+    def _validate_refs(data: Dict[str, Any]) -> None:
+        """校验 openapi 数据中所有 $ref 值，仅允许文档内部引用（以 # 开头）。
+
+        防止通过外部 URL 或文件路径引用导致 SSRF / 本地文件读取。
+        """
+        if OpenAPIImportManager._has_unsafe_refs(data):
+            raise ValueError("OpenAPI document contains external $ref which is not allowed")
+
+    @staticmethod
+    def _has_unsafe_refs(node: Any) -> bool:
+        """迭代检查是否存在非文档内部 $ref 引用。"""
+        stack: List[Any] = [node]
+
+        while stack:
+            current_node = stack.pop()
+            if isinstance(current_node, dict):
+                for key, value in current_node.items():
+                    if key == "$ref":
+                        if isinstance(value, str) and not value.startswith("#"):
+                            return True
+                    else:
+                        stack.append(value)
+            elif isinstance(current_node, list):
+                stack.extend(current_node)
+
+        return False
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:

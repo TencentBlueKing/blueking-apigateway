@@ -1136,3 +1136,334 @@ class TestOpenAPIExporter:
         assert len(plugin_configs) == 1
         assert plugin_configs[0]["type"] == "bk-cors"
         assert "allow_origins" in plugin_configs[0]["yaml"]
+
+
+class TestOpenAPIImportManagerValidateRefs:
+    """Tests for _validate_refs — ensures external $ref values are rejected."""
+
+    @pytest.mark.parametrize("ref_value", ["#/definitions/User", "#User", "#"])
+    def test_internal_ref_allowed(self, ref_value):
+        """Pure internal fragment refs should pass validation."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "definitions": {
+                "User": {"type": "object", "properties": {"name": {"type": "string"}}},
+            },
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": ref_value}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        OpenAPIImportManager._validate_refs(data)
+
+    def test_openapi_31_anchor_ref_allowed(self):
+        data = {
+            "openapi": "3.1.0",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "#userSchema"},
+                                    }
+                                }
+                            },
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+
+        OpenAPIImportManager._validate_refs(data)
+
+    def test_external_url_ref_rejected(self):
+        """HTTP(S) URL $ref should be rejected to prevent SSRF."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://evil.com/schema.json#/definitions/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_local_file_ref_rejected(self):
+        """Local file path $ref should be rejected to prevent file read."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "/etc/passwd"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_relative_file_ref_rejected(self):
+        """Relative file path $ref should be rejected."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "../common/models.yaml#/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        with pytest.raises(ValueError, match="external \\$ref"):
+            OpenAPIImportManager._validate_refs(data)
+
+    def test_validate_returns_schema_err_for_unsafe_ref(self):
+        """validate() should return SchemaValidateErr when $ref is external, not raise."""
+        gateway = G(Gateway)
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "description": "test",
+                        "tags": ["test"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://internal-service.local/schema.json"}},
+                        },
+                    }
+                }
+            },
+        }
+        manager = OpenAPIImportManager(gateway=gateway, data=data)
+        validate_err_list = manager.validate()
+        assert len(validate_err_list) > 0
+        assert "external $ref" in validate_err_list[0].message
+        assert "http://internal-service.local/schema.json" not in validate_err_list[0].message
+
+    def test_validate_and_parse_use_same_unsafe_ref_message(self):
+        gateway = G(Gateway)
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "description": "test",
+                        "tags": ["test"],
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://internal-service.local/schema.json"}},
+                        },
+                    }
+                }
+            },
+        }
+        manager = OpenAPIImportManager(gateway=gateway, data=data)
+
+        validate_err_list = manager.validate()
+
+        with pytest.raises(ValueError) as err:
+            manager.parse()
+
+        assert validate_err_list[0].message == str(err.value)
+
+    def test_literal_ref_text_in_description_is_not_misclassified(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "description": 'example text with {"$ref": "http://evil.com/schema.json"}',
+                        "responses": {
+                            "200": {"description": "success"},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+
+        OpenAPIImportManager._validate_refs(data)
+
+    def test_xss_like_ref_value_is_not_echoed_in_error_message(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "<img src=x onerror=alert(1)>"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+
+        with pytest.raises(ValueError) as err:
+            OpenAPIImportManager._validate_refs(data)
+
+        assert "<img src=x onerror=alert(1)>" not in str(err.value)
+
+    def test_xss_like_key_is_not_echoed_in_error_message(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/<img src=x onerror=alert(1)>/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {
+                            "200": {"schema": {"$ref": "http://evil.com/schema.json#/definitions/User"}},
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+
+        with pytest.raises(ValueError) as err:
+            OpenAPIImportManager._validate_refs(data)
+
+        assert "/<img src=x onerror=alert(1)>/" not in str(err.value)
+        assert "http://evil.com/schema.json" not in str(err.value)
+
+    def test_no_ref_passes(self):
+        """Document with no $ref at all should pass validation."""
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "operationId": "get_test",
+                        "responses": {"200": {"description": "success"}},
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {"type": "HTTP", "path": "/test/", "method": "get", "timeout": 30},
+                        },
+                    }
+                }
+            },
+        }
+        OpenAPIImportManager._validate_refs(data)
+
+    def test_has_unsafe_refs(self):
+        data = {
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "responses": {
+                            "200": {
+                                "schema": {
+                                    "$ref": "http://evil.com/schema.json#/definitions/User",
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        assert OpenAPIImportManager._has_unsafe_refs(data) is True
+
+    def test_has_unsafe_refs_all_internal(self):
+        data = {
+            "paths": {
+                "/test/": {
+                    "get": {
+                        "responses": {
+                            "200": {
+                                "schema": {
+                                    "$ref": "#/definitions/User",
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        assert OpenAPIImportManager._has_unsafe_refs(data) is False

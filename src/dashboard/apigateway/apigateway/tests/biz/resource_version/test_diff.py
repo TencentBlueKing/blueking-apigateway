@@ -499,7 +499,7 @@ class TestResourceDifferHandler:
             method: str
             path: str
 
-        mock_parse_obj.side_effect = lambda x: ResourceDifferMock.model_validate(x)
+        mock_parse_obj.side_effect = ResourceDifferMock.model_validate
 
         source_data = [
             {

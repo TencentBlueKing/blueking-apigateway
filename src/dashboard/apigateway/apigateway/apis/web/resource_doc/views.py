@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from html import escape as html_escape
 from tempfile import TemporaryDirectory
 from typing import Any, Dict, List
 
@@ -90,7 +91,9 @@ class DocImportByArchiveApi(generics.CreateAPIView):
                 _("不存在符合条件的资源文档，请参考使用指南，检查归档文件中资源文档是否正确。"), replace=True
             )
         except ResourceDocJinja2TemplateError as err:
-            raise error_codes.INTERNAL.format(_("导入资源文档失败，{err}。").format(err=err), replace=True)
+            raise error_codes.INTERNAL.format(
+                _("导入资源文档失败，{err}。").format(err=html_escape(str(err))), replace=True
+            )
 
         importer = DocImporter(
             gateway_id=request.gateway.id,

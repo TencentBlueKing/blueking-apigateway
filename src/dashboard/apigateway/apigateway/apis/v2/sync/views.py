@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from html import escape as html_escape
 
 from django.conf import settings
 from django.db import transaction
@@ -229,7 +230,9 @@ class GatewayResourceSyncApi(generics.CreateAPIView):
                 need_delete_unspecified_resources=slz.validated_data["delete"],
             )
         except Exception as err:  # pylint: disable=broad-except
-            raise ValidationError({"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=err)})
+            raise ValidationError(
+                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
+            )
 
         validate_err_list = openapi_manager.validate()
         if len(validate_err_list) != 0:
