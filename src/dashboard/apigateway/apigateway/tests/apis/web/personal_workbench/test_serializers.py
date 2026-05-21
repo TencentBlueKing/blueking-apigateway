@@ -159,6 +159,8 @@ class TestWorkbenchMCPPermissionApplyOutputSLZ:
         assert data["mcp_server"]["id"] == mcp_server.id
         assert data["mcp_server"]["name"] == "test-mcp"
         assert data["mcp_server"]["title"] == "Test MCP Server"
+        assert data["mcp_server"]["gateway_id"] == fake_gateway.id
+        assert data["mcp_server"]["gateway_name"] == fake_gateway.name
         assert data["status"] == MCPServerAppPermissionApplyStatusEnum.PENDING.value
         assert "status_display" in data
         assert data["reason"] == "need mcp access"
@@ -204,6 +206,8 @@ class TestWorkbenchMCPPermissionHandledOutputSLZ:
         assert data["applied_by"] == "applicant"
         assert data["handled_by"] == "handler"
         assert data["mcp_server"]["id"] == mcp_server.id
+        assert data["mcp_server"]["gateway_id"] == fake_gateway.id
+        assert data["mcp_server"]["gateway_name"] == fake_gateway.name
         assert data["status"] == MCPServerAppPermissionApplyStatusEnum.APPROVED.value
         assert data["comment"] == "looks good"
         assert "status_display" in data

@@ -66,18 +66,24 @@ class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
     - id: MCP Server 唯一标识
     - name: MCP Server 内部名称（唯一标识，用于系统间交互）
     - title: MCP Server 展示名称（为空时回退到 name）
+    - gateway_id: 所属网关 ID
+    - gateway_name: 所属网关名称
     """
 
     title = serializers.SerializerMethodField(help_text="MCP Server 展示名称（为空时回退到 name）")
+    gateway_name = serializers.SerializerMethodField(help_text="所属网关名称")
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerFilterOptionSLZ"
         model = MCPServer
-        fields = ["id", "name", "title"]
+        fields = ["id", "name", "title", "gateway_id", "gateway_name"]
         read_only_fields = fields
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
+
+    def get_gateway_name(self, obj) -> str:
+        return obj.gateway.name
 
 
 # ========== 查询输入序列化器 ==========
@@ -107,6 +113,7 @@ class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
+    gateway_name = serializers.CharField(required=False, allow_blank=True, help_text="网关名称")
     mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称或应用ID）"
@@ -259,12 +266,17 @@ class WorkbenchMCPServerBaseSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
     name = serializers.CharField(read_only=True, help_text="MCPServer 名称")
     title = serializers.SerializerMethodField(help_text="MCPServer 显示名称")
+    gateway_id = serializers.IntegerField(read_only=True, help_text="所属网关 ID")
+    gateway_name = serializers.SerializerMethodField(help_text="所属网关名称")
 
     class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPServerBaseSLZ"
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
+
+    def get_gateway_name(self, obj) -> str:
+        return obj.gateway.name
 
 
 class WorkbenchMCPPermissionApplyOutputSLZ(serializers.ModelSerializer):

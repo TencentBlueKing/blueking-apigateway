@@ -257,6 +257,10 @@ class TestWorkbenchMCPServerFilterOptionListApi:
         assert resp.status_code == 200
         mcp_ids = [item["id"] for item in result["data"]]
         assert fake_mcp_server.id in mcp_ids
+        # 验证返回了 gateway_id 和 gateway_name
+        mcp_item = next(item for item in result["data"] if item["id"] == fake_mcp_server.id)
+        assert mcp_item["gateway_id"] == fake_gateway.id
+        assert mcp_item["gateway_name"] == fake_gateway.name
 
     def test_applied_returns_mcp_servers_from_my_applies(self, request_view, fake_gateway, fake_mcp_server):
         """applied 类型：返回当前用户申请过的 MCP Server"""
@@ -357,6 +361,113 @@ class TestWorkbenchMCPServerFilterOptionListApi:
 
         mcp_ids = [item["id"] for item in result["data"]]
         assert mcp_ids.count(fake_mcp_server.id) == 1
+
+
+# ==================== 筛选下拉选项 - MCP Server 维度网关 ====================
+
+
+class TestWorkbenchMCPGatewayFilterOptionListApi:
+    def test_pending_returns_maintainer_gateways(self, request_view, fake_gateway, fake_mcp_server):
+        """pending 类型：返回当前用户作为 maintainer 的网关"""
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "pending"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_gateway.id in gateway_ids
+
+    def test_pending_excludes_non_maintainer_gateways(self, request_view, fake_other_gateway):
+        """pending 类型：不返回非 maintainer 的网关"""
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "pending"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_other_gateway.id not in gateway_ids
+
+    def test_applied_returns_gateways_from_mcp_applies(self, request_view, fake_gateway, fake_mcp_server):
+        """applied 类型：返回当前用户 MCP 申请关联的网关"""
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "applied"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_gateway.id in gateway_ids
+
+    def test_handled_returns_gateways_from_mcp_handled(self, request_view, fake_gateway, fake_mcp_server):
+        """handled 类型：返回当前用户处理过的 MCP 申请关联的网关"""
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "handled"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_gateway.id in gateway_ids
+
+    def test_applied_excludes_deleted(self, request_view, fake_gateway, fake_mcp_server):
+        """applied 类型：不返回已删除申请对应的网关"""
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by=FAKE_USERNAME,
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=True,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "applied"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_gateway.id not in gateway_ids
+
+    def test_invalid_type_returns_400(self, request_view):
+        """传入无效 type 值应返回 400"""
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "invalid_value"},
+        )
+        assert resp.status_code == 400
 
 
 # ==================== 我的代办 - API 网关 ====================
@@ -559,6 +670,8 @@ class TestWorkbenchPendingMCPPermissionListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["bk_app_code"] == "app1"
         assert result["data"]["results"][0]["mcp_server"]["id"] == fake_mcp_server.id
+        assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
+        assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 
     def test_list_excludes_substring_maintainer_gateway(self, request_view, fake_substring_gateway, fake_stage, faker):
         """测试我的代办 - MCP Server：用户名 admin 不应匹配 maintainer 为 superadmin 的网关"""
@@ -626,6 +739,40 @@ class TestWorkbenchPendingMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+    def test_list_filter_by_gateway_name(self, request_view, fake_gateway, fake_mcp_server):
+        """测试我的代办 - MCP Server 按 gateway_name 筛选"""
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        # 使用正确的 gateway_name 筛选
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.pending",
+            data={"gateway_name": fake_gateway.name},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+
+        # 使用不存在的 gateway_name 筛选
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.pending",
+            data={"gateway_name": "nonexistent_gateway"},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 0
 
 
 # ==================== 我的申请 - API 网关 ====================
