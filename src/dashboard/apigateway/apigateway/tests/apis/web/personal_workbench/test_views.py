@@ -283,6 +283,9 @@ class TestWorkbenchMCPServerFilterOptionListApi:
 
         mcp_ids = [item["id"] for item in result["data"]]
         assert fake_mcp_server.id in mcp_ids
+        mcp_item = next(item for item in result["data"] if item["id"] == fake_mcp_server.id)
+        assert mcp_item["gateway_id"] == fake_gateway.id
+        assert mcp_item["gateway_name"] == fake_gateway.name
 
     def test_handled_returns_mcp_servers_from_my_handled(self, request_view, fake_gateway, fake_mcp_server):
         """handled 类型：返回当前用户处理过的 MCP Server"""
@@ -307,6 +310,9 @@ class TestWorkbenchMCPServerFilterOptionListApi:
 
         mcp_ids = [item["id"] for item in result["data"]]
         assert fake_mcp_server.id in mcp_ids
+        mcp_item = next(item for item in result["data"] if item["id"] == fake_mcp_server.id)
+        assert mcp_item["gateway_id"] == fake_gateway.id
+        assert mcp_item["gateway_name"] == fake_gateway.name
 
     def test_applied_excludes_deleted(self, request_view, fake_gateway, fake_mcp_server):
         """applied 类型：不返回已删除申请对应的 MCP Server"""
@@ -367,7 +373,7 @@ class TestWorkbenchMCPServerFilterOptionListApi:
 
 
 class TestWorkbenchMCPGatewayFilterOptionListApi:
-    def test_pending_returns_maintainer_gateways(self, request_view, fake_gateway, fake_mcp_server):
+    def test_pending_returns_maintainer_gateways(self, request_view, fake_gateway):
         """pending 类型：返回当前用户作为 maintainer 的网关"""
         resp = request_view(
             method="GET",
@@ -914,6 +920,8 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
+        assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
+        assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 
     def test_list_excludes_other_user_apply(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的申请 - MCP Server 不返回其他用户的申请"""
@@ -1082,6 +1090,8 @@ class TestWorkbenchHandledMCPPermissionListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["handled_by"] == FAKE_USERNAME
         assert result["data"]["results"][0]["mcp_server"]["id"] == fake_mcp_server.id
+        assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
+        assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
 
     def test_list_includes_rejected(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的已办 - 包含已驳回的记录"""

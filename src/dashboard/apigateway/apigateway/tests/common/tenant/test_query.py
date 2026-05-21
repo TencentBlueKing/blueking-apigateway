@@ -50,6 +50,7 @@ class TestGatewayFilterByUserTenantId(TestCase):
         expected_filter = {"tenant_mode": TenantModeEnum.SINGLE.value, "tenant_id": user_tenant_id}
         assert filtered_queryset.filter_condition == expected_filter
 
+
 @pytest.mark.django_db
 class TestGatewayRelatedFilterByUserTenantId(TestCase):
     def setUp(self):
