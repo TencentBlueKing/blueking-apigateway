@@ -408,6 +408,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
     backend = serializers.SerializerMethodField(help_text="后端服务")
     labels = serializers.SerializerMethodField(help_text="标签列表")
     schema = serializers.SerializerMethodField(help_text="参数协议")
+    released_stages = serializers.SerializerMethodField(help_text="已使用的环境列表")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceOutputSLZ"
@@ -427,6 +428,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "backend",
             "labels",
             "schema",
+            "released_stages",
         ]
         read_only_fields = fields
 
@@ -482,6 +484,9 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
         # 填充路径参数
         parameters = extract_openapi_parameters_from_path(obj.path)
         return {"parameters": parameters}
+
+    def get_released_stages(self, obj):
+        return self.context.get("released_stages", [])
 
 
 class ResourceBatchUpdateInputSLZ(serializers.Serializer):
