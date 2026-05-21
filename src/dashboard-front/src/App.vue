@@ -193,8 +193,15 @@ const menuList: IHeaderNav[] = [
     link: '',
   },
   {
-    name: t('微网关'),
+    name: t('个人工作台'),
     id: 6,
+    url: 'PersonalWorkbench',
+    enabled: true,
+    link: '',
+  },
+  {
+    name: t('微网关'),
+    id: 7,
     url: envStore.env.BK_APISIX_URL,
     enabled: envStore.env.EDITION === 'te',
     link: envStore.env.BK_APISIX_URL,

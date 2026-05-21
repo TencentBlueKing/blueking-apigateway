@@ -20,7 +20,7 @@
     :is-show="batchApplyDialogConf.isShow"
     theme="primary"
     :mask-close="false"
-    :width="670"
+    :width="640"
     :loading="batchApplyDialogConf.isLoading"
     :title="title"
     @closed="handleClose"
@@ -32,7 +32,14 @@
         :size="'small'"
         :max-height="300"
         :columns="approvalColumns"
-      />
+      >
+        <template #cellEmptyContent="{ col }">
+          <template v-if="!col.fixed">
+            <span class="empty-placeholder">--</span>
+          </template>
+          <template v-else />
+        </template>
+      </AgTable>
       <BkForm
         ref="batchApprovalFormRef"
         :model="formData"
@@ -45,7 +52,7 @@
             [
               {
                 required: true,
-                message: t('必填项'),
+                message: t('请输入备注'),
                 trigger: 'blur',
               },
             ]
@@ -65,13 +72,13 @@
     <template #footer>
       <BkButton
         theme="primary"
-        :loading="['approved'].includes(formData.status) && batchApplyDialogConf.isLoading"
+        :loading="['approved'].includes(formData.status ?? '') && batchApplyDialogConf.isLoading"
         @click="handleApprovedPermission"
       >
         {{ t("全部通过") }}
       </BkButton>
       <BkButton
-        :loading="['rejected'].includes(formData.status) && batchApplyDialogConf.isLoading"
+        :loading="['rejected'].includes(formData.status ?? '') && batchApplyDialogConf.isLoading"
         class="m-l-4px"
         @click="handleRejectPermission"
       >
@@ -93,34 +100,30 @@ import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
 import AgTable from '@/components/ag-table/Index.vue';
 
+type IDialogParams = {
+  isShow: boolean
+  isLoading: boolean
+};
+
+type IActionParams = {
+  status?: string
+  comment?: string
+  ids?: number[]
+  part_resource_ids?: Record<string, unknown>
+};
+
 interface IProps {
   title?: string
   selections?: any[]
-  dialogParams?: {
-    isShow: boolean
-    isLoading: boolean
-  }
-  actionParams?: {
-    status: string
-    comment?: string
-    ids: number[]
-    part_resource_ids: Record<string, unknown>
-  }
+  dialogParams?: IDialogParams
+  actionParams?: IActionParams
 }
 
 interface IEmits {
   (e: 'approved'): void
   (e: 'rejected'): void
-  (e: 'update:dialogParams', value: {
-    isShow: boolean
-    isLoading: boolean
-  }): void
-  (e: 'update:actionParams', value: {
-    status: string
-    comment?: string
-    ids: number[]
-    part_resource_ids: Record<string, unknown>
-  }): void
+  (e: 'update:dialogParams', value: IDialogParams): void
+  (e: 'update:actionParams', value: IActionParams): void
 }
 
 const {
@@ -156,6 +159,7 @@ const approvalColumns = shallowRef([
     title: t('申请时间'),
     colKey: 'created_time',
     ellipsis: true,
+    width: 260,
   },
 ]);
 
@@ -163,14 +167,14 @@ const tableData = computed(() => selections);
 
 const batchApplyDialogConf = computed({
   get: () => dialogParams,
-  set: (params: any) => {
+  set: (params: IDialogParams) => {
     emits('update:dialogParams', params);
   },
 });
 
 const formData = computed({
   get: () => actionParams,
-  set: (form: any) => {
+  set: (form: IActionParams) => {
     emits('update:actionParams', form);
   },
 });

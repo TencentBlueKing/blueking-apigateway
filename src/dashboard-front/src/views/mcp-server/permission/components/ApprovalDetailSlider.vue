@@ -34,29 +34,36 @@
               {{ approvalDetail?.bk_app_code }}
             </div>
           </div>
-          <div class="item">
-            <div class="key">
-              {{ t('MCPServer 名称：') }}
+          <template v-if="['mcp'].includes(activeTab)">
+            <div class="item">
+              <div class="key">
+                {{ t('MCPServer 名称：') }}
+              </div>
+              <div class="value">
+                {{ approvalDetail?.mcp_server?.name }}
+              </div>
             </div>
-            <div class="value">
-              {{ approvalDetail?.mcp_server?.name }}
+            <div class="item">
+              <div class="key">
+                {{ t('MCPServer 中文名：') }}
+              </div>
+              <div class="value">
+                {{ approvalDetail?.mcp_server?.title }}
+              </div>
             </div>
-          </div>
-          <div class="item">
-            <div class="key">
-              {{ t('MCPServer 中文名：') }}
-            </div>
-            <div class="value">
-              {{ approvalDetail?.mcp_server?.title }}
-            </div>
-          </div>
+          </template>
           <div class="item">
             <div class="key">
               {{ t("申请人：") }}
             </div>
             <div class="value">
-              <span v-if="!featureFlagStore.isEnableDisplayName">{{ approvalDetail?.applied_by }}</span>
-              <span v-else><bk-user-display-name :user-id="approvalDetail?.applied_by" /></span>
+              <template v-if="Boolean(approvalDetail?.applied_by)">
+                <span v-if="!featureFlagStore.isEnableDisplayName">{{ approvalDetail?.applied_by }}</span>
+                <span v-else><bk-user-display-name :user-id="approvalDetail?.applied_by" /></span>
+              </template>
+              <template v-else>
+                --
+              </template>
             </div>
           </div>
           <div class="item">
@@ -69,10 +76,18 @@
           </div>
           <div class="item">
             <div class="key">
+              {{ t("申请理由：") }}
+            </div>
+            <div class="value">
+              {{ approvalDetail?.reason || '--' }}
+            </div>
+          </div>
+          <div class="item">
+            <div class="key">
               {{ t("审批状态：") }}
             </div>
             <div class="value">
-              {{ approvalDetail?.status === 'approved' ? t('通过') : t('驳回') }}
+              {{ renderApplyStatus }}
             </div>
           </div>
         </div>
@@ -85,9 +100,20 @@
 import { t } from '@/locales';
 import { useFeatureFlag } from '@/stores';
 import type { IMCPServerAppPermissionApplyListOutput } from '@/services/types/responses/gateways.ts';
+import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
+
+type IMaybeApproval
+  = | Partial<IPersonalWorkbenchListResponse>
+    | Partial<IMCPServerAppPermissionApplyListOutput>;
+
+type IApprovalWithOptionalFields = IMaybeApproval & {
+  reason?: string
+  status?: string
+};
 
 interface IProps {
-  approvalDetail: IMCPServerAppPermissionApplyListOutput
+  approvalDetail: IApprovalWithOptionalFields | null
+  activeTab?: string
 }
 
 const approvalSliderConf = defineModel('approvalSliderConf', {
@@ -100,9 +126,22 @@ const approvalSliderConf = defineModel('approvalSliderConf', {
   },
 });
 
-const { approvalDetail } = defineProps<IProps>();
+const { approvalDetail, activeTab = 'mcp' } = defineProps<IProps>();
 
 const featureFlagStore = useFeatureFlag();
+
+const renderApplyStatus = computed(() => {
+  const status = approvalDetail?.status ?? '';
+  if (['partial_approved'].includes(status)) {
+    return t('部分通过');
+  }
+
+  if (['approved'].includes(status)) {
+    return t('通过');
+  }
+
+  return t('驳回');
+});
 </script>
 
 <style lang="scss" scoped>

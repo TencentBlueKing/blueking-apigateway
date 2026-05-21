@@ -45,6 +45,8 @@ import getMonitorAlarmRoutes from '@/views/monitor-alarm/routes';
 import getMCPServerRoutes from '@/views/mcp-server/route';
 // API 文档
 import getAPIDocsRoutes from '@/views/api-docs/route';
+// 个人工作台
+import getPersonalWorkbench from '@/views/personal-workbench/routes';
 
 function props(route: RouteLocationNormalized) {
   const { id } = route.params;
@@ -99,6 +101,14 @@ const routes: RouteRecordRaw[] = [
     redirect: { name: 'ApiDocs' },
     props,
     children: [...getAPIDocsRoutes()],
+  },
+  {
+    path: '/personal-workbench',
+    name: 'PersonalWorkbench',
+    component: () => import('@/layout/personal-workbench/Index.vue'),
+    props,
+    redirect: '/personal-workbench/my-pending',
+    children: [...getPersonalWorkbench()],
   },
 ];
 

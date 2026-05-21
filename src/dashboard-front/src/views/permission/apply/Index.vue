@@ -129,45 +129,12 @@
     />
 
     <!-- 全部通过/全部驳回操作 -->
-    <BkDialog
-      :is-show="applyActionDialogConf.isShow"
-      theme="primary"
-      :width="600"
-      :quick-close="false"
-      :header-position="'left'"
-      :title="applyActionDialogConf.title"
-      :loading="applyActionDialogConf.isLoading"
-      :rules="rules"
-      @confirm="handleSubmitApprove"
-      @closed="applyActionDialogConf.isShow = false"
-    >
-      <BkForm
-        ref="approveForm"
-        :label-width="90"
-        :model="curAction"
-        :rules="rules"
-        class="m-t-10px m-r-20px m-b-30px"
-      >
-        <BkFormItem
-          :label="t('备注')"
-          :property="'comment'"
-          required
-        >
-          <BkAlert
-            class="m-b-10px"
-            :theme="alertTheme"
-            :title="approveFormMessage"
-          />
-          <BkInput
-            v-model="curAction.comment"
-            type="textarea"
-            :placeholder="t('请输入备注')"
-            :rows="4"
-            :maxlength="100"
-          />
-        </BkFormItem>
-      </BkForm>
-    </BkDialog>
+    <ApprovalDialog
+      v-model:dialog-config="applyActionDialogConf"
+      v-model:form-data="curAction"
+      :cur-permission="curPermission"
+      @approved="handleSubmitApprove"
+    />
   </div>
 </template>
 
@@ -188,12 +155,15 @@ import {
 } from '@/stores';
 import type { IApprovalListItem } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
+import type { IApplyStatus, IFomDataQuery } from '@/services/types/query/personal-workbench.ts';
+import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_STATUS_MAP } from '@/enums';
 import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
+import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
 // 扩展 IApprovalListItem，补充运行时动态添加的字段
@@ -243,12 +213,7 @@ const childrenColumns = shallowRef<any[]>([
 ]);
 const filterData = ref<Record<string, any>>({});
 const filterValue = ref<Record<string, any>>({});
-const curAction = ref<{
-  ids: any[]
-  status: string
-  comment: string
-  part_resource_ids: Record<string, any>
-}>({
+const curAction = ref<IFomDataQuery>({
   ids: [],
   status: '',
   comment: '',
@@ -285,15 +250,6 @@ let applyActionDialogConf = reactive({
   title: t('通过申请'),
   isLoading: false,
 });
-const rules = reactive({
-  comment: [
-    {
-      required: true,
-      message: t('必填项'),
-      trigger: 'blur',
-    },
-  ],
-});
 
 const apigwId = computed(() => gatewayStore.apigwId);
 // 批量审批dialog的title
@@ -301,35 +257,6 @@ const batchApplyDialogConfTitle = computed(() => {
   return t(
     '将对以下{permissionSelectListTemplate}个权限申请单进行审批',
     { permissionSelectListTemplate: selections.value.length });
-});
-// 审批操作alter的theme
-const alertTheme = computed(() => {
-  if (curPermission.value.grant_dimension === 'api') {
-    return curAction.value.status === 'approved' ? 'warning' : 'error';
-  }
-  return 'warning';
-});
-// 审批操作alter的title
-const approveFormMessage = computed(() => {
-  const selectLength = curPermission.value.selection?.length;
-  const resourceLength = curPermission.value.resource_ids?.length;
-  const appCode = curPermission.value.bk_app_code;
-  if (curPermission.value.grant_dimension === 'api') {
-    if (curAction.value.status === 'approved') {
-      return `${t('应用将申请网关下所有资源的权限，包括未来新创建的资源，请谨慎审批')}`;
-    }
-    return `${t('应用将按网关申请全部驳回')}`;
-  }
-  if (curAction.value.status === 'approved') {
-    if (selectLength && selectLength < resourceLength) {
-      const rejectLength = resourceLength - selectLength;
-      return t(
-        `应用${appCode} 申请${resourceLength}个权限，通过${selectLength}个，驳回${rejectLength}个`,
-      );
-    }
-    return t(`应用${appCode} 申请${resourceLength}个权限，全部通过`);
-  }
-  return t(`应用${appCode} 申请${resourceLength}个权限，全部驳回`);
 });
 
 // 监听授权维度的变化
@@ -608,7 +535,7 @@ const updateStatus = async () => {
   // 部分通过
   const id = params?.ids?.[0] || '';
   if (
-    ['approved'].includes(params.status)
+    ['approved'].includes(params.status as IApplyStatus)
     && expandableConfig.value.expandedRowKeys.includes(id)
     && selection.length > 0
     && !isSelectAll
@@ -618,7 +545,7 @@ const updateStatus = async () => {
       part_resource_ids: { [id]: selection.map((item: any) => item.id) },
     });
   }
-  await updatePermissionStatus(apigwId.value, params);
+  await updatePermissionStatus(apigwId.value, params as IAppPermissionApplyApprovalInputSLZ);
   batchApplyDialogConf.isShow = false;
   applyActionDialogConf.isShow = false;
   Message({

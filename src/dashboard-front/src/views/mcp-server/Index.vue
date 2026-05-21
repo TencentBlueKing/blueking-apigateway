@@ -265,7 +265,7 @@ const mcpFilterOptions = ref<any>({
 });
 const searchValue = ref([]);
 // 批量复制内容
-const selections = ref<any>(new Map());
+const selections = ref<Map<number, IMCPServerWithUIState>>(new Map());
 
 // 批量复制配置hooks
 const {
