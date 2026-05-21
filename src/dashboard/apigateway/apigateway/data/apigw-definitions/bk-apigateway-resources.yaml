@@ -1768,7 +1768,7 @@ paths:
                             properties:
                               host:
                                 type: string
-                                description: 后端服务域名、IP + 端口
+                                description: 以 http:// 或 https:// 开头的合法域名、service 地址或 ip:port
                                 example: "http://api.example.com"
                               weight:
                                 type: integer
@@ -4235,7 +4235,7 @@ paths:
                               properties:
                                 host:
                                   type: string
-                                  description: 后端服务域名、IP + 端口
+                                  description: 以 http:// 或 https:// 开头的合法域名、service 地址或 ip:port
                                 weight:
                                   type: integer
                                   description: 权重
