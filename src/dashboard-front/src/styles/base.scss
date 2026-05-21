@@ -140,13 +140,20 @@ a {
   &.primary,
   &.releasing,
   &.pending {
-    background: #f0f1f5;
+    background-color: #f0f1f5;
     border: 1px solid #c9cad2;
   }
 
-  &.success {
-    background: #e5f6ea;
-    border: 1px solid #3fc06d;
+  &.success,
+  &.partial_approved,
+  &.approved {
+    background-color: #e6f6eb;
+    border: 1px solid #43c472;
+  }
+
+  &.rejected {
+    background-color: #ffe6e6;
+    border: 1px solid #ea3636;
   }
 }
 

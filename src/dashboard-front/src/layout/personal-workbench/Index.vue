@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -20,8 +20,9 @@
   <div class="navigation-main">
     <BkNavigation
       class="navigation-main-content"
-      :default-open="collapse"
       navigation-type="left-right"
+      :default-open="collapse"
+      :class="{ 'custom-height-navigation': route.meta?.hideHeaderBorder }"
       @toggle="handleCollapse"
     >
       <template #menu>
@@ -30,7 +31,7 @@
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
         >
-          <template v-for="menu in platformToolsMenu">
+          <template v-for="menu in personalWorkbenchMenu">
             <BkMenuItem
               v-if="menu.enabled"
               :key="menu.name"
@@ -52,7 +53,7 @@
         <!-- 默认头部 -->
         <div
           v-if="!route.meta.customHeader"
-          class="flex items-center content-header"
+          class="flex items-center border-none! content-header"
         >
           <AgIcon
             v-if="route.meta.showBackIcon"
@@ -61,7 +62,6 @@
           />
           {{ headerTitle }}
         </div>
-        <!-- <div  :class="route.meta.customHeader ? 'custom-header-view' : 'default-header-view'"> -->
         <div :class="routerViewWrapperClass">
           <RouterView />
         </div>
@@ -71,14 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import { useEnv, useFeatureFlag } from '@/stores';
+import { useFeatureFlag } from '@/stores';
 import type { IMenu } from '@/types/common';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
 
 const collapse = ref(true);
@@ -86,40 +85,28 @@ const activeMenuKey = ref('');
 // 页面header名
 const headerTitle = ref('');
 
-const platformToolsMenu = computed<IMenu[]>(() => [
+const personalWorkbenchMenu = computed<IMenu[]>(() => [
   {
-    name: 'PlatformToolsToolbox',
-    title: t('工具箱'),
-    icon: 'gongjuxiang',
+    name: 'MyPending',
+    title: t('我的代办'),
+    icon: 'wodedaiban',
     enabled: true,
   },
   {
-    name: 'PlatformToolsCLI',
-    title: t('CLI 工具'),
-    icon: 'cli',
-    enabled: featureFlagStore.flags.ENABLE_BK_CLI,
-  },
-  {
-    name: 'PlatformToolsAutomatedGateway',
-    title: t('自动化接入网关'),
-    icon: 'zidongjieru',
+    name: 'MyApply',
+    title: t('我的申请'),
+    icon: 'wodeshenqing',
     enabled: true,
   },
   {
-    name: 'PlatformToolsProgrammableGateway',
-    title: t('可编程网关'),
-    icon: 'square-program',
+    name: 'MyHandled',
+    title: t('我的已办'),
+    icon: 'wodeyiban',
     enabled: true,
-  },
-  {
-    name: 'PlatformToolsMicroGateway',
-    title: t('蓝鲸微网关'),
-    icon: 'apigateway-logo',
-    enabled: envStore.env.EDITION === 'te',
   },
 ]);
 
-const openedKeys = computed(() => platformToolsMenu.value.map((e: IMenu) => e.name));
+const openedKeys = computed(() => personalWorkbenchMenu.value.map((e: IMenu) => e.name));
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
@@ -164,14 +151,10 @@ const handleBack = () => {
 .navigation-main {
   height: calc(100vh - 52px);
 
-  .navigation-main-radio {
-    margin: 10px 0 20px;
-  }
-
   :deep(.navigation-nav) {
 
     .nav-slider {
-      background: #fff !important;
+      background-color: #ffffff;
       border-right: 1px solid #dcdee5 !important;
 
       .bk-navigation-title {
@@ -179,12 +162,12 @@ const handleBack = () => {
       }
 
       .nav-slider-list {
-        border-top: 1px solid #f0f1f5;
+        padding-top: 4px;
       }
     }
 
     .bk-menu {
-      background: #fff !important;
+      background-color: #ffffff !important;
 
       .bk-menu-item {
         margin: 0;
@@ -198,18 +181,18 @@ const handleBack = () => {
         }
 
         &:hover {
-          background: #f0f1f5;
+          background-color: #f0f1f5;
         }
-      }
 
-      .bk-menu-item.is-active {
-        color: rgb(58 132 255);
-        background: rgb(225 236 255);
+        &.is-active {
+          color: rgb(58 132 255);
+          background: rgb(225 236 255);
 
-        .item-icon {
+          .item-icon {
 
-          .default-icon {
-            background-color: rgb(58 132 255);
+            .default-icon {
+              background-color: rgb(58 132 255);
+            }
           }
         }
       }
@@ -229,6 +212,14 @@ const handleBack = () => {
           min-width: 6px;
           background-color: #ff5656;
         }
+      }
+
+      &-icon {
+        color: rgb(99 101 110);
+      }
+
+      &-content {
+        color: rgb(99 101 110);
       }
     }
 
@@ -257,16 +248,8 @@ const handleBack = () => {
       }
     }
 
-    .submenu-header-icon {
-      color: rgb(99 101 110);
-    }
-
-    .submenu-header-content {
-      color: rgb(99 101 110);
-    }
-
     .bk-menu-submenu.is-opened {
-      background: #fff !important;
+      background-color: #ffffff !important;
     }
   }
 
@@ -275,12 +258,11 @@ const handleBack = () => {
     .container-header {
       height: 0 !important;
       flex-basis: 0 !important;
-      border-bottom: 0;
     }
   }
 
   .navigation-main-content {
-    border: 1px solid #ddd;
+    border: 1px solid #dddddd;
 
     .content-view {
       height: 100%;
@@ -322,14 +304,6 @@ const handleBack = () => {
           height: calc(100vh - 145px);
         }
       }
-    }
-  }
-
-  :deep(.header-select) {
-    width: 240px;
-
-    .bk-input--text {
-      background: rgb(245 247 250);
     }
   }
 }

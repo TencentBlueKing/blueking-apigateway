@@ -115,7 +115,7 @@ export interface IMCPServerUpdateLabelsInputSLZ {
 
 // PATCH /gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/app-permission-apply/{id}/status/ - 更新授权审批状态，通过/驳回
 export interface IMCPServerAppPermissionApplyUpdateInputSLZ {
-  status: 'approved' | 'rejected' // 审批状态
+  status: '' | 'approved' | 'rejected' // 审批状态
   comment?: string
 }
 

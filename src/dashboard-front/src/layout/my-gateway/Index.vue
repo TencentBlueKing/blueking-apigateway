@@ -207,19 +207,10 @@ import {
 } from '@/stores';
 import { getGatewayList } from '@/services/source/gateway';
 import type { IExtractListApiResults } from '@/services/types/utils';
+import type { IMenu } from '@/types/common';
 import { getStageList } from '@/services/source/stage';
 import { getPermissionApplyList } from '@/services/source/permission';
 import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
-
-interface IMenu {
-  name: string
-  title: string
-  icon?: string
-  enabled?: boolean
-  children?: IMenu[]
-  // 是否在可编程网关中隐藏，默认 false
-  hideInProgrammable?: boolean
-}
 
 type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
 
