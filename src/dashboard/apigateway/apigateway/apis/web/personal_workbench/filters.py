@@ -21,7 +21,7 @@ from django_filters import rest_framework as filters
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
-from apigateway.apps.permission.constants import GrantDimensionEnum
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 
 
@@ -32,11 +32,12 @@ class WorkbenchGatewayPermissionApplyFilter(filters.FilterSet):
     applied_by = filters.CharFilter(lookup_expr="icontains")
     gateway_id = filters.NumberFilter(field_name="gateway_id")
     grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
+    status = filters.ChoiceFilter(choices=ApplyStatusEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = AppPermissionApply
-        fields = ["bk_app_code", "applied_by", "gateway_id", "grant_dimension", "keyword"]
+        fields = ["bk_app_code", "applied_by", "gateway_id", "grant_dimension", "status", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))

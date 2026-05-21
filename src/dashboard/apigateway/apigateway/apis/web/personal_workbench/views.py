@@ -71,6 +71,23 @@ class WorkbenchPermissionMixin:
         gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
         return [gw.id for gw in gateways]
 
+    def _get_pending_gateway_permission_apply_queryset(self):
+        """获取当前用户待审批的 API 网关权限申请列表"""
+        gateway_ids = self._get_maintainer_gateway_ids()
+        return AppPermissionApply.objects.filter(
+            gateway_id__in=gateway_ids,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
+    def _get_pending_mcp_permission_apply_queryset(self):
+        """获取当前用户待审批的 MCP Server 权限申请列表"""
+        gateway_ids = self._get_maintainer_gateway_ids()
+        return MCPServerAppPermissionApply.objects.filter(
+            mcp_server__gateway_id__in=gateway_ids,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
 
 class ResourcePrefetchMixin:
     """批量预取资源详情 Mixin
@@ -155,8 +172,10 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.Lis
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
             return gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
-        # pending（默认）：当前用户作为 maintainer 管理的网关
-        gateway_ids = self._get_maintainer_gateway_ids()
+        # pending（默认）：从当前用户待审批的 API 网关权限申请中提取去重的网关
+        gateway_ids = (
+            self._get_pending_gateway_permission_apply_queryset().values_list("gateway_id", flat=True).distinct()
+        )
         return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
 
     def list(self, request, *args, **kwargs):
@@ -211,9 +230,11 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
             queryset = MCPServer.objects.select_related("gateway").filter(id__in=mcp_server_ids).order_by("name")
             return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
-        # pending（默认）：当前用户作为 maintainer 管理的网关下的 MCP Server
-        gateway_ids = self._get_maintainer_gateway_ids()
-        return MCPServer.objects.select_related("gateway").filter(gateway_id__in=gateway_ids).order_by("name")
+        # pending（默认）：从当前用户待审批的 MCP Server 权限申请中提取去重的 MCP Server
+        mcp_server_ids = (
+            self._get_pending_mcp_permission_apply_queryset().values_list("mcp_server_id", flat=True).distinct()
+        )
+        return MCPServer.objects.select_related("gateway").filter(id__in=mcp_server_ids).order_by("name")
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -267,8 +288,12 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
             return gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
-        # pending（默认）：当前用户作为 maintainer 管理的网关
-        gateway_ids = self._get_maintainer_gateway_ids()
+        # pending（默认）：从当前用户待审批的 MCP Server 权限申请中提取去重的网关
+        gateway_ids = (
+            self._get_pending_mcp_permission_apply_queryset()
+            .values_list("mcp_server__gateway_id", flat=True)
+            .distinct()
+        )
         return Gateway.objects.filter(id__in=gateway_ids).order_by("name")
 
     def list(self, request, *args, **kwargs):
@@ -277,20 +302,20 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
         return OKJsonResponse(data=slz.data)
 
 
-# ========== 我的代办 ==========
+# ========== 我的待办 ==========
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的代办 - API 网关权限申请列表",
+        operation_description="个人工作台 - 我的待办 - API 网关权限申请列表",
         query_serializer=WorkbenchGatewayPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchGatewayPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
 class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchPermissionMixin, generics.ListAPIView):
-    """我的代办 - API 网关
+    """我的待办 - API 网关
 
     展示当前用户作为网关管理员（maintainer）待审批的权限申请单
     """
@@ -299,28 +324,20 @@ class WorkbenchPendingGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
     filterset_class = WorkbenchGatewayPermissionApplyFilter
 
     def get_queryset(self):
-        gateway_ids = self._get_maintainer_gateway_ids()
-        return (
-            AppPermissionApply.objects.filter(
-                gateway_id__in=gateway_ids,
-                status=ApplyStatusEnum.PENDING.value,
-            )
-            .select_related("gateway")
-            .order_by("-id")
-        )
+        return self._get_pending_gateway_permission_apply_queryset().select_related("gateway").order_by("-id")
 
 
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
-        operation_description="个人工作台 - 我的代办 - MCP Server 权限申请列表",
+        operation_description="个人工作台 - 我的待办 - MCP Server 权限申请列表",
         query_serializer=WorkbenchMCPPermissionQueryInputSLZ,
         responses={status.HTTP_200_OK: WorkbenchMCPPermissionApplyOutputSLZ(many=True)},
         tags=["WebAPI.PersonalWorkbench"],
     ),
 )
 class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.ListAPIView):
-    """我的代办 - MCP Server
+    """我的待办 - MCP Server
 
     展示当前用户作为 MCP Server 所属网关管理员待审批的申请单
     """
@@ -329,13 +346,8 @@ class WorkbenchPendingMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     filterset_class = WorkbenchMCPPermissionApplyFilter
 
     def get_queryset(self):
-        gateway_ids = self._get_maintainer_gateway_ids()
         return (
-            MCPServerAppPermissionApply.objects.filter(
-                mcp_server__gateway_id__in=gateway_ids,
-                status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
-                is_deleted=False,
-            )
+            self._get_pending_mcp_permission_apply_queryset()
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-id")
         )

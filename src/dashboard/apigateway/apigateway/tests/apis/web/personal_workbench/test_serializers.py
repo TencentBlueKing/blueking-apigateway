@@ -59,6 +59,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "test_user"
+        assert data["approvers"] == fake_gateway.maintainers
         assert data["gateway_id"] == fake_gateway.id
         assert data["gateway_name"] == fake_gateway.name
         assert data["status"] == ApplyStatusEnum.PENDING.value
@@ -158,6 +159,7 @@ class TestWorkbenchMCPPermissionApplyOutputSLZ:
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "test_user"
+        assert data["approvers"] == fake_gateway.maintainers
         assert data["mcp_server"]["id"] == mcp_server.id
         assert data["mcp_server"]["name"] == "test-mcp"
         assert data["mcp_server"]["title"] == "Test MCP Server"
