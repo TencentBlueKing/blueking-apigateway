@@ -747,8 +747,8 @@ class TestWorkbenchPendingMCPPermissionListApi:
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
 
-    def test_list_filter_by_gateway_name(self, request_view, fake_gateway, fake_mcp_server):
-        """测试我的代办 - MCP Server 按 gateway_name 筛选"""
+    def test_list_filter_by_gateway_id(self, request_view, fake_gateway, fake_mcp_server):
+        """测试我的代办 - MCP Server 按 gateway_id 筛选"""
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
@@ -759,22 +759,22 @@ class TestWorkbenchPendingMCPPermissionListApi:
             is_deleted=False,
         )
 
-        # 使用正确的 gateway_name 筛选
+        # 使用正确的 gateway_id 筛选
         resp = request_view(
             method="GET",
             view_name="workbench.permissions.mcp.pending",
-            data={"gateway_name": fake_gateway.name},
+            data={"gateway_id": fake_gateway.id},
         )
         result = resp.json()
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
 
-        # 使用不存在的 gateway_name 筛选
+        # 使用不存在的 gateway_id 筛选
         resp = request_view(
             method="GET",
             view_name="workbench.permissions.mcp.pending",
-            data={"gateway_name": "nonexistent_gateway"},
+            data={"gateway_id": 99999},
         )
         result = resp.json()
 

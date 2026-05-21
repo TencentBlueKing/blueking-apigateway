@@ -64,14 +64,14 @@ class WorkbenchMCPPermissionApplyFilter(filters.FilterSet):
 
     bk_app_code = filters.CharFilter(lookup_expr="icontains")
     applied_by = filters.CharFilter(lookup_expr="icontains")
-    gateway_name = filters.CharFilter(field_name="mcp_server__gateway__name", lookup_expr="exact")
+    gateway_id = filters.NumberFilter(field_name="mcp_server__gateway_id")
     mcp_server_id = filters.NumberFilter(field_name="mcp_server_id")
     status = filters.ChoiceFilter(choices=MCPServerAppPermissionApplyStatusEnum.get_choices())
     keyword = filters.CharFilter(method="keyword_filter")
 
     class Meta:
         model = MCPServerAppPermissionApply
-        fields = ["bk_app_code", "applied_by", "gateway_name", "mcp_server_id", "status", "keyword"]
+        fields = ["bk_app_code", "applied_by", "gateway_id", "mcp_server_id", "status", "keyword"]
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(

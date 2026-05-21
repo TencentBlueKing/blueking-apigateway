@@ -113,7 +113,7 @@ class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
-    gateway_name = serializers.CharField(required=False, allow_blank=True, help_text="网关名称")
+    gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
     mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称或应用ID）"
