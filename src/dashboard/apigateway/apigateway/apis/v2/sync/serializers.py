@@ -185,7 +185,12 @@ class GatewaySyncOutputSLZ(serializers.Serializer):
 
 
 class HostSLZ(serializers.Serializer):
-    host = serializers.RegexField(DOMAIN_PATTERN)
+    host = serializers.RegexField(
+        DOMAIN_PATTERN,
+        error_messages={
+            "invalid": _("host 格式不正确，需以 http:// 或 https:// 开头，且为合法的域名，service 地址或 ip:port"),
+        },
+    )
     weight = serializers.IntegerField(min_value=1, required=False)
 
     class Meta:
