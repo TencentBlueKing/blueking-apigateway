@@ -81,7 +81,7 @@
           >
             <div class="sideslider-rg-version-collapse">
               <BkCollapse
-                v-model="activeIndex"
+                v-model="openedCollapsePanelNames"
                 header-icon="right-shape"
                 class="bk-collapse-source"
               >
@@ -97,7 +97,7 @@
                   </template>
                 </BkCollapsePanel>
                 <BkCollapsePanel
-                  v-for="(resource, index) in displayedResources"
+                  v-for="resource in displayedResources"
                   :key="resource.name"
                   :name="resource.name"
                   :class="`source-${resource.name}`"
@@ -110,7 +110,7 @@
                     <BkTag :theme="getMethodsTheme(resource.method)">
                       {{ resource.method }}
                     </BkTag>
-                    <span class="log-name">{{ index }}{{ resource.name }}</span>
+                    <span class="log-name">{{ resource.name }}</span>
                   </span>
                   <template #content>
                     <div class="sideslider-rg-content">
@@ -478,7 +478,7 @@ const emits = defineEmits<{ hidden: [void] }>();
 const { t } = useI18n();
 const route = useRoute();
 
-const activeIndex = ref<string[]>(['fixed']);
+const openedCollapsePanelNames = ref<string[]>(['fixed']);
 const info = ref<any>({});
 const currentSource = ref<any>({});
 const displayedResources = shallowRef<any[]>([]);
@@ -609,7 +609,7 @@ const getInfo = async () => {
   rawResources.value = resources || [];
   currentSource.value = resources[0] || {};
 
-  activeIndex.value = ['fixed'].concat(rawResources.value.map(item => item.name));
+  openedCollapsePanelNames.value = ['fixed'].concat(rawResources.value.map(item => item.name));
   isLoading.value = false;
   const chunk = rawResources.value.slice(
     resourceTrunkConfig.index,
