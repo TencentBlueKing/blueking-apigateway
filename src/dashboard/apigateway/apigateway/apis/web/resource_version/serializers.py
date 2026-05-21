@@ -84,7 +84,9 @@ class ResourceInfoSLZ(serializers.Serializer):
 
             # 后端服务配置
             if backend and "resource_backend_configs" in self.context:
-                backend_info["config"] = self.context["resource_backend_configs"][backend_id].config
+                backend_config = self.context["resource_backend_configs"].get(backend_id)
+                if backend_config:
+                    backend_info["config"] = backend_config.config
 
             proxy["backend"] = backend_info
 

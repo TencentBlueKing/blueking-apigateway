@@ -412,8 +412,10 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             )
             backend_configs.append(backend_config)
 
-        # 4. create other backend config with empty host
-        backends = Backend.objects.filter(gateway=instance.gateway).exclude(name__in=names)
+        # 4. create other backend config with empty host (skip default)
+        backends = (
+            Backend.objects.filter(gateway=instance.gateway).exclude(name__in=names).exclude(name=DEFAULT_BACKEND_NAME)
+        )
         config = {
             "type": "node",
             "timeout": 30,

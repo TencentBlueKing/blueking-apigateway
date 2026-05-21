@@ -32,14 +32,13 @@ from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEn
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import (
-    DEFAULT_BACKEND_NAME,
     HOST_WITHOUT_SCHEME_PATTERN,
     BackendTypeEnum,
     GatewayStatusEnum,
     HashOnTypeEnum,
     LoadBalanceTypeEnum,
 )
-from apigateway.core.models import BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, Resource, ResourceVersion, Stage
 
 from .constants import (
     APP_CODE_PATTERN,
@@ -220,24 +219,30 @@ class PublishValidator:
                     if resource["proxy"].get("backend_id", None)
                 }
             )
-            backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
         else:
             # 校验编辑区的资源所绑定的后端服务
             resource_ids = Resource.objects.filter(gateway=self.gateway).values_list("id", flat=True)
-            backend_ids = (
+            backend_ids = list(
                 Proxy.objects.filter(resource_id__in=resource_ids).values_list("backend_id", flat=True).distinct()
             )
-            backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
 
-        # default backend config 校验
-        default_backend_config = BackendConfig.objects.filter(
-            stage=self.stage, backend__name=DEFAULT_BACKEND_NAME
-        ).get()
+        backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
+        configured_backend_ids = {bc.backend_id for bc in backend_configs}
 
-        all_backend_configs = backend_configs + [default_backend_config]
-        for backend_config in all_backend_configs:
-            for host in backend_config.config["hosts"]:
-                if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host["host"]):
+        # 检查资源用到的 backend 是否都有 stage 配置
+        missing_backend_ids = set(backend_ids) - configured_backend_ids
+        if missing_backend_ids:
+            missing_backends = list(Backend.objects.filter(id__in=missing_backend_ids).values_list("name", flat=True))
+            raise ReleaseValidationError(
+                _("网关环境【{stage_name}】缺少后端服务【{backends}】的配置，请在网关 `后端服务` 中进行配置。").format(
+                    stage_name=self.stage.name,
+                    backends=", ".join(missing_backends),
+                )
+            )
+
+        for backend_config in backend_configs:
+            for host in backend_config.config.get("hosts", []):
+                if not core_constants.HOST_WITHOUT_SCHEME_PATTERN.match(host.get("host", "")):
                     raise ReleaseValidationError(
                         _(
                             "网关环境【{stage_name}】中的配置【后端服务 {backend_name} 地址】不合法。请在网关 `后端服务` 中进行配置。"
