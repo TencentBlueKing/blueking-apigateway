@@ -24,6 +24,7 @@ from ddf import G
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerAppPermissionApplyProcessedStateEnum,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
@@ -1434,6 +1435,66 @@ class TestMCPServerAppPermissionApplyApplicantListApi:
 
         assert resp.status_code == 200
         assert result["data"]["applicants"] == ["user1", "user2"]
+
+    def test_list_with_state_processed(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="pending-app",
+            applied_by="user-pending",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="approved-app",
+            applied_by="user-approved",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.applicant_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data={"state": MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["applicants"] == ["user-approved"]
+
+    def test_list_with_state_unprocessed(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="pending-app",
+            applied_by="user-pending",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="rejected-app",
+            applied_by="user-rejected",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.app-permission-apply.applicant_list",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=fake_gateway,
+            data={"state": MCPServerAppPermissionApplyProcessedStateEnum.UNPROCESSED.value},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["applicants"] == ["user-pending"]
 
 
 class TestMCPServerAppPermissionApplyUpdateStatusApi:

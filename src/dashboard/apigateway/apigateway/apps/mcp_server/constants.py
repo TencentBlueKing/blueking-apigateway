@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import List, Optional
+
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -44,6 +46,18 @@ class MCPServerAppPermissionApplyStatusEnum(StructuredEnum):
 class MCPServerAppPermissionApplyProcessedStateEnum(StructuredEnum):
     PROCESSED = EnumField("processed", label=_("已处理"))
     UNPROCESSED = EnumField("unprocessed", label=_("未处理"))
+
+    @classmethod
+    def get_status_list(cls, state: Optional[str] = None) -> List[str]:
+        state_status_map = {
+            cls.PROCESSED.value: [
+                MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+                MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+            ],
+            cls.UNPROCESSED.value: [MCPServerAppPermissionApplyStatusEnum.PENDING.value],
+        }
+
+        return state_status_map.get(state, [MCPServerAppPermissionApplyStatusEnum.PENDING.value])
 
 
 class MCPServerPermissionStatusEnum(StructuredEnum):

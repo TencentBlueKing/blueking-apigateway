@@ -57,6 +57,7 @@ from apigateway.utils.time import now_datetime
 from .serializers import (
     MCPServerAppPermissionAppCodeListInputSLZ,
     MCPServerAppPermissionAppCodeListOutputSLZ,
+    MCPServerAppPermissionApplyApplicantListInputSLZ,
     MCPServerAppPermissionApplyListInputSLZ,
     MCPServerAppPermissionApplyListOutputSLZ,
     MCPServerAppPermissionApplyUpdateInputSLZ,
@@ -784,13 +785,7 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
         data = slz.validated_data
 
         state = data.get("state")
-        if state == MCPServerAppPermissionApplyProcessedStateEnum.PROCESSED.value:
-            status_list = [
-                MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-                MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
-            ]
-        else:
-            status_list = [MCPServerAppPermissionApplyStatusEnum.PENDING.value]
+        status_list = MCPServerAppPermissionApplyProcessedStateEnum.get_status_list(state)
 
         # 根据 mcp_server_id 查询参数过滤，不传则查询当前网关下所有
         queryset = MCPServerAppPermissionApply.objects.filter(mcp_server__gateway=request.gateway)
@@ -819,13 +814,23 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
     name="get",
     decorator=swagger_auto_schema(
         operation_description="获取授权审批申请人列表",
+        query_serializer=MCPServerAppPermissionApplyApplicantListInputSLZ(),
         responses={status.HTTP_200_OK: ""},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPServerAppPermissionApplyApplicantListApi(MCPServerAppPermissionApplyQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
+        slz = MCPServerAppPermissionApplyApplicantListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
         queryset = self.get_queryset()
+
+        state = data.get("state")
+        status_list = MCPServerAppPermissionApplyProcessedStateEnum.get_status_list(state)
+        queryset = queryset.filter(status__in=status_list)
+
         applied_by_list = list(queryset.values_list("applied_by", flat=True).distinct().order_by("applied_by"))
 
         return OKJsonResponse(data={"applicants": applied_by_list})
