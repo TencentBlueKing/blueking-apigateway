@@ -59,6 +59,7 @@ class TestWorkbenchGatewayPermissionApplyOutputSLZ:
         assert data["id"] == apply_record.id
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "test_user"
+        assert data["gateway_id"] == fake_gateway.id
         assert data["gateway_name"] == fake_gateway.name
         assert data["status"] == ApplyStatusEnum.PENDING.value
         assert data["grant_dimension"] == GrantDimensionEnum.RESOURCE.value
@@ -113,6 +114,7 @@ class TestWorkbenchGatewayPermissionRecordOutputSLZ:
         assert data["bk_app_code"] == "test_app"
         assert data["applied_by"] == "applicant"
         assert data["handled_by"] == "handler"
+        assert data["gateway_id"] == fake_gateway.id
         assert data["gateway_name"] == fake_gateway.name
         assert data["status"] == ApplyStatusEnum.APPROVED.value
         assert data["comment"] == "approved"

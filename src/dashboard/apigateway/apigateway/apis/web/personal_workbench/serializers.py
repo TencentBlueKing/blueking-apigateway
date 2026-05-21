@@ -153,6 +153,7 @@ class ResourceDetailMixin:
 class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
     """个人工作台 - API 网关代办/我的申请 输出序列化器"""
 
+    gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
@@ -166,6 +167,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
         fields = [
             "id",
             "bk_app_code",
+            "gateway_id",
             "gateway_name",
             "grant_dimension",
             "grant_dimension_display",
@@ -205,6 +207,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
 class WorkbenchGatewayPermissionRecordOutputSLZ(ResourceDetailMixin, serializers.ModelSerializer):
     """个人工作台 - API 网关已办 输出序列化器"""
 
+    gateway_id = serializers.IntegerField(read_only=True, help_text="网关 ID")
     gateway_name = serializers.SerializerMethodField(help_text="网关名称")
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
@@ -218,6 +221,7 @@ class WorkbenchGatewayPermissionRecordOutputSLZ(ResourceDetailMixin, serializers
         fields = [
             "id",
             "bk_app_code",
+            "gateway_id",
             "gateway_name",
             "grant_dimension",
             "grant_dimension_display",

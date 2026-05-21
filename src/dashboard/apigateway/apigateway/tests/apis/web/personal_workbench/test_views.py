@@ -501,6 +501,7 @@ class TestWorkbenchPendingGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["bk_app_code"] == "app1"
+        assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
 
     def test_list_excludes_non_maintainer_gateway(self, request_view, fake_gateway, fake_other_gateway):
@@ -805,6 +806,8 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["applied_by"] == FAKE_USERNAME
+        assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
+        assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
 
     def test_list_excludes_other_user_apply(self, request_view, fake_gateway):
         """测试我的申请 - 不返回其他用户提交的申请"""
@@ -972,6 +975,7 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["handled_by"] == FAKE_USERNAME
+        assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
 
     def test_list_excludes_pending(self, request_view, fake_gateway):
