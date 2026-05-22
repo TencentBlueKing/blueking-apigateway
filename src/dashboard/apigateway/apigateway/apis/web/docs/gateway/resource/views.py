@@ -19,11 +19,10 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 
+from apigateway.apis.web.docs.gateway.mixins import DocsGatewayPermissionMixin
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceLabelHandler
-from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
@@ -38,9 +37,7 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
         tags=["WebAPI.Docs.Resource"],
     ),
 )
-class ResourceListApi(generics.ListAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class ResourceListApi(DocsGatewayPermissionMixin, generics.ListAPIView):
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
         slz = ResourceListInputSLZ(data=request.query_params)
