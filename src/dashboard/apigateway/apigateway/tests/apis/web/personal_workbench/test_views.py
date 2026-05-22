@@ -25,7 +25,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Resource
+from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -80,6 +80,32 @@ def fake_mcp_server(fake_gateway, fake_stage, faker):
         is_public=True,
         _resource_names="resource1;resource2",
     )
+
+
+@pytest.fixture
+def make_mcp_server(faker):
+    """创建指定网关下的 MCP Server"""
+
+    def _make_mcp_server(gateway):
+        stage = G(
+            Stage,
+            gateway=gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            name=faker.pystr()[:20],
+            description=faker.pystr(),
+        )
+        return G(
+            MCPServer,
+            name=faker.pystr()[:20],
+            gateway=gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            description=faker.pystr(),
+            is_public=True,
+            _resource_names="resource1;resource2",
+        )
+
+    return _make_mcp_server
 
 
 # ==================== 筛选下拉选项 - 网关 ====================
@@ -328,6 +354,29 @@ class TestWorkbenchMCPServerFilterOptionListApi:
         mcp_ids = [item["id"] for item in result["data"]]
         assert fake_mcp_server.id not in mcp_ids
 
+    def test_pending_excludes_non_maintainer_mcp_servers(self, request_view, fake_other_gateway, make_mcp_server):
+        """pending 类型：不返回非 maintainer 网关下存在待审批申请的 MCP Server"""
+        mcp_server = make_mcp_server(fake_other_gateway)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_servers",
+            data={"type": "pending"},
+        )
+        result = resp.json()
+
+        mcp_ids = [item["id"] for item in result["data"]]
+        assert mcp_server.id not in mcp_ids
+
     def test_applied_returns_mcp_servers_from_my_applies(self, request_view, fake_gateway, fake_mcp_server):
         """applied 类型：返回当前用户申请过的 MCP Server"""
         G(
@@ -474,8 +523,19 @@ class TestWorkbenchMCPGatewayFilterOptionListApi:
         gateway_ids = [item["id"] for item in result["data"]]
         assert fake_gateway.id not in gateway_ids
 
-    def test_pending_excludes_non_maintainer_gateways(self, request_view, fake_other_gateway):
-        """pending 类型：不返回非 maintainer 的网关"""
+    def test_pending_excludes_non_maintainer_gateways(self, request_view, fake_other_gateway, make_mcp_server):
+        """pending 类型：不返回非 maintainer 网关下存在待审批 MCP 申请的网关"""
+        mcp_server = make_mcp_server(fake_other_gateway)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
         resp = request_view(
             method="GET",
             view_name="workbench.filter_options.mcp_gateways",

@@ -92,8 +92,8 @@ class WorkbenchMCPServerFilterOptionSLZ(serializers.ModelSerializer):
 # 修改查询参数时需同步修改对应的 FilterSet 以保持一致性。
 
 
-class WorkbenchGatewayPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - API 网关权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
+class WorkbenchGatewayPendingPermissionQueryInputSLZ(serializers.Serializer):
+    """个人工作台 - API 网关待办权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
@@ -101,27 +101,43 @@ class WorkbenchGatewayPermissionQueryInputSLZ(serializers.Serializer):
     grant_dimension = serializers.ChoiceField(
         choices=GrantDimensionEnum.get_choices(), required=False, help_text="授权维度"
     )
-    status = serializers.ChoiceField(choices=ApplyStatusEnum.get_choices(), required=False, help_text="审批状态")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配网关名称或应用ID）"
     )
 
     class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPendingPermissionQueryInputSLZ"
+
+
+class WorkbenchGatewayPermissionQueryInputSLZ(WorkbenchGatewayPendingPermissionQueryInputSLZ):
+    """个人工作台 - API 网关权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
+
+    status = serializers.ChoiceField(choices=ApplyStatusEnum.get_choices(), required=False, help_text="审批状态")
+
+    class Meta:
         ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchGatewayPermissionQueryInputSLZ"
 
 
-class WorkbenchMCPPermissionQueryInputSLZ(serializers.Serializer):
-    """个人工作台 - MCP Server 权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
+class WorkbenchMCPPendingPermissionQueryInputSLZ(serializers.Serializer):
+    """个人工作台 - MCP Server 待办权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
 
     bk_app_code = serializers.CharField(required=False, allow_blank=True, help_text="蓝鲸应用 ID")
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
     gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
     mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
+    keyword = serializers.CharField(
+        required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称、展示名称或应用ID）"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.personal_workbench.serializers.WorkbenchMCPPendingPermissionQueryInputSLZ"
+
+
+class WorkbenchMCPPermissionQueryInputSLZ(WorkbenchMCPPendingPermissionQueryInputSLZ):
+    """个人工作台 - MCP Server 权限查询输入（仅用于文档生成，实际过滤由 FilterSet 处理）"""
+
     status = serializers.ChoiceField(
         choices=MCPServerAppPermissionApplyStatusEnum.get_choices(), required=False, help_text="审批状态"
-    )
-    keyword = serializers.CharField(
-        required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称或应用ID）"
     )
 
     class Meta:
@@ -163,7 +179,7 @@ class WorkbenchGatewayPermissionApplyOutputSLZ(ResourceDetailMixin, serializers.
     expire_days_display = serializers.SerializerMethodField(help_text="权限期限显示")
     grant_dimension_display = serializers.SerializerMethodField(help_text="授权维度显示")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
-    approvers = serializers.SerializerMethodField(help_text="审批人")
+    approvers = serializers.SerializerMethodField(help_text="当前网关管理员列表（潜在审批人，非历史实际审批人）")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
     resources = serializers.SerializerMethodField(help_text="资源维度时的资源列表")
 
@@ -298,7 +314,7 @@ class WorkbenchMCPPermissionApplyOutputSLZ(serializers.ModelSerializer):
 
     mcp_server = WorkbenchMCPServerBaseSLZ(help_text="MCP Server 信息")
     applied_by = serializers.SerializerMethodField(help_text="申请人")
-    approvers = serializers.SerializerMethodField(help_text="审批人")
+    approvers = serializers.SerializerMethodField(help_text="当前网关管理员列表（潜在审批人，非历史实际审批人）")
     itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
     status_display = serializers.SerializerMethodField(help_text="审批状态显示")
 

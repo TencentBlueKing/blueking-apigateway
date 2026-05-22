@@ -43,6 +43,23 @@ class WorkbenchGatewayPermissionApplyFilter(filters.FilterSet):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
 
 
+class WorkbenchGatewayPendingPermissionApplyFilter(filters.FilterSet):
+    """个人工作台 - API 网关待办权限申请筛选器"""
+
+    bk_app_code = filters.CharFilter(lookup_expr="icontains")
+    applied_by = filters.CharFilter(lookup_expr="icontains")
+    gateway_id = filters.NumberFilter(field_name="gateway_id")
+    grant_dimension = filters.ChoiceFilter(choices=GrantDimensionEnum.get_choices())
+    keyword = filters.CharFilter(method="keyword_filter")
+
+    class Meta:
+        model = AppPermissionApply
+        fields = ["bk_app_code", "applied_by", "gateway_id", "grant_dimension", "keyword"]
+
+    def keyword_filter(self, queryset, name, value):
+        return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
+
+
 class WorkbenchGatewayPermissionRecordFilter(filters.FilterSet):
     """个人工作台 - API 网关已办记录筛选器"""
 
@@ -58,6 +75,27 @@ class WorkbenchGatewayPermissionRecordFilter(filters.FilterSet):
 
     def keyword_filter(self, queryset, name, value):
         return queryset.filter(Q(bk_app_code__icontains=value) | Q(gateway__name__icontains=value))
+
+
+class WorkbenchMCPPendingPermissionApplyFilter(filters.FilterSet):
+    """个人工作台 - MCP Server 待办权限申请筛选器"""
+
+    bk_app_code = filters.CharFilter(lookup_expr="icontains")
+    applied_by = filters.CharFilter(lookup_expr="icontains")
+    gateway_id = filters.NumberFilter(field_name="mcp_server__gateway_id")
+    mcp_server_id = filters.NumberFilter(field_name="mcp_server_id")
+    keyword = filters.CharFilter(method="keyword_filter")
+
+    class Meta:
+        model = MCPServerAppPermissionApply
+        fields = ["bk_app_code", "applied_by", "gateway_id", "mcp_server_id", "keyword"]
+
+    def keyword_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(bk_app_code__icontains=value)
+            | Q(mcp_server__name__icontains=value)
+            | Q(mcp_server__title__icontains=value)
+        )
 
 
 class WorkbenchMCPPermissionApplyFilter(filters.FilterSet):

@@ -21,12 +21,15 @@ from typing import List
 from django.conf import settings
 
 from apigateway.apps.permission.constants import (
+    ApplyStatusEnum,
     GrantTypeEnum,
 )
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
+    AppPermissionApply,
     AppResourcePermission,
 )
+from apigateway.biz.gateway.gateway import GatewayHandler
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
     TenantModeEnum,
@@ -37,6 +40,16 @@ from apigateway.core.models import Gateway
 
 
 class ResourcePermissionHandler:
+    @staticmethod
+    def get_pending_apply_queryset_for_maintainer(username: str, tenant_id: str):
+        """获取指定用户作为网关管理员待审批的 API 网关权限申请列表"""
+        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
+        gateway_ids = [gateway.id for gateway in gateways]
+        return AppPermissionApply.objects.filter(
+            gateway_id__in=gateway_ids,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+
     @staticmethod
     def grant_or_renewal_expire_soon(
         gateway: Gateway, resource_id: int, bk_app_code: str, expire_days: int, expires_soon_seconds: int = 300
