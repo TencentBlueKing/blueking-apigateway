@@ -1,0 +1,181 @@
+version: "2"
+run:
+  concurrency: 4
+  issues-exit-code: 1
+  tests: false
+linters:
+  enable:
+    # bug catchers
+    - staticcheck
+    - govet
+    - errcheck
+    - errchkjson
+    - bodyclose
+    - nilerr
+    - nilnesserr
+    - ineffassign
+    - unused
+    - durationcheck
+    - errorlint
+    - noctx
+    - forcetypeassert
+    - fatcontext
+    # modernization (Go 1.25.5)
+    - modernize
+    - exptostd
+    - intrange
+    - usestdlibvars
+    # code quality
+    - gocritic
+    - gocyclo
+    - unconvert
+    - copyloopvar
+    - reassign
+    - mirror
+    - perfsprint
+    # style
+    - revive
+    - lll
+    - whitespace
+    - misspell
+    - nakedret
+    # security
+    - gosec
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -QF1008
+        - -QF1001
+        - -ST1003
+        - -ST1011
+    revive:
+      severity: error
+      enable-all-rules: false
+      rules:
+        - name: package-comments
+          severity: error
+          disabled: false
+          exclude: []
+        - name: exported
+          severity: error
+          disabled: false
+          exclude: []
+          arguments:
+            - "check-private-receivers"
+            - "disable-stuttering-check"
+            - "disable-checks-on-constants"
+            - "disable-checks-on-types"
+            - "disable-checks-on-variables"
+
+    lll:
+      line-length: 120
+      tab-width: 1
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+    errorlint:
+      errorf: true
+      errorf-multi: true
+      asserts: true
+      comparison: true
+    modernize:
+      disable:
+        - omitzero
+        - stringsbuilder
+        - waitgroup
+    perfsprint:
+      err-error: false
+      errorf: false
+      int-conversion: false
+    gosec:
+      excludes:
+        - G104
+        - G115
+        - G304
+        - G307
+        - G401
+        - G501
+        - G505
+      confidence: medium
+  exclusions:
+    generated: lax
+    paths:
+      - vendor$
+      - third_party$
+      - builtin$
+      - tests/integration/*.go
+      - examples$
+
+issues:
+  uniq-by-line: false
+  # Show only new issues: if there are unstaged changes or untracked files,
+  # only those changes are analyzed, else only changes in HEAD~ are analyzed.
+  # It's a super-useful option for integration of golangci-lint into existing large codebase.
+  # It's not practical to fix all existing issues at the moment of integration:
+  # much better don't allow issues in new code.
+  #
+  # Default: false
+  new: false
+  # Fix found issues (if it's supported by the linter).
+  # Default: false
+  fix: false
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - golines
+    - gofumpt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(operator)
+    gofmt:
+      # Simplify code: gofmt with `-s` option.
+      # Default: true
+      simplify: false
+      # Apply the rewrite rules to the source before reformatting.
+      # https://pkg.go.dev/cmd/gofmt
+      # Default: []
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+        - pattern: 'a[b:len(a)]'
+          replacement: 'a[b:]'
+    goimports:
+      local-prefixes:
+        - operator
+    gofumpt:
+      # Module path which contains the source code being formatted.
+      # Default: ""
+      module-path: operator
+      # Choose whether to use the extra rules.
+      # Default: false
+      extra-rules: true
+    golines:
+      # Target maximum line length.
+      # Default: 100
+      max-len: 120
+      # Length of a tabulation.
+      # Default: 4
+      tab-len: 8
+      # Shorten single-line comments.
+      # Default: false
+      shorten-comments: true
+      # Default: true
+      reformat-tags: false
+      # Split chained methods on the dots as opposed to the arguments.
+      # Default: true
+      chain-split-dots: false
+  exclusions:
+    generated: lax
+    paths:
+      - vendor$
+      - third_party$
+      - tests/integration/*.go
+      - builtin$
+      - examples$

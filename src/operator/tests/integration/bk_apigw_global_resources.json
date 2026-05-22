@@ -1,0 +1,91 @@
+{
+  "plugin_metadata": {
+    "/bk-gateway-apigw/v2/global/plugin_metadata/bk-concurrency-limit": {
+      "id": "bk-concurrency-limit",
+      "labels": {
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "conn": 2001,
+      "burst": 1000,
+      "default_conn_delay": 1,
+      "key_type": "var",
+      "key": "bk_concurrency_limit_key",
+      "allow_degradation": true
+    },
+    "/bk-gateway-apigw/v2/global/plugin_metadata/bk-opentelemetry": {
+      "id": "bk-opentelemetry",
+      "labels": {
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "sampler": {
+        "name": "parent_base",
+        "options": {
+          "root": {
+            "name": "trace_id_ratio",
+            "options": {
+              "fraction": 1.0
+            }
+          }
+        }
+      },
+      "additional_attributes": []
+    },
+    "/bk-gateway-apigw/v2/global/plugin_metadata/bk-real-ip": {
+      "id": "bk-real-ip",
+      "labels": {
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "recursive": true,
+      "source": "http_x_test_ip",
+      "trusted_addresses": [
+        "0.0.0.0/0"
+      ]
+    },
+    "/bk-gateway-apigw/v2/global/plugin_metadata/file-logger": {
+      "id": "file-logger",
+      "labels": {
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "log_format": {
+        "proto": "$server_protocol",
+        "method": "$request_method",
+        "http_host": "$host",
+        "http_path": "$uri",
+        "headers": "-",
+        "params": "$args",
+        "body": "$bk_log_request_body",
+        "app_code": "$bk_app_code",
+        "client_ip": "$remote_addr",
+        "request_id": "$bk_request_id",
+        "x_request_id": "$x_request_id",
+        "request_duration": "$bk_log_request_duration",
+        "bk_username": "$bk_username",
+        "bk_tenant_id": "$bk_tenant_id",
+        "api_id": "$bk_gateway_id",
+        "api_name": "$bk_gateway_name",
+        "resource_id": "$bk_resource_id",
+        "resource_name": "$bk_resource_name",
+        "stage": "$bk_stage_name",
+        "backend_name": "$bk_backend_name",
+        "backend_scheme": "$upstream_scheme",
+        "backend_method": "$method",
+        "backend_host": "$bk_backend_host",
+        "backend_addr": "$upstream_addr",
+        "backend_path": "$bk_log_backend_path",
+        "backend_duration": "$bk_log_upstream_duration",
+        "response_body": "$bk_log_response_body",
+        "response_size": "$body_bytes_sent",
+        "status": "$status",
+        "msg": "-",
+        "level": "info",
+        "code_name": "$bk_apigw_error_code_name",
+        "error": "$bk_apigw_error_message",
+        "proxy_error": "$proxy_error",
+        "instance": "$instance_id",
+        "timestamp": "$bk_log_request_timestamp",
+        "auth_location": "$auth_params_location",
+        "traceparent": "$http_traceparent"
+      }
+    }
+  }
+}

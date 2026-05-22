@@ -1,0 +1,175 @@
+{
+  "routes": {
+    "/bk-gateway-apigw/v2/gateway/bk-default/default/route/bk-default.default.-1": {
+      "id": "bk-default.default.-1",
+      "desc": "route for detect release version",
+      "labels": {
+        "gateway.bk.tencent.com/gateway": "bk-default",
+        "gateway.bk.tencent.com/stage": "default",
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "name": "bk-default.default.builtin-mock-release-version",
+      "uris": [
+        "/api/bk-default/default/__apigw_version"
+      ],
+      "methods": [
+        "GET"
+      ],
+      "plugins": {
+        "bk-mock": {
+          "response_status": 200,
+          "response_example": "{\"publish_id\": 1, \"start_time\": \"2025-10-22 15:24:57+0800\"}",
+          "response_headers": {
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "timeout": {
+        "connect": 60,
+        "send": 60,
+        "read": 60
+      }
+    },
+    "/bk-gateway-apigw/v2/gateway/bk-default/default/route/bk-default.default.1": {
+      "id": "bk-default.default.1",
+      "labels": {
+        "gateway.bk.tencent.com/gateway": "bk-default",
+        "gateway.bk.tencent.com/stage": "default",
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "name": "bk-default.default.ping",
+      "uris": [
+        "/api/bk-default/default/ping",
+        "/api/bk-default/default/ping/"
+      ],
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "plugins": {
+        "bk-resource-context": {
+          "bk_resource_id": 1,
+          "bk_resource_name": "ping",
+          "bk_resource_auth": {
+            "verified_app_required": false,
+            "verified_user_required": false,
+            "resource_perm_required": false,
+            "skip_user_verification": false
+          }
+        },
+        "bk-proxy-rewrite": {
+          "uri": "/ping",
+          "method": "GET"
+        }
+      },
+      "service_id": "bk-default.default.2-1"
+    },
+    "/bk-gateway-apigw/v2/gateway/bk-default/default/route/bk-default.default.2": {
+      "id": "bk-default.default.2",
+      "labels": {
+        "gateway.bk.tencent.com/gateway": "bk-default",
+        "gateway.bk.tencent.com/stage": "default",
+        "gateway.bk.tencent.com/apisix-version": "3.13"
+      },
+      "name": "bk-default.default.demo",
+      "uris": [
+        "/api/bk-default/default/demo",
+        "/api/bk-default/default/demo/"
+      ],
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "plugins": {
+        "bk-resource-context": {
+          "bk_resource_id": 2,
+          "bk_resource_name": "demo",
+          "bk_resource_auth": {
+            "verified_app_required": false,
+            "verified_user_required": false,
+            "resource_perm_required": false,
+            "skip_user_verification": false
+          }
+        },
+        "bk-proxy-rewrite": {
+          "uri": "/demo",
+          "method": "GET"
+        }
+      },
+      "service_id": "bk-default.default.2-2"
+    }
+  },
+  "services": {
+    "/bk-gateway-apigw/v2/gateway/bk-default/default/service/bk-default.default.2-1": {
+      "id": "bk-default.default.2-1",
+      "desc": "default/2 (backend=default)",
+      "labels": {
+        "gateway.bk.tencent.com/gateway": "bk-default",
+        "gateway.bk.tencent.com/stage": "default",
+        "gateway.bk.tencent.com/apisix-version": "3.13",
+        "gateway.bk.tencent.com/publish-id": "1",
+        "gateway.bk.tencent.com/backend-id": "1"
+      },
+      "name": "bk-default.default.default",
+      "plugins": {
+        "bk-backend-context": {
+          "bk_backend_id": 1,
+          "bk_backend_name": "default"
+        },
+        "prometheus": {},
+        "bk-real-ip": {},
+        "bk-auth-validate": {},
+        "bk-auth-verify": {},
+        "bk-break-recursive-call": {},
+        "bk-delete-sensitive": {},
+        "bk-log-context": {},
+        "bk-delete-cookie": {},
+        "bk-error-wrapper": {},
+        "bk-jwt": {},
+        "bk-request-id": {},
+        "bk-response-check": {},
+        "bk-permission": {},
+        "bk-debug": {},
+        "file-logger": {
+          "path": "logs/access.log"
+        },
+        "bk-stage-context": {
+          "bk_gateway_name": "bk-default",
+          "bk_gateway_id": 1,
+          "bk_stage_name": "default",
+          "jwt_private_key": "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBczlMQkVmazJZTGVrdmg0czFVVE95NStTOHhRRnlCcklkREF2UU04WVhhUS9QdUZ0ClZTQjhhSVA1TktsNjFUVTJrYnZsVTFJMkZlbGw2dkxUY0k5Tm1RRUlmTHh0ZDk5TW1aYjNINVZpWFIrTGxOTlUKbFFxcUxGUThIem1VWnVNNmxzbUd2U0Fjay9BTTJQYUpVMXkrOUtydldHdnRGM0I2cm4vOVZwdmRNN3lZaEpmeQppTGR1ZmhrYmpFTmFja2xjd3BRQmhKUVFaelJqUGpjYXQ1cll6T2ZNcVJsaWRaUk85SFhjNXlMYVV3QWpiUTdlCjVYb1JxQTRiMmNBZWFhc3JGMG4wbmdSWkpUQ1pOQWpmell4V21RNFJZZytVTmlhSUJ0WExjNzlub2tVQkNITzcKdjB1bml3UTJtZ1k3alRKUE1GM0srYVdZbkZvNE5BSjkySkZmc3dJREFRQUJBb0lCQUIvclRBd1ZzWHBQZnJXawpnNDdEclBWbCtONmU4anZIelVjYWVuakZpZXl0Ui9Dd2NRaklRRzBJNkFaYUF3eXZhbVZKOWZYcFJPSjAwSHQ0CjZPRTAvckFuQjh1a1lzWUJaQVpyVHFoVGl1Yyt2emNHb0Ivb2liWmVxV0ZkaGlNUk9JZ2xjMzVFb2UzOGtUczkKMzdobFlSdnE3NXRCWlE5aER0WEVzRUpjWGxKZFhuMWxEM1EzblBZNXNPVk93cVozc21Bei9SdDFoRjBPSjJoRwprZW5uYnFMY2pqeHN4c1RoMWJ5cjhEdEI0MmI1bEp4bEdSN0FPTGovZFVScnNXS1VCWGl2OFpQa1RTbklrUFA3CmZLTmlldVhqbEhmdFNzOXFVbnR3K3hKZnZaaHBiR3BkRE9hcUppaTZpcVhPZVBqeU9NSms3SWVUcEE1OWt2Q20KMU9MS2FMa0NnWUVBM09uN1hxUk1hZS9NbkljS0ZwTFlWVHVyRnRVcGkydEdVTitJa3I0c25NMDRwbnhZcEI4QQpXSWZ3Mk1CYW5mLzRJWjU1bmhIbVc0aW8rdXg1NVVWNGVUbWRkenBEREZXOFRIaWpIblhCVXNEb3hSeXk1U1NkCm05eHU2eStRaXozRVVlU3FVcndyOWx0Q0FScDNENkJPRnRocW56dzNKMXowOXlWMGhIVDV4elVDZ1lFQTBHSVcKVWZvakIvTEptWVFldEZIL3ZuMTJDV1Z3WUlkcXVrVFl4M2xwZUJkNEJXTEJtUFQzYXUrNmlhNkphanVOQmNwbwpnTUllVWE1SFFwbG9zSDk0c2lpTlk1UnZrVFJMSEJCYXQyWWQxenF6b0pEdjZZWVpnYTZiRzV3VW9VZTN5cmZzClgxdVE5bmNjSG1KSnhMVFFwQks1ajFScHpwNGtHeGRHTFhiaW9FY0NnWUFaMHV4RWd2WS94LzFtS3M3K0ZvcGQKWkUwNnJRNWZNdG9VYUIwQjhtTXFyVDY3RDN3WksxcVIvc29qdkZDYmVhbWEzSGloQnJ5ajVKVEVTRkp6ZjZ4MgpsMHFWL21TS0U1ZWdaTlhFb01WSmxDMWhwVm93T1JpSGVMd3FsL1BRb3hiSTcrOE5IdHdRdjFnMjRzNGFNSVlRClc1b1RKU25aV3g5enFKZzNSNmxQSlFLQmdRQ2FIUUR1N2ZUOGl1WG9ZSnNvdDBCU1RJMkFrNElTRWZTdi8vem4KUWZicnQwZXZqQU1zTVhmT29hK3U1ZU9CS3J1NFhhTCtIeEszVEJJdHdqRjMzejZQWEloODdpbTVGUmk3ajZqWAozSEVUWGJtOWRaUEpmTURlZFJrSHlWNUVqVHJ6ZFNVZXZTU3Y4eFZicjB0cGJHU21BNmN5eHJaZDlmMHovL21KCjVGUGxQd0tCZ0hnb3BHTWtIQ2FOV21ENGk0aHhNYkxjWkRVRVVpaXFCSjhEU2VWcVYzVVU4ZHNyV3hOUEQvN2sKUngyV0NXZzBDRTZEb1VHelN5VVVBc0ptN1FobndVU2k5eGo0U1RKSXFqOWdWYndRbmdCeDg0S0FrVFQ0aEp0dwpudGEyU3F4TWRvYnAvUVN0OVNVNUZWSURiMVNHeEJlc05qUTZmTVA5QlZUUmViSXV1R2x5Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0t",
+          "bk_api_auth": {
+            "user_auth_type": "default",
+            "api_type": 1,
+            "allow_update_api_auth": true,
+            "unfiltered_sensitive_keys": [],
+            "allow_delete_sensitive_params": true,
+            "user_conf": {
+              "user_type": "default",
+              "from_bk_token": true,
+              "from_username": true
+            }
+          }
+        },
+        "bk-default-tenant": {}
+      },
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": [
+          {
+            "host": "0.0.0.1",
+            "port": 80,
+            "weight": 100
+          }
+        ],
+        "scheme": "http",
+        "timeout": {
+          "connect": 60,
+          "send": 60,
+          "read": 60
+        },
+        "pass_host": "node"
+      }
+    }
+  }
+}

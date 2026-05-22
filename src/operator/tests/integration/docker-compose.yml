@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  etcd:
+    image: bitnamilegacy/etcd:3.5.9-debian-11-r99
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      - "2479:2379"
+      - "2480:2380"
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  operator:
+    image: bk-micro-gateway-operator:development
+    environment:
+      - BK_GATEWAY_POD_NAME=bk-apigateway-operator-7cfbf94d8d-8lbnh
+      - BK_GATEWAY_POD_NAMESPACE=blueking-dev
+    volumes:
+      - ./config_test.yaml:/app/config.yaml
+    ports:
+      - "6004:6004"
+    depends_on:
+      etcd:
+        condition: service_healthy
+
