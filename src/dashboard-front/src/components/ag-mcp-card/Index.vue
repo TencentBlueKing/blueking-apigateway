@@ -71,7 +71,7 @@
               v-if="server.status"
               size="small"
               text
-              class="edit-icon"
+              class="operate-icon"
               @click.stop="handleEditClick"
             >
               <AgIcon
@@ -84,11 +84,11 @@
               v-else
               size="small"
               text
-              class="text-12px! color-#979ba5!"
+              class="operate-icon"
               @click.stop="handleEnableClick"
             >
               <AgIcon
-                name="down"
+                name="yuan-tishi"
                 size="14"
                 class="mr-4px"
               />
@@ -455,13 +455,9 @@ onUnmounted(() => {
     }
   }
 
-  .edit-icon {
+  .operate-icon {
     font-size: 12px;
     color: #979ba5;
-
-    &:hover {
-      color: #699df4;
-    }
   }
 
   .divider {
@@ -519,6 +515,10 @@ onUnmounted(() => {
     box-shadow: 0 4px 6px 0 #1919291f;
     border-radius: 0 2px 2px 2px;
 
+    .operate-icon {
+      color: #1768ef;
+    }
+
     &.is-open {
 
       .ag-mcp-card-checkbox {
@@ -529,10 +529,6 @@ onUnmounted(() => {
 
   &.is-checked {
     border-color: #3a84ff;
-
-    .edit-icon {
-      color: #3a84ff;
-    }
   }
 }
 </style>

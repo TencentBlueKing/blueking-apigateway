@@ -734,3 +734,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-wodeyiban:before {
 	content: "\e215";
 }
+.icon-ag-yuan-tishi:before {
+	content: "\e216";
+}
