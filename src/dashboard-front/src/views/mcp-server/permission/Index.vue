@@ -476,6 +476,9 @@ const handleTabChange = (name: string) => {
   }
   filterData.value.state = name;
   handleClearFilter();
+  if (!featureFlagStore.isTenantMode) {
+    getApplicant();
+  }
 };
 
 // 处理表头筛选联动搜索框
