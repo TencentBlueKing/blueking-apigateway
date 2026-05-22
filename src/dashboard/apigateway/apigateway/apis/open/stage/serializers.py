@@ -412,30 +412,10 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             )
             backend_configs.append(backend_config)
 
-        # 4. create other backend config with empty host (skip default)
-        backends = (
-            Backend.objects.filter(gateway=instance.gateway).exclude(name__in=names).exclude(name=DEFAULT_BACKEND_NAME)
-        )
-        config = {
-            "type": "node",
-            "timeout": 30,
-            "loadbalance": "roundrobin",
-            "hosts": [{"scheme": "http", "host": "", "weight": 100}],
-        }
-
-        for backend in backends:
-            backend_config = BackendConfig(
-                gateway=instance.gateway,
-                backend=backend,
-                stage=instance,
-                config=config,
-            )
-            backend_configs.append(backend_config)
-
         if backend_configs:
             BackendConfig.objects.bulk_create(backend_configs)
 
-        # 5. sync stage plugin
+        # 4. sync stage plugin
         self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
 
         return instance

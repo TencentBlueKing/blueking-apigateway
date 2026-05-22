@@ -146,6 +146,7 @@ class TestStageSyncViewSet:
         )
 
         gateway = G(Gateway, name=unique_gateway_name, is_public=False)
+        omitted_backend = G(Backend, gateway=gateway, name="service2")
 
         request = request_factory.post(
             f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
@@ -204,6 +205,7 @@ class TestStageSyncViewSet:
         assert stage.status == 0
         assert len(Backend.objects.filter(gateway=gateway, name__in=["default", "service1"])) == 2
         assert len(BackendConfig.objects.filter(backend__name__in=["default", "service1"])) == 2
+        assert not BackendConfig.objects.filter(backend=omitted_backend, stage=stage).exists()
         assert BackendConfig.objects.get(backend__name="default").config == {
             "type": "node",
             "timeout": 60,
