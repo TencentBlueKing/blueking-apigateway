@@ -192,11 +192,13 @@ class TestReleaseManager:
         stage_prod = G(Stage, gateway=gateway, name="prod", status=1)
         stage_test = G(Stage, gateway=gateway, name="test", status=1)
         stage_dev = G(Stage, gateway=gateway, name="dev", status=1)
+        stage_offline = G(Stage, gateway=gateway, name="offline", status=StageStatusEnum.INACTIVE.value)
         resource_version_1 = G(ResourceVersion, gateway=gateway)
         resource_version_2 = G(ResourceVersion, gateway=gateway)
         G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
         G(Release, gateway=gateway, stage=stage_dev, resource_version=resource_version_2)
         G(Release, gateway=gateway, stage=stage_test, resource_version=resource_version_1)
+        G(Release, gateway=gateway, stage=stage_offline, resource_version=resource_version_1)
 
         data = [
             {
