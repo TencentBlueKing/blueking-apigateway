@@ -29,9 +29,10 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum
-from apigateway.biz.gateway.gateway import GatewayHandler
 from apigateway.common.error_codes import error_codes
+from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
 
@@ -42,8 +43,11 @@ class MCPServerPermissionHandler:
     @staticmethod
     def get_pending_apply_queryset_for_gateway_maintainer(username: str, tenant_id: str):
         """获取指定用户作为网关管理员待审批的 MCP Server 权限申请列表"""
-        gateways = GatewayHandler.list_gateways_by_user(username, tenant_id)
-        gateway_ids = [gateway.id for gateway in gateways]
+        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        if tenant_id:
+            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
+
+        gateway_ids = [gateway.id for gateway in queryset if gateway.has_permission(username)]
         return MCPServerAppPermissionApply.objects.filter(
             mcp_server__gateway_id__in=gateway_ids,
             status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
