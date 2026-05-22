@@ -26,6 +26,7 @@ from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, Ope
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
@@ -145,6 +146,45 @@ class TestResourceVersionHandler:
 
         get_released_resource_version_ids_mock.assert_called_once_with(gateway_id, stage_name)
         get_resources_mock.assert_called()
+
+    @pytest.mark.parametrize(
+        "release_stage_specs, expected",
+        [
+            ([], []),
+            ([("prod", StageStatusEnum.ACTIVE.value)], ["prod"]),
+            (
+                [
+                    ("test", StageStatusEnum.ACTIVE.value),
+                    ("prod", StageStatusEnum.ACTIVE.value),
+                    ("offline", StageStatusEnum.INACTIVE.value),
+                ],
+                ["prod", "test"],
+            ),
+        ],
+    )
+    def test_get_released_stage_names(self, fake_gateway, fake_resource, release_stage_specs, expected):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(
+            ReleasedResource,
+            gateway=fake_gateway,
+            resource_version_id=resource_version.id,
+            resource_id=fake_resource.id,
+            resource_name=fake_resource.name,
+            resource_method=fake_resource.method,
+            resource_path=fake_resource.path,
+            data={},
+        )
+
+        for stage_name, stage_status in release_stage_specs:
+            stage = G(Stage, gateway=fake_gateway, name=stage_name, status=stage_status)
+            G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+
+        other_gateway = G(Gateway)
+        other_stage = G(Stage, gateway=other_gateway, name="other", status=StageStatusEnum.ACTIVE.value)
+        G(Release, gateway=other_gateway, stage=other_stage, resource_version=resource_version)
+
+        result = ResourceVersionHandler.get_released_stage_names(fake_gateway.id, fake_resource.id)
+        assert result == expected
 
     def test_get_latest_created_time(self, fake_gateway):
         result = ResourceVersionHandler.get_latest_created_time(fake_gateway.id)

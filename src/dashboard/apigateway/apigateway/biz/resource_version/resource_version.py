@@ -169,17 +169,12 @@ class ResourceVersionHandler:
         return resource_version
 
     @staticmethod
-    def get_released_stage_names(resource_id: int) -> List[str]:
+    def get_released_stage_names(gateway_id: int, resource_id: int) -> List[str]:
         """获取资源已发布到的环境名称列表"""
-        return list(
-            Release.objects.filter(
-                resource_version_id__in=ReleasedResource.objects.filter(resource_id=resource_id).values_list(
-                    "resource_version_id", flat=True
-                )
-            )
-            .values_list("stage__name", flat=True)
-            .distinct()
+        resource_version_ids = ReleasedResource.objects.get_released_resource_version_ids_by_resource(
+            gateway_id, resource_id
         )
+        return Release.objects.get_released_stage_names_by_resource_versions(gateway_id, resource_version_ids)
 
     @staticmethod
     def get_released_public_resources(gateway_id: int, stage_name: Optional[str] = None) -> List[dict]:

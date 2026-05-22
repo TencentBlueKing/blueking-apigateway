@@ -228,7 +228,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         instance = self.get_object()
 
         # 查询资源已发布到的环境
-        released_stages = ResourceVersionHandler.get_released_stage_names(instance.id)
+        released_stages = ResourceVersionHandler.get_released_stage_names(instance.gateway_id, instance.id)
 
         slz = ResourceOutputSLZ(
             instance,

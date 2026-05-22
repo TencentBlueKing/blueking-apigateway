@@ -260,6 +260,27 @@ class TestReleaseManager:
         result = Release.objects.get_resource_version_released_stage_names([1])
         assert result == {1: ["prod", "test"]}
 
+    def test_get_released_stage_names_by_resource_versions(self):
+        gateway = G(Gateway)
+        other_gateway = G(Gateway)
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
+        resource_version_2 = G(ResourceVersion, gateway=gateway)
+
+        stage_test = G(Stage, gateway=gateway, name="test", status=StageStatusEnum.ACTIVE.value)
+        stage_prod = G(Stage, gateway=gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        stage_offline = G(Stage, gateway=gateway, name="offline", status=StageStatusEnum.INACTIVE.value)
+        stage_other = G(Stage, gateway=other_gateway, name="other", status=StageStatusEnum.ACTIVE.value)
+
+        G(Release, gateway=gateway, stage=stage_test, resource_version=resource_version_1)
+        G(Release, gateway=gateway, stage=stage_prod, resource_version=resource_version_2)
+        G(Release, gateway=gateway, stage=stage_offline, resource_version=resource_version_1)
+        G(Release, gateway=other_gateway, stage=stage_other, resource_version=resource_version_1)
+
+        result = Release.objects.get_released_stage_names_by_resource_versions(
+            gateway.id, [resource_version_1.id, resource_version_2.id]
+        )
+        assert result == ["prod", "test"]
+
     def test_save_release(self):
         gateway = G(Gateway)
         stage_1 = G(Stage, gateway=gateway)
