@@ -35,3 +35,4 @@ index.html.backup
 .codebuddy.backup
 
 src/services/temp/open-api.json
+src/types/auto-imports.d.ts

@@ -1027,6 +1027,10 @@ watch(
 watch(
   searchValue,
   () => {
+    // 网关切换期间，route.params.id 尚未更新，跳过以避免 useRouteQuery 的 router.replace 中断导航
+    if (Number(route.params.id) !== gatewayId) {
+      return;
+    }
     tableQueries.value = { order_by: tableQueries.value.order_by };
 
     if (route.query?.backend_id) {
@@ -1104,9 +1108,30 @@ watch(tableQueries, () => {
   });
 }, { deep: true });
 
+// 标记是否刚从网关切换过渡期进入正常状态，用于清除旧网关残留的 query 参数
+const wasInTransition = ref(false);
+
 watch(
   () => route.query,
   () => {
+    // 网关切换期间，route.params.id 尚未更新而 gatewayId prop 已更新（:key 触发组件重建），
+    // 此时 route.query 仍来自旧网关，跳过该 watcher 避免 useRouteQuery 的 router.replace 中断导航
+    if (Number(route.params.id) !== gatewayId) {
+      wasInTransition.value = true;
+      return;
+    }
+
+    // 刚从网关切换过渡期进入正常状态，此时 route.query 可能携带旧网关残留的查询参数
+    // 需要主动清除（searchValue 为空表示新组件尚未有用户筛选操作）
+    if (wasInTransition.value) {
+      wasInTransition.value = false;
+      if (!searchValue.value.length && Object.keys(route.query).some(k => route.query[k])) {
+        // 使用 router.replace 清除所有 query 参数，避免旧网关数据污染新网关
+        router.replace({ query: {} });
+        return;
+      }
+    }
+
     if (route.query?.keyword) {
       queryKeyword.value = route.query.keyword as string;
       const searchValueItem = searchValue.value.find((item: any) => item.id === queryKeyword.value);
