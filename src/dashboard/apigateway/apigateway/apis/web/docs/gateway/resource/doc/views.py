@@ -20,7 +20,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.docs.gateway.mixins import DocsGatewayPermissionMixin
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource_doc import ResourceDocHandler
@@ -40,7 +40,7 @@ from .serializers import DocInputSLZ, DocOutputSLZ
         tags=["WebAPI.Docs.ResourceDoc"],
     ),
 )
-class DocRetrieveApi(DocsGatewayPermissionMixin, generics.RetrieveAPIView):
+class DocRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""
         slz = DocInputSLZ(data=request.query_params)

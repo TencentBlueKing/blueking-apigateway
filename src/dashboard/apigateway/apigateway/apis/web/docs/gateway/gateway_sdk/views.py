@@ -23,7 +23,7 @@ from django.utils.timezone import now as timezone_now
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.docs.gateway.mixins import DocsGatewayPermissionMixin
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
@@ -46,7 +46,7 @@ from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExamp
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),
 )
-class SDKListApi(DocsGatewayPermissionMixin, generics.ListAPIView):
+class SDKListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
         slz = SDKListInputSLZ(data=request.query_params)
@@ -69,7 +69,7 @@ class SDKListApi(DocsGatewayPermissionMixin, generics.ListAPIView):
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),
 )
-class SDKUsageExampleApi(DocsGatewayPermissionMixin, generics.RetrieveAPIView):
+class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK示例"""
         slz = SDKUsageExampleInputSLZ(data=request.query_params)

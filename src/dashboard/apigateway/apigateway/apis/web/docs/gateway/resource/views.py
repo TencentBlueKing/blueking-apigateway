@@ -20,7 +20,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.docs.gateway.mixins import DocsGatewayPermissionMixin
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.utils.responses import OKJsonResponse
@@ -37,7 +37,7 @@ from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
         tags=["WebAPI.Docs.Resource"],
     ),
 )
-class ResourceListApi(DocsGatewayPermissionMixin, generics.ListAPIView):
+class ResourceListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关环境下已发布的资源列表"""
         slz = ResourceListInputSLZ(data=request.query_params)

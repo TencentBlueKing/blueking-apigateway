@@ -22,7 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from apigateway.common.permissions import GatewayDisplayablePermission
 
 
-class DocsGatewayPermissionMixin:
+class GatewayDocsPermissionMixin:
     """Docs-center 网关详情类接口权限基类。"""
 
     permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
