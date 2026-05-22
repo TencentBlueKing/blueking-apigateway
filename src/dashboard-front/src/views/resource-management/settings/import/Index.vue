@@ -1080,7 +1080,7 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
     const error = (err as any).error as CodeErrorResponse;
     // 如果是内容错误
     if (error?.code === 'INVALID' && error?.message === 'validate fail') {
-      const editorJsonObj = yaml.load(editorText.value) as object;
+      const editorJsonObj = yaml.load(editorText.value, { json: true }) as object;
       const errData: {
         json_path: string
         message: string
