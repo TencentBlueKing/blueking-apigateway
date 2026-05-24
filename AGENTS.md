@@ -18,7 +18,8 @@
 │   ├── dashboard           # the dashboard, ref: src/dashboard/AGENTS.md
 │   ├── dashboard-front     # the frontend of dashboard, ref: src/dashboard-front/AGENTS.md
 │   ├── esb                 # abandoned, not important, ignore it
-│   └── mcp-proxy           # the mcp-proxy service, ref: src/mcp-proxy/AGENTS.md
+│   ├── mcp-proxy           # the mcp-proxy service, ref: src/mcp-proxy/AGENTS.md
+│   └── operator            # the operator service, ref: src/operator/AGENTS.md
 ├── test                    # existing e2e test suite
 │   ├── bin
 │   ├── cases
