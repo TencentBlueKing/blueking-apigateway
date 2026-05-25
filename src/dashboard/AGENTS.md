@@ -1,208 +1,311 @@
 # AGENTS.md
 
-This file provides guidance for coding agents and automation tools when working with code in this repository.
+Guidance for coding agents working in `src/dashboard`. Treat this file as the
+local contract for dashboard changes; the repository-root AGENTS.md still
+applies.
+
+## Scope
+
+- Work from `src/dashboard` unless a command says otherwise.
+- Do not touch sibling projects (`src/dashboard-front`, `src/core-api`,
+  `src/mcp-proxy`, `src/esb`) for dashboard-only requests.
+- Before changing code, read the target file, its immediate caller or URL route,
+  the serializer/form it depends on, and the nearest tests.
+- Keep changes surgical. Do not reformat or refactor adjacent code unless the
+  requested change requires it.
+- This subproject is Python-only. Frontend code lives in `src/dashboard-front`.
 
 ## Project Overview
 
-BlueKing API Gateway Dashboard — the Django-based control plane for managing API gateways. The data plane uses Apache APISIX. This is the `dashboard` component in a monorepo (siblings: `dashboard-front`, `core-api`, `mcp-proxy`, `esb`).
+BlueKing API Gateway Dashboard is the Django control plane for managing gateway
+definitions, stages, resources, releases, permissions, plugins, SDK generation,
+MCP servers, and data-plane publication. Apache APISIX is the data plane; this
+service stores and validates gateway state, then turns releases into controller
+configuration.
 
-- Python >=3.11,<3.12, Django 4.2, DRF 3.16
-- Dependency management: `uv` (lockfile: `uv.lock`, config: `pyproject.toml`)
-- The Django project root is `apigateway/` (contains `manage.py`); the Python package is `apigateway/apigateway/`
+Current stack, from the checked-in files:
 
-## Architecture (import-linter enforced layers)
+- Python `>=3.11,<3.12` in `pyproject.toml`; CI uses Python `3.11.13`.
+- Django `4.2.30`, Django REST Framework `3.16.0`.
+- Dependencies are managed by `uv` with `pyproject.toml` and `uv.lock`.
+- The Django project root is `apigateway/` and contains `manage.py`.
+- The importable Django package is `apigateway/apigateway/`.
 
-```
-apis → biz → controller → service → components → apps → core → common → utils
-```
+## Important Paths
 
-Upper layers may import lower layers only. Violations break `make lint-check`.
+- `Makefile` - setup, lint, tests, edition switching, Docker image build, OpenAPI checks.
+- `pyproject.toml` - dependencies, ruff, mypy, pytest, import-linter contracts.
+- `uv.lock` - dependency lockfile; keep it in sync with `pyproject.toml`.
+- `Dockerfile` - production image, based on a Python 3.11 BlueKing image.
+- `bin/start.sh` - Gunicorn entrypoint; keeps Prometheus multiprocess metrics in `/tmp/`.
+- `bin/start_celery.sh` and `bin/start_beat.sh` - Celery entrypoints.
+- `apigateway/manage.py` - Django management command entrypoint.
+- `apigateway/apigateway/urls.py` - top-level URL routing.
+- `apigateway/apigateway/conf/default.py` - base settings.
+- `apigateway/apigateway/conf/settings_dev.py` and `settings_prod.py` - environment-specific settings.
+- `apigateway/apigateway/conf/unittest_env` - default test environment, SQLite databases.
+- `apigateway/apigateway/data/apigw-definitions/` - gateway resource YAML definitions.
+- `apigateway/apigateway/data/apidocs/zh/` - markdown API docs used by OpenAPI consistency checks.
+- `apigateway/apigateway/tests/` - pytest suite, mirroring source structure.
 
-### Layer responsibilities
+## Architecture
 
-| Layer | Purpose |
-|---|---|
-| `apis/` | DRF views — three independent API surfaces: `web` (UI), `open` (v1 OpenAPI), `v2` (inner/sync/open) |
-| `biz/` | Business logic orchestration (handlers, not models) |
-| `controller/` | Release pipeline — converts domain objects into APISIX config via convertor/transformer/distributor |
-| `service/` | Shared services (ES, Prometheus, SDK generation, alert flows) |
-| `components/` | HTTP clients to external BlueKing systems (bkauth, bkpaas, bkmonitor, etc.) |
-| `apps/` | Django apps with models, admin, management commands (gateway, plugin, permission, esb, mcp_server, etc.) |
-| `core/` | Central domain models: Gateway, Stage, Resource, ResourceVersion, Release, Backend, Context |
-| `common/` | Shared utilities, mixins, permissions, error codes, middleware, encryption |
-| `utils/` | Pure utility functions |
+`import-linter` enforces the main dependency direction:
 
-The three API modules (`apis.open`, `apis.web`, `apis.v2.*`) are enforced as independent — they cannot import from each other.
-
-### Domain model chain
-
-```
-Gateway → Stage → Resource → ResourceVersion → Release → ReleaseHistory
-```
-
-Plugins bind at stage/resource scope via `PluginBinding`. Auth settings live in `Context` records. Backends (upstream configs) are per-gateway with stage-specific `BackendConfig`.
-
-
-## Command Execution Guide
-
-This section contains critical command execution instructions that apply across all development.
-
-
-### Python Command Execution Requirements
-
-CRITICAL: When running Python commands (pytest, mypy, pre-commit, etc.), you MUST use the virtual environment.
-
-```
-# Activate the virtualenv (required before running make targets / dev tools)
-source .venv/bin/activate
+```text
+apis -> biz -> controller -> service -> components -> apps -> core -> common -> utils
 ```
 
-### Setup
+Higher layers may import lower layers only. If you need to cross this boundary,
+put shared logic in the lower appropriate layer instead of adding an import
+exception.
 
-```
-# Bootstrap local dev env (installs uv, pre-commit, mypy types)
+Layer intent:
+
+- `apis/` - HTTP API surfaces and serializers.
+- `biz/` - business orchestration and handlers.
+- `controller/` - release pipeline, APISIX config conversion, transformers, distributors, publisher tasks.
+- `service/` - shared service integrations such as ES, Prometheus, SDK, audit, context, plugin helpers.
+- `components/` - external BlueKing system clients.
+- `apps/` - Django apps, models, admin, migrations, management commands, Celery tasks.
+- `core/` - central gateway domain models such as `Gateway`, `Stage`, `Resource`, `ResourceVersion`, `Release`, `Backend`, `Context`.
+- `common/` - reusable middleware, permissions, fields, mixins, tenant helpers, factories.
+- `utils/` - low-level utility functions.
+
+The v2 API surfaces are intentionally independent:
+
+- `apigateway.apis.v2.sync` - sync APIs for SDK or automation clients that manage gateways.
+- `apigateway.apis.v2.inner` - internal APIs, mainly for BlueKing internal callers.
+- `apigateway.apis.v2.open` - public open APIs.
+
+Do not share view/serializer code across these API surfaces by importing from one
+surface into another. Move common behavior down into `biz`, `service`, `common`,
+or `utils` when needed.
+
+## Domain Notes
+
+- The main model chain is `Gateway -> Stage -> Resource -> ResourceVersion -> Release -> ReleaseHistory`.
+- `Gateway` is the current domain name. Legacy DB columns and some payloads still
+  use `api`, `api_id`, or `api_name`; do not introduce new API naming unless you
+  are touching an existing compatibility boundary.
+- Stage/resource plugins use `PluginBinding`.
+- Auth and other scoped configuration live in `Context` records.
+- Backends are gateway-scoped, with stage-specific `BackendConfig` records.
+- Multi-tenant behavior is controlled by `ENABLE_MULTI_TENANT_MODE`; non-tenant
+  mode still mounts ESB routes and apps.
+- Settings are selected by `BKPAAS_ENVIRONMENT`, loading
+  `apigateway.conf.settings_<environment>`; default is `dev`.
+
+## Runtime Setup
+
+Use `uv` as the source of truth for the environment.
+
+```bash
+cd src/dashboard
 make init
-
-# Install dependencies
 uv sync
+```
 
-# Regenerate uv.lock after changing pyproject.toml
+For CI-equivalent dependency installation:
+
+```bash
+cd src/dashboard
+uv sync --locked --all-extras --dev
+```
+
+Before running Python tools, verify the interpreter matches `pyproject.toml`:
+
+```bash
+cd src/dashboard
+uv run python --version
+```
+
+If an existing `.venv` reports Python 3.10 or old tool versions, refresh it with
+`uv sync` before trusting lint or test results. Do not assume a pre-existing
+`.venv` is current.
+
+After dependency changes:
+
+```bash
+cd src/dashboard
 make uv.lock
+uv lock --check
 ```
 
-### Linting
+## Local Development
 
-All configured in `pyproject.toml`:
-- **ruff** — formatter + linter (line-length 119)
-- **mypy** — strict optional, excludes `editions/` and migrations
-- **import-linter** (via `lint-imports`) — enforces layered architecture contracts (run from `apigateway/` dir)
+Prepare MySQL databases for a real local server:
 
-`make lint` runs: ruff format → ruff check → mypy → lint-imports.
-
+```sql
+CREATE DATABASE IF NOT EXISTS `bk_apigateway` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS `bk_esb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 ```
-# Lint (auto-fix + type check + import layer check)
+
+Then configure and run Django:
+
+```bash
+cd src/dashboard
+uv sync
+cp apigateway/apigateway/conf/.env.tpl apigateway/apigateway/conf/.env
+uv run python apigateway/manage.py migrate
+uv run python apigateway/manage.py migrate --database bkcore
+uv run python apigateway/manage.py runserver
+```
+
+The frontend is developed separately in `src/dashboard-front`. A local nginx
+reverse proxy usually sends `/backend/` to the dashboard server and other paths
+to the frontend dev server.
+
+## Edition System
+
+Edition-specific code lives under `apigateway/apigateway/editions/` and is
+activated through `editionctl`.
+
+```bash
+cd src/dashboard
+make edition
+make edition-ee
+make edition-te
+make edition-develop
+make edition-reset
+make edition-modules
+```
+
+CI runs lint and tests after `make edition-ee`. If imports or tests fail because
+edition links are missing, run `make edition-ee` before debugging application
+logic.
+
+## Linting
+
+Configured in `pyproject.toml`:
+
+- `ruff` handles formatting and linting.
+- `mypy` runs with strict optional checks and ignores migrations/conf/editions as configured.
+- `lint-imports` enforces the layer and API-surface contracts from `pyproject.toml`.
+
+Commands:
+
+```bash
+cd src/dashboard
 make lint
-
-# Lint (check only, no auto-fix — used in CI)
 make lint-check
 ```
 
-RUN `make lint` every time you finish coding.
+Use `make lint` for local code edits because it auto-formats and fixes what it
+can. Use `make lint-check` when you need the CI-style non-mutating check.
 
-### OpenAPI Consistency Check
+## Testing
 
-Checks that API code (Views + Serializers), YAML gateway resource definitions, and API docs are in sync. 8 checks: existence, path, HTTP method, YAML↔doc params, YAML↔serializer params, auth config, grant_permissions, MCP server.
+The normal full test gate is:
 
 ```bash
-# Check all APIs
+cd src/dashboard
+make test
+```
+
+Useful variants:
+
+```bash
+cd src/dashboard
+make test-lf
+make test-cov
+make test-pdb
+```
+
+Focused pytest pattern for agents:
+
+```bash
+cd src/dashboard
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python3 -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
+```
+
+Notes:
+
+- Tests live under `apigateway/apigateway/tests/` and mirror source paths.
+- `apigateway/conf/unittest_env` uses SQLite for both `default` and `bkcore`.
+- Always pass `--ds apigateway.settings` for direct pytest runs.
+- Add `--nomigrations` for focused runs when branch migration conflicts block DB setup.
+- Use `request_view`, `request_to_view`, `fake_gateway`, `fake_stage`, `fake_backend`,
+  `fake_resource`, and related fixtures from `tests/conftest.py`.
+- Model setup commonly uses `ddf` / `django_dynamic_fixture` `G()`.
+- API tests usually call the URL by `view_name` and assert through `resp.json()`.
+
+## OpenAPI And API Docs
+
+When changing an open API, keep these three surfaces aligned:
+
+- API implementation: views and serializers under `apigateway/apigateway/apis/`.
+- Gateway YAML definitions: `apigateway/apigateway/data/apigw-definitions/`.
+- Markdown docs: `apigateway/apigateway/data/apidocs/zh/`.
+
+Run the consistency checker:
+
+```bash
+cd src/dashboard
 make check-openapi
-
-# Check by scope (v2_open / v2_sync / v2_inner)
 make check-openapi SCOPE=v2_sync
-
-# Check a single API
 make check-openapi API=v2_sync_gateway
-
-# JSON output
 make check-openapi JSON=1
-
-# Generate missing doc templates
 make check-openapi FIX=1
 ```
 
-### Testing
+For changed or new endpoints, update the matching markdown doc with method,
+path, parameters or request body, response fields, status codes, and error
+examples. The frontend team uses these docs for integration.
+
+## Response And Validation Patterns
+
+- Prefer serializer validation at the API boundary; do not duplicate it in views
+  unless the rule depends on already-loaded domain state.
+- Web and v2 APIs commonly return `OKJsonResponse` / `FailJsonResponse` from
+  `apigateway.utils.responses`.
+- Legacy open APIs may use `V1OKJsonResponse` / `V1FailJsonResponse`; do not
+  switch formats unless the compatibility contract changes.
+- For health or security-sensitive errors, keep client messages sanitized and
+  log original exceptions with `logger.exception(...)`.
+- For drf-yasg docs, serializers commonly define unique `Meta.ref_name` values;
+  preserve that pattern when adding serializers.
+
+## Build And Runtime Entrypoints
+
+Image build targets copy a clean build tree and remove tests, edition metadata,
+and local artifacts before building.
 
 ```bash
-# Run all tests (uses SQLite, parallel via pytest-xdist)
-make test
-
-# Run a single test file or test
-cd apigateway && export PYTHONDONTWRITEBYTECODE=1 && . apigateway/conf/unittest_env && \
-  pytest --ds apigateway.settings --reuse-db -n auto --dist loadscope \
-  apigateway/apigateway/tests/path/to/test_file.py::TestClass::test_method -v
-
-# Re-run only last-failed tests
-make test-lf
-
-# Debug with pdb (single-process, stops on first failure)
-make test-pdb
-
-# Run tests with coverage
-make test-cov
+cd src/dashboard
+make image-ee
+make image-te
+make dev-ee-image
 ```
 
-RUN `make test` every time you finish coding(a lot of changes to the codebase).
+Runtime scripts source `${BK_HOME}/etc/bk_apigateway/bk_apigateway.env` when it
+exists. `bin/start.sh` runs Gunicorn with gevent workers and Prometheus
+multiprocess mode. Keep `/metrics` compatibility in mind when changing URL
+routing, middleware, or process startup.
 
-#### Running tests from an agent (critical notes)
+## Security And Secrets
 
-Working directory: `src/dashboard`
-
-```bash
-# Recommended command for agents — note the semicolons and python3
-cd /root/workspace/tx/wklken/blueking-apigateway/src/dashboard && source .venv/bin/activate 2>&1; \
-  cd apigateway && set -a; . apigateway/conf/unittest_env; set +a; \
-  python3 -m pytest --nomigrations --ds apigateway.settings -x -q --tb=short \
-  apigateway/tests/path/to/test_file.py::TestClass::test_method 2>&1
-```
-
-Pitfalls to avoid:
-- **Always activate the virtualenv first** — agent shell sessions start fresh without the venv. Use `source .venv/bin/activate 2>&1;` from `src/dashboard`. Without it, `python3` resolves to the system Python which lacks project dependencies (e.g. `celery`).
-- **Use `python3`, not `python`** — `python` silently exits with code 1 and produces no output.
-- **Use `;` (not `&&`) after `source .venv/bin/activate` and `. apigateway/conf/unittest_env`** — both exit with a non-zero status despite working correctly, which breaks `&&` chains and prevents subsequent commands from running.
-- **Always pass `--ds apigateway.settings`** — without it, Django settings are not configured and conftest imports fail with `ImproperlyConfigured`.
-- **Use `--nomigrations`** when there are conflicting migration leaf nodes in the branch — without it pytest fails at DB setup before any tests run.
-
-## Settings
-
-Settings are loaded dynamically: `apigateway.conf.settings_{BKPAAS_ENVIRONMENT}` (defaults to `dev`). Base config is in `apigateway/conf/default.py`. Local dev config goes in `apigateway/apigateway/conf/.env` (copy from `.env.tpl`).
-
-Tests source `apigateway/conf/unittest_env` which uses SQLite. Alternate env files exist for MySQL and multi-tenant testing.
-
-## Testing Patterns
-
-- Tests mirror source structure under `apigateway/apigateway/tests/`
-- Use `ddf` (django-dynamic-fixture) `G()` to create model instances
-- Key fixtures in `apigateway/apigateway/tests/conftest.py`: `fake_gateway`, `fake_stage`, `fake_backend`, `fake_resource`, `fake_admin_user`, `request_factory`
-- Test settings: `--ds apigateway.settings`, `--reuse-db` for speed, `-n auto --dist loadscope` for parallel
-- Tests use two databases: `default` (apigateway) and `bkcore` (ESB)
-
-## Edition System (EE/TE)
-
-The project supports multiple editions (Enterprise/Tencent) via `editionctl`. Edition-specific code lives under `apigateway/apigateway/editions/{ee,te}/` and is symlinked into the main package tree.
-
-```bash
-make edition          # show current
-make edition-te       # switch to TE
-make edition-ee       # switch to EE
-make edition-develop  # develop mode
-make edition-reset    # clear edition symlinks
-make edition-modules  # create __init__.pyi files for mypy compatibility
-```
-
-## Git & Pull Request Workflow
-
-### Repository structure (fork model)
-
-```
-origin   → https://github.com/<USERNAME>/blueking-apigateway.git       # personal fork — push branches here
-upstream → https://github.com/TencentBlueKing/blueking-apigateway.git  # main repo — PRs target here
-```
-
-## After Code Changes
-
-Always run `make lint` and `make test` after making code changes and fix any issues before considering the work done.
-
-When asked to "make a PR", create the pull request targeting `upstream/master`.
+- Do not commit real `.env` values, app secrets, database credentials, tokens, or
+  generated certificates.
+- `apigateway/apigateway/conf/.env` is local-only; copy from `.env.tpl`.
+- Check permission classes, middleware, serializer validation, and tenant checks
+  before accepting or rejecting a security report.
+- When a report points at a sink, trace the route, serializer, permission class,
+  and downstream handler before deciding whether the issue is real.
 
 ## Post-Implementation Requirements
 
-After finishing any code change (feature, bugfix, refactor), the agent MUST:
+For markdown-only documentation changes, do not run `make lint` or `make test`;
+verify the diff instead.
 
-1. **Add unit tests** for all changed and newly added code. Tests mirror the source structure under `apigateway/apigateway/tests/`. Biz-layer logic gets tests in `tests/biz/`, view-layer gets tests in `tests/apis/web/`. Follow existing test patterns — use `ddf` `G()` for model instances, `request_view` fixture for API tests.
-2. **Generate markdown API docs** for all changed or newly added API endpoints. Include: HTTP method, URL path, request parameters/body schema, response fields, status codes, and error examples. This documentation is handed to the frontend team for integration.
+For code changes:
 
-## Naming Convention: Gateway vs API
+1. Add or update focused tests under `apigateway/apigateway/tests/`.
+2. Update API docs and gateway YAML definitions when an API contract changes.
+3. Run the narrow relevant pytest target first.
+4. Run `make lint`.
+5. Run `make check-openapi` if any open API, YAML definition, serializer, or API
+   markdown doc changed.
+6. Run `make test` for broad code changes or when shared behavior is touched.
 
-Legacy code uses `API`/`api`/`api_id` to refer to gateways. All new code must use `Gateway`. The `api` naming persists in:
-- DB columns and ORM foreign keys (`api=`, `api_id=`)
-- Some frontend request/response payloads
+If a verification command is skipped, say exactly why.
