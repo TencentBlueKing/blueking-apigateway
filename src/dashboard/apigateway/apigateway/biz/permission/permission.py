@@ -29,11 +29,11 @@ from apigateway.apps.permission.models import (
     AppPermissionApply,
     AppResourcePermission,
 )
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
     TenantModeEnum,
 )
+from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info_cached
 from apigateway.components.bkuser import query_display_names_cached
 from apigateway.core.models import Gateway
@@ -43,7 +43,11 @@ class ResourcePermissionHandler:
     @staticmethod
     def get_pending_apply_queryset_for_maintainer(username: str, tenant_id: str):
         """获取指定用户作为网关管理员待审批的 API 网关权限申请列表"""
-        gateway_ids = [gateway.id for gateway in GatewayHandler.list_gateways_by_user(username, tenant_id)]
+        queryset = Gateway.objects.filter(_maintainers__contains=username)
+        if tenant_id:
+            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
+
+        gateway_ids = [gateway.id for gateway in queryset if gateway.has_permission(username)]
         return AppPermissionApply.objects.filter(
             gateway_id__in=gateway_ids,
             status=ApplyStatusEnum.PENDING.value,
