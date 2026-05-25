@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import datetime
+
 import pytest
 from ddf import G
 
@@ -26,7 +28,7 @@ from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimension
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Resource, Stage
-from apigateway.utils.time import now_datetime
+from apigateway.utils.time import now_datetime, timestamp
 
 pytestmark = pytest.mark.django_db
 
@@ -737,6 +739,55 @@ class TestWorkbenchPendingGatewayPermissionListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["bk_app_code"] == "target_app"
 
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway):
+        """测试我的待办 - API 网关按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        old_apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="old_app",
+            applied_by="applicant",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        AppPermissionApply.objects.filter(id=old_apply.id).update(created_time=old_time)
+        current_apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="current_app",
+            applied_by="applicant",
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        AppPermissionApply.objects.filter(id=current_apply.id).update(created_time=current_time)
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.pending",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
+
+    def test_list_invalid_time_range(self, request_view):
+        """测试我的待办 - API 网关申请时间范围参数非法"""
+        current_time = now_datetime()
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.pending",
+            data={
+                "time_start": timestamp(current_time + datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time - datetime.timedelta(minutes=1)),
+            },
+        )
+
+        assert resp.status_code == 400
+
     def test_list_empty(self, request_view):
         """测试我的待办 - 空数据"""
         resp = request_view(
@@ -760,8 +811,8 @@ class TestWorkbenchPendingGatewayPermissionListApi:
             status=ApplyStatusEnum.PENDING.value,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
         )
-        apply_obj._resource_ids = f"{resource.id}"
-        apply_obj.save()
+        apply_obj.resource_ids = [resource.id]
+        apply_obj.save(update_fields=["_resource_ids"])
 
         resp = request_view(
             method="GET",
@@ -929,6 +980,57 @@ class TestWorkbenchPendingMCPPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 0
 
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway, fake_mcp_server):
+        """测试我的待办 - MCP Server 按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="old_app",
+            applied_by="applicant",
+            applied_time=old_time,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="current_app",
+            applied_by="applicant",
+            applied_time=current_time,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.pending",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
+
+    def test_list_invalid_time_range(self, request_view):
+        """测试我的待办 - MCP Server 申请时间范围参数非法"""
+        current_time = now_datetime()
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.pending",
+            data={
+                "time_start": timestamp(current_time + datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time - datetime.timedelta(minutes=1)),
+            },
+        )
+
+        assert resp.status_code == 400
+
 
 # ==================== 我的申请 - API 网关 ====================
 
@@ -1018,6 +1120,41 @@ class TestWorkbenchMyApplyGatewayPermissionListApi:
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["status"] == ApplyStatusEnum.APPROVED.value
+
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway):
+        """测试我的申请 - API 网关按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        old_apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="old_app",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        AppPermissionApply.objects.filter(id=old_apply.id).update(created_time=old_time)
+        current_apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="current_app",
+            applied_by=FAKE_USERNAME,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        AppPermissionApply.objects.filter(id=current_apply.id).update(created_time=current_time)
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.applied",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
 
     def test_list_with_resource_dimension_returns_resources(self, request_view, fake_gateway):
         """测试我的申请 - 资源维度应返回资源详情列表"""
@@ -1146,6 +1283,43 @@ class TestWorkbenchMyApplyMCPPermissionListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["status"] == MCPServerAppPermissionApplyStatusEnum.APPROVED.value
 
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway, fake_mcp_server):
+        """测试我的申请 - MCP Server 按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="old_app",
+            applied_by=FAKE_USERNAME,
+            applied_time=old_time,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="current_app",
+            applied_by=FAKE_USERNAME,
+            applied_time=current_time,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.applied",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
+
 
 # ==================== 我的已办 - API 网关 ====================
 
@@ -1176,6 +1350,79 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         assert result["data"]["results"][0]["handled_by"] == FAKE_USERNAME
         assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
+
+    def test_list_filter_by_status(self, request_view, fake_gateway):
+        """测试我的已办 - API 网关：按 status 筛选"""
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="approved_app",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="rejected_app",
+            applied_by="applicant2",
+            applied_time=now_datetime(),
+            handled_by=FAKE_USERNAME,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.REJECTED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.handled",
+            data={"status": ApplyStatusEnum.REJECTED.value},
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "rejected_app"
+
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway):
+        """测试我的已办 - API 网关按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="old_app",
+            applied_by="applicant1",
+            applied_time=old_time,
+            handled_by=FAKE_USERNAME,
+            handled_time=current_time,
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="current_app",
+            applied_by="applicant2",
+            applied_time=current_time,
+            handled_by=FAKE_USERNAME,
+            handled_time=current_time,
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.handled",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
 
     def test_list_excludes_pending(self, request_view, fake_gateway):
         """测试我的已办 - 不返回 pending 状态的记录"""
@@ -1247,8 +1494,8 @@ class TestWorkbenchHandledGatewayPermissionListApi:
             status=ApplyStatusEnum.APPROVED.value,
             grant_dimension=GrantDimensionEnum.RESOURCE.value,
         )
-        record._resource_ids = f"{resource.id}"
-        record.save()
+        record.resource_ids = [resource.id]
+        record.save(update_fields=["_resource_ids"])
 
         resp = request_view(
             method="GET",
@@ -1318,6 +1565,47 @@ class TestWorkbenchHandledMCPPermissionListApi:
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
+
+    def test_list_filter_by_applied_time_range(self, request_view, fake_gateway, fake_mcp_server):
+        """测试我的已办 - MCP Server 按申请时间范围筛选"""
+        current_time = now_datetime()
+        old_time = current_time - datetime.timedelta(days=2)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="old_app",
+            applied_by="applicant1",
+            applied_time=old_time,
+            handled_by=FAKE_USERNAME,
+            handled_time=current_time,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="current_app",
+            applied_by="applicant2",
+            applied_time=current_time,
+            handled_by=FAKE_USERNAME,
+            handled_time=current_time,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.handled",
+            data={
+                "time_start": timestamp(current_time - datetime.timedelta(minutes=1)),
+                "time_end": timestamp(current_time + datetime.timedelta(minutes=1)),
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "current_app"
 
     def test_list_excludes_pending(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的已办 - 不返回 pending 状态的记录"""

@@ -63,8 +63,7 @@ OPERATION_STATUS_DELTA_DAYS = 180
 class GatewayHandler:
     @staticmethod
     def list_gateways_by_user(username: str, tenant_id: str = "") -> List[Gateway]:
-        """获取用户有权限的的网关列表"""
-
+        """获取用户有权限的网关列表"""
         queryset = Gateway.objects.filter(_maintainers__contains=username)
         if tenant_id:
             queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)

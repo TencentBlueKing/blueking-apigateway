@@ -29,6 +29,7 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.common.fields import TimestampField
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 
@@ -101,6 +102,8 @@ class WorkbenchGatewayPendingPermissionQueryInputSLZ(serializers.Serializer):
     grant_dimension = serializers.ChoiceField(
         choices=GrantDimensionEnum.get_choices(), required=False, help_text="授权维度"
     )
+    time_start = TimestampField(allow_null=True, required=False, help_text="申请时间开始")
+    time_end = TimestampField(allow_null=True, required=False, help_text="申请时间结束")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配网关名称或应用ID）"
     )
@@ -125,6 +128,8 @@ class WorkbenchMCPPendingPermissionQueryInputSLZ(serializers.Serializer):
     applied_by = serializers.CharField(required=False, allow_blank=True, help_text="申请人")
     gateway_id = serializers.IntegerField(required=False, help_text="网关 ID")
     mcp_server_id = serializers.IntegerField(required=False, help_text="MCP Server ID")
+    time_start = TimestampField(allow_null=True, required=False, help_text="申请时间开始")
+    time_end = TimestampField(allow_null=True, required=False, help_text="申请时间结束")
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字（模糊匹配 MCP Server 名称、展示名称或应用ID）"
     )
