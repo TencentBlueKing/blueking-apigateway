@@ -26,7 +26,7 @@ type StageScopedApisixResources struct {
 	Routes         map[string]entity.Route          `json:"routes,omitempty"`
 	Services       map[string]entity.Service        `json:"services,omitempty"`
 	PluginMetadata map[string]entity.PluginMetadata `json:"plugin_metadata,omitempty"`
-	Ssl            map[string]entity.SSL            `json:"ssl,omitempty"`
+	SSLs           map[string]entity.SSL            `json:"ssls,omitempty"`
 }
 
 // ApigwListInfo apigw 资源列表

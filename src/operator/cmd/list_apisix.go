@@ -146,7 +146,7 @@ func (l *listApisixCommand) formatOutput(apisixListInfo client.ApisixListInfo, f
 			l.printResource("Routes", listResources.Routes)
 			l.printResource("Services", listResources.Services)
 			l.printResource("PluginMetadatas", listResources.PluginMetadata)
-			l.printResource("SSLs", listResources.Ssl)
+			l.printResource("SSLs", listResources.SSLs)
 		}
 	}
 	return nil

@@ -24,5 +24,5 @@ type StageScopedApisixResources struct {
 	Routes         map[string]any `json:"routes,omitempty"`
 	Services       map[string]any `json:"services,omitempty"`
 	PluginMetadata map[string]any `json:"plugin_metadata,omitempty"`
-	Ssl            map[string]any `json:"ssl,omitempty"`
+	SSLs           map[string]any `json:"ssls,omitempty"`
 }

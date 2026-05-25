@@ -1,4 +1,4 @@
-debug: true
+debug: false
 
 operator:
   defaultGateway: "bk-default"
@@ -10,7 +10,7 @@ operator:
 dashboard:
   etcd:
     endpoints: "bk-apigateway-etcd:2379"
-    keyPrefix: "/bk-gateway-apigw/default"
+    keyPrefix: "/bk-gateway-bkop-apigw"
     username: "root"
     password: "blueking"
 
@@ -43,8 +43,8 @@ auth:
   secret: "358627d8-d3e8-4522-8f16-b5530776bbb8"
 
 httpServer:
-  bindAddress: "0.0.0.0"
-  bindAddressV6: "[::]"
+  bindAddress: "127.0.0.1"
+  bindAddressV6: "[::1]"
   bindPort: 6004
 # The authentication pwd used to access the API
   authPassword: DebugModel@bk

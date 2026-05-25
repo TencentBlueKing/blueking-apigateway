@@ -25,4 +25,3 @@ services:
     depends_on:
       etcd:
         condition: service_healthy
-

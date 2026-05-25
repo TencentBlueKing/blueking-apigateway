@@ -206,7 +206,7 @@ func newDefaultConfig() *Config {
 		},
 		Dashboard: Dashboard{
 			Etcd: Etcd{
-				KeyPrefix: "/bk-gateway-apigw/default",
+				KeyPrefix: "/bk-gateway-bkop-apigw",
 			},
 		},
 		Apisix: Apisix{
