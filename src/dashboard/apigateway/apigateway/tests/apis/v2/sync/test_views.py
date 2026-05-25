@@ -25,7 +25,7 @@ from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
-from apigateway.core.models import Resource
+from apigateway.core.models import Backend, BackendConfig, Resource
 
 
 @pytest.fixture()
@@ -86,6 +86,58 @@ class TestSyncApi:
             assert set(data_plane_ids) == {default_data_plane.id, bp_data_plane.id}
         else:
             assert set(data_plane_ids) == {default_data_plane.id}
+
+    def test_stage_sync_does_not_create_empty_config_for_omitted_backend(
+        self, request_view, fake_gateway, disable_app_permission
+    ):
+        fake_gateway.name = "test-stage-sync"
+        fake_gateway.save()
+        omitted_backend = G(Backend, gateway=fake_gateway, name="service2")
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": "service1",
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://www.a.com"}],
+                        },
+                    }
+                ],
+            },
+        )
+
+        assert resp.status_code == 200
+        assert not BackendConfig.objects.filter(backend=omitted_backend, stage__name="prod").exists()
+
+    def test_stage_sync_with_empty_backends_returns_error(self, request_view, fake_gateway, disable_app_permission):
+        fake_gateway.name = "test-stage-sync-empty-backends"
+        fake_gateway.save()
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [],
+            },
+        )
+
+        assert resp.status_code == 400
+        assert "backends" in str(resp.json()["error"])
 
     def test_gateway_sync_with_nonexistent_data_planes_returns_error(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane

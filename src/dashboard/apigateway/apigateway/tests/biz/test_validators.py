@@ -405,16 +405,52 @@ class TestPublishValidator:
         )
 
         publish_validator = PublishValidator(fake_gateway, fake_stage, resource_version)
-        publish_validator._validate_stage_backends()
+        assert publish_validator._validate_stage_backends() is None
 
     def test_validate_stage_backends_without_default_backend(
         self, fake_stage, fake_backend, fake_default_empty_backend, fake_resource, fake_gateway
     ):
         """
-        测试编辑区资源没有绑定default backend（host为空）的情况
+        测试编辑区资源没有绑定 default backend 时，不校验 default backend 配置
         """
         publish_validator = PublishValidator(fake_gateway, fake_stage, None)
-        with pytest.raises(Exception):
+        assert publish_validator._validate_stage_backends() is None
+
+    def test_validate_stage_backends_missing_used_backend_config(self, fake_stage, fake_gateway):
+        """
+        测试资源绑定的后端服务在当前环境缺少配置时，发布校验失败
+        """
+        backend = G(
+            Backend,
+            gateway=fake_gateway,
+            type="http",
+            name="backend-without-config",
+            description="test",
+        )
+        resource_version = G(
+            ResourceVersion,
+            gateway=fake_gateway,
+            version="1",
+            _data=json.dumps(
+                [
+                    {
+                        "id": 1,
+                        "name": "approval_add_workitems",
+                        "proxy": {
+                            "id": 28,
+                            "type": "http",
+                            "backend_id": backend.id,
+                            "config": json.dumps(
+                                {"method": "ANY", "path": "/api/v2/", "match_subpath": False, "timeout": 0}
+                            ),
+                        },
+                    }
+                ]
+            ),
+        )
+
+        publish_validator = PublishValidator(fake_gateway, fake_stage, resource_version)
+        with pytest.raises(ReleaseValidationError):
             publish_validator._validate_stage_backends()
 
 
