@@ -174,6 +174,8 @@ class ResourceVersionHandler:
         resource_version_ids = ReleasedResource.objects.get_released_resource_version_ids_by_resource(
             gateway_id, resource_id
         )
+        if not resource_version_ids:
+            return []
         return Release.objects.get_released_stage_names_by_resource_versions(gateway_id, resource_version_ids)
 
     @staticmethod
