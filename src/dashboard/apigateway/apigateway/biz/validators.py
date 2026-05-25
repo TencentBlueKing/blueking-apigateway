@@ -203,21 +203,6 @@ class PublishValidator:
         self.stage = stage
         self.resource_version = resource_version
 
-    def _get_resource_version_backend_ids(self, resource_version):
-        return {
-            resource["proxy"].get("backend_id")
-            for resource in resource_version.data
-            if resource["proxy"].get("backend_id")
-        }
-
-    def _get_editing_backend_ids(self):
-        resource_ids = Resource.objects.filter(gateway=self.gateway).values_list("id", flat=True)
-        return set(
-            Proxy.objects.filter(resource_id__in=resource_ids, backend_id__isnull=False)
-            .values_list("backend_id", flat=True)
-            .distinct()
-        )
-
     def _raise_invalid_backend_config(self, backend_config):
         raise ReleaseValidationError(
             _(
@@ -243,9 +228,11 @@ class PublishValidator:
         resource_version = self.resource_version or ResourceVersion.objects.get_latest_version(self.gateway.id)
 
         if resource_version and resource_version.data:
-            backend_ids = self._get_resource_version_backend_ids(resource_version)
+            backend_ids = {resource["proxy"]["backend_id"] for resource in resource_version.data}
         else:
-            backend_ids = self._get_editing_backend_ids()
+            backend_ids = set(
+                Proxy.objects.filter(resource__gateway=self.gateway).values_list("backend_id", flat=True).distinct()
+            )
 
         backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
         configured_backend_ids = {bc.backend_id for bc in backend_configs}
