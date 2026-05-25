@@ -227,6 +227,10 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
+
+        # 查询资源已发布到的环境
+        released_stages = ResourceVersionHandler.get_released_stage_names(instance.gateway_id, instance.id)
+
         slz = ResourceOutputSLZ(
             instance,
             context={
@@ -234,6 +238,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
                 "labels": ResourceLabelHandler.get_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
                 "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
+                "released_stages": released_stages,
             },
         )
         return OKJsonResponse(data=slz.data)

@@ -148,7 +148,7 @@ class ReleaseManager(models.Manager):
         queryset = self.filter(stage__status=StageStatusEnum.ACTIVE.value)
 
         if gateway is not None:
-            queryset = self.filter(gateway_id=gateway.id)
+            queryset = queryset.filter(gateway_id=gateway.id)
 
         if resource_version_ids is not None:
             queryset = queryset.filter(resource_version_id__in=resource_version_ids)
@@ -180,6 +180,22 @@ class ReleaseManager(models.Manager):
             resource_version_id: [stage["name"] for stage in stages]
             for resource_version_id, stages in released_stages.items()
         }
+
+    def get_released_stage_names_by_resource_versions(
+        self, gateway_id: int, resource_version_ids: List[int]
+    ) -> List[str]:
+        if not resource_version_ids:
+            return []
+
+        return sorted(
+            set(
+                self.filter(
+                    gateway_id=gateway_id,
+                    stage__status=StageStatusEnum.ACTIVE.value,
+                    resource_version_id__in=resource_version_ids,
+                ).values_list("stage__name", flat=True)
+            )
+        )
 
     def get_or_create_release(self, gateway, stage, resource_version, comment, username):
         """
@@ -229,6 +245,16 @@ class ReleaseManager(models.Manager):
 
 
 class ReleasedResourceManager(models.Manager):
+    def get_released_resource_version_ids_by_resource(self, gateway_id: int, resource_id: int) -> List[int]:
+        return list(
+            self.filter(
+                gateway_id=gateway_id,
+                resource_id=resource_id,
+            )
+            .values_list("resource_version_id", flat=True)
+            .distinct()
+        )
+
     def save_released_resource(self, resource_version, force: bool = False) -> None:
         """保存资源版本中的资源配置"""
         queryset = self.filter(resource_version_id=resource_version.id)
