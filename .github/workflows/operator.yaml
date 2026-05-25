@@ -1,0 +1,48 @@
+name: operator ci
+
+on:
+  push:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/operator/**']
+  pull_request:
+    branches: [ master, pre_*, ft_*, release/* ]
+    paths: ['src/operator/**']
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: 1.25.5
+        cache-dependency-path: src/operator/go.sum
+
+    - name: Init
+      run: make init
+      working-directory: src/operator
+
+
+    - name: Lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: v2.11
+        working-directory: src/operator
+
+    - name: Aqua Security Trivy
+      uses: aquasecurity/trivy-action@v0.35.0
+      continue-on-error: true
+      with:
+        scan-type: 'fs'
+        scan-ref: 'src/operator'
+
+    - name: Test
+      run: make test
+      working-directory: src/operator
+
+    - name: Integration Test
+      run:  make integration
+      working-directory: src/operator
