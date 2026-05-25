@@ -52,6 +52,11 @@ ES_LOG_FIELDS = [
         "is_filter": True,
     },
     {
+        "label": _("网关名称"),
+        "field": "gateway_name",
+        "is_filter": True,
+    },
+    {
         "label": _("资源ID"),
         "field": "resource_id",
         "is_filter": True,
