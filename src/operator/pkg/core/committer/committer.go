@@ -144,10 +144,10 @@ func (c *Committer) commitGroup(ctx context.Context, releaseInfoList []*entity.R
 		if tmpResourceInfo.IsGlobalResource() {
 			// Global 资源需要单独处理
 			utils.GoroutineWithRecovery(ctx, func() {
+				defer wg.Done()
 				c.logger.Infof("begin commit global resource: %s", tmpResourceInfo)
 				c.commitGlobalResource(ctx, tmpResourceInfo)
 				c.logger.Infof("end commit global resource: %s", tmpResourceInfo)
-				wg.Done()
 			})
 		} else {
 			// Stage 资源按 gateway 维度串行处理

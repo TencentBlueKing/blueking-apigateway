@@ -20,6 +20,8 @@ package committer
 
 import (
 	"context"
+	"io"
+	"log"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -724,6 +726,37 @@ var _ = Describe("Committer", func() {
 			globalRelease.RetryCount = maxStageRetryCount
 			committer.retryStage(globalRelease)
 			Expect(globalRelease.RetryCount).To(Equal(int64(maxStageRetryCount)))
+		})
+
+		It("should finish commit group when global resource commit panics", func() {
+			previousLogWriter := log.Writer()
+			log.SetOutput(io.Discard)
+			DeferCleanup(func() {
+				log.SetOutput(previousLogWriter)
+			})
+
+			globalRelease := &entity.ReleaseInfo{
+				ResourceMetadata: entity.ResourceMetadata{
+					ID:   "global-panic-plugin",
+					Kind: constant.PluginMetadata,
+					Labels: &entity.LabelInfo{
+						Gateway: "",
+						Stage:   "",
+					},
+				},
+			}
+
+			done := make(chan struct{})
+			go func() {
+				committer.commitGroup(context.Background(), []*entity.ReleaseInfo{globalRelease})
+				close(done)
+			}()
+
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				Fail("commitGroup blocked after a global resource panic")
+			}
 		})
 	})
 })

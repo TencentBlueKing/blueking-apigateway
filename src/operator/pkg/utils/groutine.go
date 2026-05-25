@@ -33,14 +33,18 @@ func GoroutineWithRecovery(ctx context.Context, fn func()) {
 	go func() {
 		defer func() {
 			if panicErr := recover(); panicErr != nil {
-				buf := make([]byte, 64<<10)
-				n := runtime.Stack(buf, false)
-				buf = buf[:n]
-				msg := fmt.Sprintf("painic err:%s", buf)
-				log.Println(msg)
-				sentry.CurrentHub().Client().CaptureMessage(msg, nil, sentry.NewScope())
+				reportRecoveredPanic()
 			}
 		}()
 		fn()
 	}()
+}
+
+func reportRecoveredPanic() {
+	buf := make([]byte, 64<<10)
+	n := runtime.Stack(buf, false)
+	buf = buf[:n]
+	msg := fmt.Sprintf("painic err:%s", buf)
+	log.Println(msg)
+	sentry.CaptureMessage(msg)
 }
