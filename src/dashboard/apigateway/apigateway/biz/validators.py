@@ -32,7 +32,6 @@ from apigateway.common.constants import STAGE_VAR_NAME_PATTERN, CallSourceTypeEn
 from apigateway.common.mixins.contexts import GetGatewayFromContextMixin
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import (
-    DEFAULT_BACKEND_NAME,
     HOST_WITHOUT_SCHEME_PATTERN,
     BackendTypeEnum,
     GatewayStatusEnum,
@@ -205,33 +204,19 @@ class PublishValidator:
         self.resource_version = resource_version
 
     def _get_resource_version_backend_ids(self, resource_version):
-        backend_ids = set()
-        used_default_backend = False
-        for resource in resource_version.data:
-            backend_id = resource["proxy"].get("backend_id")
-            if backend_id:
-                backend_ids.add(backend_id)
-            else:
-                used_default_backend = True
-        return backend_ids, used_default_backend
+        return {
+            resource["proxy"].get("backend_id")
+            for resource in resource_version.data
+            if resource["proxy"].get("backend_id")
+        }
 
     def _get_editing_backend_ids(self):
         resource_ids = Resource.objects.filter(gateway=self.gateway).values_list("id", flat=True)
-        proxies = Proxy.objects.filter(resource_id__in=resource_ids)
-        backend_ids = set(proxies.filter(backend_id__isnull=False).values_list("backend_id", flat=True).distinct())
-        used_default_backend = proxies.filter(backend_id__isnull=True).exists()
-        return backend_ids, used_default_backend
-
-    def _add_default_backend_id_if_used(self, backend_ids, used_default_backend):
-        if not used_default_backend:
-            return []
-
-        default_backend = Backend.objects.filter(gateway=self.gateway, name=DEFAULT_BACKEND_NAME).first()
-        if default_backend:
-            backend_ids.add(default_backend.id)
-            return []
-
-        return [DEFAULT_BACKEND_NAME]
+        return set(
+            Proxy.objects.filter(resource_id__in=resource_ids, backend_id__isnull=False)
+            .values_list("backend_id", flat=True)
+            .distinct()
+        )
 
     def _raise_invalid_backend_config(self, backend_config):
         raise ReleaseValidationError(
@@ -258,21 +243,19 @@ class PublishValidator:
         resource_version = self.resource_version or ResourceVersion.objects.get_latest_version(self.gateway.id)
 
         if resource_version and resource_version.data:
-            backend_ids, used_default_backend = self._get_resource_version_backend_ids(resource_version)
+            backend_ids = self._get_resource_version_backend_ids(resource_version)
         else:
-            backend_ids, used_default_backend = self._get_editing_backend_ids()
+            backend_ids = self._get_editing_backend_ids()
 
-        missing_backend_names = self._add_default_backend_id_if_used(backend_ids, used_default_backend)
         backend_configs = list(BackendConfig.objects.filter(stage=self.stage, backend_id__in=backend_ids))
         configured_backend_ids = {bc.backend_id for bc in backend_configs}
 
         # 检查资源用到的 backend 是否都有 stage 配置
         missing_backend_ids = backend_ids - configured_backend_ids
-        if missing_backend_ids or missing_backend_names:
+        if missing_backend_ids:
             missing_backends = list(
                 Backend.objects.filter(id__in=missing_backend_ids).order_by("name").values_list("name", flat=True)
             )
-            missing_backends.extend(missing_backend_names)
             raise ReleaseValidationError(
                 _("网关环境【{stage_name}】缺少后端服务【{backends}】的配置，请在网关 `后端服务` 中进行配置。").format(
                     stage_name=self.stage.name,

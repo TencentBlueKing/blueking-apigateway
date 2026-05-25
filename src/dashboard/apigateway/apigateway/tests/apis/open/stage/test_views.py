@@ -134,6 +134,31 @@ class TestStageSyncViewSet:
         assert result["code"] == 0
         assert stage.status == 0
 
+    def test_sync_with_empty_backends_returns_error(self, mocker, unique_gateway_name, request_factory):
+        mocker.patch(
+            "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            return_value=True,
+        )
+
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False)
+        request = request_factory.post(
+            f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "backends": [],
+            },
+        )
+        request.gateway = gateway
+
+        view = views.StageSyncViewSet.as_view({"post": "sync"})
+        response = view(request, gateway_name=unique_gateway_name)
+        result = get_response_json(response)
+
+        assert response.status_code == 400
+        assert "backends" in str(result)
+
     def test_sync_backends(self, fake_plugin_type_bk_header_rewrite, mocker, unique_gateway_name, request_factory):
         mocker.patch(
             "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",

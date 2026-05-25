@@ -303,7 +303,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
     proxy_http = StageProxyHTTPConfigSLZ(required=False)
 
-    backends = serializers.ListSerializer(help_text="后端配置", child=BackendSLZ(), allow_null=True, required=False)
+    backends = serializers.ListSerializer(
+        help_text="后端配置", child=BackendSLZ(), allow_null=True, allow_empty=False, required=False
+    )
 
     plugin_configs = serializers.ListSerializer(
         help_text="插件配置", child=PluginConfigSLZ(), allow_null=True, required=False

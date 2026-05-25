@@ -416,38 +416,6 @@ class TestPublishValidator:
         publish_validator = PublishValidator(fake_gateway, fake_stage, None)
         assert publish_validator._validate_stage_backends() is None
 
-    def test_validate_stage_backends_implicit_default_backend(
-        self, fake_stage, fake_default_empty_backend, fake_gateway
-    ):
-        """
-        测试资源版本中资源未显式绑定后端服务时，需要校验 default backend 配置
-        """
-        resource_version = G(
-            ResourceVersion,
-            gateway=fake_gateway,
-            version="1",
-            _data=json.dumps(
-                [
-                    {
-                        "id": 1,
-                        "name": "legacy_resource",
-                        "proxy": {
-                            "id": 28,
-                            "type": "http",
-                            "backend_id": None,
-                            "config": json.dumps(
-                                {"method": "ANY", "path": "/api/v2/", "match_subpath": False, "timeout": 0}
-                            ),
-                        },
-                    }
-                ]
-            ),
-        )
-
-        publish_validator = PublishValidator(fake_gateway, fake_stage, resource_version)
-        with pytest.raises(ReleaseValidationError):
-            publish_validator._validate_stage_backends()
-
     def test_validate_stage_backends_missing_used_backend_config(self, fake_stage, fake_gateway):
         """
         测试资源绑定的后端服务在当前环境缺少配置时，发布校验失败
