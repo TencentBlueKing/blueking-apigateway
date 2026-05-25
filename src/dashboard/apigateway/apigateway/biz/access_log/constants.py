@@ -53,7 +53,7 @@ ES_LOG_FIELDS = [
     },
     {
         "label": _("网关名称"),
-        "field": "gateway_name",
+        "field": "api_name",
         "is_filter": True,
     },
     {
