@@ -4,8 +4,10 @@ COPY ./ /app
 WORKDIR /app
 
 ARG BINARY=micro-gateway-operator
+ARG VERSION=latest
+ARG COMMIT=HEAD
 
-RUN make build && chmod +x ./build/${BINARY}
+RUN make build -e VERSION=${VERSION} -e COMMIT=${COMMIT} && chmod +x ./build/${BINARY}
 
 # install dlv
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.25.2

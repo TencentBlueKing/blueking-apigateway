@@ -1,4 +1,6 @@
 BUILD_PATH ?= $(shell pwd)/build
+VERSION = `git describe --tags --abbrev=0`
+COMMIT=`git rev-parse HEAD`
 # Image URL to use all building/pushing image targets
 IMG ?= bk-micro-gateway-operator:development
 
@@ -70,15 +72,15 @@ test: ## Run tests.
 
 .PHONY: build
 build: ## Build manager binary.
-	go build -ldflags "-X operator/pkg/version.Version=`git describe --tags --abbrev=0`  \
-		-X operator/pkg/version.Commit=`git rev-parse HEAD` \
+	go build -ldflags "-X operator/pkg/version.Version=$(VERSION)  \
+		-X operator/pkg/version.Commit=$(COMMIT) \
 		-X operator/pkg/version.BuildTime=`date +%Y-%m-%d_%I:%M:%S` \
 		-X 'operator/pkg/version.GoVersion=`go version`'" \
 		-o $(BUILD_PATH)/micro-gateway-operator .
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) -t ${IMG} .
 
 
 .PHONY: integration
