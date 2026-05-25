@@ -21,10 +21,9 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX, GatewayStatusEnum
@@ -99,9 +98,7 @@ class GatewayListApi(generics.ListAPIView):
         tags=["WebAPI.Docs.Gateway"],
     ),
 )
-class GatewayRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class GatewayRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """根据网关名称，获取网关详情"""
         slz = GatewayOutputSLZ(

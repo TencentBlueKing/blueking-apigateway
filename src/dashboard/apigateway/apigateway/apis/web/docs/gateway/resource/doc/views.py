@@ -19,14 +19,13 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import DocInputSLZ, DocOutputSLZ
@@ -41,9 +40,7 @@ from .serializers import DocInputSLZ, DocOutputSLZ
         tags=["WebAPI.Docs.ResourceDoc"],
     ),
 )
-class DocRetrieveApi(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class DocRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, resource_name: str, *args, **kwargs):
         """获取网关资源的文档"""
         slz = DocInputSLZ(data=request.query_params)

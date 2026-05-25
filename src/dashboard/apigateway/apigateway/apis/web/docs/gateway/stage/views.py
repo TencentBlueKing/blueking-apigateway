@@ -19,9 +19,8 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 
-from apigateway.common.permissions import GatewayDisplayablePermission
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Stage
 from apigateway.utils.responses import OKJsonResponse
@@ -37,9 +36,7 @@ from .serializers import StageOutputSLZ
         tags=["WebAPI.Docs.Stage"],
     ),
 )
-class StageListApi(generics.ListAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class StageListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关公开、可用的环境列表"""
         stages = Stage.objects.filter(

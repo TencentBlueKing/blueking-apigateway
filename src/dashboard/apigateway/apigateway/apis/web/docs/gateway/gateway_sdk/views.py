@@ -22,15 +22,14 @@ from django.utils.decorators import method_decorator
 from django.utils.timezone import now as timezone_now
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 
+from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.models import SDKDocContext
 from apigateway.common.django.translation import get_current_language_code
-from apigateway.common.permissions import GatewayDisplayablePermission
 from apigateway.core.models import Release
 from apigateway.utils import openapi
 from apigateway.utils.responses import OKJsonResponse
@@ -47,9 +46,7 @@ from .serializers import SDKListInputSLZ, SDKUsageExampleInputSLZ, SDKUsageExamp
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),
 )
-class SDKListApi(generics.ListAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class SDKListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
     def list(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK列表"""
         slz = SDKListInputSLZ(data=request.query_params)
@@ -72,9 +69,7 @@ class SDKListApi(generics.ListAPIView):
         tags=["WebAPI.Docs.Gateway.SDK"],
     ),
 )
-class SDKUsageExampleApi(generics.RetrieveAPIView):
-    permission_classes = [IsAuthenticated, GatewayDisplayablePermission]
-
+class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
     def retrieve(self, request, gateway_name: str, *args, **kwargs):
         """获取网关SDK示例"""
         slz = SDKUsageExampleInputSLZ(data=request.query_params)
