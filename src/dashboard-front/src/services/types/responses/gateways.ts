@@ -1264,6 +1264,7 @@ export interface IResourceRetrieveOutput {
   backend: string
   labels: string
   schema: string
+  released_stages: string[]
 }
 
 /**

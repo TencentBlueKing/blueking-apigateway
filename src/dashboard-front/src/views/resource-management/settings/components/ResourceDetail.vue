@@ -351,8 +351,7 @@
               {{ t('已使用的环境') }}
             </div>
             <div class="content">
-              <span v-if="!servicesData?.config?.length">--</span>
-              <span v-else>{{ servicesData?.config?.map((item: any) => item?.stage?.name)?.join(', ') }}</span>
+              <span>{{ formData.released_stages?.join(', ') || '--' }}</span>
             </div>
           </div>
         </div>
