@@ -49,6 +49,7 @@ func stringifyRequestParamValue(value any) string {
 // StringParamMap stores HTTP header/query/path parameters as strings.
 type StringParamMap map[string]string
 
+// UnmarshalJSON decodes JSON values into strings, preserving numeric precision.
 func (m *StringParamMap) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		*m = nil
