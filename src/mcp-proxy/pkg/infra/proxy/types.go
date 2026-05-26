@@ -18,10 +18,62 @@
 
 package proxy
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math"
+	"strconv"
+)
+
+const maxExactFloatInteger = 1<<53 - 1
+
+func stringifyRequestParamValue(value any) string {
+	switch value := value.(type) {
+	case json.Number:
+		return value.String()
+	case float64:
+		if value == math.Trunc(value) && value >= -maxExactFloatInteger && value <= maxExactFloatInteger {
+			return strconv.FormatInt(int64(value), 10)
+		}
+		return strconv.FormatFloat(value, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(value), 'f', -1, 32)
+	case string:
+		return value
+	default:
+		return fmt.Sprintf("%v", value)
+	}
+}
+
+// StringParamMap stores HTTP header/query/path parameters as strings.
+type StringParamMap map[string]string
+
+func (m *StringParamMap) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*m = nil
+		return nil
+	}
+
+	var values map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&values); err != nil {
+		return err
+	}
+
+	result := make(StringParamMap, len(values))
+	for key, value := range values {
+		result[key] = stringifyRequestParamValue(value)
+	}
+	*m = result
+	return nil
+}
+
 // HandlerRequest ...
 type HandlerRequest struct {
-	HeaderParam map[string]any `json:"header_param,omitempty"`
-	QueryParam  map[string]any `json:"query_param,omitempty"`
-	PathParam   map[string]any `json:"path_param,omitempty"`
+	HeaderParam StringParamMap `json:"header_param,omitempty"`
+	QueryParam  StringParamMap `json:"query_param,omitempty"`
+	PathParam   StringParamMap `json:"path_param,omitempty"`
 	BodyParam   any            `json:"body_param,omitempty"`
 }
