@@ -1085,4 +1085,57 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			}
 		})
 	})
+
+	Describe("Large Integer Path/Query Params", func() {
+		It("should preserve large integer path and query params without scientific notation", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-path-param-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "list_biz_hosts",
+				Arguments: map[string]any{
+					"path_param":  map[string]any{"bk_biz_id": 2005000002},
+					"query_param": map[string]any{"limit": 20},
+					"body_param":  map[string]any{"fields": []string{"bk_host_id", "bk_host_innerip"}},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			envelope, err := extractToolResponseEnvelope(result)
+			Expect(err).NotTo(HaveOccurred())
+
+			responseBody, ok := envelope["response_body"].(map[string]any)
+			Expect(ok).To(BeTrue())
+
+			// go-httpbin's /anything endpoint echoes back the URL
+			requestURL, ok := responseBody["url"].(string)
+			Expect(ok).To(BeTrue())
+			Expect(requestURL).To(ContainSubstring("/2005000002/"))
+			Expect(requestURL).NotTo(ContainSubstring("e+"))
+			Expect(requestURL).To(ContainSubstring("limit=20"))
+		})
+	})
 })
