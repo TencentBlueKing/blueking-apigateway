@@ -298,12 +298,11 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
                         }
                     )
 
-        related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
-        added_app_codes = GatewayRelatedAppHandler.sync_related_apps(
-            gateway=request.gateway,
+        related_app_codes_before, related_app_codes_after = GatewayRelatedAppHandler.sync_related_apps(
+            gateway_id=request.gateway.id,
             bk_app_codes=target_app_codes,
-            existing_codes=related_app_codes,
         )
+        added_app_codes = list(set(related_app_codes_after) - set(related_app_codes_before))
 
         # record audit log
         gateway = request.gateway
@@ -314,7 +313,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
             gateway_id=gateway.id,
             instance_id=gateway.id,
             instance_name=gateway.name,
-            data_before={"related_app_codes": related_app_codes},
+            data_before={"related_app_codes": related_app_codes_before},
             data_after={"added_related_app_codes": added_app_codes},
         )
 

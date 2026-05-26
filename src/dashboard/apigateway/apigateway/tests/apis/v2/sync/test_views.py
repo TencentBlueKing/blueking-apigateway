@@ -25,7 +25,7 @@ from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
-from apigateway.core.models import Backend, BackendConfig, Resource, ResourceVersion, Stage
+from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
 
 
 @pytest.fixture()
@@ -37,6 +37,32 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    def test_gateway_related_apps_add_records_related_app_codes_before_and_after(
+        self, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
+    ):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.get_app_tenant_info", return_value=("single", fake_gateway.tenant_id)
+        )
+        record_gateway_op_success = mocker.patch("apigateway.apis.v2.sync.views.Auditor.record_gateway_op_success")
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.add_related_apps",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"related_app_codes": ["app1", "app2"]},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 201
+        record_gateway_op_success.assert_called_once()
+        assert record_gateway_op_success.call_args.kwargs["data_before"] == {"related_app_codes": ["app1"]}
+        assert sorted(record_gateway_op_success.call_args.kwargs["data_after"]["related_app_codes"]) == [
+            "app1",
+            "app2",
+        ]
+
     @pytest.mark.parametrize(
         "gray_stage, expected_count",
         [

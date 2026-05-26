@@ -343,14 +343,10 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
                         }
                     )
 
-        exist_related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
-        GatewayRelatedAppHandler.sync_related_apps(
-            gateway=request.gateway,
+        related_app_codes_before, related_app_codes_after = GatewayRelatedAppHandler.sync_related_apps(
+            gateway_id=request.gateway.id,
             bk_app_codes=input_app_codes,
-            existing_codes=exist_related_app_codes,
         )
-
-        data_after = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
 
         # record audit log
         gateway = request.gateway
@@ -361,8 +357,8 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
             gateway_id=gateway.id,
             instance_id=gateway.id,
             instance_name=gateway.name,
-            data_before={"related_app_codes": exist_related_app_codes},
-            data_after={"related_app_codes": data_after},
+            data_before={"related_app_codes": related_app_codes_before},
+            data_after={"related_app_codes": related_app_codes_after},
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
