@@ -591,14 +591,3 @@ class GatewaySaver:
     def _get_gateway_unfiltered_sensitive_keys(self, gateway_name: str) -> Optional[List[str]]:
         gateway_auth_configs = getattr(settings, "SPECIAL_GATEWAY_AUTH_CONFIGS", None) or {}
         return gateway_auth_configs.get(gateway_name, {}).get("unfiltered_sensitive_keys")
-
-
-def sync_gateway(
-    gateway: Optional[Gateway],
-    data: dict,
-    bk_app_code: str,
-    username: str,
-    source: Optional[CallSourceTypeEnum],
-    data_plane_ids: Optional[List[int]],
-) -> Gateway:
-    return GatewayHandler.sync_gateway(gateway, data, bk_app_code, username, source, data_plane_ids)

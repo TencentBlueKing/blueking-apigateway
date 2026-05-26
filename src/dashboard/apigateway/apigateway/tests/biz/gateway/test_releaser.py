@@ -22,7 +22,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.biz.gateway import (
+from apigateway.biz.release.gateway_releaser import (
     GatewayReleaser,
     ReleaseError,
     ReleaseValidationError,

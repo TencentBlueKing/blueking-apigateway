@@ -19,7 +19,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
-from apigateway.biz.gateway import GatewayRelatedAppHandler, sync_related_apps
+from apigateway.biz.gateway import GatewayRelatedAppHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core.models import GatewayRelatedApp
 
@@ -72,7 +72,7 @@ class TestGatewayRelatedAppHandler:
     def test_sync_related_apps_adds_only_missing_codes(self, fake_gateway):
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
 
-        added_app_codes = sync_related_apps(
+        added_app_codes = GatewayRelatedAppHandler.sync_related_apps(
             gateway=fake_gateway,
             bk_app_codes=["app1", "app2"],
             username="admin",

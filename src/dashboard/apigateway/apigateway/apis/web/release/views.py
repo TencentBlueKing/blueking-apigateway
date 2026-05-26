@@ -29,9 +29,9 @@ from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.biz.gateway import ReleaseError, release
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.release.gateway_releaser import ReleaseError, release
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler

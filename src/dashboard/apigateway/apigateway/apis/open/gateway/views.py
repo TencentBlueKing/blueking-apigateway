@@ -37,7 +37,7 @@ from apigateway.apis.open.permissions import (
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
-from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler, sync_related_apps
+from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
 from apigateway.common.constants import (
     CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
@@ -299,7 +299,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
                     )
 
         related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
-        added_app_codes = sync_related_apps(
+        added_app_codes = GatewayRelatedAppHandler.sync_related_apps(
             gateway=request.gateway,
             bk_app_codes=target_app_codes,
             username=request.user.username,

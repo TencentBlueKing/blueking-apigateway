@@ -42,7 +42,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
-from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler, sync_related_apps
+from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
@@ -344,7 +344,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
                     )
 
         exist_related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
-        sync_related_apps(
+        GatewayRelatedAppHandler.sync_related_apps(
             gateway=request.gateway,
             bk_app_codes=input_app_codes,
             username=request.user.username,
