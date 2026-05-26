@@ -588,7 +588,7 @@ BK_ITSM4_CALLBACK_PATH = env.str(
 # ITSM 单据中心 URL 模板，使用 {ticket_id} 占位符
 BK_ITSM4_TICKET_URL_TEMPLATE = env.str("BK_ITSM4_TICKET_URL_TEMPLATE", default="")
 # 是否启用 ITSM 权限申请工单（环境变量名保持兼容）
-ENABLE_ITSM4_PERMISSION_APPLY = env.bool("BK_ITSM4_PERMISSION_APPLY_ENABLED", default=False)
+ENABLE_ITSM4_PERMISSION_APPLY = env.bool("BK_ITSM4_PERMISSION_APPLY_ENABLED", default=True)
 
 # ==============================================================================
 # 网关全局配置
