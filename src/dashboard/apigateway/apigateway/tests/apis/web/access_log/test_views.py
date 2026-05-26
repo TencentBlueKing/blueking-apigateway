@@ -22,7 +22,7 @@ from io import StringIO
 
 import pytest
 
-from apigateway.biz.access_log.constants import ES_LOG_FIELDS
+from apigateway.biz.access_log.constants import ES_LOG_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS
 
 pytestmark = pytest.mark.django_db
 
@@ -160,12 +160,13 @@ class TestLogDetailInfoApi:
 
         fields = result["data"]["fields"]
         expected_fields = deepcopy(ES_LOG_FIELDS)
+        mapping = TOOLBOX_LOG_FIELD_MAPPINGS[0]
         expected_fields.insert(
-            6,
+            mapping["insert_at"],
             {
-                "label": "网关名称",
-                "field": "gateway_name",
-                "is_filter": True,
+                "label": mapping["label"],
+                "field": mapping["output_field"],
+                "is_filter": mapping["is_filter"],
             },
         )
         assert fields == expected_fields
