@@ -302,7 +302,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         added_app_codes = GatewayRelatedAppHandler.sync_related_apps(
             gateway=request.gateway,
             bk_app_codes=target_app_codes,
-            username=request.user.username,
+            existing_codes=related_app_codes,
         )
 
         # record audit log

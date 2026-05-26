@@ -18,7 +18,7 @@
 import copy
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from django.conf import settings
 
@@ -30,7 +30,7 @@ from apigateway.core.constants import (
     ReleaseStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 
@@ -65,7 +65,9 @@ class ReleaseHandler:
         return ReleaseHistoryStatusEnum.FAILURE.value
 
     @staticmethod
-    def release_to_stages(gateway, resource_version_id: int, stage_ids: List[int], username: str, comment: str):
+    def release_to_stages(
+        gateway: Gateway, resource_version_id: int, stage_ids: List[int], username: str, comment: str
+    ) -> Tuple[bool, str]:
         try:
             for stage_id in stage_ids:
                 with Lock(

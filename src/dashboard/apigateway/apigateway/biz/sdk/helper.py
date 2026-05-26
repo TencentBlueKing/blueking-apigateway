@@ -131,6 +131,7 @@ class SDKHelper:
 def generate_sdks_for_resource_version(resource_version: ResourceVersion, languages: list[str], version: str | None):
     results = []
     try:
+        # Any failure during SDK generation is returned as INTERNAL, and partial results are discarded.
         with SDKHelper(resource_version=resource_version) as helper:
             for language in languages:
                 info = helper.create(

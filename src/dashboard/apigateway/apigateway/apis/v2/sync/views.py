@@ -347,7 +347,7 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
         GatewayRelatedAppHandler.sync_related_apps(
             gateway=request.gateway,
             bk_app_codes=input_app_codes,
-            username=request.user.username,
+            existing_codes=exist_related_app_codes,
         )
 
         data_after = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)

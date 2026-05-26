@@ -100,6 +100,25 @@ class TestReleaseHandler:
         assert ok is False
         assert message == "release failed"
 
+    def test_release_to_stages_returns_error_after_partial_success(self, fake_gateway, mocker):
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocked_release = mocker.patch(
+            "apigateway.biz.release.release.release",
+            side_effect=[None, ReleaseError("release failed")],
+        )
+
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version_id=201,
+            stage_ids=[101, 102],
+            username="admin",
+            comment="release",
+        )
+
+        assert ok is False
+        assert message == "release failed"
+        assert mocked_release.call_count == 2
+
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
             PublishEvent.objects.get_release_history_id_to_latest_publish_event_map([fake_release_history.id])[

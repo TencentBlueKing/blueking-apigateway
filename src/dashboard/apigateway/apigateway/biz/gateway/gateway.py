@@ -129,10 +129,11 @@ class GatewayHandler:
 
     @staticmethod
     def list_public_released_gateways():
-        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
-        gateway_ids = list(queryset.values_list("id", flat=True))
-        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(gateway_ids)
-        return queryset.filter(id__in=released_gateway_ids)
+        return Gateway.objects.filter(
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            id__in=Release.objects.values_list("gateway_id", flat=True),
+        )
 
     @staticmethod
     def get_gateway_auth_config(gateway_id: int) -> dict:
@@ -261,6 +262,7 @@ class GatewayHandler:
         source: Optional[CallSourceTypeEnum],
         data_plane_ids: Optional[List[int]],
     ) -> Gateway:
+        """Create or update a gateway through the shared sync entrypoint."""
         saver = GatewaySaver(
             id=gateway and gateway.id,
             data=TypeAdapter(GatewayData).validate_python(data),

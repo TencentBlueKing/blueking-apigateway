@@ -102,12 +102,15 @@ class TestGatewayHandler:
     def test_list_public_released_gateways_excludes_unreleased(self, fake_gateway):
         unreleased = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True)
         released = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        inactive = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
         G(Release, gateway=released)
+        G(Release, gateway=inactive)
 
         gateway_ids = list(GatewayHandler.list_public_released_gateways().values_list("id", flat=True))
 
         assert released.id in gateway_ids
         assert unreleased.id not in gateway_ids
+        assert inactive.id not in gateway_ids
 
     @pytest.mark.parametrize(
         "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, allow_auth_from_params, allow_delete_sensitive_params, expected",

@@ -69,14 +69,21 @@ class TestGatewayRelatedAppHandler:
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, [])
         assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 0
 
-    def test_sync_related_apps_adds_only_missing_codes(self, fake_gateway):
+    def test_sync_related_apps_adds_only_missing_codes(self, fake_gateway, mocker):
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        get_related_app_codes = mocker.patch(
+            "apigateway.biz.gateway.related_app.GatewayRelatedAppHandler.get_related_app_codes"
+        )
 
         added_app_codes = GatewayRelatedAppHandler.sync_related_apps(
             gateway=fake_gateway,
             bk_app_codes=["app1", "app2"],
-            username="admin",
+            existing_codes=["app1"],
         )
 
         assert added_app_codes == ["app2"]
-        assert sorted(GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)) == ["app1", "app2"]
+        get_related_app_codes.assert_not_called()
+        related_app_codes = GatewayRelatedApp.objects.filter(gateway=fake_gateway).values_list(
+            "bk_app_code", flat=True
+        )
+        assert sorted(related_app_codes) == ["app1", "app2"]

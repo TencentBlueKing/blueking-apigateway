@@ -177,7 +177,7 @@ class TestSyncApi:
 
         assert resp.status_code == 200
         release_to_stages.assert_called_once()
-        assert [stage.id for stage in release_to_stages.call_args.kwargs["stages"]] == [stage_2.id, stage_1.id]
+        assert release_to_stages.call_args.kwargs["stage_ids"] == [stage_2.id, stage_1.id]
 
     def test_gateway_sync_with_nonexistent_data_planes_returns_error(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
