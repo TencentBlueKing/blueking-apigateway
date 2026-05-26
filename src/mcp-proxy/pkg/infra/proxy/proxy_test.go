@@ -372,9 +372,10 @@ var _ = Describe("MCPProxy", func() {
 			Expect(request.QueryParam["ratio"]).To(Equal("1.25"))
 			Expect(request.PathParam["bk_biz_id"]).To(Equal("2005000002"))
 
+			// BodyParam retains standard json.Unmarshal behavior (float64)
 			body := request.BodyParam.(map[string]any)
-			Expect(body["bk_biz_id"]).To(Equal(json.Number("2005000002")))
-			Expect(body["nested"].(map[string]any)["id"]).To(Equal(json.Number("2005000003")))
+			Expect(body["bk_biz_id"]).To(Equal(float64(2005000002)))
+			Expect(body["nested"].(map[string]any)["id"]).To(Equal(float64(2005000003)))
 		})
 	})
 

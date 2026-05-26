@@ -20,7 +20,6 @@
 package proxy
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -230,9 +229,7 @@ func decodeHandlerRequest(arguments any) (HandlerRequest, error) {
 	if err != nil {
 		return handlerRequest, err
 	}
-	decoder := json.NewDecoder(bytes.NewReader(argsBytes))
-	decoder.UseNumber()
-	err = decoder.Decode(&handlerRequest)
+	err = json.Unmarshal(argsBytes, &handlerRequest)
 	return handlerRequest, err
 }
 
