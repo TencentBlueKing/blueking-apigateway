@@ -210,6 +210,8 @@ def get_default_feature_flags(
         "ENABLE_GATEWAY_OPERATION_STATUS": enable_gateway_operation_status,
         # 是否启用 MCP Prompt 功能
         "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
+        # 是否开启 MCP 可观测功能
+        "ENABLE_MCP_SERVER_OBSERVABILITY": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OBSERVABILITY", False),
         # 是否启用健康检查
         "ENABLE_HEALTH_CHECK": env.bool("FEATURE_FLAG_ENABLE_HEALTH_CHECK", False),
         # 是否开启 MCP Server OAuth2 公开客户端模式
