@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import csv
+from copy import deepcopy
 from datetime import datetime
 from io import StringIO
 
@@ -137,6 +138,37 @@ class TestLogLinkRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["link"]
+
+
+class TestLogDetailInfoApi:
+    def test_retrieve(self, mocker, request_view):
+        mocker.patch(
+            "apigateway.apis.web.access_log.views.LogHandler.search_logs_by_request_id_for_toolbox",
+            return_value=(1, [{"request_id": "rid", "gateway_name": "example-gateway"}]),
+        )
+
+        response = request_view(
+            "GET",
+            "access_log.logs.query",
+            path_params={"request_id": "rid"},
+        )
+        result = response.json()
+
+        assert response.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["gateway_name"] == "example-gateway"
+
+        fields = result["data"]["fields"]
+        expected_fields = deepcopy(ES_LOG_FIELDS)
+        expected_fields.insert(
+            6,
+            {
+                "label": "网关名称",
+                "field": "gateway_name",
+                "is_filter": True,
+            },
+        )
+        assert fields == expected_fields
 
 
 class TestLogExportApi:

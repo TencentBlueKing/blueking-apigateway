@@ -20,6 +20,7 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext as _
 
+from .constants import ES_OUTPUT_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS
 from .data_scrubber import DataScrubber
 from .log_search import LogSearchClient
 
@@ -50,5 +51,23 @@ class LogHandler:
         # 去除 params、body 中的敏感数据
         logs = DataScrubber().scrub_sensitive_data(logs)
         logs = LogHandler.add_or_refine_fields(logs)
+
+        return total_count, logs
+
+    @staticmethod
+    def search_logs_by_request_id_for_toolbox(request_id: str) -> Tuple[int, List[Dict]]:
+        """工具箱按 request_id 查询日志，并按字段映射规则补充展示字段。"""
+        mapping_fields = [item["es_field"] for item in TOOLBOX_LOG_FIELD_MAPPINGS]
+        output_fields = ES_OUTPUT_FIELDS + mapping_fields
+        client = LogSearchClient(request_id=request_id, output_fields=output_fields)
+
+        total_count, logs = client.search_logs()
+        logs = DataScrubber().scrub_sensitive_data(logs)
+        logs = LogHandler.add_or_refine_fields(logs)
+
+        for log in logs:
+            for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
+                log[mapping["output_field"]] = log.get(mapping["es_field"])
+                log.pop(mapping["es_field"], None)
 
         return total_count, logs
