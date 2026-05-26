@@ -2486,6 +2486,7 @@
   "我的申请": "我的申请",
   "我的已办": "我的已办",
   "跳转到 ITSM": "跳转到 ITSM",
+  "请选择申请时间": "请选择申请时间",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部通过": "应用{bk_app_code} 申请{resourceLength}个权限，全部通过",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回": "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回",
   "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个"

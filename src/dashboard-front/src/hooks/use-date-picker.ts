@@ -34,7 +34,7 @@ export const useDatePicker = (filterData?: any) => {
   const route = useRoute();
   const accessLogStore = useAccessLog();
 
-  const isHasToday = computed(() => accessLogStore.isEnabledToday);
+  const isObservabilityRoute = computed(() => ['MCPServerObservability'].includes(route.name as string));
 
   const initShortcutSelectedIndex = computed(() => {
     const routeName = route.name as string;
@@ -42,7 +42,7 @@ export const useDatePicker = (filterData?: any) => {
       return 1;
     }
 
-    if (isHasToday.value) {
+    if (isObservabilityRoute.value) {
       return 0;
     }
 

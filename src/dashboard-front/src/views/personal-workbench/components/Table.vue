@@ -113,6 +113,7 @@ import type {
   IPermission,
   IPersonalWorkbenchListQuery,
   IPersonalWorkbenchUIState,
+  ITabKey,
 } from '@/services/types/query/personal-workbench.ts';
 import type {
   IPersonalWorkbenchFilterOptionResponse,
@@ -129,6 +130,7 @@ import {
 import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
+
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
@@ -139,7 +141,7 @@ import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 interface IProps {
-  activeTab?: string
+  activeTab?: ITabKey
   applyStatus?: IApprovalStatus
   remoteMethod?: (params: IPersonalWorkbenchListQuery) => Promise<ICountAndResults<IPersonalWorkbenchListResponse>>
 }
@@ -242,14 +244,13 @@ const batchApplyDialogConfTitle = computed(() => {
     { permissionSelectListTemplate: selectedRows.value.length });
 });
 const approvalStatusMap = computed(() => isGateway.value ? APPROVAL_HISTORY_STATUS_MAP : APPROVAL_STATUS_MAP);
-const approvalStatusList = computed(() => {
-  const list = Object.entries(approvalStatusMap.value).map(([value, label]) => ({
-    value,
-    label,
-  }));
-
-  return list;
-});
+const approvalStatusList = computed(() =>
+  Object.entries(approvalStatusMap.value)
+    .map(([value, label]) => ({
+      value,
+      label,
+    })).filter(item => applyStatus !== 'handled' || item.value !== 'pending'),
+);
 const tableColumns = computed(() => {
   const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
     {
@@ -275,7 +276,6 @@ const tableColumns = computed(() => {
       title: t('蓝鲸应用ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
-      width: 120,
     },
   ];
 
@@ -284,7 +284,7 @@ const tableColumns = computed(() => {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
-      width: 100,
+      width: 160,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (!row?.applied_by) return '--';
 
@@ -306,7 +306,6 @@ const tableColumns = computed(() => {
       colKey: 'approvers',
       title: t('审批人'),
       ellipsis: true,
-      width: 160,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (!row?.approvers?.length && !row?.handled_by) return '--';
 
@@ -324,7 +323,6 @@ const tableColumns = computed(() => {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
-      width: 120,
       filter: {
         type: 'single' as const,
         showConfirmAndReset: true,
@@ -572,7 +570,7 @@ const getList = () => {
     ...filterData.value,
     applied_by: filterData.value.applied_by.join(),
   };
-  return tableRef.value?.fetchData(params, { resetPage: true });
+  return tableRef.value?.fetchData(filterSimpleEmpty(params), { resetPage: true });
 };
 
 const getTableData = async (params: {
@@ -661,7 +659,7 @@ const handleGatewayApproveReject = async () => {
     });
 
     handleClearSelection();
-    getList();
+    await getList();
   }
   catch (e: unknown) {
     const err = e as { error?: { message?: string } };
@@ -896,6 +894,8 @@ const handleClearSelection = () => {
 
 const handleClearFilter = () => {
   filterData.value = Object.assign(filterData.value ?? {}, {
+    time_start: '',
+    time_end: '',
     keyword: '',
     bk_app_code: '',
     applied_by: [],

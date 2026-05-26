@@ -52,3 +52,5 @@ export * from './use-mcp-config-divide-ratio';
 export * from './use-observability-dashboard';
 // Mcp 批量复制配置
 export * from './use-mcp-batch-copy-config';
+// 个人工作台
+export * from './use-personal-workbench';
