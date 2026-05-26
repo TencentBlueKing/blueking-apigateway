@@ -221,12 +221,12 @@ class GatewaySyncApi(generics.CreateAPIView):
         )
 
         gateway = GatewayHandler.sync_gateway(
-            gateway=gateway,
-            bk_app_code=request.app.app_code,
-            data=data,
-            username=username,
-            source=CallSourceTypeEnum.OpenAPI,
-            data_plane_ids=data_plane_ids,
+            gateway,
+            data,
+            request.app.app_code,
+            username,
+            CallSourceTypeEnum.OpenAPI,
+            data_plane_ids,
         )
 
         # record audit log

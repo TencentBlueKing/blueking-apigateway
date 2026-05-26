@@ -93,6 +93,7 @@ class TestResourceVersionReleaseApi:
         release_to_stages = mocker.patch(
             "apigateway.apis.open.resource_version.views.ReleaseHandler.release_to_stages"
         )
+        release_to_stages.return_value = (True, "")
         mocker.patch(
             "apigateway.apis.open.resource_version.serializers.ReleaseV1InputSLZ.to_internal_value",
             return_value={

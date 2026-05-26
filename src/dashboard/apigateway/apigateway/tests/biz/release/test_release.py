@@ -20,6 +20,7 @@ from unittest.mock import patch
 from ddf import G
 
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.release.gateway_releaser import ReleaseError
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -52,7 +53,7 @@ class TestReleaseHandler:
         mocker.patch("apigateway.biz.release.release.Lock")
         mocked_release = mocker.patch("apigateway.biz.release.release.ReleaseHandler.release")
 
-        ReleaseHandler.release_to_stages(
+        ok, message = ReleaseHandler.release_to_stages(
             gateway=fake_gateway,
             resource_version=resource_version,
             stages=stages,
@@ -60,7 +61,29 @@ class TestReleaseHandler:
             comment="release",
         )
 
+        assert ok is True
+        assert message == ""
         assert mocked_release.call_count == 2
+
+    def test_release_to_stages_returns_error_message(self, fake_gateway, mocker):
+        stage = G(Stage, gateway=fake_gateway, name="prod")
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocker.patch(
+            "apigateway.biz.release.release.ReleaseHandler.release",
+            side_effect=ReleaseError("release failed"),
+        )
+
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version=resource_version,
+            stages=[stage],
+            username="admin",
+            comment="release",
+        )
+
+        assert ok is False
+        assert message == "release failed"
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
@@ -125,7 +148,7 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.SUCCESS.value
@@ -139,14 +162,14 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.FAILURE.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value
 
     def test_wait_release_done_timeout(self, fake_release_history):
         """超时返回 FAILURE"""
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id, timeout=0)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value

@@ -25,7 +25,6 @@ from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -109,30 +108,6 @@ class TestGatewayHandler:
 
         assert released.id in gateway_ids
         assert unreleased.id not in gateway_ids
-
-    def test_sync_gateway_uses_gateway_saver(self, fake_gateway, mocker):
-        mocked_saver = mocker.patch("apigateway.biz.gateway.saver.GatewaySaver")
-        mocked_saver.return_value.save.return_value = fake_gateway
-
-        result = GatewayHandler.sync_gateway(
-            gateway=fake_gateway,
-            data={
-                "name": fake_gateway.name,
-                "status": GatewayStatusEnum.ACTIVE.value,
-                "is_public": True,
-            },
-            bk_app_code="app",
-            username="admin",
-            source=CallSourceTypeEnum.OpenAPI,
-            data_plane_ids=[1],
-        )
-
-        assert result == fake_gateway
-        mocked_saver.assert_called_once()
-        assert mocked_saver.call_args.kwargs["id"] == fake_gateway.id
-        assert mocked_saver.call_args.kwargs["bk_app_code"] == "app"
-        assert mocked_saver.call_args.kwargs["source"] == CallSourceTypeEnum.OpenAPI
-        assert mocked_saver.call_args.kwargs["data_plane_ids"] == [1]
 
     @pytest.mark.parametrize(
         "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, allow_auth_from_params, allow_delete_sensitive_params, expected",
@@ -280,7 +255,7 @@ class TestGatewayHandler:
         expected,
     ):
         mocker.patch(
-            "apigateway.biz.gateway.GatewayHandler.get_gateway_auth_config",
+            "apigateway.biz.gateway.gateway.GatewayHandler.get_gateway_auth_config",
             return_value={
                 "user_auth_type": "default",
                 "api_type": GatewayTypeEnum.CLOUDS_API.value,

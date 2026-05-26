@@ -59,7 +59,7 @@ class TestSyncApi:
         settings.BK_PLUGINS_DATA_PLANE_NAME = "bp"
         settings.BK_PLUGINS_DATA_PLANE_GRAY_STAGE = gray_stage
         bp_data_plane = G(DataPlane, name="bp")
-        mock_saver_cls = mocker.patch("apigateway.biz.gateway.saver.GatewaySaver")
+        mock_saver_cls = mocker.patch("apigateway.biz.gateway.gateway.GatewaySaver")
         mock_saver_cls.return_value.save.return_value = fake_gateway
 
         gateway_name = "bp-sync-gateway"
@@ -146,6 +146,7 @@ class TestSyncApi:
         stage_1 = G(Stage, gateway=fake_gateway)
         stage_2 = G(Stage, gateway=fake_gateway)
         release_to_stages = mocker.patch("apigateway.apis.v2.sync.views.ReleaseHandler.release_to_stages")
+        release_to_stages.return_value = (True, "")
         mocker.patch(
             "apigateway.apis.v2.sync.serializers.ReleaseInputSLZ.to_internal_value",
             return_value={

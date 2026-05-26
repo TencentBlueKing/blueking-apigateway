@@ -303,7 +303,7 @@ ignore_imports = [
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
     "apigateway.controller.tasks.release -> apigateway.biz.resource_version",
-    "apigateway.controller.tasks.syncing -> apigateway.biz.release",
+    "apigateway.controller.tasks.syncing -> apigateway.biz.release.waiter",
     "apigateway.apps.support.task -> apigateway.biz.ai.constant",
     "apigateway.apps.support.task -> apigateway.biz.ai.ai",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",

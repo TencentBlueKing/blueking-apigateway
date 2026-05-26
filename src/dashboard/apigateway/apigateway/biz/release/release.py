@@ -17,7 +17,6 @@
 #
 import copy
 import logging
-import time
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -32,7 +31,11 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
+
+from .gateway_releaser import ReleaseError, release
+from .waiter import wait_release_done as _wait_release_done
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +66,6 @@ class ReleaseHandler:
 
     @staticmethod
     def release(*, gateway, stage, resource_version, username: str, comment: str):
-        from apigateway.biz.gateway.releaser import release  # noqa: PLC0415
-
         return release(
             gateway=gateway,
             stage_id=stage.id,
@@ -75,14 +76,13 @@ class ReleaseHandler:
 
     @classmethod
     def release_to_stages(cls, *, gateway, resource_version, stages, username: str, comment: str):
-        results = []
-        for stage in stages:
-            with Lock(
-                f"{gateway.id}_{stage.id}",
-                timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
-                try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
-            ):
-                results.append(
+        try:
+            for stage in stages:
+                with Lock(
+                    f"{gateway.id}_{stage.id}",
+                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+                ):
                     cls.release(
                         gateway=gateway,
                         stage=stage,
@@ -90,8 +90,10 @@ class ReleaseHandler:
                         username=username,
                         comment=comment,
                     )
-                )
-        return results
+        except (LockTimeout, ReleaseError) as err:
+            return False, str(err)
+
+        return True, ""
 
     @staticmethod
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
@@ -199,29 +201,7 @@ class ReleaseHandler:
         Returns:
             最终发布状态（ReleaseHistoryStatusEnum 的值）
         """
-        start_time = datetime.now().timestamp()
-        wait_times = 0
-        while True:
-            now = datetime.now().timestamp()
-            if now - start_time > timeout:
-                logger.warning(
-                    "wait_release_done timeout after %ds, release_history_id=%d",
-                    timeout,
-                    release_history_id,
-                )
-                return ReleaseHistoryStatusEnum.FAILURE.value
-
-            time.sleep(1 * wait_times)
-            wait_times += 1
-
-            event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map([release_history_id])
-            latest_event = event_map.get(release_history_id)
-            if not latest_event:
-                continue
-
-            status = latest_event.get_release_history_status()
-            if status != ReleaseHistoryStatusEnum.DOING.value:
-                return status
+        return _wait_release_done(release_history_id, timeout)
 
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:

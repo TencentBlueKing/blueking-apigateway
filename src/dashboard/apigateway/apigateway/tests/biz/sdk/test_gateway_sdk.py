@@ -18,11 +18,14 @@
 from types import SimpleNamespace
 from unittest.mock import call
 
+import pytest
 from ddf import G
 
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
+from apigateway.common.error_codes import APIError
 
 
 class TestGatewaySDKHandler:
@@ -100,3 +103,19 @@ def test_generate_sdks_for_resource_version_returns_sdk_payload(fake_resource_ve
         call(language="python", version=fake_resource_version.version, operator=None),
         call(language="go", version=fake_resource_version.version, operator=None),
     ]
+
+
+def test_generate_sdks_for_resource_version_maps_sdk_errors(fake_resource_version, mocker):
+    helper = mocker.MagicMock()
+    helper.create.side_effect = exceptions.ResourcesIsEmpty
+    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
+    mocked_helper.return_value.__enter__.return_value = helper
+
+    with pytest.raises(APIError) as err:
+        generate_sdks_for_resource_version(
+            fake_resource_version,
+            ["python"],
+            "",
+        )
+
+    assert err.value.code.message == "网关下无资源，无法生成 SDK。"

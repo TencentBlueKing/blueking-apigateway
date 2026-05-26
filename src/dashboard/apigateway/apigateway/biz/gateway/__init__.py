@@ -15,14 +15,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .gateway import GatewayHandler  # noqa
+from .gateway import GatewayData, GatewayHandler, GatewaySaver, sync_gateway  # noqa
 from .app_binding import GatewayAppBindingHandler  # noqa
 from .related_app import GatewayRelatedAppHandler, sync_related_apps  # noqa
 from .type import GatewayTypeHandler  # noqa
-from .saver import GatewayData, GatewaySaver  # noqa
 from .label import GatewayLabelHandler  # noqa
 
-from .releaser import (
+from apigateway.biz.release.gateway_releaser import (
     GatewayReleaser,  # noqa
     ReleaseError,  # noqa
     ReleaseValidationError,  # noqa

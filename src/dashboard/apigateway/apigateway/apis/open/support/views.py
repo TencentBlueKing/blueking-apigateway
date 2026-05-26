@@ -16,11 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
-
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets
 
@@ -28,13 +25,9 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
-from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse
-
-logger = logging.getLogger(__name__)
 
 
 class SDKGenerateViewSet(viewsets.ViewSet):
@@ -55,26 +48,10 @@ class SDKGenerateViewSet(viewsets.ViewSet):
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        try:
-            results = generate_sdks_for_resource_version(
-                resource_version=resource_version,
-                languages=data["languages"],
-                version=data["version"],
-            )
-        except exceptions.ResourcesIsEmpty:
-            raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
-        except exceptions.GenerateError:
-            raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
-        except exceptions.PackError:
-            raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
-        except exceptions.DistributeError:
-            raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
-        except exceptions.TooManySDKVersion as err:
-            raise error_codes.INTERNAL.format(
-                _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
-            )
-        except Exception:  # pylint: disable=broad-except
-            logger.exception("create sdk failed for gateway %s, release %s", gateway_name, resource_version.version)
-            raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
+        results = generate_sdks_for_resource_version(
+            resource_version=resource_version,
+            languages=data["languages"],
+            version=data["version"],
+        )
 
         return V1OKJsonResponse("OK", data=results)
