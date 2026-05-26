@@ -62,13 +62,27 @@ exception.
 
 Layer intent:
 
-- `apis/` - HTTP API surfaces and serializers.
-- `biz/` - business orchestration and handlers.
+- `apis/` - HTTP API surfaces and serializers. Serializers own input
+  validation and output definitions, and must not introduce N+1 queries for
+  computed fields. Views stay thin: simple control flow, parameter building,
+  lower-layer calls, and response assembly. Keep view-level logic inside its
+  own API module even when another API surface has the same or similar logic.
+- `biz/` - main business logic, including cross-model querysets,
+  orchestration, and processing. A `biz` module should not import another
+  `biz` module; move shared coordination into `service/` when needed.
 - `controller/` - release pipeline, APISIX config conversion, transformers, distributors, publisher tasks.
-- `service/` - shared service integrations such as ES, Prometheus, SDK, audit, context, plugin helpers.
+- `service/` - thin shared services with limited business logic. Use this
+  layer mainly to break cyclic imports or avoid `biz`-to-`biz` imports.
 - `components/` - external BlueKing system clients.
-- `apps/` - Django apps, models, admin, migrations, management commands, Celery tasks.
-- `core/` - central gateway domain models such as `Gateway`, `Stage`, `Resource`, `ResourceVersion`, `Release`, `Backend`, `Context`.
+- `apps/` - Django app model layer plus admin, migrations, management commands,
+  and Celery tasks. Keep `models.py` rich for single-model properties and
+  methods. Keep `managers.py` to reusable single-model queryset logic. Do not
+  put multiple-model business queries in managers.
+- `core/` - central gateway domain model layer such as `Gateway`, `Stage`,
+  `Resource`, `ResourceVersion`, `Release`, `Backend`, `Context`. Follow the
+  same model-layer rule as `apps/`: rich single-model methods in `models.py`,
+  reusable single-model queryset logic in `managers.py`, and no multiple-model
+  business queries in managers.
 - `common/` - reusable middleware, permissions, fields, mixins, tenant helpers, factories.
 - `utils/` - low-level utility functions.
 
@@ -78,9 +92,14 @@ The v2 API surfaces are intentionally independent:
 - `apigateway.apis.v2.inner` - internal APIs, mainly for BlueKing internal callers.
 - `apigateway.apis.v2.open` - public open APIs.
 
-Do not share view/serializer code across these API surfaces by importing from one
-surface into another. Move common behavior down into `biz`, `service`, `common`,
-or `utils` when needed.
+Do not share view or serializer code across API surfaces by importing from one
+surface into another. Keep view-level logic in the owning API module
+(`apis.open`, `apis.web`, `apis.v2.open`, and other `apis.v2.*` modules), even
+when the logic is the same or nearly the same. Duplicate small view logic when
+that keeps the surfaces independent, especially because `apis.web` behavior
+changes frequently. Move common behavior down into `biz`, `service`, `common`,
+or `utils` only when it is true lower-layer business, service, or utility logic
+instead of surface-specific view flow.
 
 ## Domain Notes
 
