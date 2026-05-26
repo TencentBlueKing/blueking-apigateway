@@ -1124,18 +1124,13 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(result).NotTo(BeNil())
 			Expect(result.Content).NotTo(BeEmpty())
 
-			envelope, err := extractToolResponseEnvelope(result)
-			Expect(err).NotTo(HaveOccurred())
-
-			responseBody, ok := envelope["response_body"].(map[string]any)
+			// Extract the raw text response and verify URL contains the correct integer
+			textContent, ok := result.Content[0].(*mcp.TextContent)
 			Expect(ok).To(BeTrue())
-
-			// go-httpbin's /anything endpoint echoes back the URL
-			requestURL, ok := responseBody["url"].(string)
-			Expect(ok).To(BeTrue())
-			Expect(requestURL).To(ContainSubstring("/2005000002/"))
-			Expect(requestURL).NotTo(ContainSubstring("e+"))
-			Expect(requestURL).To(ContainSubstring("limit=20"))
+			// go-httpbin's /anything echoes back the full request URL in JSON
+			Expect(textContent.Text).To(ContainSubstring("/2005000002/"))
+			Expect(textContent.Text).NotTo(ContainSubstring("2.005"))
+			Expect(textContent.Text).To(ContainSubstring("limit=20"))
 		})
 	})
 })
