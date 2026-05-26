@@ -107,7 +107,7 @@ const routes: RouteRecordRaw[] = [
     name: 'PersonalWorkbench',
     component: () => import('@/layout/personal-workbench/Index.vue'),
     props,
-    redirect: '/personal-workbench/my-pending',
+    redirect: '/personal-workbench/my-apply',
     children: [...getPersonalWorkbench()],
   },
 ];

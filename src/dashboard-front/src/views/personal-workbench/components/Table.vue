@@ -17,54 +17,15 @@
  */
 
 <template>
-  <div class="p-16px personal-workbench-table">
-    <div class="flex justify-between h-32px mb-16px header">
-      <BkButton
-        v-if="isGateway"
-        v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selectedRows.length > 0 }"
-        theme="primary"
-        :disabled="!selectedRows.length"
-        @click="handleBatchApply"
-      >
-        {{ t("批量审批") }}
-      </BkButton>
-      <BkForm
-        class="flex ml-auto header-form"
-        label-width="120"
-      >
-        <BkFormItem :label="t('蓝鲸应用ID')">
-          <BkInput
-            v-model="filterData.bk_app_code"
-            class="w-282px"
-            clearable
-            :placeholder="t('请输入应用ID')"
-          />
-        </BkFormItem>
-        <BkFormItem
-          v-if="!featureFlagStore.isTenantMode"
-          :label="t('申请人')"
-        >
-          <BkInput
-            v-model="filterData.applied_by"
-            class="w-282px"
-            clearable
-            :placeholder="t('请输入用户')"
-          />
-        </BkFormItem>
-        <BkFormItem
-          v-else
-          :label="t('申请人')"
-        >
-          <BkUserSelector
-            v-model="filterData.applied_by"
-            :api-base-url="envStore.tenantUserDisplayAPI"
-            :tenant-id="userStore?.info?.tenant_id ?? ''"
-            :placeholder="t('请输入用户')"
-            class="w-200px"
-          />
-        </BkFormItem>
-      </BkForm>
-    </div>
+  <div :class="`p-16px personal-workbench-table ${applyStatus}`">
+    <BasicForm
+      ref="basicFormRef"
+      v-model:form-data="filterData"
+      :selected-rows="selectedRows"
+      :is-show-selection="isShowSelection"
+      :is-show-applicant="!['applied'].includes(applyStatus)"
+      @batch-approval="handleBatchApproval"
+    />
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
@@ -72,6 +33,7 @@
       v-model:settings="settings"
       show-settings
       :show-selection="isShowSelection"
+      :table-empty-type="tableEmptyType"
       :expand-icon="false"
       :expandable="expandableConfig"
       :expanded-row-keys="expandableConfig.expandedRowKeys"
@@ -93,18 +55,20 @@
         <template v-else />
       </template>
       <template #expandedRow="{row}">
-        <AgTable
-          v-model:table-data="row.resources"
-          v-model:selected-row-keys="curPermission.resource_ids"
-          size="small"
-          class="ag-expand-table"
-          local-page
-          :max-height="378"
-          :show-first-full-row="isShowSelection && curPermission.resource_ids?.length > 0"
-          :show-selection="isShowSelection"
-          :columns="childrenColumns"
-          @selection-change="(selection) => handleChildSelectionChange(row, selection)"
-        />
+        <BkLoading :loading="row?.isLoading">
+          <AgTable
+            v-model:table-data="row.resources"
+            v-model:selected-row-keys="curPermission.resource_ids"
+            size="small"
+            class="ag-expand-table"
+            local-page
+            :max-height="378"
+            :show-first-full-row="isShowSelection && curPermission.resource_ids?.length > 0"
+            :show-selection="isShowSelection"
+            :columns="childrenColumns"
+            @selection-change="(selection) => handleChildSelectionChange(row, selection)"
+          />
+        </BkLoading>
       </template>
     </AgTable>
   </div>
@@ -140,7 +104,7 @@
 import { Button, Loading, Message, Popover } from 'bkui-vue';
 import { t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableMethod } from '@/types/common';
+import type { ITableEmptyType, ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IApplyStatus,
@@ -148,8 +112,13 @@ import type {
   IFomDataQuery,
   IPermission,
   IPersonalWorkbenchListQuery,
+  IPersonalWorkbenchUIState,
 } from '@/services/types/query/personal-workbench.ts';
-import type { IPersonalWorkbenchFilterOptionResponse, IPersonalWorkbenchListResponse, IResources } from '@/services/types/responses/personal-workbench.ts';
+import type {
+  IPersonalWorkbenchFilterOptionResponse,
+  IPersonalWorkbenchListResponse,
+  IResources,
+} from '@/services/types/responses/personal-workbench.ts';
 import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
 import {
@@ -159,26 +128,15 @@ import {
 } from '@/services/source/personal-workbench.ts';
 import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
-import {
-  useEnv,
-  useFeatureFlag,
-  useUserInfo,
-} from '@/stores';
-import { APPROVAL_STATUS_MAP } from '@/enums';
+import { useFeatureFlag } from '@/stores';
+import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
+import BasicForm from '@/views/personal-workbench/components/Form.vue';
 import AgTable from '@/components/ag-table/Index.vue';
-
-type IApplyTable = IPersonalWorkbenchListResponse & {
-  isExpand: boolean
-  isSelectAll: boolean
-  gateway_id?: number
-  resource_ids: number[]
-  selection?: IResources[]
-};
+import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
 
 interface IProps {
   activeTab?: string
@@ -192,15 +150,15 @@ const {
   remoteMethod = undefined,
 } = defineProps<IProps>();
 
-const envStore = useEnv();
-const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
+const basicFormRef = useTemplateRef<InstanceType<typeof BasicForm>>('basicFormRef');
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableData = ref<IPersonalWorkbenchListResponse[]>([]);
-const selectedRows = ref<IApplyTable[]>([]);
+const selectedRows = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRowKeys = ref<(string | number)[]>([]);
 const settings = ref(null);
+const tableEmptyType = ref<ITableEmptyType>('empty');
 const applyActionDialogConf = ref({
   isShow: false,
   isLoading: false,
@@ -216,9 +174,11 @@ const approvalSliderConf = ref({
 });
 const approvalSliderDetail = ref<Partial<IPersonalWorkbenchListResponse> | null>(null);
 const filterData = ref<FilterValue | IPersonalWorkbenchListQuery>({
+  time_start: '',
+  time_end: '',
   keyword: '',
   bk_app_code: '',
-  applied_by: '',
+  applied_by: [],
   gateway_id: '',
   mcp_server_id: '',
   grant_dimension: '',
@@ -244,7 +204,7 @@ const curPermission = ref<IPermission>({
   isSelectAll: true,
 });
 // 缓存上一个展开行
-const lastExpandRow = ref<IApplyTable | TableRowData | null>(null);
+const lastExpandRow = ref<IPersonalWorkbenchUIState | TableRowData | null>(null);
 const gatewayList = ref<IPersonalWorkbenchFilterOptionResponse[]>([]);
 const mcpServerList = ref<IPersonalWorkbenchFilterOptionResponse[]>([]);
 const childrenColumns = shallowRef<PrimaryTableProps['columns']>([
@@ -272,13 +232,23 @@ const childrenColumns = shallowRef<PrimaryTableProps['columns']>([
 ]);
 
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
-const isGateway = computed(() => activeTab === 'gateway');
-const isShowSelection = computed(() => isGateway.value && !['handled'].includes(applyStatus));
+const isGateway = computed(() => ['gateway'].includes(activeTab));
+const isPending = computed(() => ['pending'].includes(applyStatus));
+const isShowSelection = computed(() => isGateway.value && isPending.value);
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
   return t(
     '将对以下{permissionSelectListTemplate}个权限申请单进行审批',
     { permissionSelectListTemplate: selectedRows.value.length });
+});
+const approvalStatusMap = computed(() => isGateway.value ? APPROVAL_HISTORY_STATUS_MAP : APPROVAL_STATUS_MAP);
+const approvalStatusList = computed(() => {
+  const list = Object.entries(approvalStatusMap.value).map(([value, label]) => ({
+    value,
+    label,
+  }));
+
+  return list;
 });
 const tableColumns = computed(() => {
   const gatewayAppCodeColumn: PrimaryTableProps['columns'] = [
@@ -286,9 +256,10 @@ const tableColumns = computed(() => {
       title: t('网关'),
       colKey: 'gateway_id',
       ellipsis: true,
+      width: 200,
       fixed: 'left' as const,
       filter: {
-        type: 'single',
+        type: 'single' as const,
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: gatewayList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
@@ -304,6 +275,7 @@ const tableColumns = computed(() => {
       title: t('蓝鲸应用ID'),
       colKey: 'bk_app_code',
       ellipsis: true,
+      width: 120,
     },
   ];
 
@@ -312,6 +284,7 @@ const tableColumns = computed(() => {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
+      width: 100,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (!row?.applied_by) return '--';
 
@@ -324,21 +297,52 @@ const tableColumns = computed(() => {
       title: t('申请时间'),
       colKey: 'applied_time',
       ellipsis: true,
-      width: 260,
+      width: 220,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         return row?.applied_time || row?.created_time || '--';
+      },
+    },
+    {
+      colKey: 'approvers',
+      title: t('审批人'),
+      ellipsis: true,
+      width: 160,
+      cell: (_: unknown, { row }: { row: TableRowData }) => {
+        if (!row?.approvers?.length && !row?.handled_by) return '--';
+
+        return (
+          <div class="w-full">
+            <RenderTagOverflow
+              data={row.approvers || [row?.handled_by]}
+              is-member
+            />
+          </div>
+        );
       },
     },
     {
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
+      width: 120,
+      filter: {
+        type: 'single' as const,
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: approvalStatusList.value.map(({ label, value }) => ({
+          label,
+          value,
+        })),
+      },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
+        const statusKey = row?.status as keyof typeof approvalStatusMap.value;
+        const status = approvalStatusMap.value[statusKey] ?? '--';
+
         if (['pending'].includes(row.status)) {
           return (
             <div class="perm-apply-dot">
               <Loading class="mr-4px" loading size="mini" mode="spin" theme="primary" />
-              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
+              {status}
             </div>
           );
         }
@@ -346,7 +350,7 @@ const tableColumns = computed(() => {
           return (
             <div class="perm-apply-dot">
               <span class={['mr-4px ag-dot', { [row.status]: row.status }]} />
-              {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
+              {status}
             </div>
           );
         }
@@ -356,11 +360,11 @@ const tableColumns = computed(() => {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right' as const,
-      width: 200,
+      width: isPending.value ? 200 : 80,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         const isItsm = isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id);
 
-        if (['pending', 'applied'].includes(applyStatus)) {
+        if (isPending.value) {
           if (isItsm) {
             return (
               <Button
@@ -370,7 +374,7 @@ const tableColumns = computed(() => {
                   window.open(row?.itsm_ticket_url);
                 }}
               >
-                {t('跳转到 itsm')}
+                {t('跳转到 ITSM')}
               </Button>
             );
           }
@@ -464,7 +468,7 @@ const tableColumns = computed(() => {
                   isShow: true,
                   title: `${t('申请应用：')}${row.bk_app_code}`,
                 };
-                approvalSliderDetail.value = { ...row } as IApplyTable;
+                approvalSliderDetail.value = { ...row } as IPersonalWorkbenchUIState;
               }}
             >
               {t('详情')}
@@ -473,7 +477,17 @@ const tableColumns = computed(() => {
         }
       },
     },
-  ];
+  ].filter((col) => {
+    if (['applied_by'].includes(col.colKey) && ['applied'].includes(applyStatus)) {
+      return false;
+    }
+
+    if (['handled_by'].includes(col.colKey) && !['applied'].includes(applyStatus)) {
+      return false;
+    }
+
+    return true;
+  });
 
   const gatewayColumns: PrimaryTableProps['columns'] = [
     ...gatewayAppCodeColumn!,
@@ -483,7 +497,7 @@ const tableColumns = computed(() => {
       ellipsis: true,
       width: 120,
       filter: {
-        type: 'single',
+        type: 'single' as const,
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: [
@@ -517,11 +531,13 @@ const tableColumns = computed(() => {
       colKey: 'expire_days_display',
       title: t('权限期限'),
       ellipsis: true,
+      width: 100,
     },
     {
       colKey: 'reason',
       title: t('申请理由'),
       ellipsis: true,
+      width: 100,
     },
     ...columns!,
   ];
@@ -533,7 +549,7 @@ const tableColumns = computed(() => {
       colKey: 'mcp_server_id',
       ellipsis: true,
       filter: {
-        type: 'single',
+        type: 'single' as const,
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: mcpServerList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
@@ -551,7 +567,13 @@ const tableColumns = computed(() => {
   return isGateway.value ? gatewayColumns : mcpColumns;
 });
 
-const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: true });
+const getList = () => {
+  const params = {
+    ...filterData.value,
+    applied_by: filterData.value.applied_by.join(),
+  };
+  return tableRef.value?.fetchData(params, { resetPage: true });
+};
 
 const getTableData = async (params: {
   offset: number
@@ -561,9 +583,10 @@ const getTableData = async (params: {
   settings.value = null;
   const queryParams: IPersonalWorkbenchListQuery = {
     ...params,
-    ...filterSimpleEmpty(filterData.value),
+    ...filterData.value,
+    applied_by: filterData.value.applied_by.join(),
   };
-  const res = await remoteMethod?.(queryParams);
+  const res = await remoteMethod?.(filterSimpleEmpty(queryParams));
   return res ?? {
     count: 0,
     results: [],
@@ -696,6 +719,8 @@ const handleRowClick = async ({ e, row }: {
 
   const newIsExpand = !row.isExpand;
 
+  row.isLoading = true;
+
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
     Object.assign(lastExpandRow.value, {
@@ -721,6 +746,10 @@ const handleRowClick = async ({ e, row }: {
       resource_ids: [],
     });
   }
+
+  setTimeout(() => {
+    row.isLoading = false;
+  }, 300);
 };
 
 const handleSelectionChange = ({
@@ -730,7 +759,7 @@ const handleSelectionChange = ({
   selections: TableRowData[]
   selectionsRowKeys: (string | number)[]
 }) => {
-  selectedRows.value = selections as IApplyTable[];
+  selectedRows.value = selections as IPersonalWorkbenchUIState[];
   selectedRowKeys.value = selectionsRowKeys;
 };
 
@@ -763,7 +792,7 @@ const handleChildSelectionChange = (
 // 全部通过/部分通过 Dialog
 const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
   e.stopPropagation();
-  curPermission.value = row as IApplyTable;
+  curPermission.value = row as IPersonalWorkbenchUIState;
   curAction.value = {
     ids: [row.id],
     gateway_id: row.gateway_id as number,
@@ -783,7 +812,7 @@ const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
 // 全部驳回 Dialog
 const handleShowGatewayReject = (e: MouseEvent, row: TableRowData) => {
   e.stopPropagation();
-  curPermission.value = row as IApplyTable;
+  curPermission.value = row as IPersonalWorkbenchUIState;
   curAction.value = {
     ids: [row.id!],
     gateway_id: row.gateway_id as number,
@@ -830,7 +859,7 @@ const handleSubmitApprove = () => {
 const handleApprovedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'approved',
-    ids: selectedRows.value.map((permission: IApplyTable) => permission.id),
+    ids: selectedRows.value.map((permission: IPersonalWorkbenchUIState) => permission.id),
   });
   handleGatewayApproveReject();
 };
@@ -839,12 +868,13 @@ const handleApprovedPermission = () => {
 const handleRejectedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'rejected',
-    ids: selectedRows.value.map((permission: IApplyTable) => permission.id),
+    ids: selectedRows.value.map((permission: IPersonalWorkbenchUIState) => permission.id),
   });
   handleGatewayApproveReject();
 };
 
-const handleBatchApply = () => {
+// 批量审批
+const handleBatchApproval = () => {
   curAction.value = Object.assign({}, {
     ids: [] as number[],
     status: '' as IApplyStatus,
@@ -865,14 +895,15 @@ const handleClearSelection = () => {
 };
 
 const handleClearFilter = () => {
-  filterData.value = {
+  filterData.value = Object.assign(filterData.value ?? {}, {
     keyword: '',
     bk_app_code: '',
-    applied_by: '',
+    applied_by: [],
     gateway_id: '',
     mcp_server_id: '',
     grant_dimension: '',
-  };
+  });
+  basicFormRef.value?.handleResetFormData();
   handleClearSelection();
 };
 
@@ -884,6 +915,7 @@ const getRowClass = ({ row }: { row: TableRowData }) => {
 };
 
 watch(() => filterData, () => {
+  tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';
   getList();
 }, { deep: true });
 
@@ -900,10 +932,13 @@ defineExpose({
 .personal-workbench-table {
   box-sizing: border-box;
 
-  .header-form {
+  &.pending {
 
-    .bk-form-item {
-      margin-bottom: 16px;
+    :deep(.t-table__th-status) {
+
+      .t-table__filter-icon-wrap {
+        display: none;
+      }
     }
   }
 }
@@ -919,6 +954,13 @@ defineExpose({
     height: 42px !important;
     padding: 0 !important;
     cursor: default !important;
+  }
+}
+
+:deep(.is-exist-member) {
+
+  .tag-input-item {
+    display: none !important;
   }
 }
  </style>

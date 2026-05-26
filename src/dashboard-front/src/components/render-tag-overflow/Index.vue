@@ -1,7 +1,7 @@
 /*
 * TencentBlueKing is pleased to support the open source community by making
 * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
-* Copyright (C) 2025 Tencent. All rights reserved.
+* Copyright (C) 2026 Tencent. All rights reserved.
 * Licensed under the MIT License (the "License"); you may not use this file except
 * in compliance with the License. You may obtain a copy of the License at
 *
@@ -53,7 +53,7 @@
               :title="item"
               class="render-row-item mb-4px max-w-400px"
             >
-              {{ item }}
+              {{ renderDisplayName(item) }}
             </BkTag>
           </div>
         </slot>
@@ -62,19 +62,40 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
+import { useFeatureFlag } from '@/stores';
+
 interface IProps {
   data: string[]
   popoverProps?: Record<string, any>
+  isMember?: boolean
 }
 
-const { data, popoverProps = {} } = defineProps<IProps>();
+const {
+  data,
+  popoverProps = {},
+  // 是否是人员
+  isMember = false,
+} = defineProps<IProps>();
+
 const emits = defineEmits<{ click: [void] }>();
 
+const featureFlagStore = useFeatureFlag();
+
+const isEnableDisplayName = computed(() => featureFlagStore.isEnableDisplayName && isMember);
 // 只显示第一个
 const visibleData = computed(() => data?.length > 1 ? data.slice(0, 1) : data);
 // 溢出的全部收起
 const overflowData = computed(() => data?.length > 1 ? data.slice(1) : []);
+
+// 支持单多租户人员渲染
+const renderDisplayName = (name: string) => {
+  if (isEnableDisplayName.value) {
+    return <bk-user-display-name user-id={name} />;
+  }
+
+  return name;
+};
 </script>
 
 <style lang="scss" scoped>

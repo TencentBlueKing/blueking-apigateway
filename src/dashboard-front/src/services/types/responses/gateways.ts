@@ -365,6 +365,9 @@ export interface IMCPServerAppPermissionApplyListOutput {
   bk_app_code: string
   applied_by: string
   applied_time: string
+  created_time?: string
+  handled_by?: string
+  handled_time?: string
   status: string
   itsm_ticket_id: string
   itsm_ticket_url: string

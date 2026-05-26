@@ -21,6 +21,8 @@ import router from '@/router';
 
 export const useAccessLog = defineStore('useAccessLog', {
   state: () => ({
+    // 是否展示今天选项
+    isEnabledToday: ['MCPServerObservability', 'MyApply', 'MyPending', 'MyHandled'].includes(router?.currentRoute?.value?.name as string),
     // 日期选择快捷方式
     baseDatepickerShortcuts: [
       {
@@ -469,9 +471,8 @@ export const useAccessLog = defineStore('useAccessLog', {
             return [start, end];
           },
         };
-
         // 满足路由条件则添加“今天”
-        if (routeName && ['MCPServerObservability'].includes(routeName)) {
+        if (routeName && state.isEnabledToday) {
           return [todayShortcut, ...state.baseDatepickerShortcuts];
         }
         return [...state.baseDatepickerShortcuts];
