@@ -106,7 +106,7 @@
             :error="error"
             :empty-type="tableEmptyType"
             :no-search-fields="noSearchFields"
-            :query-list-params="params"
+            :query-list-params="requestParams"
             @clear-filter="handlerClearFilter"
             @refresh="handleRefresh"
           />
@@ -396,12 +396,12 @@ const localeConfig = computed(() => locale.value === 'zh-cn' ? cnConfig : enConf
 
 /**
  * 请求表格数据
- * @param {Object} params 请求数据
+ * @param {Object} requestParams 请求数据
  * @param {Boolean} loading 加载状态
  * @param {Object | Null} error 错误信息
  * @param run 手动触发请求的函数
  */
-const { params, loading, error, refresh, run } = useRequest(apiMethod, {
+const { params: requestParams, loading, error, refresh, run } = useRequest(apiMethod, {
   manual: true,
   // 是否立即执行请求
   // @ts-ignore
@@ -421,7 +421,7 @@ const { params, loading, error, refresh, run } = useRequest(apiMethod, {
         };
       });
     }
-    paramsData.value = { ...params.value?.[0] };
+    paramsData.value = { ...requestParams.value?.[0] };
     pagination.value!.total = response?.count ?? 0;
     tableData.value = cloneDeep(results);
     setTimeout(() => {

@@ -21,18 +21,6 @@ import { t } from '@/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: 'my-pending',
-    name: 'MyPending',
-    component: () => import('@/views/personal-workbench/my-pending/Index.vue'),
-    props: true,
-    meta: {
-      title: t('我的代办'),
-      matchRoute: 'MyPending',
-      topMenu: 'PersonalWorkbench',
-      hideHeaderBorder: true,
-    },
-  },
-  {
     path: 'my-apply',
     name: 'MyApply',
     component: () => import('@/views/personal-workbench/my-apply/Index.vue'),
@@ -44,6 +32,19 @@ const routes: RouteRecordRaw[] = [
       hideHeaderBorder: true,
     },
   },
+  {
+    path: 'my-pending',
+    name: 'MyPending',
+    component: () => import('@/views/personal-workbench/my-pending/Index.vue'),
+    props: true,
+    meta: {
+      title: t('我的待办'),
+      matchRoute: 'MyPending',
+      topMenu: 'PersonalWorkbench',
+      hideHeaderBorder: true,
+    },
+  },
+
   {
     path: 'my-handled',
     name: 'MyHandled',

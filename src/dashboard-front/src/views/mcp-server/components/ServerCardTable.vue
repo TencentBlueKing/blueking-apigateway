@@ -56,8 +56,8 @@ import {
 import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 type IMCPServer = IMCPServerWithUIState | TableRowData;
 
