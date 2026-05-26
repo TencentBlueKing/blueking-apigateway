@@ -65,28 +65,18 @@ class ReleaseHandler:
         return ReleaseHistoryStatusEnum.FAILURE.value
 
     @staticmethod
-    def release(*, gateway, stage, resource_version, username: str, comment: str):
-        return release(
-            gateway=gateway,
-            stage_id=stage.id,
-            resource_version_id=resource_version.id,
-            comment=comment,
-            username=username,
-        )
-
-    @classmethod
-    def release_to_stages(cls, *, gateway, resource_version, stages, username: str, comment: str):
+    def release_to_stages(gateway, resource_version_id: int, stage_ids: List[int], username: str, comment: str):
         try:
-            for stage in stages:
+            for stage_id in stage_ids:
                 with Lock(
-                    f"{gateway.id}_{stage.id}",
+                    f"{gateway.id}_{stage_id}",
                     timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                     try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
                 ):
-                    cls.release(
+                    release(
                         gateway=gateway,
-                        stage=stage,
-                        resource_version=resource_version,
+                        stage_id=stage_id,
+                        resource_version_id=resource_version_id,
                         username=username,
                         comment=comment,
                     )

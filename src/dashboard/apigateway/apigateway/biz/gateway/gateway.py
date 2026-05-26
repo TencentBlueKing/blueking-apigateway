@@ -224,6 +224,7 @@ class GatewayHandler:
         # 用于标识创建网关的来源
         source: Optional[CallSourceTypeEnum] = None,
     ):
+        # 1. save gateway auth_config
         GatewayHandler.save_auth_config(
             gateway.id,
             user_auth_type=user_auth_type,
@@ -234,13 +235,20 @@ class GatewayHandler:
             allow_delete_sensitive_params=allow_delete_sensitive_params,
         )
 
+        # 2. save jwt
         GatewayJWTHandler.create_jwt(gateway)
+
+        # 3. create default stage
         StageHandler().create_default(gateway, created_by=username, source=source)
+
+        # 4. create default alarm-strategy
         create_default_alarm_strategy(gateway, created_by=username)
 
+        # 5. create related app
         if related_app_code:
             GatewayRelatedAppHandler.add_related_app(gateway.id, related_app_code)
 
+        # 6. update gateway app binding
         if app_codes_to_binding is not None:
             GatewayAppBindingHandler.update_gateway_app_bindings(gateway, app_codes_to_binding)
 

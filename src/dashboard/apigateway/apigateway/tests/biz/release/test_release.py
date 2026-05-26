@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from ddf import G
 
@@ -28,7 +28,7 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ResourceVersion, Stage
+from apigateway.core.models import PublishEvent, Release, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -48,36 +48,51 @@ class TestReleaseHandler:
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
 
     def test_release_to_stages_calls_release_once_per_stage(self, fake_gateway, mocker):
-        stages = [G(Stage, gateway=fake_gateway, name="prod"), G(Stage, gateway=fake_gateway, name="test")]
-        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        stage_ids = [101, 102]
+        resource_version_id = 201
         mocker.patch("apigateway.biz.release.release.Lock")
-        mocked_release = mocker.patch("apigateway.biz.release.release.ReleaseHandler.release")
+        mocked_release = mocker.patch("apigateway.biz.release.release.release")
 
         ok, message = ReleaseHandler.release_to_stages(
             gateway=fake_gateway,
-            resource_version=resource_version,
-            stages=stages,
+            resource_version_id=resource_version_id,
+            stage_ids=stage_ids,
             username="admin",
             comment="release",
         )
 
         assert ok is True
         assert message == ""
-        assert mocked_release.call_count == 2
+        mocked_release.assert_has_calls(
+            [
+                call(
+                    gateway=fake_gateway,
+                    stage_id=stage_ids[0],
+                    resource_version_id=resource_version_id,
+                    username="admin",
+                    comment="release",
+                ),
+                call(
+                    gateway=fake_gateway,
+                    stage_id=stage_ids[1],
+                    resource_version_id=resource_version_id,
+                    username="admin",
+                    comment="release",
+                ),
+            ]
+        )
 
     def test_release_to_stages_returns_error_message(self, fake_gateway, mocker):
-        stage = G(Stage, gateway=fake_gateway, name="prod")
-        resource_version = G(ResourceVersion, gateway=fake_gateway)
         mocker.patch("apigateway.biz.release.release.Lock")
         mocker.patch(
-            "apigateway.biz.release.release.ReleaseHandler.release",
+            "apigateway.biz.release.release.release",
             side_effect=ReleaseError("release failed"),
         )
 
         ok, message = ReleaseHandler.release_to_stages(
             gateway=fake_gateway,
-            resource_version=resource_version,
-            stages=[stage],
+            resource_version_id=201,
+            stage_ids=[101],
             username="admin",
             comment="release",
         )

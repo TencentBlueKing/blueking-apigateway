@@ -586,13 +586,10 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
-        stage_id_to_stage = {stage.id: stage for stage in Stage.objects.filter(id__in=stage_ids)}
-        stages = [stage_id_to_stage[stage_id] for stage_id in stage_ids]
-        resource_version_obj = ResourceVersion.objects.get(id=data["resource_version_id"])
         ok, message = ReleaseHandler.release_to_stages(
             gateway=request.gateway,
-            resource_version=resource_version_obj,
-            stages=stages,
+            resource_version_id=data["resource_version_id"],
+            stage_ids=stage_ids,
             username=request.user.username,
             comment=data["comment"],
         )
