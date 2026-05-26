@@ -119,3 +119,24 @@ class SDKHelper:
             GatewaySDKHandler.mark_is_recommended(instance)
 
         return SDKInfo(context=context, sdk=instance)
+
+
+def generate_sdks_for_resource_version(
+    *, resource_version: ResourceVersion, languages: list[str], version: str | None
+):
+    results = []
+    with SDKHelper(resource_version=resource_version) as helper:
+        for language in languages:
+            info = helper.create(
+                language=language,
+                version=version or resource_version.version,
+                operator=None,
+            )
+            results.append(
+                {
+                    "name": info.sdk.name,
+                    "version": info.sdk.version_number,
+                    "url": info.sdk.url,
+                }
+            )
+    return results

@@ -62,3 +62,13 @@ class GatewayRelatedAppHandler:
 
         if app_codes_to_delete:
             GatewayRelatedApp.objects.filter(gateway=gateway, bk_app_code__in=app_codes_to_delete).delete()
+
+
+def sync_related_apps(*, gateway: Gateway, bk_app_codes: List[str], username: str) -> List[str]:
+    related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(gateway.id)
+    app_codes_to_add = set(bk_app_codes) - set(related_app_codes)
+
+    for bk_app_code in app_codes_to_add:
+        GatewayRelatedAppHandler.add_related_app(gateway.id, bk_app_code)
+
+    return list(app_codes_to_add)

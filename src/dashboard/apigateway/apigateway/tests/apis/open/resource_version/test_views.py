@@ -16,12 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest.mock import MagicMock
-
 import pytest
 from ddf import G
 
-from apigateway.core.models import ResourceVersion
+from apigateway.core.models import ResourceVersion, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 pytestmark = pytest.mark.django_db
@@ -89,17 +87,18 @@ class TestResourceVersionReleaseApi:
         )
 
     def test_release(self, faker, request_view, fake_admin_user, fake_gateway, mocker):
-        G(ResourceVersion, gateway=fake_gateway)
-        mocker.patch(
-            "apigateway.biz.gateway.releaser.GatewayReleaser.release",
-            return_value=None,
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        stage_1 = G(Stage, gateway=fake_gateway)
+        stage_2 = G(Stage, gateway=fake_gateway)
+        release_to_stages = mocker.patch(
+            "apigateway.apis.open.resource_version.views.ReleaseHandler.release_to_stages"
         )
         mocker.patch(
             "apigateway.apis.open.resource_version.serializers.ReleaseV1InputSLZ.to_internal_value",
             return_value={
                 "gateway": fake_gateway,
-                "stage_ids": [1, 2],
-                "resource_version_id": 1,
+                "stage_ids": [stage_2.id, stage_1.id],
+                "resource_version_id": resource_version.id,
                 "comment": "",
             },
         )
@@ -112,10 +111,6 @@ class TestResourceVersionReleaseApi:
                 "version": faker.pystr(),
             },
         )
-
-        mocker.patch("apigateway.apis.open.resource_version.views.Lock", return_value=MagicMock())
-
-        mocker.patch("apigateway.apis.open.resource_version.views.release")
 
         response = request_view(
             "POST",
@@ -133,3 +128,5 @@ class TestResourceVersionReleaseApi:
 
         result = get_response_json(response)
         assert result["code"] == 0
+        release_to_stages.assert_called_once()
+        assert [stage.id for stage in release_to_stages.call_args.kwargs["stages"]] == [stage_2.id, stage_1.id]

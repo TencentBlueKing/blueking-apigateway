@@ -17,7 +17,7 @@
 #
 from .gateway import GatewayHandler  # noqa
 from .app_binding import GatewayAppBindingHandler  # noqa
-from .related_app import GatewayRelatedAppHandler  # noqa
+from .related_app import GatewayRelatedAppHandler, sync_related_apps  # noqa
 from .type import GatewayTypeHandler  # noqa
 from .saver import GatewayData, GatewaySaver  # noqa
 from .label import GatewayLabelHandler  # noqa

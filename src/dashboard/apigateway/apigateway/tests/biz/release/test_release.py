@@ -27,7 +27,7 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, Stage
+from apigateway.core.models import PublishEvent, Release, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
 
 
@@ -45,6 +45,22 @@ class TestReleaseHandler:
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value
         fake_gateway.save()
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
+
+    def test_release_to_stages_calls_release_once_per_stage(self, fake_gateway, mocker):
+        stages = [G(Stage, gateway=fake_gateway, name="prod"), G(Stage, gateway=fake_gateway, name="test")]
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocked_release = mocker.patch("apigateway.biz.release.release.ReleaseHandler.release")
+
+        ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version=resource_version,
+            stages=stages,
+            username="admin",
+            comment="release",
+        )
+
+        assert mocked_release.call_count == 2
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (

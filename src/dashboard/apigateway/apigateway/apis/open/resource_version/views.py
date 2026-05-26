@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -27,12 +26,12 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.gateway import ReleaseError, release
+from apigateway.biz.gateway import ReleaseError
+from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
-from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 from .serializers import (
@@ -119,29 +118,24 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        gateway_id = data["gateway"].id
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
-        for stage_id in data["stage_ids"]:
-            try:
-                with Lock(
-                    f"{gateway_id}_{stage_id}",
-                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
-                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
-                ):
-                    # do release, will record audit log
-                    release(
-                        gateway=request.gateway,
-                        stage_id=stage_id,
-                        resource_version_id=data["resource_version_id"],
-                        comment=data["comment"],
-                        username=request.user.username,
-                    )
-            except LockTimeout as err:
-                return V1FailJsonResponse(str(err))
-            except ReleaseError as err:
-                return V1FailJsonResponse(str(err))
+        stage_id_to_stage = {stage.id: stage for stage in Stage.objects.filter(id__in=stage_ids)}
+        stages = [stage_id_to_stage[stage_id] for stage_id in stage_ids]
+        resource_version_obj = ResourceVersion.objects.get(id=data["resource_version_id"])
+        try:
+            ReleaseHandler.release_to_stages(
+                gateway=request.gateway,
+                resource_version=resource_version_obj,
+                stages=stages,
+                username=request.user.username,
+                comment=data["comment"],
+            )
+        except LockTimeout as err:
+            return V1FailJsonResponse(str(err))
+        except ReleaseError as err:
+            return V1FailJsonResponse(str(err))
 
         return V1OKJsonResponse(
             "OK",

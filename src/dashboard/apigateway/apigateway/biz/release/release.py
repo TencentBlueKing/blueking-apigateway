@@ -21,6 +21,8 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List
 
+from django.conf import settings
+
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
     GatewayStatusEnum,
@@ -30,6 +32,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.utils.redis_utils import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +60,38 @@ class ReleaseHandler:
             return event.get_release_history_status()
 
         return ReleaseHistoryStatusEnum.FAILURE.value
+
+    @staticmethod
+    def release(*, gateway, stage, resource_version, username: str, comment: str):
+        from apigateway.biz.gateway.releaser import release  # noqa: PLC0415
+
+        return release(
+            gateway=gateway,
+            stage_id=stage.id,
+            resource_version_id=resource_version.id,
+            comment=comment,
+            username=username,
+        )
+
+    @classmethod
+    def release_to_stages(cls, *, gateway, resource_version, stages, username: str, comment: str):
+        results = []
+        for stage in stages:
+            with Lock(
+                f"{gateway.id}_{stage.id}",
+                timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+            ):
+                results.append(
+                    cls.release(
+                        gateway=gateway,
+                        stage=stage,
+                        resource_version=resource_version,
+                        username=username,
+                        comment=comment,
+                    )
+                )
+        return results
 
     @staticmethod
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:

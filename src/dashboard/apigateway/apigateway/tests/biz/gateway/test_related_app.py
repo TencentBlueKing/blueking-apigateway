@@ -19,7 +19,7 @@ import pytest
 from ddf import G
 from django.conf import settings
 
-from apigateway.biz.gateway import GatewayRelatedAppHandler
+from apigateway.biz.gateway import GatewayRelatedAppHandler, sync_related_apps
 from apigateway.common.error_codes import APIError
 from apigateway.core.models import GatewayRelatedApp
 
@@ -68,3 +68,15 @@ class TestGatewayRelatedAppHandler:
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, [])
         assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 0
+
+    def test_sync_related_apps_adds_only_missing_codes(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+
+        added_app_codes = sync_related_apps(
+            gateway=fake_gateway,
+            bk_app_codes=["app1", "app2"],
+            username="admin",
+        )
+
+        assert added_app_codes == ["app2"]
+        assert sorted(GatewayRelatedAppHandler.get_related_app_codes(fake_gateway.id)) == ["app1", "app2"]

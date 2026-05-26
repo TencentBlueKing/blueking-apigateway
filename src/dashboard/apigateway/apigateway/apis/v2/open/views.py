@@ -53,7 +53,6 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource import ResourceLabelHandler
@@ -139,7 +138,7 @@ class GatewayListApi(generics.ListAPIView):
         fuzzy = slz.validated_data.get("fuzzy")
         keyword = slz.validated_data.get("keyword")
 
-        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
         tenant_id = None
@@ -157,12 +156,6 @@ class GatewayListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
-        # 过滤出用户类型为指定类型的网关
-        all_gateway_ids = list(queryset.values_list("id", flat=True))
-        # 过滤出已发布的网关 ID
-        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(all_gateway_ids)
-
-        queryset = queryset.filter(id__in=released_gateway_ids)
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 

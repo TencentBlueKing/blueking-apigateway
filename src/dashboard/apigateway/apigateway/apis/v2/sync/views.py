@@ -26,7 +26,6 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from pydantic import TypeAdapter
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
@@ -43,7 +42,7 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
-from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
+from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler, ReleaseError, sync_related_apps
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
@@ -54,7 +53,7 @@ from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
-from apigateway.biz.sdk.helper import SDKHelper
+from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
@@ -62,7 +61,6 @@ from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnu
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.exception import LockTimeout
-from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 from . import serializers
@@ -129,14 +127,14 @@ class GatewaySyncApi(generics.CreateAPIView):
             data_plane_names=slz.validated_data.get("data_planes"),
         )
 
-        saver = GatewaySaver(
-            id=gateway and gateway.id,
-            data=TypeAdapter(GatewayData).validate_python(slz.validated_data),
+        gateway = GatewayHandler.sync_gateway(
+            gateway=gateway,
+            data=slz.validated_data,
             bk_app_code=request.app.app_code,
             username=username,
+            source=None,
             data_plane_ids=data_plane_ids,
         )
-        gateway = saver.save()
 
         # record audit log
         Auditor.record_gateway_op_success(
@@ -348,9 +346,11 @@ class GatewayRelatedAppAddApi(generics.CreateAPIView):
                     )
 
         exist_related_app_codes = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
-        missing_app_codes = set(input_app_codes) - set(exist_related_app_codes)
-        for bk_app_code in missing_app_codes:
-            GatewayRelatedAppHandler.add_related_app(request.gateway.id, bk_app_code)
+        sync_related_apps(
+            gateway=request.gateway,
+            bk_app_codes=input_app_codes,
+            username=request.user.username,
+        )
 
         data_after = GatewayRelatedAppHandler.get_related_app_codes(request.gateway.id)
 
@@ -585,29 +585,24 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        gateway_id = data["gateway"].id
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
-        for stage_id in data["stage_ids"]:
-            try:
-                with Lock(
-                    f"{gateway_id}_{stage_id}",
-                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
-                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
-                ):
-                    # do release, will record audit log
-                    release(
-                        gateway=request.gateway,
-                        stage_id=stage_id,
-                        resource_version_id=data["resource_version_id"],
-                        comment=data["comment"],
-                        username=request.user.username,
-                    )
-            except LockTimeout as err:
-                return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
-            except ReleaseError as err:
-                return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
+        stage_id_to_stage = {stage.id: stage for stage in Stage.objects.filter(id__in=stage_ids)}
+        stages = [stage_id_to_stage[stage_id] for stage_id in stage_ids]
+        resource_version_obj = ResourceVersion.objects.get(id=data["resource_version_id"])
+        try:
+            ReleaseHandler.release_to_stages(
+                gateway=request.gateway,
+                resource_version=resource_version_obj,
+                stages=stages,
+                username=request.user.username,
+                comment=data["comment"],
+            )
+        except LockTimeout as err:
+            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
+        except ReleaseError as err:
+            return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
         output_slz = ReleaseOutputSLZ(
             {
                 "version": resource_version["version"],
@@ -637,42 +632,31 @@ class SDKGenerateApi(generics.CreateAPIView):
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
+        data = slz.data
         resource_version = get_object_or_404(
-            ResourceVersion, gateway=request.gateway, version=slz.data["resource_version"]
+            ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        results = []
-        with SDKHelper(resource_version=resource_version) as helper:
-            for language in slz.data["languages"]:
-                try:
-                    info = helper.create(
-                        language=language,
-                        version=slz.data["version"] or resource_version.version,
-                        operator=None,
-                    )
-                    results.append(
-                        {
-                            "name": info.sdk.name,
-                            "version": info.sdk.version_number,
-                            "url": info.sdk.url,
-                        }
-                    )
-                except exceptions.ResourcesIsEmpty:
-                    raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
-                except exceptions.GenerateError:
-                    raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
-                except exceptions.PackError:
-                    raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
-                except exceptions.DistributeError:
-                    raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
-                except exceptions.TooManySDKVersion as err:
-                    raise error_codes.INTERNAL.format(
-                        _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
-                    )
-                except Exception:  # pylint: disable=broad-except
-                    logger.exception(
-                        "create sdk failed for gateway %s, release %s", gateway_name, resource_version.version
-                    )
-                    raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
+        try:
+            results = generate_sdks_for_resource_version(
+                resource_version=resource_version,
+                languages=data["languages"],
+                version=data["version"],
+            )
+        except exceptions.ResourcesIsEmpty:
+            raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
+        except exceptions.GenerateError:
+            raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
+        except exceptions.PackError:
+            raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
+        except exceptions.DistributeError:
+            raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
+        except exceptions.TooManySDKVersion as err:
+            raise error_codes.INTERNAL.format(
+                _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
+            )
+        except Exception:  # pylint: disable=broad-except
+            logger.exception("create sdk failed for gateway %s, release %s", gateway_name, resource_version.version)
+            raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
 
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"results": results})
 

@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
+from pydantic import TypeAdapter
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
@@ -40,6 +41,7 @@ from apigateway.core.constants import (
     ContextScopeTypeEnum,
     GatewayOperationSourceEnum,
     GatewayOperationStatusEnum,
+    GatewayStatusEnum,
     GatewayTypeEnum,
 )
 from apigateway.core.gateway_auth import GatewayAuthConfig
@@ -102,6 +104,35 @@ class GatewayHandler:
             )
 
         return gateway_id_to_stages
+
+    @staticmethod
+    def list_public_released_gateways():
+        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        gateway_ids = list(queryset.values_list("id", flat=True))
+        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(gateway_ids)
+        return queryset.filter(id__in=released_gateway_ids)
+
+    @staticmethod
+    def sync_gateway(
+        *,
+        gateway: Optional[Gateway],
+        data: dict,
+        bk_app_code: str,
+        username: str,
+        source: Optional[CallSourceTypeEnum],
+        data_plane_ids: Optional[List[int]],
+    ) -> Gateway:
+        from .saver import GatewayData, GatewaySaver  # noqa: PLC0415
+
+        saver = GatewaySaver(
+            id=gateway and gateway.id,
+            data=TypeAdapter(GatewayData).validate_python(data),
+            bk_app_code=bk_app_code,
+            username=username,
+            source=source,
+            data_plane_ids=data_plane_ids,
+        )
+        return saver.save()
 
     @staticmethod
     def get_gateway_auth_config(gateway_id: int) -> dict:
