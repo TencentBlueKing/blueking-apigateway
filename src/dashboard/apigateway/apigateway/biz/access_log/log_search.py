@@ -48,6 +48,7 @@ class LogSearchClient:
         time_start: Optional[int] = None,
         time_end: Optional[int] = None,
         time_range: Optional[int] = None,
+        output_fields: Optional[List[str]] = None,
     ):
         self._gateway_id = gateway_id
         self._stage_name = stage_name
@@ -57,6 +58,7 @@ class LogSearchClient:
         self._query_string = query
         self._include_conditions = include_conditions
         self._exclude_conditions = exclude_conditions
+        self._output_fields = output_fields or ES_OUTPUT_FIELDS
 
         self._smart_time_range: Optional[SmartTimeRange] = None
 
@@ -145,7 +147,7 @@ class LogSearchClient:
 
     def _build_logs_search(self, offset: int = 0, limit: Optional[int] = None, order: Optional[bool] = None) -> Search:
         s = self._build_base_search(order=order)
-        s = s.source(fields=ES_OUTPUT_FIELDS)
+        s = s.source(fields=self._output_fields)
         if limit is None:
             return s[offset:]
         return s[offset : offset + limit]
