@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-import importlib
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set
 
@@ -179,6 +178,9 @@ class ResourceVersionHandler:
         data: Dict[str, Any],
         username: str = "",
     ) -> ResourceVersion:
+        # Local import avoids an import cycle through biz.resource.importer -> biz.gateway.
+        from apigateway.biz.resource.importer.openapi import OpenAPIExportManager  # noqa: PLC0415
+
         resource_version = cls.create_resource_version(gateway, data, username)
 
         if ResourceDoc.objects.filter(gateway=gateway).exists():
@@ -188,8 +190,7 @@ class ResourceVersionHandler:
                 data=ResourceDocVersionHandler().make_version(gateway.id),
             )
 
-        openapi_module = importlib.import_module("apigateway.biz.resource.importer.openapi")
-        exporter = openapi_module.OpenAPIExportManager(
+        exporter = OpenAPIExportManager(
             api_version=resource_version.version,
             title="the openapi of %s" % gateway.name,
         )
