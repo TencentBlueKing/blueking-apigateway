@@ -22,7 +22,6 @@ from typing import Any, Dict, List, Optional, Set
 
 from cachetools import TTLCache, cached
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import (
@@ -43,10 +42,13 @@ from apigateway.biz.resource import (
     ResourceOpenAPISchemaVersionHandler,
 )
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
-from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
-from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
+from apigateway.service.resource_version_schema import (
+    get_resource_id_to_schema_by_resource_version,
+    get_resource_names_set,
+    get_resource_schema,
+)
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -278,17 +280,7 @@ class ResourceVersionHandler:
         """
         获取指定版本的资源对应的api schema
         """
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
-            resource_version_id=resource_version_id
-        ).first()
-        if resources_version_schema is None:
-            return {}
-        # 筛选资源数据
-        for schema_info in resources_version_schema.schema:
-            schema = schema_info["schema"]
-            if resource_id == schema_info["resource_id"]:
-                return schema
-        return {}
+        return get_resource_schema(resource_version_id, resource_id)
 
     @staticmethod
     def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
@@ -347,12 +339,7 @@ class ResourceVersionHandler:
             resource_version_id (int): 资源版本 ID
             raise_exception (bool, optional): 是否抛出异常, 如果资源版本不存在, 则抛出异常. 默认 False
         """
-        resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
-        if not resource_version:
-            if raise_exception:
-                raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
-            return set()
-        return {resource["name"] for resource in resource_version.data}
+        return get_resource_names_set(resource_version_id, raise_exception)
 
     @staticmethod
     def is_resource_version_referenced(resource_version_id: int) -> bool:

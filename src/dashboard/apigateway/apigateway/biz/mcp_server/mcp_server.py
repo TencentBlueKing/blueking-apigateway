@@ -52,7 +52,6 @@ from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import UserCredentials
@@ -61,6 +60,11 @@ from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageS
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
+from apigateway.service.resource_version_schema import (
+    get_resource_id_to_schema_by_resource_version,
+    get_resource_names_set,
+    get_resource_schema,
+)
 from apigateway.utils.time import NeverExpiresTime
 
 logger = logging.getLogger(__name__)
@@ -112,7 +116,7 @@ class MCPServerHandler:
             raise error_codes.FAILED_PRECONDITION.format(
                 _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
             )
-        return ResourceVersionHandler.get_resource_names_set(release.resource_version.id)
+        return get_resource_names_set(release.resource_version.id)
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
@@ -146,7 +150,7 @@ class MCPServerHandler:
             .first()
         )
         # 查询哪些资源有配置对应的 schema
-        schema = ResourceVersionHandler.get_resource_schema(
+        schema = get_resource_schema(
             resource_version_id,
             resource_data.id,
         )
@@ -784,9 +788,7 @@ class MCPServerHandler:
             stage=instance.stage,
         ).first()
         if release:
-            resource_schema_map = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-                release.resource_version_id
-            )
+            resource_schema_map = get_resource_id_to_schema_by_resource_version(release.resource_version_id)
 
         categories = [
             {"name": cat.name, "display_name": cat.display_name} for cat in instance.categories.filter(is_active=True)

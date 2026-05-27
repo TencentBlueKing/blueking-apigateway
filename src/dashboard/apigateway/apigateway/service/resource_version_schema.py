@@ -1,4 +1,24 @@
+from typing import Set
+
+from django.utils.translation import gettext_lazy as _
+
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.common.error_codes import error_codes
+from apigateway.core.models import ResourceVersion
+
+
+def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
+    resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
+        resource_version_id=resource_version_id
+    ).first()
+    if resources_version_schema is None:
+        return {}
+
+    for schema_info in resources_version_schema.schema:
+        if resource_id == schema_info["resource_id"]:
+            return schema_info["schema"]
+
+    return {}
 
 
 def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
@@ -9,3 +29,13 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
         return {}
 
     return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
+
+
+def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
+    resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
+    if not resource_version:
+        if raise_exception:
+            raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
+        return set()
+
+    return {resource["name"] for resource in resource_version.data}

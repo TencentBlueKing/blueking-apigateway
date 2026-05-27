@@ -18,7 +18,36 @@
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
-from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
+from apigateway.service.resource_version_schema import (
+    get_resource_id_to_schema_by_resource_version,
+    get_resource_names_set,
+    get_resource_schema,
+)
+
+
+def test_get_resource_schema_returns_empty_without_schema(fake_resource_version):
+    assert get_resource_schema(fake_resource_version.id, resource_id=1) == {}
+
+
+def test_get_resource_schema_returns_matching_schema(fake_resource_version):
+    G(
+        OpenAPIResourceSchemaVersion,
+        resource_version=fake_resource_version,
+        schema=[
+            {
+                "resource_id": 1,
+                "schema": {"parameters": [{"name": "foo"}]},
+            },
+            {
+                "resource_id": 2,
+                "schema": {"requestBody": {"content": {}}},
+            },
+        ],
+    )
+
+    assert get_resource_schema(fake_resource_version.id, resource_id=2) == {
+        "requestBody": {"content": {}},
+    }
 
 
 def test_get_resource_id_to_schema_by_resource_version_returns_empty_without_schema(fake_resource_version):
@@ -44,4 +73,14 @@ def test_get_resource_id_to_schema_by_resource_version_returns_schema_map(fake_r
     assert get_resource_id_to_schema_by_resource_version(fake_resource_version.id) == {
         1: {"parameters": [{"name": "foo"}]},
         2: {"requestBody": {"content": {}}},
+    }
+
+
+def test_get_resource_names_set_returns_empty_without_resource_version():
+    assert get_resource_names_set(resource_version_id=0) == set()
+
+
+def test_get_resource_names_set_returns_names(fake_resource_version):
+    assert get_resource_names_set(fake_resource_version.id) == {
+        resource["name"] for resource in fake_resource_version.data
     }

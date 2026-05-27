@@ -400,3 +400,14 @@ source_modules = [
 forbidden_modules = [
     "apigateway.biz.resource_version",
 ]
+
+[[tool.importlinter.contracts]]
+id="mcp-server-does-not-import-resource-version-biz"
+name="mcp-server-does-not-import-resource-version-biz"
+type="forbidden"
+source_modules = [
+    "apigateway.biz.mcp_server",
+]
+forbidden_modules = [
+    "apigateway.biz.resource_version",
+]
