@@ -17,7 +17,6 @@
 #
 import copy
 import logging
-import time
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -30,10 +29,9 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.service.release import DEFAULT_WAIT_RELEASE_TIMEOUT, wait_release_done
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_WAIT_RELEASE_TIMEOUT = 150
 
 
 class ReleaseHandler:
@@ -155,38 +153,7 @@ class ReleaseHandler:
 
     @staticmethod
     def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
-        """轮询等待指定发布完成，返回最终状态
-
-        Args:
-            release_history_id: 发布历史 ID
-            timeout: 超时时间（秒）
-
-        Returns:
-            最终发布状态（ReleaseHistoryStatusEnum 的值）
-        """
-        start_time = datetime.now().timestamp()
-        wait_times = 0
-        while True:
-            now = datetime.now().timestamp()
-            if now - start_time > timeout:
-                logger.warning(
-                    "wait_release_done timeout after %ds, release_history_id=%d",
-                    timeout,
-                    release_history_id,
-                )
-                return ReleaseHistoryStatusEnum.FAILURE.value
-
-            time.sleep(1 * wait_times)
-            wait_times += 1
-
-            event_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map([release_history_id])
-            latest_event = event_map.get(release_history_id)
-            if not latest_event:
-                continue
-
-            status = latest_event.get_release_history_status()
-            if status != ReleaseHistoryStatusEnum.DOING.value:
-                return status
+        return wait_release_done(release_history_id, timeout=timeout)
 
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:

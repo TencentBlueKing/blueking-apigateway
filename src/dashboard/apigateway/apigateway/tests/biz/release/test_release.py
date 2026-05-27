@@ -109,7 +109,7 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.service.release.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.SUCCESS.value
@@ -123,14 +123,14 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.FAILURE.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.service.release.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value
 
     def test_wait_release_done_timeout(self, fake_release_history):
         """超时返回 FAILURE"""
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.service.release.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id, timeout=0)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value
