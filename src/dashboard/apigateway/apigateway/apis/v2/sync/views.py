@@ -16,9 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
-from html import escape as html_escape
 
 from django.conf import settings
 from django.db import transaction
@@ -39,7 +37,6 @@ from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
-from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
@@ -47,11 +44,11 @@ from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, Gatewa
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
+from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
+from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
+from apigateway.biz.resource_doc.importer.parsers import ArchiveParser
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
@@ -223,63 +220,21 @@ class GatewayResourceSyncApi(generics.CreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        try:
-            openapi_manager = OpenAPIImportManager.load_from_content(
-                request.gateway,
-                slz.validated_data["content"],
-                need_delete_unspecified_resources=slz.validated_data["delete"],
-            )
-        except Exception as err:  # pylint: disable=broad-except
-            raise ValidationError(
-                {"content": _("导入内容为无效的 json/yaml 数据，{err}。").format(err=html_escape(str(err)))}
-            )
-
-        validate_err_list = openapi_manager.validate()
-        if len(validate_err_list) != 0:
-            error_dicts = [error.to_dict() for error in validate_err_list]
-            raise ValidationError(
-                {
-                    "content": _("validate err {err}。").format(
-                        err=json.dumps(error_dicts, ensure_ascii=False, indent=4)
-                    )
-                }
-            )
-
-        importer = ResourcesImporter.from_resources(
+        result = sync_openapi_resources_from_content(
             gateway=request.gateway,
-            resources=openapi_manager.get_resource_list(),
             username=request.user.username,
-            selected_resources=None,
-            need_delete_unspecified_resources=slz.validated_data["delete"],
+            content=slz.validated_data["content"],
+            delete_missing_resources=slz.validated_data["delete"],
+            doc_language=slz.validated_data.get("doc_language", ""),
         )
-        importer.import_resources()
-
-        # 如果生成文档还要再生成文档
-        if slz.validated_data.get("doc_language"):
-            parser = OpenAPIParser(gateway_id=request.gateway.id)
-            docs = parser.parse(
-                swagger=slz.validated_data["content"],
-                language=DocLanguageEnum(slz.validated_data["doc_language"]),
-            )
-            doc_importer = DocImporter(
-                gateway_id=request.gateway.id,
-            )
-            doc_importer.import_docs(docs=docs)
-
-        # 分析出已创建或更新的资源
-        added = []
-        updated = []
-        for resource_data in importer.get_selected_resource_data_list():
-            if resource_data.metadata.get("is_created"):
-                added.append({"id": resource_data.resource.id})
-            else:
-                updated.append({"id": resource_data.resource.id})
+        if not result.ok:
+            raise ValidationError({"content": _("{err}").format(err=result.message)})
 
         slz = ResourceSyncOutputSLZ(
             {
-                "added": added,
-                "updated": updated,
-                "deleted": importer.get_deleted_resources(),
+                "added": result.added,
+                "updated": result.updated,
+                "deleted": result.deleted,
             }
         )
         return OKJsonResponse(data=slz.data)
