@@ -22,7 +22,6 @@ from typing import Any, Dict, List, Optional
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_doc import ResourceDocHandler
-from apigateway.service.resource_doc import clear_unreleased_resource_doc
 
 
 class ResourceDocVersionHandler:
@@ -82,7 +81,3 @@ class ResourceDocVersionHandler:
 
         # 文档不可直接删除，资源删除导致的文档删除，在判断"是否需要创建资源版本"时校验
         return False
-
-    @staticmethod
-    def clear_unreleased_resource_doc(gateway_id: int) -> None:
-        clear_unreleased_resource_doc(gateway_id)

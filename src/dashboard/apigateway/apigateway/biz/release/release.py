@@ -29,7 +29,6 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory
-from apigateway.service.release import DEFAULT_WAIT_RELEASE_TIMEOUT, wait_release_done
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +149,6 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
-
-    @staticmethod
-    def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
-        return wait_release_done(release_history_id, timeout=timeout)
 
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:
