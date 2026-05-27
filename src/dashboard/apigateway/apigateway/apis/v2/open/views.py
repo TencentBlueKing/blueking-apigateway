@@ -33,11 +33,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.v2.mcp_server import (
-    build_mcp_server_list_context,
-    build_mcp_server_list_queryset,
-    validate_and_enrich_mcp_server_for_retrieve,
-)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
@@ -277,14 +272,15 @@ class MCPServerListApi(generics.ListAPIView):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = build_mcp_server_list_queryset(
+        queryset = MCPServerHandler.build_list_queryset(
             keyword=slz.validated_data.get("keyword"),
             category=slz.validated_data.get("category"),
             is_public=True,
+            order_by="-updated_time",
         )
 
         page = self.paginate_queryset(queryset)
-        context = build_mcp_server_list_context(page)
+        context = MCPServerHandler.build_list_context(page)
 
         # Add categories map
         context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
@@ -741,7 +737,7 @@ class MCPServerRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        context = validate_and_enrich_mcp_server_for_retrieve(
+        context = MCPServerHandler.build_retrieve_context(
             instance,
             check_public=True,
             username=request.user.username,

@@ -22,6 +22,8 @@ from unittest import mock
 from django.utils import timezone
 from django_dynamic_fixture import G
 
+import apigateway.apis.v2.inner.serializers as inner_serializers
+import apigateway.apis.v2.inner.views as inner_views
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
@@ -1298,3 +1300,12 @@ class TestMCPServerListApi:
         assert "tool_names" in mcp_data
         assert mcp_data["tool_names"] == ["res1", "custom_tool2"]
         assert mcp_data["resource_names"] == ["res1", "res2"]
+
+
+def test_v2_inner_does_not_import_shared_api_mcp_module():
+    shared_api_mcp_module = ".".join(["apigateway", "apis", "v2", "mcp_server"])
+
+    assert not any(getattr(obj, "__module__", "") == shared_api_mcp_module for obj in inner_views.__dict__.values())
+    assert not any(
+        getattr(obj, "__module__", "") == shared_api_mcp_module for obj in inner_serializers.__dict__.values()
+    )
