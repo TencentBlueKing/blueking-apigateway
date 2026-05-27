@@ -130,7 +130,6 @@ import {
 import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
-
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
@@ -659,7 +658,7 @@ const handleGatewayApproveReject = async () => {
     });
 
     handleClearSelection();
-    await getList();
+    getList();
   }
   catch (e: unknown) {
     const err = e as { error?: { message?: string } };

@@ -158,7 +158,6 @@ const handleCollapse = (value: boolean) => {
 
 const handleGoPage = (routeName: string) => {
   router.push({ name: routeName });
-  getMyAppliedData();
 };
 
 const handleBack = () => {
@@ -172,6 +171,7 @@ watch(
   (meta: typeof route.meta) => {
     activeMenuKey.value = meta.matchRoute as string;
     headerTitle.value = meta.title as string;
+    getMyAppliedData();
   },
   {
     immediate: true,

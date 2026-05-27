@@ -19,6 +19,11 @@
 import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
 import { getGatewayPendingList, getMcpPendingList } from '@/services/source/personal-workbench.ts';
 
+// tab切换选项
+const personalWorkbenchTab = ref<ITabKey>('gateway');
+// 我的待办是否存在需要审批数据
+const isExistApplied = ref(false);
+
 // 并行请求处理
 const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
   return payload?.status === 'fulfilled'
@@ -31,11 +36,6 @@ const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
 
 // 处理个人工作台公共数据部分
 export function usePersonalWorkbench() {
-  // tab切换选项
-  const personalWorkbenchTab = ref<ITabKey>('gateway');
-  // 我的待办是否存在需要审批数据
-  const isExistApplied = ref(false);
-
   // 获取我的待办需要审批数据
   const getMyAppliedData = async () => {
     const results = await Promise.allSettled([getGatewayPendingList(), getMcpPendingList()]);
@@ -46,13 +46,9 @@ export function usePersonalWorkbench() {
     }
   };
 
-  onUnmounted(() => {
-    personalWorkbenchTab.value = 'gateway';
-  });
-
   return {
     isExistApplied,
     personalWorkbenchTab,
     getMyAppliedData,
   };
-};
+}
