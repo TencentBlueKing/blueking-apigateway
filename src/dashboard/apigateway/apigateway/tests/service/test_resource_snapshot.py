@@ -25,6 +25,8 @@ from apigateway.service.resource_snapshot import (
     get_resource_labels,
     get_resource_labels_by_gateway,
     get_resource_labels_by_ids,
+    get_resource_updated_time,
+    get_resource_url_tmpl,
     get_resource_use_stage_vars,
     make_resource_schema_version,
 )
@@ -97,6 +99,20 @@ def test_get_resource_use_stage_vars():
         "in_path": ["region"],
         "in_host": ["region"],
     }
+
+
+def test_get_resource_updated_time(fake_resource):
+    assert get_resource_updated_time(fake_resource.gateway_id, fake_resource.name)
+
+
+def test_get_resource_updated_time_returns_empty_for_missing_resource(fake_gateway):
+    assert get_resource_updated_time(fake_gateway.id, "missing") == ""
+
+
+def test_get_resource_url_tmpl(settings):
+    settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{api_name}/{stage_name}{resource_path}"
+
+    assert get_resource_url_tmpl() == "http://bkapi.example.com/{api_name}/{stage_name}{resource_path}"
 
 
 def test_make_resource_schema_version(fake_resource_version, fake_resource_schema):

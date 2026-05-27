@@ -5,6 +5,8 @@ import operator
 from collections import defaultdict
 from typing import Dict, List, Optional
 
+from django.conf import settings
+
 from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
@@ -169,6 +171,17 @@ def get_last_resource_updated_time(gateway_id: int) -> Optional[datetime.datetim
         .values_list("updated_time", flat=True)
         .first()
     )
+
+
+def get_resource_updated_time(gateway_id: int, name: str) -> str:
+    resource = Resource.objects.filter(gateway_id=gateway_id, name=name).only("updated_time").first()
+    if not resource:
+        return ""
+    return time.format(resource.updated_time)
+
+
+def get_resource_url_tmpl() -> str:
+    return settings.API_RESOURCE_URL_TMPL
 
 
 def make_resource_schema_version(resource_version: ResourceVersion):

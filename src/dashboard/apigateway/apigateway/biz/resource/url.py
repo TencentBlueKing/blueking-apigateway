@@ -15,10 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
+from apigateway.service.resource_snapshot import get_resource_url_tmpl
 
 
 class ResourceURLHandler:
     @staticmethod
     def get_resource_url_tmpl() -> str:
-        return settings.API_RESOURCE_URL_TMPL
+        return get_resource_url_tmpl()

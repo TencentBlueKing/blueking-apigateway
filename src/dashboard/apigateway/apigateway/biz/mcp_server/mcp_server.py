@@ -50,7 +50,6 @@ from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
-from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
@@ -60,6 +59,7 @@ from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageS
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
+from apigateway.service.resource_snapshot import get_resource_labels_by_ids
 from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
@@ -101,7 +101,7 @@ class MCPServerHandler:
         ]
 
         label_ids = list({label_id for resource in tool_resources for label_id in resource.gateway_labels})
-        labels = ResourceLabelHandler.get_labels_by_ids(label_ids)
+        labels = get_resource_labels_by_ids(label_ids)
 
         return tool_resources, labels
 

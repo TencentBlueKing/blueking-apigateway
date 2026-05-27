@@ -403,6 +403,17 @@ forbidden_modules = [
 ]
 
 [[tool.importlinter.contracts]]
+id="mcp-server-does-not-import-resource-biz"
+name="mcp-server-does-not-import-resource-biz"
+type="forbidden"
+source_modules = [
+    "apigateway.biz.mcp_server",
+]
+forbidden_modules = [
+    "apigateway.biz.resource",
+]
+
+[[tool.importlinter.contracts]]
 id="resource-version-does-not-import-resource-biz"
 name="resource-version-does-not-import-resource-biz"
 type="forbidden"
