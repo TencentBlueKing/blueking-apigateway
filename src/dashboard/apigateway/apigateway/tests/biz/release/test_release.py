@@ -17,7 +17,6 @@
 #
 
 import datetime
-
 from unittest.mock import call, patch
 
 import pytest

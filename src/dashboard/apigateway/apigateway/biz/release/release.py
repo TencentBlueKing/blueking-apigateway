@@ -18,7 +18,7 @@
 import copy
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
 from django.db.models import Q
