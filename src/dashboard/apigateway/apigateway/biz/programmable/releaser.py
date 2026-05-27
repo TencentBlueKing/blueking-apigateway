@@ -19,6 +19,7 @@
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
+from django.db.models import Q
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
@@ -45,6 +46,40 @@ from apigateway.utils.django import get_model_dict
 
 
 class ProgrammableGatewayReleaser:
+    @staticmethod
+    def filter_deploy_history(
+        gateway,
+        query: str = "",
+        stage_id: Optional[int] = None,
+        created_by: str = "",
+        time_start=None,
+        time_end=None,
+        order_by: Optional[str] = None,
+        fuzzy: bool = False,
+    ):
+        queryset = ProgrammableGatewayDeployHistory.objects.filter(gateway=gateway)
+        # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
+        if query and fuzzy:
+            queryset = queryset.filter(Q(stage__name__contains=query) | Q(version__contains=query))
+
+        if stage_id:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        if created_by:
+            if fuzzy:
+                queryset = queryset.filter(created_by__contains=created_by)
+            else:
+                queryset = queryset.filter(created_by=created_by)
+
+        if time_start and time_end:
+            # time_start、time_end 须同时存在，否则无效
+            queryset = queryset.filter(created_time__range=(time_start, time_end))
+
+        if order_by:
+            queryset = queryset.order_by(order_by)
+
+        return queryset.distinct()
+
     @staticmethod
     def deploy(
         gateway: Gateway,
