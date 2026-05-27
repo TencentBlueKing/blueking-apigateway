@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
-from unittest.mock import patch
 
 import pytest
 from ddf import G
