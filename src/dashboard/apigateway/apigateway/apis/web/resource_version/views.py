@@ -38,6 +38,7 @@ from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
 from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
@@ -116,7 +117,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.serializer_class(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
-        ResourceVersionHandler.create_resource_version_with_artifacts(
+        ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
             data=slz.validated_data,
             username=request.user.username,

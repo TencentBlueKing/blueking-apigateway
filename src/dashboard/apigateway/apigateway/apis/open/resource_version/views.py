@@ -26,7 +26,7 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.biz.gateway import ReleaseError, release
-from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -75,7 +75,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
-        instance = ResourceVersionHandler.create_resource_version_with_artifacts(
+        instance = ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
             data=data,
             username=request.user.username,

@@ -51,6 +51,7 @@ from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceD
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.constants import CallSourceTypeEnum
@@ -521,7 +522,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
-        ResourceVersionHandler.create_resource_version_with_artifacts(
+        ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
             data=data,
             username=request.user.username,
