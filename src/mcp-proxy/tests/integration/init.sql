@@ -246,6 +246,82 @@ VALUES (1, 1, 1, '{
   }
 }', NOW(), NOW());
 
+-- 环境 2 (用于 path 参数测试)
+INSERT INTO `core_stage` (`id`, `api_id`, `name`, `description`, `status`, `created_time`, `updated_time`)
+VALUES (2, 1, 'stage', 'Stage for path param testing', 1, NOW(), NOW());
+
+-- 资源版本 2 (带 path/query 参数的 API，用于测试大整数参数不被科学计数法破坏)
+INSERT INTO `core_resource_version` (`id`, `api_id`, `version`, `schema_version`, `data`, `created_time`, `updated_time`)
+VALUES (2, 1, '2.0.0', '1.0', '{}', NOW(), NOW());
+
+-- 发布记录 2
+INSERT INTO `core_release` (`id`, `api_id`, `stage_id`, `resource_version_id`, `created_time`, `updated_time`)
+VALUES (2, 1, 2, 2, NOW(), NOW());
+
+-- OpenAPI 规范 2 (带 path 参数和 query 参数)
+INSERT INTO `openapi_gateway_resource_version_spec` (`id`, `api_id`, `resource_version_id`, `schema`, `created_time`, `updated_time`)
+VALUES (2, 1, 2, '{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Test API with Path Params",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://mock-api:8080/api/test-gateway/prod"
+    }
+  ],
+  "paths": {
+    "/anything/{bk_biz_id}/hosts": {
+      "post": {
+        "operationId": "list_biz_hosts",
+        "summary": "List hosts under a business",
+        "description": "Query hosts under the specified business ID",
+        "parameters": [
+          {
+            "name": "bk_biz_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Business ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    }
+  }
+}', NOW(), NOW());
+
 -- 测试用 MCP Server (SSE 协议)
 -- resource_names 使用分号分隔
 INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
@@ -278,3 +354,11 @@ VALUES (2, 2, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
 -- 权限给带工具名映射的 MCP Server
 INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
 VALUES (3, 3, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());
+
+-- 测试用 MCP Server (带 path 参数，Streamable HTTP 协议)
+INSERT INTO `mcp_server` (`id`, `name`, `description`, `is_public`, `labels`, `resource_names`, `gateway_id`, `stage_id`, `protocol_type`, `status`, `created_time`, `updated_time`)
+VALUES (4, 'test-path-param-server', 'Test MCP Server with Path Params', 1, '', 'list_biz_hosts', 1, 2, 'streamable_http', 1, NOW(), NOW());
+
+-- 权限给带 path 参数测试的 MCP Server
+INSERT INTO `mcp_server_app_permission` (`id`, `mcp_server_id`, `bk_app_code`, `grant_type`, `expires`, `created_time`, `updated_time`)
+VALUES (4, 4, 'test-app', 'grant', '2099-12-31 23:59:59', NOW(), NOW());

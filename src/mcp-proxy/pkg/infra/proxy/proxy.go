@@ -223,6 +223,16 @@ func buildToolResult(output any) *mcp.CallToolResult {
 	return result
 }
 
+func decodeHandlerRequest(arguments any) (HandlerRequest, error) {
+	var handlerRequest HandlerRequest
+	argsBytes, err := json.Marshal(arguments)
+	if err != nil {
+		return handlerRequest, err
+	}
+	err = json.Unmarshal(argsBytes, &handlerRequest)
+	return handlerRequest, err
+}
+
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
 	tool := &mcp.Tool{
 		Name:        toolConfig.Name,
@@ -529,16 +539,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseGet
 			return nil, fmt.Errorf("sign inner jwt failed: %w", err)
 		}
 		auditLog.Info("call tool", zap.Any("request", req.Params.Arguments))
-		var handlerRequest HandlerRequest
-		argsBytes, err := json.Marshal(req.Params.Arguments)
+		handlerRequest, err := decodeHandlerRequest(req.Params.Arguments)
 		if err != nil {
-			auditLog.Error("marshal arguments err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
-			return nil, err
-		}
-		err = json.Unmarshal(argsBytes, &handlerRequest)
-		if err != nil {
-			auditLog.Error("unmarshal handler request err", zap.String("request",
-				string(argsBytes)), zap.Error(err))
+			auditLog.Error("decode handler request err", zap.Any("arguments", req.Params.Arguments), zap.Error(err))
 			return nil, err
 		}
 		// 创建带日志的 Transport
@@ -591,33 +594,30 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseGet
 			}
 
 			if handlerRequest.HeaderParam != nil {
-				for k, v := range handlerRequest.HeaderParam {
-					err = req.SetHeaderParam(k, fmt.Sprintf("%v", v))
+				for k, value := range handlerRequest.HeaderParam {
+					err = req.SetHeaderParam(k, value)
 					if err != nil {
-						auditLog.Error("set header param err", zap.String(k,
-							fmt.Sprintf("%v", v)), zap.Error(err))
+						auditLog.Error("set header param err", zap.String(k, value), zap.Error(err))
 						return err
 					}
-					headerInfo[k] = fmt.Sprintf("%v", v)
+					headerInfo[k] = value
 				}
 			}
 			if handlerRequest.QueryParam != nil {
-				for k, v := range handlerRequest.QueryParam {
-					err = req.SetQueryParam(k, fmt.Sprintf("%v", v)) // 使用 SetQueryParam 方法设置查询参数
+				for k, value := range handlerRequest.QueryParam {
+					err = req.SetQueryParam(k, value) // 使用 SetQueryParam 方法设置查询参数
 					if err != nil {
-						auditLog.Error("set query param err", zap.String(k, fmt.Sprintf("%v", v)),
-							zap.Error(err))
+						auditLog.Error("set query param err", zap.String(k, value), zap.Error(err))
 						return err
 					}
 				}
 			}
 
 			if handlerRequest.PathParam != nil {
-				for k, v := range handlerRequest.PathParam {
-					err = req.SetPathParam(k, fmt.Sprintf("%v", v))
+				for k, value := range handlerRequest.PathParam {
+					err = req.SetPathParam(k, value)
 					if err != nil {
-						auditLog.Error("set path param err",
-							zap.String(k, fmt.Sprintf("%v", v)), zap.Error(err))
+						auditLog.Error("set path param err", zap.String(k, value), zap.Error(err))
 						return err
 					}
 				}
