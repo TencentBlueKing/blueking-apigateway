@@ -19,7 +19,7 @@
 <template>
   <div class="personal-workbench-top-bar">
     <BkTab
-      :active="activeTab"
+      :active="personalWorkbenchTab"
       type="unborder-card"
       @change="handleTabChange"
     >
@@ -37,16 +37,17 @@
 
 <script  lang="ts" setup>
 import { t } from '@/locales';
+import { usePersonalWorkbench } from '@/hooks';
 import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
 
 interface IEmits { 'tab-change': [tab: ITabKey] }
 
 const emit = defineEmits<IEmits>();
 
-const activeTab = ref('gateway');
+const { personalWorkbenchTab } = usePersonalWorkbench();
 
 const handleTabChange = (tab: ITabKey) => {
-  activeTab.value = tab;
+  personalWorkbenchTab.value = tab;
   emit('tab-change', tab);
 };
 </script>

@@ -43,7 +43,7 @@
           v-model="dateValue"
           type="datetimerange"
           :clearable="false"
-          :placeholder="t('选择日期时间范围')"
+          :placeholder="t('请选择申请时间')"
           use-shortcut-text
           :shortcuts="shortcutsRange"
           :shortcut-selected-index="shortcutSelectedIndex"
@@ -96,7 +96,6 @@
 </template>
 
 <script setup lang="tsx">
-// script 部分保持你原来的代码不变即可
 import { DatePicker } from 'bkui-vue';
 import type { FilterValue } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
@@ -187,7 +186,6 @@ const handleSearchTimeRange = () => {
     time_end: formatTimeRange?.[1],
   });
 };
-handleSearchTimeRange();
 
 const handleBatchApply = () => {
   emit('batch-approval');
@@ -203,7 +201,7 @@ const handleResetFormData = () => {
     datePickerRef.value.shortcut = accessLogStore.datepickerShortcuts[0];
   }
   dateValue.value = [];
-  shortcutSelectedIndex.value = 0;
+  shortcutSelectedIndex.value = -1;
   dateKey.value = String(+new Date());
   handleSearchTimeRange();
 };
@@ -237,33 +235,32 @@ defineExpose({
     gap: 24px;
     flex: 1;
     min-width: 0;
-  }
 
-  :deep(.bk-form-item) {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 230px;
-    max-width: 320px;
-  }
+    :deep(.bk-form-item) {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      max-width: fit-content;
 
-  :deep(.bk-form-label) {
-    width: auto;
-    white-space: nowrap;
-    text-align: right;
-  }
+      .bk-form-label {
+        width: auto;
+        white-space: nowrap;
+        text-align: right;
+      }
 
-  :deep(.bk-form-content) {
-    width: 100%;
-    min-width: 0;
-  }
+      .bk-form-content {
+        width: 230px;
 
-  :deep(.bk-date-picker),
-  :deep(.bk-input),
-  :deep(.bk-user-selector),
-  :deep(.member-selector) {
-    width: 100%;
+        .bk-date-picker,
+        .bk-input,
+        .bk-user-selector,
+        .member-selector {
+          width: 100%;
+        }
+      }
+    }
   }
 }
 </style>

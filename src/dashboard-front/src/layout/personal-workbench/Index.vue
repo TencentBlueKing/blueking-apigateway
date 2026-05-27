@@ -87,15 +87,18 @@
 import { locale, t } from '@/locales';
 import { useFeatureFlag } from '@/stores';
 import type { IMenu } from '@/types/common';
-import { getGatewayPendingList, getMcpPendingList } from '@/services/source/personal-workbench.ts';
+import { usePersonalWorkbench } from '@/hooks';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
 const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+const {
+  isExistApplied,
+  getMyAppliedData,
+} = usePersonalWorkbench();
 
 const collapse = ref(true);
-const isExistApplied = ref(false);
 const activeMenuKey = ref('');
 const headerTitle = ref('');
 
@@ -149,24 +152,6 @@ const routerViewWrapperClass = computed(() => {
   return `${initClass}`;
 });
 
-// 并行请求处理
-const getParallelRequestResult = (item: PromiseSettledResult<any>) => {
-  return item.status === 'fulfilled'
-    ? item.value
-    : {
-      count: 0,
-      results: [],
-    };
-};
-
-// 我的待办是否存在需要审批数据
-const getMyAppliedData = async () => {
-  const results = await Promise.allSettled([getGatewayPendingList(), getMcpPendingList()]);
-  const [gatewayData, mcpData] = results.map(getParallelRequestResult);
-  isExistApplied.value = gatewayData.count > 0 || mcpData.count > 0;
-};
-getMyAppliedData();
-
 const handleCollapse = (value: boolean) => {
   collapse.value = !value;
 };
@@ -179,11 +164,14 @@ const handleBack = () => {
   router.back();
 };
 
+getMyAppliedData();
+
 watch(
   () => route.meta,
   (meta: typeof route.meta) => {
     activeMenuKey.value = meta.matchRoute as string;
     headerTitle.value = meta.title as string;
+    getMyAppliedData();
   },
   {
     immediate: true,

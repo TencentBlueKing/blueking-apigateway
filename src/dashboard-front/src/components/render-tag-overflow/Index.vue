@@ -33,6 +33,7 @@
       v-if="overflowData.length > 0"
       ext-cls="render-row-overflow-popover-main"
       :max-height="500"
+      :popover-delay="0"
       placement="left"
       theme="light"
       arrow

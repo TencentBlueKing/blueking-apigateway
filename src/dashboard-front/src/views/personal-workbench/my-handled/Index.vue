@@ -21,8 +21,8 @@
   <ApplyTable
     ref="tableCom"
     apply-status="handled"
-    :active-tab="activeTab"
-    :remote-method="tabItem[activeTab]"
+    :active-tab="personalWorkbenchTab"
+    :remote-method="tabItem[personalWorkbenchTab]"
   />
 </template>
 
@@ -31,6 +31,7 @@ import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IPersonalWorkbenchListQuery, ITabKey } from '@/services/types/query/personal-workbench.ts';
 import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
 import { getGatewayHandledList, getMcpHandledList } from '@/services/source/personal-workbench.ts';
+import { usePersonalWorkbench } from '@/hooks';
 import TopBar from '@/views/personal-workbench/components/TopBar.vue';
 import ApplyTable from '@/views/personal-workbench/components/Table.vue';
 
@@ -42,10 +43,11 @@ const tabItem: Record<ITabKey, (
 };
 
 const tableCom = ref<InstanceType<typeof ApplyTable> | null>(null);
-const activeTab = ref<ITabKey>('gateway');
+
+const { personalWorkbenchTab } = usePersonalWorkbench();
 
 const handleTabChange = (value: ITabKey) => {
-  activeTab.value = value;
+  personalWorkbenchTab.value = value;
   nextTick(() => {
     tableCom.value?.handleClearFilter();
   });
