@@ -19,14 +19,14 @@
 <template>
   <div class="render-row-wrapper">
     <!-- 第一个标签：自适应宽度，超长省略 -->
-    <BkTag
-      v-if="visibleData.length > 0"
-      :title="visibleData?.[0]"
-      class="render-row-item flex-1 truncate"
-      @click="emits('click')"
-    >
-      {{ visibleData?.[0] }}
-    </BkTag>
+    <template v-if="visibleData?.length > 0">
+      <BkTag
+        class="render-row-item flex-1 truncate"
+        :title="visibleData[0]"
+      >
+        {{ visibleData[0] }}
+      </BkTag>
+    </template>
 
     <!-- 超过1个显示 +n 标签+气泡 -->
     <BkPopover
@@ -39,10 +39,7 @@
       arrow
       v-bind="popoverProps"
     >
-      <BkTag
-        class="overflow-tag"
-        @click="emits('click')"
-      >
+      <BkTag class="overflow-tag">
         +{{ overflowData.length }}
       </BkTag>
       <template #content>
@@ -79,8 +76,6 @@ const {
   isMember = false,
 } = defineProps<IProps>();
 
-const emits = defineEmits<{ click: [void] }>();
-
 const featureFlagStore = useFeatureFlag();
 
 const isEnableDisplayName = computed(() => featureFlagStore.isEnableDisplayName && isMember);
@@ -108,7 +103,7 @@ const renderDisplayName = (name: string) => {
   box-sizing: border-box;
 
   .render-row-item {
-    padding: 0 10px;
+    padding: 0 8px;
     flex-shrink: 0;
   }
 }
