@@ -78,6 +78,33 @@ class TestProgrammableGatewayReleaser:
             },
             {
                 "params": {
+                    "created_by": "adm",
+                },
+                "fuzzy": False,
+                "expected": {
+                    "count": 0,
+                },
+            },
+            {
+                "params": {
+                    "created_by": "admin",
+                },
+                "fuzzy": False,
+                "expected": {
+                    "count": 1,
+                },
+            },
+            {
+                "params": {
+                    "query": "prod",
+                },
+                "fuzzy": False,
+                "expected": {
+                    "count": 4,
+                },
+            },
+            {
+                "params": {
                     "time_start": dummy_time.time - datetime.timedelta(hours=1),
                     "time_end": dummy_time.time + datetime.timedelta(hours=1),
                 },
@@ -87,5 +114,7 @@ class TestProgrammableGatewayReleaser:
             },
         ]
         for test in data:
-            result = ProgrammableGatewayReleaser.filter_deploy_history(gateway, fuzzy=True, **test["params"])
+            result = ProgrammableGatewayReleaser.filter_deploy_history(
+                gateway, fuzzy=test.get("fuzzy", True), **test["params"]
+            )
             assert result.count() == test["expected"]["count"]
