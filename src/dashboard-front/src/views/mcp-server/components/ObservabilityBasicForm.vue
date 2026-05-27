@@ -457,13 +457,6 @@ defineExpose({
 
         .bk-date-picker {
           width: 100%;
-
-          :deep(.bk-picker-confirm-action) {
-
-            a:first-child {
-              display: none;
-            }
-          }
         }
       }
 
