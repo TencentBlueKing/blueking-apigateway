@@ -19,6 +19,11 @@ import pytest
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.access_log import serializers
+from apigateway.biz.log_search.parser import parse_request_id_list
+
+
+def test_parse_request_id_list_trims_empty_values():
+    assert parse_request_id_list("id-1, id-2,,") == ["id-1", "id-2"]
 
 
 class TestRequestLogQueryInputSLZ:

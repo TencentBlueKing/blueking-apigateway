@@ -22,6 +22,7 @@ from django.conf import settings
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.aggs import A
 
+from apigateway.biz.log_search.query import build_terms_filter, build_time_range_filter
 from apigateway.service.es.clients import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
@@ -211,8 +212,12 @@ class MCPServerLogSearchClient:
 
         if http_codes:
             # HTTP 层：status 是 HTTP 状态码，用 terms 同时匹配 int 和 str 形式
-            should_clauses.append(Q("terms", status=http_codes))
-            should_clauses.append(Q({"terms": {"__ext_json.status": http_codes}}))
+            status_filter = build_terms_filter(field="status", values=http_codes)
+            ext_status_filter = build_terms_filter(field="__ext_json.status", values=http_codes)
+            if status_filter:
+                should_clauses.append(Q(status_filter))
+            if ext_status_filter:
+                should_clauses.append(Q(ext_status_filter))
 
         return s.filter(
             "bool",
@@ -237,13 +242,11 @@ class MCPServerLogSearchClient:
         if self._smart_time_range:
             time_start, time_end = self._smart_time_range.get_head_and_tail()
             s = s.filter(
-                "range",
-                **{
-                    self._es_time_field_name: {
-                        "gte": time_utils.convert_second_to_epoch_millisecond(time_start),
-                        "lte": time_utils.convert_second_to_epoch_millisecond(time_end),
-                    }
-                },
+                build_time_range_filter(
+                    field=self._es_time_field_name,
+                    time_start=time_utils.convert_second_to_epoch_millisecond(time_start),
+                    time_end=time_utils.convert_second_to_epoch_millisecond(time_end),
+                )
             )
         return s
 
