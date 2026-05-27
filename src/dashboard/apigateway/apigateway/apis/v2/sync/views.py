@@ -33,14 +33,12 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayRelatedAppPermission
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
-from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppResourcePermission,
 )
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayData, GatewayRelatedAppHandler, GatewaySaver, ReleaseError, release
@@ -48,11 +46,11 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
+from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
-from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.helper import SDKHelper
 from apigateway.common.constants import CallSourceTypeEnum
@@ -523,24 +521,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
-        instance = ResourceVersionHandler.create_resource_version(request.gateway, data, request.user.username)
-
-        # 创建文档版本
-        if ResourceDoc.objects.filter(gateway=request.gateway).exists():
-            ResourceDocVersion.objects.create(
-                gateway=request.gateway,
-                resource_version=instance,
-                data=ResourceDocVersionHandler().make_version(request.gateway.id),
-            )
-        exporter = OpenAPIExportManager(
-            api_version=instance.version,
-            title="the openapi of %s" % request.gateway.name,
-        )
-        # 创建openapi file版本
-        OpenAPIFileResourceSchemaVersion.objects.create(
+        ResourceVersionHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
-            resource_version=instance,
-            schema=exporter.export_resource_version_openapi(instance),
+            data=data,
+            username=request.user.username,
         )
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 

@@ -23,7 +23,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
-from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDocVersion
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import StageStatusEnum
@@ -64,6 +64,25 @@ class TestResourceVersionHandler:
 
         ResourceVersionHandler.create_resource_version(gateway, {"comment": "test", "version": "1.1.0"}, "admin")
         assert ResourceVersion.objects.filter(gateway=gateway).count() == 1
+
+    def test_create_resource_version_with_artifacts(self, fake_gateway, fake_resource, mocker):
+        mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
+        mocker.patch(
+            "apigateway.biz.resource.importer.openapi.OpenAPIExportManager.export_resource_version_openapi",
+            return_value={"openapi": "3.0.0"},
+        )
+        G(ResourceDoc, gateway=fake_gateway, resource_id=fake_resource.id)
+
+        result = ResourceVersionHandler.create_resource_version_with_artifacts(
+            gateway=fake_gateway,
+            data={"version": "20260526120000", "comment": "release comment"},
+            username="admin",
+        )
+
+        assert result.gateway_id == fake_gateway.id
+        assert result.version == "20260526120000"
+        assert ResourceDocVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
+        assert OpenAPIFileResourceSchemaVersion.objects.filter(gateway=fake_gateway, resource_version=result).exists()
 
     @pytest.mark.parametrize(
         "gateway_id, stage_name, mocked_released_resource_version_ids, mocked_resources, expected",

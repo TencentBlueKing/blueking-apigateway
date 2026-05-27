@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import datetime
+import importlib
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set
 
 from cachetools import TTLCache, cached
 from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -32,7 +34,7 @@ from apigateway.apps.openapi.models import (
 )
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
+from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.biz.resource import (
@@ -42,6 +44,7 @@ from apigateway.biz.resource import (
     ResourceLabelHandler,
     ResourceOpenAPISchemaVersionHandler,
 )
+from apigateway.biz.resource_version.resource_doc_version import ResourceDocVersionHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
@@ -164,6 +167,36 @@ class ResourceVersionHandler:
             instance_name=resource_version.version,
             data_before={},
             data_after={"version": data.get("version")},
+        )
+
+        return resource_version
+
+    @classmethod
+    @transaction.atomic
+    def create_resource_version_with_artifacts(
+        cls,
+        gateway: Gateway,
+        data: Dict[str, Any],
+        username: str = "",
+    ) -> ResourceVersion:
+        resource_version = cls.create_resource_version(gateway, data, username)
+
+        if ResourceDoc.objects.filter(gateway=gateway).exists():
+            ResourceDocVersion.objects.create(
+                gateway=gateway,
+                resource_version=resource_version,
+                data=ResourceDocVersionHandler().make_version(gateway.id),
+            )
+
+        openapi_module = importlib.import_module("apigateway.biz.resource.importer.openapi")
+        exporter = openapi_module.OpenAPIExportManager(
+            api_version=resource_version.version,
+            title="the openapi of %s" % gateway.name,
+        )
+        OpenAPIFileResourceSchemaVersion.objects.create(
+            gateway=gateway,
+            resource_version=resource_version,
+            schema=exporter.export_resource_version_openapi(resource_version),
         )
 
         return resource_version
