@@ -51,7 +51,7 @@
                 </template>
                 {{ subMenu.title }}
                 <BkBadge
-                  v-if="['MyPending'].includes(subMenu.name) && isExistApplied"
+                  v-if="['MyPending'].includes(subMenu.name) && isExistPending"
                   dot
                   theme="danger"
                   :class="{ 'en': locale.indexOf('zh-cn') === -1 }"
@@ -94,8 +94,9 @@ const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const {
-  isExistApplied,
-  getMyAppliedData,
+  isExistPending,
+  getMyPendingData,
+  resetPersonalWorkbenchTab,
 } = usePersonalWorkbench();
 
 const collapse = ref(true);
@@ -164,14 +165,19 @@ const handleBack = () => {
   router.back();
 };
 
-getMyAppliedData();
+getMyPendingData();
 
 watch(
   () => route.meta,
   (meta: typeof route.meta) => {
-    activeMenuKey.value = meta.matchRoute as string;
-    headerTitle.value = meta.title as string;
-    getMyAppliedData();
+    const { matchRoute, title } = meta ?? {};
+    activeMenuKey.value = matchRoute as string;
+    headerTitle.value = title as string;
+    resetPersonalWorkbenchTab();
+    // 更新了个人工作台内的审批，查询网关和mcp是否还存在待办的审批
+    if (isExistPending.value) {
+      getMyPendingData();
+    }
   },
   {
     immediate: true,

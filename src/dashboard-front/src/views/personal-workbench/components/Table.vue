@@ -130,6 +130,7 @@ import {
 import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
+import { usePersonalWorkbench } from '@/hooks';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
@@ -152,6 +153,7 @@ const {
 } = defineProps<IProps>();
 
 const featureFlagStore = useFeatureFlag();
+const { getMyPendingData } = usePersonalWorkbench();
 
 const basicFormRef = useTemplateRef<InstanceType<typeof BasicForm>>('basicFormRef');
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
@@ -656,9 +658,9 @@ const handleGatewayApproveReject = async () => {
       message: t('操作成功'),
       theme: 'success',
     });
-
     handleClearSelection();
     getList();
+    getMyPendingData();
   }
   catch (e: unknown) {
     const err = e as { error?: { message?: string } };
@@ -683,12 +685,14 @@ const handleMcpApproveReject = async () => {
       curAction.value as IMCPServerAppPermissionApplyUpdateInputSLZ,
     );
 
+    applyActionDialogConf.value.isShow = false;
+
     Message({
       message: t('操作成功'),
       theme: 'success',
     });
     getList();
-    applyActionDialogConf.value.isShow = false;
+    getMyPendingData();
   }
   catch (e: unknown) {
     const err = e as { error?: { message?: string } };
