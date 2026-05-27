@@ -17,8 +17,8 @@
 #
 import logging
 import os
+import subprocess
 from dataclasses import dataclass, field
-from subprocess import CalledProcessError, check_call
 from typing import ClassVar, List, Optional
 
 from apigateway.biz.sdk.constants import PYPIRC_TMPL
@@ -90,12 +90,19 @@ class PypiSourceDistributor(Distributor):
         try:
             logger.info("start uploading package to pypi repository [%s]", self.repository)
 
-            check_call(
+            completed_process = subprocess.run(
                 ["twine", "upload", "dist/*", "-r", self.repository],
                 env=env,
                 cwd=source_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
             )
-        except CalledProcessError:
+            logger.info("twine stdout: %s", completed_process.stdout)
+            logger.info("twine stderr: %s", completed_process.stderr)
+            completed_process.check_returncode()
+        except subprocess.CalledProcessError:
             logger.exception("upload to pypi repository [%s] failed", self.repository)
             raise DistributeError(f"can not distribute to pypi repository [{self.repository}]")
 
