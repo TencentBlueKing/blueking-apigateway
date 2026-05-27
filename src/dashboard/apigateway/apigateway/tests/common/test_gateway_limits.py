@@ -1,6 +1,6 @@
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2025 Tencent. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -15,18 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+import pytest
 
-from apigateway.apps.label.models import APILabel
-from apigateway.core.models import Gateway
-from apigateway.service.gateway_label import save_gateway_labels
+from apigateway.common.gateway_limits import get_max_resource_count
 
 
-class GatewayLabelHandler:
-    @staticmethod
-    def save_labels(gateway: Gateway, names: List[str], username: str = ""):
-        save_gateway_labels(gateway, names, username)
+@pytest.mark.parametrize(
+    "gateway_name, expected",
+    [
+        ("vip-gateway", 50),
+        ("default-gateway", 20),
+    ],
+)
+def test_get_max_resource_count(settings, gateway_name, expected):
+    settings.API_GATEWAY_RESOURCE_LIMITS = {
+        "max_resource_count_per_gateway": 20,
+        "max_resource_count_per_gateway_whitelist": {
+            "vip-gateway": 50,
+        },
+    }
 
-    @staticmethod
-    def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
-        return list(APILabel.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))
+    assert get_max_resource_count(gateway_name) == expected

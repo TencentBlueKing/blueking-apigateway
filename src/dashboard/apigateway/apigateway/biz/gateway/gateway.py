@@ -35,6 +35,7 @@ from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
+from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
@@ -342,9 +343,7 @@ class GatewayHandler:
 
     @staticmethod
     def get_max_resource_count(gateway_name: str):
-        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
-            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
-        )
+        return get_max_resource_count(gateway_name)
 
     @staticmethod
     def get_operation_statuses(gateways: List[Gateway]) -> Dict[int, dict]:

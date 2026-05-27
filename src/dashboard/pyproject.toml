@@ -378,3 +378,14 @@ ignore_imports = [
     "apigateway.apps.esb.*.* -> apigateway.components.*",
     "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
 ]
+
+[[tool.importlinter.contracts]]
+id="resource-does-not-import-gateway-biz"
+name="resource-does-not-import-gateway-biz"
+type="forbidden"
+source_modules = [
+    "apigateway.biz.resource",
+]
+forbidden_modules = [
+    "apigateway.biz.gateway",
+]

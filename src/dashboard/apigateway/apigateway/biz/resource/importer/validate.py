@@ -25,9 +25,9 @@ from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.models import PluginType
-from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource.importer.schema import SchemaValidateErr
 from apigateway.biz.resource.models import ResourceData
+from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.service.plugin.validator import PluginConfigYamlValidator
@@ -213,7 +213,7 @@ class ResourceImportValidator:
 
     def _validate_resource_count(self):
         count = len(self.resource_data_list) + len(self._unchanged_resources)
-        max_resource_count = GatewayHandler.get_max_resource_count(self.gateway.name)
+        max_resource_count = get_max_resource_count(self.gateway.name)
         if count > max_resource_count:
             validate_err = SchemaValidateErr(
                 _("每个网关最多创建 {count} 个资源。").format(count=max_resource_count), "$.paths", absolute_path=[]
