@@ -29,6 +29,7 @@ from apigateway.utils.file import write_to_file
 from apigateway.utils.pypi import RepositoryConfig
 
 logger = logging.getLogger(__name__)
+default_logger = logging.getLogger()
 
 
 @dataclass
@@ -99,11 +100,12 @@ class PypiSourceDistributor(Distributor):
                 text=True,
                 check=False,
             )
-            logger.info("twine stdout: %s", completed_process.stdout)
-            logger.info("twine stderr: %s", completed_process.stderr)
+            logger.info("twine upload stdout: %s", completed_process.stdout)
+            logger.info("twine upload stderr: %s", completed_process.stderr)
             completed_process.check_returncode()
         except subprocess.CalledProcessError:
             logger.exception("upload to pypi repository [%s] failed", self.repository)
+            default_logger.exception("upload to pypi repository [%s] failed", self.repository)
             raise DistributeError(f"can not distribute to pypi repository [{self.repository}]")
 
         result.url = self.get_download_url()

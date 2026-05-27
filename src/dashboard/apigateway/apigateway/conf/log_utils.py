@@ -62,9 +62,7 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
     for logger_name in ["root", "component", "mysql", "celery", "sdk"]:
         handlers = []
 
-        # sdk generation logs are intentionally excluded from console output to avoid
-        # flooding container stdout with build/publish command details.
-        if to_console and logger_name != "sdk":
+        if to_console:
             handlers.append("console")
 
         if file_directory:
