@@ -58,7 +58,7 @@ const { loading = false, list = [] } = defineProps<IProps>();
 
 <style lang="scss" scoped>
 :deep(.bk-modal-content) {
-  height: 500px !important;
+  max-height: 500px !important;
   overflow-y: auto;
 }
 

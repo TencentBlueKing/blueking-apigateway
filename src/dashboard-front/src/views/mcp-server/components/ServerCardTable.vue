@@ -437,19 +437,21 @@ const tableColumns = computed(() => {
                         { t('删除') }
                       </Button>
                     </bk-dropdown-item>
-                    <bk-dropdown-item
-                      onClick={(e: MouseEvent) => {
-                        e?.stopPropagation();
-                        handleNavObservability(row);
-                      }}
-                    >
-                      <Button
-                        size="small"
-                        text
+                    {featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY && (
+                      <bk-dropdown-item
+                        onClick={(e: MouseEvent) => {
+                          e?.stopPropagation();
+                          handleNavObservability(row);
+                        }}
                       >
-                        { t('可观测') }
-                      </Button>
-                    </bk-dropdown-item>
+                        <Button
+                          size="small"
+                          text
+                        >
+                          { t('可观测') }
+                        </Button>
+                      </bk-dropdown-item>
+                    )}
                   </bk-dropdown-menu>
                 ),
               }}

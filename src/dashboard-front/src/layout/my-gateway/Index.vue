@@ -368,7 +368,7 @@ const menuList = computed<IMenu[]>(() => [
       {
         name: 'MCPServerObservability',
         title: t('可观测'),
-        enabled: true,
+        enabled: featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY,
       },
     ],
   },
