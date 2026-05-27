@@ -18,11 +18,8 @@
 #  #
 from typing import Optional
 
-from apigateway.apps.openapi.models import (
-    OpenAPIResourceSchema,
-    OpenAPIResourceSchemaVersion,
-)
 from apigateway.core.models import ResourceVersion
+from apigateway.service.resource_snapshot import make_resource_schema_version
 
 
 class ResourceOpenAPISchemaVersionHandler:
@@ -31,23 +28,7 @@ class ResourceOpenAPISchemaVersionHandler:
         """
         创建resource schema version
         """
-        resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
-
-        # 查询资源所有的schema
-        resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
-
-        schema_list = [
-            {
-                "resource_id": resource_schema.resource.id,
-                "schema": resource_schema.schema,
-            }
-            for resource_schema in resource_schemas
-        ]
-        if len(schema_list) > 0:
-            OpenAPIResourceSchemaVersion.objects.create(
-                resource_version=resource_version,
-                schema=schema_list,
-            )
+        make_resource_schema_version(resource_version)
 
 
 class ResourceOpenAPISchemaHandler:

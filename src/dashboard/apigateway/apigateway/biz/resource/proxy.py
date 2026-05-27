@@ -20,17 +20,13 @@ from typing import Dict, List
 from django.db.models import Count
 
 from apigateway.core.models import Proxy
-from apigateway.schema.models import Schema
+from apigateway.service.resource_snapshot import get_resource_id_to_proxy_snapshot
 
 
 class ProxyHandler:
     @staticmethod
     def get_resource_id_to_snapshot(resource_ids: List[int]) -> Dict[int, Dict]:
-        schemas = Schema.objects.filter_id_snapshot_map()
-        return {
-            proxy.resource_id: proxy.snapshot(as_dict=True, schemas=schemas)
-            for proxy in Proxy.objects.filter(resource_id__in=resource_ids).prefetch_related("backend")
-        }
+        return get_resource_id_to_proxy_snapshot(resource_ids)
 
     @staticmethod
     def get_resource_count_by_backend(backend_ids: List[int]) -> Dict[int, int]:

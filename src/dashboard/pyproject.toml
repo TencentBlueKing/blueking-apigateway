@@ -380,24 +380,14 @@ ignore_imports = [
 ]
 
 [[tool.importlinter.contracts]]
-id="resource-does-not-import-gateway-biz"
-name="resource-does-not-import-gateway-biz"
+id="resource-does-not-import-cross-biz"
+name="resource-does-not-import-cross-biz"
 type="forbidden"
 source_modules = [
     "apigateway.biz.resource",
 ]
 forbidden_modules = [
     "apigateway.biz.gateway",
-]
-
-[[tool.importlinter.contracts]]
-id="resource-does-not-import-resource-version-biz"
-name="resource-does-not-import-resource-version-biz"
-type="forbidden"
-source_modules = [
-    "apigateway.biz.resource",
-]
-forbidden_modules = [
     "apigateway.biz.resource_version",
 ]
 
@@ -410,4 +400,15 @@ source_modules = [
 ]
 forbidden_modules = [
     "apigateway.biz.resource_version",
+]
+
+[[tool.importlinter.contracts]]
+id="resource-version-does-not-import-resource-biz"
+name="resource-version-does-not-import-resource-biz"
+type="forbidden"
+source_modules = [
+    "apigateway.biz.resource_version",
+]
+forbidden_modules = [
+    "apigateway.biz.resource",
 ]

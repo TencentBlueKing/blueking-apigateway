@@ -34,16 +34,18 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
-from apigateway.biz.resource import (
-    ProxyHandler,
-    ResourceDisabledStageHandler,
-    ResourceHandler,
-    ResourceLabelHandler,
-    ResourceOpenAPISchemaVersionHandler,
-)
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.service.resource_snapshot import (
+    filter_disabled_stages_by_gateway,
+    get_last_resource_updated_time,
+    get_resource_id_to_proxy_snapshot,
+    get_resource_labels_by_gateway,
+    get_resource_use_stage_vars,
+    make_resource_schema_version,
+    snapshot_resource,
+)
 from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
@@ -60,7 +62,7 @@ class ResourceVersionHandler:
 
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
-        proxy_map = ProxyHandler.get_resource_id_to_snapshot(resource_ids)
+        proxy_map = get_resource_id_to_proxy_snapshot(resource_ids)
 
         context_map = ContextHandler.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -68,12 +70,12 @@ class ResourceVersionHandler:
         )
         disabled_stage_map = {
             resource_id: [stage["name"] for stage in stages]
-            for resource_id, stages in ResourceDisabledStageHandler.filter_disabled_stages_by_gateway(gateway).items()
+            for resource_id, stages in filter_disabled_stages_by_gateway(gateway).items()
         }
 
         gateway_label_map = {
             resource_id: [label["id"] for label in labels]
-            for resource_id, labels in ResourceLabelHandler.get_labels_by_gateway(gateway).items()
+            for resource_id, labels in get_resource_labels_by_gateway(gateway).items()
         }
 
         # plugin
@@ -87,7 +89,7 @@ class ResourceVersionHandler:
             resource_plugins_map[resource_id].extend([binding.snapshot() for binding in bindings])
 
         return [
-            ResourceHandler.snapshot(
+            snapshot_resource(
                 r,
                 as_dict=True,
                 proxy_map=proxy_map,
@@ -157,7 +159,7 @@ class ResourceVersionHandler:
         resource_version.save()
 
         # 创建资源schema版本
-        ResourceOpenAPISchemaVersionHandler.make_new_version(resource_version)
+        make_resource_schema_version(resource_version)
 
         Auditor.record_resource_version_op_success(
             op_type=OpTypeEnum.CREATE,
@@ -212,7 +214,7 @@ class ResourceVersionHandler:
         是否需要创建新的资源版本
         """
         latest_version = ResourceVersion.objects.get_latest_version(gateway_id)
-        resource_last_updated_time = ResourceHandler.get_last_updated_time(gateway_id)
+        resource_last_updated_time = get_last_resource_updated_time(gateway_id)
 
         if not (latest_version or resource_last_updated_time):
             return False
@@ -267,7 +269,7 @@ class ResourceVersionHandler:
             if resource.get("stage_vars"):
                 stage_vars = resource["stage_vars"]
             else:
-                stage_vars = ResourceHandler.get_resource_use_stage_vars(resource)
+                stage_vars = get_resource_use_stage_vars(resource)
             used_in_path.update(stage_vars["in_path"])
             used_in_host.update(stage_vars["in_host"])
         return {

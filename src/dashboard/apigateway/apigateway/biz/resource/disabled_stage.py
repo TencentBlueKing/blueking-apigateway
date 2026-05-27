@@ -16,30 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import itertools
-import operator
-
-from apigateway.core.models import Stage, StageResourceDisabled
+from apigateway.service.resource_snapshot import filter_disabled_stages_by_gateway
 
 
 class ResourceDisabledStageHandler:
     @staticmethod
     def filter_disabled_stages_by_gateway(gateway):
-        stage_ids = Stage.objects.get_ids(gateway.id)
-
-        queryset = StageResourceDisabled.objects.filter(stage_id__in=stage_ids)
-        queryset = queryset.values("stage_id", "stage__name", "resource_id")
-
-        disabled = sorted(queryset, key=operator.itemgetter("resource_id"))
-
-        disabled_groups = itertools.groupby(disabled, key=operator.itemgetter("resource_id"))
-        resource_disabled = {}
-        for resource_id, group in disabled_groups:
-            resource_disabled[resource_id] = [
-                {
-                    "id": stage["stage_id"],
-                    "name": stage["stage__name"],
-                }
-                for stage in group
-            ]
-        return resource_disabled
+        return filter_disabled_stages_by_gateway(gateway)

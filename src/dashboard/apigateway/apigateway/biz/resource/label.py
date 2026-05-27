@@ -15,48 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from collections import defaultdict
 from typing import Dict, List
 
-from apigateway.apps.label.models import ResourceLabel
-from apigateway.core.models import Resource
+from apigateway.service.resource_snapshot import (
+    get_resource_labels,
+    get_resource_labels_by_gateway,
+    get_resource_labels_by_ids,
+)
 
 
 class ResourceLabelHandler:
     @classmethod
     def get_labels_by_gateway(cls, gateway_id: int) -> Dict[int, List]:
-        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-        return cls.get_labels(resource_ids)
+        return get_resource_labels_by_gateway(gateway_id)
 
     @staticmethod
     def get_labels(resource_ids: List[int]) -> Dict[int, List]:
-        queryset = ResourceLabel.objects.filter(resource_id__in=resource_ids).values(
-            "api_label_id", "api_label__name", "resource_id"
-        )
-
-        resource_labels = defaultdict(list)
-        for label in queryset:
-            resource_labels[label["resource_id"]].append(
-                {
-                    "id": label["api_label_id"],
-                    "name": label["api_label__name"],
-                }
-            )
-
-        return resource_labels
+        return get_resource_labels(resource_ids)
 
     @staticmethod
     def get_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
-        queryset = ResourceLabel.objects.filter(api_label_id__in=label_ids).values(
-            "api_label_id", "api_label__name", "resource_id"
-        )
-        resource_labels = defaultdict(list)
-        for label in queryset:
-            resource_labels[label["resource_id"]].append(
-                {
-                    "id": label["api_label_id"],
-                    "name": label["api_label__name"],
-                }
-            )
-
-        return resource_labels
+        return get_resource_labels_by_ids(label_ids)
