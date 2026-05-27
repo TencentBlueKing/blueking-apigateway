@@ -46,6 +46,7 @@ from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -294,12 +295,7 @@ class ResourceVersionHandler:
         """
         获取资源版本下的资源与 api schema 的映射关系
         """
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
-            resource_version_id=resource_version_id
-        ).first()
-        if resources_version_schema is None:
-            return {}
-        return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
+        return get_resource_id_to_schema_by_resource_version(resource_version_id)
 
     @staticmethod
     def get_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:

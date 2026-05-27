@@ -25,7 +25,6 @@ from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.backend import BackendHandler
 from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
 from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
@@ -38,8 +37,9 @@ from apigateway.biz.resource.importer.validate import ResourceImportValidator
 
 if TYPE_CHECKING:
     from apigateway.biz.resource.models import ResourceData
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
+from apigateway.service.backend import get_backend_id_to_instance
+from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
 from apigateway.utils.yaml import yaml_dumps, yaml_loads
 
 # 初始化openapi validator schema
@@ -230,11 +230,9 @@ class OpenAPIExportManager:
         """
         根据资源版本数据导出openapi
         """
-        backend_id_to_config = BackendHandler.get_id_to_instance(resource_version.gateway.id)
+        backend_id_to_config = get_backend_id_to_instance(resource_version.gateway.id)
         resource_labels = ResourceLabelHandler.get_labels_by_gateway(resource_version.gateway.id)
-        resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-            resource_version.id
-        )
+        resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version.id)
 
         resource_data_list = []
         for resource in resource_version.data:

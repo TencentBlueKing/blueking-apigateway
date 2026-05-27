@@ -389,3 +389,14 @@ source_modules = [
 forbidden_modules = [
     "apigateway.biz.gateway",
 ]
+
+[[tool.importlinter.contracts]]
+id="resource-does-not-import-resource-version-biz"
+name="resource-does-not-import-resource-version-biz"
+type="forbidden"
+source_modules = [
+    "apigateway.biz.resource",
+]
+forbidden_modules = [
+    "apigateway.biz.resource_version",
+]

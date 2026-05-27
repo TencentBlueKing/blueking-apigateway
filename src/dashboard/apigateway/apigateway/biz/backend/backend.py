@@ -23,6 +23,7 @@ from django.db import transaction
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
+from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ class BackendHandler:
 
     @staticmethod
     def get_id_to_instance(gateway_id: int) -> Dict[int, Backend]:
-        return {backend.id: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
+        return get_backend_id_to_instance(gateway_id)
 
     @staticmethod
     def get_backend_configs_by_stage(gateway_id, stage_id) -> Dict[int, BackendConfig]:
