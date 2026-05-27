@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { IResources } from '@/services/types/responses/personal-workbench.ts';
+import type { IPersonalWorkbenchListResponse, IResources } from '@/services/types/responses/personal-workbench.ts';
 
 // 个人工作台 —> MCP Server 列表/ gateway tab选项
 export type ITabKey = 'gateway' | 'mcp';
@@ -24,15 +24,27 @@ export type ITabKey = 'gateway' | 'mcp';
 // 个人工作台 —> MCP Server 列表/ gateway 审批状态
 export type IApplyStatus = '' | 'approved' | 'rejected';
 
-// 个人工作台 —> 我的代办、我的已办、我的申请
+// 个人工作台 —> 我的待办、我的已办、我的申请
 export type IApprovalStatus = 'pending' | 'applied' | 'handled';
+
+//  个人工作台 —> 接口响应内容和自定义UI界面变量
+export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
+  isExpand: boolean
+  isSelectAll: boolean
+  isLoading?: boolean
+  gateway_id?: number
+  resource_ids: number[]
+  selection?: IResources[]
+};
 
 // 个人工作台 —> MCP Server 列表/ gateway 列表请求参数
 export interface IPersonalWorkbenchListQuery {
   limit?: number
   offset?: number
   keyword?: string
-  applied_by?: string
+  time_start?: string | number
+  time_end?: string | number
+  applied_by?: string | string[]
   bk_app_code?: string
   gateway_id?: string | number
   mcp_server_id?: string | number

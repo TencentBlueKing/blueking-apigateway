@@ -56,8 +56,8 @@ import {
 import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 type IMCPServer = IMCPServerWithUIState | TableRowData;
 
@@ -437,19 +437,21 @@ const tableColumns = computed(() => {
                         { t('删除') }
                       </Button>
                     </bk-dropdown-item>
-                    <bk-dropdown-item
-                      onClick={(e: MouseEvent) => {
-                        e?.stopPropagation();
-                        handleNavObservability(row);
-                      }}
-                    >
-                      <Button
-                        size="small"
-                        text
+                    {featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY && (
+                      <bk-dropdown-item
+                        onClick={(e: MouseEvent) => {
+                          e?.stopPropagation();
+                          handleNavObservability(row);
+                        }}
                       >
-                        { t('可观测') }
-                      </Button>
-                    </bk-dropdown-item>
+                        <Button
+                          size="small"
+                          text
+                        >
+                          { t('可观测') }
+                        </Button>
+                      </bk-dropdown-item>
+                    )}
                   </bk-dropdown-menu>
                 ),
               }}

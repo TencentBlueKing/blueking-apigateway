@@ -154,7 +154,10 @@
                       {{ t("复制配置") }}
                     </BkButton>
                   </BkDropdownItem>
-                  <BkDropdownItem @click.stop="handleNavObservability">
+                  <BkDropdownItem
+                    v-if="featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY"
+                    @click.stop="handleNavObservability"
+                  >
                     <BkButton
                       size="small"
                       text

@@ -59,6 +59,7 @@
 
 <script lang="ts" setup>
 import { locale, t } from '@/locales';
+import { useFeatureFlag } from '@/stores';
 import QueryLog from './components/QueryLog.vue';
 import QueryTraceChain from './components/QueryTraceChain.vue';
 import JwtDecoder from './components/JwtDecoder.vue';
@@ -75,6 +76,7 @@ interface ITool {
 
 const route = useRoute();
 const router = useRouter();
+const featureFlagStore = useFeatureFlag();
 
 const toolCompMap: Record<string, any> = {
   queryLog: QueryLog,
@@ -122,7 +124,12 @@ const toolList = shallowRef([
     desc: t('解析出完整的base64'),
     comp: 'base64Decoder',
   },
-]);
+].filter((item) => {
+  if (item.comp.includes('queryTraceChain')) {
+    return featureFlagStore.flags.ENABLE_MCP_SERVER_OBSERVABILITY;
+  }
+  return true;
+}));
 const curTool = ref<ITool>(toolList.value[0]);
 
 const handleToolNavClick = (tool: ITool) => {

@@ -256,7 +256,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = ReleaseHistory.objects.filter_release_history(
+        queryset = ReleaseHandler.filter_release_history(
             gateway=request.gateway,
             query=data.get("keyword"),
             stage_id=data.get("stage_id"),
@@ -300,7 +300,7 @@ class DeployHistoryListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        queryset = ProgrammableGatewayDeployHistory.objects.filter_deploy_history(
+        queryset = ProgrammableGatewayReleaser.filter_deploy_history(
             gateway=request.gateway,
             query=data.get("keyword"),
             stage_id=data.get("stage_id"),

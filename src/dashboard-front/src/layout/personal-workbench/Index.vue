@@ -31,21 +31,34 @@
           :opened-keys="openedKeys"
           :active-key="activeMenuKey"
         >
-          <template v-for="menu in personalWorkbenchMenu">
-            <BkMenuItem
-              v-if="menu.enabled"
-              :key="menu.name"
-              @click.stop="() => handleGoPage(menu.name)"
-            >
-              <template #icon>
-                <AgIcon
-                  :name="menu.icon || ''"
-                  size="18"
+          <BkMenuGroup
+            v-for="menu of personalWorkbenchMenu"
+            :key="menu.name"
+            :fold-name="menu.name"
+            :name="menu.title"
+          >
+            <template v-if="menu.enabled && menu.children?.length">
+              <BkMenuItem
+                v-for="subMenu of menu.children"
+                :key="subMenu.name"
+                @click.stop="() => handleGoPage(subMenu.name)"
+              >
+                <template #icon>
+                  <AgIcon
+                    :name="subMenu.icon || ''"
+                    size="18"
+                  />
+                </template>
+                {{ subMenu.title }}
+                <BkBadge
+                  v-if="['MyPending'].includes(subMenu.name) && isExistPending"
+                  dot
+                  theme="danger"
+                  :class="{ 'en': locale.indexOf('zh-cn') === -1 }"
                 />
-              </template>
-              {{ menu.title }}
-            </BkMenuItem>
-          </template>
+              </BkMenuItem>
+            </template>
+          </BkMenuGroup>
         </BkMenu>
       </template>
 
@@ -71,45 +84,64 @@
 </template>
 
 <script setup lang="ts">
+import { locale, t } from '@/locales';
 import { useFeatureFlag } from '@/stores';
 import type { IMenu } from '@/types/common';
+import { usePersonalWorkbench } from '@/hooks';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
-const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
+const {
+  isExistPending,
+  getMyPendingData,
+  resetPersonalWorkbenchTab,
+} = usePersonalWorkbench();
 
 const collapse = ref(true);
 const activeMenuKey = ref('');
-// 页面header名
 const headerTitle = ref('');
 
 const personalWorkbenchMenu = computed<IMenu[]>(() => [
   {
-    name: 'MyPending',
-    title: t('我的代办'),
-    icon: 'wodedaiban',
+    name: 'ApplicationDeveloper',
+    title: t('应用开发者'),
+    icon: '',
     enabled: true,
+    children: [
+      {
+        name: 'MyApply',
+        title: t('我的申请'),
+        icon: 'wodeshenqing',
+        enabled: true,
+      },
+    ],
   },
   {
-    name: 'MyApply',
-    title: t('我的申请'),
-    icon: 'wodeshenqing',
+    name: 'GatewayAdministrator',
+    title: t('网关管理员'),
+    icon: '',
     enabled: true,
-  },
-  {
-    name: 'MyHandled',
-    title: t('我的已办'),
-    icon: 'wodeyiban',
-    enabled: true,
+    children: [
+      {
+        name: 'MyPending',
+        title: t('我的待办'),
+        icon: 'wodedaiban',
+        enabled: true,
+      },
+      {
+        name: 'MyHandled',
+        title: t('我的已办'),
+        icon: 'wodeyiban',
+        enabled: true,
+      },
+    ],
   },
 ]);
 
-const openedKeys = computed(() => personalWorkbenchMenu.value.map((e: IMenu) => e.name));
-
+const openedKeys = computed(() => personalWorkbenchMenu.value.map((menu: IMenu) => menu.name));
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-
 const routerViewWrapperClass = computed(() => {
   const initClass = 'default-header-view';
   if (route.meta.customHeader) {
@@ -120,19 +152,6 @@ const routerViewWrapperClass = computed(() => {
   }
   return `${initClass}`;
 });
-
-// 监听当前路由
-watch(
-  () => route.meta,
-  (meta: typeof route.meta) => {
-    activeMenuKey.value = meta.matchRoute as string;
-    headerTitle.value = meta.title as string;
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
 
 const handleCollapse = (value: boolean) => {
   collapse.value = !value;
@@ -145,6 +164,26 @@ const handleGoPage = (routeName: string) => {
 const handleBack = () => {
   router.back();
 };
+
+getMyPendingData();
+
+watch(
+  () => route.meta,
+  (meta: typeof route.meta) => {
+    const { matchRoute, title } = meta ?? {};
+    activeMenuKey.value = matchRoute as string;
+    headerTitle.value = title as string;
+    resetPersonalWorkbenchTab();
+    // 更新了个人工作台内的审批，查询网关和mcp是否还存在待办的审批
+    if (isExistPending.value) {
+      getMyPendingData();
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
 </script>
 
 <style lang="scss" scoped>
@@ -166,82 +205,67 @@ const handleBack = () => {
       }
     }
 
+    .footer-icon {
+
+      &.is-left {
+        color: #63656e;
+
+        &:hover {
+          color: #63656e;
+          cursor: pointer;
+          background: linear-gradient(270deg, #dee0ea, #eaecf2);
+        }
+      }
+    }
+
     .bk-menu {
       background-color: #ffffff !important;
 
-      .bk-menu-item {
-        margin: 0;
-        color: rgb(99 101 110);
+      .bk-menu-group {
 
-        .item-icon {
-
-          .default-icon {
-            background-color: rgb(197 199 205);
-          }
+        .group-name {
+          margin: 0 22px;
+          color: #7f889b;
         }
 
-        &:hover {
-          background-color: #f0f1f5;
-        }
-
-        &.is-active {
-          color: rgb(58 132 255);
-          background: rgb(225 236 255);
+        .bk-menu-item {
+          margin: 0;
+          color: rgb(99 101 110);
 
           .item-icon {
 
             .default-icon {
-              background-color: rgb(58 132 255);
+              background-color: rgb(197 199 205);
             }
           }
-        }
-      }
-    }
 
-    .submenu-header {
-      position: relative;
+          .item-content {
+            position: relative;
 
-      .bk-badge-main {
-        position: absolute;
-        top: 1px;
-        left: 120px;
+            .bk-badge-main {
+              position: absolute;
+              top: 8px;
+              left: 60px;
 
-        .bk-badge {
-          width: 6px;
-          height: 6px;
-          min-width: 6px;
-          background-color: #ff5656;
-        }
-      }
+              &.en {
+                left: 84px;
+              }
+            }
+          }
 
-      &-icon {
-        color: rgb(99 101 110);
-      }
+          &:hover {
+            background-color: #f0f1f5;
+          }
 
-      &-content {
-        color: rgb(99 101 110);
-      }
-    }
+          &.is-active {
+            color: rgb(58 132 255);
+            background: rgb(225 236 255);
 
-    .submenu-list {
+            .item-icon {
 
-      .bk-menu-item {
-
-        .item-content {
-          position: relative;
-
-          .bk-badge-main {
-            position: absolute;
-            top: 6px;
-            left: 56px;
-
-            .bk-badge {
-              height: 18px;
-              min-width: 18px;
-              padding: 0 2px;
-              font-size: 12px;
-              line-height: 14px;
-              background-color: #ff5656;
+              .default-icon {
+                background-color: rgb(58 132 255);
+              }
             }
           }
         }
@@ -276,7 +300,7 @@ const handleBack = () => {
         margin-right: auto;
         font-size: 16px;
         color: #313238;
-        background: #fff;
+        background-color: #ffffff;
         border-bottom: 1px solid #dcdee5;
         box-shadow: 0 3px 4px rgb(64 112 203 / 5.88%);
         align-items: center;

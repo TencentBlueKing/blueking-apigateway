@@ -16,12 +16,9 @@
 #  We undertake not to change the open source license (MIT license) applicable
 #  to the current version of the project delivered to anyone in the future.
 #  #
-from typing import ClassVar
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.apps.programmable_gateway.managers import ProgrammableGatewayDeployHistoryManager
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Gateway, Stage
@@ -60,7 +57,6 @@ class ProgrammableGatewayDeployHistory(TimestampedModelMixin, OperatorModelMixin
     )
     # publish_id -> ReleaseHistory.id
     publish_id = models.IntegerField(blank=True, null=True)
-    objects: ClassVar[ProgrammableGatewayDeployHistoryManager] = ProgrammableGatewayDeployHistoryManager()
 
     def __str__(self):
         return f"<Deploy: {self.gateway}/{self.stage}/{self.version}>"

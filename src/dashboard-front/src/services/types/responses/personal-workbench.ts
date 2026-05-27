@@ -58,4 +58,5 @@ export interface IPersonalWorkbenchListResponse {
     gateway_id: number
   }
   resources?: IResources[]
+  approvers?: string[]
 }

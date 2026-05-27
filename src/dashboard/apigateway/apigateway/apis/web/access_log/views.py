@@ -18,6 +18,7 @@
 import csv
 import random
 import time
+from copy import deepcopy
 from datetime import datetime
 from io import StringIO
 from urllib.parse import urlencode
@@ -29,7 +30,12 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.access_log.constants import ES_LOG_FIELDS, LOG_LINK_EXPIRE_SECONDS, LOG_LINK_SHARED_PATH
+from apigateway.biz.access_log.constants import (
+    ES_LOG_FIELDS,
+    LOG_LINK_EXPIRE_SECONDS,
+    LOG_LINK_SHARED_PATH,
+    TOOLBOX_LOG_FIELD_MAPPINGS,
+)
 from apigateway.biz.access_log.data_scrubber import DataScrubber
 from apigateway.biz.access_log.log import LogHandler
 from apigateway.biz.access_log.log_search import LogSearchClient
@@ -243,13 +249,23 @@ class LogDetailInfoApi(generics.RetrieveAPIView):
         """
         获取指定 request_id 日志的分享链接
         """
-        total_count, logs = LogHandler.search_logs_by_request_id(request_id)
+        total_count, logs = LogHandler.search_logs_by_request_id_for_toolbox(request_id)
 
         paginator = LimitOffsetPaginator(total_count, 0, total_count)
 
         # 将字段信息添加到结果中，便于前端展示
         results = paginator.get_paginated_data(logs)
-        results["fields"] = ES_LOG_FIELDS
+        fields = deepcopy(ES_LOG_FIELDS)
+        for mapping in TOOLBOX_LOG_FIELD_MAPPINGS:
+            fields.insert(
+                mapping["insert_at"],
+                {
+                    "label": mapping["label"],
+                    "field": mapping["output_field"],
+                    "is_filter": mapping["is_filter"],
+                },
+            )
+        results["fields"] = fields
 
         return OKJsonResponse(data=results)
 

@@ -71,7 +71,50 @@
               {{ t("申请时间：") }}
             </div>
             <div class="value">
-              {{ approvalDetail?.applied_time }}
+              {{ approvalDetail?.applied_time || approvalDetail?.created_time }}
+            </div>
+          </div>
+          <div class="item">
+            <div class="key">
+              {{ t("审批人：") }}
+            </div>
+            <div class="value">
+              <!-- 优先展示 handled_by -->
+              <template v-if="approvalDetail?.handled_by">
+                <span v-if="!featureFlagStore.isEnableDisplayName">
+                  {{ approvalDetail.handled_by }}
+                </span>
+                <bk-user-display-name
+                  v-else
+                  :user-id="approvalDetail.handled_by"
+                />
+              </template>
+
+              <!-- 没有 handled_by 再展示 approvers -->
+              <template v-else-if="approvalDetail?.approvers?.length">
+                <span v-if="!featureFlagStore.isEnableDisplayName">
+                  {{ approvalDetail.approvers.join(', ') }}
+                </span>
+                <bk-user-display-name
+                  v-else
+                  :user-id="approvalDetail.approvers.join(',')"
+                />
+              </template>
+
+              <template v-else>
+                --
+              </template>
+            </div>
+          </div>
+          <div
+            v-if="approvalDetail?.handled_time"
+            class="item"
+          >
+            <div class="key">
+              {{ t("审批时间：") }}
+            </div>
+            <div class="value">
+              {{ approvalDetail?.handled_time }}
             </div>
           </div>
           <div class="item">
@@ -99,6 +142,7 @@
 <script setup lang="tsx">
 import { t } from '@/locales';
 import { useFeatureFlag } from '@/stores';
+import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import type { IMCPServerAppPermissionApplyListOutput } from '@/services/types/responses/gateways.ts';
 import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
 
@@ -109,6 +153,7 @@ type IMaybeApproval
 type IApprovalWithOptionalFields = IMaybeApproval & {
   reason?: string
   status?: string
+  approvers?: string[]
 };
 
 interface IProps {
@@ -131,16 +176,8 @@ const { approvalDetail, activeTab = 'mcp' } = defineProps<IProps>();
 const featureFlagStore = useFeatureFlag();
 
 const renderApplyStatus = computed(() => {
-  const status = approvalDetail?.status ?? '';
-  if (['partial_approved'].includes(status)) {
-    return t('部分通过');
-  }
-
-  if (['approved'].includes(status)) {
-    return t('通过');
-  }
-
-  return t('驳回');
+  const statusMap = activeTab.includes('gateway') ? APPROVAL_HISTORY_STATUS_MAP : APPROVAL_STATUS_MAP;
+  return statusMap[approvalDetail?.status as keyof typeof statusMap];
 });
 </script>
 

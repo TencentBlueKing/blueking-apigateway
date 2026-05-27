@@ -18,12 +18,13 @@
 
 import { isEmpty, isNull, isObject, isUndefined, omitBy } from 'lodash-es';
 
-// 过滤：null / undefined / 空字符串 / 空数组 / 空对象
+// 过滤：null / undefined / isNaN / 空字符串 / 空数组 / 空对象
 export const filterSimpleEmpty = (obj: Record<string, any>) => {
   return omitBy(obj, (value) => {
     return (
       isNull(value)
       || isUndefined(value)
+      || Number.isNaN(value)
       || value === ''
       || (isObject(value) && !Array.isArray(value) && isEmpty(value))
       || (Array.isArray(value) && isEmpty(value))

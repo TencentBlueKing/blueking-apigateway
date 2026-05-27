@@ -24,10 +24,10 @@ import type { IPersonalWorkbenchFilterOptionResponse, IPersonalWorkbenchListResp
 const path = '/me/workbench';
 
 /**
- * 个人工作台 - 我的代办 - API 网关权限申请列表
+ * 个人工作台 - 我的待办 - API 网关权限申请列表
  * @param params 参数
  */
-export const getGatewayPendingList = (params: IPersonalWorkbenchListQuery) =>
+export const getGatewayPendingList = (params?: IPersonalWorkbenchListQuery) =>
   http.get<ICountAndResults<IPersonalWorkbenchListResponse>>(`${path}/permissions/gateway/pending/`, params);
 
 /**
@@ -45,10 +45,10 @@ export const getGatewayHandledList = (params: IPersonalWorkbenchListQuery) =>
   http.get(`${path}/permissions/gateway/handled/`, params);
 
 /**
- * 个人工作台 - 我的代办 - API 网关权限申请列表
+ * 个人工作台 - 我的待办 - API 网关权限申请列表
  * @param params 参数
  */
-export const getMcpPendingList = (params: IPersonalWorkbenchListQuery) =>
+export const getMcpPendingList = (params?: IPersonalWorkbenchListQuery) =>
   http.get<ICountAndResults<IPersonalWorkbenchListResponse>>(`${path}/permissions/mcp/pending/`, params);
 
 /**
@@ -59,7 +59,7 @@ export const getMcpAppliedList = (params: IPersonalWorkbenchListQuery) =>
   http.get<ICountAndResults<IPersonalWorkbenchListResponse>>(`${path}/permissions/mcp/applied/`, params);
 
 /**
- * 个人工作台 - 我的代办 - MCP Server 权限申请列表
+ * 个人工作台 - 我的待办 - MCP Server 权限申请列表
  * @param params 参数
  */
 export const getMcpHandledList = (params: IPersonalWorkbenchListQuery) =>

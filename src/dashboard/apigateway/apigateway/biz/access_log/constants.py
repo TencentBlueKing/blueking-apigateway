@@ -180,6 +180,17 @@ if settings.ENABLE_MULTI_TENANT_MODE:
 
 ES_OUTPUT_FIELDS = [field["field"] for field in ES_LOG_FIELDS]
 
+# 工具箱 access-log 字段映射（ES 字段 -> 接口返回字段）
+TOOLBOX_LOG_FIELD_MAPPINGS = [
+    {
+        "es_field": "api_name",
+        "output_field": "gateway_name",
+        "label": _("网关名称"),
+        "is_filter": True,
+        "insert_at": 5,
+    }
+]
+
 
 # 完全匹配的敏感 key，如 key access_token 仅匹配字段 access_token
 SENSITIVE_KEYS = [

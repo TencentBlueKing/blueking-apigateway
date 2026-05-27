@@ -20,6 +20,7 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -599,29 +600,26 @@ func setHandlerRequestParams(
 	auditLog *zap.Logger,
 ) error {
 	if handlerRequest.HeaderParam != nil {
-		for k, v := range handlerRequest.HeaderParam {
-			val := fmt.Sprintf("%v", v)
-			if err := req.SetHeaderParam(k, val); err != nil {
-				auditLog.Error("set header param err", zap.String(k, val), zap.Error(err))
+		for k, value := range handlerRequest.HeaderParam {
+			if err := req.SetHeaderParam(k, value); err != nil {
+				auditLog.Error("set header param err", zap.String(k, value), zap.Error(err))
 				return err
 			}
-			headerInfo[k] = val
+			headerInfo[k] = value
 		}
 	}
 	if handlerRequest.QueryParam != nil {
-		for k, v := range handlerRequest.QueryParam {
-			val := fmt.Sprintf("%v", v)
-			if err := req.SetQueryParam(k, val); err != nil {
-				auditLog.Error("set query param err", zap.String(k, val), zap.Error(err))
+		for k, value := range handlerRequest.QueryParam {
+			if err := req.SetQueryParam(k, value); err != nil {
+				auditLog.Error("set query param err", zap.String(k, value), zap.Error(err))
 				return err
 			}
 		}
 	}
 	if handlerRequest.PathParam != nil {
-		for k, v := range handlerRequest.PathParam {
-			val := fmt.Sprintf("%v", v)
-			if err := req.SetPathParam(k, val); err != nil {
-				auditLog.Error("set path param err", zap.String(k, val), zap.Error(err))
+		for k, value := range handlerRequest.PathParam {
+			if err := req.SetPathParam(k, value); err != nil {
+				auditLog.Error("set path param err", zap.String(k, value), zap.Error(err))
 				return err
 			}
 		}
@@ -896,8 +894,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditStatus        = "success"
 			auditUpstreamReqID string
 			auditHeaderInfo    map[string]string
-			auditQueryParam    map[string]any
-			auditPathParam     map[string]any
+			auditQueryParam    StringParamMap
+			auditPathParam     StringParamMap
 			auditBodyParam     any
 		)
 
@@ -936,7 +934,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
-		err = json.Unmarshal(argsBytes, &handlerRequest)
+		decoder := json.NewDecoder(bytes.NewReader(argsBytes))
+		decoder.UseNumber()
+		err = decoder.Decode(&handlerRequest)
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
 				string(argsBytes)), zap.Error(err))

@@ -621,8 +621,6 @@ class ReleaseHistory(TimestampedModelMixin, OperatorModelMixin):
         help_text="The data plane this release was published to",
     )
 
-    objects: ClassVar[managers.ReleaseHistoryManager] = managers.ReleaseHistoryManager()
-
     def __str__(self):
         return f"<Release: {self.gateway}/{self.stage}/{self.resource_version}>"
 
