@@ -1026,4 +1026,53 @@ var _ = Describe("MCPProxy", func() {
 			Expect(responseLog).To(HaveKeyWithValue("gateway_name", "test-gateway"))
 		})
 	})
+
+	Describe("stringifyRequestParamValue", func() {
+		It("should keep large integer values in decimal format", func() {
+			Expect(stringifyRequestParamValue(float64(2005000002))).To(Equal("2005000002"))
+			Expect(stringifyRequestParamValue(json.Number("2005000002"))).To(Equal("2005000002"))
+		})
+
+		It("should keep decimal values without scientific notation", func() {
+			Expect(stringifyRequestParamValue(1.25)).To(Equal("1.25"))
+			Expect(stringifyRequestParamValue(float32(1.25))).To(Equal("1.25"))
+		})
+
+		It("should preserve non-numeric values", func() {
+			Expect(stringifyRequestParamValue("abc123")).To(Equal("abc123"))
+			Expect(stringifyRequestParamValue(true)).To(Equal("true"))
+		})
+	})
+
+	Describe("decodeHandlerRequest with UseNumber", func() {
+		It("should preserve numbers for all request parameter groups", func() {
+			arguments := map[string]any{
+				"header_param": map[string]any{"X-Trace-ID": 2005000002},
+				"query_param":  map[string]any{"bk_biz_id": 2005000002, "ratio": 1.25},
+				"path_param":   map[string]any{"bk_biz_id": 2005000002},
+				"body_param": map[string]any{
+					"bk_biz_id": 2005000002,
+					"nested":    map[string]any{"id": 2005000003},
+				},
+			}
+
+			argsBytes, err := json.Marshal(arguments)
+			Expect(err).NotTo(HaveOccurred())
+
+			var handlerRequest HandlerRequest
+			decoder := json.NewDecoder(bytes.NewReader(argsBytes))
+			decoder.UseNumber()
+			err = decoder.Decode(&handlerRequest)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(handlerRequest.HeaderParam["X-Trace-ID"]).To(Equal("2005000002"))
+			Expect(handlerRequest.QueryParam["bk_biz_id"]).To(Equal("2005000002"))
+			Expect(handlerRequest.QueryParam["ratio"]).To(Equal("1.25"))
+			Expect(handlerRequest.PathParam["bk_biz_id"]).To(Equal("2005000002"))
+
+			body := handlerRequest.BodyParam.(map[string]any)
+			Expect(body["bk_biz_id"]).To(Equal(json.Number("2005000002")))
+			Expect(body["nested"].(map[string]any)["id"]).To(Equal(json.Number("2005000003")))
+		})
+	})
 })

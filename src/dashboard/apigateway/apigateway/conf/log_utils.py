@@ -59,7 +59,7 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
     }
     # 生成指定 Logger 对应的 Handlers
     logger_handlers_map: Dict[str, List[str]] = {}
-    for logger_name in ["root", "component", "mysql", "celery"]:
+    for logger_name in ["root", "component", "mysql", "celery", "sdk"]:
         handlers = []
 
         if to_console:
@@ -126,6 +126,11 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
             },
             "celery": {
                 "handlers": [*logger_handlers_map["celery"], "sentry"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "apigateway.biz.sdk": {
+                "handlers": logger_handlers_map["sdk"],
                 "level": "INFO",
                 "propagate": False,
             },

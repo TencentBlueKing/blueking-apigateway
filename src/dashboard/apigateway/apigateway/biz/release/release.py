@@ -18,7 +18,9 @@
 import copy
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from django.db.models import Q
 
 from apigateway.core.constants import (
     EVENT_FAIL_INTERVAL_TIME,
@@ -34,6 +36,42 @@ logger = logging.getLogger(__name__)
 
 
 class ReleaseHandler:
+    @staticmethod
+    def filter_release_history(
+        gateway,
+        query: str = "",
+        stage_id: Optional[int] = None,
+        created_by: str = "",
+        time_start=None,
+        time_end=None,
+        order_by: Optional[str] = None,
+        fuzzy: bool = False,
+    ):
+        queryset = ReleaseHistory.objects.filter(gateway=gateway)
+
+        # query 不是模型字段，仅支持模糊匹配，如需精确匹配，可使用具体字段
+        if query and fuzzy:
+            queryset = queryset.filter(Q(stage__name__contains=query) | Q(resource_version__version__contains=query))
+
+        if stage_id:
+            queryset = queryset.filter(stage_id=stage_id)
+
+        if created_by:
+            if fuzzy:
+                queryset = queryset.filter(created_by__contains=created_by)
+            else:
+                queryset = queryset.filter(created_by=created_by)
+
+        if time_start and time_end:
+            # time_start、time_end 须同时存在，否则无效
+            queryset = queryset.filter(created_time__range=(time_start, time_end))
+
+        if order_by:
+            queryset = queryset.order_by(order_by)
+
+        # Select related data_plane for ReleaseHistory to avoid N+1 queries.
+        return queryset.select_related("data_plane").distinct()
+
     @staticmethod
     def get_released_stage_ids(gateway_ids: List[int]) -> List[int]:
         return list(
