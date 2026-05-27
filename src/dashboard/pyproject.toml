@@ -302,7 +302,6 @@ ignore_imports = [
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
     "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
-    "apigateway.controller.tasks.release -> apigateway.biz.resource_version",
     "apigateway.controller.tasks.syncing -> apigateway.biz.release",
     "apigateway.apps.support.task -> apigateway.biz.ai.constant",
     "apigateway.apps.support.task -> apigateway.biz.ai.ai",
@@ -380,46 +379,13 @@ ignore_imports = [
 ]
 
 [[tool.importlinter.contracts]]
-id="resource-does-not-import-cross-biz"
-name="resource-does-not-import-cross-biz"
-type="forbidden"
-source_modules = [
-    "apigateway.biz.resource",
-]
-forbidden_modules = [
+id="biz-domain-independence"
+name="biz-domain-independence"
+type="independence"
+modules = [
     "apigateway.biz.gateway",
-    "apigateway.biz.resource_version",
-]
-
-[[tool.importlinter.contracts]]
-id="mcp-server-does-not-import-resource-version-biz"
-name="mcp-server-does-not-import-resource-version-biz"
-type="forbidden"
-source_modules = [
-    "apigateway.biz.mcp_server",
-]
-forbidden_modules = [
-    "apigateway.biz.resource_version",
-]
-
-[[tool.importlinter.contracts]]
-id="mcp-server-does-not-import-resource-biz"
-name="mcp-server-does-not-import-resource-biz"
-type="forbidden"
-source_modules = [
-    "apigateway.biz.mcp_server",
-]
-forbidden_modules = [
     "apigateway.biz.resource",
-]
-
-[[tool.importlinter.contracts]]
-id="resource-version-does-not-import-resource-biz"
-name="resource-version-does-not-import-resource-biz"
-type="forbidden"
-source_modules = [
     "apigateway.biz.resource_version",
-]
-forbidden_modules = [
-    "apigateway.biz.resource",
+    "apigateway.biz.permission",
+    "apigateway.biz.mcp_server",
 ]

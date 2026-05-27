@@ -78,6 +78,7 @@ DOMAIN_PATTERN = re.compile(
 HEADER_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9-]{1,100}$")
 
 STAGE_VAR_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,49}$")
+STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")
 
 
 # 调用来源类型

@@ -15,13 +15,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.core.models import ResourceVersion
 from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
+    get_used_stage_vars,
 )
 
 
@@ -84,3 +88,39 @@ def test_get_resource_names_set_returns_names(fake_resource_version):
     assert get_resource_names_set(fake_resource_version.id) == {
         resource["name"] for resource in fake_resource_version.data
     }
+
+
+def test_get_used_stage_vars_returns_vars_from_resource_data(fake_gateway):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        _data=json.dumps(
+            [
+                {
+                    "proxy": {
+                        "type": "http",
+                        "config": '{"path": "/users/{env.prefix}", "upstreams": {"hosts": [{"host": "{env.domain}"}]}}',
+                    },
+                },
+                {
+                    "proxy": {
+                        "type": "http",
+                        "config": "{}",
+                    },
+                    "stage_vars": {
+                        "in_path": ["explicit_path"],
+                        "in_host": ["explicit_host"],
+                    },
+                },
+            ]
+        ),
+    )
+
+    result = get_used_stage_vars(fake_gateway.id, resource_version.id)
+
+    assert set(result["in_path"]) == {"prefix", "explicit_path"}
+    assert set(result["in_host"]) == {"domain", "explicit_host"}
+
+
+def test_get_used_stage_vars_returns_none_for_missing_resource_version(fake_gateway):
+    assert get_used_stage_vars(fake_gateway.id, 0) is None

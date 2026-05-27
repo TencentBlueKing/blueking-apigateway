@@ -25,7 +25,6 @@ from django.conf import settings
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import (
-    OpenAPIFileResourceSchemaVersion,
     OpenAPIResourceSchema,
     OpenAPIResourceSchemaVersion,
 )
@@ -35,14 +34,14 @@ from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
-from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.service.resource_cleanup import delete_gateway_resource_versions
 from apigateway.service.resource_snapshot import (
     filter_disabled_stages_by_gateway,
     get_last_resource_updated_time,
     get_resource_id_to_proxy_snapshot,
     get_resource_labels_by_gateway,
-    get_resource_use_stage_vars,
     make_resource_schema_version,
     snapshot_resource,
 )
@@ -50,6 +49,7 @@ from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
+    get_used_stage_vars,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
@@ -127,17 +127,7 @@ class ResourceVersionHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id: int):
-        # delete gateway release
-        Release.objects.filter(gateway_id=gateway_id).delete()
-
-        # delete gateway openapi resource schema version
-        OpenAPIResourceSchemaVersion.objects.filter(resource_version__gateway_id=gateway_id).delete()
-
-        # delete gateway openapi file resource schema version
-        OpenAPIFileResourceSchemaVersion.objects.filter(gateway_id=gateway_id).delete()
-
-        # delete resource version
-        ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
+        delete_gateway_resource_versions(gateway_id)
 
     @classmethod
     def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
@@ -257,25 +247,7 @@ class ResourceVersionHandler:
     @staticmethod
     @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
     def get_used_stage_vars(gateway_id: int, id: int):
-        resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=id).first()
-        if not resource_version:
-            return None
-
-        used_in_path = set()
-        used_in_host = set()
-        for resource in resource_version.data:
-            if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
-                continue
-            if resource.get("stage_vars"):
-                stage_vars = resource["stage_vars"]
-            else:
-                stage_vars = get_resource_use_stage_vars(resource)
-            used_in_path.update(stage_vars["in_path"])
-            used_in_host.update(stage_vars["in_host"])
-        return {
-            "in_path": list(used_in_path),
-            "in_host": list(used_in_host),
-        }
+        return get_used_stage_vars(gateway_id, id)
 
     @staticmethod
     def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:

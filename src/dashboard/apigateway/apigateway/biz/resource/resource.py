@@ -25,12 +25,9 @@ from django.db.models import Q
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.models import ResourceDoc
-from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.service.contexts import ResourceAuthContext
+from apigateway.service.resource_cleanup import delete_gateway_resources, delete_resources
 from apigateway.service.resource_snapshot import (
     get_last_resource_updated_time,
     get_resource_updated_time,
@@ -57,33 +54,11 @@ class ResourceHandler:
 
     @staticmethod
     def delete_by_gateway_id(gateway_id):
-        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-        if not resource_ids:
-            return
-        ResourceHandler.delete_resources(resource_ids)
+        delete_gateway_resources(gateway_id)
 
     @staticmethod
     def delete_resources(resource_ids: List[int]):
-        if not resource_ids:
-            return
-
-        # 1. delete auth config context
-        Context.objects.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids).delete()
-
-        # 2. delete proxy
-        Proxy.objects.filter(resource_id__in=resource_ids).delete()
-
-        # 3. delete plugin binding
-        PluginBinding.objects.filter(
-            scope_type=PluginBindingScopeEnum.RESOURCE.value,
-            scope_id__in=resource_ids,
-        ).delete()
-
-        # 4. delete resource doc
-        ResourceDoc.objects.filter(resource_id__in=resource_ids).delete()
-
-        # 5. delete resource
-        Resource.objects.filter(id__in=resource_ids).delete()
+        delete_resources(resource_ids)
 
     @staticmethod
     def get_resource_use_stage_vars(resource: dict) -> dict:

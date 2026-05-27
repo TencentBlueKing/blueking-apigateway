@@ -19,6 +19,8 @@ import re
 
 from django.conf import settings
 
+from apigateway.common.constants import STAGE_VAR_FOR_PATH_PATTERN  # noqa: F401
+
 # bk app code
 APP_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
@@ -36,6 +38,3 @@ MAX_BACKEND_TIMEOUT_IN_SECOND = settings.MAX_BACKEND_TIMEOUT_IN_SECOND
 PROGRAMMABLE_GATEWAY_ALLOWED_STAGE_NAMES = frozenset({"stage", "prod"})
 
 PROGRAMMABLE_GATEWAY_VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\+(stag|prod)$")
-
-# stage var
-STAGE_VAR_FOR_PATH_PATTERN = re.compile(r"^[\w/.-]*$")

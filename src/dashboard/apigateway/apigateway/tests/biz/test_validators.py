@@ -296,7 +296,7 @@ class TestPublishValidator:
         self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
     ):
         mocker.patch(
-            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+            "apigateway.service.publish_validator.get_used_stage_vars",
             return_value=mock_used_stage_vars,
         )
 
@@ -863,7 +863,7 @@ class TestStageVarsValidator:
                 },
             )
             mocker.patch(
-                "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+                "apigateway.service.publish_validator.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
             )
 
