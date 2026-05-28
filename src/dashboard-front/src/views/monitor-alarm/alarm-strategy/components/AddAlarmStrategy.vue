@@ -255,7 +255,7 @@
                 />
               </div>
               <div
-                v-show="filterEnabled"
+                v-if="filterEnabled"
                 class="keyword-filter-content"
               >
                 <BkForm
