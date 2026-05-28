@@ -38,6 +38,7 @@ from apigateway.biz.resource.importer.validate import ResourceImportValidator
 
 if TYPE_CHECKING:
     from apigateway.biz.resource.models import ResourceData
+
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.utils.yaml import yaml_dumps, yaml_loads

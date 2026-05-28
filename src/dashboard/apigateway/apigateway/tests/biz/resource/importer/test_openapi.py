@@ -25,6 +25,7 @@ from openapi_spec_validator.versions import get_spec_version
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
 from apigateway.biz.resource.importer.parser import BaseExporter
+from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
 from apigateway.core.models import Backend, Gateway
 from apigateway.utils.yaml import yaml_loads
@@ -1467,3 +1468,117 @@ class TestOpenAPIImportManagerValidateRefs:
         }
 
         assert OpenAPIImportManager._has_unsafe_refs(data) is False
+
+
+class TestSyncOpenAPIResourcesFromContent:
+    PATCH_PREFIX = "apigateway.biz.resource.importer.sync"
+
+    def _mock_sync_deps(self, mocker):
+        mgr = mocker.patch(f"{self.PATCH_PREFIX}.OpenAPIImportManager.load_from_content").return_value
+        mgr.validate.return_value = []
+        mgr.get_resource_list.return_value = []
+
+        imp_cls = mocker.patch(f"{self.PATCH_PREFIX}.ResourcesImporter")
+        imp = imp_cls.from_resources.return_value
+        imp.get_selected_resource_data_list.return_value = []
+        imp.get_deleted_resources.return_value = []
+        return mgr, imp
+
+    def test_returns_diff(self, fake_gateway, mocker):
+        self._mock_sync_deps(mocker)
+
+        ok, message, data = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content='{"swagger": "2.0", "paths": {}}',
+            delete_missing_resources=False,
+            doc_language="",
+        )
+
+        assert ok is True
+        assert message == ""
+        assert data["added"] == []
+        assert data["updated"] == []
+        assert data["deleted"] == []
+
+    def test_invalid_content_returns_not_ok(self, fake_gateway, mocker):
+        mocker.patch(
+            f"{self.PATCH_PREFIX}.OpenAPIImportManager.load_from_content",
+            side_effect=ValueError("bad yaml"),
+        )
+
+        ok, message, data = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content="not valid",
+            delete_missing_resources=False,
+        )
+
+        assert ok is False
+        assert "json/yaml" in message
+        assert "bad yaml" in message
+        assert data == {}
+
+    def test_validation_error_returns_not_ok(self, fake_gateway, mocker):
+        mgr, _ = self._mock_sync_deps(mocker)
+        mock_err = mocker.MagicMock()
+        mock_err.to_dict.return_value = {"message": "bad"}
+        mgr.validate.return_value = [mock_err]
+
+        ok, message, data = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content='{"swagger": "2.0", "paths": {}}',
+            delete_missing_resources=False,
+        )
+
+        assert ok is False
+        assert "bad" in message
+        assert data == {}
+
+    def test_with_doc_language(self, fake_gateway, mocker):
+        self._mock_sync_deps(mocker)
+
+        mock_parser = mocker.patch(f"{self.PATCH_PREFIX}.OpenAPIParser").return_value
+        mock_parser.parse.return_value = []
+        mock_doc_importer = mocker.patch(f"{self.PATCH_PREFIX}.DocImporter").return_value
+
+        ok, message, data = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content='{"swagger": "2.0", "paths": {}}',
+            delete_missing_resources=False,
+            doc_language="zh",
+        )
+
+        mock_parser.parse.assert_called_once()
+        mock_doc_importer.import_docs.assert_called_once()
+        assert ok is True
+        assert message == ""
+
+    def test_added_and_updated_classification(self, fake_gateway, mocker):
+        _, imp = self._mock_sync_deps(mocker)
+
+        created_rd = mocker.MagicMock()
+        created_rd.metadata = {"is_created": True}
+        created_rd.resource.id = 1
+
+        updated_rd = mocker.MagicMock()
+        updated_rd.metadata = {}
+        updated_rd.resource.id = 2
+
+        imp.get_selected_resource_data_list.return_value = [created_rd, updated_rd]
+        imp.get_deleted_resources.return_value = [{"id": 3}]
+
+        ok, message, data = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content='{"swagger": "2.0", "paths": {}}',
+            delete_missing_resources=True,
+        )
+
+        assert ok is True
+        assert message == ""
+        assert data["added"] == [{"id": 1}]
+        assert data["updated"] == [{"id": 2}]
+        assert data["deleted"] == [{"id": 3}]

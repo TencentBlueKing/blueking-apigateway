@@ -24,8 +24,8 @@ from celery import shared_task
 
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
-from apigateway.biz.release import ReleaseHandler
 from apigateway.core.constants import ReleaseHistoryStatusEnum
+from apigateway.service.release import wait_release_done
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +237,7 @@ def sync_mcp_server_after_release(
         release_history_id,
     )
 
-    final_status = ReleaseHandler.wait_release_done(release_history_id)
+    final_status = wait_release_done(release_history_id)
 
     if final_status != ReleaseHistoryStatusEnum.SUCCESS.value:
         logger.warning(

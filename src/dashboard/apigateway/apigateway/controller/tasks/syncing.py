@@ -21,7 +21,6 @@ import uuid
 from celery import shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
-from apigateway.biz.release.waiter import wait_release_done
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
@@ -32,6 +31,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Release, ReleaseHistory
 from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.release import wait_release_done
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
