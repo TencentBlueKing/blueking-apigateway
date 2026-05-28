@@ -222,7 +222,7 @@ const versionCountAlert = computed(() => {
   if (versionCount.value >= 100) {
     return {
       theme: 'error' as const,
-      title: t('当前已创建 {n} 个资源版本，已达到上限 100 个，无法创建新版本。请删除不再使用的旧版本以释放配额。', { n: versionCount.value }),
+      title: t('当前已创建 {n} 个资源版本，已达到上限 100 个。请删除不再使用的旧版本以释放配额。', { n: versionCount.value }),
     };
   }
   if (versionCount.value > 80) {
