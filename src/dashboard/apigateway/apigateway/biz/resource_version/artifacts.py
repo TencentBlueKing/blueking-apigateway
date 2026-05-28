@@ -48,7 +48,7 @@ class ResourceVersionArtifactHandler:
 
         exporter = OpenAPIExportManager(
             api_version=resource_version.version,
-            title="the openapi of %s" % gateway.name,
+            title=f"the openapi of {gateway.name}",
         )
         OpenAPIFileResourceSchemaVersion.objects.create(
             gateway=gateway,
