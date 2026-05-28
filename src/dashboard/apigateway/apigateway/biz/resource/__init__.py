@@ -17,6 +17,4 @@
 #
 from .resource import ResourceHandler  # noqa
 from .proxy import ProxyHandler  # noqa
-from .label import ResourceLabelHandler  # noqa
 from .openapi_schema import ResourceOpenAPISchemaHandler  # noqa
-from .url import ResourceURLHandler  # noqa

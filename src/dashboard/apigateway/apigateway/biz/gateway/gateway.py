@@ -33,7 +33,6 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
-from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
@@ -339,10 +338,6 @@ class GatewayHandler:
             .annotate(count=Count("gateway_id"))
         )
         return {i["gateway_id"]: i["count"] for i in resource_count}
-
-    @staticmethod
-    def get_max_resource_count(gateway_name: str):
-        return get_max_resource_count(gateway_name)
 
     @staticmethod
     def get_operation_statuses(gateways: List[Gateway]) -> Dict[int, dict]:

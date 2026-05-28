@@ -33,7 +33,6 @@ from apigateway.biz.gateway import ReleaseError, release
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
@@ -46,6 +45,8 @@ from apigateway.components.bkpaas import (
 )
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
+from apigateway.service.resource_snapshot import get_resource_labels_by_ids
+from apigateway.service.resource_version_schema import get_resource_schema
 from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -98,7 +99,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels_by_ids(label_ids),
+                "labels": get_resource_labels_by_ids(label_ids),
             },
         )
         return OKJsonResponse(data=output_slz.data)
@@ -132,7 +133,7 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
         schema_result = {"resource_id": resource_id}
 
         # 获取对应资源的 schema
-        schema = ResourceVersionHandler.get_resource_schema(instance.resource_version.id, resource_id)
+        schema = get_resource_schema(instance.resource_version.id, resource_id)
         schema_result["parameter_schema"] = schema.get("parameters", [])
         schema_result["response_schema"] = schema.get("responses", {})
         request_body = schema.get("requestBody")

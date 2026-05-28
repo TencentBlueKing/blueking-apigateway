@@ -31,9 +31,11 @@ from apigateway.service.resource_version_schema import (
 
 
 @pytest.fixture(autouse=True)
-def clear_get_used_stage_vars_cache():
+def clear_resource_version_schema_caches():
+    get_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
     yield
+    get_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
 
 

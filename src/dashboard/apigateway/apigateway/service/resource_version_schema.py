@@ -42,6 +42,7 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
     return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
 
+@cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
 def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
     """获取资源版本中的资源名称列表, 缓存 5 分钟
 

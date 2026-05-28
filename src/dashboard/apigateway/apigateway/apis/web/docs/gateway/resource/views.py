@@ -22,7 +22,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.resource import ResourceLabelHandler
+from apigateway.service.resource_snapshot import get_resource_labels_by_ids
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import ResourceListInputSLZ, ResourceOutputSLZ
@@ -51,7 +51,7 @@ class ResourceListApi(GatewayDocsPermissionMixin, generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels_by_ids(label_ids),
+                "labels": get_resource_labels_by_ids(label_ids),
             },
         )
         return OKJsonResponse(data=output_slz.data)

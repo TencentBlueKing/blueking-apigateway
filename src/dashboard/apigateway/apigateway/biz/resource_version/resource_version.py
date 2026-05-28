@@ -18,9 +18,8 @@
 #
 import datetime
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from cachetools import TTLCache, cached
 from django.conf import settings
 
 from apigateway.apps.audit.constants import OpTypeEnum
@@ -33,7 +32,6 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
-from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.service.resource_snapshot import (
@@ -46,8 +44,6 @@ from apigateway.service.resource_snapshot import (
 )
 from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
-    get_resource_names_set,
-    get_resource_schema,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
@@ -106,9 +102,7 @@ class ResourceVersionHandler:
         """
         if resource_version_id:
             resource_version_data = ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
-            resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-                resource_version_id
-            )
+            resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version_id)
             for resource in resource_version_data:
                 resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
             return resource_version_data
@@ -237,20 +231,6 @@ class ResourceVersionHandler:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
 
     @staticmethod
-    def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
-        """
-        获取指定版本的资源对应的api schema
-        """
-        return get_resource_schema(resource_version_id, resource_id)
-
-    @staticmethod
-    def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
-        """
-        获取资源版本下的资源与 api schema 的映射关系
-        """
-        return get_resource_id_to_schema_by_resource_version(resource_version_id)
-
-    @staticmethod
     def get_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:
         """
         获取资源版本下的资源name 与 api schema 的映射关系
@@ -290,17 +270,6 @@ class ResourceVersionHandler:
             if backend_id:
                 backend_to_resources[backend_id].append(resource_data)
         return backend_to_resources
-
-    @staticmethod
-    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-    def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
-        """获取资源版本中的资源名称列表, 缓存 5 分钟
-
-        Args:
-            resource_version_id (int): 资源版本 ID
-            raise_exception (bool, optional): 是否抛出异常, 如果资源版本不存在, 则抛出异常. 默认 False
-        """
-        return get_resource_names_set(resource_version_id, raise_exception)
 
     @staticmethod
     def is_resource_version_referenced(resource_version_id: int) -> bool:

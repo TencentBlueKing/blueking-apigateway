@@ -45,6 +45,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
+from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.version import get_next_version, get_next_version_with_type
 
@@ -174,9 +175,7 @@ class ResourceVersionRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
         resource_backends = get_backend_id_to_instance(request.gateway.id)
 
         # 查询哪些资源有配置对应的 schema
-        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-            instance.id
-        )
+        resource_id_with_schema_dict = get_resource_id_to_schema_by_resource_version(instance.id)
 
         context = {
             "resource_doc_updated_time": resource_docs_updated_time,

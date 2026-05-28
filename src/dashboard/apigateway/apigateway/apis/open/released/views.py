@@ -26,9 +26,10 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayNamePermission,
 )
 from apigateway.apis.open.released import serializers
-from apigateway.biz.resource import ResourceURLHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release, ReleasedResource
+from apigateway.service.resource_snapshot import get_resource_url_tmpl
+from apigateway.service.resource_version_schema import get_resource_schema
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
 
@@ -68,7 +69,7 @@ class ReleasedResourceRetrieveApi(generics.RetrieveAPIView):
             raise Http404
 
         # 查询资源schema
-        resource["schema"] = ResourceVersionHandler.get_resource_schema(resource_version_id, resource["id"])
+        resource["schema"] = get_resource_schema(resource_version_id, resource["id"])
 
         return resource
 
@@ -103,7 +104,7 @@ class ReleasedResourceListByGatewayNameApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "resource_url_tmpl": ResourceURLHandler.get_resource_url_tmpl(),
+                "resource_url_tmpl": get_resource_url_tmpl(),
                 "api_name": self.request.gateway.name,
                 "stage_name": stage_name,
             },

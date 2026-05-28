@@ -201,20 +201,6 @@ class TestResourceVersionHandler:
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
 
-    def test_get_resource_schema(self, fake_resource, fake_resource_version, fake_resource_schema_with_body):
-        openapi_schema_version = G(
-            OpenAPIResourceSchemaVersion,
-            resource_version=fake_resource_version,
-            schema=[
-                {
-                    "resource_id": fake_resource.id,
-                    "schema": fake_resource_schema_with_body.schema,
-                }
-            ],
-        )
-        resource_schema = ResourceVersionHandler.get_resource_schema(fake_resource_version.id, fake_resource.id)
-        assert resource_schema["requestBody"] == fake_resource_schema_with_body.schema["requestBody"]
-
     def test_is_resource_version_referenced_by_release(self, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
         assert ResourceVersionHandler.is_resource_version_referenced(rv.id) is False

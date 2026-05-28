@@ -211,7 +211,7 @@ class TestPreparedRequestURL:
     )
     def test_get_request_url(self, mocker, params, expected):
         mocker.patch(
-            "apigateway.apis.web.api_test.prepared_request.ResourceURLHandler.get_resource_url_tmpl",
+            "apigateway.apis.web.api_test.prepared_request.get_resource_url_tmpl",
             return_value="http://example.com/{api_name}/{stage_name}/{resource_path}",
         )
 

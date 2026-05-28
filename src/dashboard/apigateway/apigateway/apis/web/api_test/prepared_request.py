@@ -23,8 +23,8 @@ from typing import Any, Dict, Optional
 from django.utils.translation import gettext as _
 from requests.structures import CaseInsensitiveDict
 
-from apigateway.biz.resource import ResourceURLHandler
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
+from apigateway.service.resource_snapshot import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
@@ -108,7 +108,7 @@ class PreparedRequestURL:
             resource_path = render_path(resource_path, self.path_params)
 
         return get_resource_url(
-            resource_url_tmpl=ResourceURLHandler.get_resource_url_tmpl(),
+            resource_url_tmpl=get_resource_url_tmpl(),
             gateway_name=self.gateway_name,
             stage_name=self.stage_name,
             resource_path=resource_path,

@@ -21,11 +21,11 @@ from typing import Any, Dict, List, Optional
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.gateway_label import save_gateway_labels
+from apigateway.service.resource_cleanup import delete_resources
 
 from .legacy_synchronizers import LegacyTransformHeadersToPluginSynchronizer, LegacyUpstreamToBackendSynchronizer
 
@@ -130,7 +130,7 @@ class ResourcesImporter:
             return []
 
         unspecified_resource_ids = [resource["id"] for resource in unspecified_resources]
-        ResourceHandler.delete_resources(unspecified_resource_ids)
+        delete_resources(unspecified_resource_ids)
 
         return unspecified_resources
 

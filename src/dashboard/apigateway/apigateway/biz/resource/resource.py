@@ -26,7 +26,6 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.service.contexts import ResourceAuthContext
-from apigateway.service.resource_cleanup import delete_resources
 
 
 class ResourceHandler:
@@ -44,10 +43,6 @@ class ResourceHandler:
         auth_config.update(config)
 
         ResourceAuthContext().save(resource_id, auth_config)
-
-    @staticmethod
-    def delete_resources(resource_ids: List[int]):
-        delete_resources(resource_ids)
 
     @staticmethod
     def filter_by_resource_filter_condition(gateway_id: int, condition: Dict[str, Any]):

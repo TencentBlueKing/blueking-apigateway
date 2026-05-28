@@ -56,9 +56,7 @@ from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
-from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
@@ -68,6 +66,8 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
+from apigateway.service.resource_snapshot import get_resource_labels
+from apigateway.service.resource_version_schema import get_resource_schema
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -589,7 +589,7 @@ class GatewayResourceListApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels(resource_ids),
+                "labels": get_resource_labels(resource_ids),
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )
@@ -662,7 +662,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
             )
 
         # 获取资源 OpenAPI Schema
-        resource_schema = ResourceVersionHandler.get_resource_schema(resource_version_id, resource_data.id)
+        resource_schema = get_resource_schema(resource_version_id, resource_data.id)
 
         # 生成文档信息
         doc_info = self._generate_doc_info(request.gateway, stage_name, resource_data, doc_data)
