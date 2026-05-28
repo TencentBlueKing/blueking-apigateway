@@ -57,6 +57,7 @@ const {
   // 文档包含的sdk语言列表
   sdkLanguages = [
     'python',
+    'golang',
     'java',
   ],
   langList = undefined,

@@ -23,7 +23,6 @@
       v-if="curTab === 'gateway'"
       v-model="language"
       :margin-bottom="0"
-      :sdk-languages="['python', 'java', 'golang']"
       @select="handleLangSelect"
     />
     <div
