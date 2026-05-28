@@ -28,7 +28,7 @@ from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.core.models import ResourceVersion
-from apigateway.service.resource.snapshot import get_resource_use_stage_vars
+from apigateway.service.resource import get_resource_use_stage_vars
 
 
 def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:

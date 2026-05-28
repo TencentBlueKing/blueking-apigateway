@@ -104,13 +104,14 @@ Service organization guide:
   only after several related service modules exist or a file starts mixing
   unrelated capabilities, for example `service/resource/snapshot.py`,
   `service/resource/cleanup.py`, and `service/resource/labels.py`.
-- For `service/<domain>/` packages, external callers must import public symbols
-  from `apigateway.service.<domain>`, not from leaf modules such as
+- For `service/<domain>/` packages, external callers must import public symbols from
+  `apigateway.service.<domain>`, not from leaf modules such as
   `apigateway.service.<domain>.<capability>`. The package `__init__.py` owns the
   public API and `__all__`; leaf modules must not define `__all__`.
-- Service package internals may depend on sibling leaf modules, but should use
-  absolute imports rooted at `apigateway.service` for those implementation
-  dependencies. Do not use parent relative imports such as `..` inside `service/`.
+- Service package internals may use single-dot relative imports for local
+  leaf modules, but should not use parent relative imports such as `..` inside
+  `service/`. When reaching outside the current package, use absolute imports
+  rooted at `apigateway.service`.
 - Function names should describe the action, domain, and output shape or side
   effect. Use `get_*` for reads, `delete_*` or `clear_*` for destructive writes,
   `build_*` for construction, `format_*` or `normalize_*` for shape changes,
