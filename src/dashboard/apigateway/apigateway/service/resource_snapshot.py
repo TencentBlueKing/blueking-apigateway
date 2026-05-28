@@ -84,6 +84,9 @@ def get_resource_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
 
 
 def get_resource_use_stage_vars(resource: dict) -> dict:
+    """
+    获取资源使用的 stage vars
+    """
     used_in_path = set()
     used_in_host = set()
     proxy_config = json.loads(resource["proxy"]["config"])
@@ -91,6 +94,7 @@ def get_resource_use_stage_vars(resource: dict) -> dict:
     used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
     proxy_upstreams = proxy_config.get("upstreams")
     if proxy_upstreams:
+        # 覆盖环境配置
         for host in proxy_upstreams["hosts"]:
             for match in STAGE_VAR_PATTERN.findall(host["host"]):
                 used_in_host.add(match)
@@ -109,6 +113,10 @@ def snapshot_resource(
     api_label_map=None,
     plugin_map=None,
 ):
+    """
+    - can add field
+    - should not delete field!!!!!!!!!
+    """
     data = {
         "id": resource.pk,
         "name": resource.name,
@@ -129,6 +137,7 @@ def snapshot_resource(
     else:
         data["proxy"] = proxy_map[resource.id]
 
+    # 资源使用的 stage vars
     if data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
         data["stage_vars"] = get_resource_use_stage_vars(data)
 
@@ -165,6 +174,7 @@ def snapshot_resource(
 
 
 def get_last_resource_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
+    """获取网关下资源的最近更新时间"""
     return (
         Resource.objects.filter(gateway_id=gateway_id)
         .order_by("-updated_time")
@@ -174,6 +184,7 @@ def get_last_resource_updated_time(gateway_id: int) -> Optional[datetime.datetim
 
 
 def get_resource_updated_time(gateway_id: int, name: str) -> str:
+    """获取网关下某个资源的更新时间"""
     resource = Resource.objects.filter(gateway_id=gateway_id, name=name).only("updated_time").first()
     if not resource:
         return ""
@@ -185,7 +196,12 @@ def get_resource_url_tmpl() -> str:
 
 
 def make_resource_schema_version(resource_version: ResourceVersion):
+    """
+    创建resource schema version
+    """
     resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
+
+    # 查询资源所有的schema
     resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
 
     schema_list = [
