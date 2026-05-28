@@ -1516,6 +1516,7 @@ class TestSyncOpenAPIResourcesFromContent:
 
         assert result.ok is False
         assert "json/yaml" in result.message
+        assert "bad yaml" in result.message
 
     def test_validation_error_returns_not_ok(self, fake_gateway, mocker):
         mgr, _ = self._mock_sync_deps(mocker)

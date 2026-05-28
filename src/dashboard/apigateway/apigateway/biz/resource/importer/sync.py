@@ -20,6 +20,8 @@ import json
 import logging
 from dataclasses import dataclass, field
 
+from django.utils.html import escape as html_escape
+
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
@@ -52,9 +54,12 @@ def sync_openapi_resources_from_content(
             content,
             need_delete_unspecified_resources=delete_missing_resources,
         )
-    except Exception:
+    except Exception as err:
         logger.exception("failed to load openapi content")
-        return OpenAPIResourceSyncResult(ok=False, message="导入内容为无效的 json/yaml 数据")
+        return OpenAPIResourceSyncResult(
+            ok=False,
+            message=f"导入内容为无效的 json/yaml 数据，{html_escape(str(err))}。",
+        )
 
     validate_err_list = openapi_manager.validate()
     if validate_err_list:
