@@ -109,7 +109,8 @@ Service organization guide:
   `apigateway.service.<domain>.<capability>`. The package `__init__.py` owns the
   public API and `__all__`; leaf modules must not define `__all__`.
 - Service package internals may depend on sibling leaf modules, but should use
-  relative imports for those implementation dependencies.
+  absolute imports rooted at `apigateway.service` for those implementation
+  dependencies. Do not use parent relative imports such as `..` inside `service/`.
 - Function names should describe the action, domain, and output shape or side
   effect. Use `get_*` for reads, `delete_*` or `clear_*` for destructive writes,
   `build_*` for construction, `format_*` or `normalize_*` for shape changes,

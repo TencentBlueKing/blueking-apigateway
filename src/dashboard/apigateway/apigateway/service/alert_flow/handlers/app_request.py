@@ -25,10 +25,10 @@ from apigateway.apps.monitor.constants import AlarmStatusEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.components.bkpaas import get_app_maintainers, get_tenant_id_for_app_developers
 from apigateway.core.models import Resource
+from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
 from apigateway.utils import time as time_utils
 
 from .base import Alerter
-from ..helpers import AlertHandler, MonitorEvent  # noqa: TID252
 
 
 class AppRequestDimension(BaseModel):

@@ -21,8 +21,7 @@ from typing import List
 from django.conf import settings
 
 from apigateway.apps.monitor.constants import SOURCE_TIME_OFFSET_SECONDS
-
-from ...es.clients import BKLogESClient  # noqa: TID252
+from apigateway.service.es.clients import BKLogESClient
 
 
 class LogSearchClient:

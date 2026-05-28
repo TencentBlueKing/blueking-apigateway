@@ -29,8 +29,7 @@ from apigateway.common.constants import STAGE_VAR_FOR_PATH_PATTERN
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, GatewayStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, ResourceVersion, Stage
-
-from ..resource_version.schema import get_used_stage_vars  # noqa: TID252
+from apigateway.service.resource_version.schema import get_used_stage_vars
 
 
 class ReleaseValidationError(Exception):

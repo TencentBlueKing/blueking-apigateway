@@ -26,10 +26,10 @@ from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.core.models import ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
+from apigateway.service.resource.labels import get_resource_labels_by_gateway
 from apigateway.utils.yaml import yaml_dumps, yaml_export_dumps
 
 from .schema import get_resource_id_to_schema_by_resource_version
-from ..resource.labels import get_resource_labels_by_gateway  # noqa: TID252
 
 OPENAPI_METHOD_ANY_EXTENSION = "x-bk-apigateway-method-any"
 OPENAPI_RESOURCE_EXTENSION = "x-bk-apigateway-resource"

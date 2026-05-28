@@ -21,9 +21,9 @@ from typing import Any, Dict, List
 from django.conf import settings
 
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION
+from apigateway.service.alert_flow.helpers import MonitorEvent
 
 from .base import Alerter
-from ..helpers import MonitorEvent  # noqa: TID252
 
 
 class NginxErrorAlerter(Alerter):
