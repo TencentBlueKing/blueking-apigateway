@@ -209,7 +209,7 @@ class AlarmRecordListApi(generics.ListAPIView):
         return AlarmRecord.objects.all()
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).prefetch_related("alarm_strategies")
         queryset = queryset.order_by("-id")
 
         page = self.paginate_queryset(queryset)
