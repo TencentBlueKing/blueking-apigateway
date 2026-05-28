@@ -60,19 +60,52 @@ Higher layers may import lower layers only. If you need to cross this boundary,
 put shared logic in the lower appropriate layer instead of adding an import
 exception.
 
+Important call rules:
+
+- `apis/` view and serializer code may call `biz/` and `service/` directly.
+- `biz/` may call `service/`. Package-local `biz` imports are allowed inside
+  one domain or subpackage, but do not add peer-domain imports covered by the
+  `biz-domain-independence` contract.
+- `service/` modules may call each other and may contain cross-model operations
+  when the operation is focused and reusable.
+- Direct model or queryset use from views and serializers is limited to simple
+  local reads or writes that are already idiomatic in Django.
+
+Function placement guide:
+
+- Keep a function where it is if it is only used inside one module or `biz`
+  domain, and moving it would only create a proxy wrapper.
+- Put a function in `biz/` when it owns use-case flow: what should happen,
+  permission-aware decisions, lifecycle branching, audit or side-effect
+  orchestration, or sequencing multiple lower-level operations.
+- Put a function in `service/` when it is a focused reusable operation over
+  model relationships or domain data: snapshots, schema lookup, cleanup,
+  reusable cross-model queries, relation normalization, or data shaping.
+- When both seem possible, keep orchestration in `biz/` and extract only the
+  smallest reusable relation or data operation to `service/`.
+
 Layer intent:
 
 - `apis/` - HTTP API surfaces and serializers. Serializers own input
   validation and output definitions, and must not introduce N+1 queries for
   computed fields. Views stay thin: simple control flow, parameter building,
-  lower-layer calls, and response assembly. Keep view-level logic inside its
-  own API module even when another API surface has the same or similar logic.
-- `biz/` - main business logic, including cross-model querysets,
-  orchestration, and processing. A `biz` module should not import another
-  `biz` module; move shared coordination into `service/` when needed.
+  lower-layer calls, and response assembly. Call `biz/` for workflows,
+  decisions, permission-aware orchestration, and multi-model operations. Call
+  `service/` for focused reusable domain operations, snapshots, cleanup
+  helpers, schema lookup, and pure or query helpers. Keep view-level logic
+  inside its own API module even when another API surface has the same or
+  similar logic.
+- `biz/` - workflow and decision logic, including permission-aware
+  orchestration and multi-model operations. Keep peer model domains such as
+  gateway, resource, resource version, permission, and MCP server independent;
+  move shared coordination or reusable domain operations into `service/` when
+  needed. Internal helpers within the same `biz` domain may stay inside that
+  domain.
 - `controller/` - release pipeline, APISIX config conversion, transformers, distributors, publisher tasks.
-- `service/` - thin shared services with limited business logic. Use this
-  layer mainly to break cyclic imports or avoid `biz`-to-`biz` imports.
+- `service/` - focused reusable domain operations, snapshots, cleanup helpers,
+  schema lookup, and pure or query helpers. `service` modules may import each
+  other and may perform cross-model work when the operation is reusable outside
+  one view or `biz` workflow.
 - `components/` - external BlueKing system clients.
 - `apps/` - Django app model layer plus admin, migrations, management commands,
   and Celery tasks. Keep `models.py` rich for single-model properties and
