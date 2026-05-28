@@ -346,6 +346,10 @@ export default defineComponent({
                       />
                     )}
                     <span
+                      v-bk-tooltips={{
+                        content: `${displayServiceName} ${displayOperationName} | ${label}`,
+                        placement: 'top',
+                      }}
                       class={[
                         'span-svc-name',
                         { 'is-children-collapsed': isParent && !isChildrenExpanded },
@@ -488,8 +492,8 @@ export default defineComponent({
                           <Divider
                             direction="vertical"
                             type="solid"
-                            color="#979ba5"
-                            class="m-4px!"
+                            color="#979ba5!"
+                            class="mx-4px!"
                           />
                           {label}
                         </span>

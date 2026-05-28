@@ -43,7 +43,9 @@
 
     /* 左侧文字：反向排列 */
     &.left {
-      right: 100%;
+      left: auto;
+      right: auto;
+      transform: translateY(-50%) translateX(-100%);
       margin-right: 4px;
       flex-direction: row-reverse;
     }
