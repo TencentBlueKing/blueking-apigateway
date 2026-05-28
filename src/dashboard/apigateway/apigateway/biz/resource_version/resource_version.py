@@ -36,7 +36,6 @@ from apigateway.biz.context import ContextHandler
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
-from apigateway.service.resource_cleanup import delete_gateway_resource_versions
 from apigateway.service.resource_snapshot import (
     filter_disabled_stages_by_gateway,
     get_last_resource_updated_time,
@@ -49,7 +48,6 @@ from apigateway.service.resource_version_schema import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
-    get_used_stage_vars,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
@@ -124,10 +122,6 @@ class ResourceVersionHandler:
         for resource in resource_version_data:
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
         return resource_version_data
-
-    @staticmethod
-    def delete_by_gateway_id(gateway_id: int):
-        delete_gateway_resource_versions(gateway_id)
 
     @classmethod
     def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
@@ -241,13 +235,6 @@ class ResourceVersionHandler:
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
-
-    # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
-    # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
-    @staticmethod
-    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-    def get_used_stage_vars(gateway_id: int, id: int):
-        return get_used_stage_vars(gateway_id, id)
 
     @staticmethod
     def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:

@@ -19,7 +19,6 @@
 import pytest
 from django_dynamic_fixture import G
 
-from apigateway.biz.resource import ResourceHandler
 from apigateway.core import models
 from apigateway.core.constants import GatewayStatusEnum, PublishEventNameTypeEnum, PublishEventStatusEnum
 
@@ -98,13 +97,6 @@ class TestGateway:
     #     # Setting any extra info should result in empty dict
     #     gateway.extra_info = {"key": "value"}
     #     assert gateway._extra_info == {}
-
-
-class TestResource:
-    def test_snapshot(self, fake_resource):
-        snapshot = ResourceHandler.snapshot(fake_resource, as_dict=True)
-        assert snapshot
-        assert isinstance(snapshot, dict)
 
 
 class TestPublishEvent:

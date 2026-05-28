@@ -18,15 +18,9 @@
 from typing import List
 
 from apigateway.apps.label.models import APILabel
-from apigateway.core.models import Gateway
-from apigateway.service.gateway_label import save_gateway_labels
 
 
 class GatewayLabelHandler:
-    @staticmethod
-    def save_labels(gateway: Gateway, names: List[str], username: str = ""):
-        save_gateway_labels(gateway, names, username)
-
     @staticmethod
     def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:
         return list(APILabel.objects.filter(gateway_id=gateway_id, id__in=ids).values_list("id", flat=True))

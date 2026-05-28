@@ -16,10 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import itertools
 import operator
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from django.db.models import Q
 
@@ -27,13 +26,7 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.service.contexts import ResourceAuthContext
-from apigateway.service.resource_cleanup import delete_gateway_resources, delete_resources
-from apigateway.service.resource_snapshot import (
-    get_last_resource_updated_time,
-    get_resource_updated_time,
-    get_resource_use_stage_vars,
-    snapshot_resource,
-)
+from apigateway.service.resource_cleanup import delete_resources
 
 
 class ResourceHandler:
@@ -53,43 +46,8 @@ class ResourceHandler:
         ResourceAuthContext().save(resource_id, auth_config)
 
     @staticmethod
-    def delete_by_gateway_id(gateway_id):
-        delete_gateway_resources(gateway_id)
-
-    @staticmethod
     def delete_resources(resource_ids: List[int]):
         delete_resources(resource_ids)
-
-    @staticmethod
-    def get_resource_use_stage_vars(resource: dict) -> dict:
-        """
-        获取资源使用的 stage vars
-        """
-        return get_resource_use_stage_vars(resource)
-
-    @staticmethod
-    def snapshot(
-        resource,
-        as_dict=False,
-        proxy_map=None,
-        context_map=None,
-        disabled_stage_map=None,
-        api_label_map=None,
-        plugin_map=None,
-    ):
-        """
-        - can add field
-        - should not delete field!!!!!!!!!
-        """
-        return snapshot_resource(
-            resource,
-            as_dict=as_dict,
-            proxy_map=proxy_map,
-            context_map=context_map,
-            disabled_stage_map=disabled_stage_map,
-            api_label_map=api_label_map,
-            plugin_map=plugin_map,
-        )
 
     @staticmethod
     def filter_by_resource_filter_condition(gateway_id: int, condition: Dict[str, Any]):
@@ -212,16 +170,6 @@ class ResourceHandler:
             gateway_id: [item["id"] for item in group]
             for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
         }
-
-    @staticmethod
-    def get_last_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
-        """获取网关下资源的最近更新时间"""
-        return get_last_resource_updated_time(gateway_id)
-
-    @staticmethod
-    def get_updated_time(gateway_id: int, name: str) -> str:
-        """获取网关下某个资源的更新时间"""
-        return get_resource_updated_time(gateway_id, name)
 
     @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:

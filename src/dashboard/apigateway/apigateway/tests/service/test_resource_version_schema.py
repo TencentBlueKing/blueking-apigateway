@@ -17,6 +17,7 @@
 #
 import json
 
+import pytest
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
@@ -27,6 +28,13 @@ from apigateway.service.resource_version_schema import (
     get_resource_schema,
     get_used_stage_vars,
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_get_used_stage_vars_cache():
+    get_used_stage_vars.cache_clear()
+    yield
+    get_used_stage_vars.cache_clear()
 
 
 def test_get_resource_schema_returns_empty_without_schema(fake_resource_version):
@@ -88,6 +96,76 @@ def test_get_resource_names_set_returns_names(fake_resource_version):
     assert get_resource_names_set(fake_resource_version.id) == {
         resource["name"] for resource in fake_resource_version.data
     }
+
+
+@pytest.mark.parametrize(
+    "resource_data, expected",
+    [
+        (
+            [
+                {
+                    "proxy": {
+                        "type": "mock",
+                    }
+                }
+            ],
+            {
+                "in_path": [],
+                "in_host": [],
+            },
+        ),
+        (
+            [
+                {
+                    "proxy": {
+                        "type": "http",
+                        "config": json.dumps(
+                            {
+                                "path": "/hello/{env.region}/",
+                                "upstreams": {
+                                    "hosts": [
+                                        {"host": "https://{env.domain}"},
+                                    ]
+                                },
+                            }
+                        ),
+                    }
+                }
+            ],
+            {
+                "in_path": ["region"],
+                "in_host": ["domain"],
+            },
+        ),
+        (
+            [
+                {
+                    "proxy": {
+                        "type": "http",
+                        "config": json.dumps(
+                            {
+                                "path": "/hello/{env.region}/",
+                                "upstreams": {},
+                            }
+                        ),
+                    }
+                }
+            ],
+            {
+                "in_path": ["region"],
+                "in_host": [],
+            },
+        ),
+    ],
+)
+def test_get_used_stage_vars_matches_resource_version_handler_cases(fake_gateway, resource_data, expected):
+    resource_version = G(
+        ResourceVersion,
+        gateway=fake_gateway,
+        _data=json.dumps(resource_data),
+    )
+
+    assert get_used_stage_vars(fake_gateway.id, resource_version.id) == expected
 
 
 def test_get_used_stage_vars_returns_vars_from_resource_data(fake_gateway):

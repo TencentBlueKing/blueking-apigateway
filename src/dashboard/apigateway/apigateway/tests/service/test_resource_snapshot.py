@@ -22,6 +22,8 @@ from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.models import Resource, Stage, StageResourceDisabled
 from apigateway.service.resource_snapshot import (
     filter_disabled_stages_by_gateway,
+    get_last_resource_updated_time,
+    get_resource_id_to_proxy_snapshot,
     get_resource_labels,
     get_resource_labels_by_gateway,
     get_resource_labels_by_ids,
@@ -29,6 +31,7 @@ from apigateway.service.resource_snapshot import (
     get_resource_url_tmpl,
     get_resource_use_stage_vars,
     make_resource_schema_version,
+    snapshot_resource,
 )
 
 
@@ -85,6 +88,13 @@ def test_filter_disabled_stages_by_gateway(fake_gateway):
     }
 
 
+def test_get_resource_id_to_proxy_snapshot(fake_resource):
+    result = get_resource_id_to_proxy_snapshot([fake_resource.id])
+
+    assert fake_resource.id in result
+    assert result[fake_resource.id]["type"] == "http"
+
+
 def test_get_resource_use_stage_vars():
     assert get_resource_use_stage_vars(
         {
@@ -99,6 +109,18 @@ def test_get_resource_use_stage_vars():
         "in_path": ["region"],
         "in_host": ["region"],
     }
+
+
+def test_snapshot_resource(fake_resource):
+    snapshot = snapshot_resource(fake_resource, as_dict=True)
+
+    assert snapshot["id"] == fake_resource.id
+    assert snapshot["proxy"]["type"] == "http"
+    assert "contexts" in snapshot
+
+
+def test_get_last_resource_updated_time(fake_resource):
+    assert get_last_resource_updated_time(fake_resource.gateway_id) == fake_resource.updated_time
 
 
 def test_get_resource_updated_time(fake_resource):

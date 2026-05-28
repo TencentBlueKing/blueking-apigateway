@@ -19,7 +19,9 @@ def test_delete_gateway_resources_removes_resource_related_rows(fake_resource):
     delete_gateway_resources(fake_resource.gateway_id)
 
     assert not Resource.objects.filter(id=fake_resource.id).exists()
-    assert not Context.objects.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id=fake_resource.id).exists()
+    assert not Context.objects.filter(
+        scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id=fake_resource.id
+    ).exists()
     assert not Proxy.objects.filter(resource_id=fake_resource.id).exists()
     assert not ResourceDoc.objects.filter(resource_id=fake_resource.id).exists()
 

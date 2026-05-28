@@ -20,14 +20,9 @@ from typing import Dict, List
 from django.db.models import Count
 
 from apigateway.core.models import Proxy
-from apigateway.service.resource_snapshot import get_resource_id_to_proxy_snapshot
 
 
 class ProxyHandler:
-    @staticmethod
-    def get_resource_id_to_snapshot(resource_ids: List[int]) -> Dict[int, Dict]:
-        return get_resource_id_to_proxy_snapshot(resource_ids)
-
     @staticmethod
     def get_resource_count_by_backend(backend_ids: List[int]) -> Dict[int, int]:
         """获取每个 backend 对应的资源个数"""

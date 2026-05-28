@@ -36,7 +36,6 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler, ResourceLabelHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
@@ -48,6 +47,7 @@ from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.contexts import ResourceAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
@@ -119,7 +119,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             context={
                 "labels": ResourceLabelHandler.get_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
-                "backends": BackendHandler.get_id_to_instance(request.gateway.id),
+                "backends": get_backend_id_to_instance(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "plugin_counts": PluginBindingHandler.get_resource_ids_plugin_binding_count(
                     gateway_id=request.gateway.id, resource_ids=resource_ids
@@ -591,7 +591,7 @@ class ResourceExportApi(generics.CreateAPIView):
             many=True,
             context={
                 "labels": ResourceLabelHandler.get_labels_by_gateway(request.gateway.id),
-                "backends": BackendHandler.get_id_to_instance(gateway_id=request.gateway.id),
+                "backends": get_backend_id_to_instance(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },

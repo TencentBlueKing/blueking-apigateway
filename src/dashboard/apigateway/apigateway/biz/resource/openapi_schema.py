@@ -18,18 +18,6 @@
 #  #
 from typing import Optional
 
-from apigateway.core.models import ResourceVersion
-from apigateway.service.resource_snapshot import make_resource_schema_version
-
-
-class ResourceOpenAPISchemaVersionHandler:
-    @staticmethod
-    def make_new_version(resource_version: ResourceVersion):
-        """
-        创建resource schema version
-        """
-        make_resource_schema_version(resource_version)
-
 
 class ResourceOpenAPISchemaHandler:
     @staticmethod
