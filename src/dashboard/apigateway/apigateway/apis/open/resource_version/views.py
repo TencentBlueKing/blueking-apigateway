@@ -24,11 +24,8 @@ from rest_framework import generics, status
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
-from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
-from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
@@ -75,25 +72,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
-        instance = ResourceVersionHandler.create_resource_version(request.gateway, data, request.user.username)
-
-        # 创建文档版本
-        if ResourceDoc.objects.filter(gateway=request.gateway).exists():
-            ResourceDocVersion.objects.create(
-                gateway=request.gateway,
-                resource_version=instance,
-                data=ResourceDocVersionHandler().make_version(request.gateway.id),
-            )
-
-        exporter = OpenAPIExportManager(
-            api_version=instance.version,
-            title="the openapi of %s" % request.gateway.name,
-        )
-        # 创建openapi file版本
-        OpenAPIFileResourceSchemaVersion.objects.create(
+        instance = ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
-            resource_version=instance,
-            schema=exporter.export_resource_version_openapi(instance),
+            data=data,
+            username=request.user.username,
         )
 
         return V1OKJsonResponse(
