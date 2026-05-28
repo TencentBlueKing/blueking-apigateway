@@ -1533,13 +1533,6 @@ onBeforeUnmount(() => {
   height: 280px;
 }
 
-:deep(.bk-picker-confirm-action) {
-
-  a:first-child {
-    display: none;
-  }
-}
-
 :deep(.access-log-table) {
 
   .head-text {
