@@ -68,3 +68,14 @@ class TestGatewayRelatedAppHandler:
         G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
         GatewayRelatedAppHandler.update_related_app_codes(fake_gateway, [])
         assert GatewayRelatedApp.objects.filter(gateway=fake_gateway).count() == 0
+
+    def test_sync_related_apps_returns_codes_before_and_after(self, fake_gateway):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+
+        related_app_codes_before, related_app_codes_after = GatewayRelatedAppHandler.sync_related_apps(
+            gateway_id=fake_gateway.id,
+            bk_app_codes=["app1", "app2"],
+        )
+
+        assert related_app_codes_before == ["app1"]
+        assert sorted(related_app_codes_after) == ["app1", "app2"]

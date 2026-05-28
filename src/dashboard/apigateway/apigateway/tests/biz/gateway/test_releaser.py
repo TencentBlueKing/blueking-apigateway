@@ -22,7 +22,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.biz.gateway import (
+from apigateway.biz.release.gateway_releaser import (
     GatewayReleaser,
     ReleaseError,
     ReleaseValidationError,
@@ -140,7 +140,7 @@ class TestGatewayReleaser:
         celery_mock_task,
     ):
         mock_release_gateway_by_registry = mocker.patch(
-            "apigateway.biz.gateway.releaser.release_gateway_by_registry",
+            "apigateway.biz.release.gateway_releaser.release_gateway_by_registry",
             wraps=celery_mock_task,
         )
         releaser = GatewayReleaser(gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)

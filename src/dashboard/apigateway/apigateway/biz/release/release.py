@@ -18,8 +18,9 @@
 import copy
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from django.conf import settings
 from django.db.models import Q
 
 from apigateway.core.constants import (
@@ -30,7 +31,11 @@ from apigateway.core.constants import (
     ReleaseStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, ReleaseHistory
+from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory
+from apigateway.utils.exception import LockTimeout
+from apigateway.utils.redis_utils import Lock
+
+from .gateway_releaser import ReleaseError, release
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +97,29 @@ class ReleaseHandler:
             return event.get_release_history_status()
 
         return ReleaseHistoryStatusEnum.FAILURE.value
+
+    @staticmethod
+    def release_to_stages(
+        gateway: Gateway, resource_version_id: int, stage_ids: List[int], username: str, comment: str
+    ) -> Tuple[bool, str]:
+        try:
+            for stage_id in stage_ids:
+                with Lock(
+                    f"{gateway.id}_{stage_id}",
+                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
+                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
+                ):
+                    release(
+                        gateway=gateway,
+                        stage_id=stage_id,
+                        resource_version_id=resource_version_id,
+                        username=username,
+                        comment=comment,
+                    )
+        except (LockTimeout, ReleaseError) as err:
+            return False, str(err)
+
+        return True, ""
 
     @staticmethod
     def list_publish_events_by_release_history_id(release_history_id: int) -> List[PublishEvent]:
