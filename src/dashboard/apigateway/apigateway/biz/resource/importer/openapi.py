@@ -36,6 +36,7 @@ from apigateway.biz.resource.importer.validate import ResourceImportValidator
 
 if TYPE_CHECKING:
     from apigateway.biz.resource.models import ResourceData
+
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.resource_snapshot import get_resource_labels_by_gateway

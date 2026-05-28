@@ -33,11 +33,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.v2.mcp_server import (
-    build_mcp_server_list_context,
-    build_mcp_server_list_queryset,
-    validate_and_enrich_mcp_server_for_retrieve,
-)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
@@ -53,7 +48,6 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.gateway.type import GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
 from apigateway.biz.released_resource_doc.generators import DocGenerator
 from apigateway.biz.resource_doc import ResourceDocHandler
@@ -139,7 +133,7 @@ class GatewayListApi(generics.ListAPIView):
         fuzzy = slz.validated_data.get("fuzzy")
         keyword = slz.validated_data.get("keyword")
 
-        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
         tenant_id = None
@@ -157,12 +151,6 @@ class GatewayListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
-        # 过滤出用户类型为指定类型的网关
-        all_gateway_ids = list(queryset.values_list("id", flat=True))
-        # 过滤出已发布的网关 ID
-        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(all_gateway_ids)
-
-        queryset = queryset.filter(id__in=released_gateway_ids)
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
@@ -277,14 +265,15 @@ class MCPServerListApi(generics.ListAPIView):
         slz = MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = build_mcp_server_list_queryset(
+        queryset = MCPServerHandler.build_list_queryset(
             keyword=slz.validated_data.get("keyword"),
             category=slz.validated_data.get("category"),
             is_public=True,
+            order_by="-updated_time",
         )
 
         page = self.paginate_queryset(queryset)
-        context = build_mcp_server_list_context(page)
+        context = MCPServerHandler.build_list_context(page)
 
         # Add categories map
         context["categories"] = MCPServerHandler.build_categories_map([mcp_server.id for mcp_server in page])
@@ -741,7 +730,7 @@ class MCPServerRetrieveApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        context = validate_and_enrich_mcp_server_for_retrieve(
+        context = MCPServerHandler.build_retrieve_context(
             instance,
             check_public=True,
             username=request.user.username,

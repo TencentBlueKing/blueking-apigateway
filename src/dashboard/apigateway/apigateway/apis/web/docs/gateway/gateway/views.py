@@ -23,11 +23,11 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
-from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX, GatewayStatusEnum
-from apigateway.core.models import Gateway, Release
+from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
@@ -53,8 +53,7 @@ class GatewayListApi(generics.ListAPIView):
 
         user_tenant_id = get_user_tenant_id(request)
 
-        # 网关公开，启用中
-        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        queryset = GatewayHandler.list_public_released_gateways()
 
         # 根据租户过滤 => app 开发者 可以看到本租户 + 全租户的网关列表及文档 => 所以这里以 user_tenant_id 当成 app_tenant_id 过滤
         queryset = gateway_filter_by_app_tenant_id(queryset, user_tenant_id)
@@ -68,9 +67,7 @@ class GatewayListApi(generics.ListAPIView):
         if not show_plugin_gateway:
             queryset = queryset.exclude(name__startswith=PLUGIN_GATEWAY_PREFIX)
 
-        # 网关存在已发布的版本
-        released_gateway_ids = Release.objects.all().values_list("gateway_id", flat=True).distinct()
-        gateways = list(queryset.filter(id__in=released_gateway_ids))
+        gateways = list(queryset)
 
         gateway_ids = [gateway.id for gateway in gateways]
 

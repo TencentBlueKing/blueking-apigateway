@@ -108,7 +108,7 @@ export function createStrategy(apigwId: number, params: IAlarmStrategyInputSLZ) 
  * @param params 更新参数
  */
 export function updateStrategy(apigwId: number, id: number, params: IAlarmStrategyInputSLZ) {
-  return http.put(`/gateways/${apigwId}/monitors/alarm/strategies/${id}`, params);
+  return http.put(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/`, params);
 }
 
 /**
@@ -117,7 +117,7 @@ export function updateStrategy(apigwId: number, id: number, params: IAlarmStrate
  * @param id 告警策略id
  */
 export function deleteStrategy(apigwId: number, id: number) {
-  return http.delete(`/gateways/${apigwId}/monitors/alarm/strategies/${id}`);
+  return http.delete(`/gateways/${apigwId}/monitors/alarm/strategies/${id}/`);
 }
 
 /**

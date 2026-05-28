@@ -22,6 +22,8 @@ from zoneinfo import ZoneInfo
 
 from django_dynamic_fixture import G
 
+import apigateway.apis.v2.open.serializers as open_serializers
+import apigateway.apis.v2.open.views as open_views
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -534,19 +536,19 @@ class TestMCPServerRetrieveApi:
 
         # Mock MCPServerHandler 方法
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], ["label1"]),
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -601,19 +603,19 @@ class TestMCPServerRetrieveApi:
         mock_resource.allow_apply_permission = True
 
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([mock_resource], {1: ["label1"]}),
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -655,19 +657,19 @@ class TestMCPServerRetrieveApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -702,19 +704,19 @@ class TestMCPServerRetrieveApi:
         )
 
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -749,19 +751,19 @@ class TestMCPServerRetrieveApi:
 
         # Mock MCPServerHandler 方法
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_tools_resources_and_labels",
             return_value=([], []),
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts_count_map",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts_count_map",
             return_value={mcp_server.id: 0},
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_prompts",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_prompts",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.apis.v2.mcp_server.MCPServerHandler.get_user_custom_doc",
+            "apigateway.biz.mcp_server.MCPServerHandler.get_user_custom_doc",
             return_value="",
         )
 
@@ -1609,3 +1611,12 @@ class TestMCPServerListCategories:
         mcp_data = next(r for r in result["data"]["results"] if r["id"] == mcp_server.id)
         assert len(mcp_data["categories"]) == 1
         assert mcp_data["categories"][0]["name"] == "official"
+
+
+def test_v2_open_does_not_import_shared_api_mcp_module():
+    shared_api_mcp_module = ".".join(["apigateway", "apis", "v2", "mcp_server"])
+
+    assert not any(getattr(obj, "__module__", "") == shared_api_mcp_module for obj in open_views.__dict__.values())
+    assert not any(
+        getattr(obj, "__module__", "") == shared_api_mcp_module for obj in open_serializers.__dict__.values()
+    )

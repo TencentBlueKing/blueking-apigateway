@@ -21,7 +21,8 @@ from pydantic import TypeAdapter
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
-from apigateway.core.constants import GatewayTypeEnum
+from apigateway.common.constants import CallSourceTypeEnum
+from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -200,6 +201,30 @@ class TestGatewaySaver:
 
         assert saver._get_gateway_unfiltered_sensitive_keys("foo") == ["bar"]
         assert saver._get_gateway_unfiltered_sensitive_keys("bar") is None
+
+    def test_sync_gateway_uses_gateway_saver(self, fake_gateway, mocker):
+        mocked_saver = mocker.patch("apigateway.biz.gateway.gateway.GatewaySaver")
+        mocked_saver.return_value.save.return_value = fake_gateway
+
+        result = GatewayHandler.sync_gateway(
+            fake_gateway,
+            {
+                "name": fake_gateway.name,
+                "status": GatewayStatusEnum.ACTIVE.value,
+                "is_public": True,
+            },
+            "app",
+            "admin",
+            CallSourceTypeEnum.OpenAPI,
+            [1],
+        )
+
+        assert result == fake_gateway
+        mocked_saver.assert_called_once()
+        assert mocked_saver.call_args.kwargs["id"] == fake_gateway.id
+        assert mocked_saver.call_args.kwargs["bk_app_code"] == "app"
+        assert mocked_saver.call_args.kwargs["source"] == CallSourceTypeEnum.OpenAPI
+        assert mocked_saver.call_args.kwargs["data_plane_ids"] == [1]
 
     def test_save_with_data_plane_ids_creates_bindings(self, unique_gateway_name):
         """Test save with data_plane_ids creates gateway-dataplane bindings on new gateway"""

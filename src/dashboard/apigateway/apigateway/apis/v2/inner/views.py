@@ -30,10 +30,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.v2.mcp_server import (
-    build_mcp_server_list_context,
-    build_mcp_server_list_queryset,
-)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -48,7 +44,6 @@ from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
-from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -100,7 +95,7 @@ class GatewayListApi(generics.ListAPIView):
         name = slz.validated_data.get("name")
         fuzzy = slz.validated_data.get("fuzzy")
 
-        queryset = Gateway.objects.filter(status=GatewayStatusEnum.ACTIVE.value, is_public=True)
+        queryset = GatewayHandler.list_public_released_gateways()
 
         # 可以看到 全租户网关 + 本租户网关
         tenant_id = None
@@ -115,12 +110,6 @@ class GatewayListApi(generics.ListAPIView):
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
 
-        # 过滤出用户类型为指定类型的网关
-        all_gateway_ids = list(queryset.values_list("id", flat=True))
-        # 过滤出已发布的网关 ID
-        released_gateway_ids = ReleaseHandler.filter_released_gateway_ids(all_gateway_ids)
-
-        queryset = queryset.filter(id__in=released_gateway_ids)
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
@@ -820,14 +809,14 @@ class MCPServerListApi(generics.ListAPIView):
         slz = serializers.MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = build_mcp_server_list_queryset(
+        queryset = MCPServerHandler.build_list_queryset(
             keyword=slz.validated_data.get("keyword"),
             order_by=slz.validated_data.get("order_by", "-updated_time"),
             ids=slz.validated_data.get("mcp_server_ids") or None,
         )
 
         page = self.paginate_queryset(queryset)
-        context = build_mcp_server_list_context(page)
+        context = MCPServerHandler.build_list_context(page)
 
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)

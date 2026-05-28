@@ -64,6 +64,7 @@
               allow-create
               filterable
               @change="() => handleNameChange(index, row.name)"
+              @blur="() => handleSelectBlur(index, row)"
             >
               <BkOption
                 v-for="item in headersNameList"
@@ -302,6 +303,29 @@ const handleNameChange = (index: number, name: string) => {
   }
 
   tableData.value[index].value = '';
+
+  nextTick(() => {
+    const selectRef = formInputRef.value?.get(`name-input-${index}-1`);
+    if (selectRef) {
+      (selectRef as any).handleInputChange?.(name);
+    }
+  });
+};
+
+// BkSelect allow-create 失焦时自动提交自定义输入值
+const handleSelectBlur = (index: number, row: Record<string, any>) => {
+  // 直接从 DOM input 读取用户输入，避免组件内部状态在 blur 时被清空
+  const selectRef = formInputRef.value?.get(`name-input-${index}-1`);
+  const inputEl = (selectRef as any)?.$el?.querySelector?.('input');
+  const typedValue = inputEl?.value || '';
+  if (!typedValue || row.name === typedValue) return;
+
+  // 当前 row.name 不为合法选项时，说明是自定义输入，自动提交
+  const isExistingOption = headersNameList.value.some((item: { value: string }) => item.value === row.name);
+  if (!isExistingOption) {
+    row.name = typedValue;
+    handleNameChange(index, typedValue);
+  }
 };
 
 const addRow = (index: number) => {

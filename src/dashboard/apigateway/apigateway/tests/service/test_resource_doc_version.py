@@ -2,7 +2,7 @@ from ddf import G
 
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.core.models import Release, ResourceVersion
-from apigateway.service.resource_doc_version import clear_unreleased_resource_doc
+from apigateway.service.resource_doc import clear_unreleased_resource_doc
 
 
 def test_clear_unreleased_resource_doc_keeps_current_release_docs(fake_gateway, fake_stage, fake_resource_version):

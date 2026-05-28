@@ -38,7 +38,7 @@ from apigateway.core.models import (
 )
 from apigateway.service.event.event import PublishEventReporter
 from apigateway.service.mcp.mcp_server import update_stage_mcp_server_related_resource_names
-from apigateway.service.resource_doc_version import clear_unreleased_resource_doc
+from apigateway.service.resource_doc import clear_unreleased_resource_doc
 from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)

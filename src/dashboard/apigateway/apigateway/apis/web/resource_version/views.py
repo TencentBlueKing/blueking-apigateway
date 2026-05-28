@@ -27,11 +27,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
@@ -40,6 +38,7 @@ from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
 from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
@@ -120,24 +119,10 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.serializer_class(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
 
-        instance = ResourceVersionHandler.create_resource_version(request.gateway, slz.data, request.user.username)
-
-        # 创建文档版本
-        if ResourceDoc.objects.filter(gateway=request.gateway).exists():
-            ResourceDocVersion.objects.create(
-                gateway=self.request.gateway,
-                resource_version=instance,
-                data=ResourceDocVersionHandler().make_version(request.gateway.id),
-            )
-        exporter = OpenAPIExportManager(
-            api_version=instance.version,
-            title="the openapi of %s" % request.gateway.name,
-        )
-        # 创建openapi file版本
-        OpenAPIFileResourceSchemaVersion.objects.create(
+        ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
-            resource_version=instance,
-            schema=exporter.export_resource_version_openapi(instance),
+            data=slz.validated_data,
+            username=request.user.username,
         )
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 

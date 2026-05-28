@@ -41,7 +41,7 @@ class TestSyncMcpServerAfterRelease:
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.ReleaseHandler.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_done",
                 return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
             ),
             patch(
@@ -72,7 +72,7 @@ class TestSyncMcpServerAfterRelease:
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.ReleaseHandler.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_done",
                 return_value=ReleaseHistoryStatusEnum.FAILURE.value,
             ),
             patch(
@@ -96,7 +96,7 @@ class TestSyncMcpServerAfterRelease:
 
         with (
             patch(
-                "apigateway.apps.mcp_server.tasks.ReleaseHandler.wait_release_done",
+                "apigateway.apps.mcp_server.tasks.wait_release_done",
                 return_value=ReleaseHistoryStatusEnum.SUCCESS.value,
             ),
             patch(
