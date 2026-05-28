@@ -30,10 +30,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apis.v2.mcp_server import (
-    build_mcp_server_list_context,
-    build_mcp_server_list_queryset,
-)
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -820,14 +816,14 @@ class MCPServerListApi(generics.ListAPIView):
         slz = serializers.MCPServerListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = build_mcp_server_list_queryset(
+        queryset = MCPServerHandler.build_list_queryset(
             keyword=slz.validated_data.get("keyword"),
             order_by=slz.validated_data.get("order_by", "-updated_time"),
             ids=slz.validated_data.get("mcp_server_ids") or None,
         )
 
         page = self.paginate_queryset(queryset)
-        context = build_mcp_server_list_context(page)
+        context = MCPServerHandler.build_list_context(page)
 
         mcp_server_ids = [mcp_server.id for mcp_server in page]
         context["prompts_count_map"] = MCPServerHandler.get_prompts_count_map(mcp_server_ids)

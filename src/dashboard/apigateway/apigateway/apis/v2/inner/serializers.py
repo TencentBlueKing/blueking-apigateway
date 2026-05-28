@@ -24,7 +24,6 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apis.v2.mcp_server import get_categories_from_context, get_mcp_server_url_from_context
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
@@ -39,6 +38,7 @@ from apigateway.apps.permission.constants import (
     PermissionStatusEnum,
 )
 from apigateway.apps.permission.models import AppPermissionRecord
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
@@ -52,6 +52,16 @@ from apigateway.service.mcp.mcp_server import (
 from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
+
+
+def _get_mcp_server_url_from_context(context, obj) -> str:
+    least_privileges = context.get("least_privileges", {})
+    least_privilege = least_privileges.get((obj.gateway.id, obj.stage.id), "")
+    return MCPServerHandler.get_mcp_server_url(obj, least_privilege)
+
+
+def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
+    return context.get("categories", {}).get(obj.id, [])
 
 
 class GatewayListInputSLZ(serializers.Serializer):
@@ -386,13 +396,13 @@ class MCPServerBaseSLZ(serializers.Serializer):
         return obj.title if obj.title else obj.name
 
     def get_url(self, obj) -> str:
-        return get_mcp_server_url_from_context(self.context, obj)
+        return _get_mcp_server_url_from_context(self.context, obj)
 
     def get_doc_link(self, obj):
         return build_mcp_server_detail_url(obj.id)
 
     def get_categories(self, obj) -> List[Dict[str, str]]:
-        return get_categories_from_context(self.context, obj)
+        return _get_categories_from_context(self.context, obj)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"
@@ -666,7 +676,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         return obj.title if obj.title else obj.name
 
     def get_categories(self, obj) -> List[Dict[str, str]]:
-        return get_categories_from_context(self.context, obj)
+        return _get_categories_from_context(self.context, obj)
 
     def get_stage(self, obj):
         return self.context["stages"][obj.stage.id]
@@ -675,7 +685,7 @@ class MCPServerListOutputSLZ(serializers.Serializer):
         return self.context["gateways"][obj.gateway.id]
 
     def get_url(self, obj) -> str:
-        return get_mcp_server_url_from_context(self.context, obj)
+        return _get_mcp_server_url_from_context(self.context, obj)
 
     def get_detail_url(self, obj) -> str:
         return build_mcp_server_detail_url(obj.id)
