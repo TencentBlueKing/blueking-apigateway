@@ -15,19 +15,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 import os
 from dataclasses import dataclass
 from tempfile import TemporaryDirectory
 from typing import Dict, Optional
 
+from django.utils.translation import gettext as _
+
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.sdk import exceptions
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
 
 from .managers import SDKManagerFactory
 from .models import SDKContext
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -119,3 +126,44 @@ class SDKHelper:
             GatewaySDKHandler.mark_is_recommended(instance)
 
         return SDKInfo(context=context, sdk=instance)
+
+
+def generate_sdks_for_resource_version(resource_version: ResourceVersion, languages: list[str], version: str | None):
+    results = []
+    try:
+        # Any failure during SDK generation is returned as INTERNAL, and partial results are discarded.
+        with SDKHelper(resource_version=resource_version) as helper:
+            for language in languages:
+                info = helper.create(
+                    language=language,
+                    version=version or resource_version.version,
+                    operator=None,
+                )
+                results.append(
+                    {
+                        "name": info.sdk.name,
+                        "version": info.sdk.version_number,
+                        "url": info.sdk.url,
+                    }
+                )
+    except exceptions.ResourcesIsEmpty:
+        raise error_codes.INTERNAL.format(_("网关下无资源，无法生成 SDK。"), replace=True)
+    except exceptions.GenerateError:
+        raise error_codes.INTERNAL.format(_("网关 SDK 生成失败，请联系管理员。"), replace=True)
+    except exceptions.PackError:
+        raise error_codes.INTERNAL.format(_("网关 SDK 打包失败，请联系管理员。"), replace=True)
+    except exceptions.DistributeError:
+        raise error_codes.INTERNAL.format(_("网关 SDK 发布失败，请联系管理员。"), replace=True)
+    except exceptions.TooManySDKVersion as err:
+        raise error_codes.INTERNAL.format(
+            _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count), replace=True
+        )
+    except Exception:
+        logger.exception(
+            "create sdk failed for gateway %s, release %s",
+            resource_version.gateway.name,
+            resource_version.version,
+        )
+        raise error_codes.INTERNAL.format(_("网关 SDK 创建失败，请联系管理员。"), replace=True)
+
+    return results

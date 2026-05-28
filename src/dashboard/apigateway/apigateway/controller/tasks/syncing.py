@@ -21,7 +21,7 @@ import uuid
 from celery import shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
-from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.release.waiter import wait_release_done
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
 from apigateway.controller.constants import DELETE_PUBLISH_ID, GLOBAL_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor
@@ -237,7 +237,7 @@ def wait_another_release_done(release_history: ReleaseHistory, data_plane_id: in
     if release_interval >= RELEASE_GATEWAY_INTERVAL_SECOND:
         return
 
-    ReleaseHandler.wait_release_done(
+    wait_release_done(
         other_latest_release.id,
         timeout=10 * RELEASE_GATEWAY_INTERVAL_SECOND,
     )

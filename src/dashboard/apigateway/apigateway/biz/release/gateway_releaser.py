@@ -29,7 +29,7 @@ from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
 from apigateway.biz.validators import PublishValidator, ReleaseValidationError
-from apigateway.controller.tasks import (
+from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
 )

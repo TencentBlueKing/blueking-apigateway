@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import List, Tuple
 
 from django.conf import settings
 
@@ -62,3 +62,14 @@ class GatewayRelatedAppHandler:
 
         if app_codes_to_delete:
             GatewayRelatedApp.objects.filter(gateway=gateway, bk_app_code__in=app_codes_to_delete).delete()
+
+    @staticmethod
+    def sync_related_apps(gateway_id: int, bk_app_codes: List[str]) -> Tuple[List[str], List[str]]:
+        related_app_codes_before = GatewayRelatedAppHandler.get_related_app_codes(gateway_id)
+        app_codes_to_add = set(bk_app_codes) - set(related_app_codes_before)
+
+        for bk_app_code in app_codes_to_add:
+            GatewayRelatedAppHandler.add_related_app(gateway_id, bk_app_code)
+
+        related_app_codes_after = GatewayRelatedAppHandler.get_related_app_codes(gateway_id)
+        return related_app_codes_before, related_app_codes_after

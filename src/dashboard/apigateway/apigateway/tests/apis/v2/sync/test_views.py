@@ -25,7 +25,7 @@ from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
-from apigateway.core.models import Backend, BackendConfig, Resource
+from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
 
 
 @pytest.fixture()
@@ -37,6 +37,32 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    def test_gateway_related_apps_add_records_related_app_codes_before_and_after(
+        self, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
+    ):
+        G(GatewayRelatedApp, gateway=fake_gateway, bk_app_code="app1")
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.get_app_tenant_info", return_value=("single", fake_gateway.tenant_id)
+        )
+        record_gateway_op_success = mocker.patch("apigateway.apis.v2.sync.views.Auditor.record_gateway_op_success")
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.add_related_apps",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"related_app_codes": ["app1", "app2"]},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 201
+        record_gateway_op_success.assert_called_once()
+        assert record_gateway_op_success.call_args.kwargs["data_before"] == {"related_app_codes": ["app1"]}
+        assert sorted(record_gateway_op_success.call_args.kwargs["data_after"]["related_app_codes"]) == [
+            "app1",
+            "app2",
+        ]
+
     @pytest.mark.parametrize(
         "gray_stage, expected_count",
         [
@@ -59,7 +85,7 @@ class TestSyncApi:
         settings.BK_PLUGINS_DATA_PLANE_NAME = "bp"
         settings.BK_PLUGINS_DATA_PLANE_GRAY_STAGE = gray_stage
         bp_data_plane = G(DataPlane, name="bp")
-        mock_saver_cls = mocker.patch("apigateway.apis.v2.sync.views.GatewaySaver")
+        mock_saver_cls = mocker.patch("apigateway.biz.gateway.gateway.GatewaySaver")
         mock_saver_cls.return_value.save.return_value = fake_gateway
 
         gateway_name = "bp-sync-gateway"
@@ -138,6 +164,46 @@ class TestSyncApi:
 
         assert resp.status_code == 400
         assert "backends" in str(resp.json()["error"])
+
+    def test_resource_version_release_preserves_stage_id_order(
+        self, faker, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        stage_1 = G(Stage, gateway=fake_gateway)
+        stage_2 = G(Stage, gateway=fake_gateway)
+        release_to_stages = mocker.patch("apigateway.apis.v2.sync.views.ReleaseHandler.release_to_stages")
+        release_to_stages.return_value = (True, "")
+        mocker.patch(
+            "apigateway.apis.v2.sync.serializers.ReleaseInputSLZ.to_internal_value",
+            return_value={
+                "gateway": fake_gateway,
+                "stage_ids": [stage_2.id, stage_1.id],
+                "resource_version_id": resource_version.id,
+                "comment": "",
+            },
+        )
+        mocker.patch(
+            "apigateway.apis.v2.sync.views.ResourceVersion.objects.get_object_fields",
+            return_value={
+                "id": faker.pyint(),
+                "name": faker.pystr(),
+                "title": faker.pystr(),
+                "version": faker.pystr(),
+            },
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.resource_version.release",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"stage_name": ["prod"], "resource_version_name": "test"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        release_to_stages.assert_called_once()
+        assert release_to_stages.call_args.kwargs["stage_ids"] == [stage_2.id, stage_1.id]
 
     def test_gateway_sync_with_nonexistent_data_planes_returns_error(
         self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
