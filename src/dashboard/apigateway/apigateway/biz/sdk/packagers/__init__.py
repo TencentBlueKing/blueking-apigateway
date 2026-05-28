@@ -15,3 +15,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from .archive import TgzPackager
+from .maven import SourcePackager as MavenSourcePackager
+from .pypi import SourcePackager as PypiSourcePackager
+from .python import PythonPackager
+
+SourcePackager = PypiSourcePackager
+
+__all__ = [
+    "MavenSourcePackager",
+    "PypiSourcePackager",
+    "PythonPackager",
+    "SourcePackager",
+    "TgzPackager",
+]

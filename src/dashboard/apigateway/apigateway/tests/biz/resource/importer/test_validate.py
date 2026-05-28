@@ -20,8 +20,8 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
-from apigateway.biz.plugin.synchronizers import PluginConfigData
-from apigateway.biz.resource.importer.validate import ResourceImportValidator
+from apigateway.biz.plugin import PluginConfigData
+from apigateway.biz.openapi import ResourceImportValidator
 from apigateway.core.models import Resource
 from apigateway.utils.yaml import yaml_dumps
 

@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.sdk.packagers.pypi import SourcePackager
+from apigateway.biz.sdk.packagers import SourcePackager
 
 
 @pytest.fixture

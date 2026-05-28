@@ -22,7 +22,7 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk.models import SDKContext
+from apigateway.biz.sdk import SDKContext
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time

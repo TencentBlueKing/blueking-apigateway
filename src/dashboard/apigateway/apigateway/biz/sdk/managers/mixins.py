@@ -20,8 +20,7 @@ from django.conf import settings
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk.exceptions import TooManySDKVersion
-from apigateway.biz.sdk.models import SDKContext
+from apigateway.biz.sdk import SDKContext, TooManySDKVersion
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
 

@@ -32,7 +32,7 @@ from apigateway.apps.esb.bkcore.models import (
     ComponentSystem,
     ESBChannel,
 )
-from apigateway.biz.esb.permissions import ComponentPermissionManager
+from apigateway.biz.esb import ComponentPermissionManager
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import V1OKJsonResponse
 

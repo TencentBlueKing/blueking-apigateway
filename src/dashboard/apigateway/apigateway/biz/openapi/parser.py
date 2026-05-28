@@ -25,17 +25,18 @@ from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV30
 from pydantic import TypeAdapter
 
-from apigateway.biz.plugin.synchronizers import PluginConfigData
-from apigateway.biz.resource.importer.constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
-from apigateway.biz.resource.importer.schema import (
+from apigateway.biz.plugin import PluginConfigData
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
+from apigateway.core.models import Backend, Gateway, Resource
+from apigateway.utils.openapi import extract_openapi_parameters_from_path
+
+from .constants import VALID_METHOD_IN_SWAGGER_PATHITEM, OpenAPIExtensionEnum
+from .schema import (
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
     convert_openapi2_response_headers_to_openapi,
 )
-from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
-from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 
 @dataclass

@@ -16,4 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .context import ContextHandler  # noqa
+from .context import ContextHandler
+
+__all__ = ["ContextHandler"]

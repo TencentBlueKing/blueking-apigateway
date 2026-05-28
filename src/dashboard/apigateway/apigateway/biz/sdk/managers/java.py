@@ -17,10 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.distributors.bkrepo import GenericDistributor
-from apigateway.biz.sdk.distributors.maven import MavenSourceDistributor
-from apigateway.biz.sdk.generators.openapi import JavaTemplateGenerator
-from apigateway.biz.sdk.packagers.maven import SourcePackager
+from apigateway.biz.sdk.distributors import GenericDistributor, MavenSourceDistributor
+from apigateway.biz.sdk.generators import JavaTemplateGenerator
+from apigateway.biz.sdk.packagers import MavenSourcePackager
 
 from .base import BaseSDKManager
 from .mixins import SDKManagerMixin
@@ -28,7 +27,7 @@ from .mixins import SDKManagerMixin
 
 class SDKManager(SDKManagerMixin, BaseSDKManager):
     generator_cls = JavaTemplateGenerator
-    packager_cls = SourcePackager
+    packager_cls = MavenSourcePackager
     public_distributor_cls = MavenSourceDistributor
     private_distributor_cls = GenericDistributor
     language = ProgrammingLanguageEnum.JAVA

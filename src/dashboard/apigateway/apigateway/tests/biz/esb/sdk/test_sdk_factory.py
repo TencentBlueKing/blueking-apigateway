@@ -18,8 +18,8 @@
 #
 import pytest
 
-from apigateway.biz.esb.board_config import BoardConfig
-from apigateway.biz.esb.sdk.sdk_factory import PythonSDK, SimplePythonSDKManager
+from apigateway.biz.esb import BoardConfig
+from apigateway.biz.esb.sdk import PythonSDK, SimplePythonSDKManager
 
 
 @pytest.fixture()

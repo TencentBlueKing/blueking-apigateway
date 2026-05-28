@@ -30,8 +30,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
-from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.release.gateway_releaser import ReleaseError, release
+import apigateway.biz.release as release_biz
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -211,7 +210,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
-                history = release(
+                history = release_biz.release(
                     gateway=request.gateway,
                     stage_id=slz.validated_data["stage_id"],
                     resource_version_id=resource_version_id,
@@ -221,7 +220,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         except LockTimeout as err:
             logger.exception("retrieve lock timeout")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
-        except ReleaseError as err:
+        except release_biz.ReleaseError as err:
             logger.exception("release failed.")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
@@ -257,7 +256,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = ReleaseHandler.filter_release_history(
+        queryset = release_biz.ReleaseHandler.filter_release_history(
             gateway=request.gateway,
             query=data.get("keyword"),
             stage_id=data.get("stage_id"),
@@ -344,7 +343,7 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
         slz = self.get_serializer(
             release_history,
             context={
-                "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
+                "release_history_events": release_biz.ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
                 "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id]
                 ),
@@ -476,7 +475,7 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         release_history_events = []
         release_history_events_map = {}
         if release_history:
-            release_history_events = ReleaseHandler.list_publish_events_by_release_history_id(release_history.id)
+            release_history_events = release_biz.ReleaseHandler.list_publish_events_by_release_history_id(release_history.id)
             release_history_events_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                 [release_history.id]
             )

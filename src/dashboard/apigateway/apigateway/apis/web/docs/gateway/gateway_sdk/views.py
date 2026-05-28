@@ -27,8 +27,7 @@ from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.biz.sdk.models import SDKDocContext
+from apigateway.biz.sdk import GatewaySDKHandler, SDKDocContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.models import Release
 from apigateway.service.resource_version import get_resource_schema

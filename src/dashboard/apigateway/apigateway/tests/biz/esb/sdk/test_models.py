@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.biz.esb.sdk.models import DocTemplates, DummySDKDocContext, SDKDocContext
+from apigateway.biz.esb.sdk import DocTemplates, DummySDKDocContext, SDKDocContext
 
 
 class TestSDKDocContext:

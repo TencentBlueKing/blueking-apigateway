@@ -26,7 +26,7 @@ from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, Ope
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
+from apigateway.biz.resource_version import ResourceVersionArtifactHandler
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime

@@ -30,15 +30,15 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.access_log.constants import (
+from apigateway.biz.access_log import (
     ES_LOG_FIELDS,
     LOG_LINK_EXPIRE_SECONDS,
     LOG_LINK_SHARED_PATH,
     TOOLBOX_LOG_FIELD_MAPPINGS,
+    DataScrubber,
+    LogHandler,
+    LogSearchClient,
 )
-from apigateway.biz.access_log.data_scrubber import DataScrubber
-from apigateway.biz.access_log.log import LogHandler
-from apigateway.biz.access_log.log_search import LogSearchClient
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Gateway, Stage
 from apigateway.utils.paginator import LimitOffsetPaginator

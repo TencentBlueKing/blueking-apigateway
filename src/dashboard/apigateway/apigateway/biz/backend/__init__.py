@@ -16,4 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .backend import BackendHandler  # noqa
+from .backend import BackendHandler
+
+__all__ = ["BackendHandler"]

@@ -19,7 +19,7 @@
 from ddf import G
 
 from apigateway.apps.esb.bkcore.models import ComponentDoc, ComponentSystem, ESBChannel
-from apigateway.biz.esb.doc.generators import ComponentDocFactory
+from apigateway.biz.esb.doc import ComponentDocFactory
 
 
 class TestComponentDocFactory:

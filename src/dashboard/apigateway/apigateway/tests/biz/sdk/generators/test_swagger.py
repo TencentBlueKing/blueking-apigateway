@@ -19,7 +19,7 @@ import ast
 
 import pytest
 
-from apigateway.biz.sdk.generators.openapi import PythonTemplateGenerator
+from apigateway.biz.sdk.generators import PythonTemplateGenerator
 
 
 @pytest.fixture

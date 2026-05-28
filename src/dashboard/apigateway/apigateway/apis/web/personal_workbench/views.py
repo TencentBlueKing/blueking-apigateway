@@ -26,7 +26,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
-from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.common.tenant.query import (
     gateway_filter_by_user_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,

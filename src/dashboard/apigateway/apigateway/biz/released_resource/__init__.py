@@ -16,8 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .released_resource import (
-    ReleasedResourceData,  # noqa
-    ReleasedResourceHandler,  # noqa
-    get_released_resource_data,  # noqa
-)
+from .released_resource import ReleasedResourceData, ReleasedResourceHandler, get_released_resource_data
+
+__all__ = ["ReleasedResourceData", "ReleasedResourceHandler", "get_released_resource_data"]

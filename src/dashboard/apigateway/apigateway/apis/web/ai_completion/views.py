@@ -29,8 +29,7 @@ from rest_framework import generics, status
 
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.apps.support.task import batch_translate_docs
-from apigateway.biz.ai.ai import AIHandler
-from apigateway.biz.ai.constant import AIContentTypeEnum
+from apigateway.biz.ai import AIContentTypeEnum, AIHandler
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
 from .serializers import AICompletionInputSLZ, BatchTranslateInputSLZ, BatchTranslateOutputSLZ

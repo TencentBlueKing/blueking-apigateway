@@ -23,11 +23,12 @@ from typing import Tuple
 from django.utils.html import escape as html_escape
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
-from apigateway.biz.resource_doc.importer import DocImporter
+from apigateway.biz.openapi import OpenAPIImportManager
+from apigateway.biz.resource_doc.importer.importers import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
 from apigateway.core.models import Gateway
+
+from .importers import ResourcesImporter
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
+from apigateway.biz.resource_doc import ArchiveFileFactory
 from apigateway.utils.archivefile import TgzArchiveFile, ZipArchiveFile
 
 

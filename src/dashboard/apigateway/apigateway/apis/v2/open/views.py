@@ -43,13 +43,11 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.access_log.log import LogHandler
-from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.gateway.type import GatewayTypeHandler
+from apigateway.biz.access_log import LogHandler
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
-from apigateway.biz.released_resource_doc.generators import DocGenerator
+from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes

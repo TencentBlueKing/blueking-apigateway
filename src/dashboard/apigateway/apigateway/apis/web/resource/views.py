@@ -36,14 +36,14 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
+from apigateway.biz.openapi import OpenAPIImportManager, ResourceDataConvertor, ResourceImportValidator
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
-from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource import ResourcesSaver
+from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
-from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc.importer import OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage

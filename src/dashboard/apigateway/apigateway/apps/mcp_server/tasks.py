@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from celery import shared_task
 
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
+from apigateway.biz.mcp_server import MCPServerPromptHandler
 from apigateway.core.constants import ReleaseHistoryStatusEnum
 from apigateway.service.release import wait_release_done
 

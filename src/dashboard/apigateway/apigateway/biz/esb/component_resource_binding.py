@@ -18,7 +18,7 @@
 from typing import List
 
 from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
-from apigateway.biz.resource.models import ResourceData
+from apigateway.biz.resource import ResourceData
 
 
 class ComponentResourceBindingHandler:

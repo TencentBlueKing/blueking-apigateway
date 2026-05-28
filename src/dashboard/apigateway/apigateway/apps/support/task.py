@@ -25,8 +25,7 @@ from django.utils import timezone
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.ai.ai import AIHandler
-from apigateway.biz.ai.constant import AIContentTypeEnum
+from apigateway.biz.ai import AIContentTypeEnum, AIHandler
 
 logger = logging.getLogger(__name__)
 

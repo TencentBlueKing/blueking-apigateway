@@ -18,9 +18,8 @@
 import pytest
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.importer.models import ArchiveDoc
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, BaseParser, OpenAPIParser
+from apigateway.biz.resource_doc import NoResourceDocError
+from apigateway.biz.resource_doc.importer import ArchiveDoc, ArchiveParser, BaseParser, OpenAPIParser
 from apigateway.core.models import Resource
 
 

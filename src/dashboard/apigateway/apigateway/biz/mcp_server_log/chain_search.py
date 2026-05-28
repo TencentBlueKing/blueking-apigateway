@@ -20,10 +20,10 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 
-from apigateway.biz.mcp_server_log.es_query import search_all_layers, search_by_upstream_request_id
-from apigateway.biz.mcp_server_log.gateway_log import search_gateway_log
-from apigateway.biz.mcp_server_log.span_builder import build_spans, merge_mcp_logs
-from apigateway.biz.mcp_server_log.utils import calc_max_end_time
+from .es_query import search_all_layers, search_by_upstream_request_id
+from .gateway_log import search_gateway_log
+from .span_builder import build_spans, merge_mcp_logs
+from .utils import calc_max_end_time
 from apigateway.service.es import BKLogESClient
 
 logger = logging.getLogger(__name__)

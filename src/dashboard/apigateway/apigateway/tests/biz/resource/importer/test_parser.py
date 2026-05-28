@@ -20,7 +20,7 @@
 import pytest
 from ddf import G
 
-from apigateway.biz.resource.importer.parser import BaseParser, ResourceDataConvertor
+from apigateway.biz.openapi import BaseParser, ResourceDataConvertor
 from apigateway.core.models import Backend, Resource
 
 

@@ -22,7 +22,7 @@ from io import StringIO
 
 import pytest
 
-from apigateway.biz.access_log.constants import ES_LOG_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS
+from apigateway.biz.access_log import ES_LOG_FIELDS, TOOLBOX_LOG_FIELD_MAPPINGS
 
 pytestmark = pytest.mark.django_db
 

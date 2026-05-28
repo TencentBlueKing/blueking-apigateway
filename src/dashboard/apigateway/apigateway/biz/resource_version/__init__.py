@@ -16,13 +16,26 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .resource_version import ResourceVersionHandler  # noqa
-from .resource_doc_version import ResourceDocVersionHandler  # noqa
+from .artifacts import ResourceVersionArtifactHandler
 from .diff import (
-    DiffMixin,  # noqa
-    ResourceContexts,  # noqa
-    ResourceDifferHandler,  # noqa
-    ResourceHTTPProxy,  # noqa
-    ResourceMockProxy,  # noqa
-    ResourcePluginConfig,  # noqa
+    DiffMixin,
+    ResourceContexts,
+    ResourceDifferHandler,
+    ResourceHTTPProxy,
+    ResourceMockProxy,
+    ResourcePluginConfig,
 )
+from .resource_doc_version import ResourceDocVersionHandler
+from .resource_version import ResourceVersionHandler
+
+__all__ = [
+    "DiffMixin",
+    "ResourceContexts",
+    "ResourceDifferHandler",
+    "ResourceDocVersionHandler",
+    "ResourceHTTPProxy",
+    "ResourceMockProxy",
+    "ResourcePluginConfig",
+    "ResourceVersionArtifactHandler",
+    "ResourceVersionHandler",
+]

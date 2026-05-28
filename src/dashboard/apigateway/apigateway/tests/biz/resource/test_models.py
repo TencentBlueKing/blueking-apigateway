@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.resource.models import ResourceBackendConfig
+from apigateway.biz.resource import ResourceBackendConfig
 
 
 class TestResourceBackendConfig:

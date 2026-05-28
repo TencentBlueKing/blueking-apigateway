@@ -33,12 +33,10 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
-from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError
+from apigateway.biz.resource_doc.exporter import ResourceVersionDocArchiveGenerator
+from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionArtifactHandler, ResourceVersionHandler
+from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion

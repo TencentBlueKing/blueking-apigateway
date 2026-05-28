@@ -26,7 +26,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2Permission
 from apigateway.apps.esb.bkcore.models import AppPermissionApplyRecord, ComponentSystem, ESBChannel
-from apigateway.biz.esb.permissions import ComponentPermissionManager
+from apigateway.biz.esb import ComponentPermissionManager
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Gateway
 from apigateway.utils.responses import OKJsonResponse

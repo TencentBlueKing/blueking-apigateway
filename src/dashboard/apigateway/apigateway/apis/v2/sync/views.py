@@ -41,13 +41,11 @@ from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser
-from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
-from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
+from apigateway.biz.resource.importer import sync_openapi_resources_from_content
+from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
+from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter
+from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
+from apigateway.biz.sdk import generate_sdks_for_resource_version
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info

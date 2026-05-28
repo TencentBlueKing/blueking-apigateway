@@ -22,7 +22,7 @@ from typing import List
 
 from packaging.version import parse as parse_version
 
-from apigateway.biz.sdk.models import Packager
+from apigateway.biz.sdk import Packager
 from apigateway.utils.archivefile import TgzArchiveFile
 from apigateway.utils.file import iter_files_recursive
 

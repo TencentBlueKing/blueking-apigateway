@@ -21,8 +21,8 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.models import ResourceDocVersion
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator, ResourceVersionDocArchiveGenerator
+from apigateway.biz.resource_doc import NoResourceDocError
+from apigateway.biz.resource_doc.exporter import DocArchiveGenerator, ResourceVersionDocArchiveGenerator
 from apigateway.core.models import Resource, ResourceVersion
 
 

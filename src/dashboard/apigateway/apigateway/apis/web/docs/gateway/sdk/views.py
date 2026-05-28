@@ -21,7 +21,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.sdk.models import DummySDKDocContext
+from apigateway.biz.sdk import DummySDKDocContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.utils.responses import OKJsonResponse
 

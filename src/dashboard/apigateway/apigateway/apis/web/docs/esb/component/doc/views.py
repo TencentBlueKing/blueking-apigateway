@@ -20,8 +20,8 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.esb.decorators import check_board_exist
-from apigateway.biz.esb.doc.generators import ComponentDocFactory
+from apigateway.biz.esb import check_board_exist
+from apigateway.biz.esb.doc import ComponentDocFactory
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import ComponentDocOutputSLZ

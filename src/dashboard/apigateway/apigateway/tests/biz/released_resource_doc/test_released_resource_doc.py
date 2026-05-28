@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
-from apigateway.biz.released_resource_doc.released_resource_doc import DummyResourceDocData, ReleasedResourceDocData
+from apigateway.biz.released_resource_doc import DummyResourceDocData, ReleasedResourceDocData
 
 
 class TestReleasedResourceDocData:

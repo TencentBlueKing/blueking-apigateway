@@ -16,4 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .stage import StageHandler  # noqa
+from .stage import StageHandler
+
+__all__ = ["StageHandler"]

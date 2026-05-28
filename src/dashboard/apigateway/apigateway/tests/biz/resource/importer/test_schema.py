@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.resource.importer.schema import (
+from apigateway.biz.openapi.schema import (
     SchemaValidateErr,
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
@@ -133,9 +133,9 @@ class TestSchema:
 
     @pytest.fixture(autouse=True)
     def mock_convert_functions(self, mocker):
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_request_body", return_value=([], []))
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_parameters", return_value=[])
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_responses", return_value=({}, []))
+        mocker.patch("apigateway.biz.openapi.schema.convert_request_body", return_value=([], []))
+        mocker.patch("apigateway.biz.openapi.schema.convert_parameters", return_value=[])
+        mocker.patch("apigateway.biz.openapi.schema.convert_responses", return_value=({}, []))
 
     def test_convert_operation_v3_to_v2(self):
         v3_operation = {

@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.biz.esb import BoardConfigManager
 
 
 class TestBoardConfigManager:

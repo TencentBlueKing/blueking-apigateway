@@ -23,7 +23,7 @@ from unittest.mock import patch
 import pytest
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.distributors.pypi import PypiSourceDistributor
+from apigateway.biz.sdk.distributors import PypiSourceDistributor
 
 
 @pytest.fixture

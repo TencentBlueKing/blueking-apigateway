@@ -25,7 +25,7 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.apis.open.support import serializers
-from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
+from apigateway.biz.sdk import generate_sdks_for_resource_version
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import V1OKJsonResponse
 

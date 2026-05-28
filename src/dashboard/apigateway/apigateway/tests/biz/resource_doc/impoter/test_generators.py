@@ -25,7 +25,7 @@ from apigateway.biz.resource_doc.exceptions import (
     ResourceDocJinja2TemplateNotFound,
     ResourceDocJinja2TemplateSyntaxError,
 )
-from apigateway.biz.resource_doc.importer.generators import Jinja2ToMarkdownGenerator
+from apigateway.biz.resource_doc.importer import Jinja2ToMarkdownGenerator
 from apigateway.utils.file import write_to_file
 
 

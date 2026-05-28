@@ -24,11 +24,8 @@ from openapi_spec_validator.versions import OPENAPIV2
 
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.resource.importer.constants import OpenAPIExtensionEnum
-from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
-from apigateway.biz.resource.importer.schema import convert_operation_v3_to_v2
-from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.openapi import OpenAPIExtensionEnum, OpenAPIImportManager, convert_operation_v3_to_v2
+from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.resource_version import OpenAPIExportManager

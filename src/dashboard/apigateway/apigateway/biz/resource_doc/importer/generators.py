@@ -25,7 +25,7 @@ from jinja2.exceptions import TemplateNotFound, TemplatesNotFound, TemplateSynta
 from jinja2.sandbox import SandboxedEnvironment
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.exceptions import (
+from apigateway.biz.resource_doc import (
     ResourceDocJinja2TemplateError,
     ResourceDocJinja2TemplateNotFound,
     ResourceDocJinja2TemplateSyntaxError,

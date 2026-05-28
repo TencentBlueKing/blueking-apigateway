@@ -23,7 +23,7 @@ from ddf import G
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerExtend
-from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
+from apigateway.biz.mcp_server import MCPServerPromptHandler
 
 
 class TestMCPServerPromptHandler:

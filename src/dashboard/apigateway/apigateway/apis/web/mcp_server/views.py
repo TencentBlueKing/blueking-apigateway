@@ -42,8 +42,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerExtend,
 )
 from apigateway.biz.audit import Auditor
-from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id

@@ -16,9 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.distributors.bkrepo import GenericDistributor
-from apigateway.biz.sdk.generators.openapi import GolangTemplateGenerator
-from apigateway.biz.sdk.packagers.archive import TgzPackager
+from apigateway.biz.sdk.distributors import GenericDistributor
+from apigateway.biz.sdk.generators import GolangTemplateGenerator
+from apigateway.biz.sdk.packagers import TgzPackager
 
 from .base import BaseSDKManager
 from .mixins import SDKManagerMixin

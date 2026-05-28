@@ -30,7 +30,7 @@ from apigateway.apis.web.resource.views import (
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource import ResourcesSaver
 from apigateway.core import constants
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import (

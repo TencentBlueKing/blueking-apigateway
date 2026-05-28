@@ -16,5 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .mcp_server import MCPServerHandler  # noqa
-from .permission import MCPServerPermissionHandler  # noqa
+from .mcp_server import MCPServerHandler
+from .permission import MCPServerPermissionHandler
+from .prompt import MCPServerPromptHandler
+
+__all__ = [
+    "MCPServerHandler",
+    "MCPServerPermissionHandler",
+    "MCPServerPromptHandler",
+]

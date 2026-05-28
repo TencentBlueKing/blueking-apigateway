@@ -21,7 +21,7 @@ from ddf import G
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.models import ArchiveDoc
+from apigateway.biz.resource_doc.importer import ArchiveDoc
 from apigateway.core.models import Resource
 
 

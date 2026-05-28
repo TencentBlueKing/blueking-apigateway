@@ -24,8 +24,7 @@ from typing import Dict, Optional
 from django.utils.translation import gettext as _
 
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import exceptions
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.sdk import GatewaySDKHandler, exceptions
 from apigateway.common.error_codes import error_codes
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion

@@ -19,7 +19,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from apigateway.biz.sdk.packagers.archive import TgzPackager
+from apigateway.biz.sdk.packagers import TgzPackager
 from apigateway.utils.archivefile import TgzArchiveFile
 
 

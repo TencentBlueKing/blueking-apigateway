@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-from apigateway.biz.sdk.models import Packager
+from apigateway.biz.sdk import Packager
 
 logger = logging.getLogger(__name__)
 

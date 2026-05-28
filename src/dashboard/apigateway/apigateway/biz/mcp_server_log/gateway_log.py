@@ -18,7 +18,7 @@
 import logging
 from typing import Dict, Optional
 
-from apigateway.biz.access_log.log_search import LogSearchClient
+from apigateway.biz.access_log import LogSearchClient
 
 logger = logging.getLogger(__name__)
 

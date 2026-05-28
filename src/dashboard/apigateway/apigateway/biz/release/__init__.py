@@ -16,4 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .release import ReleaseHandler  # noqa
+from .gateway_releaser import ReleaseError, release
+from .release import ReleaseHandler
+
+__all__ = ["ReleaseError", "ReleaseHandler", "release"]

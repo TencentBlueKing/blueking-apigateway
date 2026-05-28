@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.biz.sdk.models import SDKDocContext
+from apigateway.biz.sdk import SDKDocContext
 from apigateway.utils.time import now_datetime
 
 

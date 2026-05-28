@@ -21,8 +21,7 @@ from typing import Any, Dict, List, Optional
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.biz.resource.models import ResourceData
-from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource import ResourceData, ResourcesSaver
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.resource import delete_resources, ensure_gateway_labels
 

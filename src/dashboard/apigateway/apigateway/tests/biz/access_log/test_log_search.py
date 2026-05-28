@@ -17,8 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.access_log.constants import ES_OUTPUT_FIELDS
-from apigateway.biz.access_log.log_search import LogSearchClient
+from apigateway.biz.access_log import ES_OUTPUT_FIELDS, LogSearchClient
 
 
 class TestLogSearchClient:

@@ -29,7 +29,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
-from apigateway.biz.gateway.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
+from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.common.tenant.constants import TENANT_MODE_SINGLE_DEFAULT_TENANT_ID
 from apigateway.components.bkcmsi import cmsi_component
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum

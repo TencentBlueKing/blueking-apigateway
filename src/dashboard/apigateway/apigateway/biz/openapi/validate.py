@@ -25,13 +25,14 @@ from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.models import PluginType
-from apigateway.biz.resource.importer.schema import SchemaValidateErr
-from apigateway.biz.resource.models import ResourceData
+from apigateway.biz.resource import ResourceData
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.service.plugin import PluginConfigYamlValidator
 from apigateway.utils.list import get_duplicate_items
+
+from .schema import SchemaValidateErr
 
 
 class ResourceImportValidator:

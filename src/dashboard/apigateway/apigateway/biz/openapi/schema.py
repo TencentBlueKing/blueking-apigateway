@@ -81,7 +81,7 @@ def _load_open_schema_for_apigw(version: str) -> Tuple[Mapping[Hashable, Any], s
     根据不同版本加载不同版本的 schema
     """
     schema_path = f"schemas/openapi_{version}_schema.json"
-    ref = files("apigateway.biz.resource.importer") / schema_path
+    ref = files("apigateway.biz.openapi") / schema_path
     with as_file(ref) as resource_path:
         schema_path_full = path.join(path.dirname(__file__), resource_path)
     return FilePathReader(schema_path_full).read()

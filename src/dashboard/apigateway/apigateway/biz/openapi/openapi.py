@@ -25,20 +25,20 @@ from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
-from apigateway.biz.resource.importer.parser import BaseParser, OpenAPIV3Parser, ResourceDataConvertor
-from apigateway.biz.resource.importer.schema import (
+from apigateway.core.models import Gateway
+from apigateway.utils.yaml import yaml_loads
+
+from .constants import OpenAPIVersionKeyEnum
+from .parser import BaseParser, OpenAPIV3Parser, ResourceDataConvertor
+from .schema import (
     SchemaValidateErr,
     init_validator_schema,
     openapi_validator_mapping,
 )
-from apigateway.biz.resource.importer.validate import ResourceImportValidator
+from .validate import ResourceImportValidator
 
 if TYPE_CHECKING:
-    from apigateway.biz.resource.models import ResourceData
-
-from apigateway.core.models import Gateway
-from apigateway.utils.yaml import yaml_loads
+    from apigateway.biz.resource import ResourceData
 
 # 初始化openapi validator schema
 init_validator_schema()
@@ -54,7 +54,7 @@ class OpenAPIImportManager:
         self.data = data
         self.gateway = gateway
         self._raw_resource_list: List[Dict[str, Any]] = []
-        self._resource_list: List[ResourceData] = []
+        self._resource_list: List["ResourceData"] = []
         self.parser = None
         self.need_delete_unspecified_resources = need_delete_unspecified_resources
 
