@@ -28,7 +28,17 @@ DEFAULT_WAIT_RELEASE_TIMEOUT = 150
 
 
 def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
-    """轮询等待指定发布完成，返回最终状态"""
+    """轮询等待指定发布任务结束，用于滚动同步、下架等任务开始前等待上一轮发布收敛。
+
+    调用方只需要知道发布是否已经离开 DOING 状态，不需要读取完整发布事件详情时使用。
+
+    Args:
+        release_history_id (int): 需要等待的发布历史 ID。
+        timeout (int): 最长等待秒数，超过后按发布失败处理。
+
+    Returns:
+        str: 发布历史的最终状态值；超时或无最终成功事件时返回 FAILURE。
+    """
     start_time = datetime.now().timestamp()
     wait_times = 0
     while True:

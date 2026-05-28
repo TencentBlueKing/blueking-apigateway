@@ -1,3 +1,21 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+
 import datetime
 import itertools
 import json
@@ -16,6 +34,16 @@ from apigateway.utils import time
 
 
 def get_resource_id_to_proxy_snapshot(resource_ids: List[int]) -> Dict[int, Dict]:
+    """批量生成资源代理配置快照，用于创建资源版本快照时批量组装 proxy 字段。
+
+    调用方已经拿到资源 ID 列表，需要避免逐个资源查询 Proxy 时使用。
+
+    Args:
+        resource_ids (List[int]): 资源 ID 列表。
+
+    Returns:
+        Dict[int, Dict]: 键为资源 ID，值为该资源的代理配置快照；没有数据时返回空字典。
+    """
     schemas = Schema.objects.filter_id_snapshot_map()
     return {
         proxy.resource_id: proxy.snapshot(as_dict=True, schemas=schemas)
@@ -24,6 +52,16 @@ def get_resource_id_to_proxy_snapshot(resource_ids: List[int]) -> Dict[int, Dict
 
 
 def filter_disabled_stages_by_gateway(gateway):
+    """查询网关下每个资源禁用的环境，用于创建资源快照时补全 disabled_stages 字段。
+
+    需要按资源维度展示或保存“资源在哪些环境被禁用”的信息时使用。
+
+    Args:
+        gateway: 网关实例。
+
+    Returns:
+        dict: 键为资源 ID，值为禁用环境列表；每个环境包含 id 和 name。
+    """
     stage_ids = Stage.objects.get_ids(gateway.id)
 
     queryset = StageResourceDisabled.objects.filter(stage_id__in=stage_ids)
@@ -45,6 +83,16 @@ def filter_disabled_stages_by_gateway(gateway):
 
 
 def get_resource_labels(resource_ids: List[int]) -> Dict[int, List]:
+    """批量查询资源绑定的标签，用于为资源列表、详情和资源版本快照补全标签信息。
+
+    调用方已经有资源 ID 列表，需要按资源 ID 聚合标签 ID 和名称时使用。
+
+    Args:
+        resource_ids (List[int]): 资源 ID 列表。
+
+    Returns:
+        Dict[int, List]: 键为资源 ID，值为标签列表；每个标签包含 id 和 name。
+    """
     queryset = ResourceLabel.objects.filter(resource_id__in=resource_ids).values(
         "api_label_id", "api_label__name", "resource_id"
     )
@@ -62,11 +110,31 @@ def get_resource_labels(resource_ids: List[int]) -> Dict[int, List]:
 
 
 def get_resource_labels_by_gateway(gateway_id: int) -> Dict[int, List]:
+    """查询网关下所有资源绑定的标签，用于创建资源版本或导出资源时获取资源标签映射。
+
+    调用方只有网关 ID，需要一次性获取该网关所有资源的标签时使用。
+
+    Args:
+        gateway_id (int): 网关 ID。
+
+    Returns:
+        Dict[int, List]: 键为资源 ID，值为标签列表；没有资源或标签时返回空字典。
+    """
     resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
     return get_resource_labels(resource_ids)
 
 
 def get_resource_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
+    """按标签 ID 查询资源标签绑定关系，用于根据标签筛选或补全资源。
+
+    调用方已经有标签 ID 列表，需要按资源 ID 聚合标签信息时使用。
+
+    Args:
+        label_ids (List[int]): 标签 ID 列表。
+
+    Returns:
+        Dict[int, List]: 键为资源 ID，值为命中的标签列表。
+    """
     queryset = ResourceLabel.objects.filter(api_label_id__in=label_ids).values(
         "api_label_id", "api_label__name", "resource_id"
     )
@@ -84,8 +152,15 @@ def get_resource_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
 
 
 def get_resource_use_stage_vars(resource: dict) -> dict:
-    """
-    获取资源使用的 stage vars
+    """解析资源代理配置中使用到的环境变量，用于发布校验时识别路径和 Host 变量引用。
+
+    处理 ResourceVersion.data 中的资源快照，或兼容未保存 stage_vars 的旧快照时使用。
+
+    Args:
+        resource (dict): 资源快照字典，必须包含 proxy.config。
+
+    Returns:
+        dict: 包含 in_path 和 in_host 两个列表，分别表示路径变量和 Host 变量名称。
     """
     used_in_path = set()
     used_in_host = set()
@@ -113,9 +188,21 @@ def snapshot_resource(
     api_label_map=None,
     plugin_map=None,
 ):
-    """
-    - can add field
-    - should not delete field!!!!!!!!!
+    """生成资源版本使用的单个资源快照，用于把编辑区 Resource 转换为 ResourceVersion.data 条目。
+
+    创建资源版本或需要复用资源版本结构时调用；字段只能向后兼容新增，不能删除旧字段。
+
+    Args:
+        resource: Resource 实例。
+        as_dict (bool): 是否直接返回字典；为 False 时返回 JSON 字符串。
+        proxy_map: 可选的资源 ID 到代理快照映射，用于批量场景减少查询。
+        context_map: 可选的资源 ID 到上下文快照映射。
+        disabled_stage_map: 可选的资源 ID 到禁用环境名称列表映射。
+        api_label_map: 可选的资源 ID 到标签 ID 列表映射。
+        plugin_map: 可选的资源 ID 到插件配置快照列表映射。
+
+    Returns:
+        dict | str: as_dict 为 True 时返回快照字典，否则返回快照 JSON 字符串。
     """
     data = {
         "id": resource.pk,
@@ -174,7 +261,16 @@ def snapshot_resource(
 
 
 def get_last_resource_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
-    """获取网关下资源的最近更新时间"""
+    """获取网关下资源的最近更新时间，用于判断编辑区资源是否晚于最新资源版本。
+
+    资源版本列表、发布前检查或任何需要比较资源与版本新旧的地方使用。
+
+    Args:
+        gateway_id (int): 网关 ID。
+
+    Returns:
+        Optional[datetime.datetime]: 最近更新时间；网关下没有资源时返回 None。
+    """
     return (
         Resource.objects.filter(gateway_id=gateway_id)
         .order_by("-updated_time")
@@ -184,7 +280,17 @@ def get_last_resource_updated_time(gateway_id: int) -> Optional[datetime.datetim
 
 
 def get_resource_updated_time(gateway_id: int, name: str) -> str:
-    """获取网关下某个资源的更新时间"""
+    """获取网关下指定资源的格式化更新时间，用于 API 响应或资源文档展示。
+
+    调用方用资源名称定位资源，并希望得到已经格式化的时间时使用。
+
+    Args:
+        gateway_id (int): 网关 ID。
+        name (str): 资源名称。
+
+    Returns:
+        str: 格式化后的更新时间；资源不存在时返回空字符串。
+    """
     resource = Resource.objects.filter(gateway_id=gateway_id, name=name).only("updated_time").first()
     if not resource:
         return ""
@@ -192,12 +298,29 @@ def get_resource_updated_time(gateway_id: int, name: str) -> str:
 
 
 def get_resource_url_tmpl() -> str:
+    """获取资源访问地址模板，用于资源文档或展示逻辑读取统一的资源 URL 模板配置。
+
+    调用方只需要读取 settings.API_RESOURCE_URL_TMPL，不应直接依赖 settings 时使用。
+
+    Args:
+        None: 此函数不接收输入参数。
+
+    Returns:
+        str: 资源访问地址模板。
+    """
     return settings.API_RESOURCE_URL_TMPL
 
 
 def make_resource_schema_version(resource_version: ResourceVersion):
-    """
-    创建resource schema version
+    """为资源版本创建 OpenAPI schema 快照，用于固化资源级 schema 的版本数据。
+
+    创建 ResourceVersion 后立即调用；只有资源存在 schema 时才会创建版本 schema 记录。
+
+    Args:
+        resource_version (ResourceVersion): 已保存的资源版本实例，data 中应包含资源 ID。
+
+    Returns:
+        None: 有 schema 时写入 OpenAPIResourceSchemaVersion；没有 schema 时不创建记录。
     """
     resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
 

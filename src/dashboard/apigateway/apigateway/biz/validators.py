@@ -33,11 +33,7 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Gateway, Proxy, Resource, ResourceVersion, Stage
-from apigateway.service.publish_validator import (  # noqa: F401
-    PublishValidator,
-    ReleaseValidationError,
-    StageVarsValuesValidator,
-)
+from apigateway.service.publish_validator import StageVarsValuesValidator
 
 from .constants import (
     APP_CODE_PATTERN,

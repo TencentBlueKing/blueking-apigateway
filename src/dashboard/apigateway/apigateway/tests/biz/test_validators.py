@@ -30,8 +30,6 @@ from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
     ProgrammableGatewayStageNameValidator,
     ProgrammableGatewayVersionValidator,
-    PublishValidator,
-    ReleaseValidationError,
     ResourceIDValidator,
     ResourceVersionValidator,
     SchemeHostInputValidator,
@@ -42,6 +40,7 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import BackendTypeEnum, GatewayKindEnum, GatewayStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.service.publish_validator import PublishValidator, ReleaseValidationError
 from apigateway.tests.utils.testing import create_request
 
 pytestmark = pytest.mark.django_db

@@ -1,3 +1,21 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+
 from typing import Set
 
 from cachetools import TTLCache, cached
@@ -12,8 +30,16 @@ from apigateway.service.resource_snapshot import get_resource_use_stage_vars
 
 
 def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
-    """
-    获取指定版本的资源对应的api schema
+    """获取资源版本中单个资源的 OpenAPI schema，用于资源详情、文档生成等场景。
+
+    调用方同时持有 resource_version_id 和 resource_id，只需要一个资源的 schema 时使用。
+
+    Args:
+        resource_version_id (int): 资源版本 ID。
+        resource_id (int): 资源 ID。
+
+    Returns:
+        dict: 命中的 OpenAPI schema；版本 schema 不存在或资源未命中时返回空字典。
     """
     resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
         resource_version_id=resource_version_id
@@ -30,8 +56,15 @@ def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
 
 
 def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
-    """
-    获取资源版本下的资源与 api schema 的映射关系
+    """获取资源版本下所有资源的 OpenAPI schema 映射，用于批量读取 schema。
+
+    资源版本展示、OpenAPI 导出、MCP 工具生成等场景需要按资源 ID 快速补全 schema 时使用。
+
+    Args:
+        resource_version_id (int): 资源版本 ID。
+
+    Returns:
+        dict: 键为资源 ID，值为对应 OpenAPI schema；版本 schema 不存在时返回空字典。
     """
     resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
         resource_version_id=resource_version_id
@@ -44,11 +77,16 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
 
 @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
 def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
-    """获取资源版本中的资源名称列表, 缓存 5 分钟
+    """获取资源版本中的资源名称集合，用于权限、MCP Server 等名称存在性判断。
+
+    频繁读取同一资源版本名称集合的路径使用；结果会缓存 5 分钟。
 
     Args:
-        resource_version_id (int): 资源版本 ID
-        raise_exception (bool, optional): 是否抛出异常, 如果资源版本不存在, 则抛出异常. 默认 False
+        resource_version_id (int): 资源版本 ID。
+        raise_exception (bool): 资源版本不存在时是否抛出 NOT_FOUND；为 False 时返回空集合。
+
+    Returns:
+        Set[str]: 资源名称集合；资源版本不存在且不抛异常时返回空集合。
     """
     resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
     if not resource_version:
@@ -63,6 +101,17 @@ def get_resource_names_set(resource_version_id: int, raise_exception: bool = Fal
 # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
 @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
 def get_used_stage_vars(gateway_id: int, resource_version_id: int):
+    """获取资源版本中被资源引用的环境变量，用于发布校验时检查环境变量引用。
+
+    校验指定网关、指定资源版本能否发布到某个环境时使用。
+
+    Args:
+        gateway_id (int): 网关 ID。
+        resource_version_id (int): 资源版本 ID。
+
+    Returns:
+        dict | None: 存在资源版本时返回包含 in_path 和 in_host 的字典；资源版本不存在时返回 None。
+    """
     resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=resource_version_id).first()
     if not resource_version:
         return None

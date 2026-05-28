@@ -1,3 +1,21 @@
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+
 from typing import Optional
 
 from django.utils.translation import gettext as _
@@ -24,6 +42,17 @@ class StageVarsValuesValidator:
     """
 
     def __call__(self, attrs):
+        """校验环境变量值是否满足资源版本引用要求，用于发布前确认目标环境变量是否可用。
+
+        发布校验、环境变量保存校验等需要根据资源版本反查变量引用的场景使用。
+
+        Args:
+            attrs (dict): 校验上下文字典，必须包含 gateway、stage_name、vars、
+                resource_version_id；可选 allow_var_not_exist 表示是否允许资源引用的变量暂时不存在。
+
+        Returns:
+            None: 校验通过时不返回值；校验失败时抛出 serializers.ValidationError。
+        """
         stage_name = attrs["stage_name"]
         stage_vars = attrs["vars"]
         gateway_id = attrs["gateway"].id
@@ -191,7 +220,17 @@ class PublishValidator:
             )
 
     def __call__(self):
-        """校验待发布数据"""
+        """执行网关环境发布校验，用于发布前统一检查环境与资源版本是否满足发布条件。
+
+        GatewayReleaser 或环境序列化器需要判断某个环境是否允许发布指定资源版本时使用。
+
+        Args:
+            None: 校验所需的 gateway、stage、resource_version 来自构造函数。
+
+        Returns:
+            None: 校验通过时不返回值；校验失败时抛出 ReleaseValidationError 或
+                serializers.ValidationError。
+        """
 
         # 校验网关启用状态
         self._validate_gateway_status()
