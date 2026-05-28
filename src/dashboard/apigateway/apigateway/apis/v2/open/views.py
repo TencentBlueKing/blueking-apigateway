@@ -60,8 +60,8 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
-from apigateway.service.resource_snapshot import get_resource_labels
-from apigateway.service.resource_version_schema import get_resource_schema
+from apigateway.service.resource import get_resource_labels
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers

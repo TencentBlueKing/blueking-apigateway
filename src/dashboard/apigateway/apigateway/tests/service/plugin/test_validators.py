@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.service.plugin.validator import PluginConfigYamlValidator
+from apigateway.service.plugin import PluginConfigYamlValidator
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -40,7 +40,7 @@ class TestPluginConfigYamlValidator:
             )
 
         mocker.patch(
-            "apigateway.service.plugin.validator.PluginConfigYamlChecker.check",
+            "apigateway.service.plugin.PluginConfigYamlChecker.check",
             side_effect=ValueError(),
         )
         with pytest.raises(ValueError):

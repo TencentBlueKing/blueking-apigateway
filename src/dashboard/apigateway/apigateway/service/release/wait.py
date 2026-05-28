@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+"""Release waiting helpers."""
+
 import logging
 import time
 from datetime import datetime

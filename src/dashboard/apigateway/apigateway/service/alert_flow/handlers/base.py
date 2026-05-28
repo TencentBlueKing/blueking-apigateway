@@ -33,12 +33,12 @@ from apigateway.apps.monitor.constants import (
 )
 from apigateway.apps.monitor.models import AlarmFilterConfig, AlarmRecord
 from apigateway.core.models import Gateway
-from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
-from apigateway.service.alert_flow.matcher import Matcher
-from apigateway.service.alert_flow.notice import NoticeWay
 from apigateway.utils import time as time_utils
 
 from .bk_log import LogSearchClient
+from ..helpers import AlertHandler, MonitorEvent  # noqa: TID252
+from ..matcher import Matcher  # noqa: TID252
+from ..notice import NoticeWay  # noqa: TID252
 
 logger = logging.getLogger(__name__)
 

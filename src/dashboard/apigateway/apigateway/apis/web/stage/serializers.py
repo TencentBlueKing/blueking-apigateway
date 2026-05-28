@@ -40,7 +40,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import Backend, Stage
-from apigateway.service.publish_validator import PublishValidator, ReleaseValidationError
+from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.version import is_version1_greater_than_version2
 
 

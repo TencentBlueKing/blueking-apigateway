@@ -24,8 +24,7 @@ from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
 from apigateway.biz.resource.models import ResourceData
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.core.models import Gateway, Resource
-from apigateway.service.gateway_label import save_gateway_labels
-from apigateway.service.resource_cleanup import delete_resources
+from apigateway.service.resource import delete_resources, ensure_gateway_labels
 
 from .legacy_synchronizers import LegacyTransformHeadersToPluginSynchronizer, LegacyUpstreamToBackendSynchronizer
 
@@ -140,7 +139,7 @@ class ResourcesImporter:
         for resource_data in self.resource_data_list:
             label_names.update(resource_data.metadata.get("labels", []))
 
-        save_gateway_labels(self.gateway, list(label_names), self.username)
+        ensure_gateway_labels(self.gateway, list(label_names), self.username)
 
     def _complete_label_ids(self):
         """补全资源中的 label_ids 信息"""

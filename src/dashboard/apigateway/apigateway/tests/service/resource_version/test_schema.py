@@ -22,11 +22,12 @@ from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.models import ResourceVersion
-from apigateway.service.resource_version_schema import (
+from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
     get_used_stage_vars,
+    make_resource_schema_version,
 )
 
 
@@ -204,3 +205,9 @@ def test_get_used_stage_vars_returns_vars_from_resource_data(fake_gateway):
 
 def test_get_used_stage_vars_returns_none_for_missing_resource_version(fake_gateway):
     assert get_used_stage_vars(fake_gateway.id, 0) is None
+
+
+def test_make_resource_schema_version(fake_resource_version, fake_resource_schema):
+    make_resource_schema_version(fake_resource_version)
+
+    assert OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=fake_resource_version.id).exists()

@@ -27,7 +27,7 @@ from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
 from apigateway.core.models import Backend, Gateway
-from apigateway.service.openapi_export import BaseExporter, OpenAPIExportManager
+from apigateway.service.resource_version import BaseExporter, OpenAPIExportManager
 from apigateway.utils.yaml import yaml_loads
 
 

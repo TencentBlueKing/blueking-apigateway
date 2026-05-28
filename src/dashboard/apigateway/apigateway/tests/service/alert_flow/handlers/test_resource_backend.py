@@ -22,7 +22,7 @@ from ddf import G
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.core.models import Gateway, Resource
-from apigateway.service.alert_flow.handlers import resource_backend
+from apigateway.service.alert_flow import resource_backend
 
 pytestmark = pytest.mark.django_db
 
@@ -34,17 +34,17 @@ class TestResourceBackendAlarmStrategyEnabledFilter:
 
     def test_do(self, mocker, faker, mock_event):
         mocker.patch(
-            "apigateway.service.alert_flow.handlers.resource_backend.ResourceBackendAlarmStrategyEnabledFilter._get_resource_alarm_strategy",
+            "apigateway.service.alert_flow.resource_backend.ResourceBackendAlarmStrategyEnabledFilter._get_resource_alarm_strategy",
             return_value=[],
         )
         mocker.patch(
-            "apigateway.service.alert_flow.handlers.resource_backend.AlarmRecord.objects.update_alarm",
+            "apigateway.service.alert_flow.resource_backend.AlarmRecord.objects.update_alarm",
             return_value=None,
         )
 
         mocker.patch(
             (
-                "apigateway.service.alert_flow.handlers.resource_backend."
+                "apigateway.service.alert_flow.resource_backend."
                 "ResourceBackendAlarmStrategyEnabledFilter._is_alarm_enabled"
             ),
             return_value=False,
@@ -54,14 +54,14 @@ class TestResourceBackendAlarmStrategyEnabledFilter:
 
         mocker.patch(
             (
-                "apigateway.service.alert_flow.handlers.resource_backend."
+                "apigateway.service.alert_flow.resource_backend."
                 "ResourceBackendAlarmStrategyEnabledFilter._is_alarm_enabled"
             ),
             return_value=True,
         )
         mocker.patch(
             (
-                "apigateway.service.alert_flow.handlers.resource_backend.ResourceBackendAlarmStrategyEnabledFilter."
+                "apigateway.service.alert_flow.resource_backend.ResourceBackendAlarmStrategyEnabledFilter."
                 "_get_enabled_strategies"
             ),
             return_value=[],

@@ -49,7 +49,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
-from apigateway.service.resource_version_schema import get_resource_names_set
+from apigateway.service.resource_version import get_resource_names_set
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.time import now_datetime

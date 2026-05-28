@@ -25,7 +25,7 @@ from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
-from apigateway.service.resource_snapshot import make_resource_schema_version
+from apigateway.service.resource_version import make_resource_schema_version
 
 
 @pytest.fixture()

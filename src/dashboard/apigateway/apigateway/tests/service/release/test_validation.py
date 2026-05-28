@@ -20,12 +20,12 @@ import pytest
 from rest_framework import serializers
 
 from apigateway.core.constants import GatewayStatusEnum
-from apigateway.service.publish_validator import PublishValidator, ReleaseValidationError, StageVarsValuesValidator
+from apigateway.service.release import PublishValidator, ReleaseValidationError, StageVarsValuesValidator
 
 
 def test_stage_vars_values_validator_uses_resource_version_stage_vars(mocker, fake_gateway):
     mocker.patch(
-        "apigateway.service.publish_validator.get_used_stage_vars",
+        "apigateway.service.release.validation.get_used_stage_vars",
         return_value={
             "in_path": ["prefix"],
             "in_host": ["domain"],
@@ -49,7 +49,7 @@ def test_stage_vars_values_validator_uses_resource_version_stage_vars(mocker, fa
 
 def test_stage_vars_values_validator_rejects_invalid_path_var(mocker, fake_gateway):
     mocker.patch(
-        "apigateway.service.publish_validator.get_used_stage_vars",
+        "apigateway.service.release.validation.get_used_stage_vars",
         return_value={
             "in_path": ["prefix"],
             "in_host": [],

@@ -26,11 +26,11 @@ from apigateway.apps.label.models import ResourceLabel
 from apigateway.apps.monitor.constants import AlarmStatusEnum, ResourceBackendAlarmSubTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord, AlarmStrategy
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
-from apigateway.service.alert_flow.helpers import AlertHandler, MonitorEvent
 from apigateway.utils import time as time_utils
 from apigateway.utils.string import truncate_string
 
 from .base import Alerter
+from ..helpers import AlertHandler, MonitorEvent  # noqa: TID252
 
 
 class ResourceBackendDimension(BaseModel):

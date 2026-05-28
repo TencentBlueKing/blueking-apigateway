@@ -40,8 +40,8 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
-from apigateway.service.event.event import PublishEventReporter
-from apigateway.service.publish_validator import PublishValidator, ReleaseValidationError
+from apigateway.service.event import PublishEventReporter
+from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.django import get_model_dict
 
 logger = logging.getLogger(__name__)

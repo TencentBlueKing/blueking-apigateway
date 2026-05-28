@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.service.alert_flow.handlers import app_request
+from apigateway.service.alert_flow import app_request
 
 
 class TestAppRequestAppCodeRequiredFilter:
@@ -54,7 +54,7 @@ class TestAppRequestAppCodeRequiredFilter:
     def test_do(self, mocker, event, expected_none):
         event = mocker.MagicMock(**event)
         mock_update_alarm = mocker.patch(
-            "apigateway.service.alert_flow.handlers.app_request.AlarmRecord.objects.update_alarm",
+            "apigateway.service.alert_flow.app_request.AlarmRecord.objects.update_alarm",
             return_value=None,
         )
 
@@ -75,14 +75,14 @@ class TestAppRequestAlerter:
         self.alerter = app_request.AppRequestAlerter(notice_ways=[])
 
     def test_get_receivers(self, mocker, faker, mock_event):
-        mocker.patch("apigateway.service.alert_flow.handlers.app_request.get_app_maintainers", return_value=["admin"])
+        mocker.patch("apigateway.service.alert_flow.app_request.get_app_maintainers", return_value=["admin"])
 
         result = self.alerter.get_receivers(mock_event)
         assert result == ["admin"]
 
     def test_get_message(self, mocker, faker):
         mocker.patch(
-            "apigateway.service.alert_flow.handlers.app_request.Resource.objects.filter"
+            "apigateway.service.alert_flow.app_request.Resource.objects.filter"
         ).return_value.values_list.return_value.first.return_value = "test-resource"
 
         event = mocker.MagicMock(

@@ -22,7 +22,7 @@ from django.conf import settings
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.aggs import A
 
-from apigateway.service.es.clients import BKLogESClient
+from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 

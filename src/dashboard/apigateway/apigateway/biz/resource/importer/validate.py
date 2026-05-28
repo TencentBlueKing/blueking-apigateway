@@ -30,7 +30,7 @@ from apigateway.biz.resource.models import ResourceData
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.service.plugin.validator import PluginConfigYamlValidator
+from apigateway.service.plugin import PluginConfigYamlValidator
 from apigateway.utils.list import get_duplicate_items
 
 

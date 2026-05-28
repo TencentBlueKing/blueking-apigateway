@@ -30,7 +30,7 @@ from apigateway.core.constants import (
     TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Release, ReleaseHistory
-from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.event import PublishEventReporter
 
 from .hooks import (
     _pre_publish_check_is_gateway_ready_for_releasing,

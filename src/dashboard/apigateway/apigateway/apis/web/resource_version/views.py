@@ -43,8 +43,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
-from apigateway.service.openapi_export import OpenAPIExportManager
-from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
+from apigateway.service.resource_version import OpenAPIExportManager, get_resource_id_to_schema_by_resource_version
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.version import get_next_version, get_next_version_with_type
 

@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+"""Resource and resource-version cleanup helpers."""
+
 from typing import List
 
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion

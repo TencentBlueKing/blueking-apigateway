@@ -58,9 +58,9 @@ from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
-from apigateway.service.mcp.mcp_server import build_mcp_server_application_url, build_mcp_server_url
-from apigateway.service.resource_snapshot import get_resource_labels_by_ids
-from apigateway.service.resource_version_schema import (
+from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
+from apigateway.service.resource import get_resource_labels_by_ids
+from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,

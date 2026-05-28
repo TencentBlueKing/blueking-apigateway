@@ -24,7 +24,7 @@ from apigateway.biz.mcp_server_log.es_query import search_all_layers, search_by_
 from apigateway.biz.mcp_server_log.gateway_log import search_gateway_log
 from apigateway.biz.mcp_server_log.span_builder import build_spans, merge_mcp_logs
 from apigateway.biz.mcp_server_log.utils import calc_max_end_time
-from apigateway.service.es.clients import BKLogESClient
+from apigateway.service.es import BKLogESClient
 
 logger = logging.getLogger(__name__)
 

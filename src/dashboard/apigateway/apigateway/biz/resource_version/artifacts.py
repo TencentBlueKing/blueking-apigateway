@@ -25,7 +25,7 @@ from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource_version.resource_doc_version import ResourceDocVersionHandler
 from apigateway.biz.resource_version.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.service.openapi_export import OpenAPIExportManager
+from apigateway.service.resource_version import OpenAPIExportManager
 
 
 class ResourceVersionArtifactHandler:

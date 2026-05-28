@@ -45,8 +45,8 @@ from apigateway.components.bkpaas import (
 )
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
-from apigateway.service.resource_snapshot import get_resource_labels_by_ids
-from apigateway.service.resource_version_schema import get_resource_schema
+from apigateway.service.resource import get_resource_labels_by_ids
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock

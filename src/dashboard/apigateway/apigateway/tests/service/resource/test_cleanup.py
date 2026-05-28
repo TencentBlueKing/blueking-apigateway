@@ -23,7 +23,7 @@ from apigateway.apps.support.constants import DocTypeEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import Context, Proxy, Release, Resource, ResourceVersion
-from apigateway.service.resource_cleanup import delete_gateway_resource_versions, delete_gateway_resources
+from apigateway.service.resource import delete_gateway_resource_versions, delete_gateway_resources
 
 
 def test_delete_gateway_resources_removes_resource_related_rows(fake_resource):

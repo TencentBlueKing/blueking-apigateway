@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Tuple
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
-from apigateway.service.resource_snapshot import get_resource_updated_time
+from apigateway.service.resource import get_resource_updated_time
 
 
 @dataclass

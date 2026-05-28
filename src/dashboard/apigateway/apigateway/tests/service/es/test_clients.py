@@ -18,7 +18,7 @@
 import pytest
 
 from apigateway.common.error_codes import APIError, error_codes
-from apigateway.service.es.clients import (
+from apigateway.service.es import (
     BKLogESClient,
 )
 

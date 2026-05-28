@@ -45,7 +45,7 @@ from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
-from apigateway.service.mcp.mcp_server import (
+from apigateway.service.mcp import (
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
 )

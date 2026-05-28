@@ -16,17 +16,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+"""Resource-version schema lookup and schema-version creation helpers."""
+
 from typing import Set
 
 from cachetools import TTLCache, cached
 from django.utils.translation import gettext_lazy as _
 
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.core.models import ResourceVersion
-from apigateway.service.resource_snapshot import get_resource_use_stage_vars
+
+from ..resource.snapshot import get_resource_use_stage_vars  # noqa: TID252
 
 
 def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
@@ -128,3 +131,33 @@ def get_used_stage_vars(gateway_id: int, resource_version_id: int):
         "in_path": list(used_in_path),
         "in_host": list(used_in_host),
     }
+
+
+def make_resource_schema_version(resource_version: ResourceVersion):
+    """为资源版本创建 OpenAPI schema 快照，用于固化资源级 schema 的版本数据。
+
+    创建 ResourceVersion 后立即调用；只有资源存在 schema 时才会创建版本 schema 记录。
+
+    Args:
+        resource_version (ResourceVersion): 已保存的资源版本实例，data 中应包含资源 ID。
+
+    Returns:
+        None: 有 schema 时写入 OpenAPIResourceSchemaVersion；没有 schema 时不创建记录。
+    """
+    resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
+
+    # 查询资源所有的schema
+    resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
+
+    schema_list = [
+        {
+            "resource_id": resource_schema.resource.id,
+            "schema": resource_schema.schema,
+        }
+        for resource_schema in resource_schemas
+    ]
+    if len(schema_list) > 0:
+        OpenAPIResourceSchemaVersion.objects.create(
+            resource_version=resource_version,
+            schema=schema_list,
+        )

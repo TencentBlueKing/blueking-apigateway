@@ -17,54 +17,16 @@
 #
 from ddf import G
 
-from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
 from apigateway.core.models import Resource, Stage, StageResourceDisabled
-from apigateway.service.resource_snapshot import (
+from apigateway.service.resource import (
     filter_disabled_stages_by_gateway,
     get_last_resource_updated_time,
     get_resource_id_to_proxy_snapshot,
-    get_resource_labels,
-    get_resource_labels_by_gateway,
-    get_resource_labels_by_ids,
     get_resource_updated_time,
     get_resource_url_tmpl,
     get_resource_use_stage_vars,
-    make_resource_schema_version,
     snapshot_resource,
 )
-
-
-def test_get_resource_labels_by_gateway(fake_resource):
-    label_1 = G(APILabel, gateway=fake_resource.gateway, name="label1")
-    label_2 = G(APILabel, gateway=fake_resource.gateway, name="label2")
-
-    G(ResourceLabel, resource=fake_resource, api_label=label_1)
-    G(ResourceLabel, resource=fake_resource, api_label=label_2)
-
-    assert get_resource_labels_by_gateway(fake_resource.gateway.id) == {
-        fake_resource.id: [
-            {"id": label_1.id, "name": label_1.name},
-            {"id": label_2.id, "name": label_2.name},
-        ]
-    }
-
-
-def test_get_resource_labels(fake_resource):
-    label = G(APILabel, gateway=fake_resource.gateway, name="label1")
-    G(ResourceLabel, resource=fake_resource, api_label=label)
-
-    assert get_resource_labels([fake_resource.id]) == {fake_resource.id: [{"id": label.id, "name": label.name}]}
-
-
-def test_get_resource_labels_by_ids(fake_resource):
-    label_1 = G(APILabel, gateway=fake_resource.gateway, name="label1")
-    label_2 = G(APILabel, gateway=fake_resource.gateway, name="label2")
-
-    G(ResourceLabel, resource=fake_resource, api_label=label_1)
-    G(ResourceLabel, resource=fake_resource, api_label=label_2)
-
-    assert get_resource_labels_by_ids([label_1.id]) == {fake_resource.id: [{"id": label_1.id, "name": label_1.name}]}
 
 
 def test_filter_disabled_stages_by_gateway(fake_gateway):
@@ -135,9 +97,3 @@ def test_get_resource_url_tmpl(settings):
     settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{api_name}/{stage_name}{resource_path}"
 
     assert get_resource_url_tmpl() == "http://bkapi.example.com/{api_name}/{stage_name}{resource_path}"
-
-
-def test_make_resource_schema_version(fake_resource_version, fake_resource_schema):
-    make_resource_schema_version(fake_resource_version)
-
-    assert OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=fake_resource_version.id).exists()

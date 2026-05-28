@@ -16,19 +16,19 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+"""Resource snapshot construction and snapshot-related read helpers."""
+
 import datetime
 import itertools
 import json
 import operator
-from collections import defaultdict
 from typing import Dict, List, Optional
 
 from django.conf import settings
 
 from apigateway.apps.label.models import ResourceLabel
-from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
-from apigateway.core.models import Context, Proxy, Resource, ResourceVersion, Stage, StageResourceDisabled
+from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.schema.models import Schema
 from apigateway.utils import time
 
@@ -80,75 +80,6 @@ def filter_disabled_stages_by_gateway(gateway):
             for stage in group
         ]
     return resource_disabled
-
-
-def get_resource_labels(resource_ids: List[int]) -> Dict[int, List]:
-    """批量查询资源绑定的标签，用于为资源列表、详情和资源版本快照补全标签信息。
-
-    调用方已经有资源 ID 列表，需要按资源 ID 聚合标签 ID 和名称时使用。
-
-    Args:
-        resource_ids (List[int]): 资源 ID 列表。
-
-    Returns:
-        Dict[int, List]: 键为资源 ID，值为标签列表；每个标签包含 id 和 name。
-    """
-    queryset = ResourceLabel.objects.filter(resource_id__in=resource_ids).values(
-        "api_label_id", "api_label__name", "resource_id"
-    )
-
-    resource_labels = defaultdict(list)
-    for label in queryset:
-        resource_labels[label["resource_id"]].append(
-            {
-                "id": label["api_label_id"],
-                "name": label["api_label__name"],
-            }
-        )
-
-    return resource_labels
-
-
-def get_resource_labels_by_gateway(gateway_id: int) -> Dict[int, List]:
-    """查询网关下所有资源绑定的标签，用于创建资源版本或导出资源时获取资源标签映射。
-
-    调用方只有网关 ID，需要一次性获取该网关所有资源的标签时使用。
-
-    Args:
-        gateway_id (int): 网关 ID。
-
-    Returns:
-        Dict[int, List]: 键为资源 ID，值为标签列表；没有资源或标签时返回空字典。
-    """
-    resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-    return get_resource_labels(resource_ids)
-
-
-def get_resource_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
-    """按标签 ID 查询资源标签绑定关系，用于根据标签筛选或补全资源。
-
-    调用方已经有标签 ID 列表，需要按资源 ID 聚合标签信息时使用。
-
-    Args:
-        label_ids (List[int]): 标签 ID 列表。
-
-    Returns:
-        Dict[int, List]: 键为资源 ID，值为命中的标签列表。
-    """
-    queryset = ResourceLabel.objects.filter(api_label_id__in=label_ids).values(
-        "api_label_id", "api_label__name", "resource_id"
-    )
-
-    resource_labels = defaultdict(list)
-    for label in queryset:
-        resource_labels[label["resource_id"]].append(
-            {
-                "id": label["api_label_id"],
-                "name": label["api_label__name"],
-            }
-        )
-
-    return resource_labels
 
 
 def get_resource_use_stage_vars(resource: dict) -> dict:
@@ -309,33 +240,3 @@ def get_resource_url_tmpl() -> str:
         str: 资源访问地址模板。
     """
     return settings.API_RESOURCE_URL_TMPL
-
-
-def make_resource_schema_version(resource_version: ResourceVersion):
-    """为资源版本创建 OpenAPI schema 快照，用于固化资源级 schema 的版本数据。
-
-    创建 ResourceVersion 后立即调用；只有资源存在 schema 时才会创建版本 schema 记录。
-
-    Args:
-        resource_version (ResourceVersion): 已保存的资源版本实例，data 中应包含资源 ID。
-
-    Returns:
-        None: 有 schema 时写入 OpenAPIResourceSchemaVersion；没有 schema 时不创建记录。
-    """
-    resource_ids = [resource["id"] for resource in resource_version.data if "id" in resource]
-
-    # 查询资源所有的schema
-    resource_schemas = OpenAPIResourceSchema.objects.filter(resource_id__in=resource_ids)
-
-    schema_list = [
-        {
-            "resource_id": resource_schema.resource.id,
-            "schema": resource_schema.schema,
-        }
-        for resource_schema in resource_schemas
-    ]
-    if len(schema_list) > 0:
-        OpenAPIResourceSchemaVersion.objects.create(
-            resource_version=resource_version,
-            schema=schema_list,
-        )

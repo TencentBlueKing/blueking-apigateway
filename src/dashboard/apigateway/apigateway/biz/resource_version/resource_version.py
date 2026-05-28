@@ -34,16 +34,16 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
 from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
-from apigateway.service.resource_snapshot import (
+from apigateway.service.resource import (
     filter_disabled_stages_by_gateway,
     get_last_resource_updated_time,
     get_resource_id_to_proxy_snapshot,
     get_resource_labels_by_gateway,
-    make_resource_schema_version,
     snapshot_resource,
 )
-from apigateway.service.resource_version_schema import (
+from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
+    make_resource_schema_version,
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version

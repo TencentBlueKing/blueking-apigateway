@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+"""Release validation helpers."""
+
 from typing import Optional
 
 from django.utils.translation import gettext as _
@@ -27,7 +29,8 @@ from apigateway.common.constants import STAGE_VAR_FOR_PATH_PATTERN
 from apigateway.core import constants as core_constants
 from apigateway.core.constants import HOST_WITHOUT_SCHEME_PATTERN, GatewayStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, ResourceVersion, Stage
-from apigateway.service.resource_version_schema import get_used_stage_vars
+
+from ..resource_version.schema import get_used_stage_vars  # noqa: TID252
 
 
 class ReleaseValidationError(Exception):

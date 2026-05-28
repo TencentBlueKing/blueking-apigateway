@@ -40,7 +40,7 @@ from apigateway.biz.permission.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.models import Resource
-from apigateway.service.mcp.mcp_server import (
+from apigateway.service.mcp import (
     build_mcp_server_application_url,
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,

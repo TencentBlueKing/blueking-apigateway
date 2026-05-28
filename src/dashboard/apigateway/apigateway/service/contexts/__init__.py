@@ -15,5 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .gateway_auth import GatewayAuthConfig, GatewayAuthContext  # noqa
-from .resource_auth import ResourceAuthContext  # noqa
+from .gateway_auth import GatewayAuthConfig, GatewayAuthContext
+from .resource_auth import ResourceAuthContext
+
+__all__ = [
+    "GatewayAuthConfig",
+    "GatewayAuthContext",
+    "ResourceAuthContext",
+]

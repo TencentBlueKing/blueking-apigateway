@@ -24,7 +24,7 @@ from django.utils.translation import gettext as _
 from requests.structures import CaseInsensitiveDict
 
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
-from apigateway.service.resource_snapshot import get_resource_url_tmpl
+from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
 from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 

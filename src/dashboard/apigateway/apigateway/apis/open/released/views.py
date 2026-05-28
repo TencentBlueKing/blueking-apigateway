@@ -28,8 +28,8 @@ from apigateway.apis.open.permissions import (
 from apigateway.apis.open.released import serializers
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.models import Release, ReleasedResource
-from apigateway.service.resource_snapshot import get_resource_url_tmpl
-from apigateway.service.resource_version_schema import get_resource_schema
+from apigateway.service.resource import get_resource_url_tmpl
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import V1OKJsonResponse
 

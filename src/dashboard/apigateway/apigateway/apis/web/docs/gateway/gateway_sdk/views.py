@@ -31,7 +31,7 @@ from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.models import SDKDocContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.models import Release
-from apigateway.service.resource_version_schema import get_resource_schema
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils import openapi
 from apigateway.utils.responses import OKJsonResponse
 

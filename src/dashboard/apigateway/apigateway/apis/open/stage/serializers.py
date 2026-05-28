@@ -49,8 +49,7 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Stage
-from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
-from apigateway.service.plugin.validator import PluginConfigYamlValidator
+from apigateway.service.plugin import HeaderRewriteConvertor, PluginConfigYamlValidator
 
 
 class StageV1SLZ(serializers.Serializer):

@@ -18,13 +18,13 @@
 #
 import pytest
 
+import apigateway.service.prometheus as dimension
 from apigateway.apps.metrics.constants import MetricsInstantEnum, MetricsRangeEnum
-from apigateway.service.prometheus import dimension
 
 
 class TestRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -65,7 +65,7 @@ class TestRequestsMetrics:
 
 class TestNon20XStatusMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -108,7 +108,7 @@ class TestNon20XStatusMetrics:
 
 class TestAppRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -150,7 +150,7 @@ class TestAppRequestsMetrics:
 
 class TestResourceRequestsMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -192,7 +192,7 @@ class TestResourceRequestsMetrics:
 
 class TestResponseTime90thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -236,7 +236,7 @@ class TestResponseTime90thMetrics:
 
 class TestResponseTime50thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -280,7 +280,7 @@ class TestResponseTime50thMetrics:
 
 class TestResponseTime95thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -324,7 +324,7 @@ class TestResponseTime95thMetrics:
 
 class TestResponseTime99thMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -368,7 +368,7 @@ class TestResponseTime99thMetrics:
 
 class TestIngressMetrics:
     def test_get_query_promql_backend_not_found(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
         mocker.patch(
             "apigateway.service.prometheus.dimension.Backend.objects.filter"
         ).return_value.first.return_value = None
@@ -386,7 +386,7 @@ class TestIngressMetrics:
         assert result == ""
 
     def test_get_query_promql(self, mocker, fake_default_backend):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         gateway_name = fake_default_backend.gateway.name
         backend_name = fake_default_backend.name
@@ -432,7 +432,7 @@ class TestIngressMetrics:
 
 class TestEgressMetrics:
     def test_get_query_promql_backend_not_found(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
         mocker.patch(
             "apigateway.service.prometheus.dimension.Backend.objects.filter"
         ).return_value.first.return_value = None
@@ -450,7 +450,7 @@ class TestEgressMetrics:
         assert result == ""
 
     def test_get_query_promql(self, mocker, fake_default_backend):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         gateway_name = fake_default_backend.gateway.name
         backend_name = fake_default_backend.name
@@ -496,7 +496,7 @@ class TestEgressMetrics:
 
 class TestRequestTotalMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {
@@ -535,7 +535,7 @@ class TestRequestTotalMetrics:
 
 class TestHealthRateMetrics:
     def test_get_query_promql(self, mocker):
-        mocker.patch("apigateway.service.prometheus.dimension.BaseMetrics.default_labels", return_value=[])
+        mocker.patch("apigateway.service.prometheus.BaseMetrics.default_labels", return_value=[])
 
         data = [
             {

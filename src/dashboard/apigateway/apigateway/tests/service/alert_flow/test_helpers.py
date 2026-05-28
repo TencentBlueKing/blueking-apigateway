@@ -19,7 +19,7 @@
 import datetime
 
 from apigateway.apps.monitor.constants import AlarmTypeEnum
-from apigateway.service.alert_flow.helpers import MonitorEvent
+from apigateway.service.alert_flow import MonitorEvent
 
 
 class TestMonitorEvent:

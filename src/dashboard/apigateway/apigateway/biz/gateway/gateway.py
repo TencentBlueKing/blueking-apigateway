@@ -47,7 +47,7 @@ from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Rel
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
-from apigateway.service.resource_cleanup import delete_gateway_resource_versions, delete_gateway_resources
+from apigateway.service.resource import delete_gateway_resource_versions, delete_gateway_resources
 from apigateway.utils.dict import deep_update
 
 from .app_binding import GatewayAppBindingHandler

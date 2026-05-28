@@ -31,7 +31,7 @@ from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Gateway, Resource
-from apigateway.service.openapi_export import OpenAPIExportManager
+from apigateway.service.resource_version import OpenAPIExportManager
 
 from .generators import Jinja2ToMarkdownGenerator, OpenAPIToMarkdownGenerator
 from .models import ArchiveDoc, OpenAPIDoc

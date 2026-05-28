@@ -68,21 +68,59 @@ Important call rules:
   `biz-domain-independence` contract.
 - `service/` modules may call each other and may contain cross-model operations
   when the operation is focused and reusable.
+- `service/` is not a dumping ground for code moved only to avoid `biz`-to-`biz`
+  imports. Cross-domain workflow orchestration belongs in a neutral use-case
+  `biz` module or in `controller/`, not in `service/`. Keep `service/` to leaf
+  capabilities with stable inputs and outputs, clear reuse, direct tests, and no
+  permission, audit, lifecycle, or workflow decisions.
 - Direct model or queryset use from views and serializers is limited to simple
   local reads or writes that are already idiomatic in Django.
 
 Function placement guide:
 
-- Keep a function where it is if it is only used inside one module or `biz`
-  domain, and moving it would only create a proxy wrapper.
-- Put a function in `biz/` when it owns use-case flow: what should happen,
-  permission-aware decisions, lifecycle branching, audit or side-effect
-  orchestration, or sequencing multiple lower-level operations.
-- Put a function in `service/` when it is a focused reusable operation over
-  model relationships or domain data: snapshots, schema lookup, cleanup,
-  reusable cross-model queries, relation normalization, or data shaping.
-- When both seem possible, keep orchestration in `biz/` and extract only the
-  smallest reusable relation or data operation to `service/`.
+Use this order when deciding where a new function belongs:
+
+1. Keep it where it is if it is only used inside one module or one `biz`
+   domain, especially when moving it would only create a proxy wrapper.
+2. Keep view-specific parameter shaping, response assembly, or API-surface
+   branching in the owning view or serializer.
+3. Put it in `biz/` when it owns use-case flow: what should happen,
+   permission-aware decisions, lifecycle branching, audit or side-effect
+   orchestration, transactions, or sequencing multiple lower-level operations.
+4. Put it in `service/` only when it is a focused reusable leaf operation over
+   model relationships or domain data: snapshots, schema lookup, cleanup,
+   reusable cross-model queries, relation normalization, or data shaping.
+5. When both `biz` and `service` seem possible, keep orchestration in `biz` and
+   extract only the smallest reusable relation or data operation to `service`.
+
+Service organization guide:
+
+- Name `service` modules by domain plus capability, not by vague technical
+  buckets. Prefer names like `resource_snapshot.py`, `resource_cleanup.py`,
+  `resource_version_schema.py`, or `openapi_export.py`; avoid adding new
+  behavior to generic modules such as `utils.py` unless the code is truly
+  domain-neutral.
+- Keep a small capability as a top-level module. Convert a domain into a package
+  only after several related service modules exist or a file starts mixing
+  unrelated capabilities, for example `service/resource/snapshot.py`,
+  `service/resource/cleanup.py`, and `service/resource/labels.py`.
+- For `service/<domain>/` packages, external callers must import public symbols
+  from `apigateway.service.<domain>`, not from leaf modules such as
+  `apigateway.service.<domain>.<capability>`. The package `__init__.py` owns the
+  public API and `__all__`; leaf modules must not define `__all__`.
+- Service package internals may depend on sibling leaf modules, but should use
+  relative imports for those implementation dependencies.
+- Function names should describe the action, domain, and output shape or side
+  effect. Use `get_*` for reads, `delete_*` or `clear_*` for destructive writes,
+  `build_*` for construction, `format_*` or `normalize_*` for shape changes,
+  `snapshot_*` for snapshot creation, and `ensure_*` for idempotent creation or
+  backfill.
+- Prefer free functions for stateless leaf operations. Use classes only when
+  the service needs state, strategy selection, validation objects, factories, or
+  polymorphic behavior.
+- Each non-trivial service module should expose a small public surface: add a
+  module docstring that states what the module owns, keep public helpers
+  discoverable, and prefix module-private helpers with `_`.
 
 Layer intent:
 

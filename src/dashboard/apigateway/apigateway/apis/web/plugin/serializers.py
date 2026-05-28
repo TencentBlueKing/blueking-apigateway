@@ -34,7 +34,7 @@ from apigateway.apps.plugin.constants import (
 )
 from apigateway.apps.plugin.models import PluginConfig, PluginType
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.service.plugin.validator import PluginConfigYamlValidator
+from apigateway.service.plugin import PluginConfigYamlValidator
 
 
 class PluginTypeOutputSLZ(serializers.ModelSerializer):
