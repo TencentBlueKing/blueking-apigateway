@@ -18,7 +18,7 @@
 #
 import json
 import logging
-from dataclasses import dataclass, field
+from typing import Tuple
 
 from django.utils.html import escape as html_escape
 
@@ -32,22 +32,22 @@ from apigateway.core.models import Gateway
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class OpenAPIResourceSyncResult:
-    ok: bool = True
-    message: str = ""
-    added: list[dict] = field(default_factory=list)
-    updated: list[dict] = field(default_factory=list)
-    deleted: list[dict] = field(default_factory=list)
-
-
 def sync_openapi_resources_from_content(
     gateway: Gateway,
     username: str,
     content: str,
     delete_missing_resources: bool,
     doc_language: str = "",
-) -> OpenAPIResourceSyncResult:
+) -> Tuple[bool, str, dict]:
+    """
+    Sync OpenAPI resources from content.
+
+    Returns:
+        Tuple[bool, str, dict]: (ok, message, data)
+            - ok: True if sync succeeded, False otherwise
+            - message: Error message if failed, empty string if succeeded
+            - data: Dict with keys "added", "updated", "deleted" if succeeded, empty dict if failed
+    """
     try:
         openapi_manager = OpenAPIImportManager.load_from_content(
             gateway,
@@ -56,17 +56,19 @@ def sync_openapi_resources_from_content(
         )
     except Exception as err:
         logger.exception("failed to load openapi content")
-        return OpenAPIResourceSyncResult(
-            ok=False,
-            message=f"导入内容为无效的 json/yaml 数据，{html_escape(str(err))}。",
+        return (
+            False,
+            f"导入内容为无效的 json/yaml 数据，{html_escape(str(err))}。",
+            {},
         )
 
     validate_err_list = openapi_manager.validate()
     if validate_err_list:
         error_dicts = [error.to_dict() for error in validate_err_list]
-        return OpenAPIResourceSyncResult(
-            ok=False,
-            message=json.dumps(error_dicts, ensure_ascii=False, indent=4),
+        return (
+            False,
+            json.dumps(error_dicts, ensure_ascii=False, indent=4),
+            {},
         )
 
     importer = ResourcesImporter.from_resources(
@@ -91,8 +93,12 @@ def sync_openapi_resources_from_content(
         else:
             updated.append({"id": resource_data.resource.id})
 
-    return OpenAPIResourceSyncResult(
-        added=added,
-        updated=updated,
-        deleted=importer.get_deleted_resources(),
+    return (
+        True,
+        "",
+        {
+            "added": added,
+            "updated": updated,
+            "deleted": importer.get_deleted_resources(),
+        },
     )

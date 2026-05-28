@@ -52,22 +52,16 @@ class ResourceSyncApi(generics.CreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        result = sync_openapi_resources_from_content(
+        ok, message, data = sync_openapi_resources_from_content(
             gateway=request.gateway,
             username=request.user.username,
             content=slz.validated_data["content"],
             delete_missing_resources=slz.validated_data["delete"],
             doc_language=slz.validated_data.get("doc_language", ""),
         )
-        if not result.ok:
-            raise serializers.ValidationError({"content": _("{err}").format(err=result.message)})
+        if not ok:
+            raise serializers.ValidationError({"content": _("{err}").format(err=message)})
 
-        slz = ResourceSyncOutputSLZ(
-            {
-                "added": result.added,
-                "updated": result.updated,
-                "deleted": result.deleted,
-            }
-        )
+        slz = ResourceSyncOutputSLZ(data)
 
         return V1OKJsonResponse(data=slz.data)
