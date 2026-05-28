@@ -293,9 +293,9 @@ func logMCPRequest(
 				},
 			)
 		}
-
-		logger.Info("-", fields...)
 	}
+
+	logger.Info("-", fields...)
 }
 
 // AddLoggingMiddleware adds logging middleware to the MCP server.

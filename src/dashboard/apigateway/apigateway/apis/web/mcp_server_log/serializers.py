@@ -103,7 +103,9 @@ class MCPServerLogOutputSLZ(serializers.Serializer):
     request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
     x_request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="全链路请求 ID")
     timestamp = serializers.IntegerField(required=False, allow_null=True, help_text="请求时间戳")
+    gateway_id = serializers.IntegerField(required=False, allow_null=True, help_text="网关 ID")
     gateway_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="网关名称")
+    mcp_server_id = serializers.IntegerField(required=False, allow_null=True, help_text="MCP Server ID")
     mcp_server_name = serializers.CharField(
         required=False, allow_null=True, allow_blank=True, help_text="MCP Server 名称"
     )
@@ -174,6 +176,7 @@ class GatewayLogOutputSLZ(serializers.Serializer):
     service = serializers.CharField(help_text="服务名称")
     timestamp = serializers.IntegerField(required=False, allow_null=True, help_text="请求时间戳")
     request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
+    x_request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="全链路请求 ID")
     method = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求方法")
     http_host = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求域名")
     http_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求路径")
@@ -227,6 +230,9 @@ class MCPServerLogQuerySummaryOutputSLZ(serializers.Serializer):
     service_count = serializers.IntegerField(help_text="服务数")
     span_count = serializers.IntegerField(help_text="Span 总数")
     status = serializers.CharField(allow_blank=True, help_text="请求状态 (success/failed)")
+    gateway_id = serializers.IntegerField(allow_null=True, help_text="网关 ID")
+    gateway_name = serializers.CharField(allow_blank=True, help_text="网关名称")
+    mcp_server_id = serializers.IntegerField(allow_null=True, help_text="MCP Server ID")
     mcp_server_name = serializers.CharField(allow_blank=True, help_text="MCP Server 名称")
     mcp_method = serializers.CharField(allow_blank=True, help_text="MCP 方法")
     tool_name = serializers.CharField(allow_blank=True, help_text="工具名称")

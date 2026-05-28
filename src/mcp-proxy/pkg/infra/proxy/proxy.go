@@ -478,14 +478,17 @@ func genPromptAndHandler(promptConfig *PromptConfig) (*mcp.Prompt, PromptHandler
 
 // loggingTransport 是一个带日志的 HTTP Transport
 type loggingTransport struct {
-	base        http.RoundTripper
-	logger      *zap.SugaredLogger
-	appCode     string
-	username    string
-	requestID   string
-	xRequestID  string
-	gatewayName string
-	toolName    string
+	base          http.RoundTripper
+	logger        *zap.SugaredLogger
+	appCode       string
+	username      string
+	requestID     string
+	xRequestID    string
+	gatewayID     int
+	gatewayName   string
+	mcpServerID   int
+	mcpServerName string
+	toolName      string
 }
 
 func buildLoggingTransport(
@@ -493,16 +496,21 @@ func buildLoggingTransport(
 	baseTransport http.RoundTripper,
 	toolApiConfig *ToolConfig,
 	appCode, username, requestID, xRequestID string,
+	mcpServerName string,
 ) *loggingTransport {
+	gatewayName := util.GetGatewayNameFromContext(ctx)
 	return &loggingTransport{
-		base:        baseTransport,
-		logger:      logging.GetLogger(),
-		appCode:     appCode,
-		username:    username,
-		requestID:   requestID,
-		xRequestID:  xRequestID,
-		gatewayName: util.GetGatewayNameFromContext(ctx),
-		toolName:    toolApiConfig.String(),
+		base:          baseTransport,
+		logger:        logging.GetLogger(),
+		appCode:       appCode,
+		username:      username,
+		requestID:     requestID,
+		xRequestID:    xRequestID,
+		gatewayID:     util.GetGatewayIDFromContext(ctx),
+		gatewayName:   gatewayName,
+		mcpServerID:   util.GetMCPServerIDFromContext(ctx),
+		mcpServerName: mcpServerName,
+		toolName:      toolApiConfig.String(),
 	}
 }
 
@@ -536,7 +544,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
+		"gateway_id", t.gatewayID,
 		"gateway_name", t.gatewayName,
+		"mcp_server_id", t.mcpServerID,
+		"mcp_server_name", t.mcpServerName,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.Path,
@@ -558,7 +569,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			"bk_username", t.username,
 			"request_id", t.requestID,
 			"x_request_id", t.xRequestID,
+			"gateway_id", t.gatewayID,
 			"gateway_name", t.gatewayName,
+			"mcp_server_id", t.mcpServerID,
+			"mcp_server_name", t.mcpServerName,
 			"tool", t.toolName,
 			"method", req.Method,
 			"url", req.URL.Path,
@@ -581,7 +595,10 @@ func (t *loggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"bk_username", t.username,
 		"request_id", t.requestID,
 		"x_request_id", t.xRequestID,
+		"gateway_id", t.gatewayID,
 		"gateway_name", t.gatewayName,
+		"mcp_server_id", t.mcpServerID,
+		"mcp_server_name", t.mcpServerName,
 		"tool", t.toolName,
 		"method", req.Method,
 		"url", req.URL.Path,
@@ -748,6 +765,10 @@ func prepareToolCallAuditLog(
 		zap.String("app_code", appCode),
 		zap.String("bk_username", username),
 		zap.String("client_ip", clientIP),
+		zap.Int("gateway_id", util.GetGatewayIDFromContext(ctx)),
+		zap.String("gateway_name", util.GetGatewayNameFromContext(ctx)),
+		zap.Int("mcp_server_id", util.GetMCPServerIDFromContext(ctx)),
+		zap.String("mcp_server_name", util.GetMCPServerNameFromContext(ctx)),
 	)
 
 	return auditLog, requestID, xRequestID, appCode, username, clientIP
@@ -758,6 +779,7 @@ func buildToolCallClient(
 	ctx context.Context,
 	toolApiConfig *ToolConfig,
 	appCode, username, requestID, xRequestID string,
+	mcpServerName string,
 ) *http.Client {
 	logTransport := buildLoggingTransport(
 		ctx,
@@ -767,6 +789,7 @@ func buildToolCallClient(
 		username,
 		requestID,
 		xRequestID,
+		mcpServerName,
 	)
 	return &http.Client{Transport: logTransport}
 }
@@ -943,7 +966,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		// Build HTTP client with shared transport
-		client := buildToolCallClient(ctx, toolApiConfig, appCode, username, requestID, xRequestID)
+		client := buildToolCallClient(ctx, toolApiConfig, appCode, username, requestID, xRequestID, serverName)
 		timeout := util.GetBkApiTimeout(ctx)
 		headerInfo := map[string]string{constant.BkApiTimeoutHeaderKey: fmt.Sprintf("%v", timeout)}
 		requestParam := runtime.ClientRequestWriterFunc(

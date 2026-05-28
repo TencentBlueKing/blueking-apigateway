@@ -84,6 +84,7 @@ def _format_gateway_log(log: Dict, gateway_type: str) -> Dict:
         "service": service,
         "timestamp": log.get("timestamp"),
         "request_id": log.get("request_id"),
+        "x_request_id": log.get("x_request_id"),
         "method": log.get("method"),
         "http_host": log.get("http_host"),
         "http_path": log.get("http_path"),

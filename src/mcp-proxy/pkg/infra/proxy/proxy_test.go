@@ -534,10 +534,12 @@ var _ = Describe("MCPProxy", func() {
 				"tester",
 				"req-1",
 				"x-req-1",
+				"test-mcp-server",
 			)
 
 			Expect(transport).NotTo(BeNil())
 			Expect(transport.gatewayName).To(Equal("test-gateway"))
+			Expect(transport.mcpServerName).To(Equal("test-mcp-server"))
 			Expect(transport.requestID).To(Equal("req-1"))
 			Expect(transport.xRequestID).To(Equal("x-req-1"))
 			Expect(transport.toolName).To(Equal(toolConfig.String()))
