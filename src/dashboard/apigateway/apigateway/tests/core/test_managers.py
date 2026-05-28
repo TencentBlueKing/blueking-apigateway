@@ -16,11 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import json
 
 import pytest
-from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.biz.stage import StageHandler
@@ -33,12 +31,10 @@ from apigateway.core.models import (
     Gateway,
     Release,
     ReleasedResource,
-    ReleaseHistory,
     Resource,
     ResourceVersion,
     Stage,
 )
-from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
 
@@ -457,67 +453,3 @@ class TestReleasedResourceManager:
     def test_get_recommended_stage_name(self, stage_names, disabled_stages, expecged):
         result = ReleasedResource.objects.get_recommended_stage_name(stage_names, disabled_stages)
         assert result == expecged
-
-
-class TestReleaseHistoryManager(TestCase):
-    def test_filter_release_history(self):
-        gateway = G(Gateway)
-        stage_prod = G(Stage, gateway=gateway, name="prod")
-        stage_test = G(Stage, gateway=gateway, name="test")
-        resource_version_1 = G(ResourceVersion, gateway=gateway)
-        resource_version_2 = G(ResourceVersion, gateway=gateway)
-
-        # prod
-        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
-        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin")
-        G(
-            ReleaseHistory,
-            gateway=gateway,
-            stage=stage_prod,
-            resource_version=resource_version_1,
-            created_time=dummy_time.time,
-        )
-        # test
-        G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
-
-        data = [
-            # query, stage_name
-            {
-                "params": {
-                    "query": "prod",
-                },
-                "expected": {
-                    "count": 3,
-                },
-            },
-            # stage prod
-            {
-                "params": {
-                    "stage_id": stage_prod.id,
-                },
-                "expected": {
-                    "count": 3,
-                },
-            },
-            # created_by
-            {
-                "params": {
-                    "created_by": "adm",
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-            {
-                "params": {
-                    "time_start": dummy_time.time - datetime.timedelta(hours=1),
-                    "time_end": dummy_time.time + datetime.timedelta(hours=1),
-                },
-                "expected": {
-                    "count": 1,
-                },
-            },
-        ]
-        for test in data:
-            result = ReleaseHistory.objects.filter_release_history(gateway, fuzzy=True, **test["params"])
-            self.assertEqual(result.count(), test["expected"]["count"])

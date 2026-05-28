@@ -15,11 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest.mock import patch
 
+import datetime
+from unittest.mock import call, patch
+
+import pytest
 from ddf import G
 
 from apigateway.biz.release import ReleaseHandler
+from apigateway.biz.release.gateway_releaser import ReleaseError
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -27,11 +31,92 @@ from apigateway.core.constants import (
     ReleaseHistoryStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import PublishEvent, Release, Stage
+from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
+from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils.time import now_datetime
+
+pytestmark = pytest.mark.django_db
 
 
 class TestReleaseHandler:
+    def test_filter_release_history(self):
+        gateway = G(Gateway)
+        stage_prod = G(Stage, gateway=gateway, name="prod")
+        stage_test = G(Stage, gateway=gateway, name="test")
+        resource_version_1 = G(ResourceVersion, gateway=gateway)
+        resource_version_2 = G(ResourceVersion, gateway=gateway)
+
+        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1)
+        G(ReleaseHistory, gateway=gateway, stage=stage_prod, resource_version=resource_version_1, created_by="admin")
+        G(
+            ReleaseHistory,
+            gateway=gateway,
+            stage=stage_prod,
+            resource_version=resource_version_1,
+            created_time=dummy_time.time,
+        )
+        G(ReleaseHistory, gateway=gateway, stage=stage_test, resource_version=resource_version_2)
+
+        data = [
+            {
+                "params": {
+                    "query": "prod",
+                },
+                "expected": {
+                    "count": 3,
+                },
+            },
+            {
+                "params": {
+                    "stage_id": stage_prod.id,
+                },
+                "expected": {
+                    "count": 3,
+                },
+            },
+            {
+                "params": {
+                    "created_by": "adm",
+                },
+                "expected": {
+                    "count": 1,
+                },
+            },
+            {
+                "params": {
+                    "time_start": dummy_time.time - datetime.timedelta(hours=1),
+                    "time_end": dummy_time.time + datetime.timedelta(hours=1),
+                },
+                "expected": {
+                    "count": 1,
+                },
+            },
+        ]
+        for test in data:
+            result = ReleaseHandler.filter_release_history(gateway, fuzzy=True, **test["params"])
+            assert result.count() == test["expected"]["count"]
+
+    def test_filter_release_history_selects_data_plane(
+        self, django_assert_num_queries, fake_gateway, default_data_plane
+    ):
+        stage = G(Stage, gateway=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        for _ in range(3):
+            G(
+                ReleaseHistory,
+                gateway=fake_gateway,
+                stage=stage,
+                resource_version=resource_version,
+                data_plane=default_data_plane,
+            )
+
+        queryset = ReleaseHandler.filter_release_history(fake_gateway, order_by="id")
+
+        with django_assert_num_queries(1):
+            data_plane_names = [history.data_plane.name for history in queryset]
+
+        assert data_plane_names == [default_data_plane.name] * 3
+
     def test_get_released_stage_ids(self, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
@@ -45,6 +130,78 @@ class TestReleaseHandler:
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value
         fake_gateway.save()
         assert ReleaseHandler.get_released_stage_ids([fake_gateway.id]) == []
+
+    def test_release_to_stages_calls_release_once_per_stage(self, fake_gateway, mocker):
+        stage_ids = [101, 102]
+        resource_version_id = 201
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocked_release = mocker.patch("apigateway.biz.release.release.release")
+
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version_id=resource_version_id,
+            stage_ids=stage_ids,
+            username="admin",
+            comment="release",
+        )
+
+        assert ok is True
+        assert message == ""
+        mocked_release.assert_has_calls(
+            [
+                call(
+                    gateway=fake_gateway,
+                    stage_id=stage_ids[0],
+                    resource_version_id=resource_version_id,
+                    username="admin",
+                    comment="release",
+                ),
+                call(
+                    gateway=fake_gateway,
+                    stage_id=stage_ids[1],
+                    resource_version_id=resource_version_id,
+                    username="admin",
+                    comment="release",
+                ),
+            ]
+        )
+
+    def test_release_to_stages_returns_error_message(self, fake_gateway, mocker):
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocker.patch(
+            "apigateway.biz.release.release.release",
+            side_effect=ReleaseError("release failed"),
+        )
+
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version_id=201,
+            stage_ids=[101],
+            username="admin",
+            comment="release",
+        )
+
+        assert ok is False
+        assert message == "release failed"
+
+    def test_release_to_stages_returns_error_after_partial_success(self, fake_gateway, mocker):
+        mocker.patch("apigateway.biz.release.release.Lock")
+        mocked_release = mocker.patch(
+            "apigateway.biz.release.release.release",
+            side_effect=[None, ReleaseError("release failed")],
+        )
+
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=fake_gateway,
+            resource_version_id=201,
+            stage_ids=[101, 102],
+            username="admin",
+            comment="release",
+        )
+
+        assert ok is False
+        assert message == "release failed"
+        assert mocked_release.call_count == 2
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (
@@ -109,7 +266,7 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.SUCCESS.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.SUCCESS.value
@@ -123,14 +280,14 @@ class TestReleaseHandler:
             status=PublishEventStatusTypeEnum.FAILURE.value,
         )
 
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value
 
     def test_wait_release_done_timeout(self, fake_release_history):
         """超时返回 FAILURE"""
-        with patch("apigateway.biz.release.release.time.sleep"):
+        with patch("apigateway.biz.release.waiter.time.sleep"):
             result = ReleaseHandler.wait_release_done(fake_release_history.id, timeout=0)
 
         assert result == ReleaseHistoryStatusEnum.FAILURE.value

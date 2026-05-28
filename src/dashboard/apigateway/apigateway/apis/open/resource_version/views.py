@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
@@ -25,11 +24,9 @@ from rest_framework import generics, status
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
-from apigateway.biz.gateway import ReleaseError, release
+from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
 from apigateway.core.models import ResourceVersion, Stage
-from apigateway.utils.exception import LockTimeout
-from apigateway.utils.redis_utils import Lock
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 
 from .serializers import (
@@ -101,29 +98,18 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        gateway_id = data["gateway"].id
         stage_ids = data["stage_ids"]
         resource_version = ResourceVersion.objects.get_object_fields(data["resource_version_id"])
 
-        for stage_id in data["stage_ids"]:
-            try:
-                with Lock(
-                    f"{gateway_id}_{stage_id}",
-                    timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
-                    try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
-                ):
-                    # do release, will record audit log
-                    release(
-                        gateway=request.gateway,
-                        stage_id=stage_id,
-                        resource_version_id=data["resource_version_id"],
-                        comment=data["comment"],
-                        username=request.user.username,
-                    )
-            except LockTimeout as err:
-                return V1FailJsonResponse(str(err))
-            except ReleaseError as err:
-                return V1FailJsonResponse(str(err))
+        ok, message = ReleaseHandler.release_to_stages(
+            gateway=request.gateway,
+            resource_version_id=data["resource_version_id"],
+            stage_ids=stage_ids,
+            username=request.user.username,
+            comment=data["comment"],
+        )
+        if not ok:
+            return V1FailJsonResponse(message)
 
         return V1OKJsonResponse(
             "OK",

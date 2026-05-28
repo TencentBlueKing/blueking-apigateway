@@ -22,7 +22,7 @@ import { getGatewayPendingList, getMcpPendingList } from '@/services/source/pers
 // tab切换选项
 const personalWorkbenchTab = ref<ITabKey>('gateway');
 // 我的待办是否存在需要审批数据
-const isExistApplied = ref(false);
+const isExistPending = ref(true);
 
 // 并行请求处理
 const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
@@ -37,18 +37,24 @@ const getParallelRequestResult = (payload: PromiseSettledResult<any>) => {
 // 处理个人工作台公共数据部分
 export function usePersonalWorkbench() {
   // 获取我的待办需要审批数据
-  const getMyAppliedData = async () => {
+  const getMyPendingData = async () => {
     const results = await Promise.allSettled([getGatewayPendingList(), getMcpPendingList()]);
     const [gatewayData, mcpData] = results.map(getParallelRequestResult);
-    isExistApplied.value = gatewayData.count > 0 || mcpData.count > 0;
+    isExistPending.value = gatewayData.count > 0 || mcpData.count > 0;
     if (gatewayData.count < 1 && mcpData.count > 0) {
       personalWorkbenchTab.value = 'mcp';
     }
   };
 
+  //  重置到网关选项
+  const resetPersonalWorkbenchTab = () => {
+    personalWorkbenchTab.value = 'gateway';
+  };
+
   return {
-    isExistApplied,
+    isExistPending,
     personalWorkbenchTab,
-    getMyAppliedData,
+    getMyPendingData,
+    resetPersonalWorkbenchTab,
   };
 }
