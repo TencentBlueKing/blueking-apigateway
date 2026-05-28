@@ -36,11 +36,8 @@ from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 
 from .gateway_releaser import ReleaseError, release
-from .waiter import wait_release_done as _wait_release_done
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_WAIT_RELEASE_TIMEOUT = 150
 
 
 class ReleaseHandler:
@@ -218,19 +215,6 @@ class ReleaseHandler:
             stage_publish_status[stage_id] = state
 
         return stage_publish_status
-
-    @staticmethod
-    def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
-        """轮询等待指定发布完成，返回最终状态
-
-        Args:
-            release_history_id: 发布历史 ID
-            timeout: 超时时间（秒）
-
-        Returns:
-            最终发布状态（ReleaseHistoryStatusEnum 的值）
-        """
-        return _wait_release_done(release_history_id, timeout)
 
     @staticmethod
     def filter_released_gateway_ids(gateway_ids: List[int]) -> List[int]:

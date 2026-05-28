@@ -24,8 +24,10 @@ from apigateway.core.models import PublishEvent
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_WAIT_RELEASE_TIMEOUT = 150
 
-def wait_release_done(release_history_id: int, timeout: int) -> str:
+
+def wait_release_done(release_history_id: int, timeout: int = DEFAULT_WAIT_RELEASE_TIMEOUT) -> str:
     """轮询等待指定发布完成，返回最终状态"""
     start_time = datetime.now().timestamp()
     wait_times = 0
