@@ -23,11 +23,11 @@ from ddf import G
 from openapi_spec_validator.versions import get_spec_version
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
-from apigateway.biz.resource.importer.parser import BaseExporter
+from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
 from apigateway.core.models import Backend, Gateway
+from apigateway.service.openapi_export import BaseExporter, OpenAPIExportManager
 from apigateway.utils.yaml import yaml_loads
 
 

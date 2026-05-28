@@ -388,6 +388,3 @@ modules = [
     "apigateway.biz.permission",
     "apigateway.biz.mcp_server",
 ]
-ignore_imports = [
-    "apigateway.biz.resource_version.artifacts -> apigateway.biz.resource.importer.openapi",
-]

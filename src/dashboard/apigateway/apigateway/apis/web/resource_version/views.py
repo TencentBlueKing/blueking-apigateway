@@ -33,7 +33,6 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
 from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
 from apigateway.biz.resource_doc.exceptions import NoResourceDocError
 from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
@@ -44,6 +43,7 @@ from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
+from apigateway.service.openapi_export import OpenAPIExportManager
 from apigateway.service.resource_version_schema import get_resource_id_to_schema_by_resource_version
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.version import get_next_version, get_next_version_with_type

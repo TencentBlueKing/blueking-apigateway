@@ -69,7 +69,7 @@ class TestResourceVersionHandler:
     def test_create_resource_version_with_artifacts(self, fake_gateway, fake_resource, mocker):
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
-            "apigateway.biz.resource.importer.openapi.OpenAPIExportManager.export_resource_version_openapi",
+            "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
             return_value={"openapi": "3.0.0"},
         )
         G(ResourceDoc, gateway=fake_gateway, resource_id=fake_resource.id)
@@ -89,7 +89,7 @@ class TestResourceVersionHandler:
         """Test that OpenAPIFileResourceSchemaVersion is created even when no ResourceDoc exists."""
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
-            "apigateway.biz.resource.importer.openapi.OpenAPIExportManager.export_resource_version_openapi",
+            "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
             return_value={"openapi": "3.0.0"},
         )
         # No ResourceDoc created for this gateway

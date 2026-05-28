@@ -39,7 +39,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
+from apigateway.biz.resource.importer.openapi import OpenAPIImportManager
 from apigateway.biz.resource.savers import ResourcesSaver
 from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
@@ -49,6 +49,7 @@ from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.contexts import ResourceAuthContext
+from apigateway.service.openapi_export import OpenAPIExportManager
 from apigateway.service.resource_cleanup import delete_resources
 from apigateway.service.resource_snapshot import get_resource_labels, get_resource_labels_by_gateway
 from apigateway.utils.django import get_model_dict
