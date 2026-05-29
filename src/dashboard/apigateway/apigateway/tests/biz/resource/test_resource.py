@@ -124,11 +124,6 @@ class TestResourceHandler:
             ResourceHandler.save_auth_config(resource.id, test["config"])
             assert ResourceAuthContext().get_config(resource.id) == test["expected"]
 
-    def test_snapshot(self, fake_resource):
-        snapshot = ResourceHandler().snapshot(fake_resource, as_dict=True)
-        assert snapshot
-        assert isinstance(snapshot, dict)
-
     def test_filter_by_resource_filter_condition(self, fake_gateway):
         resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test")
         resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test")

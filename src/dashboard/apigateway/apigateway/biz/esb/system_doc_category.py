@@ -20,8 +20,9 @@ import copy
 from django.conf import settings
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem, ESBChannel
-from apigateway.biz.esb.board_config import BoardConfigManager
 from apigateway.common.i18n.field import SerializerTranslatedField
+
+from .board_config import BoardConfigManager
 
 
 class SystemDocCategoryHandler:

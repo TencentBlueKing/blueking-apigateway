@@ -18,7 +18,7 @@
 from ddf import G
 
 from apigateway.apps.support.models import ResourceDoc
-from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
 
 
 class TestResourceDocHandler:

@@ -21,7 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.esb.bkcore.models import ESBChannel
-from apigateway.biz.esb.decorators import check_board_exist
+from apigateway.biz.esb import check_board_exist
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import ComponentOutputSLZ, ComponentSearchInputSLZ, ComponentSearchOutputSLZ

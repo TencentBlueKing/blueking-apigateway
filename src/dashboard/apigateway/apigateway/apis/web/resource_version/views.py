@@ -33,16 +33,20 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
-from apigateway.biz.resource_doc.exporter.generators import ResourceVersionDocArchiveGenerator
-from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError
+from apigateway.biz.resource_doc.exporter import ResourceVersionDocArchiveGenerator
+from apigateway.biz.resource_version import (
+    ResourceDifferHandler,
+    ResourceDocVersionHandler,
+    ResourceVersionArtifactHandler,
+    ResourceVersionHandler,
+)
+from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
+from apigateway.service.backend import get_backend_id_to_instance
+from apigateway.service.resource_version import OpenAPIExportManager, get_resource_id_to_schema_by_resource_version
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.version import get_next_version, get_next_version_with_type
 
@@ -155,12 +159,10 @@ class ResourceVersionRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
         resource_docs_updated_time = ResourceDocVersionHandler().get_doc_updated_time(request.gateway.id, instance.id)
 
         # 查询网关后端服务
-        resource_backends = BackendHandler.get_id_to_instance(request.gateway.id)
+        resource_backends = get_backend_id_to_instance(request.gateway.id)
 
         # 查询哪些资源有配置对应的 schema
-        resource_id_with_schema_dict = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-            instance.id
-        )
+        resource_id_with_schema_dict = get_resource_id_to_schema_by_resource_version(instance.id)
 
         context = {
             "resource_doc_updated_time": resource_docs_updated_time,

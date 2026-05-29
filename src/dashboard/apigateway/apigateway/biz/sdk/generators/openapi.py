@@ -25,9 +25,9 @@ from typing import Any, ClassVar, Dict, List
 from bkapi_client_generator import GenerateFailed, generate_client
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.sdk import exceptions
+from apigateway.biz.sdk.exceptions import GenerateError
 from apigateway.biz.sdk.models import Generator
+from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.file import write_to_file
 
 logger = logging.getLogger(__name__)
@@ -47,11 +47,9 @@ class OpenAPITemplateGenerator(Generator):
                 output=output_dir,
             )
         except GenerateFailed as err:
-            raise exceptions.GenerateError(
-                f"failed to generate client package {self.context.name}, code: {err.code}"
-            ) from err
+            raise GenerateError(f"failed to generate client package {self.context.name}, code: {err.code}") from err
         except Exception as err:  # pylint: disable=broad-except
-            raise exceptions.GenerateError(f"failed to generate client package {self.context.name}") from err
+            raise GenerateError(f"failed to generate client package {self.context.name}") from err
 
     def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
         exporter = OpenAPIExportManager(

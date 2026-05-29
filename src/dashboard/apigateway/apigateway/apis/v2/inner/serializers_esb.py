@@ -33,7 +33,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
     PermissionStatusEnum,
 )
-from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.fields import TimestampField

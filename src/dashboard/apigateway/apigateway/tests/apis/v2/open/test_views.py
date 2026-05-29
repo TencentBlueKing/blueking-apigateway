@@ -996,7 +996,7 @@ class TestMCPServerRetrieveApi:
             return_value="",
         )
         mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.ResourceVersionHandler.get_resource_id_to_schema_by_resource_version",
+            "apigateway.biz.mcp_server.mcp_server.get_resource_id_to_schema_by_resource_version",
             return_value={101: fake_schema},
         )
         mocker.patch(

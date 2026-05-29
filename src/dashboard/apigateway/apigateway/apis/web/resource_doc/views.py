@@ -28,11 +28,9 @@ from rest_framework import generics, status
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_doc.archive_factory import ArchiveFileFactory
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.biz.resource_doc.exporter.generators import DocArchiveGenerator
-from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import ArchiveParser, OpenAPIParser
+from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError, ResourceDocJinja2TemplateError
+from apigateway.biz.resource_doc.exporter import DocArchiveGenerator
+from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter, OpenAPIParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.core.models import Resource

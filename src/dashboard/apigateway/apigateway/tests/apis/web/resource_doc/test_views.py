@@ -18,7 +18,7 @@
 import json
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.resource_doc.importer.models import ArchiveDoc
+from apigateway.biz.resource_doc.importer import ArchiveDoc
 
 
 class TestDocArchiveParseApi:

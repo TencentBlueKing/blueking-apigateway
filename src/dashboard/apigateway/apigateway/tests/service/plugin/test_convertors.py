@@ -18,7 +18,7 @@
 import pytest
 
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum
-from apigateway.service.plugin.convertor import (
+from apigateway.service.plugin import (
     AIProxyConvertor,
     BkAccessTokenSourceConvertor,
     BkCorsConvertor,

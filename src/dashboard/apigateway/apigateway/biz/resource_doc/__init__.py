@@ -15,4 +15,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .resource_doc import ResourceDocHandler  # noqa
+from .archive_factory import ArchiveFileFactory
+from .exceptions import (
+    NoResourceDocError,
+    ResourceDocJinja2TemplateError,
+    ResourceDocJinja2TemplateNotFound,
+    ResourceDocJinja2TemplateSyntaxError,
+)
+from .resource_doc import ResourceDocHandler
+
+__all__ = [
+    # constant
+    # Enum
+    # class
+    "ArchiveFileFactory",
+    "NoResourceDocError",
+    "ResourceDocHandler",
+    "ResourceDocJinja2TemplateError",
+    "ResourceDocJinja2TemplateNotFound",
+    "ResourceDocJinja2TemplateSyntaxError",
+    # functions
+    # others
+]

@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.esb.system_doc_category import SystemDocCategoryHandler
+from apigateway.biz.esb import SystemDocCategoryHandler
 
 pytestmark = pytest.mark.django_db
 

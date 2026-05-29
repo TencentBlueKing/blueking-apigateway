@@ -30,7 +30,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import Release, ReleaseHistory
-from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.event import PublishEventReporter
 from apigateway.service.release import wait_release_done
 from apigateway.utils.time import now_datetime
 

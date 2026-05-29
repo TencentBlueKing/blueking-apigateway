@@ -60,19 +60,108 @@ Higher layers may import lower layers only. If you need to cross this boundary,
 put shared logic in the lower appropriate layer instead of adding an import
 exception.
 
+Important call rules:
+
+- `apis/` view and serializer code may call `biz/` and `service/` directly.
+- `biz/` may call `service/`. Package-local `biz` imports are allowed inside
+  one domain or subpackage, but do not add peer-domain imports covered by the
+  `biz-domain-independence` contract.
+- `service/` modules may call each other and may contain cross-model operations
+  when the operation is focused and reusable.
+- `service/` is not a dumping ground for code moved only to avoid `biz`-to-`biz`
+  imports. Cross-domain workflow orchestration belongs in a neutral use-case
+  `biz` module or in `controller/`, not in `service/`. Keep `service/` to leaf
+  capabilities with stable inputs and outputs, clear reuse, direct tests, and no
+  permission, audit, lifecycle, or workflow decisions.
+- Historical exception: `apigateway.service.release.PublishValidator` currently
+  lives under `service/` because it was moved there during the 2026-05
+  `biz-domain-independence` refactor to break an import-boundary issue. Treat
+  that location as compatibility debt, not as placement precedent. Release
+  gating, lifecycle, and publish workflow decisions should prefer
+  `biz/release/`; keep only the smallest reusable leaf checks in `service/`.
+- Direct model or queryset use from views and serializers is limited to simple
+  local reads or writes that are already idiomatic in Django.
+
+Function placement guide:
+
+Use this order when deciding where a new function belongs:
+
+1. Keep it where it is if it is only used inside one module or one `biz`
+   domain, especially when moving it would only create a proxy wrapper.
+2. Keep view-specific parameter shaping, response assembly, or API-surface
+   branching in the owning view or serializer.
+3. Put it in `biz/` when it owns use-case flow: what should happen,
+   permission-aware decisions, lifecycle branching, audit or side-effect
+   orchestration, transactions, or sequencing multiple lower-level operations.
+4. Put it in `service/` only when it is a focused reusable leaf operation over
+   model relationships or domain data: snapshots, schema lookup, cleanup,
+   reusable cross-model queries, relation normalization, or data shaping.
+5. When both `biz` and `service` seem possible, keep orchestration in `biz` and
+   extract only the smallest reusable relation or data operation to `service`.
+
+Service organization guide:
+
+- Name `service` modules by domain plus capability, not by vague technical
+  buckets. Prefer names like `resource_snapshot.py`, `resource_cleanup.py`,
+  `resource_version_schema.py`, or `openapi_export.py`; avoid adding new
+  behavior to generic modules such as `utils.py` unless the code is truly
+  domain-neutral.
+- Keep a small capability as a top-level module. Convert a domain into a package
+  only after several related service modules exist or a file starts mixing
+  unrelated capabilities, for example `service/resource/snapshot.py`,
+  `service/resource/cleanup.py`, and `service/resource/labels.py`.
+- For `service/<domain>/` packages, external callers must import public symbols from
+  `apigateway.service.<domain>`, not from leaf modules such as
+  `apigateway.service.<domain>.<capability>`. The package `__init__.py` owns the
+  public API and `__all__`; leaf modules must not define `__all__`.
+- Service package internals may use single-dot relative imports for local
+  leaf modules, but should not use parent relative imports such as `..` inside
+  `service/`. When reaching outside the current package, use absolute imports
+  rooted at `apigateway.service`.
+- Function names should describe the action, domain, and output shape or side
+  effect. Use `get_*` for reads, `delete_*` or `clear_*` for destructive writes,
+  `build_*` for construction, `format_*` or `normalize_*` for shape changes,
+  `snapshot_*` for snapshot creation, and `ensure_*` for idempotent creation or
+  backfill.
+- Prefer free functions for stateless leaf operations. Use classes only when
+  the service needs state, strategy selection, validation objects, factories, or
+  polymorphic behavior.
+- Each non-trivial service module should expose a small public surface: add a
+  module docstring that states what the module owns, keep public helpers
+  discoverable, and prefix module-private helpers with `_`.
+
+Package `__init__.py` export guide:
+
+- For `biz/` and `service/` package `__init__.py` files that define `__all__`,
+  keep exports grouped in this fixed order: `# constant`, `# Enum`, `# class`,
+  `# functions`, `# others`.
+- Keep every section comment in place even when that section is empty, so later
+  additions have an obvious slot.
+- Keep names grouped under the matching section. Put module re-exports or other
+  uncategorized names under `# others`.
+
 Layer intent:
 
 - `apis/` - HTTP API surfaces and serializers. Serializers own input
   validation and output definitions, and must not introduce N+1 queries for
   computed fields. Views stay thin: simple control flow, parameter building,
-  lower-layer calls, and response assembly. Keep view-level logic inside its
-  own API module even when another API surface has the same or similar logic.
-- `biz/` - main business logic, including cross-model querysets,
-  orchestration, and processing. A `biz` module should not import another
-  `biz` module; move shared coordination into `service/` when needed.
+  lower-layer calls, and response assembly. Call `biz/` for workflows,
+  decisions, permission-aware orchestration, and multi-model operations. Call
+  `service/` for focused reusable domain operations, snapshots, cleanup
+  helpers, schema lookup, and pure or query helpers. Keep view-level logic
+  inside its own API module even when another API surface has the same or
+  similar logic.
+- `biz/` - workflow and decision logic, including permission-aware
+  orchestration and multi-model operations. Keep peer model domains such as
+  gateway, resource, resource version, permission, and MCP server independent;
+  move shared coordination or reusable domain operations into `service/` when
+  needed. Internal helpers within the same `biz` domain may stay inside that
+  domain.
 - `controller/` - release pipeline, APISIX config conversion, transformers, distributors, publisher tasks.
-- `service/` - thin shared services with limited business logic. Use this
-  layer mainly to break cyclic imports or avoid `biz`-to-`biz` imports.
+- `service/` - focused reusable domain operations, snapshots, cleanup helpers,
+  schema lookup, and pure or query helpers. `service` modules may import each
+  other and may perform cross-model work when the operation is reusable outside
+  one view or `biz` workflow.
 - `components/` - external BlueKing system clients.
 - `apps/` - Django app model layer plus admin, migrations, management commands,
   and Celery tasks. Keep `models.py` rich for single-model properties and

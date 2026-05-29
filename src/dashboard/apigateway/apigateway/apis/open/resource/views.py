@@ -24,7 +24,7 @@ from rest_framework import generics, serializers, status
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
-from apigateway.biz.resource.importer.sync import sync_openapi_resources_from_content
+from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.core.models import Resource
 from apigateway.utils.responses import V1OKJsonResponse
 

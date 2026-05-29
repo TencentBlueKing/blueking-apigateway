@@ -30,8 +30,6 @@ from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
     ProgrammableGatewayStageNameValidator,
     ProgrammableGatewayVersionValidator,
-    PublishValidator,
-    ReleaseValidationError,
     ResourceIDValidator,
     ResourceVersionValidator,
     SchemeHostInputValidator,
@@ -42,6 +40,7 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import BackendTypeEnum, GatewayKindEnum, GatewayStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.tests.utils.testing import create_request
 
 pytestmark = pytest.mark.django_db
@@ -296,7 +295,7 @@ class TestPublishValidator:
         self, mocker, fake_gateway, fake_stage, fake_resource_version, vars, mock_used_stage_vars, will_error
     ):
         mocker.patch(
-            "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+            "apigateway.service.release.validation.get_used_stage_vars",
             return_value=mock_used_stage_vars,
         )
 
@@ -863,7 +862,7 @@ class TestStageVarsValidator:
                 },
             )
             mocker.patch(
-                "apigateway.biz.validators.ResourceVersionHandler.get_used_stage_vars",
+                "apigateway.service.release.validation.get_used_stage_vars",
                 return_value=test["mock_used_stage_vars"],
             )
 

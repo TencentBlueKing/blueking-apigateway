@@ -28,12 +28,10 @@ from drf_yasg.utils import swagger_auto_schema
 from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
+import apigateway.biz.release as release_biz
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
-from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.release.gateway_releaser import ReleaseError, release
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.biz.resource import ResourceLabelHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
@@ -46,6 +44,8 @@ from apigateway.components.bkpaas import (
 )
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
+from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
@@ -98,7 +98,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels_by_ids(label_ids),
+                "labels": get_resource_id_to_labels_by_label_ids(label_ids),
             },
         )
         return OKJsonResponse(data=output_slz.data)
@@ -132,7 +132,7 @@ class ReleaseAvailableResourceSchemaRetrieveApi(generics.RetrieveAPIView):
         schema_result = {"resource_id": resource_id}
 
         # 获取对应资源的 schema
-        schema = ResourceVersionHandler.get_resource_schema(instance.resource_version.id, resource_id)
+        schema = get_resource_schema(instance.resource_version.id, resource_id)
         schema_result["parameter_schema"] = schema.get("parameters", [])
         schema_result["response_schema"] = schema.get("responses", {})
         request_body = schema.get("requestBody")
@@ -210,7 +210,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
-                history = release(
+                history = release_biz.release(
                     gateway=request.gateway,
                     stage_id=slz.validated_data["stage_id"],
                     resource_version_id=resource_version_id,
@@ -220,7 +220,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
         except LockTimeout as err:
             logger.exception("retrieve lock timeout")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
-        except ReleaseError as err:
+        except release_biz.ReleaseError as err:
             logger.exception("release failed.")
             return FailJsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, code="UNKNOWN", message=str(err))
 
@@ -256,7 +256,7 @@ class ReleaseHistoryListApi(generics.ListAPIView):
 
         data = slz.validated_data
 
-        queryset = ReleaseHandler.filter_release_history(
+        queryset = release_biz.ReleaseHandler.filter_release_history(
             gateway=request.gateway,
             query=data.get("keyword"),
             stage_id=data.get("stage_id"),
@@ -343,7 +343,9 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
         slz = self.get_serializer(
             release_history,
             context={
-                "release_history_events": ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
+                "release_history_events": release_biz.ReleaseHandler.list_publish_events_by_release_history_id(
+                    release_history.id
+                ),
                 "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id]
                 ),
@@ -475,7 +477,9 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         release_history_events = []
         release_history_events_map = {}
         if release_history:
-            release_history_events = ReleaseHandler.list_publish_events_by_release_history_id(release_history.id)
+            release_history_events = release_biz.ReleaseHandler.list_publish_events_by_release_history_id(
+                release_history.id
+            )
             release_history_events_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                 [release_history.id]
             )

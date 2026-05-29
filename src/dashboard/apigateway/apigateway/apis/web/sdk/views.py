@@ -28,9 +28,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.sdk import serializers
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import exceptions
-from apigateway.biz.sdk.helper import SDKHelper
-from apigateway.biz.sdk.models import SDKFactory
+from apigateway.biz.sdk import SDKFactory, SDKHelper, exceptions
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse

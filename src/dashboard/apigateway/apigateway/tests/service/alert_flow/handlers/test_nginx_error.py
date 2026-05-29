@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.service.alert_flow.handlers import nginx_error
+from apigateway.service.alert_flow import nginx_error
 
 
 class TestNginxErrorAlerter:

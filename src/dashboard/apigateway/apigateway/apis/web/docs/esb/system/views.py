@@ -21,8 +21,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apps.esb.bkcore.models import ComponentSystem
-from apigateway.biz.esb.decorators import check_board_exist
-from apigateway.biz.esb.system_doc_category import SystemDocCategoryHandler
+from apigateway.biz.esb import SystemDocCategoryHandler, check_board_exist
 from apigateway.common.error_codes import error_codes
 from apigateway.utils.responses import OKJsonResponse
 

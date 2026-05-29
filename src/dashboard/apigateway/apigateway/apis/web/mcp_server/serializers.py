@@ -37,8 +37,8 @@ from apigateway.apps.mcp_server.models import (
     MCPServerAppPermissionApply,
     MCPServerCategory,
 )
-from apigateway.biz.mcp_server.prompt import MCPServerPromptHandler
-from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.biz.mcp_server import MCPServerPromptHandler
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator, MCPServerHandler, MCPServerValidator
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code

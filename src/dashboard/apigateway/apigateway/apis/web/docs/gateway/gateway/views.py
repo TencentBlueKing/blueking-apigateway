@@ -24,7 +24,7 @@ from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
+from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX

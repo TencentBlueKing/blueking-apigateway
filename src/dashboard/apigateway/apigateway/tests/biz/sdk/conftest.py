@@ -23,7 +23,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.models import SDKContext
+from apigateway.biz.sdk import SDKContext
 from apigateway.core.models import ResourceVersion
 
 

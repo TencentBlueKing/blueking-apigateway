@@ -22,9 +22,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import exceptions
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.biz.sdk.helper import generate_sdks_for_resource_version
+from apigateway.biz.sdk import GatewaySDKHandler, exceptions, generate_sdks_for_resource_version
 from apigateway.common.error_codes import APIError
 
 

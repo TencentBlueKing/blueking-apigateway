@@ -26,7 +26,7 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, DocTypeEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.audit import Auditor
-from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.core.models import Resource
 from apigateway.utils.responses import OKJsonResponse
 

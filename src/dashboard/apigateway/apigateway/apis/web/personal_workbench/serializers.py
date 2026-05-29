@@ -28,7 +28,7 @@ from apigateway.apps.permission.constants import (
     PermissionApplyExpireDaysEnum,
 )
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
-from apigateway.biz.permission.permission import ResourcePermissionHandler
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.common.fields import TimestampField
 from apigateway.core.models import Gateway, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper

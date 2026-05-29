@@ -25,23 +25,20 @@ from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
 from prance import ResolvingParser
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.biz.backend import BackendHandler
-from apigateway.biz.resource import ResourceLabelHandler
-from apigateway.biz.resource.importer.constants import OpenAPIVersionKeyEnum
-from apigateway.biz.resource.importer.parser import BaseExporter, BaseParser, OpenAPIV3Parser, ResourceDataConvertor
-from apigateway.biz.resource.importer.schema import (
+from apigateway.core.models import Gateway
+from apigateway.utils.yaml import yaml_loads
+
+from .constants import OpenAPIVersionKeyEnum
+from .parser import BaseParser, OpenAPIV3Parser, ResourceDataConvertor
+from .schema import (
     SchemaValidateErr,
     init_validator_schema,
     openapi_validator_mapping,
 )
-from apigateway.biz.resource.importer.validate import ResourceImportValidator
+from .validate import ResourceImportValidator
 
 if TYPE_CHECKING:
-    from apigateway.biz.resource.models import ResourceData
-
-from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.core.models import Gateway, ResourceVersion
-from apigateway.utils.yaml import yaml_dumps, yaml_loads
+    from apigateway.biz.resource import ResourceData
 
 # 初始化openapi validator schema
 init_validator_schema()
@@ -57,7 +54,7 @@ class OpenAPIImportManager:
         self.data = data
         self.gateway = gateway
         self._raw_resource_list: List[Dict[str, Any]] = []
-        self._resource_list: List[ResourceData] = []
+        self._resource_list: List["ResourceData"] = []
         self.parser = None
         self.need_delete_unspecified_resources = need_delete_unspecified_resources
 
@@ -205,77 +202,3 @@ class OpenAPIImportManager:
         - false -> List[ResourceData]
         """
         return self._raw_resource_list if raw else self._resource_list
-
-
-class OpenAPIExportManager:
-    """
-    资源配置导出manager
-    """
-
-    def __init__(
-        self,
-        api_version: str = "2.0",
-        include_bk_apigateway_resource: bool = True,
-        title: str = "API Gateway Resources",
-        description: str = "",
-    ):
-        self.api_version = api_version
-        self.include_bk_apigateway_resource = include_bk_apigateway_resource
-        self.title = title
-        self.description = description
-        self._exporter = BaseExporter(
-            self.api_version, self.include_bk_apigateway_resource, self.title, self.description
-        )
-
-    def export_resource_version_openapi(self, resource_version: ResourceVersion, file_type: str = ""):
-        """
-        根据资源版本数据导出openapi
-        """
-        backend_id_to_config = BackendHandler.get_id_to_instance(resource_version.gateway.id)
-        resource_labels = ResourceLabelHandler.get_labels_by_gateway(resource_version.gateway.id)
-        resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-            resource_version.id
-        )
-
-        resource_data_list = []
-        for resource in resource_version.data:
-            labels = resource_labels.get(resource["id"], [])
-            resource["labels"] = [label["name"] for label in labels]
-            resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
-            resource["auth_config"] = json.loads(resource["contexts"]["resource_auth"]["config"])
-            resource["backend"] = {
-                "name": backend_id_to_config[resource["proxy"]["backend_id"]].name,
-                "config": json.loads(resource["proxy"]["config"]),
-            }
-            resource["plugin_configs"] = [
-                {
-                    "type": plugin["type"],
-                    "yaml": yaml_dumps(plugin["config"]).rstrip("\n"),
-                }
-                for plugin in resource.get("plugins", [])
-            ]
-            resource_data_list.append(resource)
-
-        return self.export_openapi(resource_data_list, file_type)
-
-    def export_openapi(self, resources: list, file_type: str = ""):
-        """
-        file_type: json/yaml
-        """
-        return self._exporter.to_openapi(resources, file_type)
-
-    def get_swagger_by_paths(
-        self,
-        paths: Dict[str, Any],
-        openapi_format: OpenAPIFormatEnum,
-    ) -> str:
-        """
-        获取swagger2.0的格式导出(主要用于文档生成)
-        """
-        return self._exporter.get_swagger_by_paths(paths, openapi_format)
-
-    def get_swagger_by_resources(self, resources: List[Dict], file_type: str = "") -> str:
-        """
-        获取swagger2.0的格式导出(主要用于sdk生成)
-        """
-        return self._exporter.get_swagger_by_resource(resources, file_type)

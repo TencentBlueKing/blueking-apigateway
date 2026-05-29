@@ -23,8 +23,8 @@ from typing import Any, Dict, List, Optional
 from django.db import transaction
 from django.utils.translation import gettext as _
 
+import apigateway.biz.release as release_biz
 from apigateway.apps.esb.bkcore.models import ComponentReleaseHistory
-from apigateway.biz.release.gateway_releaser import release
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.core.models import Gateway, ResourceVersion, Stage
@@ -67,7 +67,7 @@ class ComponentReleaser:
         assert self.resource_version
 
         for stage_id in Stage.objects.get_ids(self.gateway.id):
-            release(
+            release_biz.release(
                 gateway=self.gateway,
                 stage_id=stage_id,
                 resource_version_id=self.resource_version.id,

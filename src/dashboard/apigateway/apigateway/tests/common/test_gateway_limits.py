@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
-# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# 蓝鲸智云 - API 网关 (BlueKing - APIGateway) available.
 # Copyright (C) 2025 Tencent. All rights reserved.
 # Licensed under the MIT License (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -16,14 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+
+from apigateway.common.gateway_limits import get_max_resource_count
 
 
-from apigateway.biz.resource import ResourceURLHandler
+@pytest.mark.parametrize(
+    "gateway_name, expected",
+    [
+        ("vip-gateway", 50),
+        ("default-gateway", 20),
+    ],
+)
+def test_get_max_resource_count(settings, gateway_name, expected):
+    settings.API_GATEWAY_RESOURCE_LIMITS = {
+        "max_resource_count_per_gateway": 20,
+        "max_resource_count_per_gateway_whitelist": {
+            "vip-gateway": 50,
+        },
+    }
 
-
-class TestResourceURLHandler:
-    def test_get_resource_url_tmpl(self, settings, unique_id):
-        settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/api/{api_name}/{stage_name}/{resource_path}"
-
-        url = ResourceURLHandler.get_resource_url_tmpl()
-        assert url == settings.API_RESOURCE_URL_TMPL
+    assert get_max_resource_count(gateway_name) == expected

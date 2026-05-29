@@ -17,8 +17,8 @@
 #
 import pytest
 
-from apigateway.biz.sdk.distributors.bkrepo import GenericDistributor
-from apigateway.biz.sdk.exceptions import DistributeError
+from apigateway.biz.sdk import DistributeError
+from apigateway.biz.sdk.distributors import GenericDistributor
 
 
 class TestGenericDistributor:

@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.distributors.maven import MAVEN_CENTRAL_URL, MavenSourceDistributor
-from apigateway.biz.sdk.exceptions import DistributeError
+from apigateway.biz.sdk import DistributeError
+from apigateway.biz.sdk.distributors import MAVEN_CENTRAL_URL, MavenSourceDistributor
 
 
 @pytest.fixture

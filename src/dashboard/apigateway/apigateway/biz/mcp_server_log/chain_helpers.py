@@ -17,7 +17,7 @@
 #
 from typing import Dict, List, Optional, Set
 
-from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
+from .constants import MCP_SERVER_LOG_FIELDS
 
 
 def span_to_log(span: dict) -> dict:

@@ -25,14 +25,14 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.biz.mcp_server_log.chain_query import (
+from apigateway.biz.mcp_server_log import (
+    MCP_SERVER_LOG_FIELDS,
+    build_mcp_server_log_client,
     search_chain_logs_by_any_id,
     search_chain_logs_with_gateway_by_any_id,
     search_chain_summary_by_any_id,
     search_chain_with_summary_by_any_id,
 )
-from apigateway.biz.mcp_server_log.constants import MCP_SERVER_LOG_FIELDS
-from apigateway.biz.mcp_server_log.utils import build_mcp_server_log_client
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import SmartTimeRange

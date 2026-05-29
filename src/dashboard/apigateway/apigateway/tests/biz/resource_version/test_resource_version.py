@@ -25,8 +25,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
+from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.utils.time import now_datetime
@@ -69,7 +68,7 @@ class TestResourceVersionHandler:
     def test_create_resource_version_with_artifacts(self, fake_gateway, fake_resource, mocker):
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
-            "apigateway.biz.resource.importer.openapi.OpenAPIExportManager.export_resource_version_openapi",
+            "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
             return_value={"openapi": "3.0.0"},
         )
         G(ResourceDoc, gateway=fake_gateway, resource_id=fake_resource.id)
@@ -89,7 +88,7 @@ class TestResourceVersionHandler:
         """Test that OpenAPIFileResourceSchemaVersion is created even when no ResourceDoc exists."""
         mocker.patch.object(ResourceVersionHandler, "make_version", return_value=[])
         mocker.patch(
-            "apigateway.biz.resource.importer.openapi.OpenAPIExportManager.export_resource_version_openapi",
+            "apigateway.biz.resource_version.artifacts.OpenAPIExportManager.export_resource_version_openapi",
             return_value={"openapi": "3.0.0"},
         )
         # No ResourceDoc created for this gateway
@@ -242,113 +241,6 @@ class TestResourceVersionHandler:
         resource_version_3 = G(ResourceVersion, gateway=fake_gateway, version="2.0.0", created_time=now_datetime())
         result = ResourceVersionHandler.get_latest_version_by_gateway(fake_gateway.id)
         assert result == resource_version_3.version
-
-    def test_get_used_stage_vars(self):
-        gateway = G(Gateway)
-
-        data = [
-            # resource version not exist
-            {
-                "resource_version": None,
-                "expected": None,
-            },
-            # proxy type is mock
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "mock",
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": [],
-                    "in_host": [],
-                },
-            },
-            # vars in path/host
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/hello/{env.region}/",
-                                            "upstreams": {
-                                                "hosts": [
-                                                    {"host": "https://{env.domain}"},
-                                                ]
-                                            },
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": ["region"],
-                    "in_host": ["domain"],
-                },
-            },
-            # vars in path/host
-            {
-                "resource_version": G(
-                    ResourceVersion,
-                    gateway=gateway,
-                    _data=json.dumps(
-                        [
-                            {
-                                "proxy": {
-                                    "type": "http",
-                                    "config": json.dumps(
-                                        {
-                                            "path": "/hello/{env.region}/",
-                                            "upstreams": {},
-                                        }
-                                    ),
-                                }
-                            }
-                        ]
-                    ),
-                ),
-                "expected": {
-                    "in_path": ["region"],
-                    "in_host": [],
-                },
-            },
-        ]
-        for test in data:
-            result = ResourceVersionHandler.get_used_stage_vars(
-                gateway_id=gateway.id,
-                id=test["resource_version"].id if test["resource_version"] else 0,
-            )
-            assert result == test["expected"]
-
-    def test_get_resource_schema(self, fake_resource, fake_resource_version, fake_resource_schema_with_body):
-        openapi_schema_version = G(
-            OpenAPIResourceSchemaVersion,
-            resource_version=fake_resource_version,
-            schema=[
-                {
-                    "resource_id": fake_resource.id,
-                    "schema": fake_resource_schema_with_body.schema,
-                }
-            ],
-        )
-        resource_schema = ResourceVersionHandler.get_resource_schema(fake_resource_version.id, fake_resource.id)
-        assert resource_schema["requestBody"] == fake_resource_schema_with_body.schema["requestBody"]
 
     def test_is_resource_version_referenced_by_release(self, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")

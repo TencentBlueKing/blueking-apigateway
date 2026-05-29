@@ -20,8 +20,7 @@ import pytest
 from ddf import G
 
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.biz.released_resource_doc.generators import DocGenerator
-from apigateway.biz.released_resource_doc.released_resource_doc import DummyResourceDocData, ReleasedResourceDocData
+from apigateway.biz.released_resource_doc import DocGenerator, DummyResourceDocData, ReleasedResourceDocData
 from apigateway.core.models import Stage
 
 

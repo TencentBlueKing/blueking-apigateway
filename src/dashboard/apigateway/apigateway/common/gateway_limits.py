@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -17,12 +16,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-
-from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
-from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
+from django.conf import settings
 
 
-class TestResourceOpenAPISchemaVersionHandler:
-    def test_make_new_version(self, fake_resource_version, fake_resource_schema):
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_resource_version)
-        assert OpenAPIResourceSchemaVersion.objects.filter(resource_version_id=fake_resource_version.id).exists()
+def get_max_resource_count(gateway_name: str) -> int:
+    return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
+        gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
+    )

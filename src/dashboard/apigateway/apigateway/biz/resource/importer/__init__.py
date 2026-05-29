@@ -15,6 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from .importers import ResourcesImporter  # noqa
-from .parser import ResourceDataConvertor  # noqa
-from .validate import ResourceImportValidator  # noqa
+from .importers import ResourcesImporter
+from .sync import sync_openapi_resources_from_content
+
+__all__ = [
+    # constant
+    # Enum
+    # class
+    "ResourcesImporter",
+    # functions
+    "sync_openapi_resources_from_content",
+    # others
+]

@@ -19,7 +19,7 @@ from dataclasses import asdict, dataclass, field
 
 from django.conf import settings
 
-from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.biz.esb import BoardConfigManager
 
 
 @dataclass

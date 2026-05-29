@@ -19,7 +19,7 @@
 from django.test import TestCase
 
 from apigateway.apps.audit.models import AuditEventLog
-from apigateway.service.audit.shortcuts import record_audit_log
+from apigateway.service.audit import record_audit_log
 
 
 class TestRecordAuditLog(TestCase):

@@ -24,7 +24,7 @@ from django.utils import timezone
 
 from apigateway.apps.gateway.tasks import InactiveGatewayNotifier, notify_inactive_gateway_maintainers
 from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
-from apigateway.biz.gateway.gateway import OPERATION_STATUS_DELTA_DAYS
+from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ResourceVersion, Stage
 

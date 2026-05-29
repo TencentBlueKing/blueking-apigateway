@@ -18,15 +18,12 @@
 #
 import datetime
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from cachetools import TTLCache, cached
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.openapi.models import (
-    OpenAPIFileResourceSchemaVersion,
     OpenAPIResourceSchema,
     OpenAPIResourceSchemaVersion,
 )
@@ -35,17 +32,19 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc
 from apigateway.biz.audit import Auditor
 from apigateway.biz.context import ContextHandler
-from apigateway.biz.resource import (
-    ProxyHandler,
-    ResourceDisabledStageHandler,
-    ResourceHandler,
-    ResourceLabelHandler,
-    ResourceOpenAPISchemaVersionHandler,
-)
-from apigateway.common.constants import CACHE_TIME_5_MINUTES
-from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import ContextScopeTypeEnum, ProxyTypeEnum, ResourceVersionSchemaEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchemaEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.service.resource import (
+    filter_disabled_stages_by_gateway,
+    get_gateway_resource_id_to_labels,
+    get_last_resource_updated_time,
+    get_resource_id_to_proxy_snapshot,
+    snapshot_resource,
+)
+from apigateway.service.resource_version import (
+    get_resource_id_to_schema_by_resource_version,
+    make_resource_schema_version,
+)
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
 
@@ -57,7 +56,7 @@ class ResourceVersionHandler:
 
         resource_ids = list(resource_queryset.values_list("id", flat=True))
 
-        proxy_map = ProxyHandler.get_resource_id_to_snapshot(resource_ids)
+        proxy_map = get_resource_id_to_proxy_snapshot(resource_ids)
 
         context_map = ContextHandler.filter_id_type_snapshot_map(
             scope_type=ContextScopeTypeEnum.RESOURCE.value,
@@ -65,12 +64,12 @@ class ResourceVersionHandler:
         )
         disabled_stage_map = {
             resource_id: [stage["name"] for stage in stages]
-            for resource_id, stages in ResourceDisabledStageHandler.filter_disabled_stages_by_gateway(gateway).items()
+            for resource_id, stages in filter_disabled_stages_by_gateway(gateway).items()
         }
 
         gateway_label_map = {
             resource_id: [label["id"] for label in labels]
-            for resource_id, labels in ResourceLabelHandler.get_labels_by_gateway(gateway).items()
+            for resource_id, labels in get_gateway_resource_id_to_labels(gateway).items()
         }
 
         # plugin
@@ -84,7 +83,7 @@ class ResourceVersionHandler:
             resource_plugins_map[resource_id].extend([binding.snapshot() for binding in bindings])
 
         return [
-            ResourceHandler.snapshot(
+            snapshot_resource(
                 r,
                 as_dict=True,
                 proxy_map=proxy_map,
@@ -103,9 +102,7 @@ class ResourceVersionHandler:
         """
         if resource_version_id:
             resource_version_data = ResourceVersion.objects.get(gateway=gateway, id=resource_version_id).data
-            resource_id_to_schema = ResourceVersionHandler.get_resource_id_to_schema_by_resource_version(
-                resource_version_id
-            )
+            resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version_id)
             for resource in resource_version_data:
                 resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
             return resource_version_data
@@ -119,20 +116,6 @@ class ResourceVersionHandler:
         for resource in resource_version_data:
             resource["openapi_schema"] = resource_id_to_schema.get(resource["id"], {})
         return resource_version_data
-
-    @staticmethod
-    def delete_by_gateway_id(gateway_id: int):
-        # delete gateway release
-        Release.objects.filter(gateway_id=gateway_id).delete()
-
-        # delete gateway openapi resource schema version
-        OpenAPIResourceSchemaVersion.objects.filter(resource_version__gateway_id=gateway_id).delete()
-
-        # delete gateway openapi file resource schema version
-        OpenAPIFileResourceSchemaVersion.objects.filter(gateway_id=gateway_id).delete()
-
-        # delete resource version
-        ResourceVersion.objects.filter(gateway_id=gateway_id).delete()
 
     @classmethod
     def create_resource_version(cls, gateway: Gateway, data: Dict[str, Any], username: str = "") -> ResourceVersion:
@@ -154,7 +137,7 @@ class ResourceVersionHandler:
         resource_version.save()
 
         # 创建资源schema版本
-        ResourceOpenAPISchemaVersionHandler.make_new_version(resource_version)
+        make_resource_schema_version(resource_version)
 
         Auditor.record_resource_version_op_success(
             op_type=OpTypeEnum.CREATE,
@@ -209,7 +192,7 @@ class ResourceVersionHandler:
         是否需要创建新的资源版本
         """
         latest_version = ResourceVersion.objects.get_latest_version(gateway_id)
-        resource_last_updated_time = ResourceHandler.get_last_updated_time(gateway_id)
+        resource_last_updated_time = get_last_resource_updated_time(gateway_id)
 
         if not (latest_version or resource_last_updated_time):
             return False
@@ -246,60 +229,6 @@ class ResourceVersionHandler:
     @staticmethod
     def get_latest_created_time(gateway_id: int) -> Optional[datetime.datetime]:
         return ResourceVersion.objects.filter(gateway_id=gateway_id).values_list("created_time", flat=True).last()
-
-    # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
-    # 版本中包含的配置不会变化，但是处理逻辑可能调整，因此，缓存需支持版本
-    @staticmethod
-    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-    def get_used_stage_vars(gateway_id: int, id: int):
-        resource_version = ResourceVersion.objects.filter(gateway_id=gateway_id, id=id).first()
-        if not resource_version:
-            return None
-
-        used_in_path = set()
-        used_in_host = set()
-        for resource in resource_version.data:
-            if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
-                continue
-            if resource.get("stage_vars"):
-                stage_vars = resource["stage_vars"]
-            else:
-                stage_vars = ResourceHandler.get_resource_use_stage_vars(resource)
-            used_in_path.update(stage_vars["in_path"])
-            used_in_host.update(stage_vars["in_host"])
-        return {
-            "in_path": list(used_in_path),
-            "in_host": list(used_in_host),
-        }
-
-    @staticmethod
-    def get_resource_schema(resource_version_id: int, resource_id: int) -> dict:
-        """
-        获取指定版本的资源对应的api schema
-        """
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
-            resource_version_id=resource_version_id
-        ).first()
-        if resources_version_schema is None:
-            return {}
-        # 筛选资源数据
-        for schema_info in resources_version_schema.schema:
-            schema = schema_info["schema"]
-            if resource_id == schema_info["resource_id"]:
-                return schema
-        return {}
-
-    @staticmethod
-    def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> dict:
-        """
-        获取资源版本下的资源与 api schema 的映射关系
-        """
-        resources_version_schema = OpenAPIResourceSchemaVersion.objects.filter(
-            resource_version_id=resource_version_id
-        ).first()
-        if resources_version_schema is None:
-            return {}
-        return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
     @staticmethod
     def get_resource_name_to_schema_by_resource_version(resource_version_id: int) -> dict:
@@ -341,22 +270,6 @@ class ResourceVersionHandler:
             if backend_id:
                 backend_to_resources[backend_id].append(resource_data)
         return backend_to_resources
-
-    @staticmethod
-    @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-    def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
-        """获取资源版本中的资源名称列表, 缓存 5 分钟
-
-        Args:
-            resource_version_id (int): 资源版本 ID
-            raise_exception (bool, optional): 是否抛出异常, 如果资源版本不存在, 则抛出异常. 默认 False
-        """
-        resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
-        if not resource_version:
-            if raise_exception:
-                raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
-            return set()
-        return {resource["name"] for resource in resource_version.data}
 
     @staticmethod
     def is_resource_version_referenced(resource_version_id: int) -> bool:

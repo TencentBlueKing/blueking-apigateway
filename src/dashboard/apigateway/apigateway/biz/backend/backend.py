@@ -149,10 +149,6 @@ class BackendHandler:
         return list(stage_names)
 
     @staticmethod
-    def get_id_to_instance(gateway_id: int) -> Dict[int, Backend]:
-        return {backend.id: backend for backend in Backend.objects.filter(gateway_id=gateway_id)}
-
-    @staticmethod
     def get_backend_configs_by_stage(gateway_id, stage_id) -> Dict[int, BackendConfig]:
         """查询网关环境后端配置"""
 

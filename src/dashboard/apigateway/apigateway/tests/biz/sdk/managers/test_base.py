@@ -17,8 +17,8 @@
 #
 import pytest
 
-from apigateway.biz.sdk.exceptions import DistributeError
-from apigateway.biz.sdk.managers.base import BaseSDKManager
+from apigateway.biz.sdk import DistributeError
+from apigateway.biz.sdk.managers import BaseSDKManager
 
 
 @pytest.fixture

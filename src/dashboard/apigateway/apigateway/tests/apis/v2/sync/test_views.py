@@ -24,8 +24,8 @@ from django.conf import settings
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
-from apigateway.biz.resource import ResourceOpenAPISchemaVersionHandler
 from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
+from apigateway.service.resource_version import make_resource_schema_version
 
 
 @pytest.fixture()
@@ -263,7 +263,7 @@ class TestSyncApi:
         fake_release_v2,
         disable_app_permission,
     ):
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -306,7 +306,7 @@ class TestSyncApi:
         fake_release_v2,
         disable_app_permission,
     ):
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
 
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -402,7 +402,7 @@ class TestSyncApiOAuth2:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时开启 OAuth2 公开客户端模式，自动对 bk_app_code=public 的应用进行授权"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -462,7 +462,7 @@ class TestSyncApiOAuth2:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时不开启 OAuth2 公开客户端模式，不会对 bk_app_code=public 的应用进行授权"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -511,7 +511,7 @@ class TestSyncApiOAuth2:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时开启 OAuth2 公开客户端模式，自动对 bk_app_code=public 的应用进行授权"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -575,7 +575,7 @@ class TestSyncApiOAuth2:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时关闭 OAuth2，撤销 bk_app_code=public 的权限"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -643,7 +643,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时同步分类"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -707,7 +707,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时传入空分类列表"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -752,7 +752,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时不传 category_names"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -796,7 +796,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时传入不存在的分类名，返回错误"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -846,7 +846,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时同步分类"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -920,7 +920,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时不传 category_names，分类不变"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -983,7 +983,7 @@ class TestSyncApiCategory:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时传入不存在的分类名，返回错误"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -1034,7 +1034,7 @@ class TestSyncApiToolNames:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时使用 tool_names 对资源进行重命名"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -1079,7 +1079,7 @@ class TestSyncApiToolNames:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时 tool_names 长度与 resource_names 不一致，返回错误"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -1117,7 +1117,7 @@ class TestSyncApiToolNames:
         disable_app_permission,
     ):
         """测试创建 MCPServer 时 tool_names 有重复，返回错误"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()
@@ -1158,7 +1158,7 @@ class TestSyncApiToolNames:
         disable_app_permission,
     ):
         """测试更新 MCPServer 时使用 tool_names 对资源进行重命名"""
-        ResourceOpenAPISchemaVersionHandler.make_new_version(fake_release_v2.resource_version)
+        make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
         fake_gateway.save()

@@ -24,7 +24,7 @@ from apigateway.apps.mcp_server.metrics_constants import (
     MCPServerMetricsRangeEnum,
 )
 from apigateway.apps.metrics.constants import MetricsStepEnum
-from apigateway.service.prometheus.mcp_server_dimension import (
+from apigateway.service.prometheus import (
     MCPServerMetricsInstantFactory,
     MCPServerMetricsRangeFactory,
 )

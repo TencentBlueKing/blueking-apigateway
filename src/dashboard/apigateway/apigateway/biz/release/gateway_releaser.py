@@ -28,7 +28,6 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
-from apigateway.biz.validators import PublishValidator, ReleaseValidationError
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -41,7 +40,8 @@ from apigateway.core.models import (
     ResourceVersion,
     Stage,
 )
-from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.event import PublishEventReporter
+from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.django import get_model_dict
 
 logger = logging.getLogger(__name__)

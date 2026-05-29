@@ -32,8 +32,6 @@ from apigateway.apps.metrics.models import StatisticsAppRequestByDay, Statistics
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
@@ -49,6 +47,7 @@ from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Rel
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
+from apigateway.service.resource import delete_gateway_resource_versions, delete_gateway_resources
 from apigateway.utils.dict import deep_update
 
 from .app_binding import GatewayAppBindingHandler
@@ -313,11 +312,11 @@ class GatewayHandler:
 
         # 5. delete resource
 
-        ResourceHandler.delete_by_gateway_id(gateway_id)
+        delete_gateway_resources(gateway_id)
 
         # 6. delete resource-version
 
-        ResourceVersionHandler.delete_by_gateway_id(gateway_id)
+        delete_gateway_resource_versions(gateway_id)
 
         # 7. plugin bindings
 
@@ -388,12 +387,6 @@ class GatewayHandler:
             .annotate(count=Count("gateway_id"))
         )
         return {i["gateway_id"]: i["count"] for i in resource_count}
-
-    @staticmethod
-    def get_max_resource_count(gateway_name: str):
-        return settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway_whitelist"].get(
-            gateway_name, settings.API_GATEWAY_RESOURCE_LIMITS["max_resource_count_per_gateway"]
-        )
 
     @staticmethod
     def get_operation_statuses(gateways: List[Gateway]) -> Dict[int, dict]:

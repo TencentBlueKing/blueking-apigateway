@@ -1,24 +1,24 @@
-#  -*- coding: utf-8 -*-
-#  #
-#  TencentBlueKing is pleased to support the open source community by making
-#  蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
-#  Copyright (C) 2025 Tencent. All rights reserved.
-#  Licensed under the MIT License (the "License"); you may not use this file except
-#  in compliance with the License. You may obtain a copy of the License at
-#  #
-#      http://opensource.org/licenses/MIT
-#  #
-#  Unless required by applicable law or agreed to in writing, software distributed under
-#  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-#  either express or implied. See the License for the specific language governing permissions and
-#  limitations under the License.
-#  #
-#  We undertake not to change the open source license (MIT license) applicable
-#  to the current version of the project delivered to anyone in the future.
-#  #
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 import pytest
 
-from apigateway.biz.resource.importer.schema import (
+from apigateway.biz.openapi.schema import (
     SchemaValidateErr,
     convert_openapi2_formdata_to_openapi,
     convert_openapi2_parameters_to_openapi,
@@ -133,9 +133,9 @@ class TestSchema:
 
     @pytest.fixture(autouse=True)
     def mock_convert_functions(self, mocker):
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_request_body", return_value=([], []))
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_parameters", return_value=[])
-        mocker.patch("apigateway.biz.resource.importer.schema.convert_responses", return_value=({}, []))
+        mocker.patch("apigateway.biz.openapi.schema.convert_request_body", return_value=([], []))
+        mocker.patch("apigateway.biz.openapi.schema.convert_parameters", return_value=[])
+        mocker.patch("apigateway.biz.openapi.schema.convert_responses", return_value=({}, []))
 
     def test_convert_operation_v3_to_v2(self):
         v3_operation = {

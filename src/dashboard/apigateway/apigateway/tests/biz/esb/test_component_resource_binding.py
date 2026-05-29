@@ -18,7 +18,7 @@
 from ddf import G
 
 from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
-from apigateway.biz.esb.component_resource_binding import ComponentResourceBindingHandler
+from apigateway.biz.esb import ComponentResourceBindingHandler
 from apigateway.core.models import Resource
 
 

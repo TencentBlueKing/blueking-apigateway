@@ -33,7 +33,7 @@ from apigateway.apps.metrics.constants import (
 )
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.core.models import Resource, Stage
-from apigateway.service.prometheus.dimension import (
+from apigateway.service.prometheus import (
     MetricsInstantFactory,
     MetricsRangeFactory,
     MetricsSummaryFactory,

@@ -23,7 +23,7 @@ from django_dynamic_fixture import G
 
 from apigateway.apis.web.sdk.serializers import GatewaySDKGenerateInputSLZ, GatewaySDKListOutputSLZ
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk.models import SDKFactory
+from apigateway.biz.sdk import SDKFactory
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time

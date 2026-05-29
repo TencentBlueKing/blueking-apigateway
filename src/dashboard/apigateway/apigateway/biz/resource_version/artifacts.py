@@ -22,10 +22,11 @@ from django.db import transaction
 
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager
-from apigateway.biz.resource_version.resource_doc_version import ResourceDocVersionHandler
-from apigateway.biz.resource_version.resource_version import ResourceVersionHandler
 from apigateway.core.models import Gateway, ResourceVersion
+from apigateway.service.resource_version import OpenAPIExportManager
+
+from .resource_doc_version import ResourceDocVersionHandler
+from .resource_version import ResourceVersionHandler
 
 
 class ResourceVersionArtifactHandler:

@@ -36,19 +36,19 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.backend import BackendHandler
+from apigateway.biz.openapi import OpenAPIImportManager, ResourceDataConvertor, ResourceImportValidator
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource import ResourceHandler, ResourceLabelHandler
-from apigateway.biz.resource.importer import ResourceDataConvertor, ResourceImportValidator, ResourcesImporter
-from apigateway.biz.resource.importer.openapi import OpenAPIExportManager, OpenAPIImportManager
-from apigateway.biz.resource.savers import ResourcesSaver
-from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer.parsers import OpenAPIParser
-from apigateway.biz.resource_doc.resource_doc import ResourceDocHandler
+from apigateway.biz.resource import ResourceHandler, ResourcesSaver
+from apigateway.biz.resource.importer import ResourcesImporter
+from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_doc.importer import DocImporter, OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
+from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.contexts import ResourceAuthContext
+from apigateway.service.resource import delete_resources, get_gateway_resource_id_to_labels, get_resource_id_to_labels
+from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
 
@@ -117,9 +117,9 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             page,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels(resource_ids),
+                "labels": get_resource_id_to_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
-                "backends": BackendHandler.get_id_to_instance(request.gateway.id),
+                "backends": get_backend_id_to_instance(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
                 "plugin_counts": PluginBindingHandler.get_resource_ids_plugin_binding_count(
                     gateway_id=request.gateway.id, resource_ids=resource_ids
@@ -235,7 +235,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance,
             context={
                 "auth_config": ResourceAuthContext().get_config(instance.id),
-                "labels": ResourceLabelHandler.get_labels([instance.id]),
+                "labels": get_resource_id_to_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
                 "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
                 "released_stages": released_stages,
@@ -296,7 +296,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         data_before = get_model_dict(instance)
         instance_id = instance.id
 
-        ResourceHandler.delete_resources([instance_id])
+        delete_resources([instance_id])
 
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.DELETE,
@@ -378,7 +378,7 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
         resource_ids = [resource.id for resource in queryset]
         resource_identities = [resource.identity for resource in queryset]
 
-        ResourceHandler.delete_resources(resource_ids)
+        delete_resources(resource_ids)
 
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.DELETE,
@@ -590,8 +590,8 @@ class ResourceExportApi(generics.CreateAPIView):
             selected_resource_queryset,
             many=True,
             context={
-                "labels": ResourceLabelHandler.get_labels_by_gateway(request.gateway.id),
-                "backends": BackendHandler.get_id_to_instance(gateway_id=request.gateway.id),
+                "labels": get_gateway_resource_id_to_labels(request.gateway.id),
+                "backends": get_backend_id_to_instance(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)
                 },

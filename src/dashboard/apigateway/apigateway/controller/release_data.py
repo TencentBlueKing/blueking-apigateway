@@ -27,7 +27,7 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.core.models import BackendConfig, Gateway, Release, ResourceVersion, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.gateway_jwt import GatewayJWTHandler
-from apigateway.service.plugin.convertor import PluginConvertorFactory
+from apigateway.service.plugin import PluginConvertorFactory
 
 logger = logging.getLogger(__name__)
 

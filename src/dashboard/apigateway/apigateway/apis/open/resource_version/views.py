@@ -25,7 +25,7 @@ from apigateway.apis.open.permissions import (
     OpenAPIGatewayRelatedAppPermission,
 )
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.resource_version.artifacts import ResourceVersionArtifactHandler
+from apigateway.biz.resource_version import ResourceVersionArtifactHandler
 from apigateway.core.models import ResourceVersion, Stage
 from apigateway.utils.responses import V1FailJsonResponse, V1OKJsonResponse
 

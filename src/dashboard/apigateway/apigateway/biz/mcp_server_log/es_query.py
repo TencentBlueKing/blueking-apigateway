@@ -18,13 +18,14 @@
 import logging
 from typing import Dict, List
 
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Q, Search
 
-from apigateway.biz.mcp_server_log.constants import CHAIN_OUTPUT_FIELDS
 from apigateway.common.error_codes import error_codes
-from apigateway.service.es.clients import BKLogESClient
+from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
+
+from .constants import CHAIN_OUTPUT_FIELDS
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,6 @@ def search_all_layers(
     # BKLog 中 __ext_json 是 flattened 类型，request_id/x_request_id 同时搜索顶层和 __ext_json
     # 注意：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
     # 把 __ext_json 前缀的 __ 去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict
-    from elasticsearch_dsl import Q  # noqa: PLC0415
 
     if request_id:
         s = s.filter(
@@ -123,7 +123,6 @@ def search_by_upstream_request_id(
         return []
 
     s = Search()
-    from elasticsearch_dsl import Q  # noqa: PLC0415
 
     s = s.filter(
         "bool",

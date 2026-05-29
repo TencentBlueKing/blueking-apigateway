@@ -24,10 +24,8 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
-from apigateway.biz.release.gateway_releaser import ReleaseValidationError
 from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
-    PublishValidator,
     SchemeHostInputValidator,
     StageVarsValidator,
 )
@@ -42,6 +40,7 @@ from apigateway.core.constants import (
     StageStatusEnum,
 )
 from apigateway.core.models import Backend, Stage
+from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.version import is_version1_greater_than_version2
 
 

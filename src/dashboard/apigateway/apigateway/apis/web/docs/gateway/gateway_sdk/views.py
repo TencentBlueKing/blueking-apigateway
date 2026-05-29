@@ -27,10 +27,10 @@ from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
-from apigateway.biz.sdk.models import SDKDocContext
+from apigateway.biz.sdk import GatewaySDKHandler, SDKDocContext
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.models import Release
+from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils import openapi
 from apigateway.utils.responses import OKJsonResponse
 
@@ -93,7 +93,7 @@ class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
         if not resource_id and resource_version_id:
             resource_id = ResourceVersionHandler.get_resource_id(resource_version_id, resource_name)
             # 获取对应资源的schema
-            resource_schema = ResourceVersionHandler.get_resource_schema(resource_version_id, resource_id)
+            resource_schema = get_resource_schema(resource_version_id, resource_id)
             example = openapi.get_openapi_example(resource_schema)
 
         content = render_to_string(

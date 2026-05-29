@@ -1,21 +1,21 @@
-#  -*- coding: utf-8 -*-
-#  #
-#  TencentBlueKing is pleased to support the open source community by making
-#  蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
-#  Copyright (C) 2025 Tencent. All rights reserved.
-#  Licensed under the MIT License (the "License"); you may not use this file except
-#  in compliance with the License. You may obtain a copy of the License at
-#  #
-#      http://opensource.org/licenses/MIT
-#  #
-#  Unless required by applicable law or agreed to in writing, software distributed under
-#  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-#  either express or implied. See the License for the specific language governing permissions and
-#  limitations under the License.
-#  #
-#  We undertake not to change the open source license (MIT license) applicable
-#  to the current version of the project delivered to anyone in the future.
-#  #
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) 2025 Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
 from functools import partial
 from html import escape as html_escape
 from importlib.resources import as_file, files
@@ -81,7 +81,7 @@ def _load_open_schema_for_apigw(version: str) -> Tuple[Mapping[Hashable, Any], s
     根据不同版本加载不同版本的 schema
     """
     schema_path = f"schemas/openapi_{version}_schema.json"
-    ref = files("apigateway.biz.resource.importer") / schema_path
+    ref = files("apigateway.biz.openapi") / schema_path
     with as_file(ref) as resource_path:
         schema_path_full = path.join(path.dirname(__file__), resource_path)
     return FilePathReader(schema_path_full).read()
@@ -93,22 +93,6 @@ def _get_apigw_schema_content(spec_version: SpecVersion) -> Mapping[Hashable, An
     """
     content, _ = _load_open_schema_for_apigw(f"{spec_version.major}.{spec_version.minor}")
     return content
-
-
-def has_openapi_schema(openapi_schema: Dict[str, Any]) -> bool:
-    """
-    判断schema是否已经确认
-    """
-    if "none_schema" in openapi_schema and openapi_schema["none_schema"] is True:
-        # 对于确认过没有 schema 的资源，直接返回 True
-        return True
-
-        # currently, the schema.responses is initialized during import openapi file
-        # so, we can't judge whether the schema has configured the schema or not
-    if "requestBody" in openapi_schema or "parameters" in openapi_schema:
-        return True
-
-    return False
 
 
 def init_validator_schema():

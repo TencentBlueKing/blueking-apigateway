@@ -19,7 +19,7 @@ import logging
 import re
 from typing import Dict, List, Optional
 
-from apigateway.biz.mcp_server_log.utils import parse_latency_ms
+from .utils import parse_latency_ms
 
 logger = logging.getLogger(__name__)
 

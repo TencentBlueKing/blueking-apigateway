@@ -16,23 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import itertools
-import json
 import operator
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from django.db.models import Q
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginBinding
-from apigateway.apps.support.models import ResourceDoc
-from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
-from apigateway.core.models import Context, Gateway, Proxy, Resource, StageResourceDisabled
+from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.service.contexts import ResourceAuthContext
-from apigateway.utils import time
 
 
 class ResourceHandler:
@@ -50,127 +43,6 @@ class ResourceHandler:
         auth_config.update(config)
 
         ResourceAuthContext().save(resource_id, auth_config)
-
-    @staticmethod
-    def delete_by_gateway_id(gateway_id):
-        resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-        if not resource_ids:
-            return
-        ResourceHandler.delete_resources(resource_ids)
-
-    @staticmethod
-    def delete_resources(resource_ids: List[int]):
-        if not resource_ids:
-            return
-
-        # 1. delete auth config context
-        Context.objects.filter(scope_type=ContextScopeTypeEnum.RESOURCE.value, scope_id__in=resource_ids).delete()
-
-        # 2. delete proxy
-        Proxy.objects.filter(resource_id__in=resource_ids).delete()
-
-        # 3. delete plugin binding
-        PluginBinding.objects.filter(
-            scope_type=PluginBindingScopeEnum.RESOURCE.value,
-            scope_id__in=resource_ids,
-        ).delete()
-
-        # 4. delete resource doc
-        ResourceDoc.objects.filter(resource_id__in=resource_ids).delete()
-
-        # 5. delete resource
-        Resource.objects.filter(id__in=resource_ids).delete()
-
-    @staticmethod
-    def get_resource_use_stage_vars(resource: dict) -> dict:
-        """
-        获取资源使用的 stage vars
-        """
-        used_in_path = set()
-        used_in_host = set()
-        proxy_config = json.loads(resource["proxy"]["config"])
-        proxy_path = proxy_config["path"]
-        used_in_path.update(STAGE_VAR_PATTERN.findall(proxy_path))
-        proxy_upstreams = proxy_config.get("upstreams")
-        if proxy_upstreams:
-            # 覆盖环境配置
-            for host in proxy_upstreams["hosts"]:
-                for match in STAGE_VAR_PATTERN.findall(host["host"]):
-                    used_in_host.add(match)
-        return {
-            "in_path": list(used_in_path),
-            "in_host": list(used_in_host),
-        }
-
-    @staticmethod
-    def snapshot(
-        resource,
-        as_dict=False,
-        proxy_map=None,
-        context_map=None,
-        disabled_stage_map=None,
-        api_label_map=None,
-        plugin_map=None,
-    ):
-        """
-        - can add field
-        - should not delete field!!!!!!!!!
-        """
-
-        data = {
-            "id": resource.pk,
-            "name": resource.name,
-            "description": resource.description,
-            "description_en": resource.description_en,
-            "method": resource.method,
-            "path": resource.path,
-            "match_subpath": resource.match_subpath,
-            "enable_websocket": resource.enable_websocket,
-            "is_public": resource.is_public,
-            "allow_apply_permission": resource.allow_apply_permission,
-            "created_time": time.format(resource.created_time),
-            "updated_time": time.format(resource.updated_time),
-        }
-
-        if proxy_map is None:
-            data["proxy"] = Proxy.objects.get(resource_id=resource.id).snapshot(as_dict=True)
-        else:
-            data["proxy"] = proxy_map[resource.id]
-
-        # 资源使用的 stage vars
-        if data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
-            data["stage_vars"] = ResourceHandler.get_resource_use_stage_vars(data)
-
-        if context_map is None:
-            contexts = Context.objects.filter(
-                scope_type=ContextScopeTypeEnum.RESOURCE.value,
-                scope_id=resource.pk,
-            ).all()
-            data["contexts"] = {c.type: c.snapshot(as_dict=True) for c in contexts}
-        else:
-            data["contexts"] = context_map[resource.pk]
-
-        if disabled_stage_map is None:
-            data["disabled_stages"] = list(
-                StageResourceDisabled.objects.filter(resource=resource).values_list("stage__name", flat=True)
-            )
-        else:
-            data["disabled_stages"] = disabled_stage_map.get(resource.pk, [])
-
-        if api_label_map is None:
-            data["api_labels"] = list(
-                ResourceLabel.objects.filter(resource_id=resource.pk).values_list("api_label_id", flat=True)
-            )
-        else:
-            data["api_labels"] = api_label_map.get(resource.pk, [])
-
-        if plugin_map:
-            data["plugins"] = plugin_map.get(resource.pk, [])
-
-        if as_dict:
-            return data
-
-        return json.dumps(data)
 
     @staticmethod
     def filter_by_resource_filter_condition(gateway_id: int, condition: Dict[str, Any]):
@@ -293,24 +165,6 @@ class ResourceHandler:
             gateway_id: [item["id"] for item in group]
             for gateway_id, group in itertools.groupby(data, key=operator.itemgetter("gateway_id"))
         }
-
-    @staticmethod
-    def get_last_updated_time(gateway_id: int) -> Optional[datetime.datetime]:
-        """获取网关下资源的最近更新时间"""
-        return (
-            Resource.objects.filter(gateway_id=gateway_id)
-            .order_by("-updated_time")
-            .values_list("updated_time", flat=True)
-            .first()
-        )
-
-    @staticmethod
-    def get_updated_time(gateway_id: int, name: str) -> str:
-        """获取网关下某个资源的更新时间"""
-        resource = Resource.objects.filter(gateway_id=gateway_id, name=name).only("updated_time").first()
-        if not resource:
-            return ""
-        return time.format(resource.updated_time)
 
     @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:

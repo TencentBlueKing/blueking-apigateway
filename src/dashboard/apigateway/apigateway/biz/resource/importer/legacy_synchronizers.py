@@ -22,10 +22,10 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.biz.resource.models import ResourceData
+from apigateway.biz.resource import ResourceData
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
-from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.service.plugin import HeaderRewriteConvertor
 
 logger = logging.getLogger(__name__)
 

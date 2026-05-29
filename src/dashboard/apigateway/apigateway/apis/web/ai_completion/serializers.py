@@ -20,7 +20,7 @@
 from rest_framework import serializers
 
 from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.biz.ai.constant import AIContentTypeEnum
+from apigateway.biz.ai import AIContentTypeEnum
 
 
 class AICompletionContentInfo(serializers.Serializer):

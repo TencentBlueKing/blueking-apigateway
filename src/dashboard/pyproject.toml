@@ -298,22 +298,103 @@ ignore_imports = [
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
     "apigateway.apps.gateway.tasks -> apigateway.components.*",
-    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway.gateway",
-    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
-    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
+    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
-    "apigateway.apps.support.task -> apigateway.biz.ai.constant",
-    "apigateway.apps.support.task -> apigateway.biz.ai.ai",
-    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
+    "apigateway.apps.support.task -> apigateway.biz.ai",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.service.release",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.biz.*",
     "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
     "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
     # 需要重构的依赖
 ]
+
+[[tool.importlinter.contracts]]
+id="service-package-public-api"
+name="service-package-public-api"
+type="forbidden"
+source_modules = [
+    "apigateway.account.**",
+    "apigateway.apigateway.**",
+    "apigateway.apis.**",
+    "apigateway.apps.**",
+    "apigateway.biz.**",
+    "apigateway.common.**",
+    "apigateway.components.**",
+    "apigateway.conf.**",
+    "apigateway.controller.**",
+    "apigateway.core.**",
+    "apigateway.editions.**",
+    "apigateway.healthz.**",
+    "apigateway.schema.**",
+    "apigateway.tests.**",
+    "apigateway.tracing.**",
+    "apigateway.utils.**",
+]
+forbidden_modules = [
+    "apigateway.service.*.*",
+    "apigateway.service.*.*.*",
+]
+allow_indirect_imports = true
+as_packages = false
+
+[[tool.importlinter.contracts]]
+id="biz-package-public-api"
+name="biz-package-public-api"
+type="forbidden"
+source_modules = [
+    "apigateway.apis.**",
+    "apigateway.apps.**",
+]
+forbidden_modules = [
+    "apigateway.biz.sdk.constants",
+    "apigateway.biz.sdk.gateway_sdk",
+    "apigateway.biz.sdk.helper",
+    "apigateway.biz.sdk.models",
+    "apigateway.biz.sdk.*.*",
+    "apigateway.biz.sdk.*.*.*",
+    "apigateway.biz.resource.models",
+    "apigateway.biz.resource.openapi_schema",
+    "apigateway.biz.resource.proxy",
+    "apigateway.biz.resource.resource",
+    "apigateway.biz.resource.savers",
+    "apigateway.biz.resource.*.*",
+    "apigateway.biz.resource.*.*.*",
+    "apigateway.biz.resource_doc.archive_factory",
+    "apigateway.biz.resource_doc.exceptions",
+    "apigateway.biz.resource_doc.resource_doc",
+    "apigateway.biz.resource_doc.*.*",
+    "apigateway.biz.resource_doc.*.*.*",
+    "apigateway.biz.resource_version.*",
+    "apigateway.biz.resource_version.*.*",
+    "apigateway.biz.released_resource_doc.*",
+    "apigateway.biz.released_resource_doc.*.*",
+    "apigateway.biz.access_log.*",
+    "apigateway.biz.access_log.*.*",
+    "apigateway.biz.ai.*",
+    "apigateway.biz.ai.*.*",
+    "apigateway.biz.gateway.*",
+    "apigateway.biz.gateway.*.*",
+    "apigateway.biz.mcp_server.*",
+    "apigateway.biz.mcp_server.*.*",
+    "apigateway.biz.mcp_server_log.*",
+    "apigateway.biz.mcp_server_log.*.*",
+    "apigateway.biz.release.*",
+    "apigateway.biz.release.*.*",
+    "apigateway.biz.esb.board_config",
+    "apigateway.biz.esb.component_resource_binding",
+    "apigateway.biz.esb.decorators",
+    "apigateway.biz.esb.permissions",
+    "apigateway.biz.esb.system_doc_category",
+    "apigateway.biz.esb.*.*",
+    "apigateway.biz.esb.*.*.*",
+]
+allow_indirect_imports = true
+as_packages = false
 
 [[tool.importlinter.contracts]]
 id="api-layers"
@@ -345,13 +426,11 @@ ignore_imports = [
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
     "apigateway.apps.gateway.tasks -> apigateway.components.*",
-    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway.gateway",
-    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*",
-    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow.*.*",
+    "apigateway.apps.gateway.tasks -> apigateway.biz.gateway",
+    "apigateway.apps.monitor.tasks -> apigateway.service.alert_flow",
     "apigateway.apps.metrics.tasks -> apigateway.service.statistics",
-    "apigateway.apps.support.task -> apigateway.biz.ai.constant",
-    "apigateway.apps.support.task -> apigateway.biz.ai.ai",
-    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server.prompt",
+    "apigateway.apps.support.task -> apigateway.biz.ai",
+    "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.service.release",
     # -- django commands
@@ -374,5 +453,17 @@ ignore_imports = [
     "apigateway.apps.esb.*.* -> apigateway.biz.*",
     "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
     "apigateway.apps.esb.*.* -> apigateway.components.*",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es.clients",
+    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
+]
+
+[[tool.importlinter.contracts]]
+id="biz-domain-independence"
+name="biz-domain-independence"
+type="independence"
+modules = [
+    "apigateway.biz.gateway",
+    "apigateway.biz.resource",
+    "apigateway.biz.resource_version",
+    "apigateway.biz.permission",
+    "apigateway.biz.mcp_server",
 ]

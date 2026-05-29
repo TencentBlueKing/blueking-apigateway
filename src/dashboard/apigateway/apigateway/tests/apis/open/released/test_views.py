@@ -158,7 +158,7 @@ class TestReleasedResourceRetrieveApi:
         )
 
         get_released_resource_schema_version_mock = mocker.patch(
-            "apigateway.apis.open.released.views.ResourceVersionHandler.get_resource_schema",
+            "apigateway.apis.open.released.views.get_resource_schema",
             return_value=mocked_resource_schema_version,
         )
 

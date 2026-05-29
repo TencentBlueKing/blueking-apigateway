@@ -17,8 +17,7 @@
 #
 import pytest
 
-from apigateway.biz.access_log.data_scrubber import DataScrubber
-from apigateway.biz.access_log.exceptions import NotScrubbedException
+from apigateway.biz.access_log import DataScrubber, NotScrubbedException
 
 
 class TestDataScrubber:

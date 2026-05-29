@@ -18,7 +18,7 @@
 
 import pytest
 
-from apigateway.service.plugin.normalizer import format_fault_injection_config, format_response_rewrite_config
+from apigateway.service.plugin import format_fault_injection_config, format_response_rewrite_config
 
 
 @pytest.mark.parametrize(

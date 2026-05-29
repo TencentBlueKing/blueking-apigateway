@@ -18,7 +18,7 @@
 #
 from apigateway.core.constants import PublishEventNameTypeEnum, PublishEventStatusTypeEnum
 from apigateway.core.models import PublishEvent
-from apigateway.service.event.event import PublishEventReporter
+from apigateway.service.event import PublishEventReporter
 
 
 class TestPublishEventReporter:

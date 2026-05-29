@@ -23,7 +23,7 @@ from ddf import G
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.core.models import Gateway, ResourceVersion, Stage
-from apigateway.service.mcp.mcp_server import (
+from apigateway.service.mcp import (
     build_mcp_server_permission_approval_url,
     build_mcp_server_url,
     update_stage_mcp_server_related_resource_names,

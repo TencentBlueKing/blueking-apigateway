@@ -20,7 +20,7 @@ import os
 from typing import Dict, List
 
 from apigateway.apps.support.models import ResourceDoc, ResourceDocVersion
-from apigateway.biz.resource_doc.exceptions import NoResourceDocError
+from apigateway.biz.resource_doc import NoResourceDocError
 from apigateway.core.models import Resource, ResourceVersion
 from apigateway.utils.file import write_to_file
 

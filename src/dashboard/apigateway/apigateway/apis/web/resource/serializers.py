@@ -34,11 +34,12 @@ from apigateway.apis.web.resource.validators import (
 from apigateway.apps.plugin.models import PluginConfig
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
-from apigateway.biz.gateway import GatewayHandler, GatewayLabelHandler
+from apigateway.biz.gateway import GatewayLabelHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
+from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
@@ -304,7 +305,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         validators = [
             MaxCountPerGatewayValidator(
                 Resource,
-                max_count_callback=lambda gateway: GatewayHandler.get_max_resource_count(gateway.name),
+                max_count_callback=lambda gateway: get_max_resource_count(gateway.name),
                 message=gettext_lazy("每个网关最多创建 {max_count} 个资源。"),
             ),
             UniqueTogetherValidator(

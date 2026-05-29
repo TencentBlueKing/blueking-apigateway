@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.biz.constants import STAGE_VAR_FOR_PATH_PATTERN
+from apigateway.common.constants import STAGE_VAR_FOR_PATH_PATTERN
 
 
 class TestConstants:

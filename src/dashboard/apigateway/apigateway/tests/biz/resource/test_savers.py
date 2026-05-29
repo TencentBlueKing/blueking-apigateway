@@ -18,7 +18,7 @@
 from ddf import G
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.biz.resource.savers import ResourcesSaver
+from apigateway.biz.resource import ResourcesSaver
 from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum
 from apigateway.core.models import Backend, Context, Proxy, Resource
 

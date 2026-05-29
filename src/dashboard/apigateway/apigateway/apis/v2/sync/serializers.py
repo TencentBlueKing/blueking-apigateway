@@ -67,7 +67,7 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
-from apigateway.service.plugin.validator import PluginConfigYamlValidator
+from apigateway.service.plugin import PluginConfigYamlValidator
 from apigateway.utils.time import NeverExpiresTime
 
 

@@ -25,7 +25,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.esb.board_config import BoardConfigManager
+from apigateway.biz.esb import BoardConfigManager
 from apigateway.common.pypi.pip import PipHelper
 from apigateway.common.pypi.registry import SimplePypiRegistry
 

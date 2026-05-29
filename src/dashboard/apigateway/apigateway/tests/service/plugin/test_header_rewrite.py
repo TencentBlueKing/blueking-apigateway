@@ -18,7 +18,7 @@
 import pytest
 
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.service.plugin.header_rewrite import HeaderRewriteConvertor
+from apigateway.service.plugin import HeaderRewriteConvertor
 
 
 class TestHeaderRewriteConvertor:
