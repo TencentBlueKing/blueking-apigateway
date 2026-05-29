@@ -18,6 +18,7 @@
 
 import { t } from '@/locales';
 import { useViewRangeInject } from '../../hooks';
+import { useTrace } from '@/stores/useTrace';
 import Ticks from '../ticks';
 import TimelineRow from '../timeline-row';
 import TimelineRowCell from '../timeline-row-cell';
@@ -53,8 +54,13 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
     columnResizeHandleHeight,
   } = props;
 
+  const traceStore = useTrace();
   const viewRange = useViewRangeInject();
-  const [viewStart = 0, viewEnd = 0] = (viewRange?.viewRange.value.time.current ?? [0, 0]) as [number, number];
+
+  const [viewStart = 0] = (viewRange?.viewRange.value.time.current ?? [0, 0]) as [number, number];
+
+  // 总耗时
+  const totalTraceDuration = computed(() => traceStore?.traceTree?.total_latency_ms ?? 0);
 
   return (
     <TimelineRow className="timeline-header-row">
@@ -78,7 +84,7 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
         {/* 暂时先注释掉，后续如果需要支持动态拉伸每列宽度在开放 */}
         {/* <TimelineViewingLayer boundsInvalidator={nameColumnWidth} /> */}
         <Ticks
-          endTime={viewEnd * duration}
+          endTime={totalTraceDuration.value}
           numTicks={numTicks}
           startTime={viewStart * duration}
           hideLine
