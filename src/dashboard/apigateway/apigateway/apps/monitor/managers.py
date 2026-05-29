@@ -65,7 +65,7 @@ class AlarmStrategyManager(models.Manager):
         if order_by is not None:
             queryset = queryset.order_by(order_by)
 
-        return queryset.distinct()
+        return queryset.distinct().prefetch_related("api_labels")
 
     def annotate_alarm_record_by_strategy(self, gateway_ids, time_start=None, time_end=None):
         """

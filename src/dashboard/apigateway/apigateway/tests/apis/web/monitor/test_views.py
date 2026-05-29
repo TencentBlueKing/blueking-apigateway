@@ -18,7 +18,9 @@
 #
 import json
 
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.monitor.views import (
@@ -157,6 +159,22 @@ class TestAlarmStrategyListCreateApi(TestCase):
             result = get_response_json(response)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(result["data"]["results"], test["expected"])
+
+    def test_list_prefetches_gateway_labels(self):
+        label = G(APILabel, gateway=self.gateway, name="label")
+        for index in range(6):
+            strategy = G(AlarmStrategy, gateway=self.gateway, name=f"strategy-{index}")
+            strategy.api_labels.add(label)
+
+        request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/strategies/")
+        view = AlarmStrategyListCreateApi.as_view()
+
+        with CaptureQueriesContext(connection) as queries:
+            response = view(request, gateway_id=self.gateway.id)
+
+        result = get_response_json(response)
+        self.assertEqual(response.status_code, 200, result)
+        self.assertLessEqual(len(queries), 8)
 
 
 class TestAlarmStrategyRetrieveUpdateDestroyApi(TestCase):
@@ -345,6 +363,22 @@ class TestAlarmRecordListApi(TestCase):
             result = get_response_json(response)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(len(result["data"]["results"]), test["expected"]["count"])
+
+    def test_list_prefetches_alarm_strategy_names(self):
+        strategies = [G(AlarmStrategy, gateway=self.gateway, name=f"strategy-{index}") for index in range(6)]
+        for index in range(6):
+            record = G(AlarmRecord, gateway=self.gateway, status="received")
+            record.alarm_strategies.set([strategies[index]])
+
+        request = self.factory.get(f"/apis/{self.gateway.id}/monitors/alarm/records/")
+        view = AlarmRecordListApi.as_view()
+
+        with CaptureQueriesContext(connection) as queries:
+            response = view(request, gateway_id=self.gateway.id)
+
+        result = get_response_json(response)
+        self.assertEqual(response.status_code, 200, result)
+        self.assertLessEqual(len(queries), 8)
 
 
 class TestAlarmRecordRetrieveApi(TestCase):
