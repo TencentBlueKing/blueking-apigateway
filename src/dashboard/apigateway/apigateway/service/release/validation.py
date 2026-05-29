@@ -189,7 +189,6 @@ class PublishValidator:
             if stage_plugin.config.type.code in stage_plugin_type_set:
                 raise ReleaseValidationError(
                     _("网关环境【{stage_name}】存在绑定多个相同类型[{plugin_code}]的插件。").format(
-                        # noqa: E501
                         stage_name=self.stage.name,
                         plugin_code=stage_plugin.config.type.code,
                     )

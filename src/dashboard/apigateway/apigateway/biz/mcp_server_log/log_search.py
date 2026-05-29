@@ -19,7 +19,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from django.conf import settings
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.aggs import A
 
 from apigateway.service.es import BKLogESClient
@@ -114,8 +114,6 @@ class MCPServerLogSearchClient:
         # 注意：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
         # 把 __ext_json 前缀的 __ 去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict
         if self._gateway_id:
-            from elasticsearch_dsl import Q  # noqa: PLC0415
-
             s = s.filter(
                 "bool",
                 should=[
@@ -150,8 +148,6 @@ class MCPServerLogSearchClient:
         重要：Q("term", **{"__ext_json.xxx": v}) 会被 elasticsearch_dsl 错误处理，
         把 __ext_json 的 __ 前缀去掉变成 .ext_json，必须用 Q({"term": {...}}) 传 raw dict。
         """
-        from elasticsearch_dsl import Q  # noqa: PLC0415
-
         # MCP 协议层专属字段，仅存在于顶层
         top_level_only_fields = {
             "mcp_method": self._mcp_method,
@@ -198,8 +194,6 @@ class MCPServerLogSearchClient:
         策略：用 terms 枚举具体状态码值（同时包含 int 和 str 两种形式），
         避免 range 查询在 keyword/flattened 类型上的不确定行为。
         """
-        from elasticsearch_dsl import Q  # noqa: PLC0415
-
         status_value = self._status
         http_codes = STATUS_HTTP_CODES.get(status_value or "", [])
 

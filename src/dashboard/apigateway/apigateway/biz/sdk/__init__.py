@@ -1,4 +1,3 @@
-# ruff: noqa: I001
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -19,6 +18,8 @@
 from . import exceptions
 from .constants import MANIFEST_IN_TMPL, PYPIRC_TMPL, RESOURCE_PY_TMPL, SETUP_PY_TMPL
 from .exceptions import DistributeError, ResourcesIsEmpty, SDKRepoConfigError, TooManySDKVersion
+from .gateway_sdk import GatewaySDKHandler
+from .helper import SDKHelper, SDKInfo, generate_sdks_for_resource_version
 from .models import (
     DistributeResult,
     Distributor,
@@ -30,8 +31,6 @@ from .models import (
     SDKFactory,
     SDKManager,
 )
-from .gateway_sdk import GatewaySDKHandler
-from .helper import SDKHelper, SDKInfo, generate_sdks_for_resource_version
 
 __all__ = [
     "DistributeResult",
