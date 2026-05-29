@@ -21,6 +21,9 @@ from .models import ArchiveDoc, OpenAPIDoc
 from .parsers import ArchiveParser, BaseParser, OpenAPIParser
 
 __all__ = [
+    # constant
+    # Enum
+    # class
     "ArchiveDoc",
     "ArchiveParser",
     "BaseParser",
@@ -29,4 +32,6 @@ __all__ = [
     "OpenAPIDoc",
     "OpenAPIParser",
     "OpenAPIToMarkdownGenerator",
+    # functions
+    # others
 ]

@@ -25,9 +25,14 @@ except ImportError:
     TencentPypiSourceDistributor = None
 
 __all__ = [
-    "GenericDistributor",
+    # constant
     "MAVEN_CENTRAL_URL",
+    # Enum
+    # class
+    "GenericDistributor",
     "MavenSourceDistributor",
     "PypiSourceDistributor",
     "TencentPypiSourceDistributor",
+    # functions
+    # others
 ]

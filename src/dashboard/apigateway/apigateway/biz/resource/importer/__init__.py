@@ -19,6 +19,11 @@ from .importers import ResourcesImporter
 from .sync import sync_openapi_resources_from_content
 
 __all__ = [
+    # constant
+    # Enum
+    # class
     "ResourcesImporter",
+    # functions
     "sync_openapi_resources_from_content",
+    # others
 ]

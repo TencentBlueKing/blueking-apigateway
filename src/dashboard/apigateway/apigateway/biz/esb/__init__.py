@@ -22,10 +22,15 @@ from .permissions import ComponentPermissionManager
 from .system_doc_category import SystemDocCategoryHandler
 
 __all__ = [
+    # constant
+    # Enum
+    # class
     "BoardConfig",
     "BoardConfigManager",
     "ComponentPermissionManager",
     "ComponentResourceBindingHandler",
     "SystemDocCategoryHandler",
+    # functions
     "check_board_exist",
+    # others
 ]

@@ -17,4 +17,11 @@
 #
 from .generators import ComponentDocFactory
 
-__all__ = ["ComponentDocFactory"]
+__all__ = [
+    # constant
+    # Enum
+    # class
+    "ComponentDocFactory",
+    # functions
+    # others
+]

@@ -22,14 +22,19 @@ from .schema import SchemaValidateErr, convert_operation_v3_to_v2
 from .validate import ResourceImportValidator
 
 __all__ = [
+    # constant
+    "VALID_METHOD_IN_SWAGGER_PATHITEM",
+    # Enum
+    "OpenAPIExtensionEnum",
+    "OpenAPIVersionKeyEnum",
+    # class
     "BaseParser",
     "OpenAPIImportManager",
-    "OpenAPIExtensionEnum",
     "OpenAPIV3Parser",
-    "OpenAPIVersionKeyEnum",
     "ResourceDataConvertor",
     "ResourceImportValidator",
     "SchemaValidateErr",
-    "VALID_METHOD_IN_SWAGGER_PATHITEM",
+    # functions
     "convert_operation_v3_to_v2",
+    # others
 ]

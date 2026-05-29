@@ -24,9 +24,14 @@ from .released_resource_doc import (
 )
 
 __all__ = [
+    # constant
+    # Enum
+    # class
     "DocGenerator",
     "DummyResourceDocData",
     "ReleasedResourceDocData",
     "ReleasedResourceDocHandler",
     "ResourceDocData",
+    # functions
+    # others
 ]

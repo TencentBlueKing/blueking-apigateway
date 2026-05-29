@@ -28,9 +28,14 @@ except ImportError:
     PythonLegacyGenerator = None
 
 __all__ = [
+    # constant
+    # Enum
+    # class
     "GolangTemplateGenerator",
     "JavaTemplateGenerator",
     "PythonGenerator",
     "PythonLegacyGenerator",
     "PythonTemplateGenerator",
+    # functions
+    # others
 ]

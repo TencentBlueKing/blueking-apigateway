@@ -17,4 +17,12 @@
 #
 from .generators import DocArchiveGenerator, ResourceVersionDocArchiveGenerator
 
-__all__ = ["DocArchiveGenerator", "ResourceVersionDocArchiveGenerator"]
+__all__ = [
+    # constant
+    # Enum
+    # class
+    "DocArchiveGenerator",
+    "ResourceVersionDocArchiveGenerator",
+    # functions
+    # others
+]

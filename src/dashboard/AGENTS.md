@@ -73,6 +73,12 @@ Important call rules:
   `biz` module or in `controller/`, not in `service/`. Keep `service/` to leaf
   capabilities with stable inputs and outputs, clear reuse, direct tests, and no
   permission, audit, lifecycle, or workflow decisions.
+- Historical exception: `apigateway.service.release.PublishValidator` currently
+  lives under `service/` because it was moved there during the 2026-05
+  `biz-domain-independence` refactor to break an import-boundary issue. Treat
+  that location as compatibility debt, not as placement precedent. Release
+  gating, lifecycle, and publish workflow decisions should prefer
+  `biz/release/`; keep only the smallest reusable leaf checks in `service/`.
 - Direct model or queryset use from views and serializers is limited to simple
   local reads or writes that are already idiomatic in Django.
 
@@ -123,6 +129,16 @@ Service organization guide:
 - Each non-trivial service module should expose a small public surface: add a
   module docstring that states what the module owns, keep public helpers
   discoverable, and prefix module-private helpers with `_`.
+
+Package `__init__.py` export guide:
+
+- For `biz/` and `service/` package `__init__.py` files that define `__all__`,
+  keep exports grouped in this fixed order: `# constant`, `# Enum`, `# class`,
+  `# functions`, `# others`.
+- Keep every section comment in place even when that section is empty, so later
+  additions have an obvious slot.
+- Keep names grouped under the matching section. Put module re-exports or other
+  uncategorized names under `# others`.
 
 Layer intent:
 
