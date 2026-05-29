@@ -21,7 +21,9 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import ClassVar, List, Optional
 
-from apigateway.biz.sdk import DistributeError, DistributeResult, Distributor, PYPIRC_TMPL
+from apigateway.biz.sdk.constants import PYPIRC_TMPL
+from apigateway.biz.sdk.exceptions import DistributeError
+from apigateway.biz.sdk.models import DistributeResult, Distributor
 from apigateway.common.pypi.registry import SimplePypiRegistry
 from apigateway.utils.file import write_to_file
 from apigateway.utils.pypi import RepositoryConfig

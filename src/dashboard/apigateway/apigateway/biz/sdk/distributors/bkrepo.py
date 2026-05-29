@@ -20,7 +20,8 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from apigateway.biz.sdk import DistributeError, DistributeResult, Distributor
+from apigateway.biz.sdk.exceptions import DistributeError
+from apigateway.biz.sdk.models import DistributeResult, Distributor
 from apigateway.components.bkrepo import BKRepoComponent
 
 logger = logging.getLogger(__name__)

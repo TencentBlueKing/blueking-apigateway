@@ -29,8 +29,7 @@ from apigateway.apis.web.resource.views import (
     ResourceRetrieveUpdateDestroyApi,
 )
 from apigateway.apps.label.models import APILabel, ResourceLabel
-from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource import ResourcesSaver
+from apigateway.biz.resource import ResourceHandler, ResourcesSaver
 from apigateway.core import constants
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import (

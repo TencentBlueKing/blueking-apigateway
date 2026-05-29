@@ -35,7 +35,12 @@ from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
 from apigateway.biz.resource_doc import ArchiveFileFactory, NoResourceDocError
 from apigateway.biz.resource_doc.exporter import ResourceVersionDocArchiveGenerator
-from apigateway.biz.resource_version import ResourceDifferHandler, ResourceDocVersionHandler, ResourceVersionArtifactHandler, ResourceVersionHandler
+from apigateway.biz.resource_version import (
+    ResourceDifferHandler,
+    ResourceDocVersionHandler,
+    ResourceVersionArtifactHandler,
+    ResourceVersionHandler,
+)
 from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.constants import PublishSourceEnum

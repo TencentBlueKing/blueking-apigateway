@@ -24,12 +24,13 @@ from typing import Dict, Optional
 from django.utils.translation import gettext as _
 
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import GatewaySDKHandler, exceptions
 from apigateway.common.error_codes import error_codes
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
 
+from . import exceptions
+from .gateway_sdk import GatewaySDKHandler
 from .managers import SDKManagerFactory
 from .models import SDKContext
 

@@ -19,16 +19,14 @@ import logging
 from dataclasses import dataclass
 from typing import Any, ClassVar, Dict, List, Optional, Type
 
-from apigateway.biz.sdk import (
-    DistributeError,
+from apigateway.biz.sdk.exceptions import DistributeError, ResourcesIsEmpty, SDKRepoConfigError
+from apigateway.biz.sdk.models import (
     DistributeResult,
     Distributor,
     Generator,
     Packager,
-    ResourcesIsEmpty,
     SDKContext,
     SDKManager,
-    SDKRepoConfigError,
 )
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import ResourceVersion

@@ -20,11 +20,12 @@ from typing import Dict, List
 
 from elasticsearch_dsl import Search
 
-from .constants import CHAIN_OUTPUT_FIELDS
 from apigateway.common.error_codes import error_codes
 from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
+
+from .constants import CHAIN_OUTPUT_FIELDS
 
 logger = logging.getLogger(__name__)
 

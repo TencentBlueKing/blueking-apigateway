@@ -23,9 +23,9 @@ from .base import BaseSDKManager
 from .mixins import SDKManagerMixin
 
 try:
-	from .python_legacy import PythonLegacySDKManager
+    from .python_legacy import PythonLegacySDKManager
 except ImportError:
-	PythonLegacySDKManager = None
+    PythonLegacySDKManager = None
 
 SDKManagerFactory = TypeFactory()
 

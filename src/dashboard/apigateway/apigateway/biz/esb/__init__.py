@@ -22,10 +22,10 @@ from .permissions import ComponentPermissionManager
 from .system_doc_category import SystemDocCategoryHandler
 
 __all__ = [
-	"BoardConfig",
-	"BoardConfigManager",
-	"ComponentPermissionManager",
-	"ComponentResourceBindingHandler",
-	"SystemDocCategoryHandler",
-	"check_board_exist",
+    "BoardConfig",
+    "BoardConfigManager",
+    "ComponentPermissionManager",
+    "ComponentResourceBindingHandler",
+    "SystemDocCategoryHandler",
+    "check_board_exist",
 ]

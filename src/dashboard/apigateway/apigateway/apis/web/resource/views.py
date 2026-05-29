@@ -38,12 +38,10 @@ from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.openapi import OpenAPIImportManager, ResourceDataConvertor, ResourceImportValidator
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.biz.resource import ResourceHandler
-from apigateway.biz.resource import ResourcesSaver
+from apigateway.biz.resource import ResourceHandler, ResourcesSaver
 from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.biz.resource_doc.importer import DocImporter
 from apigateway.biz.resource_doc import ResourceDocHandler
-from apigateway.biz.resource_doc.importer import OpenAPIParser
+from apigateway.biz.resource_doc.importer import DocImporter, OpenAPIParser
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage

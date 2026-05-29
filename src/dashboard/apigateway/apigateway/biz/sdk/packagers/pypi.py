@@ -25,7 +25,7 @@ from typing import List
 from packaging.version import parse as parse_version
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk import Packager
+from apigateway.biz.sdk.models import Packager
 
 logger = logging.getLogger(__name__)
 

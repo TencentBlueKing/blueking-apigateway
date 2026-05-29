@@ -27,8 +27,7 @@ from apigateway.apis.open.permissions import (
 )
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
-from apigateway.biz.resource_doc.importer import DocImporter
-from apigateway.biz.resource_doc.importer import ArchiveParser, OpenAPIParser
+from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter, OpenAPIParser
 from apigateway.common.error_codes import error_codes
 from apigateway.common.exceptions import SchemaValidationError
 from apigateway.utils.responses import V1OKJsonResponse

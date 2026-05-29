@@ -30,8 +30,7 @@ from apigateway.apps.permission.constants import (
     PermissionStatusEnum,
 )
 from apigateway.apps.permission.models import AppPermissionRecord
-from apigateway.biz.permission import PermissionDimensionManager
-from apigateway.biz.permission import ResourcePermissionHandler
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField

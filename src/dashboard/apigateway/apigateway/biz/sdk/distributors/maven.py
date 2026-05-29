@@ -23,7 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, List
 
-from apigateway.biz.sdk import DistributeError, DistributeResult, Distributor
+from apigateway.biz.sdk.exceptions import DistributeError
+from apigateway.biz.sdk.models import DistributeResult, Distributor
 from apigateway.utils.maven import RepositoryConfig
 
 logger = logging.getLogger(__name__)

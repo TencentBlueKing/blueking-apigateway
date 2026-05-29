@@ -16,8 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from .bkrepo import GenericDistributor
-from .maven import MavenSourceDistributor
-from .maven import MAVEN_CENTRAL_URL
+from .maven import MAVEN_CENTRAL_URL, MavenSourceDistributor
 from .pypi import PypiSourceDistributor
 
 try:

@@ -28,9 +28,9 @@ from drf_yasg.utils import swagger_auto_schema
 from openapi_schema_to_json_schema import to_json_schema
 from rest_framework import generics, status
 
+import apigateway.biz.release as release_biz
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
-import apigateway.biz.release as release_biz
 from apigateway.biz.released_resource import ReleasedResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -343,7 +343,9 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
         slz = self.get_serializer(
             release_history,
             context={
-                "release_history_events": release_biz.ReleaseHandler.list_publish_events_by_release_history_id(release_history.id),
+                "release_history_events": release_biz.ReleaseHandler.list_publish_events_by_release_history_id(
+                    release_history.id
+                ),
                 "release_history_events_map": PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                     [release_history.id]
                 ),
@@ -475,7 +477,9 @@ class BaseProgrammableDeployEventsRetrieveApi(generics.RetrieveAPIView):
         release_history_events = []
         release_history_events_map = {}
         if release_history:
-            release_history_events = release_biz.ReleaseHandler.list_publish_events_by_release_history_id(release_history.id)
+            release_history_events = release_biz.ReleaseHandler.list_publish_events_by_release_history_id(
+                release_history.id
+            )
             release_history_events_map = PublishEvent.objects.get_release_history_id_to_latest_publish_event_map(
                 [release_history.id]
             )

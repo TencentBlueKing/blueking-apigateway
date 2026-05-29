@@ -22,8 +22,8 @@ from ddf import G
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.constants import PluginBindingSourceEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig
-from apigateway.biz.plugin.synchronizers import PluginConfigData
 from apigateway.biz.openapi import ResourceDataConvertor
+from apigateway.biz.plugin.synchronizers import PluginConfigData
 from apigateway.biz.resource.importer import ResourcesImporter
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps

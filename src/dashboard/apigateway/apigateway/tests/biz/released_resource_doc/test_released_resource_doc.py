@@ -15,8 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.biz.released_resource_doc import ReleasedResourceDocHandler
-from apigateway.biz.released_resource_doc import DummyResourceDocData, ReleasedResourceDocData
+from apigateway.biz.released_resource_doc import (
+    DummyResourceDocData,
+    ReleasedResourceDocData,
+    ReleasedResourceDocHandler,
+)
 
 
 class TestReleasedResourceDocData:
