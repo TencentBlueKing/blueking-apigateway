@@ -16,8 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .gateway_releaser import ReleaseError, release
-from .release import ReleaseHandler
+from .gateway_releaser import ReleaseError, release_gateway
+from .release_handler import ReleaseHandler
 
 __all__ = [
     # constant
@@ -26,6 +26,6 @@ __all__ = [
     "ReleaseError",
     "ReleaseHandler",
     # functions
-    "release",
+    "release_gateway",
     # others
 ]

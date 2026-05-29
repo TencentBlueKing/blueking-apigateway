@@ -217,7 +217,7 @@ class GatewayReleaser:
         delay_on_commit(task | release_success_callback)
 
 
-def release(
+def release_gateway(
     gateway: Gateway,
     stage_id: int,
     resource_version_id: int,

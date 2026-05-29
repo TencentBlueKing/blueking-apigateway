@@ -65,7 +65,7 @@ class TestReleaseCreateApi:
                 created_time=dummy_time.time,
             )
             # TODO: mock the releaser
-            mocker.patch("apigateway.apis.web.release.views.release_biz.release", return_value=release_history)
+            mocker.patch("apigateway.apis.web.release.views.release_biz.release_gateway", return_value=release_history)
 
             data = {
                 "gateway_id": fake_gateway.id,

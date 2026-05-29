@@ -21,8 +21,9 @@ from unittest.mock import call
 import pytest
 from ddf import G
 
+import apigateway.biz.release as release_biz
 from apigateway.biz.release import ReleaseHandler
-from apigateway.biz.release.gateway_releaser import ReleaseError
+from apigateway.biz.release.gateway_releaser import ReleaseError, release_gateway
 from apigateway.core.constants import (
     GatewayStatusEnum,
     PublishEventNameTypeEnum,
@@ -37,6 +38,10 @@ pytestmark = pytest.mark.django_db
 
 
 class TestReleaseHandler:
+    def test_package_release_gateway_export_is_callable(self):
+        assert release_biz.release_gateway is release_gateway
+        assert callable(release_biz.release_gateway)
+
     def test_filter_release_history(self):
         gateway = G(Gateway)
         stage_prod = G(Stage, gateway=gateway, name="prod")
@@ -132,8 +137,8 @@ class TestReleaseHandler:
     def test_release_to_stages_calls_release_once_per_stage(self, fake_gateway, mocker):
         stage_ids = [101, 102]
         resource_version_id = 201
-        mocker.patch("apigateway.biz.release.release.Lock")
-        mocked_release = mocker.patch("apigateway.biz.release.release.release")
+        mocker.patch("apigateway.biz.release.release_handler.Lock")
+        mocked_release_gateway = mocker.patch("apigateway.biz.release.release_handler.release_gateway")
 
         ok, message = ReleaseHandler.release_to_stages(
             gateway=fake_gateway,
@@ -145,7 +150,7 @@ class TestReleaseHandler:
 
         assert ok is True
         assert message == ""
-        mocked_release.assert_has_calls(
+        mocked_release_gateway.assert_has_calls(
             [
                 call(
                     gateway=fake_gateway,
@@ -165,9 +170,9 @@ class TestReleaseHandler:
         )
 
     def test_release_to_stages_returns_error_message(self, fake_gateway, mocker):
-        mocker.patch("apigateway.biz.release.release.Lock")
+        mocker.patch("apigateway.biz.release.release_handler.Lock")
         mocker.patch(
-            "apigateway.biz.release.release.release",
+            "apigateway.biz.release.release_handler.release_gateway",
             side_effect=ReleaseError("release failed"),
         )
 
@@ -183,9 +188,9 @@ class TestReleaseHandler:
         assert message == "release failed"
 
     def test_release_to_stages_returns_error_after_partial_success(self, fake_gateway, mocker):
-        mocker.patch("apigateway.biz.release.release.Lock")
-        mocked_release = mocker.patch(
-            "apigateway.biz.release.release.release",
+        mocker.patch("apigateway.biz.release.release_handler.Lock")
+        mocked_release_gateway = mocker.patch(
+            "apigateway.biz.release.release_handler.release_gateway",
             side_effect=[None, ReleaseError("release failed")],
         )
 
@@ -199,7 +204,7 @@ class TestReleaseHandler:
 
         assert ok is False
         assert message == "release failed"
-        assert mocked_release.call_count == 2
+        assert mocked_release_gateway.call_count == 2
 
     def test_get_latest_publish_event_by_release_history_ids(self, fake_release_history, fake_publish_event):
         assert (

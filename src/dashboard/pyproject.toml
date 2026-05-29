@@ -306,10 +306,6 @@ ignore_imports = [
     "apigateway.apps.mcp_server.tasks -> apigateway.biz.mcp_server",
     "apigateway.apps.mcp_server.tasks -> apigateway.service.release",
     # -- esb legacy
-    "apigateway.apps.esb.*.* -> apigateway.biz.*",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
-    "apigateway.apps.esb.component.convertor -> apigateway.components.esb_components",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
     # 需要重构的依赖
 ]
 
@@ -448,12 +444,6 @@ ignore_imports = [
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
     # -- esb legacy
-    "apigateway.apps.esb.*.* -> apigateway.core.models",
-    "apigateway.apps.esb.*.* -> apigateway.core.constants",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*",
-    "apigateway.apps.esb.*.* -> apigateway.biz.*.*",
-    "apigateway.apps.esb.*.* -> apigateway.components.*",
-    "apigateway.apps.esb.status.es_client -> apigateway.service.es",
 ]
 
 [[tool.importlinter.contracts]]
