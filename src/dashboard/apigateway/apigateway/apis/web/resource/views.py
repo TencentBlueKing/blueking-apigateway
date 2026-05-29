@@ -47,7 +47,7 @@ from apigateway.core.constants import STAGE_VAR_PATTERN
 from apigateway.core.models import BackendConfig, Proxy, Resource, Stage
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.contexts import ResourceAuthContext
-from apigateway.service.resource import delete_resources, get_resource_labels, get_resource_labels_by_gateway
+from apigateway.service.resource import delete_resources, get_gateway_resource_id_to_labels, get_resource_id_to_labels
 from apigateway.service.resource_version import OpenAPIExportManager
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, FailJsonResponse, OKJsonResponse
@@ -117,7 +117,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
             page,
             many=True,
             context={
-                "labels": get_resource_labels(resource_ids),
+                "labels": get_resource_id_to_labels(resource_ids),
                 "docs": ResourceDocHandler.get_docs(resource_ids),
                 "backends": get_backend_id_to_instance(request.gateway.id),
                 "proxies": {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=resource_ids)},
@@ -235,7 +235,7 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
             instance,
             context={
                 "auth_config": ResourceAuthContext().get_config(instance.id),
-                "labels": get_resource_labels([instance.id]),
+                "labels": get_resource_id_to_labels([instance.id]),
                 "proxy": Proxy.objects.get(resource_id=instance.id),
                 "resource_id_to_schema": ResourceHandler.get_id_to_schema([instance.id]),
                 "released_stages": released_stages,
@@ -590,7 +590,7 @@ class ResourceExportApi(generics.CreateAPIView):
             selected_resource_queryset,
             many=True,
             context={
-                "labels": get_resource_labels_by_gateway(request.gateway.id),
+                "labels": get_gateway_resource_id_to_labels(request.gateway.id),
                 "backends": get_backend_id_to_instance(gateway_id=request.gateway.id),
                 "proxies": {
                     proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource_id__in=selected_resource_ids)

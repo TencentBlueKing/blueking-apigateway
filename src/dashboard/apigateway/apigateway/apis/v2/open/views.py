@@ -58,7 +58,7 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
-from apigateway.service.resource import get_resource_labels
+from apigateway.service.resource import get_resource_id_to_labels
 from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils.responses import OKJsonResponse
 
@@ -576,7 +576,7 @@ class GatewayResourceListApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": get_resource_labels(resource_ids),
+                "labels": get_resource_id_to_labels(resource_ids),
                 "auth_configs": ResourceAuthContext().get_resource_id_to_auth_config(resource_ids),
             },
         )

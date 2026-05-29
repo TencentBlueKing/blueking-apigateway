@@ -36,9 +36,9 @@ from apigateway.core.constants import ContextScopeTypeEnum, ResourceVersionSchem
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.service.resource import (
     filter_disabled_stages_by_gateway,
+    get_gateway_resource_id_to_labels,
     get_last_resource_updated_time,
     get_resource_id_to_proxy_snapshot,
-    get_resource_labels_by_gateway,
     snapshot_resource,
 )
 from apigateway.service.resource_version import (
@@ -69,7 +69,7 @@ class ResourceVersionHandler:
 
         gateway_label_map = {
             resource_id: [label["id"] for label in labels]
-            for resource_id, labels in get_resource_labels_by_gateway(gateway).items()
+            for resource_id, labels in get_gateway_resource_id_to_labels(gateway).items()
         }
 
         # plugin

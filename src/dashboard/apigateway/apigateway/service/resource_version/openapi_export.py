@@ -26,7 +26,7 @@ from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
 from apigateway.core.models import ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
-from apigateway.service.resource import get_resource_labels_by_gateway
+from apigateway.service.resource import get_gateway_resource_id_to_labels
 from apigateway.utils.yaml import yaml_dumps, yaml_export_dumps
 
 from .schema import get_resource_id_to_schema_by_resource_version
@@ -294,7 +294,7 @@ class OpenAPIExportManager:
         根据资源版本数据导出openapi
         """
         backend_id_to_config = get_backend_id_to_instance(resource_version.gateway.id)
-        resource_labels = get_resource_labels_by_gateway(resource_version.gateway.id)
+        resource_labels = get_gateway_resource_id_to_labels(resource_version.gateway.id)
         resource_id_to_schema = get_resource_id_to_schema_by_resource_version(resource_version.id)
 
         resource_data_list = []

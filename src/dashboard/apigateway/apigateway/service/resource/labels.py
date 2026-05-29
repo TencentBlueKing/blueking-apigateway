@@ -25,7 +25,7 @@ from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.core.models import Gateway, Resource
 
 
-def get_resource_labels(resource_ids: List[int]) -> Dict[int, List]:
+def get_resource_id_to_labels(resource_ids: List[int]) -> Dict[int, List]:
     """批量查询资源绑定的标签，用于为资源列表、详情和资源版本快照补全标签信息。
 
     调用方已经有资源 ID 列表，需要按资源 ID 聚合标签 ID 和名称时使用。
@@ -52,7 +52,7 @@ def get_resource_labels(resource_ids: List[int]) -> Dict[int, List]:
     return resource_labels
 
 
-def get_resource_labels_by_gateway(gateway_id: int) -> Dict[int, List]:
+def get_gateway_resource_id_to_labels(gateway_id: int) -> Dict[int, List]:
     """查询网关下所有资源绑定的标签，用于创建资源版本或导出资源时获取资源标签映射。
 
     调用方只有网关 ID，需要一次性获取该网关所有资源的标签时使用。
@@ -64,10 +64,10 @@ def get_resource_labels_by_gateway(gateway_id: int) -> Dict[int, List]:
         Dict[int, List]: 键为资源 ID，值为标签列表；没有资源或标签时返回空字典。
     """
     resource_ids = list(Resource.objects.filter(gateway_id=gateway_id).values_list("id", flat=True))
-    return get_resource_labels(resource_ids)
+    return get_resource_id_to_labels(resource_ids)
 
 
-def get_resource_labels_by_ids(label_ids: List[int]) -> Dict[int, List]:
+def get_resource_id_to_labels_by_label_ids(label_ids: List[int]) -> Dict[int, List]:
     """按标签 ID 查询资源标签绑定关系，用于根据标签筛选或补全资源。
 
     调用方已经有标签 ID 列表，需要按资源 ID 聚合标签信息时使用。

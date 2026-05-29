@@ -18,9 +18,9 @@
 from .cleanup import delete_gateway_resource_versions, delete_gateway_resources, delete_resources
 from .labels import (
     ensure_gateway_labels,
-    get_resource_labels,
-    get_resource_labels_by_gateway,
-    get_resource_labels_by_ids,
+    get_gateway_resource_id_to_labels,
+    get_resource_id_to_labels,
+    get_resource_id_to_labels_by_label_ids,
 )
 from .snapshot import (
     filter_disabled_stages_by_gateway,
@@ -40,9 +40,9 @@ __all__ = [
     "filter_disabled_stages_by_gateway",
     "get_last_resource_updated_time",
     "get_resource_id_to_proxy_snapshot",
-    "get_resource_labels",
-    "get_resource_labels_by_gateway",
-    "get_resource_labels_by_ids",
+    "get_resource_id_to_labels",
+    "get_gateway_resource_id_to_labels",
+    "get_resource_id_to_labels_by_label_ids",
     "get_resource_updated_time",
     "get_resource_url_tmpl",
     "get_resource_use_stage_vars",

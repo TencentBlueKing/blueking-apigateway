@@ -44,7 +44,7 @@ from apigateway.components.bkpaas import (
 )
 from apigateway.core.constants import PublishSourceEnum
 from apigateway.core.models import Backend, PublishEvent, Release, ReleaseHistory, ResourceVersion
-from apigateway.service.resource import get_resource_labels_by_ids
+from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils import openapi as openapi_utils
 from apigateway.utils.exception import LockTimeout
@@ -98,7 +98,7 @@ class ReleaseAvailableResourceListApi(generics.ListAPIView):
             resources,
             many=True,
             context={
-                "labels": get_resource_labels_by_ids(label_ids),
+                "labels": get_resource_id_to_labels_by_label_ids(label_ids),
             },
         )
         return OKJsonResponse(data=output_slz.data)

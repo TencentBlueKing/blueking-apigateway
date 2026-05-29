@@ -20,20 +20,20 @@ from ddf import G
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.service.resource import (
     ensure_gateway_labels,
-    get_resource_labels,
-    get_resource_labels_by_gateway,
-    get_resource_labels_by_ids,
+    get_gateway_resource_id_to_labels,
+    get_resource_id_to_labels,
+    get_resource_id_to_labels_by_label_ids,
 )
 
 
-def test_get_resource_labels_by_gateway(fake_resource):
+def test_get_gateway_resource_id_to_labels(fake_resource):
     label_1 = G(APILabel, gateway=fake_resource.gateway, name="label1")
     label_2 = G(APILabel, gateway=fake_resource.gateway, name="label2")
 
     G(ResourceLabel, resource=fake_resource, api_label=label_1)
     G(ResourceLabel, resource=fake_resource, api_label=label_2)
 
-    assert get_resource_labels_by_gateway(fake_resource.gateway.id) == {
+    assert get_gateway_resource_id_to_labels(fake_resource.gateway.id) == {
         fake_resource.id: [
             {"id": label_1.id, "name": label_1.name},
             {"id": label_2.id, "name": label_2.name},
@@ -41,21 +41,23 @@ def test_get_resource_labels_by_gateway(fake_resource):
     }
 
 
-def test_get_resource_labels(fake_resource):
+def test_get_resource_id_to_labels(fake_resource):
     label = G(APILabel, gateway=fake_resource.gateway, name="label1")
     G(ResourceLabel, resource=fake_resource, api_label=label)
 
-    assert get_resource_labels([fake_resource.id]) == {fake_resource.id: [{"id": label.id, "name": label.name}]}
+    assert get_resource_id_to_labels([fake_resource.id]) == {fake_resource.id: [{"id": label.id, "name": label.name}]}
 
 
-def test_get_resource_labels_by_ids(fake_resource):
+def test_get_resource_id_to_labels_by_label_ids(fake_resource):
     label_1 = G(APILabel, gateway=fake_resource.gateway, name="label1")
     label_2 = G(APILabel, gateway=fake_resource.gateway, name="label2")
 
     G(ResourceLabel, resource=fake_resource, api_label=label_1)
     G(ResourceLabel, resource=fake_resource, api_label=label_2)
 
-    assert get_resource_labels_by_ids([label_1.id]) == {fake_resource.id: [{"id": label_1.id, "name": label_1.name}]}
+    assert get_resource_id_to_labels_by_label_ids([label_1.id]) == {
+        fake_resource.id: [{"id": label_1.id, "name": label_1.name}]
+    }
 
 
 def test_ensure_gateway_labels_creates_missing_labels(fake_gateway):

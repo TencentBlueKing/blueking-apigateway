@@ -58,7 +58,7 @@ from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageS
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
-from apigateway.service.resource import get_resource_labels_by_ids
+from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
@@ -100,7 +100,7 @@ class MCPServerHandler:
         ]
 
         label_ids = list({label_id for resource in tool_resources for label_id in resource.gateway_labels})
-        labels = get_resource_labels_by_ids(label_ids)
+        labels = get_resource_id_to_labels_by_label_ids(label_ids)
 
         return tool_resources, labels
 
