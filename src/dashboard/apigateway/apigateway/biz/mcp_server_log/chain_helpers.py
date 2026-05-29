@@ -146,6 +146,14 @@ def build_chain_summary(chain_data: dict) -> dict:
     # 获取 timestamp（从 chain_data 中获取）
     timestamp = chain_data.get("timestamp")
 
+    gateway_id = mcp_detail.get("gateway_id")
+    if gateway_id is None:
+        gateway_id = first_detail.get("gateway_id")
+
+    mcp_server_id = mcp_detail.get("mcp_server_id")
+    if mcp_server_id is None:
+        mcp_server_id = first_detail.get("mcp_server_id")
+
     return {
         "request_id": chain_data.get("request_id", ""),
         "x_request_id": chain_data.get("x_request_id", ""),
@@ -154,6 +162,9 @@ def build_chain_summary(chain_data: dict) -> dict:
         "service_count": len(services),
         "span_count": span_count,
         "status": status,
+        "gateway_id": gateway_id,
+        "gateway_name": mcp_detail.get("gateway_name", "") or first_detail.get("gateway_name", ""),
+        "mcp_server_id": mcp_server_id,
         "mcp_server_name": mcp_detail.get("mcp_server_name", "") or first_detail.get("mcp_server_name", ""),
         "mcp_method": mcp_detail.get("mcp_method", ""),
         "tool_name": mcp_detail.get("tool_name", ""),
