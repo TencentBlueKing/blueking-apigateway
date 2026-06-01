@@ -51,7 +51,9 @@ script:pre-request {
     if (pollStatus === 200) {
       return;
     }
-    await bru.sleep(intervalMs);
+    // 兼容旧版本 Bruno CLI（无 bru.sleep）
+    const waitUntil = Date.now() + intervalMs;
+    while (Date.now() < waitUntil) {}
   }
   throw new Error(
     "Resource detail still returning non-200 after " + maxAttempts + " attempts (" +

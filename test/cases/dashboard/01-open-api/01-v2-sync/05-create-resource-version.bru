@@ -15,17 +15,19 @@ headers {
   Content-Type: application/json
 }
 
+script:pre-request {
+  // 生成唯一 resource_version，避免重复执行导致同版本多条记录。
+  const resourceVersion = `1.0.${Date.now()}`;
+  bru.setVar("resource_version", resourceVersion);
+}
+
 body:json {
   {
-    "version": "1.0.0",
+    "version": "{{resource_version}}",
     "comment": "e2e test version"
   }
 }
 
 assert {
   res.status: lte 201
-}
-
-script:post-response {
-  bru.setVar("resource_version", "1.0.0");
 }
