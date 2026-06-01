@@ -67,7 +67,7 @@ class ComponentReleaser:
         assert self.resource_version
 
         for stage_id in Stage.objects.get_ids(self.gateway.id):
-            release_biz.release(
+            release_biz.release_gateway(
                 gateway=self.gateway,
                 stage_id=stage_id,
                 resource_version_id=self.resource_version.id,

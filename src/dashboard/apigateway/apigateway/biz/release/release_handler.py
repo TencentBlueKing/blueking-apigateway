@@ -35,7 +35,7 @@ from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistor
 from apigateway.utils.exception import LockTimeout
 from apigateway.utils.redis_utils import Lock
 
-from .gateway_releaser import ReleaseError, release
+from .gateway_releaser import ReleaseError, release_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class ReleaseHandler:
                     timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                     try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
                 ):
-                    release(
+                    release_gateway(
                         gateway=gateway,
                         stage_id=stage_id,
                         resource_version_id=resource_version_id,

@@ -210,7 +210,7 @@ class ReleaseCreateApi(generics.CreateAPIView):
                 timeout=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
                 try_get_times=settings.REDIS_PUBLISH_LOCK_RETRY_GET_TIMES,
             ):
-                history = release_biz.release(
+                history = release_biz.release_gateway(
                     gateway=request.gateway,
                     stage_id=slz.validated_data["stage_id"],
                     resource_version_id=resource_version_id,
