@@ -14,7 +14,6 @@ headers {
   X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
   Content-Type: application/json
   Accept: application/json, text/event-stream
-  Mcp-Session-Id: {{app_streamable_session_id}}
 }
 
 body:json {
@@ -29,8 +28,24 @@ body:json {
   }
 }
 
-assert {
-  res.status: eq 200
-  res.body.jsonrpc: eq 2.0
-  res.body.result.content: isDefined
+tests {
+  function jsonRpcBody() {
+    var body = res.getBody();
+    if (typeof body === "string") {
+      var match = body.match(/(?:^|\n)data:\s*(\{.*\})(?:\r?\n|$)/);
+      return JSON.parse(match ? match[1] : body);
+    }
+    return body;
+  }
+
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("tools/call response is valid", function() {
+    var data = jsonRpcBody();
+    expect(data.jsonrpc).to.equal("2.0");
+    expect(data.result).to.not.be.undefined;
+    expect(data.result.content).to.not.be.undefined;
+  });
 }
