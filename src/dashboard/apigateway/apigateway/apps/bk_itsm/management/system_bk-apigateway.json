@@ -827,31 +827,31 @@
               "label": "submit",
               "fields": {
                 "instance_approvers": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "bk_app_code": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "gateway_name": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "ticket__title": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "apply_record_id": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "apply_resources": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 },
                 "grant_dimension": {
-                  "state": "default",
+                  "state": "readonly",
                   "required": true
                 }
               },
@@ -1023,7 +1023,7 @@
                     "tips": "网关权限申请",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "标题",
                       "isHide": false
@@ -1088,7 +1088,7 @@
                     "tips": "申请资源所属网关名",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "网关名",
                       "isHide": false
@@ -1156,7 +1156,7 @@
                     "slot": [],
                     "type": "radio",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "权限维度",
                       "isHide": false
@@ -1245,7 +1245,7 @@
                     "tips": "权限对象",
                     "type": "textarea",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "权限对象",
                       "isHide": false
@@ -1311,7 +1311,7 @@
                     "tips": "申请应用",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "申请应用",
                       "isHide": false
@@ -1380,7 +1380,7 @@
                     "tips": "网关申请单据id",
                     "type": "number",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "网关申请单据id",
                       "isHide": false
@@ -1446,7 +1446,7 @@
                     "tips": "审批人",
                     "type": "multiUser",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "审批人",
                       "isHide": false
@@ -2879,7 +2879,7 @@
                     "tips": "请输入",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "标题",
                       "isHide": false
@@ -2939,7 +2939,7 @@
                     "tips": "申请资源所属网关名",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "网关名",
                       "isHide": false
@@ -3007,7 +3007,7 @@
                     "slot": [],
                     "type": "radio",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "权限维度",
                       "isHide": false
@@ -3096,7 +3096,7 @@
                     "tips": "权限对象",
                     "type": "textarea",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "权限对象",
                       "isHide": false
@@ -3162,7 +3162,7 @@
                     "tips": "申请应用",
                     "type": "text",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "申请应用",
                       "isHide": false
@@ -3231,7 +3231,7 @@
                     "tips": "网关申请单据id",
                     "type": "number",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "网关申请单据id",
                       "isHide": false
@@ -3297,7 +3297,7 @@
                     "tips": "审批人",
                     "type": "multiUser",
                     "class": [],
-                    "state": "default",
+                    "state": "readonly",
                     "title": {
                       "value": "审批人",
                       "isHide": false
