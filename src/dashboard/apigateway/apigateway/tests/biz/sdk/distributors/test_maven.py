@@ -21,7 +21,7 @@ import pytest
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.sdk import DistributeError
-from apigateway.biz.sdk.distributors import MAVEN_CENTRAL_URL, MavenSourceDistributor
+from apigateway.biz.sdk.distributors import MavenSourceDistributor
 
 
 @pytest.fixture
@@ -31,14 +31,19 @@ def sdk_context(sdk_context):
 
 
 @pytest.fixture
-def maven_config_base(faker):
+def default_maven_mirror_url(settings):
+    return settings.MAVEN_MIRRORS_CONFIG["default"]["mirror_url"]
+
+
+@pytest.fixture
+def maven_config_base(faker, default_maven_mirror_url):
     return {
         "repository_url": faker.url(),
         "repository_id": "test-maven",
         "username": faker.user_name(),
         "password": faker.password(),
         "ssl_insecure": False,
-        "mirror_url": "",
+        "mirror_url": default_maven_mirror_url,
     }
 
 
@@ -78,7 +83,15 @@ class TestMavenSourceDistributor:
 
         assert "com/tencent/bkapi/test-sdk/1.0.0/test-sdk-1.0.0.jar" in url
 
-    def test_distribute_with_ssl_insecure(self, sdk_context, settings, output_dir, tmpdir, faker):
+    def test_distribute_with_ssl_insecure(
+        self,
+        sdk_context,
+        settings,
+        output_dir,
+        tmpdir,
+        faker,
+        default_maven_mirror_url,
+    ):
         """测试配置了 ssl_insecure 时命令包含 SSL 跳过参数"""
         settings.MAVEN_MIRRORS_CONFIG = {
             "default": {
@@ -87,7 +100,7 @@ class TestMavenSourceDistributor:
                 "username": faker.user_name(),
                 "password": faker.password(),
                 "ssl_insecure": True,
-                "mirror_url": "",
+                "mirror_url": default_maven_mirror_url,
             }
         }
         distributor = MavenSourceDistributor(context=sdk_context)
@@ -153,8 +166,8 @@ class TestMavenSourceDistributor:
             command = call_args[0][0]
             assert f"-DmirrorUrl={mirror_url}" in command
 
-    def test_distribute_without_mirror_url_uses_default(self, distributor, output_dir, tmpdir):
-        """测试未配置镜像源时使用 Maven Central 作为默认值"""
+    def test_distribute_with_default_mirror_url(self, distributor, output_dir, tmpdir):
+        """测试使用 settings 中的默认镜像源"""
         # 创建一个假的 jar 文件
         jar_file = tmpdir.join("test.jar")
         jar_file.write("fake jar content")
@@ -164,10 +177,10 @@ class TestMavenSourceDistributor:
 
             distributor.distribute(output_dir, [str(jar_file)])
 
-            # 验证命令中使用了 Maven Central 作为默认镜像源
+            # 验证命令中使用 settings 中的默认镜像源
             call_args = mock_run.call_args
             command = call_args[0][0]
-            assert f"-DmirrorUrl={MAVEN_CENTRAL_URL}" in command
+            assert f"-DmirrorUrl={distributor.repository_config.mirror_url}" in command
 
     def test_distribute_empty_files(self, distributor, output_dir):
         """测试空文件列表时不执行任何操作"""
