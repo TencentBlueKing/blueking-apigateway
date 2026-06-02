@@ -22,7 +22,7 @@
     <template v-if="visibleData?.length > 0">
       <BkTag
         class="render-row-item flex-1 truncate"
-        :title="visibleData[0]"
+        :title="renderDisplayName(visibleData[0])"
       >
         {{ renderDisplayName(visibleData[0]) }}
       </BkTag>
@@ -48,7 +48,7 @@
             <BkTag
               v-for="(item, index) of overflowData"
               :key="index"
-              :title="item"
+              :title="renderDisplayName(item)"
               class="render-row-item mb-4px max-w-400px"
             >
               {{ renderDisplayName(item) }}
