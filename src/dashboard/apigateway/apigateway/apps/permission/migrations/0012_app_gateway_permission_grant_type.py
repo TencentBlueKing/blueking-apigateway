@@ -16,14 +16,30 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER, ItsmCallbackResultHandler
+from django.db import migrations, models
 
-__all__ = [
-    # constant
-    "ITSM_PERMISSION_APPROVAL_HANDLER",
-    # Enum
-    # class
-    "ItsmCallbackResultHandler",
-    # functions
-    # others
-]
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("permission", "0011_add_itsm_ticket_id"),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name="appapipermission",
+            name="grant_type",
+            field=models.CharField(
+                choices=[
+                    ("initialize", "主动授权"),
+                    ("apply", "申请审批"),
+                    ("renew", "续期"),
+                    ("auto_renew", "自动续期"),
+                    ("sync", "按网关授权同步"),
+                ],
+                db_index=True,
+                default="initialize",
+                max_length=16,
+            ),
+        ),
+    ]

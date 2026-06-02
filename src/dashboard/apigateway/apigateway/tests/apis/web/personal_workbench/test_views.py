@@ -26,6 +26,7 @@ from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStat
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
+from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Resource, Stage
 from apigateway.utils.time import now_datetime, timestamp
@@ -211,6 +212,40 @@ class TestWorkbenchGatewayFilterOptionListApi:
 
         gateway_ids = [item["id"] for item in result["data"]]
         assert fake_gateway.id in gateway_ids
+
+    def test_handled_returns_itsm_records_for_maintainer(self, request_view, fake_gateway, fake_other_gateway):
+        """handled 类型：ITSM 回调无实际审批人，返回当前用户维护网关下的 ITSM 已办记录"""
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            AppPermissionRecord,
+            gateway=fake_other_gateway,
+            bk_app_code="app2",
+            applied_by="applicant2",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.gateways",
+            data={"type": "handled"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_gateway.id in gateway_ids
+        assert fake_other_gateway.id not in gateway_ids
 
     def test_default_type_is_pending(self, request_view, fake_gateway):
         """默认 type 为 pending"""
@@ -1350,6 +1385,40 @@ class TestWorkbenchHandledGatewayPermissionListApi:
         assert result["data"]["results"][0]["handled_by"] == FAKE_USERNAME
         assert result["data"]["results"][0]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["gateway_name"] == fake_gateway.name
+
+    def test_list_includes_itsm_records_for_maintainer(self, request_view, fake_gateway, fake_other_gateway):
+        """测试我的已办 - API 网关：ITSM 回调无实际审批人，按当前用户维护网关补充可见记录"""
+        G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+        G(
+            AppPermissionRecord,
+            gateway=fake_other_gateway,
+            bk_app_code="app2",
+            applied_by="applicant2",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=ApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.gateway.handled",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "app1"
+        assert result["data"]["results"][0]["handled_by"] == ITSM_PERMISSION_APPROVAL_HANDLER
 
     def test_list_filter_by_status(self, request_view, fake_gateway):
         """测试我的已办 - API 网关：按 status 筛选"""

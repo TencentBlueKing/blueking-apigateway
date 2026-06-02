@@ -109,6 +109,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
         gateway_permissions = [
             {
                 "bk_app_code": perm.bk_app_code,
+                "grant_type": perm.grant_type,
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
                 "id": perm.id,
@@ -142,12 +143,8 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
     def get_queryset(self):
         query_params = self.request.query_params
         app_gateway_permissions = AppGatewayPermissionFilter(self.request.GET, queryset=self.get_gateway_queryset()).qs
-        # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
-        if (
-            query_params.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
-            or (query_params.get("grant_type") and query_params.get("grant_type") != GrantTypeEnum.INITIALIZE.value)
-            or query_params.get("resource_id")
-        ):
+        # 查询维度为资源或查询某个资源时，忽略网关维度权限
+        if query_params.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value or query_params.get("resource_id"):
             app_gateway_permissions = []
 
         app_resource_permissions = AppResourcePermissionFilter(
@@ -323,12 +320,8 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
             resource_queryset = self.get_resource_queryset()
         elif data["export_type"] == ExportTypeEnum.FILTERED.value:
             gateway_queryset = AppGatewayPermissionFilter(self.request.data, queryset=self.get_gateway_queryset()).qs
-            # 如果查询维度为资源 或者 授权类型不为 INITIALIZE(网关维度都为INITIALIZE)或者 查询某个资源 都要忽略掉网关维度的
-            if (
-                data.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value
-                or (data.get("grant_type") and data.get("grant_type") != GrantTypeEnum.INITIALIZE.value)
-                or data.get("resource_id")
-            ):
+            # 查询维度为资源或查询某个资源时，忽略网关维度权限
+            if data.get("grant_dimension") == GrantDimensionEnum.RESOURCE.value or data.get("resource_id"):
                 gateway_queryset = []
 
             resource_queryset = AppResourcePermissionFilter(

@@ -75,6 +75,7 @@ class AppPermissionApplyFilter(filters.FilterSet):
 class AppGatewayPermissionFilter(filters.FilterSet):
     bk_app_code = filters.CharFilter()
     keyword = filters.CharFilter(method="query_filter")
+    grant_type = filters.ChoiceFilter(choices=GrantTypeEnum.get_choices())
     order_by = filters.OrderingFilter(
         choices=[(field, field) for field in ["bk_app_code", "-bk_app_code", "expires", "-expires"]]
     )
@@ -84,6 +85,7 @@ class AppGatewayPermissionFilter(filters.FilterSet):
         fields = [
             "bk_app_code",
             "keyword",
+            "grant_type",
             "order_by",
         ]
 

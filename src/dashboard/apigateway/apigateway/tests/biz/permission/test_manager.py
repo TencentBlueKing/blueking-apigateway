@@ -21,7 +21,7 @@ from unittest import mock
 import pytest
 from ddf import G
 
-from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
 from apigateway.apps.permission.models import (
     AppGatewayPermission,
     AppPermissionApply,
@@ -87,7 +87,8 @@ class TestGatewayPermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppGatewayPermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 1
+        permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
+        assert permission.grant_type == GrantTypeEnum.APPLY.value
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_handle_permission_apply_rejected(self, fake_gateway):

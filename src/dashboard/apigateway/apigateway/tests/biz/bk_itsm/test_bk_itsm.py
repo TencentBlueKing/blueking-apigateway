@@ -25,9 +25,9 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionGrantTypeEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
-from apigateway.apps.permission.models import AppPermissionApply
-from apigateway.biz.bk_itsm import ItsmCallbackResultHandler
+from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum, GrantTypeEnum
+from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApply, AppPermissionRecord
+from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER, ItsmCallbackResultHandler
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -119,6 +119,46 @@ class TestItsmCallbackResultHandler:
         assert apply.status == ApplyStatusEnum.APPROVED.value
         mock_get_manager.assert_not_called()
 
+    def test_handle_gateway_callback_approved_grant_type_apply(self, fake_gateway):
+        record = G(
+            AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            applied_time=now_datetime(),
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+        )
+        apply = G(
+            AppPermissionApply,
+            gateway=fake_gateway,
+            bk_app_code="test-app",
+            applied_by="admin",
+            _resource_ids="",
+            grant_dimension=GrantDimensionEnum.API.value,
+            status=ApplyStatusEnum.PENDING.value,
+            apply_record_id=record.id,
+            itsm_ticket_id="itsm-ticket-004",
+            itsm_callback_token="cb-token-004",
+        )
+
+        ItsmCallbackResultHandler().handle(
+            ticket={
+                "id": "itsm-ticket-004",
+                "approve_result": True,
+                "form_data": {
+                    "apply_record_id": record.id,
+                    "grant_dimension": "gateway",
+                },
+            },
+            callback_token="cb-token-004",
+        )
+
+        permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
+        assert permission.grant_type == GrantTypeEnum.APPLY.value
+        assert not AppPermissionApply.objects.filter(id=apply.id).exists()
+
     def test_handle_mcp_callback_approved_updates_apply_and_sync_permissions(self, mocker, fake_gateway, fake_stage):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         apply = G(
@@ -151,7 +191,7 @@ class TestItsmCallbackResultHandler:
 
         apply.refresh_from_db()
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.APPROVED.value
-        assert apply.handled_by == "itsm"
+        assert apply.handled_by == ITSM_PERMISSION_APPROVAL_HANDLER
         assert apply.handled_time is not None
         mock_save_permission.assert_called_once_with(
             mcp_server_id=apply.mcp_server_id,

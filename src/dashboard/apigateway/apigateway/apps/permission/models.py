@@ -54,6 +54,12 @@ class AppGatewayPermission(TimestampedModelMixin):
     expires = models.DateTimeField(
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
+    grant_type = models.CharField(
+        max_length=16,
+        choices=GrantTypeEnum.get_choices(),
+        default=GrantTypeEnum.INITIALIZE.value,
+        db_index=True,
+    )
 
     objects: ClassVar[managers.AppGatewayPermissionManager] = managers.AppGatewayPermissionManager()
 

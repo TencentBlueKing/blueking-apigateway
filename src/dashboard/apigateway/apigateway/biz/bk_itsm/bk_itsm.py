@@ -35,6 +35,8 @@ from apigateway.utils.time import now_datetime
 
 logger = logging.getLogger(__name__)
 
+ITSM_PERMISSION_APPROVAL_HANDLER = "itsm"
+
 
 class ItsmCallbackResultHandler:
     """处理 ITSM 回调审批结果"""
@@ -146,7 +148,7 @@ class ItsmCallbackResultHandler:
                 apply=apply,
                 status=status_value,
                 comment="",
-                handled_by="itsm",
+                handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
                 part_resource_ids=None,
             )
 
@@ -197,7 +199,7 @@ class ItsmCallbackResultHandler:
                 else MCPServerAppPermissionApplyStatusEnum.REJECTED.value
             )
             apply.status = status_value
-            apply.handled_by = "itsm"
+            apply.handled_by = ITSM_PERMISSION_APPROVAL_HANDLER
             apply.handled_time = now_datetime()
             apply.save(update_fields=["status", "handled_by", "handled_time"])
 
