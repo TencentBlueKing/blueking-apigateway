@@ -466,6 +466,49 @@ class TestWorkbenchMCPServerFilterOptionListApi:
         assert mcp_item["gateway_id"] == fake_gateway.id
         assert mcp_item["gateway_name"] == fake_gateway.name
 
+    def test_handled_returns_itsm_records_for_maintainer(
+        self,
+        request_view,
+        fake_mcp_server,
+        fake_other_gateway,
+        make_mcp_server,
+    ):
+        """handled 类型：ITSM 回调无实际审批人，返回当前用户维护网关下的 MCP Server"""
+        other_mcp_server = make_mcp_server(fake_other_gateway)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=other_mcp_server,
+            bk_app_code="app2",
+            applied_by="applicant2",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_servers",
+            data={"type": "handled"},
+        )
+        result = resp.json()
+
+        mcp_ids = [item["id"] for item in result["data"]]
+        assert fake_mcp_server.id in mcp_ids
+        assert other_mcp_server.id not in mcp_ids
+
     def test_applied_excludes_deleted(self, request_view, fake_gateway, fake_mcp_server):
         """applied 类型：不返回已删除申请对应的 MCP Server"""
         G(
@@ -628,6 +671,31 @@ class TestWorkbenchMCPGatewayFilterOptionListApi:
 
         gateway_ids = [item["id"] for item in result["data"]]
         assert fake_gateway.id in gateway_ids
+
+    def test_handled_returns_itsm_records_for_maintainer(self, request_view, fake_mcp_server, fake_other_gateway):
+        """handled 类型：ITSM 回调无实际审批人，返回当前用户维护网关下的 MCP 记录网关"""
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.filter_options.mcp_gateways",
+            data={"type": "handled"},
+        )
+        result = resp.json()
+
+        gateway_ids = [item["id"] for item in result["data"]]
+        assert fake_mcp_server.gateway_id in gateway_ids
+        assert fake_other_gateway.id not in gateway_ids
 
     def test_applied_excludes_deleted(self, request_view, fake_gateway, fake_mcp_server):
         """applied 类型：不返回已删除申请对应的网关"""
@@ -1611,6 +1679,49 @@ class TestWorkbenchHandledMCPPermissionListApi:
         assert result["data"]["results"][0]["mcp_server"]["id"] == fake_mcp_server.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_id"] == fake_gateway.id
         assert result["data"]["results"][0]["mcp_server"]["gateway_name"] == fake_gateway.name
+
+    def test_list_includes_itsm_records_for_maintainer(
+        self,
+        request_view,
+        fake_mcp_server,
+        fake_other_gateway,
+        make_mcp_server,
+    ):
+        """测试我的已办 - MCP Server：ITSM 回调无实际审批人，按当前用户维护网关补充可见记录"""
+        other_mcp_server = make_mcp_server(fake_other_gateway)
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            applied_by="applicant1",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=other_mcp_server,
+            bk_app_code="app2",
+            applied_by="applicant2",
+            applied_time=now_datetime(),
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
+            handled_time=now_datetime(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="workbench.permissions.mcp.handled",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "app1"
+        assert result["data"]["results"][0]["handled_by"] == ITSM_PERMISSION_APPROVAL_HANDLER
 
     def test_list_includes_rejected(self, request_view, fake_gateway, fake_mcp_server):
         """测试我的已办 - 包含已驳回的记录"""

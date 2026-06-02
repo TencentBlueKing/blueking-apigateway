@@ -248,12 +248,9 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
             return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
-            # 我的已办：从用户处理过的记录中提取去重的 MCP Server
+            # 我的已办：从用户处理过的记录中提取去重的 MCP Server；ITSM 回调无实际审批人，按当前用户维护的网关补充
             mcp_server_ids = (
-                MCPServerAppPermissionApply.objects.filter(handled_by=username, is_deleted=False)
-                .exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
-                .values_list("mcp_server_id", flat=True)
-                .distinct()
+                self._get_handled_mcp_permission_apply_queryset().values_list("mcp_server_id", flat=True).distinct()
             )
             queryset = MCPServer.objects.select_related("gateway").filter(id__in=mcp_server_ids).order_by("name")
             return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
@@ -483,15 +480,8 @@ class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
     filterset_class = WorkbenchMCPPermissionApplyFilter
 
     def get_queryset(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        queryset = (
-            MCPServerAppPermissionApply.objects.filter(
-                handled_by=username,
-                is_deleted=False,
-            )
-            .exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
+        return (
+            self._get_handled_mcp_permission_apply_queryset()
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-handled_time")
         )
-        return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
