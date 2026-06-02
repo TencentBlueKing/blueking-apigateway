@@ -67,3 +67,26 @@ class TestStageWithResourceVersionV1SLZ:
             },
         )
         assert slz.data == expected
+
+
+class TestStageSLZ:
+    def test_validate_delegates_plugin_validation_to_stage_sync_handler(self, mocker, fake_gateway):
+        mocked_validate = mocker.patch(
+            "apigateway.apis.open.stage.serializers.StageSyncHandler.validate_plugin_configs"
+        )
+
+        slz = serializers.StageSLZ(context={"gateway": fake_gateway})
+        slz.validate(
+            {
+                "gateway": fake_gateway,
+                "backends": [
+                    {
+                        "name": "default",
+                        "config": {"hosts": [{"host": "http://example.com", "weight": 100}]},
+                    }
+                ],
+                "plugin_configs": [{"type": "test-plugin", "yaml": "enabled: true"}],
+            }
+        )
+
+        mocked_validate.assert_called_once_with([{"type": "test-plugin", "yaml": "enabled: true"}])
