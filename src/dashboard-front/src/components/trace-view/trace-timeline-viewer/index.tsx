@@ -29,7 +29,7 @@ interface IState {
   resizeObserver: any
 }
 
-const DEFAULT_MIN_VALUE = 240;
+const DEFAULT_MIN_VALUE = 198;
 
 const TProps = {
   updateViewRangeTime: Function as PropType<TUpdateViewRangeTimeFunction>,
@@ -47,8 +47,8 @@ export default defineComponent({
 
     const wrapperRef = ref<HTMLDivElement>();
     const virtualizedTraceViewRef = ref<InstanceType<typeof VirtualizedTraceView>>();
-    const spanNameColumnWidth = ref<number>(0.25);
-    const minSpanNameColumnWidth = ref<number>(0.25);
+    const spanNameColumnWidth = ref<number>(0.20);
+    const minSpanNameColumnWidth = ref<number>(0.20);
     const childrenHiddenIds = ref(new Set());
 
     const state = reactive<IState>({
@@ -177,9 +177,8 @@ export default defineComponent({
     const getSpanNameColumnWidth = () => {
       const elemWidth = wrapperRef.value?.getBoundingClientRect()?.width || 0;
       const minReact = Number((DEFAULT_MIN_VALUE / elemWidth).toFixed(2));
-      minSpanNameColumnWidth.value = minReact > 0.25 ? minReact : 0.25;
+      minSpanNameColumnWidth.value = minReact > 0.20 ? minReact : 0.20;
       if (minReact < spanNameColumnWidth.value) return;
-
       spanNameColumnWidth.value = Number(minReact);
     };
 

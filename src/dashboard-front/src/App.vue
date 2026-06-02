@@ -19,6 +19,7 @@
   <BkConfigProvider :locale="bkuiLocale">
     <div
       id="app"
+      class="app"
       :class="[
         systemCls,
         { 'show-notice-wrapper': enableShowNotice && showNoticeAlert}

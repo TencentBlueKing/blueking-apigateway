@@ -23,7 +23,7 @@
       v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selectedRows.length > 0 }"
       theme="primary"
       :disabled="!selectedRows.length"
-      class="batch-btn"
+      class="batch-approva"
       @click="handleBatchApply"
     >
       {{ t("批量审批") }}
@@ -222,7 +222,7 @@ defineExpose({
   min-height: 32px;
   flex-wrap: wrap;
 
-  .batch-btn {
+  .batch-approval {
     flex-shrink: 0;
     width: auto;
   }

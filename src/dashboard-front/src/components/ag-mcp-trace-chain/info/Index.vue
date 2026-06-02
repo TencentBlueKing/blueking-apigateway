@@ -48,7 +48,7 @@
             {{ t('总耗时') }}:
           </div>
           <div class="value">
-            {{ `${traceChainDetail?.total_latency_ms ?? 0 }ms` }}
+            {{ formattedLatency }}
           </div>
         </div>
         <div class="item">
@@ -94,8 +94,9 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
+import { isNumber } from 'lodash-es';
 import { t } from '@/locales';
-import type { ITraceDetail } from '@/services/source/observability';
+import type { ILatencyDistribution, ITraceDetail } from '@/services/source/observability';
 import AgStatusDot from '@/components/ag-status-dot/Index.vue';
 
 interface IProps { traceChainDetail?: ITraceDetail }
@@ -106,6 +107,16 @@ const isSuccessStatus = computed(() => {
   return traceChainDetail?.status
     && ((Number(traceChainDetail.status) >= 200
       && Number(traceChainDetail.status) < 300) || ['success'].includes(traceChainDetail.status));
+});
+const formattedLatency = computed(() => {
+  const totalLatency = traceChainDetail?.total_latency_ms ?? 0;
+  const results = isNumber(totalLatency)
+    ? totalLatency % 1 === 0 || totalLatency.toString().split('.')[1]?.length <= 2
+      ? totalLatency
+      : totalLatency.toFixed(3)
+    : 0;
+
+  return `${results}ms`;
 });
 
 const renderStatusDot = () => {
@@ -119,7 +130,7 @@ const renderLatencyDistribution = () => {
   const latencyDistribution = traceChainDetail?.latency_distribution;
 
   if (latencyDistribution?.length) {
-    return latencyDistribution.map((item: any) => `${item?.latency_ms}ms`)?.join(' - ');
+    return latencyDistribution.map((item: ILatencyDistribution) => `${item?.latency_ms}ms`)?.join(' - ');
   }
 
   return '0ms';

@@ -2489,5 +2489,6 @@
   "请选择申请时间": "请选择申请时间",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部通过": "应用{bk_app_code} 申请{resourceLength}个权限，全部通过",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回": "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回",
-  "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个"
+  "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个",
+  "单据接入了 ITSM，ITSM 不支持批量审批": "单据接入了 ITSM，ITSM 不支持批量审批"
 }

@@ -38,6 +38,7 @@
       :expandable="expandableConfig"
       :expanded-row-keys="expandableConfig.expandedRowKeys"
       :show-first-full-row="selectedRows.length > 0"
+      :disabled-check-selection="disabledSelection"
       :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign' }"
       :filter-value="filterData"
       :api-method="getTableData"
@@ -64,7 +65,7 @@
             local-page
             :max-height="378"
             :show-first-full-row="isShowSelection && curPermission.resource_ids?.length > 0"
-            :show-selection="isShowSelection"
+            :show-selection="isShowSelection && !disabledSelection(row)"
             :columns="childrenColumns"
             @selection-change="(selection) => handleChildSelectionChange(row, selection)"
           />
@@ -616,6 +617,12 @@ const fetchMcpServerFilterOptions = async () => {
   }
 };
 fetchMcpServerFilterOptions();
+
+const disabledSelection = (row: TableRowData) => {
+  const isDisabled = Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
+  return isDisabled;
+};
 
 // 批量网关审批提交
 const handleGatewayApproveReject = async () => {

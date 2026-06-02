@@ -2489,5 +2489,6 @@
   "请选择申请时间": "Please select application time",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部通过": "Application {bk_app_code} requested {resourceLength} permissions, all approved.",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回": "Application {bk_app_code} requested {resourceLength} permissions, all denied",
-  "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "Application {bk_app_code} requested {resourceLength} permissions, approved {selectLength} of them, and rejected {rejectLength}"
+  "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "Application {bk_app_code} requested {resourceLength} permissions, approved {selectLength} of them, and rejected {rejectLength}",
+  "单据接入了 ITSM，ITSM 不支持批量审批": "The ticket is integrated with ITSM; ITSM does not support batch approvals"
 }

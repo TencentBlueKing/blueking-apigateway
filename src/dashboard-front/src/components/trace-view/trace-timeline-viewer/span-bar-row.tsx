@@ -16,8 +16,10 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+import type { SetupContext } from 'vue';
 import { Divider, PopConfirm, Popover } from 'bkui-vue';
 import { bkTooltips } from 'bkui-vue/lib/directives';
+import { debounce } from 'lodash-es';
 import {
   type ViewedBoundsFunctionType,
   createViewedBoundsFunc,
@@ -86,7 +88,9 @@ const SpanBarRowProps = {
     type: Number,
     required: true,
   },
-};
+} as const;
+
+type SpanBarRowPropsType = ExtractPropTypes<typeof SpanBarRowProps>;
 
 export default defineComponent({
   name: 'SpanBarRow',
@@ -94,7 +98,13 @@ export default defineComponent({
   props: SpanBarRowProps,
   emits: ['toggleCollapse'],
 
-  setup(props: any, { emit }: any) {
+  setup(props: SpanBarRowPropsType, { emit }: SetupContext<['toggleCollapse']>) {
+    // 自动更新溢出状态
+    let resizeObserver: ResizeObserver | null = null;
+    // 服务名称文本溢出判断
+    const svcNameEl = ref<HTMLElement | null>(null);
+    const isSvcNameOverflow = ref(false);
+
     const traceStore = useTrace();
     const spanBarCurrentStore = useSpanBarCurrentInject();
     const childrenHiddenStore = useChildrenHiddenInject();
@@ -150,6 +160,15 @@ export default defineComponent({
       }) as ViewedBoundsFunctionType;
     };
 
+    // 服务名称是否溢出判断
+    const updateOverflow = debounce(() => {
+      if (!svcNameEl.value) return;
+
+      // 核心判断：文本是否溢出
+      isSvcNameOverflow.value
+        = svcNameEl.value.scrollWidth > svcNameEl.value.clientWidth;
+    }, 100);
+
     const detailToggle = () => {
       props.onDetailToggled?.(props.span?.span_id as string);
     };
@@ -177,7 +196,30 @@ export default defineComponent({
       emit('toggleCollapse', groupID, status);
     };
 
+    onMounted(() => {
+      nextTick(() => {
+        if (!svcNameEl.value) return;
+
+        resizeObserver = new ResizeObserver(() => {
+          updateOverflow();
+        });
+        resizeObserver.observe(svcNameEl.value);
+
+        updateOverflow();
+      });
+    });
+
+    onBeforeUnmount(() => {
+      if (resizeObserver && svcNameEl.value) {
+        resizeObserver.unobserve(svcNameEl.value);
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+    });
+
     return {
+      svcNameEl,
+      isSvcNameOverflow,
       activeSpan,
       showDuration,
       crossRelationInfo,
@@ -255,14 +297,6 @@ export default defineComponent({
           : ebpfTapPortName
         : operation;
     const labelDetail = `${displayServiceName}::${displayOperationName}`;
-    let errorDescription = '';
-    if (showErrorIcon) {
-      const item = attributes?.find?.(
-        (attr: { key: string }) => attr.key === 'span.status_message',
-      );
-      errorDescription = item?.value || '';
-    }
-
     const longLabel = `${label ? `${label} | ` : ''}${labelDetail}`;
 
     const kindIcons: Record<KindType, string> = {
@@ -346,9 +380,11 @@ export default defineComponent({
                       />
                     )}
                     <span
+                      ref="svcNameEl"
                       v-bk-tooltips={{
                         content: `${displayServiceName} ${displayOperationName} | ${label}`,
                         placement: 'top',
+                        disabled: !this.isSvcNameOverflow,
                       }}
                       class={[
                         'span-svc-name',
@@ -528,13 +564,13 @@ export default defineComponent({
                             ? (
                               <i
                                 class="icon-monitor icon-mc-fold-menu icon-collapsed"
-                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
+                                onClick={(e: MouseEvent) => this.handleToggleCollapse(e, groupInfo.id, 'collpase')}
                               />
                             )
                             : (
                               <span
                                 class="collapsed-mark"
-                                onClick={(e: any) => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
+                                onClick={(e: MouseEvent) => this.handleToggleCollapse(e, groupInfo.id, 'expand')}
                               >
                                 {groupInfo.members.length}
                               </span>

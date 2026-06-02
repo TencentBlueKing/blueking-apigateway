@@ -54,7 +54,10 @@
         :z-index="999"
       >
         <div class="trace-chain-content">
-          <AgMcpTraceChain :trace-chain-detail="traceData" />
+          <AgMcpTraceChain
+            v-if="isShow"
+            :trace-chain-detail="traceData"
+          />
         </div>
       </BkLoading>
     </template>
@@ -168,6 +171,10 @@ defineExpose({
 
   :deep(.bk-modal-body) {
     background-color: #f5f7fb;
+
+    .bk-modal-content {
+      scrollbar-gutter: auto !important;
+    }
   }
 
   .trace-chain-content {

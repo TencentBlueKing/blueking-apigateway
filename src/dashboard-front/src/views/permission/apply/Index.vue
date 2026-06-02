@@ -18,33 +18,30 @@
 <template>
   <CustomHeader />
   <div class="permission-apply-container page-wrapper-padding">
-    <div class="flex justify-between header">
+    <div class="flex items-center justify-between perm-approval-header">
       <BkButton
         v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selections.length }"
         theme="primary"
         :disabled="!selections.length"
+        class="batch-approval"
         @click="handleBatchApply"
       >
         {{ t("批量审批") }}
       </BkButton>
       <BkForm
-        class="flex header-filter"
-        label-width="120"
+        class="perm-approval-form"
+        label-width="auto"
       >
         <BkFormItem :label="t('蓝鲸应用ID')">
           <BkInput
             v-model="filterData.bk_app_code"
-            class="w-282px"
             clearable
             :placeholder="t('请输入应用ID')"
           />
         </BkFormItem>
-        <BkFormItem
-          :label="t('授权维度')"
-        >
+        <BkFormItem :label="t('授权维度')">
           <BkSelect
             v-model="filterData.grant_dimension"
-            class="w-282px"
           >
             <BkOption
               v-for="option of AUTHORIZATION_DIMENSION"
@@ -60,7 +57,6 @@
         >
           <BkInput
             v-model="filterData.applied_by"
-            class="w-282px"
             clearable
             :placeholder="t('请输入用户')"
           />
@@ -75,7 +71,6 @@
             :api-base-url="envStore.tenantUserDisplayAPI"
             :tenant-id="userStore.info.tenant_id"
             :placeholder="t('请输入用户')"
-            class="w-200px"
           />
         </BkFormItem>
       </BkForm>
@@ -92,6 +87,7 @@
         :expandable="expandableConfig"
         :expanded-row-keys="expandableConfig.expandedRowKeys"
         :show-first-full-row="selections.length > 0"
+        :disabled-check-selection="disabledSelection"
         :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign'}"
         :filter-value="filterValue"
         :api-method="getTableData"
@@ -109,7 +105,7 @@
             size="small"
             class="ag-expand-table"
             local-page
-            show-selection
+            :show-selection="!disabledSelection(row)"
             :max-height="378"
             :columns="childrenColumns"
             @selection-change="(selection) => handleRowSelectionChange(row, selection)"
@@ -141,6 +137,7 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { Button, Form, Loading, Message, Popover } from 'bkui-vue';
+import type { TableRowData } from '@blueking/tdesign-ui';
 import {
   getApigwResources,
   getPermissionApplyList,
@@ -149,7 +146,6 @@ import {
 import {
   useEnv,
   useFeatureFlag,
-  useGateway,
   usePermission,
   useUserInfo,
 } from '@/stores';
@@ -170,13 +166,17 @@ import AgTable from '@/components/ag-table/Index.vue';
 interface IApprovalListItemExt extends IApprovalListItem {
   id: number
   grant_dimension: string
+  selectionTip: string
   isExpand?: boolean
   selection?: any[]
   isSelectAll?: boolean
 }
 
+interface IProps { gatewayId?: number }
+
+const { gatewayId = 0 } = defineProps<IProps>();
+
 const envStore = useEnv();
-const gatewayStore = useGateway();
 const userStore = useUserInfo();
 const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
@@ -251,7 +251,7 @@ let applyActionDialogConf = reactive({
   isLoading: false,
 });
 
-const apigwId = computed(() => gatewayStore.apigwId);
+const apigwId = computed(() => gatewayId);
 // 批量审批dialog的title
 const batchApplyDialogConfTitle = computed(() => {
   return t(
@@ -352,10 +352,14 @@ const getTableColumns = computed((): any[] => {
       colKey: 'applied_by',
       title: t('申请人'),
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) =>
-        featureFlagStore.isEnableDisplayName
+      width: 160,
+      cell: (_: unknown, { row }: { row: Partial<IApprovalListItemExt> }) => {
+        if (!row?.applied_by) return '--';
+
+        return featureFlagStore.isEnableDisplayName
           ? <span><bk-user-display-name user-id={row.applied_by} /></span>
-          : <span>{row.applied_by}</span>,
+          : <span>{row.applied_by}</span>;
+      },
     },
     {
       colKey: 'created_time',
@@ -490,6 +494,12 @@ const handleRequestDone = () => {
     permissionStore.setCount(pageConf.total || 0);
   }
   getResourceList();
+};
+
+const disabledSelection = (row: TableRowData) => {
+  const isDisabled = Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
+  return isDisabled;
 };
 
 // 批量审批
@@ -682,29 +692,51 @@ const handleClearSelection = () => {
   background-color: #fafafa;
 }
 
-.header-filter {
+.perm-approval-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  min-height: 32px;
+  flex-wrap: wrap;
 
-  .bk-form-item {
-    margin-bottom: 16px;
+  .batch-approval {
+    flex-shrink: 0;
+    width: auto;
+  }
 
-    :deep(.bk-form-content) {
-      line-height: 30px;
+  .perm-approval-form {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 24px;
+    flex: 1;
+    min-width: 0;
 
-      .form-item-label {
-        padding: 5px 7px;
-        overflow: hidden;
-        line-height: 20px;
-        color: #4d4f56;
-        text-align: center;
-        text-overflow: ellipsis;
+    :deep(.bk-form-item) {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      max-width: fit-content;
+
+      .bk-form-label {
+        width: auto;
         white-space: nowrap;
-        background-color: #fafbfd;
-        border: 1px solid #c4c6cc;
-        border-radius: 2px 0 0 2px;
+        text-align: right;
       }
 
-      .form-item-value {
-        margin-left: -1px;
+      .bk-form-content {
+        width: 230px;
+
+        .bk-input,
+        .bk-user-selector,
+        .member-selector {
+          width: 100%;
+        }
       }
     }
   }
