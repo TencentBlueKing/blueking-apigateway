@@ -107,7 +107,7 @@ function isOutOfView(layout: TDraggingLeftLayout | TOutOfViewLayout): layout is 
 
 /**
  * Map from a sub range to the greater view range, e.g, when the view range is
- * the middle half ([0.25, 0.75]), a value of 0.25 befomes 3/8.
+ * the middle half ([0.20, 0.80]), a value of 0.20 befomes 3/8.
  * @returns {number}
  */
 function mapFromViewSubRange(viewStart: number, viewEnd: number, value: number): number {
@@ -116,7 +116,7 @@ function mapFromViewSubRange(viewStart: number, viewEnd: number, value: number):
 
 /**
  * Map a value from the view ([0, 1]) to a sub-range, e.g, when the view range is
- * the middle half ([0.25, 0.75]), a value of 3/8 becomes 1/4.
+ * the middle half ([0.20, 0.80]), a value of 3/8 becomes 1/4.
  * @returns {number}
  */
 function mapToViewSubRange(viewStart: number, viewEnd: number, value: number): number {

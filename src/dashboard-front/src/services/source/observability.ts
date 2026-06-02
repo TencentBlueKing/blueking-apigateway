@@ -197,6 +197,7 @@ export interface ILatencyDistribution {
   percentage: number
   service: string
   start_offset_ms: number
+  upstream?: string
 }
 
 // 根接口

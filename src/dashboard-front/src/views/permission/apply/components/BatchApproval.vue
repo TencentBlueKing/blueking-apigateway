@@ -94,10 +94,12 @@
   </BkDialog>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { Form } from 'bkui-vue';
+import type { TableRowData } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
+import { useFeatureFlag } from '@/stores';
 import AgTable from '@/components/ag-table/Index.vue';
 
 type IDialogParams = {
@@ -143,6 +145,8 @@ const {
 
 const emits = defineEmits<IEmits>();
 
+const featureFlagStore = useFeatureFlag();
+
 const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const approvalColumns = shallowRef([
   {
@@ -154,6 +158,10 @@ const approvalColumns = shallowRef([
     title: t('申请人'),
     colKey: 'applied_by',
     ellipsis: true,
+    cell: (_: unknown, { row }: { row: TableRowData }) =>
+      featureFlagStore.isEnableDisplayName && !!row.applied_by
+        ? <span><bk-user-display-name user-id={row.applied_by} /></span>
+        : <span>{row.applied_by || '--'}</span>,
   },
   {
     title: t('申请时间'),

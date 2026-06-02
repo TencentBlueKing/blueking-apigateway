@@ -69,7 +69,10 @@
           v-else
           class="body-content"
         >
-          <AgMcpTraceChain :trace-chain-detail="traceData" />
+          <AgMcpTraceChain
+            :key="componentKey"
+            :trace-chain-detail="traceData"
+          />
         </div>
       </BkLoading>
     </div>
@@ -95,6 +98,7 @@ const route = useRoute();
 const traceStore = useTrace();
 
 const searchKeyword = ref('');
+const componentKey = ref(0);
 const traceData = ref<any>(cloneDeep(DEFAULT_TRACE_DATA));
 
 // 空状态配置
@@ -139,6 +143,7 @@ const handleQueryTrace = async () => {
     return;
   }
 
+  componentKey.value++;
   traceStore.setTraceLoading(true);
 
   try {

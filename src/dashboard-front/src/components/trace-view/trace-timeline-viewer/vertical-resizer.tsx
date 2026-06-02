@@ -45,11 +45,13 @@ const VerticalResizerProps = {
   columnResizeHandleHeight: { type: Number },
 };
 
+type VerticalResizerPropsType = ExtractPropTypes<typeof VerticalResizerProps>;
+
 export default defineComponent({
   name: 'VerticalResizer',
   props: VerticalResizerProps,
 
-  setup(props: any) {
+  setup(props: VerticalResizerPropsType) {
     const verticalResizerRef = ref<HTMLDivElement>();
     const state = reactive<{ dragPosition: number | null }>({ dragPosition: null });
 

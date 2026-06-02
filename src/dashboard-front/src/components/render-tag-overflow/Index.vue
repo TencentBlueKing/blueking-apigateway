@@ -24,7 +24,7 @@
         class="render-row-item flex-1 truncate"
         :title="visibleData[0]"
       >
-        {{ visibleData[0] }}
+        {{ renderDisplayName(visibleData[0]) }}
       </BkTag>
     </template>
 

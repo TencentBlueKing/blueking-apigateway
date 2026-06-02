@@ -17,6 +17,7 @@
  */
 
 import _groupBy from 'lodash-es/groupBy';
+import { useElementSize } from '@vueuse/core';
 import type { ISpan } from '@/components/trace-view/typings';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
@@ -54,14 +55,22 @@ const SpanBarProps = {
     type: Number,
     default: 5,
   },
-};
+} as const;
+
+type SpanBarPropsType = ExtractPropTypes<typeof SpanBarProps>;
 
 export default defineComponent({
   name: 'SpanBar',
   props: SpanBarProps,
 
-  setup(props: any) {
+  setup(props: SpanBarPropsType) {
+    const textWidthCache = new Map<string, number>();
+    let canvasCtx: CanvasRenderingContext2D | null = null;
+
+    const wrapperRef = ref<HTMLElement | null>(null);
     const label = ref(props.shortLabel);
+
+    const { width: containerWidth } = useElementSize(wrapperRef);
 
     // 百分比格式化
     function toPercent(value: number): string {
@@ -91,68 +100,86 @@ export default defineComponent({
       return total && (props.span?.latency_ms ?? 0) >= total * 0.99;
     });
 
-    // 估算文字宽度（根据 label 长度和字体大小）
-    const estimateTextWidth = (text: string): number => {
-      // 这里的 8 是估算的每个字符的平均像素宽度（12px 字体）
-      const charWidth = 8;
-      // 加上 icon 的宽度和 gap
-      const iconWidth = 14;
-      const gap = 4;
-      return text.length * charWidth + iconWidth + gap;
+    // 自适应不同电脑设备的字体
+    const getCanvasContext = () => {
+      if (!canvasCtx) {
+        const canvas = document.createElement('canvas');
+        canvasCtx = canvas.getContext('2d');
+        if (canvasCtx) {
+          const appEl = document.querySelector('.app');
+          const fontMap = {
+            mac: 'PingFang SC, Microsoft Yahei, Helvetica, Arial',
+            win: 'Microsoft Yahei, Helvetica, Arial',
+          };
+
+          const key = appEl?.classList?.contains('win') ? 'win' : 'mac';
+
+          canvasCtx.font = `12px ${fontMap[key]}`;
+        }
+      }
+      return canvasCtx;
     };
 
-    // 文字放左边、右边还是线条里面
+    // 估算文字宽度（根据 label 长度和字体大小）
+    const estimateTextWidth = (text: string): number => {
+      if (textWidthCache.has(text)) {
+        return textWidthCache.get(text)!;
+      }
+
+      const ctx = getCanvasContext();
+      if (!ctx) {
+        // 按字符粗略估算
+        let width = 0;
+        for (const char of text) {
+          width += /[\x00-\x7F]/.test(char) ? 7 : 12;
+        }
+        const fallbackWidth = width + 14 + 4; // icon + gap
+        textWidthCache.set(text, fallbackWidth);
+        return fallbackWidth;
+      }
+
+      const metrics = ctx.measureText(text);
+      const textWidth = metrics.width + 14 + 4; // icon 宽度 + gap
+      textWidthCache.set(text, textWidth);
+      return textWidth;
+    };
+
+    // 文字放左边、右边还是线条里面, 优先使用 longLabel
     const labelPosition = computed(() => {
       if (isFullWidth.value) return 'inside';
+
+      const calcLabel = props.longLabel || props.label;
+      const textWidth = estimateTextWidth(calcLabel);
 
       const total = props.totalTraceDuration || 1;
       const startPos = viewStart.value / total;
       const endPos = viewEnd.value / total;
       const barWidth = endPos - startPos;
 
-      // 默认放右边
-      let position = 'right';
-      if (endPos > 0.8 && barWidth < 0.2) {
-        position = 'left';
+      const currentContainerWidth = containerWidth.value || 900;
+      const barPixelEnd = endPos * currentContainerWidth;
+      const barPixelStart = startPos * currentContainerWidth;
+
+      // 处理右边是否绝对放得下
+      const canRight = barPixelEnd + textWidth + 4 <= currentContainerWidth;
+
+      // 右端+窄条 → 尝试左边
+      const preferLeft = endPos > 0.8 && barWidth < 0.2;
+
+      if (preferLeft) {
+        // 特殊场景：先试左，左放不下再右；右也放不下才 inside
+        const canLeft = barPixelStart - textWidth - 4 >= 0;
+        if (canLeft) return 'left';
+        if (canRight) return 'right';
+        return 'inside';
       }
-
-      // 计算文字放在条外时是否会超出容器, 线条区域默认是900px
-      const textWidth = estimateTextWidth(label.value);
-      const containerWidth = 900;
-      const barPixelEnd = endPos * containerWidth;
-      const barPixelStart = startPos * containerWidth;
-      const barPixelWidth = barWidth * containerWidth;
-
-      // 右边模式：文字放在条右侧，需要判断 barPixelEnd + textWidth 是否超过容器宽度
-      if (position === 'right') {
-        // 条块结束位置 + 文字宽度 + 间距 4px > 容器宽度，就超出了
-        if (barPixelEnd + textWidth + 4 > containerWidth) {
-          // 再判断：条块宽度是否足够放下文字
-          if (barPixelWidth >= textWidth + 8) { // +8 是左右内边距
-            return 'inside';
-          }
-          else {
-            // 条块也放不下，只能放左边
-            return 'left';
-          }
-        }
+      else {
+        // 正常场景：【强制优先右】，右放不下才左；左也放不下才 inside
+        if (canRight) return 'right';
+        const canLeft = barPixelStart - textWidth - 4 >= 0;
+        if (canLeft) return 'left';
+        return 'inside';
       }
-
-      // 左边模式：文字放在条左侧，需要判断 barPixelStart - textWidth - 4 是否小于 0
-      if (position === 'left') {
-        if (barPixelStart - textWidth - 4 < 0) {
-          // 条块宽度足够的话，放里面
-          if (barPixelWidth >= textWidth + 8) {
-            return 'inside';
-          }
-          else {
-            // 条块也放不下，只能放右边（虽然会超出，但比被切掉好）
-            return 'right';
-          }
-        }
-      }
-
-      return position;
     });
 
     // 进度条样式
@@ -176,7 +203,12 @@ export default defineComponent({
       };
     });
 
+    onUnmounted(() => {
+      textWidthCache.clear();
+    });
+
     return {
+      wrapperRef,
       label,
       barStyle,
       labelPosition,
@@ -192,6 +224,7 @@ export default defineComponent({
 
     return (
       <div
+        ref="wrapperRef"
         class="span-bar-wrapper"
         onMouseout={this.setShortLabel}
         onMouseover={this.setLongLabel}

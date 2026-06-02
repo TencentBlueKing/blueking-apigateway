@@ -68,7 +68,10 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
         width={nameColumnWidth}
         className="ub-flex ub-px2"
       >
-        <h3 class="timeline-header-row-title">
+        <h3
+          v-bk-tooltips={{ content: `${t('服务')}&${t('操作')}` }}
+          class="timeline-header-row-title"
+        >
           {t('服务')}
           &amp;
           {t('操作')}
@@ -94,7 +97,7 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
       <VerticalResizer
         columnResizeHandleHeight={columnResizeHandleHeight}
         max={0.85}
-        min={Math.max(minSpanNameColumnWidth, 0.25)}
+        min={Math.max(minSpanNameColumnWidth, 0.20)}
         position={nameColumnWidth}
         onChange={onColumnWidthChange}
       />
