@@ -18,17 +18,24 @@
 import logging
 import os
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import ClassVar, List
 
 from apigateway.biz.sdk.models import Packager
+from apigateway.utils.maven import RepositoryConfig
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class SourcePackager(Packager):
+    repository: ClassVar[str] = "default"
+    repository_config: RepositoryConfig = field(init=False)
+
+    def __post_init__(self):
+        self.repository_config = RepositoryConfig.by_name(self.repository)
+
     def pack(self, output_dir: str) -> List[str]:
         # 保存当前工作目录
         original_dir = os.getcwd()
@@ -42,6 +49,7 @@ class SourcePackager(Packager):
                     str(Path(original_dir) / "apigateway/biz/sdk/maven/settings.xml"),
                     "clean",
                     "package",
+                    "-DmirrorUrl=" + self.repository_config.mirror_url,
                 ],
                 env={"HOME": output_dir},
                 cwd=output_dir,

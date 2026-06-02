@@ -308,7 +308,7 @@ def get_bkrepo_config(env: Env) -> dict:
                 "username": env.str("DEFAULT_MAVEN_USERNAME", "bk_apigateway"),
                 "password": env.str("DEFAULT_MAVEN_PASSWORD", "bk_apigateway"),
                 "ssl_insecure": env.bool("DEFAULT_MAVEN_SSL_INSECURE", False),
-                "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", ""),
+                "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", "https://repo.maven.apache.org/maven2"),
             }
         },
     }
