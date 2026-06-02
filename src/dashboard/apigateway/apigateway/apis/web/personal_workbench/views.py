@@ -16,19 +16,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from django.db.models import Q
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 
-from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
-from apigateway.apps.permission.models import AppPermissionApply, AppPermissionRecord
-from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
+from apigateway.apps.permission.constants import GrantDimensionEnum
+from apigateway.apps.permission.models import AppPermissionApply
 from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import ResourcePermissionHandler
+from apigateway.biz.personal_workbench import WorkbenchPermissionHandler
 from apigateway.common.tenant.query import (
     gateway_filter_by_user_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,
@@ -85,39 +83,19 @@ class WorkbenchPermissionMixin:
             get_user_tenant_id(self.request),
         )
 
-    def _get_current_maintainer_gateway_ids(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        queryset = Gateway.objects.filter(_maintainers__contains=username)
-        if tenant_id:
-            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
-
-        return [gateway.id for gateway in queryset if gateway.has_permission(username)]
-
     def _get_handled_gateway_permission_record_queryset(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        queryset = AppPermissionRecord.objects.filter(
-            Q(handled_by=username)
-            | Q(
-                handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
-                gateway_id__in=self._get_current_maintainer_gateway_ids(),
-            )
-        ).exclude(status=ApplyStatusEnum.PENDING.value)
-        return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
+        """获取当前用户已处理或通过 ITSM 处理的 API 网关权限申请记录"""
+        return WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(
+            self.request.user.username,
+            get_user_tenant_id(self.request),
+        )
 
     def _get_handled_mcp_permission_apply_queryset(self):
-        username = self.request.user.username
-        tenant_id = get_user_tenant_id(self.request)
-        queryset = MCPServerAppPermissionApply.objects.filter(
-            Q(handled_by=username)
-            | Q(
-                handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
-                mcp_server__gateway_id__in=self._get_current_maintainer_gateway_ids(),
-            ),
-            is_deleted=False,
-        ).exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
-        return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+        """获取当前用户已处理或通过 ITSM 处理的 MCP Server 权限申请记录"""
+        return WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(
+            self.request.user.username,
+            get_user_tenant_id(self.request),
+        )
 
 
 class ResourcePrefetchMixin:
