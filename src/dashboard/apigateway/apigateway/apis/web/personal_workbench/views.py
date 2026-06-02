@@ -83,20 +83,6 @@ class WorkbenchPermissionMixin:
             get_user_tenant_id(self.request),
         )
 
-    def _get_handled_gateway_permission_record_queryset(self):
-        """获取当前用户已处理或通过 ITSM 处理的 API 网关权限申请记录"""
-        return WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(
-            self.request.user.username,
-            get_user_tenant_id(self.request),
-        )
-
-    def _get_handled_mcp_permission_apply_queryset(self):
-        """获取当前用户已处理或通过 ITSM 处理的 MCP Server 权限申请记录"""
-        return WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(
-            self.request.user.username,
-            get_user_tenant_id(self.request),
-        )
-
 
 class ResourcePrefetchMixin:
     """批量预取资源详情 Mixin
@@ -173,7 +159,9 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.Lis
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的网关；ITSM 回调无实际审批人，按当前用户维护的网关补充
             gateway_ids = (
-                self._get_handled_gateway_permission_record_queryset().values_list("gateway_id", flat=True).distinct()
+                WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(username, tenant_id)
+                .values_list("gateway_id", flat=True)
+                .distinct()
             )
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
             return gateway_filter_by_user_tenant_id(queryset, tenant_id)
@@ -228,7 +216,9 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的 MCP Server；ITSM 回调无实际审批人，按当前用户维护的网关补充
             mcp_server_ids = (
-                self._get_handled_mcp_permission_apply_queryset().values_list("mcp_server_id", flat=True).distinct()
+                WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(username, tenant_id)
+                .values_list("mcp_server_id", flat=True)
+                .distinct()
             )
             queryset = MCPServer.objects.select_related("gateway").filter(id__in=mcp_server_ids).order_by("name")
             return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
@@ -283,7 +273,7 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的 MCP 记录中提取去重的网关；ITSM 回调无实际审批人，按当前用户维护的网关补充
             gateway_ids = (
-                self._get_handled_mcp_permission_apply_queryset()
+                WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(username, tenant_id)
                 .values_list("mcp_server__gateway_id", flat=True)
                 .distinct()
             )
@@ -435,7 +425,12 @@ class WorkbenchHandledGatewayPermissionListApi(ResourcePrefetchMixin, WorkbenchP
 
     def get_queryset(self):
         return (
-            self._get_handled_gateway_permission_record_queryset().select_related("gateway").order_by("-handled_time")
+            WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(
+                self.request.user.username,
+                get_user_tenant_id(self.request),
+            )
+            .select_related("gateway")
+            .order_by("-handled_time")
         )
 
 
@@ -459,7 +454,10 @@ class WorkbenchHandledMCPPermissionListApi(WorkbenchPermissionMixin, generics.Li
 
     def get_queryset(self):
         return (
-            self._get_handled_mcp_permission_apply_queryset()
+            WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(
+                self.request.user.username,
+                get_user_tenant_id(self.request),
+            )
             .select_related("mcp_server", "mcp_server__gateway")
             .order_by("-handled_time")
         )
