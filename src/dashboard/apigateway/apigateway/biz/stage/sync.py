@@ -48,18 +48,17 @@ class StageSyncHandler:
     @staticmethod
     def build_backend_item_config(backend_item: dict) -> dict:
         """Build backend config from one `backends` list item payload (used by open + v2/sync)."""
-        # `backend_item` may be shaped as {name, config} or already be the config object itself.
-        backend_config = backend_item.get("config", backend_item)
+        backend_config = backend_item["config"]
 
         hosts = []
-        for host in backend_config.get("hosts", []):
+        for host in backend_config["hosts"]:
             scheme, _host = host["host"].rstrip("/").split("://")
             hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
 
-        loadbalance = backend_config.get("loadbalance")
+        loadbalance = backend_config["loadbalance"]
         config = {
             "type": "node",
-            "timeout": backend_config.get("timeout"),
+            "timeout": backend_config["timeout"],
             "loadbalance": loadbalance,
             "hosts": hosts,
         }
@@ -68,7 +67,7 @@ class StageSyncHandler:
             config["hash_on"] = backend_config["hash_on"]
             config["key"] = backend_config["key"]
 
-        if "checks" in backend_config and backend_config["checks"]:
+        if backend_config.get("checks"):
             config["checks"] = backend_config["checks"]
 
         return config

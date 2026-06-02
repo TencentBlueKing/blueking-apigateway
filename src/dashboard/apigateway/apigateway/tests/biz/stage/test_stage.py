@@ -54,14 +54,17 @@ class TestStageHandler:
         assert expected == sorted(result)
 
 
-def test_stage_sync_preserves_backend_health_checks(fake_gateway):
+def test_stage_sync_preserves_backend_health_checks():
     config = StageSyncHandler.build_backend_item_config(
         {
-            "type": "node",
-            "timeout": 30,
-            "loadbalance": "roundrobin",
-            "hosts": [{"host": "http://example.com", "weight": 100}],
-            "checks": {"active": {"http_path": "/healthz"}},
+            "name": "default",
+            "config": {
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"host": "http://example.com", "weight": 100}],
+                "checks": {"active": {"http_path": "/healthz"}},
+            },
         }
     )
 
