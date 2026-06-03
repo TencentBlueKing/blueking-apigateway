@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import datetime
 import json
 
 import pytest
@@ -38,6 +39,7 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import Release, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
@@ -1303,13 +1305,28 @@ class TestMCPServerAppPermissionApplyListApi:
         )
 
     def test_list_processed_with_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server):
-        """测试按 mcp_server_id 查询已处理的审批"""
+        """测试按 mcp_server_id 查询已处理的审批，ITSM 审批记录按处理时间排序"""
+        handled_time = now_datetime()
+        # 普通审批，处理时间较早
         G(
             MCPServerAppPermissionApply,
             mcp_server=fake_mcp_server,
             bk_app_code="test-app",
             applied_by="admin",
-            applied_time=now_datetime(),
+            applied_time=handled_time,
+            handled_time=handled_time - datetime.timedelta(days=1),
+            handled_by="admin",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+        # ITSM 审批，处理时间较新
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="itsm-app",
+            applied_by="admin",
+            applied_time=handled_time,
+            handled_time=handled_time,
+            handled_by=ITSM_PERMISSION_APPROVAL_HANDLER,
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
         )
 
@@ -1318,12 +1335,14 @@ class TestMCPServerAppPermissionApplyListApi:
             view_name="mcp_server.app-permission-apply.list",
             path_params={"gateway_id": fake_gateway.id},
             gateway=fake_gateway,
-            data={"state": "processed", "mcp_server_id": fake_mcp_server.id},
+            data={"state": "processed", "mcp_server_id": fake_mcp_server.id, "limit": 1},
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["count"] == 1
+        assert result["data"]["count"] == 2
+        # ITSM 审批记录处理时间更新，应排在第一位
+        assert result["data"]["results"][0]["bk_app_code"] == "itsm-app"
 
     def test_list_all_mcp_servers_without_mcp_server_id(self, request_view, fake_gateway, fake_stage, faker):
         """测试不传 mcp_server_id 查询网关下所有 MCP Server 的审批"""
