@@ -55,7 +55,7 @@ class TestStageHandler:
 
 
 def test_stage_sync_preserves_backend_health_checks():
-    config = StageSyncHandler.build_backend_item_config(
+    config = StageSyncHandler.build_backend_config(
         {
             "name": "default",
             "config": {
@@ -71,8 +71,8 @@ def test_stage_sync_preserves_backend_health_checks():
     assert config["checks"] == {"active": {"http_path": "/healthz"}}
 
 
-def test_build_proxy_http_backend_config():
-    config = StageSyncHandler.build_proxy_http_backend_config(
+def test_build_legacy_backend_config():
+    config = StageSyncHandler.build_legacy_backend_config(
         {
             "timeout": 30,
             "upstreams": {
@@ -90,8 +90,8 @@ def test_build_proxy_http_backend_config():
     }
 
 
-def test_build_backend_item_config_with_chash_and_checks():
-    config = StageSyncHandler.build_backend_item_config(
+def test_build_backend_config_with_chash_and_checks():
+    config = StageSyncHandler.build_backend_config(
         {
             "name": "default",
             "config": {

@@ -372,7 +372,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         proxy_http_config = validated_data.get("proxy_http")
         # 兼容老的配置
         if proxy_http_config is not None and len(proxy_http_config) != 0:
-            config = StageSyncHandler.build_proxy_http_backend_config(proxy_http_config)
+            config = StageSyncHandler.build_legacy_backend_config(proxy_http_config)
             backend_config = BackendConfig(
                 gateway=instance.gateway,
                 backend=backend,
@@ -398,7 +398,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 gateway=instance.gateway,
                 name=backend_info["name"],
             )
-            config = StageSyncHandler.build_backend_item_config(backend_info)
+            config = StageSyncHandler.build_backend_config(backend_info)
             backend_config = BackendConfig(
                 gateway=instance.gateway,
                 backend=backend,
@@ -447,7 +447,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     stage=instance,
                 )
 
-            backend_config.config = StageSyncHandler.build_proxy_http_backend_config(proxy_http_config)
+            backend_config.config = StageSyncHandler.build_legacy_backend_config(proxy_http_config)
             backend_config.save()
 
             # create or update header rewrite plugin config
@@ -478,7 +478,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     backend=backend,
                     stage=instance,
                 )
-            backend_config.config = StageSyncHandler.build_backend_item_config(backend_info)
+            backend_config.config = StageSyncHandler.build_backend_config(backend_info)
             backend_config.save()
 
         # 4. sync stage plugin

@@ -31,7 +31,7 @@ from apigateway.service.plugin import PluginConfigYamlValidator
 
 class StageSyncHandler:
     @staticmethod
-    def build_proxy_http_backend_config(proxy_http_config: dict) -> dict:
+    def build_legacy_backend_config(proxy_http_config: dict) -> dict:
         """Build backend config from open-v1 proxy_http input payload."""
         hosts = []
         for host in proxy_http_config["upstreams"]["hosts"]:
@@ -46,7 +46,7 @@ class StageSyncHandler:
         }
 
     @staticmethod
-    def build_backend_item_config(backend_item: dict) -> dict:
+    def build_backend_config(backend_item: dict) -> dict:
         """Build backend config from one `backends` list item payload (used by open + v2/sync)."""
         backend_config = backend_item["config"]
 
@@ -73,7 +73,7 @@ class StageSyncHandler:
         return config
 
     @staticmethod
-    def validate_plugin_configs(plugin_configs: Optional[List[Dict[str, Any]]]) -> Optional[List[Dict[str, Any]]]:
+    def validate_plugin_configs(plugin_configs: Optional[List[Dict[str, Any]]]) -> None:
         """
         校验插件配置
         - 1. 插件类型不能重复
@@ -81,7 +81,7 @@ class StageSyncHandler:
         - 3. 插件配置，必须符合插件类型的 schema 约束
         """
         if not plugin_configs:
-            return plugin_configs
+            return
 
         types = set()
         for plugin_config in plugin_configs:
@@ -117,7 +117,7 @@ class StageSyncHandler:
                     )
                 )
 
-        return plugin_configs
+        return
 
     @staticmethod
     def sync_plugin_configs(gateway_id: int, stage_id: int, plugin_configs: Optional[List[Dict[str, Any]]]) -> None:

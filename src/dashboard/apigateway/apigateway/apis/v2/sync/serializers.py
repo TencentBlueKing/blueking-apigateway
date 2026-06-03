@@ -461,7 +461,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                 gateway=instance.gateway,
                 name=backend_info["name"],
             )
-            config = StageSyncHandler.build_backend_item_config(backend_info)
+            config = StageSyncHandler.build_backend_config(backend_info)
             backend_config = BackendConfig(
                 gateway=instance.gateway,
                 backend=backend,
@@ -510,7 +510,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     backend=backend,
                     stage=instance,
                 )
-            backend_config.config = StageSyncHandler.build_backend_item_config(backend_info)
+            backend_config.config = StageSyncHandler.build_backend_config(backend_info)
             backend_config.save()
 
         # 4. sync stage plugin
