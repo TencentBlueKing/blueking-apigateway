@@ -158,11 +158,8 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.Lis
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的网关；ITSM 回调无实际审批人，按当前用户维护的网关补充
-            gateway_ids = (
-                WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(username, tenant_id)
-                .values_list("gateway_id", flat=True)
-                .distinct()
-            )
+            queryset = WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(username, tenant_id)
+            gateway_ids = queryset.values_list("gateway_id", flat=True).distinct()
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
             return gateway_filter_by_user_tenant_id(queryset, tenant_id)
 
