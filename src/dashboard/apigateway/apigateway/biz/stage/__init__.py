@@ -17,12 +17,14 @@
 #
 
 from .stage import StageHandler
+from .sync import StageSyncHandler
 
 __all__ = [
     # constant
     # Enum
     # class
     "StageHandler",
+    "StageSyncHandler",
     # functions
     # others
 ]

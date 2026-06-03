@@ -18,7 +18,7 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ
+from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncInputSLZ
 
 
 class TestSDKGenerateInputSLZ:
@@ -45,3 +45,24 @@ class TestSDKGenerateInputSLZ:
         assert slz.is_valid() is is_valid
         if not is_valid:
             assert "version" in slz.errors
+
+
+class TestStageSyncInputSLZ:
+    def test_validate_delegates_plugin_validation_to_stage_sync_handler(self, mocker, fake_gateway):
+        mocked_validate = mocker.patch("apigateway.apis.v2.sync.serializers.StageSyncHandler.validate_plugin_configs")
+
+        slz = StageSyncInputSLZ(context={"gateway": fake_gateway})
+        slz.validate(
+            {
+                "gateway": fake_gateway,
+                "backends": [
+                    {
+                        "name": "default",
+                        "config": {"hosts": [{"host": "http://example.com", "weight": 100}]},
+                    }
+                ],
+                "plugin_configs": [{"type": "test-plugin", "yaml": "enabled: true"}],
+            }
+        )
+
+        mocked_validate.assert_called_once_with([{"type": "test-plugin", "yaml": "enabled: true"}])

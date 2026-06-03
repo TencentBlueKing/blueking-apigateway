@@ -16,19 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Optional
-
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
-from pydantic import TypeAdapter
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
-from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
+from apigateway.biz.stage import StageSyncHandler
 from apigateway.biz.validators import (
     MaxCountPerGatewayValidator,
     ProgrammableGatewayStageNameValidator,
@@ -49,7 +45,7 @@ from apigateway.core.constants import (
     LoadBalanceTypeEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Stage
-from apigateway.service.plugin import HeaderRewriteConvertor, PluginConfigYamlValidator
+from apigateway.service.plugin import HeaderRewriteConvertor
 
 
 class StageV1SLZ(serializers.Serializer):
@@ -354,7 +350,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        self._validate_plugin_configs(data.get("plugin_configs"))
+        StageSyncHandler.validate_plugin_configs(data.get("plugin_configs"))
         if data.get("backends"):
             self._validate_scheme_host(data.get("backends"))
 
@@ -376,7 +372,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         proxy_http_config = validated_data.get("proxy_http")
         # 兼容老的配置
         if proxy_http_config is not None and len(proxy_http_config) != 0:
-            config = self._get_stage_backend_config(proxy_http_config)
+            config = StageSyncHandler.build_legacy_backend_config(proxy_http_config)
             backend_config = BackendConfig(
                 gateway=instance.gateway,
                 backend=backend,
@@ -397,14 +393,12 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
 
         # 3.create config backend
         backend_configs = []
-        names = [DEFAULT_BACKEND_NAME]
         for backend_info in validated_data.get("backends", []):
-            names.append(backend_info["name"])
             backend, _ = Backend.objects.get_or_create(
                 gateway=instance.gateway,
                 name=backend_info["name"],
             )
-            config = self._get_stage_backend_config_v2(backend_info)
+            config = StageSyncHandler.build_backend_config(backend_info)
             backend_config = BackendConfig(
                 gateway=instance.gateway,
                 backend=backend,
@@ -417,40 +411,13 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             BackendConfig.objects.bulk_create(backend_configs)
 
         # 4. sync stage plugin
-        self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
+        StageSyncHandler.sync_plugin_configs(
+            gateway_id=instance.gateway_id,
+            stage_id=instance.id,
+            plugin_configs=validated_data.get("plugin_configs", None),
+        )
 
         return instance
-
-    def _get_stage_backend_config(self, proxy_http_config):
-        hosts = []
-        for host in proxy_http_config["upstreams"]["hosts"]:
-            scheme, _host = host["host"].rstrip("/").split("://")
-            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-
-        return {
-            "type": "node",
-            "timeout": proxy_http_config["timeout"],
-            "loadbalance": proxy_http_config["upstreams"]["loadbalance"],
-            "hosts": hosts,
-        }
-
-    def _get_stage_backend_config_v2(self, backend: dict):
-        hosts = []
-        for host in backend["config"]["hosts"]:
-            scheme, _host = host["host"].rstrip("/").split("://")
-            hosts.append({"scheme": scheme, "host": _host, "weight": host["weight"]})
-        loadbalance = backend["config"]["loadbalance"]
-        config = {
-            "type": "node",
-            "timeout": backend["config"]["timeout"],
-            "loadbalance": loadbalance,
-            "hosts": hosts,
-        }
-        if loadbalance == LoadBalanceTypeEnum.CHASH.value:
-            config["hash_on"] = backend["config"]["hash_on"]
-            config["key"] = backend["config"]["key"]
-
-        return config
 
     def update(self, instance, validated_data):
         validated_data.pop("name", None)
@@ -480,7 +447,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     stage=instance,
                 )
 
-            backend_config.config = self._get_stage_backend_config(proxy_http_config)
+            backend_config.config = StageSyncHandler.build_legacy_backend_config(proxy_http_config)
             backend_config.save()
 
             # create or update header rewrite plugin config
@@ -511,58 +478,17 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
                     backend=backend,
                     stage=instance,
                 )
-            backend_config.config = self._get_stage_backend_config_v2(backend_info)
+            backend_config.config = StageSyncHandler.build_backend_config(backend_info)
             backend_config.save()
 
         # 4. sync stage plugin
-        self._sync_plugins(instance.gateway_id, instance.id, validated_data.get("plugin_configs", None))
+        StageSyncHandler.sync_plugin_configs(
+            gateway_id=instance.gateway_id,
+            stage_id=instance.id,
+            plugin_configs=validated_data.get("plugin_configs", None),
+        )
 
         return instance
-
-    def _validate_plugin_configs(self, plugin_configs):
-        """
-        校验插件配置
-        - 1. 插件类型不能重复
-        - 2. 插件类型必须已存在
-        - 3. 插件配置，必须符合插件类型的 schema 约束
-        """
-        if not plugin_configs:
-            return
-
-        types = set()
-        for plugin_config in plugin_configs:
-            plugin_type = plugin_config["type"]
-            if plugin_type in types:
-                raise serializers.ValidationError(_("插件类型重复：{plugin_type}。").format(plugin_type=plugin_type))
-            types.add(plugin_type)
-
-        all_plugin_type = PluginType.objects.all()
-
-        exist_plugin_types = set(all_plugin_type.values_list("code", flat=True))
-        not_exist_types = types - exist_plugin_types
-        if not_exist_types:
-            raise serializers.ValidationError(
-                _("插件类型 {not_exist_types} 不存在。").format(not_exist_types=", ".join(not_exist_types))
-            )
-
-        plugin_types = {plugin_type.code: plugin_type for plugin_type in all_plugin_type}
-        yaml_validator = PluginConfigYamlValidator()
-
-        for plugin_config in plugin_configs:
-            plugin_type = plugin_types[plugin_config["type"]]
-            try:
-                yaml_validator.validate(
-                    plugin_type.code,
-                    plugin_config["yaml"],
-                    plugin_type.schema and plugin_type.schema.schema,
-                )
-            except Exception as err:  # pylint: disable=broad-except
-                raise serializers.ValidationError(
-                    _("插件配置校验失败，插件类型：{plugin_type_code}，错误信息：{err}。").format(
-                        plugin_type_code=plugin_type.code,
-                        err=err,
-                    )
-                )
 
     def _validate_scheme_host(self, backends):
         if backends is None:
@@ -570,16 +496,3 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         for backend in backends:
             validator = SchemeHostInputValidator(hosts=backend["config"]["hosts"], backend=backend)
             validator.validate_scheme(CallSourceTypeEnum.OpenAPI.value)
-
-    def _sync_plugins(self, gateway_id: int, stage_id: int, plugin_configs: Optional[Dict[str, Any]] = None):
-        # plugin_configs 为 None 则，plugin_config_datas 设置 [] 则清空对应配置
-        plugin_config_datas = (
-            TypeAdapter(Optional[List[PluginConfigData]]).validate_python(plugin_configs) if plugin_configs else []
-        )
-        scope_id_to_plugin_configs = {stage_id: plugin_config_datas}
-        synchronizer = PluginSynchronizer()
-        synchronizer.sync(
-            gateway_id=gateway_id,
-            scope_type=PluginBindingScopeEnum.STAGE,
-            scope_id_to_plugin_configs=scope_id_to_plugin_configs,
-        )
