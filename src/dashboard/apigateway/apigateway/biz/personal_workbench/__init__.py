@@ -16,14 +16,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from .bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER, ItsmCallbackResultHandler
+from .permission import WorkbenchPermissionHandler
 
 __all__ = [
     # constant
-    "ITSM_PERMISSION_APPROVAL_HANDLER",
     # Enum
     # class
-    "ItsmCallbackResultHandler",
+    "WorkbenchPermissionHandler",
     # functions
     # others
 ]

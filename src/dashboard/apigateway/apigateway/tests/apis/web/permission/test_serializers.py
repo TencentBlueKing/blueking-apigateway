@@ -89,6 +89,7 @@ class TestAppPermissionOutputSLZ(TestCase):
             gateway=gateway,
             bk_app_code="test",
             expires=None,
+            grant_type="apply",
         )
 
         app_resource_permission = G(
@@ -120,7 +121,7 @@ class TestAppPermissionOutputSLZ(TestCase):
                 "resource_method": "",
                 "expires": None,
                 "grant_dimension": "api",
-                "grant_type": "initialize",
+                "grant_type": "apply",
                 "renewable": False,
                 "id": app_api_permission.id,
             },

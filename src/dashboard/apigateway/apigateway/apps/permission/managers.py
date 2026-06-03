@@ -35,12 +35,20 @@ class AppGatewayPermissionManager(models.Manager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
-    def save_permissions(self, gateway, resource_ids=None, bk_app_code=None, grant_type=None, expire_days=None):
+    def save_permissions(
+        self,
+        gateway,
+        resource_ids=None,
+        bk_app_code=None,
+        grant_type=GrantTypeEnum.INITIALIZE.value,
+        expire_days=None,
+    ):
         obj, _ = self.update_or_create(
             gateway=gateway,
             bk_app_code=bk_app_code,
             defaults={
                 "expires": calculate_expires(expire_days),
+                "grant_type": grant_type,
             },
         )
         return obj

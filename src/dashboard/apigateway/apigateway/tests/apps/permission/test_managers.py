@@ -22,7 +22,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apps.permission import models
-from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
+from apigateway.apps.permission.constants import GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.core.models import Gateway, Resource
 from apigateway.tests.utils.testing import dummy_time
 from apigateway.utils.time import now_datetime, to_datetime_from_now
@@ -45,6 +45,16 @@ class TestAppAPIPermissionManager:
         G(models.AppGatewayPermission, gateway=gateway_2, bk_app_code=unique_id)
 
         assert models.AppGatewayPermission.objects.filter_public_permission_by_app(unique_id).count() == 1
+
+    def test_save_permissions(self):
+        permission = models.AppGatewayPermission.objects.save_permissions(
+            gateway=self.gateway,
+            bk_app_code="test",
+            grant_type=GrantTypeEnum.APPLY.value,
+            expire_days=180,
+        )
+
+        assert permission.grant_type == GrantTypeEnum.APPLY.value
 
     def test_renew_by_ids(self):
         perm_1 = G(
