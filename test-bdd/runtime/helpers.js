@@ -177,22 +177,61 @@ async function dismissLoginOverlays(page) {
   }
 }
 
+async function waitForLoginSurface(page, timeout = 30000) {
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    await dismissLoginOverlays(page);
+
+    if (await hasAuthenticatedSession(page)) {
+      return 'authenticated';
+    }
+
+    if (await page.locator('input[placeholder="请输入用户名"]').isVisible({ timeout: 500 }).catch(() => false)) {
+      return 'chinese';
+    }
+
+    if (await page.locator('#user').isVisible({ timeout: 500 }).catch(() => false)) {
+      return 'id';
+    }
+
+    const englishUsername = page.locator(
+      'input[placeholder="Please enter your username"], input[name="username"], input[type="text"]'
+    ).first();
+    const englishPassword = page.locator(
+      'input[placeholder="Please enter your password"], input[name="password"], input[type="password"]'
+    ).first();
+    if (
+      await englishUsername.isVisible({ timeout: 500 }).catch(() => false)
+      && await englishPassword.isVisible({ timeout: 500 }).catch(() => false)
+    ) {
+      return 'english';
+    }
+
+    if (await isTransientUnavailablePage(page)) {
+      await page.waitForTimeout(2000);
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForLoadState('networkidle').catch(() => {});
+      continue;
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  return 'unknown';
+}
+
 /**
  * Full login flow using environment credentials.
  * Handles both Chinese and English login forms.
  */
 async function login(page) {
-  await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(1000);
+  await gotoWithTransientWait(page, BASE_URL);
   await dismissLoginOverlays(page);
 
-  const loginForm = page.locator(
-    'input[placeholder="请输入用户名"], #user, input[placeholder="Please enter your username"], input[type="password"]'
-  ).first();
-  const hasLoginForm = await loginForm.isVisible({ timeout: 3000 }).catch(() => false);
+  const loginState = await waitForLoginSurface(page, 30000);
   const url = page.url();
-  if (!hasLoginForm && !url.includes('/login/') && await waitForAuthenticatedSession(page, 5000)) {
+  if (loginState === 'authenticated' || !url.includes('/login/') && await waitForAuthenticatedSession(page, 5000)) {
     return; // already logged in
   }
 
@@ -206,25 +245,21 @@ async function login(page) {
     return;
   }
 
-  // Chinese form detection
-  const hasChineseForm = await page.locator('input[placeholder="请输入用户名"]').isVisible().catch(() => false);
-
-  if (hasChineseForm) {
+  if (loginState === 'chinese') {
     await page.locator('input[placeholder="请输入用户名"], #user').first().fill(USERNAME);
     await page.locator('input[placeholder="请输入密码"], #password').first().fill(PASSWORD);
     await page.locator('button').filter({ hasText: '立即登录' }).evaluate((button) => button.click());
+  } else if (loginState === 'id') {
+    await page.locator('#user').fill(USERNAME);
+    await page.locator('#password').fill(PASSWORD);
+    await page.locator('.login-btn, button').filter({ hasText: /立即登录|Log in/i }).first().evaluate((button) => button.click());
+  } else if (loginState === 'english') {
+    await page.locator('input[placeholder="Please enter your username"], input[name="username"], input[type="text"]').first().fill(USERNAME);
+    await page.locator('input[placeholder="Please enter your password"], input[name="password"], input[type="password"]').first().fill(PASSWORD);
+    await page.getByRole('button', { name: /log in/i }).evaluate((button) => button.click());
   } else {
-    // English form fallback
-    const hasIdUser = await page.locator('#user').isVisible().catch(() => false);
-    if (hasIdUser) {
-      await page.locator('#user').fill(USERNAME);
-      await page.locator('#password').fill(PASSWORD);
-      await page.locator('.login-btn').evaluate((button) => button.click());
-    } else {
-      await page.locator('input[placeholder="Please enter your username"], input[name="username"], input[type="text"]').first().fill(USERNAME);
-      await page.locator('input[placeholder="Please enter your password"], input[name="password"], input[type="password"]').first().fill(PASSWORD);
-      await page.getByRole('button', { name: /log in/i }).evaluate((button) => button.click());
-    }
+    const bodyText = await page.locator('body').textContent({ timeout: 1000 }).catch(() => '');
+    throw new Error(`Login form not ready after waiting: ${bodyText.slice(0, 120)}`);
   }
 
   // Wait for redirect away from login
@@ -293,6 +328,48 @@ const SUB_MENU_PARENTS = {
   'MCP权限审批': '权限管理',
 };
 
+async function isTransientUnavailablePage(page) {
+  const bodyText = await page.locator('body').textContent({ timeout: 1000 }).catch(() => '');
+  return /OperationalError|Can't connect to MySQL server|Name or service not known|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|503|系统出现异常|努力恢复中|请稍后再试/i
+    .test(bodyText || '');
+}
+
+async function gotoWithTransientWait(page, url, options = {}) {
+  const attempts = options.attempts || 5;
+  let lastNavigationError = null;
+  let lastStatus = 0;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    lastNavigationError = null;
+    lastStatus = 0;
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded' }).catch((error) => {
+      lastNavigationError = error;
+      return null;
+    });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    lastStatus = response ? response.status() : 0;
+    const transientUnavailable = lastNavigationError
+      || lastStatus >= 500
+      || await isTransientUnavailablePage(page);
+
+    if (!transientUnavailable) {
+      await page.waitForTimeout(1000);
+      return;
+    }
+
+    if (attempt < attempts) {
+      await page.waitForTimeout(Math.min(15000, 3000 * attempt));
+    }
+  }
+
+  throw new Error(
+    `Dashboard page stayed unavailable after ${attempts} attempts: ${url}`
+    + (lastStatus ? ` (last status: ${lastStatus})` : '')
+    + (lastNavigationError ? ` (${lastNavigationError.message})` : '')
+  );
+}
+
 /**
  * Navigate to a gateway sub-page by first loading the overview (to initialize Vue SPA context),
  * then navigating to the target page. The SPA requires the overview to be loaded first for
@@ -310,19 +387,15 @@ async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
   const overviewUrl = `${baseUrl}/${gatewayId}/stage/overview`;
 
   // Step 1: Load gateway overview to initialize SPA context.
-  // Retry up to 3 times if sidebar doesn't appear.
+  // Retry while the shared dev dashboard is publishing or temporarily unavailable.
   let sidebarVisible = false;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.goto(overviewUrl, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle').catch(() => {});
-    await page.waitForTimeout(2000);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await gotoWithTransientWait(page, overviewUrl);
 
     // Handle auth redirect
     if (page.url().includes('/login/')) {
       await reAuth(page);
-      await page.goto(overviewUrl, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await page.waitForTimeout(2000);
+      await gotoWithTransientWait(page, overviewUrl);
     }
 
     // Wait for sidebar to appear — check for gateway selector or menu items
@@ -332,22 +405,19 @@ async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
       .catch(() => false);
 
     if (sidebarVisible) break;
+    await page.waitForTimeout(3000);
   }
 
   if (!sidebarVisible && fallbackPath) {
     // Last resort: try direct navigation
-    await page.goto(`${baseUrl}/${gatewayId}${fallbackPath}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle').catch(() => {});
-    await page.waitForTimeout(2000);
+    await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
     return;
   }
 
   // Step 2: Navigate to target page
   if (fallbackPath) {
     // Use direct URL navigation after SPA is initialized — more reliable than sidebar clicks
-    await page.goto(`${baseUrl}/${gatewayId}${fallbackPath}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle').catch(() => {});
-    await page.waitForTimeout(2000);
+    await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
   } else {
     // No fallbackPath — use sidebar navigation
     const parentMenu = SUB_MENU_PARENTS[menuText];
@@ -626,7 +696,7 @@ function normalizeApiPath(requestPath) {
 
 async function apiRequest(page, method, requestPath, data = undefined, options = {}) {
   const csrfToken = await getCsrfToken(page);
-  const maxAttempts = options.retryHtml500 === false ? 1 : 3;
+  const maxAttempts = options.retryHtml500 === false ? 1 : 6;
   let response;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -681,9 +751,16 @@ async function apiRequest(page, method, requestPath, data = undefined, options =
       csrf: csrfToken,
     });
 
-    const isRetryableServerError = response.status >= 500
-      && typeof response.data === 'string'
-      && /<html|<!doctype html|Server Error|OperationalError|Can't connect to MySQL server|Name or service not known/i.test(response.data);
+    const responseText = typeof response.data === 'string' ? response.data : '';
+    const isHtmlResponse = /<html|<!doctype html/i.test(responseText);
+    const isRetryableServerError = responseText
+      && (
+        response.status >= 500
+        && /Server Error|OperationalError|Can't connect to MySQL server|Name or service not known|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|503|系统出现异常|努力恢复中|请稍后再试/i.test(responseText)
+        || response.status === 404
+        && isHtmlResponse
+        && /页面找不到|404页|404 page|page not found/i.test(responseText)
+      );
     if (!isRetryableServerError || attempt === maxAttempts) {
       const isUnauthenticated = response.status === 401
         && JSON.stringify(response.data || '').includes('UNAUTHENTICATED');
@@ -693,7 +770,7 @@ async function apiRequest(page, method, requestPath, data = undefined, options =
       }
       break;
     }
-    await page.waitForTimeout(1000 * attempt);
+    await page.waitForTimeout(Math.min(15000, 3000 * attempt));
   }
 
   if (!response.ok && !options.allowFailure) {

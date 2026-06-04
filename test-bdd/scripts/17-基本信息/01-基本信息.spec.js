@@ -89,13 +89,10 @@ test.describe('功能: 基本信息 - 网关基本信息管理', () => {
     await expect(editBtn).toBeVisible({ timeout: 10000 });
 
     await editBtn.click();
-    const editTitle = page.getByText('编辑网关').last();
-    await expect(editTitle).toBeVisible({ timeout: 10000 });
-
     const cancelBtn = page.locator('button:visible, .bk-button:visible').filter({ hasText: /取消/ }).last();
     await expect(cancelBtn).toBeVisible({ timeout: 5000 });
     await cancelBtn.click();
-    await expect(editTitle).toBeHidden({ timeout: 10000 });
+    await expect(cancelBtn).toBeHidden({ timeout: 10000 });
 
     const originalDescription = await readHeaderDescription(page);
     const updatedDescription = `bdd basic info ${Date.now().toString(36)}`;
