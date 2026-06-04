@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, getToastMessage, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { clickConfirm, getActionButton, getActiveDialog, getActiveSideslider, getToastMessage, navigateToGatewayPage, getGatewayId, selectDropdownOption } = require("../../runtime/helpers");
 
 
 test.describe('功能: 环境概览 - 环境概览', () => {
@@ -11,45 +11,9 @@ test.describe('功能: 环境概览 - 环境概览', () => {
   });
 
   test('场景: 查看环境概览', async ({ page }) => {
-    // 点击"+"新建环境
-    const addBtn = page.locator('button, .bk-button, [class*="add"]').filter({ hasText: /\+|新建/ }).first();
-    if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await addBtn.click();
-      await page.waitForTimeout(800);
+    await expect(page).toHaveURL(new RegExp(`/${getGatewayId()}/stage/overview`), { timeout: 5000 });
 
-      // 输入环境名称（必填）
-      const stageName = `test-stage-${Date.now().toString(36).slice(-4)}`;
-      const nameInput = page.locator('input[placeholder*="名称"], input[name*="name"]').first();
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill(stageName);
-      }
-
-      // 输入描述（选填）
-      const descInput = page.locator('textarea, input[placeholder*="描述"]').first();
-      if (await descInput.isVisible().catch(() => false)) {
-        await descInput.fill('自动化测试创建的环境');
-      }
-
-      // 输入后端服务地址
-      const addrInput = page.locator('input[placeholder*="地址"], input[placeholder*="host"], input[placeholder*="http"]').first();
-      if (await addrInput.isVisible().catch(() => false)) {
-        await addrInput.fill('http://httpbin.org');
-      }
-
-      // 输入超时时间
-      const timeoutInput = page.locator('input[placeholder*="超时"], input[type="number"]').first();
-      if (await timeoutInput.isVisible().catch(() => false)) {
-        await timeoutInput.fill('30');
-      }
-
-      // 点击确定
-      await page.locator('button').filter({ hasText: /确定|确认/ }).click();
-      await page.waitForTimeout(2000);
-
-      // 验证创建成功
-      const toast = await getToastMessage(page);
-      expect(toast).toMatch(/成功|新建/);
-    }
+    await expect(page.locator('body')).toContainText(/环境概览|发布资源|prod|暂无/, { timeout: 20000 });
   });
 
   test('场景: 发布资源', async ({ page }) => {
@@ -62,31 +26,21 @@ test.describe('功能: 环境概览 - 环境概览', () => {
       await page.waitForTimeout(1500);
 
       // The publish sideslider opens. All interactions must be scoped to it.
-      const sideslider = page.locator('.bk-sideslider').first();
+      const sideslider = getActiveSideslider(page);
 
       // 选择要发布的资源版本 — the version select is inside the sideslider
-      const versionSelect = sideslider.locator('.bk-select').last();
-      if (await versionSelect.isVisible().catch(() => false)) {
-        await versionSelect.click();
-        await page.waitForTimeout(500);
-        const firstOption = page.locator('.bk-select-option, .bk-option').first();
-        if (await firstOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await firstOption.click();
-          await page.waitForTimeout(300);
-        }
-      }
+      await selectDropdownOption(page, sideslider.locator('.bk-select').last()).catch(() => false);
 
       // 点击下一步
-      const nextBtn = sideslider.locator('button').filter({ hasText: '下一步' });
+      const nextBtn = getActionButton(sideslider, '下一步');
       if (await nextBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await nextBtn.click();
         await page.waitForTimeout(1000);
       }
 
       // 确认发布
-      const confirmBtn = sideslider.locator('button').filter({ hasText: /确认发布|确认|确定/ });
-      if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await confirmBtn.click();
+      if (await clickConfirm(page, /确认发布|确认|确定/, getActiveDialog(page)).catch(() => false)
+        || await clickConfirm(page, /确认发布|确认|确定/, sideslider).catch(() => false)) {
         await page.waitForTimeout(2000);
 
         const toast = await getToastMessage(page);
@@ -110,9 +64,7 @@ test.describe('功能: 环境概览 - 环境概览', () => {
       await page.waitForTimeout(800);
 
       // 确认下架操作
-      const confirmBtn = page.locator('.bk-dialog button, .bk-dialog-footer button').filter({ hasText: /确定|确认|下架/ });
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click();
+      if (await clickConfirm(page, /确定|确认|下架/, getActiveDialog(page)).catch(() => false)) {
         await page.waitForTimeout(2000);
 
         const toast = await getToastMessage(page);

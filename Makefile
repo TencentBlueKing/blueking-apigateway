@@ -1,7 +1,9 @@
 # BlueKing API Gateway - BDD Test Suite
 #
 # Usage:
-#   1. Create test-bdd/runtime/.test-env.json:
+#   1. Either pass runtime credentials on the make command line:
+#      make test-bdd URL=https://example.com USER=admin PASSWORD='secret'
+#      Or pre-create test-bdd/runtime/.test-env.json:
 #      {"url": "https://example.com", "user": "admin", "password": "secret"}
 #      Or with cookie: {"url": "https://example.com", "cookie": "bk_token=abc"}
 #
@@ -23,9 +25,10 @@ test-bdd-init:
 		echo "BDD runtime environment setup complete."; \
 	fi
 
-# Run BDD tests — requires test-bdd/runtime/.test-env.json
+# Run BDD tests — sync CLI/env credentials into test-bdd/runtime/.test-env.json first
 test-bdd: test-bdd-init
 	@cd test-bdd/runtime && \
+		node prepare-env.js && \
 		node -e " \
 			var fs = require('fs'); \
 			var f = '.test-env.json'; \

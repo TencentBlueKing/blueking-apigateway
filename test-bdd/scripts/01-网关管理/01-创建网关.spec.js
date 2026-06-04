@@ -2,21 +2,12 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, fillForm, getToastMessage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { selectDropdownOption, waitForGatewayHomeReady } = require("../../runtime/helpers");
 
 
 test.describe('功能: 网关管理 - 创建网关', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${BASE_URL}/`);
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(3000);
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await page.goto(`${BASE_URL}/`);
-      await page.waitForTimeout(3000);
-    }
-    // Wait for gateway list content to load
-    await page.locator('.gateway-card, .gateway-item, [class*="gateway"], table tbody tr, .bk-exception').first().waitFor({ timeout: 15000 }).catch(() => {});
+    await waitForGatewayHomeReady(page);
   });
 
   test('场景: 创建普通网关', async ({ page }) => {
@@ -63,11 +54,7 @@ test.describe('功能: 网关管理 - 创建网关', () => {
     // 选择开发语言
     const langSelect = page.locator('.bk-select').filter({ hasText: /语言|language/i }).first();
     if (await langSelect.isVisible().catch(() => false)) {
-      await langSelect.click();
-      await page.waitForTimeout(300);
-      await page.locator('.bk-select-option, .bk-option').first().click();
-      await page.waitForTimeout(300);
-      await page.locator('body').click({ position: { x: 10, y: 10 } });
+      await selectDropdownOption(page, langSelect).catch(() => false);
     }
 
     // 输入代码仓库地址

@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, getToastMessage, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { clickConfirm, getFirstVisibleTableRow, getTableRowActionButton, getToastMessage, getTableRowCount, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 
 test.describe('功能: 后端服务 - 后端服务管理', () => {
@@ -53,7 +53,8 @@ test.describe('功能: 后端服务 - 后端服务管理', () => {
     await navigateToGatewayPage(page, getGatewayId(), '后端服务', '/backends');
 
     // 点击编辑按钮
-    const editBtn = page.locator('button, a, .bk-button').filter({ hasText: '编辑' }).first();
+    const firstRow = getFirstVisibleTableRow(page);
+    const editBtn = getTableRowActionButton(firstRow, '编辑');
     if (await editBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
       await editBtn.click();
       await page.waitForTimeout(800);
@@ -79,15 +80,14 @@ test.describe('功能: 后端服务 - 后端服务管理', () => {
     await navigateToGatewayPage(page, getGatewayId(), '后端服务', '/backends');
 
     // 找到未关联资源的后端服务并点击删除
-    const deleteBtn = page.locator('button, a, .bk-button').filter({ hasText: '删除' }).first();
+    const firstRow = getFirstVisibleTableRow(page);
+    const deleteBtn = getTableRowActionButton(firstRow, '删除');
     if (await deleteBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
       await deleteBtn.click();
       await page.waitForTimeout(800);
 
       // 确认删除操作
-      const confirmBtn = page.locator('.bk-dialog button, .bk-dialog-footer button').filter({ hasText: /确定|确认|删除/ }).first();
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click();
+      if (await clickConfirm(page, /确定|确认|删除/)) {
         await page.waitForTimeout(2000);
 
         // 验证删除成功

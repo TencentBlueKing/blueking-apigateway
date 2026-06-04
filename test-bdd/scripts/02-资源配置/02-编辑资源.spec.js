@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, getToastMessage, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { getFirstVisibleTableRow, getTableRowActionButton, getToastMessage, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 
 test.describe('功能: 资源配置 - 编辑资源', () => {
@@ -12,7 +12,7 @@ test.describe('功能: 资源配置 - 编辑资源', () => {
 
   test('场景: 编辑基础信息', async ({ page }) => {
     // Wait for table data to load (not the "暂无数据" row)
-    const dataRow = page.locator('table tbody tr').filter({ hasNotText: '暂无数据' }).first();
+    const dataRow = getFirstVisibleTableRow(page);
     const hasData = await dataRow.isVisible({ timeout: 15000 }).catch(() => false);
 
     if (!hasData) {
@@ -21,7 +21,7 @@ test.describe('功能: 资源配置 - 编辑资源', () => {
     }
 
     // Click the "编辑" button in the row actions column
-    const editBtn = dataRow.locator('button').filter({ hasText: '编辑' }).first();
+    const editBtn = getTableRowActionButton(dataRow, '编辑', 'button');
     await editBtn.click();
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
@@ -46,7 +46,7 @@ test.describe('功能: 资源配置 - 编辑资源', () => {
   });
 
   test('场景: 编辑后端配置', async ({ page }) => {
-    const dataRow = page.locator('table tbody tr').filter({ hasNotText: '暂无数据' }).first();
+    const dataRow = getFirstVisibleTableRow(page);
     const hasData = await dataRow.isVisible({ timeout: 15000 }).catch(() => false);
 
     if (!hasData) {
@@ -55,7 +55,7 @@ test.describe('功能: 资源配置 - 编辑资源', () => {
     }
 
     // Click the "编辑" button in the row actions column
-    const editBtn = dataRow.locator('button').filter({ hasText: '编辑' }).first();
+    const editBtn = getTableRowActionButton(dataRow, '编辑', 'button');
     await editBtn.click();
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);

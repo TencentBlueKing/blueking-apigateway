@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { dismissFloatingLayers, getTableRowCount, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 
 test.describe('功能: 发布记录 - 发布记录', () => {
@@ -62,8 +62,7 @@ test.describe('功能: 发布记录 - 发布记录', () => {
       await page.waitForTimeout(300);
 
       // 关闭日期选择器
-      await page.locator('body').click({ position: { x: 10, y: 10 } });
-      await page.waitForTimeout(300);
+      await dismissFloatingLayers(page);
     }
   });
 });

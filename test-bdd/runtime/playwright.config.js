@@ -36,8 +36,8 @@ module.exports = defineConfig({
   retries: 0,
 
   // Timeouts
-  timeout: 60_000,          // 60s per test
-  globalTimeout: 1_800_000, // 30 minutes for entire suite
+  timeout: 120_000,         // 120s per test; dev dashboard can be briefly unavailable while publishing
+  globalTimeout: 2_700_000, // 45 minutes for the expanded BDD suite on the shared dev environment
 
   // Global setup/teardown — test gateway lifecycle
   globalSetup: './setup.js',

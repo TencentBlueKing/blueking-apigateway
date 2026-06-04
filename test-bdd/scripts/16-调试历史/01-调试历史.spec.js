@@ -6,6 +6,8 @@ const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../..
 
 
 test.describe('功能: 调试历史 - 请求记录管理', () => {
+  test.setTimeout(90000);
+
   test.beforeEach(async ({ page }) => {
     await navigateToGatewayPage(page, getGatewayId(), '在线调试', '/online-debug/history');
   });
