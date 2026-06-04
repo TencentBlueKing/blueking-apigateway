@@ -57,7 +57,7 @@ class OpenAPITemplateGenerator(Generator):
         exporter = OpenAPIExportManager(
             api_version=self.context.version,
             title=self.context.resource_version.gateway.name,
-            description=self.context.resource_version.gateway.description,
+            description=f"an sdk for {self.context.resource_version.gateway.name} on bk-apigateway",
             include_bk_apigateway_resource=False,
         )
 

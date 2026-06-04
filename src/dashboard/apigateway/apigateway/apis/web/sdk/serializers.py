@@ -21,6 +21,7 @@ from rest_framework import serializers
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
+from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.utils.time import now_datetime
 
@@ -29,7 +30,14 @@ class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本号id")
     language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="sdk语言")
-    version = serializers.CharField(label="版本", default="", allow_null=True, allow_blank=True, help_text="sdk版本号")
+    version = serializers.RegexField(
+        SEMVER_PATTERN,
+        label="版本",
+        default="",
+        allow_null=True,
+        allow_blank=True,
+        help_text="sdk版本号",
+    )
 
     def validate(self, data):
         # 用户指定版本号的情况下，需要检查一下版本是否存在
