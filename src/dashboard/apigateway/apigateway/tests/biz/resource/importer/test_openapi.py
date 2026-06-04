@@ -75,6 +75,65 @@ class TestOpenAPIManger:
         result = OpenAPIImportManager.guess_content_format(swagger)
         assert result == expected
 
+    @pytest.mark.parametrize(
+        "ref",
+        [
+            "http://evil.example.com/schema.json",
+            "https://evil.example.com/schema.json",
+            "file:///etc/passwd",
+            "/etc/passwd",
+            "../secret.json",
+        ],
+    )
+    def test_validate_rejects_external_ref_before_resolving(self, mocker, fake_gateway, ref):
+        manager = OpenAPIImportManager(
+            gateway=fake_gateway,
+            data={
+                "swagger": "2.0",
+                "info": {"title": "probe", "version": "1.0.0"},
+                "paths": {
+                    "/probe": {
+                        "get": {
+                            "operationId": "probe",
+                            "responses": {"200": {"description": "ok", "schema": {"$ref": ref}}},
+                        }
+                    }
+                },
+            },
+        )
+        resolving_parser = mocker.patch("apigateway.biz.resource.importer.openapi.ResolvingParser")
+
+        errors = manager.validate()
+
+        assert len(errors) == 1
+        assert "外部 $ref" in errors[0].message
+        assert ref[:120] in errors[0].message
+        resolving_parser.assert_not_called()
+
+    def test_validate_allows_internal_ref(self, mocker, fake_gateway):
+        manager = OpenAPIImportManager(
+            gateway=fake_gateway,
+            data={
+                "swagger": "2.0",
+                "info": {"title": "probe", "version": "1.0.0"},
+                "paths": {
+                    "/probe": {
+                        "get": {
+                            "operationId": "probe",
+                            "responses": {"200": {"description": "ok", "schema": {"$ref": "#/definitions/User"}}},
+                        }
+                    }
+                },
+                "definitions": {"User": {"type": "object"}},
+            },
+        )
+        mocker.patch("apigateway.biz.resource.importer.openapi.ResourceImportValidator.validate", return_value=[])
+        mocker.patch("apigateway.biz.resource.importer.openapi.ResourceDataConvertor.convert", return_value=[])
+
+        errors = manager.validate()
+
+        assert errors == []
+
         @pytest.mark.parametrize(
             "content, will_error",
             [
