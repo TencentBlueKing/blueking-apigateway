@@ -958,6 +958,8 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     )
     grant_type_display = serializers.SerializerMethodField(help_text="授权类型展示")
 
+    _dt_field = serializers.DateTimeField()
+
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionListOutputSLZ"
 
@@ -980,7 +982,7 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     def get_effective_time(self, obj):
         apply_record = self._get_apply_record(obj)
         effective_time = apply_record.handled_time if apply_record and apply_record.handled_time else obj.created_time
-        return serializers.DateTimeField().to_representation(effective_time)
+        return self._dt_field.to_representation(effective_time)
 
     def get_handled_by(self, obj):
         apply_record = self._get_apply_record(obj)

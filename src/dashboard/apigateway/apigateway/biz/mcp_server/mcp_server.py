@@ -448,7 +448,7 @@ class MCPServerHandler:
         return risks
 
     @staticmethod
-    def get_app_permission_apply_record_map(permissions) -> Dict[tuple, Any]:
+    def get_app_permission_apply_record_map(permissions: Sequence[MCPServerAppPermission]) -> Dict[tuple, Any]:
         """根据已授权记录列表，批量查询对应的审批记录并构建映射。
 
         Args:

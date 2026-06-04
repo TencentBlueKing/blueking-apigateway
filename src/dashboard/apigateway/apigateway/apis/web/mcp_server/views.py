@@ -1090,6 +1090,22 @@ class MCPServerBatchConfigApi(generics.CreateAPIView):
         return OKJsonResponse(data=output_slz.data)
 
 
+def _filter_gateway_app_permissions(queryset, data):
+    """根据筛选条件过滤网关级 MCPServer 应用权限"""
+    mcp_server_id = data.get("mcp_server_id")
+    bk_app_code = data.get("bk_app_code")
+    grant_type = data.get("grant_type")
+
+    if mcp_server_id:
+        queryset = queryset.filter(mcp_server_id=mcp_server_id)
+    if bk_app_code:
+        queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
+    if grant_type:
+        queryset = queryset.filter(grant_type=grant_type)
+
+    return queryset
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -1108,18 +1124,7 @@ class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
             "mcp_server"
         )
 
-        data = slz.validated_data
-        mcp_server_id = data.get("mcp_server_id")
-        bk_app_code = data.get("bk_app_code")
-        grant_type = data.get("grant_type")
-
-        if mcp_server_id:
-            queryset = queryset.filter(mcp_server_id=mcp_server_id)
-        if bk_app_code:
-            queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
-        if grant_type:
-            queryset = queryset.filter(grant_type=grant_type)
-
+        queryset = _filter_gateway_app_permissions(queryset, slz.validated_data)
         queryset = queryset.order_by("mcp_server__name", "bk_app_code")
         page = self.paginate_queryset(queryset)
 
@@ -1155,15 +1160,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         )
 
         if data["export_type"] == ExportTypeEnum.FILTERED.value:
-            mcp_server_id = data.get("mcp_server_id")
-            bk_app_code = data.get("bk_app_code")
-            grant_type = data.get("grant_type")
-            if mcp_server_id:
-                queryset = queryset.filter(mcp_server_id=mcp_server_id)
-            if bk_app_code:
-                queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
-            if grant_type:
-                queryset = queryset.filter(grant_type=grant_type)
+            queryset = _filter_gateway_app_permissions(queryset, data)
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             queryset = queryset.filter(id__in=data["selected_ids"])
 
