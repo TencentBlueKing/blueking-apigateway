@@ -203,22 +203,14 @@ class AppPermissionRenewApi(generics.CreateAPIView):
         resource_dimension_ids = data["resource_dimension_ids"]
         expire_days = data["expire_days"]
 
-        resource_data_before, resource_data_after, resource_bk_app_codes = (
-            ResourcePermissionHandler.renew_resource_permissions_by_ids(
-                gateway=request.gateway,
-                ids=resource_dimension_ids,
-                expire_days=expire_days,
-            )
-        )
-        gateway_data_before, gateway_data_after, gateway_bk_app_codes = (
-            ResourcePermissionHandler.renew_gateway_permissions_by_ids(
-                gateway=request.gateway,
-                ids=gateway_dimension_ids,
-                expire_days=expire_days,
-            )
-        )
-
         if resource_dimension_ids:
+            resource_data_before, resource_data_after, resource_bk_app_codes = (
+                ResourcePermissionHandler.renew_resource_permissions_by_ids(
+                    gateway=request.gateway,
+                    ids=resource_dimension_ids,
+                    expire_days=expire_days,
+                )
+            )
             Auditor.record_permission_op_success(
                 op_type=OpTypeEnum.MODIFY,
                 username=request.user.username,
@@ -231,6 +223,13 @@ class AppPermissionRenewApi(generics.CreateAPIView):
             )
 
         if gateway_dimension_ids:
+            gateway_data_before, gateway_data_after, gateway_bk_app_codes = (
+                ResourcePermissionHandler.renew_gateway_permissions_by_ids(
+                    gateway=request.gateway,
+                    ids=gateway_dimension_ids,
+                    expire_days=expire_days,
+                )
+            )
             Auditor.record_permission_op_success(
                 op_type=OpTypeEnum.MODIFY,
                 username=request.user.username,

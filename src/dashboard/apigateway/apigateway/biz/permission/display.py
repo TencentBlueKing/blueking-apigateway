@@ -107,7 +107,7 @@ class ResourcePermission(BaseModel):
 
     id: int
     name: str
-    gateway_name: Optional[str] = None
+    gateway_name: str
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None

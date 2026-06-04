@@ -175,16 +175,6 @@ class ResourcePermissionHandler:
         return data_before, data_after, bk_app_codes
 
     @staticmethod
-    def delete_permissions_by_ids(queryset, ids: List[int]):
-        target_queryset = queryset.filter(id__in=ids)
-        if not target_queryset.exists():
-            return None
-
-        instance = target_queryset[0]
-        target_queryset.delete()
-        return instance
-
-    @staticmethod
     def convert_applied_by_to_display_name(
         bk_app_code: str, applied_by: str, gateway_tenant_mode: str, gateway_tenant_id: str
     ) -> str:
