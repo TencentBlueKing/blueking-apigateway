@@ -45,6 +45,7 @@ const Ticks = (props: TicksProps) => {
   const ticks = [];
   for (let i = 0; i < numTicks; i++) {
     const portion = i / (numTicks - 1);
+    const labelCls = `ticks-tickLabel ${portion >= 1 ? 'isEndAnchor' : ''} ${hideLine ? 'hide-line-label' : ''} ${portion >= 0.75 && portion < 1 ? 'preEndAnchor' : ''}`;
     ticks.push(
       <div
         key={portion}
@@ -55,7 +56,7 @@ const Ticks = (props: TicksProps) => {
         class="ticks-tick"
       >
         {labels && (
-          <span class={`ticks-tickLabel ${portion >= 1 ? 'isEndAnchor' : ''} ${hideLine ? 'hide-line-label' : ''}`}>
+          <span class={labelCls}>
             {labels[i]}
           </span>
         )}

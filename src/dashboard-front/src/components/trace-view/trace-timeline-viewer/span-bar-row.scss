@@ -59,7 +59,7 @@
     .span-bar-wrapper,
     .span-duration,
     .inside {
-      background-color: #fafbfd;
+      background-color: transparent;
     }
   }
 
@@ -87,7 +87,7 @@
     .span-bar-wrapper,
     .span-duration,
     .inside {
-      background-color: #e1ecff;
+      background-color: transparent;
     }
   }
 
@@ -121,7 +121,7 @@
     position: relative;
     display: flex;
     height: 28px;
-    overflow: visible !important;
+    overflow: hidden;
     border-right: 1px solid #e8e8e8;
     line-height: 28px;
     align-items: center;

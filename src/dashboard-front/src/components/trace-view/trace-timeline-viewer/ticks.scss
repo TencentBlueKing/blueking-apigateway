@@ -6,33 +6,42 @@
     height: 100%;
     width: 1px;
 
+    .ticks-tickLabel {
+      left: 16px;
+      position: absolute;
+      color: #9ea8bd;
+      line-height: 32px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+
+      &.hide-line-label {
+        left: 0;
+      }
+
+      // 倒数第二个靠右，从当前刻度向左排版
+      &.preEndAnchor {
+        left: initial;
+      }
+
+      &.isEndAnchor {
+        left: initial;
+        right: 16px;
+      }
+    }
+
     &:first-child {
       width: 10px;
       background-color: transparent !important;
       background-image: linear-gradient(270deg, rgba(0,0,0,.00) 0%, rgba(0,0,0,.06) 100%);
+
+      .hide-line-label {
+        left: 10px;
+      }
     }
 
     &:last-child {
       width: 0;
-    }
-  }
-
-  .ticks-tickLabel {
-    left: 16px;
-    position: absolute;
-    color: #9ea8bd;
-    line-height: 32px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-
-    &.hide-line-label {
-      left: 16px;
-    }
-
-    &.isEndAnchor {
-      left: initial;
-      right: 16px;
     }
   }
 }

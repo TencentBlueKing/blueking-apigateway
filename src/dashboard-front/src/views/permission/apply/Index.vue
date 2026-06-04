@@ -81,7 +81,6 @@
         v-model:table-data="tableData"
         v-model:selected-row-keys="selectedRowKeys"
         show-settings
-        resizable
         show-selection
         :expand-icon="false"
         :expandable="expandableConfig"
@@ -105,7 +104,7 @@
             size="small"
             class="ag-expand-table"
             local-page
-            :show-selection="!disabledSelection(row)"
+            :show-selection="!isITSMApproval(row)"
             :max-height="378"
             :columns="childrenColumns"
             @selection-change="(selection) => handleRowSelectionChange(row, selection)"
@@ -396,7 +395,7 @@ const getTableColumns = computed((): any[] => {
       fixed: 'right',
       ellipsis: true,
       cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
-        if (isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id)) {
+        if (isITSMApproval(row)) {
           return (
             <Button
               text
@@ -496,8 +495,12 @@ const handleRequestDone = () => {
   getResourceList();
 };
 
+const isITSMApproval = (row: TableRowData) => {
+  return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+};
+
 const disabledSelection = (row: TableRowData) => {
-  const isDisabled = Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+  const isDisabled = isITSMApproval(row);
   row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
   return isDisabled;
 };
