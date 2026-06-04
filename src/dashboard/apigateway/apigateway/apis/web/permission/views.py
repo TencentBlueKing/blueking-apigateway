@@ -572,13 +572,15 @@ class AppGatewayPermissionDeleteApi(AppGatewayPermissionQuerySetMixin, generics.
 
         data = slz.validated_data
 
-        instance = ResourcePermissionHandler.delete_permissions_by_ids(self.get_queryset(), data["ids"])
-        if not instance:
+        queryset = self.get_queryset().filter(id__in=data["ids"])
+        if not queryset.exists():
             raise Http404
 
+        instance = queryset[0]
         instance_id = instance.id
         bk_app_code = instance.bk_app_code
         data_before = get_model_dict(instance)
+        queryset.delete()
 
         Auditor.record_permission_op_success(
             op_type=OpTypeEnum.DELETE,
