@@ -16,17 +16,32 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from rest_framework import serializers
+import pytest
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.apis.open.support.serializers import SDKGenerateV1SLZ
 
 
-class SDKGenerateV1SLZ(serializers.Serializer):
-    resource_version = serializers.CharField(max_length=128, help_text="资源版本")
-    languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
-        help_text="需要生成SDK的语言列表",
-        default=[ProgrammingLanguageEnum.PYTHON.value],
+class TestSDKGenerateV1SLZ:
+    @pytest.mark.parametrize(
+        "version, is_valid",
+        [
+            ("", True),
+            ("1.2.3", True),
+            ("1.2.3-beta.1+build.1", True),
+            ("v1.2.3", False),
+            ("1.2", False),
+            ("1.0.0');__import__('os').system('touch /tmp/sdk-version-pwned')#", False),
+        ],
     )
-    version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")
+    def test_validate_version(self, version, is_valid):
+        slz = SDKGenerateV1SLZ(
+            data={
+                "resource_version": "1.0.0",
+                "languages": ["python"],
+                "version": version,
+            },
+        )
+
+        assert slz.is_valid() is is_valid
+        if not is_valid:
+            assert "version" in slz.errors

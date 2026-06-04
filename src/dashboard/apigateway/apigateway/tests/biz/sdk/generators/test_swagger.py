@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import ast
+
 import pytest
 
 from apigateway.biz.sdk.generators.openapi import PythonTemplateGenerator
@@ -28,3 +30,25 @@ def python_generator(sdk_context):
 def test_python_generator(public_api_resources, output_dir, tmpdir, python_generator: PythonTemplateGenerator):
     python_generator.generate(output_dir, public_api_resources)
     assert tmpdir.join("setup.py").exists()
+
+
+def test_python_generator_uses_safe_setup_py_description(
+    public_api_resources,
+    output_dir,
+    tmpdir,
+    python_generator: PythonTemplateGenerator,
+):
+    gateway = python_generator.context.resource_version.gateway
+    gateway.name = "demo-gateway"
+    gateway.description = "gateway description '''\nINJECTED = 'should stay data'\n#"
+
+    python_generator.generate(output_dir, public_api_resources)
+
+    setup_source = tmpdir.join("setup.py").read()
+    tree = ast.parse(setup_source)
+    setup_call = next(
+        node for node in ast.walk(tree) if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "setup"
+    )
+    description_arg = next(keyword for keyword in setup_call.keywords if keyword.arg == "description")
+    assert isinstance(description_arg.value, ast.Constant)
+    assert description_arg.value.value == "an sdk for demo-gateway on bk-apigateway"
