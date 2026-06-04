@@ -65,7 +65,7 @@
             local-page
             :max-height="378"
             :show-first-full-row="isShowSelection && curPermission.resource_ids?.length > 0"
-            :show-selection="isShowSelection && !disabledSelection(row)"
+            :show-selection="isShowSelection && !isITSMApproval(row)"
             :columns="childrenColumns"
             @selection-change="(selection) => handleChildSelectionChange(row, selection)"
           />
@@ -103,6 +103,7 @@
 
 <script setup lang="tsx">
 import { Button, Loading, Message, Popover } from 'bkui-vue';
+import { cloneDeep } from 'lodash-es';
 import { t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableEmptyType, ITableMethod } from '@/types/common';
@@ -133,6 +134,7 @@ import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
 import { usePersonalWorkbench } from '@/hooks';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
+import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
@@ -177,16 +179,7 @@ const approvalSliderConf = ref({
   title: '',
 });
 const approvalSliderDetail = ref<Partial<IPersonalWorkbenchListResponse> | null>(null);
-const filterData = ref<FilterValue | IPersonalWorkbenchListQuery>({
-  time_start: '',
-  time_end: '',
-  keyword: '',
-  bk_app_code: '',
-  applied_by: [],
-  gateway_id: '',
-  mcp_server_id: '',
-  grant_dimension: '',
-});
+const filterData = ref<FilterValue | IPersonalWorkbenchListQuery>(cloneDeep(DEFAULT_FORM_DATA));
 const expandableConfig = ref({
   expandColumn: false,
   expandedRowKeys: [] as number[],
@@ -362,7 +355,7 @@ const tableColumns = computed(() => {
       fixed: 'right' as const,
       width: isPending.value ? 200 : 80,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        const isItsm = isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id);
+        const isItsm = isITSMApproval(row);
 
         if (isPending.value) {
           if (isItsm) {
@@ -566,11 +559,14 @@ const tableColumns = computed(() => {
 
   return isGateway.value ? gatewayColumns : mcpColumns;
 });
+const getAppliedBy = computed(() =>
+  Array.isArray(filterData.value.applied_by) ? filterData.value.applied_by.join() : filterData.value.applied_by,
+);
 
 const getList = () => {
   const params = {
     ...filterData.value,
-    applied_by: filterData.value.applied_by.join(),
+    applied_by: getAppliedBy.value,
   };
   return tableRef.value?.fetchData(filterSimpleEmpty(params), { resetPage: true });
 };
@@ -584,7 +580,7 @@ const getTableData = async (params: {
   const queryParams: IPersonalWorkbenchListQuery = {
     ...params,
     ...filterData.value,
-    applied_by: filterData.value.applied_by.join(),
+    applied_by: getAppliedBy.value,
   };
   const res = await remoteMethod?.(filterSimpleEmpty(queryParams));
   return res ?? {
@@ -618,8 +614,12 @@ const fetchMcpServerFilterOptions = async () => {
 };
 fetchMcpServerFilterOptions();
 
+const isITSMApproval = (row: TableRowData) => {
+  return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+};
+
 const disabledSelection = (row: TableRowData) => {
-  const isDisabled = Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
+  const isDisabled = isITSMApproval(row);
   row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
   return isDisabled;
 };
@@ -903,16 +903,7 @@ const handleClearSelection = () => {
 };
 
 const handleClearFilter = () => {
-  filterData.value = Object.assign(filterData.value ?? {}, {
-    time_start: '',
-    time_end: '',
-    keyword: '',
-    bk_app_code: '',
-    applied_by: [],
-    gateway_id: '',
-    mcp_server_id: '',
-    grant_dimension: '',
-  });
+  filterData.value = cloneDeep(DEFAULT_FORM_DATA);
   basicFormRef.value?.handleResetFormData();
   handleClearSelection();
 };

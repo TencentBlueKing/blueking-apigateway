@@ -84,7 +84,6 @@
             v-model="formData.applied_by"
             :class="[{ 'is-exist-member': formData.applied_by?.length > 0 }]"
             :copyable="false"
-            :multiple="false"
             :placeholder="t('请输入用户')"
             has-delete-icon
             @change="handleMemberChange"
@@ -106,6 +105,7 @@ import {
   useUserInfo,
 } from '@/stores';
 import { useDatePicker } from '@/hooks';
+import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchUIState } from '@/services/types/query/personal-workbench.ts';
 import BkUserSelector from '@blueking/bk-user-selector';
 import MemberSelector from '@/components/member-selector';
@@ -122,16 +122,7 @@ interface IEmits {
 
 const formData = defineModel<FilterValue | IPersonalWorkbenchListQuery>('formData', {
   type: Object,
-  default: () => ({
-    time_start: '',
-    time_end: '',
-    keyword: '',
-    bk_app_code: '',
-    applied_by: [],
-    gateway_id: '',
-    mcp_server_id: '',
-    grant_dimension: '',
-  }),
+  default: DEFAULT_FORM_DATA,
 });
 
 const {
@@ -161,12 +152,12 @@ const dateKey = ref('dateKey');
 
 const getTenantId = computed(() => userStore?.info?.tenant_id as string);
 
-const handleMemberChange = (member: string[]) => {
-  formData.value.applied_by = member;
+const handleMemberChange = (members: string[]) => {
+  formData.value.applied_by = members;
 };
 
-const handleTenantUserChange = (members: { id: string }[]) => {
-  formData.value.applied_by = members.map(member => member.id);
+const handleTenantUserChange = (member: string) => {
+  formData.value.applied_by = member;
 };
 
 const formatDatetime = (timeRange: (number | string | Date)[]) => {

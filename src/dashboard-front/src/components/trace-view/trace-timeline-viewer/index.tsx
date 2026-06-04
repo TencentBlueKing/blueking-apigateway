@@ -47,8 +47,12 @@ export default defineComponent({
 
     const wrapperRef = ref<HTMLDivElement>();
     const virtualizedTraceViewRef = ref<InstanceType<typeof VirtualizedTraceView>>();
+    // 默认展示宽度0.2
     const spanNameColumnWidth = ref<number>(0.20);
-    const minSpanNameColumnWidth = ref<number>(0.20);
+    // 拖拽允许最小值 0
+    const minSpanNameColumnWidth = ref<number>(0);
+    // 窗口自适应自动下限（原来的0.2，窗口缩小时自动不会小于这个，但拖拽可以突破）
+    const layoutMinWidth = ref(0.20);
     const childrenHiddenIds = ref(new Set());
 
     const state = reactive<IState>({
@@ -159,11 +163,6 @@ export default defineComponent({
       childrenHiddenIds.value = childrenHiddenIDs;
     };
 
-    const setSpanNameColumnWidth = (width: number) => {
-      spanNameColumnWidth.value = width;
-      nextTick(() => getSpanNameColumnWidth());
-    };
-
     const childrenToggle = (span_id: string) => {
       const childrenHiddenIDs = new Set(childrenHiddenIds.value);
       if (childrenHiddenIDs.has(span_id)) {
@@ -177,9 +176,20 @@ export default defineComponent({
     const getSpanNameColumnWidth = () => {
       const elemWidth = wrapperRef.value?.getBoundingClientRect()?.width || 0;
       const minReact = Number((DEFAULT_MIN_VALUE / elemWidth).toFixed(2));
-      minSpanNameColumnWidth.value = minReact > 0.20 ? minReact : 0.20;
-      if (minReact < spanNameColumnWidth.value) return;
-      spanNameColumnWidth.value = Number(minReact);
+      // minSpanNameColumnWidth.value = minReact > 0.20 ? minReact : 0.20;
+      // if (minReact < spanNameColumnWidth.value) return;
+      // spanNameColumnWidth.value = Number(minReact);
+      // 布局自动下限取计算值和0.2大的那个
+      layoutMinWidth.value = Math.max(minReact, 0.2);
+      // 只有当前宽度小于布局最小才自动顶回去
+      if (spanNameColumnWidth.value < layoutMinWidth.value) {
+        spanNameColumnWidth.value = layoutMinWidth.value;
+      }
+      console.log(spanNameColumnWidth.value, layoutMinWidth.value, 454444);
+    };
+
+    const setSpanNameColumnWidth = (width: number) => {
+      spanNameColumnWidth.value = width;
     };
 
     return {

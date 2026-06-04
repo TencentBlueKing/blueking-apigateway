@@ -66,7 +66,7 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
     <TimelineRow className="timeline-header-row">
       <TimelineRowCell
         width={nameColumnWidth}
-        className="ub-flex ub-px2"
+        className="flex"
       >
         <h3
           v-bk-tooltips={{ content: `${t('服务')}&${t('操作')}` }}
@@ -76,12 +76,14 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
           &amp;
           {t('操作')}
         </h3>
-        <TimelineCollapser
-          onCollapseAll={onCollapseAll}
-          onCollapseOne={onCollapseOne}
-          onExpandAll={onExpandAll}
-          onExpandOne={onExpandOne}
-        />
+        {nameColumnWidth > 0.19 && (
+          <TimelineCollapser
+            onCollapseAll={onCollapseAll}
+            onCollapseOne={onCollapseOne}
+            onExpandAll={onExpandAll}
+            onExpandOne={onExpandOne}
+          />
+        )}
       </TimelineRowCell>
       <TimelineRowCell width={1 - nameColumnWidth}>
         {/* 暂时先注释掉，后续如果需要支持动态拉伸每列宽度在开放 */}
@@ -96,8 +98,8 @@ const TimelineHeaderRow = (props: TimelineHeaderRowProps) => {
       </TimelineRowCell>
       <VerticalResizer
         columnResizeHandleHeight={columnResizeHandleHeight}
-        max={0.85}
-        min={Math.max(minSpanNameColumnWidth, 0.20)}
+        max={0.80}
+        min={Math.max(minSpanNameColumnWidth, 0)}
         position={nameColumnWidth}
         onChange={onColumnWidthChange}
       />
