@@ -22,6 +22,7 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -3362,3 +3363,239 @@ class TestMCPServerBatchConfigApi:
         )
 
         assert resp.status_code == 404
+
+
+class TestGatewayMCPServerAppPermissionListApi:
+    """测试网关级 MCPServer 应用权限列表 API"""
+
+    def test_list(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app2",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"]["count"] == 2
+
+    def test_list_filter_by_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server, fake_stage, faker):
+        another_mcp = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name=faker.pystr()[:20],
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=another_mcp,
+            bk_app_code="app2",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"mcp_server_id": fake_mcp_server.id},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "app1"
+
+    def test_list_filter_by_bk_app_code(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="target-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="other-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"bk_app_code": "target"},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["bk_app_code"] == "target-app"
+
+    def test_list_filter_by_grant_type(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="grant-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"grant_type": MCPServerAppPermissionGrantTypeEnum.GRANT.value},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["grant_type"] == MCPServerAppPermissionGrantTypeEnum.GRANT.value
+
+    def test_list_empty(self, request_view, fake_gateway):
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"]["count"] == 0
+
+    def test_list_returns_mcp_server_info(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        item = result["data"]["results"][0]
+        assert "mcp_server" in item
+        assert item["mcp_server"]["id"] == fake_mcp_server.id
+        assert item["mcp_server"]["name"] == fake_mcp_server.name
+        assert "grant_type_display" in item
+
+
+class TestGatewayMCPServerAppPermissionExportApi:
+    """测试网关级 MCPServer 应用权限导出 API"""
+
+    def test_export_all(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"export_type": ExportTypeEnum.ALL.value},
+        )
+        assert resp.status_code == 200
+
+    def test_export_filtered(self, request_view, fake_gateway, fake_mcp_server):
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app2",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "export_type": ExportTypeEnum.FILTERED.value,
+                "grant_type": MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            },
+        )
+        assert resp.status_code == 200
+
+    def test_export_selected(self, request_view, fake_gateway, fake_mcp_server):
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "export_type": ExportTypeEnum.SELECTED.value,
+                "selected_ids": [permission.id],
+            },
+        )
+        assert resp.status_code == 200
+
+    def test_export_selected_empty_ids(self, request_view, fake_gateway):
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "export_type": ExportTypeEnum.SELECTED.value,
+                "selected_ids": [],
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_export_missing_export_type(self, request_view, fake_gateway):
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.gateway_app_permission.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={},
+        )
+        assert resp.status_code == 400

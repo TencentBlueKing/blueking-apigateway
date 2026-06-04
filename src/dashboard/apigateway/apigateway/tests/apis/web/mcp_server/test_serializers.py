@@ -22,14 +22,27 @@ from uuid import uuid4
 import pytest
 from ddf import G
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apis.web.mcp_server.serializers import (
+    GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionListInputSLZ,
+    GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerCategoryOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerListInputSLZ,
     MCPServerUpdateInputSLZ,
 )
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
+from apigateway.apps.mcp_server.constants import (
+    MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
+    MCPServerStatusEnum,
+)
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+)
 from apigateway.common.constants import CallSourceTypeEnum, LanguageCodeEnum
 
 pytestmark = pytest.mark.django_db
@@ -506,3 +519,194 @@ class TestMCPServerUpdateInputSLZOAuth2:
         )
         assert slz.is_valid(), slz.errors
         assert "oauth2_public_client_enabled" not in slz.validated_data
+
+
+class TestGatewayMCPServerAppPermissionListInputSLZ:
+    """测试网关级 MCPServer 应用权限列表输入序列化器"""
+
+    def test_validate_empty(self):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(data={})
+        assert slz.is_valid(), slz.errors
+
+    def test_validate_with_mcp_server_id(self):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(data={"mcp_server_id": 1})
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["mcp_server_id"] == 1
+
+    def test_validate_with_bk_app_code(self):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(data={"bk_app_code": "test-app"})
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["bk_app_code"] == "test-app"
+
+    def test_validate_with_grant_type(self):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(
+            data={"grant_type": MCPServerAppPermissionGrantTypeEnum.APPLY.value}
+        )
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.APPLY.value
+
+    def test_validate_with_all_params(self):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(
+            data={
+                "mcp_server_id": 1,
+                "bk_app_code": "test-app",
+                "grant_type": MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            }
+        )
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["mcp_server_id"] == 1
+        assert slz.validated_data["bk_app_code"] == "test-app"
+        assert slz.validated_data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.GRANT.value
+
+
+class TestGatewayMCPServerAppPermissionListOutputSLZ:
+    """测试网关级 MCPServer 应用权限列表输出序列化器"""
+
+    def test_output_grant_type(self, fake_gateway, fake_stage):
+        """测试主动授权类型的序列化输出"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp",
+            title="测试MCP",
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(permission, context={})
+        data = slz.data
+        assert data["bk_app_code"] == "test-app"
+        assert data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.GRANT.value
+        assert data["mcp_server"]["name"] == "test-mcp"
+        assert data["mcp_server"]["id"] == mcp_server.id
+
+    def test_output_apply_type_with_record(self, fake_gateway, fake_stage):
+        """测试申请授权类型（有关联审批记录）的序列化输出"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp",
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            applied_by="test_user",
+            handled_by="admin",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+            permission,
+            context={"apply_record_map": {(mcp_server.id, "test-app"): apply_record}},
+        )
+        data = slz.data
+        assert data["bk_app_code"] == "test-app"
+        assert data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.APPLY.value
+        # APPLY 类型应该通过审批单获取 handled_by
+        assert data["handled_by"] == "admin"
+
+    def test_output_apply_type_without_record(self, fake_gateway, fake_stage):
+        """测试申请授权类型（无关联审批记录）的序列化输出，应回退到 permission 字段"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp",
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+            created_by="creator_user",
+            updated_by="updater_user",
+        )
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(permission, context={})
+        data = slz.data
+        assert data["bk_app_code"] == "test-app"
+        assert data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.APPLY.value
+        # 无审批记录时，applied_by 回退到 updated_by
+        assert data["applied_by"] == "updater_user"
+
+    def test_output_grant_type_with_operator(self, fake_gateway, fake_stage):
+        """测试主动授权类型时，handled_by 返回操作人"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp",
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            created_by="grant_user",
+        )
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(permission, context={})
+        data = slz.data
+        assert data["handled_by"] == "grant_user"
+
+
+class TestGatewayMCPServerAppPermissionExportInputSLZ:
+    """测试网关级 MCPServer 应用权限导出输入序列化器"""
+
+    def test_validate_export_type_all(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(data={"export_type": ExportTypeEnum.ALL.value})
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["export_type"] == ExportTypeEnum.ALL.value
+
+    def test_validate_export_type_filtered(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(data={"export_type": ExportTypeEnum.FILTERED.value})
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["export_type"] == ExportTypeEnum.FILTERED.value
+
+    def test_validate_export_type_selected(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(
+            data={"export_type": ExportTypeEnum.SELECTED.value, "selected_ids": [1, 2, 3]}
+        )
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["export_type"] == ExportTypeEnum.SELECTED.value
+        assert slz.validated_data["selected_ids"] == [1, 2, 3]
+
+    def test_validate_export_type_selected_without_ids(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(data={"export_type": ExportTypeEnum.SELECTED.value})
+        assert not slz.is_valid()
+        assert "non_field_errors" in slz.errors
+
+    def test_validate_export_type_selected_with_empty_ids(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(
+            data={"export_type": ExportTypeEnum.SELECTED.value, "selected_ids": []}
+        )
+        assert not slz.is_valid()
+        assert "non_field_errors" in slz.errors
+
+    def test_validate_export_type_missing(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(data={})
+        assert not slz.is_valid()
+        assert "export_type" in slz.errors
+
+    def test_validate_with_filter_params(self):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(
+            data={
+                "export_type": ExportTypeEnum.FILTERED.value,
+                "mcp_server_id": 1,
+                "bk_app_code": "test",
+                "grant_type": MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            }
+        )
+        assert slz.is_valid(), slz.errors
+        assert slz.validated_data["mcp_server_id"] == 1
+        assert slz.validated_data["bk_app_code"] == "test"
