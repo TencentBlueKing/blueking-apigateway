@@ -22,6 +22,7 @@ from typing import Any, Dict, List
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     MCP_AGENT_CLIENT_CHOICES_WITHOUT_AIDEV,
@@ -924,3 +925,92 @@ class MCPServerBatchConfigOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerBatchConfigOutputSLZ"
+
+
+class GatewayMCPServerAppPermissionListInputSLZ(serializers.Serializer):
+    """网关下 MCPServer 应用权限列表输入序列化器"""
+
+    mcp_server_id = serializers.IntegerField(required=False, help_text="MCPServer ID")
+    bk_app_code = serializers.CharField(required=False, allow_blank=True, default="", help_text="蓝鲸应用 ID")
+    grant_type = serializers.ChoiceField(
+        choices=MCPServerAppPermissionGrantTypeEnum.get_choices(),
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="授权类型",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionListInputSLZ"
+
+
+class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
+    """网关下 MCPServer 应用权限列表输出序列化器"""
+
+    id = serializers.IntegerField(read_only=True)
+    mcp_server = MCPServerBaseSLZ()
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    applied_by = serializers.SerializerMethodField(help_text="申请人")
+    effective_time = serializers.SerializerMethodField(help_text="生效时间")
+    handled_by = serializers.SerializerMethodField(help_text="审批人/授权人")
+    grant_type = serializers.ChoiceField(
+        read_only=True, choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
+    )
+    grant_type_display = serializers.SerializerMethodField(help_text="授权类型展示")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionListOutputSLZ"
+
+    def _get_apply_record(self, obj):
+        if obj.grant_type != MCPServerAppPermissionGrantTypeEnum.APPLY.value:
+            return None
+        return self.context.get("apply_record_map", {}).get((obj.mcp_server_id, obj.bk_app_code))
+
+    def get_applied_by(self, obj):
+        apply_record = self._get_apply_record(obj)
+        if apply_record:
+            return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                obj.bk_app_code,
+                apply_record.applied_by,
+                self.context.get("gateway_tenant_mode"),
+                self.context.get("gateway_tenant_id"),
+            )
+        return obj.updated_by or obj.created_by or ""
+
+    def get_effective_time(self, obj):
+        apply_record = self._get_apply_record(obj)
+        effective_time = apply_record.handled_time if apply_record and apply_record.handled_time else obj.created_time
+        return serializers.DateTimeField().to_representation(effective_time)
+
+    def get_handled_by(self, obj):
+        apply_record = self._get_apply_record(obj)
+        if apply_record:
+            return apply_record.handled_by
+        return obj.created_by or obj.updated_by or ""
+
+    def get_grant_type_display(self, obj):
+        return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(obj.grant_type))
+
+
+class GatewayMCPServerAppPermissionExportInputSLZ(GatewayMCPServerAppPermissionListInputSLZ):
+    """网关下 MCPServer 应用权限导出输入序列化器"""
+
+    export_type = serializers.ChoiceField(
+        choices=ExportTypeEnum.get_choices(),
+        required=True,
+        help_text="导出类型：all(全部), filtered(按筛选条件), selected(选中)",
+    )
+    selected_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text="选中的权限 ID 列表，当 export_type 为 selected 时必填",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionExportInputSLZ"
+
+    def validate(self, data):
+        if data["export_type"] == ExportTypeEnum.SELECTED.value and not data.get("selected_ids"):
+            raise serializers.ValidationError(_("导出已选中权限时，已选中权限不能为空。"))
+        return data

@@ -23,18 +23,26 @@ from ddf import G
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerLeastPrivilegeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory, MCPServerExtend
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+    MCPServerExtend,
+)
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway
-from apigateway.utils.time import NeverExpiresTime
+from apigateway.utils.time import NeverExpiresTime, now_datetime
 
 
 class TestMCPServerHandler:
@@ -1921,3 +1929,178 @@ class TestMCPServerHandler:
 
         assert "server-app" in result["mcpServers"]
         assert "server-user" in result["mcpServers"]
+
+
+class TestMCPServerHandlerAppPermissionApplyRecordMap:
+    """测试 get_app_permission_apply_record_map 方法"""
+
+    def test_empty_permissions(self):
+        result = MCPServerHandler.get_app_permission_apply_record_map([])
+        assert result == {}
+
+    def test_no_approved_apply_records(self, fake_gateway, fake_stage):
+        """测试权限存在但无对应审批记录时返回空映射"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        # 不创建审批记录
+
+        result = MCPServerHandler.get_app_permission_apply_record_map([permission])
+        assert result == {}
+
+    def test_with_approved_apply_record(self, fake_gateway, fake_stage):
+        """测试有已审批记录时正确返回映射"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        apply_record = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="test_user",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        result = MCPServerHandler.get_app_permission_apply_record_map([permission])
+        assert len(result) == 1
+        assert (mcp_server.id, "app1") in result
+        assert result[(mcp_server.id, "app1")].id == apply_record.id
+
+    def test_dedup_multiple_records(self, fake_gateway, fake_stage):
+        """测试同一 (mcp_server_id, bk_app_code) 有多条审批记录时取最新"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        old_time = now_datetime()
+        new_time = old_time
+
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="old_user",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+            handled_time=old_time,
+        )
+        new_apply = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="new_user",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+            handled_time=new_time,
+        )
+
+        result = MCPServerHandler.get_app_permission_apply_record_map([permission])
+        assert len(result) == 1
+        assert result[(mcp_server.id, "app1")].applied_by == "new_user"
+
+    def test_ignores_non_approved_and_deleted(self, fake_gateway, fake_stage):
+        """测试忽略未审批和已删除的审批记录"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        # 创建 PENDING 状态的记录（应被忽略）
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="pending_user",
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            is_deleted=False,
+        )
+        # 创建已删除的 APPROVED 记录（应被忽略）
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server,
+            bk_app_code="app1",
+            applied_by="deleted_user",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=True,
+        )
+
+        result = MCPServerHandler.get_app_permission_apply_record_map([permission])
+        assert result == {}
+
+    def test_multiple_permissions(self, fake_gateway, fake_stage):
+        """测试多条权限记录混合场景"""
+        mcp_server_1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        mcp_server_2 = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        perm_1 = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server_1,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        perm_2 = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server_1,
+            bk_app_code="app2",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        perm_3 = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server_2,
+            bk_app_code="app1",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        # perm_4 是 GRANT 类型，不需要审批记录
+        perm_4 = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server_2,
+            bk_app_code="app2",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        apply_1 = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_1,
+            bk_app_code="app1",
+            applied_by="user1",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        apply_2 = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_1,
+            bk_app_code="app2",
+            applied_by="user2",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+        apply_3 = G(
+            MCPServerAppPermissionApply,
+            mcp_server=mcp_server_2,
+            bk_app_code="app1",
+            applied_by="user3",
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        )
+
+        result = MCPServerHandler.get_app_permission_apply_record_map([perm_1, perm_2, perm_3, perm_4])
+        # 只有 APPLY 类型才在映射中，perm_4(GRANT) 没有审批记录
+        assert len(result) == 3
+        assert result[(mcp_server_1.id, "app1")] == apply_1
+        assert result[(mcp_server_1.id, "app2")] == apply_2
+        assert result[(mcp_server_2.id, "app1")] == apply_3
+        assert (mcp_server_2.id, "app2") not in result

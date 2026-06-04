@@ -31,6 +31,7 @@ from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPAgentClientTypeEnum,
+    MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
     MCPServerLeastPrivilegeEnum,
@@ -42,6 +43,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import (
     MCPServer,
     MCPServerAppPermission,
+    MCPServerAppPermissionApply,
     MCPServerCategory,
     MCPServerExtend,
 )
@@ -444,6 +446,35 @@ class MCPServerHandler:
                 risks[mcp_server.id] = risk_tools
 
         return risks
+
+    @staticmethod
+    def get_app_permission_apply_record_map(permissions: Sequence[MCPServerAppPermission]) -> Dict[tuple, Any]:
+        """根据已授权记录列表，批量查询对应的审批记录并构建映射。
+
+        Args:
+            permissions: MCPServerAppPermission 实例列表
+
+        Returns:
+            {(mcp_server_id, bk_app_code): MCPServerAppPermissionApply} 映射
+        """
+        if not permissions:
+            return {}
+
+        mcp_server_ids = [p.mcp_server_id for p in permissions]
+        bk_app_codes = [p.bk_app_code for p in permissions]
+        apply_records = MCPServerAppPermissionApply.objects.filter(
+            mcp_server_id__in=mcp_server_ids,
+            bk_app_code__in=bk_app_codes,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        ).order_by("-handled_time", "-id")
+
+        apply_record_map = {}
+        for apply_record in apply_records:
+            key = (apply_record.mcp_server_id, apply_record.bk_app_code)
+            if key not in apply_record_map:
+                apply_record_map[key] = apply_record
+        return apply_record_map
 
     @staticmethod
     def get_least_privileges(

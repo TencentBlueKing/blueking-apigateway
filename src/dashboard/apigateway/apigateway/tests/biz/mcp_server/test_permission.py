@@ -375,3 +375,60 @@ class TestMCPServerPermissionHandlerItsm:
 
         permission = MCPServerAppPermission.objects.get(mcp_server_id=mcp_server.id, bk_app_code="test-app")
         assert permission.grant_type == GrantTypeEnum.SYNC.value
+
+    def test_save_permission_with_operator_new_record(self, fake_gateway, fake_stage):
+        """测试 save_permission 带 operator 参数创建新记录"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.INITIALIZE.value,
+            expire_days=None,
+            operator="admin_user",
+        )
+
+        permission = MCPServerAppPermission.objects.get(mcp_server_id=mcp_server.id, bk_app_code="test-app")
+        assert permission.created_by == "admin_user"
+        assert permission.updated_by == "admin_user"
+
+    def test_save_permission_with_operator_existing_record(self, fake_gateway, fake_stage):
+        """测试 save_permission 带 operator 参数更新已有记录"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.APPLY.value,
+            expire_days=None,
+            operator="first_user",
+        )
+
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.INITIALIZE.value,
+            expire_days=None,
+            operator="second_user",
+        )
+
+        permission = MCPServerAppPermission.objects.get(mcp_server_id=mcp_server.id, bk_app_code="test-app")
+        # created_by 保持首次写入的值，不会被覆盖
+        assert permission.created_by == "first_user"
+        # updated_by 应更新为新 operator
+        assert permission.updated_by == "second_user"
+
+    def test_save_permission_without_operator(self, fake_gateway, fake_stage):
+        """测试 save_permission 不带 operator 参数"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        MCPServerAppPermission.objects.save_permission(
+            mcp_server_id=mcp_server.id,
+            bk_app_code="test-app",
+            grant_type=GrantTypeEnum.INITIALIZE.value,
+            expire_days=None,
+        )
+
+        permission = MCPServerAppPermission.objects.get(mcp_server_id=mcp_server.id, bk_app_code="test-app")
+        assert permission.created_by is None
+        assert permission.updated_by is None

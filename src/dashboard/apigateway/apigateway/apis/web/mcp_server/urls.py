@@ -19,6 +19,8 @@
 from django.urls import include, path
 
 from .views import (
+    GatewayMCPServerAppPermissionExportApi,
+    GatewayMCPServerAppPermissionListApi,
     MCPServerAppPermissionAppCodeListApi,
     MCPServerAppPermissionApplyApplicantListApi,
     MCPServerAppPermissionApplyListApi,
@@ -51,6 +53,18 @@ urlpatterns = [
         "-/permissions/",
         include(
             [
+                # 网关下 MCPServer 应用权限列表
+                path(
+                    "app-permissions/",
+                    GatewayMCPServerAppPermissionListApi.as_view(),
+                    name="mcp_server.gateway_app_permission.list",
+                ),
+                # 网关下 MCPServer 应用权限导出
+                path(
+                    "app-permissions/-/export/",
+                    GatewayMCPServerAppPermissionExportApi.as_view(),
+                    name="mcp_server.gateway_app_permission.export",
+                ),
                 # 有权限的 bk_app_code 列表（网关级别）
                 path(
                     "app-permission-app-codes/",
