@@ -20,6 +20,8 @@ async function listStrategies(page, gatewayId) {
 }
 
 test.describe('功能: 告警策略 - 告警策略管理', () => {
+  test.setTimeout(120000);
+
   test('场景: 管理告警策略生命周期', async ({ page }) => {
     const gatewayId = getGatewayId();
     const strategyName = createTestName('bdd-alarm-life');

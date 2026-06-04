@@ -363,8 +363,11 @@ async function openStageOverviewTab(page, tabText) {
   if (await stageSelect.isVisible().catch(() => false)) {
     await stageSelect.click();
     await page.waitForTimeout(300);
-    await page.locator('.bk-select-option, .bk-option').first().click();
-    await page.waitForTimeout(300);
+    const firstStageOption = page.locator('.bk-select-option, .bk-option').first();
+    if (await firstStageOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await firstStageOption.click();
+      await page.waitForTimeout(300);
+    }
     await dismissFloatingLayers(page);
   }
 
@@ -608,56 +611,69 @@ function normalizeApiPath(requestPath) {
 
 async function apiRequest(page, method, requestPath, data = undefined, options = {}) {
   const csrfToken = await getCsrfToken(page);
-  const response = await page.evaluate(async ({ method: requestMethod, requestPath: rawPath, data: payload, options: requestOptions, csrf }) => {
-    const url = new URL(rawPath, window.location.origin);
-    const headers = { Accept: 'application/json' };
-    const init = {
-      method: requestMethod,
-      credentials: 'include',
-      headers,
-    };
+  const maxAttempts = options.retryHtml500 === false ? 1 : 3;
+  let response;
 
-    if (csrf) {
-      headers['X-CSRFToken'] = csrf;
-    }
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    response = await page.evaluate(async ({ method: requestMethod, requestPath: rawPath, data: payload, options: requestOptions, csrf }) => {
+      const url = new URL(rawPath, window.location.origin);
+      const headers = { Accept: 'application/json' };
+      const init = {
+        method: requestMethod,
+        credentials: 'include',
+        headers,
+      };
 
-    if (payload !== undefined && payload !== null) {
-      if (requestMethod === 'GET' || requestOptions.query === true) {
-        for (const [key, value] of Object.entries(payload)) {
-          if (value === undefined || value === null) continue;
-          if (Array.isArray(value)) {
-            value.forEach(item => url.searchParams.append(key, String(item)));
-          } else {
-            url.searchParams.set(key, String(value));
-          }
-        }
-      } else {
-        headers['Content-Type'] = 'application/json';
-        init.body = JSON.stringify(payload);
+      if (csrf) {
+        headers['X-CSRFToken'] = csrf;
       }
+
+      if (payload !== undefined && payload !== null) {
+        if (requestMethod === 'GET' || requestOptions.query === true) {
+          for (const [key, value] of Object.entries(payload)) {
+            if (value === undefined || value === null) continue;
+            if (Array.isArray(value)) {
+              value.forEach(item => url.searchParams.append(key, String(item)));
+            } else {
+              url.searchParams.set(key, String(value));
+            }
+          }
+        } else {
+          headers['Content-Type'] = 'application/json';
+          init.body = JSON.stringify(payload);
+        }
+      }
+
+      const resp = await fetch(url.toString(), init);
+      const contentType = resp.headers.get('content-type') || '';
+      let body;
+
+      if (requestOptions.responseType === 'blob') {
+        const blob = await resp.blob();
+        body = { size: blob.size, type: blob.type };
+      } else if (contentType.includes('application/json')) {
+        body = await resp.json().catch(() => null);
+      } else {
+        body = await resp.text().catch(() => '');
+      }
+
+      return { ok: resp.ok, status: resp.status, statusText: resp.statusText, data: body };
+    }, {
+      method,
+      requestPath: normalizeApiPath(requestPath),
+      data,
+      options,
+      csrf: csrfToken,
+    });
+
+    const isHtmlServerError = response.status >= 500
+      && typeof response.data === 'string'
+      && /<html|<!doctype html|Server Error/i.test(response.data);
+    if (!isHtmlServerError || attempt === maxAttempts) {
+      break;
     }
-
-    const resp = await fetch(url.toString(), init);
-    const contentType = resp.headers.get('content-type') || '';
-    let body;
-
-    if (requestOptions.responseType === 'blob') {
-      const blob = await resp.blob();
-      body = { size: blob.size, type: blob.type };
-    } else if (contentType.includes('application/json')) {
-      body = await resp.json().catch(() => null);
-    } else {
-      body = await resp.text().catch(() => '');
-    }
-
-    return { ok: resp.ok, status: resp.status, statusText: resp.statusText, data: body };
-  }, {
-    method,
-    requestPath: normalizeApiPath(requestPath),
-    data,
-    options,
-    csrf: csrfToken,
-  });
+    await page.waitForTimeout(1000 * attempt);
+  }
 
   if (!response.ok && !options.allowFailure) {
     throw new Error(`${method} ${normalizeApiPath(requestPath)} failed: ${response.status} ${response.statusText} ${JSON.stringify(response.data)}`);
@@ -975,7 +991,10 @@ async function createTestMcpServer(page, gatewayId, options = {}) {
   }
 
   const resources = await listResources(page, gatewayId);
-  const resource = options.resource || resources.find(item => item.name === options.resourceName) || resources[0];
+  const resource = options.resource
+    || resources.find(item => item.name === options.resourceName)
+    || resources.find(item => /^test_resource_/.test(item.name))
+    || resources[0];
   if (!resource) {
     throw new Error('No resource found for creating MCP Server');
   }

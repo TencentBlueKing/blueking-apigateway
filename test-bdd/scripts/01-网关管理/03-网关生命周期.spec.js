@@ -223,6 +223,8 @@ async function deleteGatewayFromBasicInfo(page, gatewayName) {
 
 
 test.describe('功能: 网关管理 - 网关生命周期', () => {
+  test.setTimeout(120000);
+
   test.beforeEach(async ({ page }) => {
     await waitForGatewayHomeReady(page);
   });

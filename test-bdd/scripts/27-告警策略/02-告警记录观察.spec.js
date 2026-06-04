@@ -16,14 +16,8 @@ test.describe('功能: 告警策略 - 告警记录观察', () => {
     await navigateToGatewayPage(page, gatewayId, '告警记录', '/monitor/alarm-history');
     await expect(page).toHaveURL(new RegExp(`/${gatewayId}/monitor/alarm-history`));
 
-    const historyResponse = await pageApiGet(page, `/gateways/${gatewayId}/monitors/alarm/records/`, null, { allowFailure: true });
-    if (!historyResponse.ok) {
-      const fallbackResponse = await pageApiGet(page, `/gateways/${gatewayId}/monitors/alarm/histories/`);
-      expect(fallbackResponse.ok).toBe(true);
-      unwrapApiResults(fallbackResponse);
-    } else {
-      unwrapApiResults(historyResponse);
-    }
+    const historyResponse = await pageApiGet(page, `/gateways/${gatewayId}/monitors/alarm/records/`);
+    unwrapApiResults(historyResponse);
 
     const content = page.locator('.bk-table, .bk-exception, [class*="empty"], [class*="history"]').first();
     await expect(content).toBeVisible({ timeout: 10000 });
