@@ -28,6 +28,7 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.biz.permission import (
     ResourcePermissionHandler,
+    build_resource_permission_display,
 )
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
@@ -82,6 +83,26 @@ class TestResourcePermissionHandler:
         api_perm.save()
         ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
         assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
+
+
+def test_build_permission_display_preserves_gateway_name(fake_gateway):
+    item = build_resource_permission_display(
+        resource_id=1,
+        resource_name="get_user",
+        gateway_id=fake_gateway.id,
+        gateway_name=fake_gateway.name,
+        description="desc",
+        description_en="desc en",
+        resource_perm_required=True,
+        doc_link="",
+        gateway_permission=None,
+        resource_permission=None,
+        gateway_permission_apply_status="",
+        resource_permission_apply_status="",
+    )
+
+    assert item["gateway_name"] == fake_gateway.name
+    assert item["name"] == "get_user"
 
 
 class TestConvertAppliedByToDisplayName:

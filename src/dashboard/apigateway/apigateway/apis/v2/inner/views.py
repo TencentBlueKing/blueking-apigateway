@@ -38,12 +38,17 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
-from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
-from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
+from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
+from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
-from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
+from apigateway.biz.permission import (
+    AppPermissionBuilder,
+    PermissionDimensionManager,
+    ResourcePermissionBuilder,
+    ResourcePermissionHandler,
+)
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -57,7 +62,6 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
-from .helpers import AppPermissionBuilder, ResourcePermissionBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -343,21 +347,11 @@ class AppPermissionRenewApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
-            gateway = Gateway.objects.get(id=gateway_id)
-            # 如果应用 - 资源权限不存在，则将按网关的权限同步到应用 - 资源权限
-            ResourcePermissionHandler.sync_from_gateway_permission(
-                gateway=gateway,
-                bk_app_code=data["target_app_code"],
-                resource_ids=resource_ids,
-            )
-            AppResourcePermission.objects.renew_by_resource_ids(
-                gateway=gateway,
-                bk_app_code=data["target_app_code"],
-                resource_ids=resource_ids,
-                grant_type=GrantTypeEnum.RENEW.value,
-                expire_days=data["expire_days"],
-            )
+        ResourcePermissionHandler.renew_resource_permissions_by_resource_ids(
+            bk_app_code=data["target_app_code"],
+            resource_ids=data["resource_ids"],
+            expire_days=data["expire_days"],
+        )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 

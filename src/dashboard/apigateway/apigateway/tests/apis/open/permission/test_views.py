@@ -205,7 +205,7 @@ class TestAppPermissionViewSet:
                 {
                     "id": 1,
                     "name": "test",
-                    "api_name": "test",
+                    "gateway_name": "test",
                     "gateway_id": 1,
                     "description": "desc",
                     "description_en": "desc_en",

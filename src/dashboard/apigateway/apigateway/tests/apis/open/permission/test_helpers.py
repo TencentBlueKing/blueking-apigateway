@@ -22,9 +22,9 @@ from unittest import mock
 import pytest
 from ddf import G
 
-from apigateway.apis.open.permission.helpers import AppPermissionBuilder, ResourcePermission
 from apigateway.apps.permission.constants import ApplyStatusEnum, GrantDimensionEnum
 from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
+from apigateway.biz.permission import AppPermissionBuilder, ResourcePermission
 from apigateway.core.models import Resource
 from apigateway.utils.time import to_datetime_from_now
 
@@ -69,7 +69,7 @@ class TestResourcePermission:
                 {
                     "id": 1,
                     "name": "test",
-                    "api_name": "test",
+                    "gateway_name": "test",
                     "gateway_id": 1,
                     "doc_link": "",
                     "description": "desc",
@@ -260,7 +260,7 @@ class TestAppPermissionBuilder:
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
 
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
+            "apigateway.biz.permission.display.ResourceVersionHandler.get_released_public_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -272,7 +272,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
+            "apigateway.biz.permission.display.ReleasedResource.objects.filter_latest_released_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -284,7 +284,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
+            "apigateway.biz.permission.display.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
             },
@@ -295,7 +295,7 @@ class TestAppPermissionBuilder:
             {
                 "id": r.id,
                 "name": "test1-2",
-                "api_name": fake_gateway.name,
+                "gateway_name": fake_gateway.name,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -321,7 +321,7 @@ class TestAppPermissionBuilder:
             status=ApplyStatusEnum.REJECTED.value,
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
+            "apigateway.biz.permission.display.ResourceVersionHandler.get_released_public_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -333,7 +333,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
+            "apigateway.biz.permission.display.ReleasedResource.objects.filter_latest_released_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -345,7 +345,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
+            "apigateway.biz.permission.display.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
             },
@@ -356,7 +356,7 @@ class TestAppPermissionBuilder:
             {
                 "id": r.id,
                 "name": "test1-2",
-                "api_name": fake_gateway.name,
+                "gateway_name": fake_gateway.name,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -382,7 +382,7 @@ class TestAppPermissionBuilder:
         # 创建资源权限
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code=unique_id, resource_id=r.id)
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
+            "apigateway.biz.permission.display.ResourceVersionHandler.get_released_public_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -394,7 +394,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
+            "apigateway.biz.permission.display.ReleasedResource.objects.filter_latest_released_resources",
             return_value=[
                 {
                     "id": r.id,
@@ -406,7 +406,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
+            "apigateway.biz.permission.display.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 r.id: "test",
             },
@@ -417,7 +417,7 @@ class TestAppPermissionBuilder:
             {
                 "id": r.id,
                 "name": "test1-2",
-                "api_name": fake_gateway.name,
+                "gateway_name": fake_gateway.name,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",
@@ -445,7 +445,7 @@ class TestAppPermissionBuilder:
         )
 
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ResourceVersionHandler.get_released_public_resources",
+            "apigateway.biz.permission.display.ResourceVersionHandler.get_released_public_resources",
             return_value=[
                 {
                     "id": fake_resource.id,
@@ -457,7 +457,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResource.objects.filter_latest_released_resources",
+            "apigateway.biz.permission.display.ReleasedResource.objects.filter_latest_released_resources",
             return_value=[
                 {
                     "id": fake_resource.id,
@@ -469,7 +469,7 @@ class TestAppPermissionBuilder:
             ],
         )
         mocker.patch(
-            "apigateway.apis.open.permission.helpers.ReleasedResourceHandler.get_latest_doc_link",
+            "apigateway.biz.permission.display.ReleasedResourceHandler.get_latest_doc_link",
             return_value={
                 fake_resource.id: "test",
             },
@@ -483,7 +483,7 @@ class TestAppPermissionBuilder:
             {
                 "id": fake_resource.id,
                 "name": "test1-2",
-                "api_name": fake_gateway.name,
+                "gateway_name": fake_gateway.name,
                 "gateway_id": fake_gateway.id,
                 "description": "desc",
                 "description_en": "desc_en",

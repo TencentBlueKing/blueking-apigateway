@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import itertools
+import operator
 from typing import List
 
 from django.conf import settings
@@ -36,7 +38,7 @@ from apigateway.common.tenant.constants import (
 from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info_cached
 from apigateway.components.bkuser import query_display_names_cached
-from apigateway.core.models import Gateway
+from apigateway.core.models import Gateway, Resource
 
 
 class ResourcePermissionHandler:
@@ -94,6 +96,93 @@ class ResourcePermissionHandler:
                     "grant_type": GrantTypeEnum.SYNC.value,
                 },
             )
+
+    @staticmethod
+    def renew_resource_permissions_by_resource_ids(
+        bk_app_code: str,
+        resource_ids: List[int],
+        expire_days: int,
+    ):
+        grouped_resources = (
+            Resource.objects.filter(id__in=resource_ids).values("gateway_id", "id").order_by("gateway_id")
+        )
+        for gateway_id, grouped in itertools.groupby(grouped_resources, key=operator.itemgetter("gateway_id")):
+            grouped_resource_ids = [item["id"] for item in grouped]
+            gateway = Gateway.objects.get(id=gateway_id)
+            ResourcePermissionHandler.sync_from_gateway_permission(
+                gateway=gateway,
+                bk_app_code=bk_app_code,
+                resource_ids=grouped_resource_ids,
+            )
+            AppResourcePermission.objects.renew_by_resource_ids(
+                gateway=gateway,
+                bk_app_code=bk_app_code,
+                resource_ids=grouped_resource_ids,
+                grant_type=GrantTypeEnum.RENEW.value,
+                expire_days=expire_days,
+            )
+
+    @staticmethod
+    def renew_resource_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int):
+        if not ids:
+            return [], [], []
+
+        data_before = list(
+            AppResourcePermission.objects.filter(
+                gateway=gateway,
+                id__in=ids,
+            )
+        )
+        AppResourcePermission.objects.renew_by_ids(
+            gateway=gateway,
+            ids=ids,
+            expires=expire_days,
+        )
+        data_after = list(
+            AppResourcePermission.objects.filter(
+                gateway=gateway,
+                id__in=ids,
+            )
+        )
+        bk_app_codes = [perm.bk_app_code for perm in data_before]
+
+        return data_before, data_after, bk_app_codes
+
+    @staticmethod
+    def renew_gateway_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int):
+        if not ids:
+            return [], [], []
+
+        data_before = list(
+            AppGatewayPermission.objects.filter(
+                gateway=gateway,
+                id__in=ids,
+            )
+        )
+        AppGatewayPermission.objects.renew_by_ids(
+            gateway=gateway,
+            ids=ids,
+            expires=expire_days,
+        )
+        data_after = list(
+            AppGatewayPermission.objects.filter(
+                gateway=gateway,
+                id__in=ids,
+            )
+        )
+        bk_app_codes = [perm.bk_app_code for perm in data_before]
+
+        return data_before, data_after, bk_app_codes
+
+    @staticmethod
+    def delete_permissions_by_ids(queryset, ids: List[int]):
+        target_queryset = queryset.filter(id__in=ids)
+        if not target_queryset.exists():
+            return None
+
+        instance = target_queryset[0]
+        target_queryset.delete()
+        return instance
 
     @staticmethod
     def convert_applied_by_to_display_name(
