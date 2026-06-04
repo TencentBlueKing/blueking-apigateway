@@ -17,6 +17,9 @@
 #
 
 
+import csv
+from io import StringIO
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
@@ -24,6 +27,7 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
+from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
@@ -50,10 +54,13 @@ from apigateway.common.tenant.user_credentials import get_user_credentials_from_
 from apigateway.core.models import Stage
 from apigateway.service.resource_version import get_resource_names_set
 from apigateway.utils.django import get_model_dict
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import now_datetime
 
 from .serializers import (
+    GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionListInputSLZ,
+    GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerAppPermissionAppCodeListInputSLZ,
     MCPServerAppPermissionAppCodeListOutputSLZ,
     MCPServerAppPermissionApplyApplicantListInputSLZ,
@@ -730,6 +737,7 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
             bk_app_code=data["bk_app_code"],
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
             expire_days=None,
+            operator=request.user.username,
         )
 
         MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
@@ -863,6 +871,7 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
                 bk_app_code=slz.instance.bk_app_code,
                 grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
                 expire_days=None,
+                operator=request.user.username,
             )
 
             MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
@@ -1079,3 +1088,148 @@ class MCPServerBatchConfigApi(generics.CreateAPIView):
 
         output_slz = MCPServerBatchConfigOutputSLZ(result)
         return OKJsonResponse(data=output_slz.data)
+
+
+class GatewayMCPServerAppPermissionQuerySetMixin:
+    def get_queryset(self):
+        return MCPServerAppPermission.objects.filter(mcp_server__gateway=self.request.gateway).select_related(
+            "mcp_server"
+        )
+
+    def filter_queryset_by_params(self, queryset, data):
+        mcp_server_id = data.get("mcp_server_id")
+        bk_app_code = data.get("bk_app_code")
+        grant_type = data.get("grant_type")
+
+        if mcp_server_id:
+            queryset = queryset.filter(mcp_server_id=mcp_server_id)
+        if bk_app_code:
+            queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
+        if grant_type:
+            queryset = queryset.filter(grant_type=grant_type)
+
+        return queryset
+
+    def get_apply_record_map(self, permissions):
+        mcp_server_ids = [permission.mcp_server_id for permission in permissions]
+        bk_app_codes = [permission.bk_app_code for permission in permissions]
+        apply_records = MCPServerAppPermissionApply.objects.filter(
+            mcp_server_id__in=mcp_server_ids,
+            bk_app_code__in=bk_app_codes,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            is_deleted=False,
+        ).order_by("-handled_time", "-id")
+
+        apply_record_map = {}
+        for apply_record in apply_records:
+            key = (apply_record.mcp_server_id, apply_record.bk_app_code)
+            if key not in apply_record_map:
+                apply_record_map[key] = apply_record
+        return apply_record_map
+
+    def get_app_permission_serializer_context(self, permissions):
+        return {
+            "gateway_tenant_mode": self.request.gateway.tenant_mode,
+            "gateway_tenant_id": self.request.gateway.tenant_id,
+            "apply_record_map": self.get_apply_record_map(permissions),
+        }
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关下 MCPServer 应用权限列表",
+        query_serializer=GatewayMCPServerAppPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: GatewayMCPServerAppPermissionListOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class GatewayMCPServerAppPermissionListApi(GatewayMCPServerAppPermissionQuerySetMixin, generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = self.filter_queryset_by_params(self.get_queryset(), slz.validated_data).order_by(
+            "mcp_server__name", "bk_app_code"
+        )
+        page = self.paginate_queryset(queryset)
+
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+            page,
+            many=True,
+            context=self.get_app_permission_serializer_context(page),
+        )
+        return self.get_paginated_response(slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="导出网关下 MCPServer 应用权限列表",
+        request_body=GatewayMCPServerAppPermissionExportInputSLZ,
+        responses={status.HTTP_200_OK: "file/csv"},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class GatewayMCPServerAppPermissionExportApi(GatewayMCPServerAppPermissionQuerySetMixin, generics.CreateAPIView):
+    def create(self, request, *args, **kwargs):
+        slz = GatewayMCPServerAppPermissionExportInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+        queryset = self.get_queryset()
+        if data["export_type"] == ExportTypeEnum.FILTERED.value:
+            queryset = self.filter_queryset_by_params(queryset, data)
+        elif data["export_type"] == ExportTypeEnum.SELECTED.value:
+            queryset = queryset.filter(id__in=data["selected_ids"])
+
+        permissions = list(queryset.order_by("mcp_server__name", "bk_app_code"))
+        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+            permissions,
+            many=True,
+            context=self.get_app_permission_serializer_context(permissions),
+        )
+
+        content = self._get_csv_content(slz.data)
+        filename = f"{self.request.gateway.name}-mcp_server_app_permissions.csv"
+
+        response = DownloadableResponse(content, filename=filename)
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+        return response
+
+    def _get_csv_content(self, data):
+        headers = [
+            "mcp_server_name",
+            "bk_app_code",
+            "applied_by",
+            "effective_time",
+            "handled_by",
+            "grant_type_display",
+        ]
+        header_row = {
+            "mcp_server_name": _("MCPServer名称"),
+            "bk_app_code": _("蓝鲸应用ID"),
+            "applied_by": _("申请人"),
+            "effective_time": _("生效时间"),
+            "handled_by": _("审批人/授权人"),
+            "grant_type_display": _("授权类型"),
+        }
+
+        rows = [
+            {
+                "mcp_server_name": item["mcp_server"]["name"],
+                "bk_app_code": item["bk_app_code"],
+                "applied_by": item["applied_by"],
+                "effective_time": item["effective_time"],
+                "handled_by": item["handled_by"],
+                "grant_type_display": item["grant_type_display"],
+            }
+            for item in data
+        ]
+
+        content = StringIO()
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv.writerow(header_row)
+        io_csv.writerows(rows)
+
+        return content.getvalue()
