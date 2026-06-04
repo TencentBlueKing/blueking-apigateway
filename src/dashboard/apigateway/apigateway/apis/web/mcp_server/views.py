@@ -1090,13 +1090,25 @@ class MCPServerBatchConfigApi(generics.CreateAPIView):
         return OKJsonResponse(data=output_slz.data)
 
 
-class GatewayMCPServerAppPermissionQuerySetMixin:
-    def get_queryset(self):
-        return MCPServerAppPermission.objects.filter(mcp_server__gateway=self.request.gateway).select_related(
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取网关下 MCPServer 应用权限列表",
+        query_serializer=GatewayMCPServerAppPermissionListInputSLZ,
+        responses={status.HTTP_200_OK: GatewayMCPServerAppPermissionListOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        slz = GatewayMCPServerAppPermissionListInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+
+        queryset = MCPServerAppPermission.objects.filter(mcp_server__gateway=self.request.gateway).select_related(
             "mcp_server"
         )
 
-    def filter_queryset_by_params(self, queryset, data):
+        data = slz.validated_data
         mcp_server_id = data.get("mcp_server_id")
         bk_app_code = data.get("bk_app_code")
         grant_type = data.get("grant_type")
@@ -1108,56 +1120,17 @@ class GatewayMCPServerAppPermissionQuerySetMixin:
         if grant_type:
             queryset = queryset.filter(grant_type=grant_type)
 
-        return queryset
-
-    def get_apply_record_map(self, permissions):
-        mcp_server_ids = [permission.mcp_server_id for permission in permissions]
-        bk_app_codes = [permission.bk_app_code for permission in permissions]
-        apply_records = MCPServerAppPermissionApply.objects.filter(
-            mcp_server_id__in=mcp_server_ids,
-            bk_app_code__in=bk_app_codes,
-            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
-            is_deleted=False,
-        ).order_by("-handled_time", "-id")
-
-        apply_record_map = {}
-        for apply_record in apply_records:
-            key = (apply_record.mcp_server_id, apply_record.bk_app_code)
-            if key not in apply_record_map:
-                apply_record_map[key] = apply_record
-        return apply_record_map
-
-    def get_app_permission_serializer_context(self, permissions):
-        return {
-            "gateway_tenant_mode": self.request.gateway.tenant_mode,
-            "gateway_tenant_id": self.request.gateway.tenant_id,
-            "apply_record_map": self.get_apply_record_map(permissions),
-        }
-
-
-@method_decorator(
-    name="get",
-    decorator=swagger_auto_schema(
-        operation_description="获取网关下 MCPServer 应用权限列表",
-        query_serializer=GatewayMCPServerAppPermissionListInputSLZ,
-        responses={status.HTTP_200_OK: GatewayMCPServerAppPermissionListOutputSLZ(many=True)},
-        tags=["WebAPI.MCPServer"],
-    ),
-)
-class GatewayMCPServerAppPermissionListApi(GatewayMCPServerAppPermissionQuerySetMixin, generics.ListAPIView):
-    def list(self, request, *args, **kwargs):
-        slz = GatewayMCPServerAppPermissionListInputSLZ(data=request.query_params)
-        slz.is_valid(raise_exception=True)
-
-        queryset = self.filter_queryset_by_params(self.get_queryset(), slz.validated_data).order_by(
-            "mcp_server__name", "bk_app_code"
-        )
+        queryset = queryset.order_by("mcp_server__name", "bk_app_code")
         page = self.paginate_queryset(queryset)
 
         slz = GatewayMCPServerAppPermissionListOutputSLZ(
             page,
             many=True,
-            context=self.get_app_permission_serializer_context(page),
+            context={
+                "gateway_tenant_mode": self.request.gateway.tenant_mode,
+                "gateway_tenant_id": self.request.gateway.tenant_id,
+                "apply_record_map": MCPServerHandler.get_app_permission_apply_record_map(page),
+            },
         )
         return self.get_paginated_response(slz.data)
 
@@ -1171,15 +1144,26 @@ class GatewayMCPServerAppPermissionListApi(GatewayMCPServerAppPermissionQuerySet
         tags=["WebAPI.MCPServer"],
     ),
 )
-class GatewayMCPServerAppPermissionExportApi(GatewayMCPServerAppPermissionQuerySetMixin, generics.CreateAPIView):
+class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         slz = GatewayMCPServerAppPermissionExportInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        queryset = self.get_queryset()
+        queryset = MCPServerAppPermission.objects.filter(mcp_server__gateway=self.request.gateway).select_related(
+            "mcp_server"
+        )
+
         if data["export_type"] == ExportTypeEnum.FILTERED.value:
-            queryset = self.filter_queryset_by_params(queryset, data)
+            mcp_server_id = data.get("mcp_server_id")
+            bk_app_code = data.get("bk_app_code")
+            grant_type = data.get("grant_type")
+            if mcp_server_id:
+                queryset = queryset.filter(mcp_server_id=mcp_server_id)
+            if bk_app_code:
+                queryset = queryset.filter(bk_app_code__icontains=bk_app_code)
+            if grant_type:
+                queryset = queryset.filter(grant_type=grant_type)
         elif data["export_type"] == ExportTypeEnum.SELECTED.value:
             queryset = queryset.filter(id__in=data["selected_ids"])
 
@@ -1187,7 +1171,11 @@ class GatewayMCPServerAppPermissionExportApi(GatewayMCPServerAppPermissionQueryS
         slz = GatewayMCPServerAppPermissionListOutputSLZ(
             permissions,
             many=True,
-            context=self.get_app_permission_serializer_context(permissions),
+            context={
+                "gateway_tenant_mode": self.request.gateway.tenant_mode,
+                "gateway_tenant_id": self.request.gateway.tenant_id,
+                "apply_record_map": MCPServerHandler.get_app_permission_apply_record_map(permissions),
+            },
         )
 
         content = self._get_csv_content(slz.data)
