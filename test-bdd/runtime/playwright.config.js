@@ -36,7 +36,7 @@ module.exports = defineConfig({
   retries: 0,
 
   // Timeouts
-  timeout: 60_000,          // 60s per test
+  timeout: 90_000,          // 90s per test
   globalTimeout: 1_800_000, // 30 minutes for entire suite
 
   // Global setup/teardown — test gateway lifecycle

@@ -2,11 +2,20 @@
 // @generated-date: 2026-06-04
 
 const { test, expect } = require('@playwright/test');
-const { BASE_URL, waitForPageReady } = require('../../runtime/helpers');
+const { BASE_URL, reAuth, waitForPageReady } = require('../../runtime/helpers');
 
 async function gotoPlatformTool(page, path) {
-  await page.goto(`${BASE_URL.replace(/\/$/, '')}${path}`, { waitUntil: 'domcontentloaded' });
+  const url = `${BASE_URL.replace(/\/$/, '')}${path}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
   await waitForPageReady(page);
+  const loginVisible = await page.locator('button').filter({ hasText: /Log in|立即登录/ }).first()
+    .isVisible({ timeout: 1000 })
+    .catch(() => false);
+  if (page.url().includes('/login/') || loginVisible) {
+    await reAuth(page);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await waitForPageReady(page);
+  }
   const pathname = path.split('?')[0];
   await expect(page).toHaveURL(new RegExp(pathname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }

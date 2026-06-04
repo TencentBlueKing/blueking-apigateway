@@ -169,16 +169,30 @@ async function waitForAuthenticatedSession(page, timeout = 15000) {
   return false;
 }
 
+async function dismissLoginOverlays(page) {
+  const noticeButton = page.locator('button, .bk-button').filter({ hasText: /I know|我知道|知道了/ }).first();
+  if (await noticeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await noticeButton.evaluate((button) => button.click()).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+}
+
 /**
  * Full login flow using environment credentials.
  * Handles both Chinese and English login forms.
  */
 async function login(page) {
-  await page.goto(BASE_URL);
-  await page.waitForTimeout(3000);
+  await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(1000);
+  await dismissLoginOverlays(page);
 
+  const loginForm = page.locator(
+    'input[placeholder="请输入用户名"], #user, input[placeholder="Please enter your username"], input[type="password"]'
+  ).first();
+  const hasLoginForm = await loginForm.isVisible({ timeout: 3000 }).catch(() => false);
   const url = page.url();
-  if (!url.includes('/login/') && await waitForAuthenticatedSession(page, 3000)) {
+  if (!hasLoginForm && !url.includes('/login/') && await waitForAuthenticatedSession(page, 5000)) {
     return; // already logged in
   }
 
@@ -198,24 +212,25 @@ async function login(page) {
   if (hasChineseForm) {
     await page.locator('input[placeholder="请输入用户名"], #user').first().fill(USERNAME);
     await page.locator('input[placeholder="请输入密码"], #password').first().fill(PASSWORD);
-    await page.locator('button').filter({ hasText: '立即登录' }).click({ force: true });
+    await page.locator('button').filter({ hasText: '立即登录' }).evaluate((button) => button.click());
   } else {
     // English form fallback
     const hasIdUser = await page.locator('#user').isVisible().catch(() => false);
     if (hasIdUser) {
       await page.locator('#user').fill(USERNAME);
       await page.locator('#password').fill(PASSWORD);
-      await page.locator('.login-btn').click({ force: true });
+      await page.locator('.login-btn').evaluate((button) => button.click());
     } else {
-      await page.getByRole('textbox', { name: /username/i }).fill(USERNAME);
-      await page.getByRole('textbox', { name: /password/i }).fill(PASSWORD);
-      await page.getByRole('button', { name: /log in/i }).click();
+      await page.locator('input[placeholder="Please enter your username"], input[name="username"], input[type="text"]').first().fill(USERNAME);
+      await page.locator('input[placeholder="Please enter your password"], input[name="password"], input[type="password"]').first().fill(PASSWORD);
+      await page.getByRole('button', { name: /log in/i }).evaluate((button) => button.click());
     }
   }
 
   // Wait for redirect away from login
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(500);
+    await dismissLoginOverlays(page);
     if (!page.url().includes('/login/')) break;
   }
 
@@ -666,10 +681,16 @@ async function apiRequest(page, method, requestPath, data = undefined, options =
       csrf: csrfToken,
     });
 
-    const isHtmlServerError = response.status >= 500
+    const isRetryableServerError = response.status >= 500
       && typeof response.data === 'string'
-      && /<html|<!doctype html|Server Error/i.test(response.data);
-    if (!isHtmlServerError || attempt === maxAttempts) {
+      && /<html|<!doctype html|Server Error|OperationalError|Can't connect to MySQL server|Name or service not known/i.test(response.data);
+    if (!isRetryableServerError || attempt === maxAttempts) {
+      const isUnauthenticated = response.status === 401
+        && JSON.stringify(response.data || '').includes('UNAUTHENTICATED');
+      if (isUnauthenticated && options.retryAuth !== false && attempt === 1) {
+        await reAuth(page);
+        continue;
+      }
       break;
     }
     await page.waitForTimeout(1000 * attempt);

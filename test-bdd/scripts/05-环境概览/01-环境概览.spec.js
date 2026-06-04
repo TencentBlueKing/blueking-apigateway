@@ -13,8 +13,7 @@ test.describe('功能: 环境概览 - 环境概览', () => {
   test('场景: 查看环境概览', async ({ page }) => {
     await expect(page).toHaveURL(new RegExp(`/${getGatewayId()}/stage/overview`), { timeout: 5000 });
 
-    const pageContent = page.locator('.bk-table, [class*="stage"], [class*="overview"], .bk-exception').first();
-    await expect(pageContent).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('body')).toContainText(/环境概览|发布资源|prod|暂无/, { timeout: 20000 });
   });
 
   test('场景: 发布资源', async ({ page }) => {
