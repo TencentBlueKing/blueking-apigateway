@@ -798,6 +798,7 @@ class MCPServerAppPermissionApplyListApi(generics.ListAPIView):
             data.get("bk_app_code"),
             data.get("applied_by"),
         )
+        queryset = queryset.order_by("-handled_time", "-applied_time", "-id")
 
         page = self.paginate_queryset(queryset)
 
