@@ -2,7 +2,158 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { clickConfirm, getActiveDialog, getTableRowByText, selectDropdownOption, selectVisibleTableRowCheckboxes, getTableRowCount, getToastMessage, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
+
+async function createBatchResources(page, count = 2) {
+  const token = Date.now().toString(36);
+  const resources = Array.from({ length: count }, (_, index) => ({
+    name: `batch_op_${token}_${index + 1}`,
+    path: `/batch-op-${token}-${index + 1}/`,
+  }));
+
+  const result = await page.evaluate(async ({ gwId, items }) => {
+    try {
+      const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+      const csrfToken = csrfMatch ? csrfMatch[1] : '';
+
+      const backendResp = await fetch(`/backend/gateways/${gwId}/backends/`);
+      const backendPayload = await backendResp.json().catch(() => ({}));
+      const backends = backendPayload?.data?.results || backendPayload?.data || [];
+      const backendId = (backends.find(item => item.name === 'default') || backends[0])?.id;
+
+      if (!backendId) {
+        return { ok: false, error: 'backend not found' };
+      }
+
+      for (const item of items) {
+        const response = await fetch(`/backend/gateways/${gwId}/resources/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          body: JSON.stringify({
+            name: item.name,
+            description: 'batch operation test resource',
+            method: 'GET',
+            path: item.path,
+            match_subpath: false,
+            is_public: true,
+            allow_apply_permission: true,
+            backend: { id: backendId, config: { method: 'GET', path: '/get', timeout: 30 } },
+            auth_config: { app_verified_required: true, auth_verified_required: true, resource_perm_required: false },
+            label_ids: [],
+          }),
+        });
+
+        if (!response.ok) {
+          return { ok: false, status: response.status, item };
+        }
+      }
+
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }, { gwId: getGatewayId(), items: resources });
+
+  if (!result.ok) {
+    throw new Error(`Failed to create batch resources: ${JSON.stringify(result)}`);
+  }
+
+  return resources;
+}
+
+async function listResourcesByNames(page, names) {
+  return await page.evaluate(async ({ gwId, targetNames }) => {
+    const response = await fetch(`/backend/gateways/${gwId}/resources/?limit=500&offset=0`);
+    const payload = await response.json().catch(() => ({}));
+    const rows = payload?.data?.results || payload?.data || [];
+    return rows.filter(item => targetNames.includes(item.name));
+  }, { gwId: getGatewayId(), targetNames: names });
+}
+
+async function waitForResourcesByNames(page, names, timeout = 15000) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    const rows = await listResourcesByNames(page, names);
+    if (rows.length === names.length) {
+      return rows;
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  throw new Error(`Resources not ready: ${names.join(', ')}`);
+}
+
+async function getResourceDetailsByNames(page, names) {
+  const rows = await listResourcesByNames(page, names);
+  return await page.evaluate(async ({ gwId, ids }) => {
+    const details = [];
+    for (const id of ids) {
+      const response = await fetch(`/backend/gateways/${gwId}/resources/${id}/`);
+      const payload = await response.json().catch(() => ({}));
+      details.push(payload?.data || payload);
+    }
+    return details;
+  }, { gwId: getGatewayId(), ids: rows.map(item => item.id) });
+}
+
+async function cleanupResourcesByNames(page, names) {
+  await page.evaluate(async ({ gwId, targetNames }) => {
+    const csrfMatch = document.cookie.match(/(?:bkapigw_csrftoken[^=]*|bk_csrftoken|csrftoken)=([^;]+)/);
+    const csrfToken = csrfMatch ? csrfMatch[1] : '';
+    const headers = csrfToken ? { 'X-CSRFToken': csrfToken } : {};
+
+    const response = await fetch(`/backend/gateways/${gwId}/resources/?limit=500&offset=0`);
+    const payload = await response.json().catch(() => ({}));
+    const rows = payload?.data?.results || payload?.data || [];
+    const targets = rows.filter(item => targetNames.includes(item.name));
+
+    for (const item of targets) {
+      await fetch(`/backend/gateways/${gwId}/resources/${item.id}/`, {
+        method: 'DELETE',
+        headers,
+      }).catch(() => null);
+    }
+  }, { gwId: getGatewayId(), targetNames: names }).catch(() => null);
+}
+
+async function searchResources(page, keyword) {
+  const searchInput = page.locator('.bk-search-select, input[placeholder*="资源名称"], input[placeholder*="搜索"], input[placeholder*="Enter"]').first();
+  await searchInput.click();
+  await page.waitForTimeout(300);
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A').catch(() => {});
+  await page.keyboard.type(keyword);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1500);
+}
+
+async function selectRowsByNames(page, names) {
+  return await page.evaluate((targetNames) => {
+    let clicked = 0;
+    const rows = document.querySelectorAll('table tbody tr, .bk-table-body tr, .table-row');
+
+    for (const row of rows) {
+      const text = row.textContent || '';
+      if (!targetNames.some(name => text.includes(name))) {
+        continue;
+      }
+
+      const checkbox = row.querySelector('.bk-checkbox-input, label.bk-checkbox, .bk-checkbox-original');
+      if (!checkbox) {
+        continue;
+      }
+
+      checkbox.click();
+      clicked += 1;
+    }
+
+    return clicked;
+  }, names);
+}
 
 
 test.describe('功能: 资源配置 - 资源列表操作', () => {
@@ -45,63 +196,87 @@ test.describe('功能: 资源配置 - 资源列表操作', () => {
     const tagFilter = page.locator('.tag-filter, .label-filter, [class*="tag"]').first();
     if (await tagFilter.isVisible({ timeout: 5000 }).catch(() => false)) {
       // 点击标签筛选
-      await tagFilter.click();
-      await page.waitForTimeout(300);
-
-      // 选择第一个标签
-      const tagOption = page.locator('.bk-select-option, .bk-option, .tag-item').first();
-      if (await tagOption.isVisible().catch(() => false)) {
-        await tagOption.click();
+      if (await selectDropdownOption(page, tagFilter, null, '.bk-select-option, .bk-option, .tag-item').catch(() => false)) {
         await page.waitForTimeout(800);
 
         // 验证筛选结果
         const rows = await getTableRowCount(page);
         expect(rows).toBeGreaterThanOrEqual(0);
       }
-
-      // 关闭筛选下拉
-      await page.locator('body').click({ position: { x: 10, y: 10 } });
     }
   });
 
   test('场景: 批量操作', async ({ page }) => {
-    // 不勾选资源直接点击批量操作中的编辑资源
-    const batchBtn = page.locator('button, .bk-button').filter({ hasText: /批量/ }).first();
-    if (await batchBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    let createdResources = [];
+
+    createdResources = await createBatchResources(page, 2);
+    const createdNames = createdResources.map(item => item.name);
+
+    try {
+      await waitForResourcesByNames(page, createdNames);
+      await page.reload();
+      await page.waitForTimeout(2000);
+
+      // 不勾选资源时，批量编辑按钮应保持不可点击。
+      const batchBtn = page.locator('button, .bk-button').filter({ hasText: /批量/ }).first();
+      await expect(batchBtn).toBeVisible({ timeout: 10000 });
       await batchBtn.click();
+      await page.waitForTimeout(500);
+
+      const batchEditBtn = page.locator('button, .bk-button').filter({ hasText: /^编辑资源$/ }).first();
+      await expect(batchEditBtn).toBeDisabled({ timeout: 10000 });
+
+      await searchResources(page, createdResources[0].name.replace(/_1$/, ''));
+      await expect(getTableRowByText(page, createdResources[0].name)).toBeVisible({ timeout: 10000 });
+      await expect(getTableRowByText(page, createdResources[1].name)).toBeVisible({ timeout: 10000 });
+
+      const clicked = await selectRowsByNames(page, createdNames);
+      expect(clicked).toBe(2);
+
+      await batchEditBtn.click();
+      await page.waitForTimeout(500);
+
+      const editDialog = getActiveDialog(page);
+      await expect(editDialog).toBeVisible({ timeout: 5000 });
+
+      await editDialog.getByText('是否公开', { exact: true }).click();
       await page.waitForTimeout(300);
+      await expect(clickConfirm(page, /确定|确认/, editDialog)).resolves.toBe(true);
+      await page.waitForTimeout(1500);
 
-      const editOption = page.locator('.bk-select-option, .bk-option, .dropdown-item, [class*="menu-item"]').filter({ hasText: '编辑资源' }).first();
-      if (await editOption.isVisible().catch(() => false)) {
-        await editOption.click();
-        await page.waitForTimeout(800);
+      const editToast = await getToastMessage(page);
+      expect(editToast).toMatch(/编辑成功|成功/);
 
-        // 验证提示"请先勾选资源"
-        const tipMsg = page.locator('.bk-message, .bk-notify, [class*="toast"], [class*="message"]').filter({ hasText: /勾选/ }).first();
-        await expect(tipMsg).toBeVisible({ timeout: 10000 });
+      const editedDetails = await getResourceDetailsByNames(page, createdNames);
+      for (const detail of editedDetails) {
+        expect(detail.is_public).toBe(false);
+        expect(detail.allow_apply_permission).toBe(false);
       }
-    }
 
-    // 勾选多个资源 — use JavaScript to click since native checkboxes are hidden
-    const clicked = await page.evaluate(() => {
-      const rows = document.querySelectorAll('table tbody tr');
-      let clickCount = 0;
-      for (const row of rows) {
-        if (row.textContent.includes('暂无数据')) continue;
-        const cb = row.querySelector('.bk-checkbox-input, label.bk-checkbox, .bk-checkbox-original');
-        if (cb) {
-          cb.click();
-          clickCount++;
-          if (clickCount >= 2) break;
-        }
+      const batchDeleteBtn = page.locator('button, .bk-button').filter({ hasText: /^删除资源$/ }).first();
+      await searchResources(page, createdResources[0].name.replace(/_1$/, ''));
+      const clickedAgain = await selectRowsByNames(page, createdNames);
+      expect(clickedAgain).toBe(2);
+
+      await batchDeleteBtn.click();
+      await page.waitForTimeout(500);
+
+      const deleteDialog = getActiveDialog(page);
+      await expect(deleteDialog).toBeVisible({ timeout: 5000 });
+      await expect(deleteDialog).toContainText(createdResources[0].path);
+      await expect(clickConfirm(page, /确定|确认/, deleteDialog)).resolves.toBe(true);
+      await page.waitForTimeout(1500);
+
+      const deleteToast = await getToastMessage(page);
+      expect(deleteToast).toMatch(/删除成功|成功/);
+
+      const remainingRows = await listResourcesByNames(page, createdNames);
+      expect(remainingRows).toHaveLength(0);
+      createdResources = [];
+    } finally {
+      if (createdResources.length) {
+        await cleanupResourcesByNames(page, createdResources.map(item => item.name));
       }
-      return clickCount;
-    });
-
-    if (clicked >= 2) {
-      await page.waitForTimeout(300);
-      // 验证勾选成功
-      expect(clicked).toBeGreaterThanOrEqual(2);
     }
   });
 });

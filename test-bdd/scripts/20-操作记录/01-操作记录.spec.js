@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { dismissFloatingLayers, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 
 test.describe('功能: 操作记录 - 操作审计记录', () => {
@@ -30,8 +30,7 @@ test.describe('功能: 操作记录 - 操作审计记录', () => {
         }
 
         // Close picker
-        await page.locator('body').click({ position: { x: 10, y: 10 } });
-        await page.waitForTimeout(300);
+        await dismissFloatingLayers(page);
       }
     } else {
       const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();

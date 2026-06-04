@@ -4,22 +4,22 @@
 
 const { chromium } = require('@playwright/test');
 const fs = require('fs');
-const path = require('path');
 
-const { BASE_URL, USERNAME, PASSWORD } = require('./test-env');
-const ENV_FILE = path.join(__dirname, '.env');
-const STORAGE_FILE = path.join(__dirname, 'storage-state.json');
+const { BASE_URL } = require('./test-env');
+const {
+  cleanupRuntimeArtifacts,
+  login,
+  readRuntimeState,
+  STORAGE_STATE_FILE,
+} = require('./helpers');
 
 module.exports = async () => {
   // Read gateway info from .env
-  let gatewayId, gatewayName;
-  try {
-    const envContent = fs.readFileSync(ENV_FILE, 'utf-8');
-    const idMatch = envContent.match(/TEST_GATEWAY_ID=(\d+)/);
-    const nameMatch = envContent.match(/TEST_GATEWAY_NAME=(\S+)/);
-    gatewayId = idMatch ? idMatch[1] : null;
-    gatewayName = nameMatch ? nameMatch[1] : null;
-  } catch {
+  const runtimeState = readRuntimeState();
+  const gatewayId = runtimeState.TEST_GATEWAY_ID;
+  const gatewayName = runtimeState.TEST_GATEWAY_NAME;
+
+  if (!gatewayId && !gatewayName) {
     console.log('[teardown] No .env file found — skipping cleanup');
     return;
   }
@@ -36,7 +36,7 @@ module.exports = async () => {
 
   // Reuse storage state if available
   try {
-    const storageState = JSON.parse(fs.readFileSync(STORAGE_FILE, 'utf-8'));
+    const storageState = JSON.parse(fs.readFileSync(STORAGE_STATE_FILE, 'utf-8'));
     context = await browser.newContext({ storageState });
   } catch {
     context = await browser.newContext();
@@ -51,20 +51,7 @@ module.exports = async () => {
 
     // Re-authenticate if needed
     if (page.url().includes('/login/')) {
-      const hasChineseForm = await page.locator('input[placeholder="请输入用户名"]').isVisible().catch(() => false);
-      if (hasChineseForm) {
-        await page.locator('input[placeholder="请输入用户名"]').click();
-        await page.locator('input[placeholder="请输入用户名"]').type(USERNAME);
-        await page.locator('input[placeholder="请输入密码"]').click();
-        await page.locator('input[placeholder="请输入密码"]').type(PASSWORD);
-        await page.locator('button').filter({ hasText: '立即登录' }).click();
-      }
-
-      for (let i = 0; i < 30; i++) {
-        await page.waitForTimeout(500);
-        if (!page.url().includes('/login/')) break;
-      }
-
+      await login(page);
       await page.goto(`${BASE_URL}/${gatewayId}/basic-info`);
       await page.waitForTimeout(2000);
     }
@@ -128,9 +115,6 @@ module.exports = async () => {
     console.log(`[teardown] Error during cleanup: ${err.message}`);
   } finally {
     await browser.close();
-
-    // Clean up state files
-    try { fs.unlinkSync(ENV_FILE); } catch {}
-    try { fs.unlinkSync(STORAGE_FILE); } catch {}
+    cleanupRuntimeArtifacts();
   }
 };

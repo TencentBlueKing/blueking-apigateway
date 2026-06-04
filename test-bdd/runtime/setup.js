@@ -6,8 +6,8 @@ const { chromium } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const { BASE_URL, USERNAME, PASSWORD, COOKIE } = require('./test-env');
-const ENV_FILE = path.join(__dirname, '.env');
+const { BASE_URL, PASSWORD, COOKIE } = require('./test-env');
+const { createTestName, login, writeRuntimeState, STORAGE_STATE_FILE } = require('./helpers');
 
 module.exports = async () => {
   if (!BASE_URL) {
@@ -23,41 +23,7 @@ module.exports = async () => {
 
   try {
     // === Step 1: Authenticate ===
-    await page.goto(BASE_URL);
-    await page.waitForTimeout(3000);
-
-    if (page.url().includes('/login/')) {
-      if (COOKIE) {
-        const domain = new URL(BASE_URL).hostname.split('.').slice(-2).join('.');
-        await context.addCookies([{ name: 'bk_token', value: COOKIE, domain: '.' + domain, path: '/' }]);
-        await page.goto(BASE_URL);
-        await page.waitForTimeout(3000);
-      } else {
-        const hasChineseForm = await page.locator('input[placeholder="请输入用户名"]').isVisible().catch(() => false);
-        if (hasChineseForm) {
-          await page.locator('input[placeholder="请输入用户名"]').click();
-          await page.locator('input[placeholder="请输入用户名"]').type(USERNAME);
-          await page.locator('input[placeholder="请输入密码"]').click();
-          await page.locator('input[placeholder="请输入密码"]').type(PASSWORD);
-          await page.locator('button').filter({ hasText: '立即登录' }).click();
-        } else {
-          await page.locator('#user').click();
-          await page.locator('#user').type(USERNAME);
-          await page.locator('#password').click();
-          await page.locator('#password').type(PASSWORD);
-          await page.locator('.login-btn').click();
-        }
-
-        for (let i = 0; i < 30; i++) {
-          await page.waitForTimeout(500);
-          if (!page.url().includes('/login/')) break;
-        }
-      }
-
-      if (page.url().includes('/login/')) {
-        throw new Error('Setup: Authentication failed');
-      }
-    }
+    await login(page);
 
     console.log('[setup] Authenticated successfully');
 
@@ -65,7 +31,7 @@ module.exports = async () => {
     await page.goto(BASE_URL);
     await page.waitForTimeout(2000);
 
-    const testName = 'testagent' + Date.now().toString().slice(-6);
+    const testName = createTestName('testagent');
 
     const createResult = await page.evaluate(async (name) => {
       try {
@@ -361,14 +327,14 @@ module.exports = async () => {
     process.env.TEST_GATEWAY_NAME = testName;
 
     const storageState = await context.storageState();
-    fs.writeFileSync(
-      ENV_FILE,
-      `TEST_GATEWAY_ID=${gatewayId}\nTEST_GATEWAY_NAME=${testName}\n`
-    );
+    writeRuntimeState({
+      TEST_GATEWAY_ID: gatewayId,
+      TEST_GATEWAY_NAME: testName,
+    });
 
     // Save storage state for test reuse
     fs.writeFileSync(
-      path.join(__dirname, 'storage-state.json'),
+      STORAGE_STATE_FILE,
       JSON.stringify(storageState)
     );
 

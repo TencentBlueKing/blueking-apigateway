@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, selectDropdown, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { clickConfirm, getActiveSideslider, getTableRowCount, navigateToGatewayPage, BASE_URL, getGatewayId, selectDropdownOption } = require("../../runtime/helpers");
 
 
 test.describe('功能: SDK列表 - SDK列表', () => {
@@ -22,36 +22,22 @@ test.describe('功能: SDK列表 - SDK列表', () => {
       await genSDKBtn.click();
       await page.waitForTimeout(800);
 
+      const sdkSlider = getActiveSideslider(page);
+
       // 选择资源版本
-      const versionSelect = page.locator('.bk-select').filter({ hasText: /版本|version/i }).first();
-      if (await versionSelect.isVisible().catch(() => false)) {
-        await versionSelect.click();
-        await page.waitForTimeout(300);
-        await page.locator('.bk-select-option, .bk-option').first().click();
-        await page.waitForTimeout(300);
-        await page.locator('body').click({ position: { x: 10, y: 10 } });
-      }
+      await selectDropdownOption(page, sdkSlider.locator('.bk-select').filter({ hasText: /版本|version/i }).first()).catch(() => false);
 
       // 输入SDK版本号
-      const sdkVersionInput = page.locator('input[placeholder*="版本"], input[name*="version"]').first();
+      const sdkVersionInput = sdkSlider.locator('input[placeholder*="版本"], input[name*="version"]').first();
       if (await sdkVersionInput.isVisible().catch(() => false)) {
         await sdkVersionInput.fill(`1.0.${Date.now().toString().slice(-4)}`);
       }
 
       // 选择语言（Python）
-      const langSelect = page.locator('.bk-select').filter({ hasText: /语言|language/i }).first();
-      if (await langSelect.isVisible().catch(() => false)) {
-        await langSelect.click();
-        await page.waitForTimeout(300);
-        await page.locator('.bk-select-option, .bk-option').filter({ hasText: /Python/ }).click();
-        await page.waitForTimeout(300);
-        await page.locator('body').click({ position: { x: 10, y: 10 } });
-      }
+      await selectDropdownOption(page, sdkSlider.locator('.bk-select').filter({ hasText: /语言|language/i }).first(), /Python/).catch(() => false);
 
       // 点击确定
-      const confirmBtn = page.locator('button').filter({ hasText: /确定|确认/ });
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click();
+      if (await clickConfirm(page, /确定|确认/, sdkSlider).catch(() => false)) {
         await page.waitForTimeout(2000);
       }
     }

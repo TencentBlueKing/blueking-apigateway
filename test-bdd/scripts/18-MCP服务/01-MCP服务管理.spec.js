@@ -1,73 +1,84 @@
 // @generated from: test-bdd/cases/18-MCP服务/01-MCP服务管理.md
-// @generated-date: 2026-03-31
+// @generated-date: 2026-06-04
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const {
+  cleanupMcpServersByName,
+  createTestMcpServer,
+  createTestName,
+  getGatewayId,
+  navigateToGatewayPage,
+  pageApiDelete,
+  pageApiGet,
+  pageApiPatch,
+  pageApiPut,
+  unwrapApiData,
+  unwrapApiResults,
+} = require('../../runtime/helpers');
 
+async function listMcpServers(page, gatewayId) {
+  return unwrapApiResults(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/`));
+}
 
 test.describe('功能: MCP服务 - MCP Server管理', () => {
-  test('场景: 创建MCP Server (read-only verification)', async ({ page }) => {
-    const gwId = getGatewayId();
-    await navigateToGatewayPage(page, gwId, 'MCP Server', '/mcp');
+  test('场景: MCP Server 生命周期', async ({ page }) => {
+    const gatewayId = getGatewayId();
+    const name = createTestName('bdd-mcp-life');
+    const updatedTitle = `BDD MCP Updated ${name}`;
+    let server;
 
-    // 验证"新建"按钮存在
-    const createBtn = page.locator('button, .bk-button').filter({ hasText: /新建|创建|\+ 新建/ }).first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await expect(createBtn).toBeVisible();
-    } else {
-      // Verify page loaded
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
-    }
-  });
+    await navigateToGatewayPage(page, gatewayId, 'MCP Server', '/mcp/server');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/mcp/server`));
 
-  test('场景: 编辑MCP Server (read-only verification)', async ({ page }) => {
-    const gwId = getGatewayId();
-    await navigateToGatewayPage(page, gwId, 'MCP Server', '/mcp');
+    try {
+      const created = await createTestMcpServer(page, gatewayId, {
+        name,
+        title: `BDD MCP ${name}`,
+        description: `BDD MCP Server ${name}`,
+      });
+      server = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${created.id}/`));
 
-    // 验证编辑操作按钮存在
-    const editBtn = page.locator('.bk-table button, .bk-table .bk-button, .bk-table a').filter({ hasText: /编辑/ }).first();
-    if (await editBtn.isVisible().catch(() => false)) {
-      await expect(editBtn).toBeVisible();
-    } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
-    }
-  });
+      let servers = await listMcpServers(page, gatewayId);
+      expect(servers.some(item => item.name === name)).toBe(true);
 
-  test('场景: 删除MCP Server (read-only verification)', async ({ page }) => {
-    const gwId = getGatewayId();
-    await navigateToGatewayPage(page, gwId, 'MCP Server', '/mcp');
+      const resourceNames = server.resource_names || server.tools?.map(item => item.name) || [];
+      const toolNames = server.tool_names || server.tools?.map(item => item.tool_name || item.name) || resourceNames;
+      expect(resourceNames.length).toBeGreaterThan(0);
 
-    // 验证删除操作按钮存在
-    const deleteBtn = page.locator('.bk-table button, .bk-table .bk-button, .bk-table a').filter({ hasText: /删除/ }).first();
-    if (await deleteBtn.isVisible().catch(() => false)) {
-      await expect(deleteBtn).toBeVisible();
-    } else {
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
-    }
-  });
+      await pageApiPut(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`, {
+        title: updatedTitle,
+        description: `Updated ${server.description}`,
+        is_public: true,
+        labels: [],
+        resource_names: resourceNames,
+        tool_names: toolNames,
+        prompts: [],
+        protocol_type: server.protocol_type || 'sse',
+        category_ids: [],
+        oauth2_public_client_enabled: false,
+        raw_response_enabled: false,
+      });
 
-  test('场景: 查看MCP列表', async ({ page }) => {
-    await navigateToGatewayPage(page, getGatewayId(), 'MCP Server', '/mcp');
+      server = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`));
+      expect(server.title).toBe(updatedTitle);
 
-    // 页面应展示所有MCP Server及其状态信息 — use broad selectors
-    const contentArea = page.locator('.bk-table, [class*="mcp"], [class*="card"], [class*="list"], [class*="empty"], .bk-exception').first();
-    const contentVisible = await contentArea.isVisible({ timeout: 10000 }).catch(() => false);
+      await pageApiPatch(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/status/`, { status: 0 });
+      server = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`));
+      expect(Number(server.status)).toBe(0);
 
-    if (contentVisible) {
-      await expect(contentArea).toBeVisible();
+      await pageApiPatch(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/status/`, { status: 1 });
+      server = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`));
+      expect(Number(server.status)).toBe(1);
 
-      // 支持通过名称模糊搜索MCP Server
-      const searchInput = page.locator('.bk-search-select, .bk-input input, input[placeholder*="搜索"], input[placeholder*="名称"]').first();
-      if (await searchInput.isVisible().catch(() => false)) {
-        await expect(searchInput).toBeVisible();
+      await pageApiDelete(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`);
+      server = null;
+
+      servers = await listMcpServers(page, gatewayId);
+      expect(servers.some(item => item.name === name)).toBe(false);
+    } finally {
+      if (server) {
+        await cleanupMcpServersByName(page, gatewayId, name);
       }
-    } else {
-      // Verify page loaded
-      const sidebar = page.locator('.bk-menu-item, [class*="menu-item"]').first();
-      await expect(sidebar).toBeVisible({ timeout: 10000 });
     }
   });
 });

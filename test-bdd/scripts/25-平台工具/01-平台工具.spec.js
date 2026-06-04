@@ -1,73 +1,71 @@
 // @generated from: test-bdd/cases/25-平台工具/01-平台工具.md
-// @generated-date: 2026-03-31
+// @generated-date: 2026-06-04
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, BASE_URL } = require("../../runtime/helpers");
+const { BASE_URL, waitForPageReady } = require('../../runtime/helpers');
 
+async function gotoPlatformTool(page, path) {
+  await page.goto(`${BASE_URL.replace(/\/$/, '')}${path}`, { waitUntil: 'domcontentloaded' });
+  await waitForPageReady(page);
+  const pathname = path.split('?')[0];
+  await expect(page).toHaveURL(new RegExp(pathname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+
+async function useToolbox(page, toolboxId) {
+  await gotoPlatformTool(page, `/platform-tools/toolbox?toolbox_id=${toolboxId}`);
+  await expect(page).toHaveURL(/\/platform-tools\/toolbox/);
+}
 
 test.describe('功能: 平台工具 - 平台工具集', () => {
-  test('场景: 查询日志工具箱', async ({ page }) => {
-    await page.goto(`${BASE_URL}/tools`);
-    await waitForPageReady(page);
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await page.goto(`${BASE_URL}/tools`);
-      await waitForPageReady(page);
-    }
+  test('场景: 工具箱本地转换工具', async ({ page }) => {
+    await useToolbox(page, 6);
+    await page.locator('textarea').first().fill('hello bdd');
+    await page.locator('button').filter({ hasText: '编码' }).first().click();
+    await expect(page.locator('body')).toContainText('aGVsbG8gYmRk');
 
-    // 页面应展示工具箱内容
-    const contentArea = page.locator('[class*="tool"], [class*="content"], .main-content, .page-content').first();
-    await expect(contentArea).toBeVisible({ timeout: 10000 });
+    await useToolbox(page, 5);
+    await page.locator('textarea').first().fill('hello bdd');
+    await page.locator('button').filter({ hasText: '编码' }).first().click();
+    await expect(page.locator('body')).toContainText('hello%20bdd');
 
-    // 查询日志搜索框
-    const searchInput = page.locator('.bk-input input, input[placeholder*="request_id"], input[placeholder*="搜索"], textarea').first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await expect(searchInput).toBeVisible();
-    }
+    await useToolbox(page, 4);
+    await page.locator('textarea').first().fill('{"name":"bdd"}');
+    await page.locator('button').filter({ hasText: '格式化' }).first().click();
+    await expect(page.locator('body')).toContainText('"name": "bdd"');
 
-    // 支持JWT解析功能
-    const jwtSection = page.locator('span, div, label, a, .bk-tab-label').filter({ hasText: /JWT/ }).first();
-    if (await jwtSection.isVisible().catch(() => false)) {
-      await expect(jwtSection).toBeVisible();
-    }
+    await useToolbox(page, 3);
+    await page.locator('textarea').first().fill('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiZGQifQ.signature');
+    await page.locator('button').filter({ hasText: '解密' }).first().click();
+    await expect(page.locator('body')).toContainText('bdd');
+  });
 
-    // 支持JSON格式化功能
-    const jsonSection = page.locator('span, div, label, a, .bk-tab-label').filter({ hasText: /JSON/ }).first();
-    if (await jsonSection.isVisible().catch(() => false)) {
-      await expect(jsonSection).toBeVisible();
+  test('场景: 工具箱日志和 Trace 查询入口', async ({ page }) => {
+    await useToolbox(page, 1);
+    await page.locator('input[placeholder*="request_id"]').first().fill('bdd-not-exist-request-id');
+    await page.locator('button').filter({ hasText: '查询' }).first().click();
+    await expect(page.locator('body')).toContainText(/查询结果|暂无数据|无数据|搜索/);
+
+    await useToolbox(page, 2);
+    const traceEntry = page.locator('.tool-nav-item').filter({ hasText: /调用链/ }).first();
+    if (await traceEntry.isVisible()) {
+      await traceEntry.click();
+      await page.locator('input[placeholder*="request_id"]').first().fill('bdd-not-exist-trace-id');
+      await page.locator('button').filter({ hasText: '查询' }).first().click();
+      await expect(page.locator('body')).toContainText(/查询结果|暂无数据|无数据|搜索/);
     }
   });
 
-  test('场景: 查看自动化接入与可编程网关', async ({ page }) => {
-    await page.goto(`${BASE_URL}/tools`);
-    await waitForPageReady(page);
-    if (page.url().includes('/login/')) {
-      await reAuth(page);
-      await page.goto(`${BASE_URL}/tools`);
-      await waitForPageReady(page);
-    }
+  test('场景: 查看平台工具子页', async ({ page }) => {
+    const subPages = [
+      ['/platform-tools/automated-gateway', /自动化接入网关/],
+      ['/platform-tools/bk-cli', /CLI|命令行/],
+      ['/platform-tools/programmable-gateway', /可编程网关/],
+      ['/platform-tools/micro-gateway', /微网关/],
+    ];
 
-    // 验证页面内容加载
-    const contentArea = page.locator('[class*="tool"], [class*="content"], .main-content, .page-content').first();
-    await expect(contentArea).toBeVisible({ timeout: 10000 });
-
-    // 自动化接入网关 - 验证"查看详情"按钮存在
-    const autoAccessSection = page.locator('div, section').filter({ hasText: /自动化接入/ }).first();
-    if (await autoAccessSection.isVisible().catch(() => false)) {
-      await expect(autoAccessSection).toBeVisible();
-    }
-
-    // 可编程网关 - 验证"查看详情"按钮存在
-    const programmableSection = page.locator('div, section').filter({ hasText: /可编程网关/ }).first();
-    if (await programmableSection.isVisible().catch(() => false)) {
-      await expect(programmableSection).toBeVisible();
-    }
-
-    // 验证"查看详情"链接存在
-    const detailLinks = page.locator('a, button').filter({ hasText: /查看详情|详情/ });
-    if (await detailLinks.first().isVisible().catch(() => false)) {
-      const count = await detailLinks.count();
-      expect(count).toBeGreaterThanOrEqual(1);
+    for (const [path, text] of subPages) {
+      await gotoPlatformTool(page, path);
+      await expect(page.locator('body')).toContainText(text);
     }
   });
 });

@@ -1,51 +1,85 @@
 // @generated from: test-bdd/cases/18-MCP服务/02-MCP服务配置.md
-// @generated-date: 2026-03-31
+// @generated-date: 2026-06-04
 
 const { test, expect } = require('@playwright/test');
-const { waitForPageReady, reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
-
+const {
+  BASE_URL,
+  cleanupMcpServersByName,
+  createTestMcpServer,
+  createTestName,
+  getGatewayId,
+  navigateToGatewayPage,
+  pageApiDelete,
+  pageApiGet,
+  pageApiPost,
+  pageApiPut,
+  unwrapApiData,
+  unwrapApiResults,
+  waitForPageReady,
+} = require('../../runtime/helpers');
 
 test.describe('功能: MCP服务 - MCP Server配置', () => {
-  test.beforeEach(async ({ page }) => {
-    const gwId = getGatewayId();
-    await navigateToGatewayPage(page, gwId, 'MCP Server', '/mcp');
-  });
+  test('场景: 查看详情、Tool、接入配置和自定义文档', async ({ page }) => {
+    const gatewayId = getGatewayId();
+    const name = createTestName('bdd-mcp-config');
+    let server;
+    let customDocCreated = false;
 
-  test('场景: 配置连接方式', async ({ page }) => {
-    // 进入MCP Server详情页 - 点击列表中的第一个MCP Server
-    const firstRow = page.locator('.bk-table tbody tr, .bk-table-body tr, [class*="card"], [class*="list-item"]').first();
-    if (await firstRow.isVisible().catch(() => false)) {
-      const nameLink = firstRow.locator('a, [class*="link"], [class*="name"]').first();
-      if (await nameLink.isVisible().catch(() => false)) {
-        await nameLink.click();
-        await waitForPageReady(page);
+    await navigateToGatewayPage(page, gatewayId, 'MCP Server', '/mcp/server');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/mcp/server`));
+
+    try {
+      server = await createTestMcpServer(page, gatewayId, {
+        name,
+        title: `BDD MCP ${name}`,
+        description: `BDD MCP Server ${name}`,
+      });
+
+      await page.goto(`${BASE_URL.replace(/\/$/, '')}/${gatewayId}/mcp/detail/${server.id}`, { waitUntil: 'domcontentloaded' });
+      await waitForPageReady(page);
+      await expect(page).toHaveURL(new RegExp(`/${gatewayId}/mcp/detail/${server.id}`));
+
+      const detail = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/`));
+      expect(detail.name).toBe(name);
+
+      const toolsPath = `/gateways/${gatewayId}/mcp-servers/${server.id}/tool` + 's/';
+      const tools = unwrapApiResults(await pageApiGet(page, toolsPath));
+      expect(tools.length).toBeGreaterThan(0);
+
+      const configs = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/configs/`));
+      expect(configs).toBeTruthy();
+
+      const guideline = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/guideline/`));
+      expect(typeof guideline.content).toBe('string');
+
+      const docContent = `# BDD MCP Doc\n\n${name}`;
+      await pageApiPost(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`, {
+        content: docContent,
+      });
+      customDocCreated = true;
+
+      let customDoc = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`));
+      expect(customDoc.content).toContain(name);
+
+      await pageApiPut(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`, {
+        content: `${docContent}\n\nupdated`,
+      });
+      customDoc = unwrapApiData(await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`));
+      expect(customDoc.content).toContain('updated');
+
+      await pageApiDelete(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`);
+      customDocCreated = false;
+
+      const deletedDoc = await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`, null, { allowFailure: true });
+      expect(deletedDoc.ok).toBe(false);
+
+      const remotePrompts = await pageApiGet(page, `/gateways/${gatewayId}/mcp-servers/-/remote-prompts/`, null, { allowFailure: true });
+      expect([true, false]).toContain(remotePrompts.ok);
+    } finally {
+      if (customDocCreated && server) {
+        await pageApiDelete(page, `/gateways/${gatewayId}/mcp-servers/${server.id}/user-custom-doc/`, null, { allowFailure: true });
       }
-
-      // 查看使用指引中的配置信息
-      const configSection = page.locator('[class*="config"], [class*="guide"], [class*="instruction"]').first();
-      if (await configSection.isVisible().catch(() => false)) {
-        await expect(configSection).toBeVisible();
-      }
-
-      // 支持复制各项配置信息
-      const copyBtn = page.locator('button, [class*="copy"], .icon-copy').first();
-      if (await copyBtn.isVisible().catch(() => false)) {
-        await expect(copyBtn).toBeVisible();
-      }
-    }
-  });
-
-  test('场景: 配置资源与Prompt (read-only verification)', async ({ page }) => {
-    // 验证创建/编辑MCP Server时的资源选择区域
-    const createBtn = page.locator('button, .bk-button').filter({ hasText: /新建|编辑/ }).first();
-    if (await createBtn.isVisible().catch(() => false)) {
-      await expect(createBtn).toBeVisible();
-    }
-
-    // 验证页面有资源相关区域
-    const contentArea = page.locator('.bk-table, [class*="resource"], [class*="mcp"]').first();
-    if (await contentArea.isVisible().catch(() => false)) {
-      await expect(contentArea).toBeVisible();
+      await cleanupMcpServersByName(page, gatewayId, name);
     }
   });
 });

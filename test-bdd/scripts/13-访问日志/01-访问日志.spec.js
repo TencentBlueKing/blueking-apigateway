@@ -2,7 +2,7 @@
 // @generated-date: 2026-03-31
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const { dismissFloatingLayers, navigateToGatewayPage, getGatewayId } = require("../../runtime/helpers");
 
 
 test.describe('功能: 访问日志 - 流水日志查看', () => {
@@ -24,8 +24,7 @@ test.describe('功能: 访问日志 - 流水日志查看', () => {
         await timeRangePicker.click();
         await page.waitForTimeout(300);
         // Close picker by clicking elsewhere
-        await page.locator('body').click({ position: { x: 10, y: 10 } });
-        await page.waitForTimeout(300);
+        await dismissFloatingLayers(page);
       }
     } else {
       // Verify page loaded via URL

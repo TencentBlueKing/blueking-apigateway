@@ -1,67 +1,94 @@
 // @generated from: test-bdd/cases/12-应用权限/01-应用权限.md
-// @generated-date: 2026-03-31
+// @generated-date: 2026-06-04
 
 const { test, expect } = require('@playwright/test');
-const { reAuth, navigateToGatewayPage, BASE_URL, getGatewayId } = require("../../runtime/helpers");
+const {
+  cleanupPermissionsByAppCode,
+  cleanupResourcesByName,
+  createGatewayPermission,
+  createTestIdentifier,
+  getGatewayId,
+  listGatewayPermissions,
+  navigateToGatewayPage,
+  pageApiDelete,
+  pageApiPost,
+} = require('../../runtime/helpers');
 
+function splitPermissionIds(permissions) {
+  return {
+    gatewayIds: permissions.filter(item => item.grant_dimension === 'api').map(item => item.id),
+    resourceIds: permissions.filter(item => item.grant_dimension === 'resource').map(item => item.id),
+  };
+}
 
 test.describe('功能: 应用权限 - 应用权限管理', () => {
-  test.beforeEach(async ({ page }) => {
-    await navigateToGatewayPage(page, getGatewayId(), '应用权限', '/permission/apps');
-  });
+  test('场景: 主动授权、续期和删除应用权限', async ({ page }) => {
+    const gatewayId = getGatewayId();
+    const bkAppCode = `bddapp${Date.now().toString(36).slice(-8)}`;
+    const resourceName = createTestIdentifier('bdd_perm_resource');
+    let createdResourceName = resourceName;
 
-  test('场景: 查看应用权限列表', async ({ page }) => {
-    const table = page.locator('.bk-table').first();
-    const tableVisible = await table.isVisible({ timeout: 10000 }).catch(() => false);
+    await navigateToGatewayPage(page, gatewayId, '应用权限', '/permission/app');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/permission/app`));
 
-    if (tableVisible) {
-      await expect(table).toBeVisible();
+    try {
+      const { resource } = await createGatewayPermission(page, gatewayId, {
+        bkAppCode,
+        resourceName,
+        expireDays: 180,
+      });
+      createdResourceName = resource.name;
 
-      const headerRow = page.locator('.bk-table thead th, .bk-table-head th').first();
-      await expect(headerRow).toBeVisible({ timeout: 10000 });
+      let permissions = await listGatewayPermissions(page, gatewayId, bkAppCode);
+      expect(permissions.map(item => item.bk_app_code)).toContain(bkAppCode);
 
-      const pagination = page.locator('.bk-pagination').first();
-      if (await pagination.isVisible().catch(() => false)) {
-        await expect(pagination).toBeVisible();
-      }
+      let { gatewayIds, resourceIds } = splitPermissionIds(permissions);
+      expect(gatewayIds.length).toBeGreaterThan(0);
+      expect(resourceIds.length).toBeGreaterThan(0);
 
-      const exportBtn = page.locator('button, .bk-button').filter({ hasText: /导出/ }).first();
-      if (await exportBtn.isVisible().catch(() => false)) {
-        await expect(exportBtn).toBeVisible();
-      }
-    } else {
-      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
-    }
-  });
+      await pageApiPost(page, `/gateways/${gatewayId}/permissions/app-gateway-permissions/renew/`, {
+        ids: gatewayIds,
+        expire_days: 360,
+      });
 
-  test('场景: 管理应用权限 (read-only verification)', async ({ page }) => {
-    const table = page.locator('.bk-table').first();
-    const tableVisible = await table.isVisible({ timeout: 10000 }).catch(() => false);
+      permissions = await listGatewayPermissions(page, gatewayId, bkAppCode);
+      const gatewayPermission = permissions.find(item => item.grant_dimension === 'api');
+      expect(gatewayPermission).toBeTruthy();
+      expect(Boolean(gatewayPermission.renewable)).toBe(false);
 
-    if (tableVisible) {
-      const batchRenewBtn = page.locator('button, .bk-button').filter({ hasText: /批量续期|续期/ }).first();
-      if (await batchRenewBtn.isVisible().catch(() => false)) {
-        await expect(batchRenewBtn).toBeVisible();
-      }
+      ({ gatewayIds, resourceIds } = splitPermissionIds(permissions));
+      await pageApiPost(page, `/gateways/${gatewayId}/permissions/app-permissions/renew/`, {
+        gateway_dimension_ids: gatewayIds,
+        resource_dimension_ids: resourceIds,
+        expire_days: 360,
+      });
 
-      const deleteBtn = page.locator('.bk-table button, .bk-table .bk-button, .bk-table a').filter({ hasText: /删除/ }).first();
-      if (await deleteBtn.isVisible().catch(() => false)) {
-        await expect(deleteBtn).toBeVisible();
-      }
-    } else {
-      await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
+      permissions = await listGatewayPermissions(page, gatewayId, bkAppCode);
+      expect(permissions.length).toBeGreaterThanOrEqual(2);
+      expect(permissions.every(item => Boolean(item.expires))).toBe(true);
+
+      ({ gatewayIds, resourceIds } = splitPermissionIds(permissions));
+      await pageApiDelete(page, `/gateways/${gatewayId}/permissions/app-resource-permissions/delete/`, { ids: resourceIds }, { query: true });
+      await pageApiDelete(page, `/gateways/${gatewayId}/permissions/app-gateway-permissions/delete/`, { ids: gatewayIds }, { query: true });
+
+      permissions = await listGatewayPermissions(page, gatewayId, bkAppCode);
+      expect(permissions.length).toBe(0);
+    } finally {
+      await cleanupPermissionsByAppCode(page, gatewayId, bkAppCode);
+      await cleanupResourcesByName(page, gatewayId, createdResourceName);
     }
   });
 
   test('场景: 权限筛选', async ({ page }) => {
-    // Try search input
-    const searchInput = page.locator('.bk-search-select, .bk-input, input[placeholder*="搜索"], input[placeholder*="应用"]').first();
-    if (await searchInput.isVisible().catch(() => false)) {
-      await searchInput.click();
-      await page.waitForTimeout(300);
-    }
+    const gatewayId = getGatewayId();
 
-    // Verify page loaded
-    await expect(page).toHaveURL(new RegExp('/' + getGatewayId() + '/'), { timeout: 5000 });
+    await navigateToGatewayPage(page, gatewayId, '应用权限', '/permission/app');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/permission/app`));
+
+    const response = await listGatewayPermissions(page, gatewayId, '');
+    expect(Array.isArray(response)).toBe(true);
+
+    const tableOrEmpty = page.locator('.bk-table, .bk-exception, [class*="empty"]').first();
+    await expect(tableOrEmpty).toBeVisible({ timeout: 10000 });
   });
 });
