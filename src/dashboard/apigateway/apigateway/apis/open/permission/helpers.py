@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-
 import copy
 import math
 from collections import defaultdict
@@ -32,72 +31,8 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, Stage
-
-
-def build_resource_permission_display(
-    *,
-    resource_id: int,
-    resource_name: str,
-    gateway_id: int,
-    gateway_name: str,
-    description: str,
-    description_en: str | None,
-    resource_perm_required: bool,
-    doc_link: str,
-    gateway_permission,
-    resource_permission,
-    gateway_permission_apply_status: str,
-    resource_permission_apply_status: str,
-) -> dict:
-    return {
-        "id": resource_id,
-        "name": resource_name,
-        "gateway_id": gateway_id,
-        "gateway_name": gateway_name,
-        "description": description,
-        "description_en": description_en,
-        "resource_perm_required": resource_perm_required,
-        "doc_link": doc_link,
-        "gateway_permission": gateway_permission,
-        "resource_permission": resource_permission,
-        "gateway_permission_apply_status": gateway_permission_apply_status,
-        "resource_permission_apply_status": resource_permission_apply_status,
-    }
-
-
-class ResourceVersionHandler:
-    @staticmethod
-    def get_released_public_resources(gateway_id: int) -> List[dict]:
-        release_resource_version_ids = list(
-            Release.objects.filter(gateway_id=gateway_id).values_list("resource_version_id", flat=True)
-        )
-        if not release_resource_version_ids:
-            return []
-
-        resource_ids = list(
-            ReleasedResource.objects.filter(
-                gateway_id=gateway_id,
-                resource_version_id__in=release_resource_version_ids,
-            )
-            .order_by("resource_id")
-            .values_list("resource_id", flat=True)
-            .distinct()
-        )
-        if not resource_ids:
-            return []
-
-        resources = ReleasedResource.objects.filter_latest_released_resources(resource_ids)
-        resources = [resource for resource in resources if resource.get("is_public")]
-
-        # 若资源无可用环境，则不展示该资源
-        current_stage_names = set(Stage.objects.get_names(gateway_id))
-        return [
-            resource
-            for resource in resources
-            if not resource.get("disabled_stages")
-            or (current_stage_names - set(resource.get("disabled_stages") or []))
-        ]
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.core.models import Gateway, ReleasedResource, Resource
 
 
 class ResourcePermission(BaseModel):
@@ -107,25 +42,22 @@ class ResourcePermission(BaseModel):
 
     id: int
     name: str
-    gateway_name: Optional[str] = None
+    api_name: str
     gateway_id: Optional[int] = None
     description: str
     description_en: Optional[str] = None
     resource_perm_required: bool
     doc_link: str
-
-    gateway_permission: Optional[AppGatewayPermission] = None
+    api_permission: Optional[AppGatewayPermission] = None
     resource_permission: Optional[AppResourcePermission] = None
-
-    gateway_permission_apply_status: Optional[str] = ""
+    api_permission_apply_status: Optional[str] = ""
     resource_permission_apply_status: Optional[str] = ""
 
     def as_dict(self):
-        gateway_name = self.gateway_name or ""
         return {
             "id": self.id,
             "name": self.name,
-            "gateway_name": gateway_name,
+            "api_name": self.api_name,
             "gateway_id": self.gateway_id,
             "description": self.description,
             "description_en": self.description_en,
@@ -153,8 +85,8 @@ class ResourcePermission(BaseModel):
             return PermissionStatusEnum.OWNED.value
 
         # 如果权限已有申请状态，如已拒绝、申请中；优先展示
-        if self.gateway_permission_apply_status or self.resource_permission_apply_status:
-            return self.gateway_permission_apply_status or self.resource_permission_apply_status
+        if self.api_permission_apply_status or self.resource_permission_apply_status:
+            return self.api_permission_apply_status or self.resource_permission_apply_status
 
         # 有权限且未过期
         if self.expires_in > 0:
@@ -172,13 +104,13 @@ class ResourcePermission(BaseModel):
         if not self.resource_perm_required:
             return math.inf
 
-        return max(self._get_gateway_permission_expires_in(), self._get_resource_permission_expires_in())
+        return max(self._get_api_permission_expires_in(), self._get_resource_permission_expires_in())
 
-    def _get_gateway_permission_expires_in(self) -> Union[int, float]:
-        if not self.gateway_permission:
+    def _get_api_permission_expires_in(self) -> Union[int, float]:
+        if not self.api_permission:
             return -math.inf
 
-        return self._normalize_expires_in(self.gateway_permission.expires_in)
+        return self._normalize_expires_in(self.api_permission.expires_in)
 
     def _get_resource_permission_expires_in(self) -> Union[int, float]:
         if not self.resource_permission:
@@ -199,9 +131,9 @@ class ResourcePermissionBuilder:
         self.gateway = gateway
         self.target_app_code = target_app_code
 
-        self.gateway_permission = self._get_gateway_permission()
+        self.api_permission = self._get_api_permission()
         self.resource_permission_map = self._get_resource_permission_map()
-        self.gateway_permission_apply_status = self._get_gateway_permission_apply_status()
+        self.api_permission_apply_status = self._get_api_permission_apply_status()
         self.resource_permission_apply_status_map = self._get_resource_permission_apply_status_map()
 
     def build(self, resources: list) -> list:
@@ -209,28 +141,22 @@ class ResourcePermissionBuilder:
         resource_ids = [resource["id"] for resource in resources]
         doc_links = ReleasedResourceHandler.get_latest_doc_link(resource_ids)
 
-        items = [
-            build_resource_permission_display(
-                resource_id=resource["id"],
-                resource_name=resource["name"],
-                gateway_id=self.gateway.id,
-                gateway_name=self.gateway.name,
-                description=resource["description"],
-                description_en=resource.get("description_en"),
-                resource_perm_required=resource["resource_perm_required"],
-                doc_link=doc_links.get(resource["id"], ""),
-                gateway_permission=self.gateway_permission,
-                resource_permission=self.resource_permission_map.get(resource["id"]),
-                gateway_permission_apply_status=self.gateway_permission_apply_status,
-                resource_permission_apply_status=self.resource_permission_apply_status_map.get(resource["id"], ""),
+        for resource in resources:
+            resource["api_name"] = self.gateway.name
+            resource["gateway_id"] = self.gateway.id
+            resource["doc_link"] = doc_links.get(resource["id"], "")
+            resource["api_permission"] = self.api_permission
+            resource["resource_permission"] = self.resource_permission_map.get(resource["id"])
+            resource["api_permission_apply_status"] = self.api_permission_apply_status
+            resource["resource_permission_apply_status"] = self.resource_permission_apply_status_map.get(
+                resource["id"], ""
             )
-            for resource in resources
-        ]
 
-        resource_permissions = TypeAdapter(List[ResourcePermission]).validate_python(items)
+        resource_permissions = TypeAdapter(List[ResourcePermission]).validate_python(resources)
+
         return [perm.as_dict() for perm in resource_permissions]
 
-    def _get_gateway_permission(self):
+    def _get_api_permission(self):
         return AppGatewayPermission.objects.filter(
             gateway=self.gateway,
             bk_app_code=self.target_app_code,
@@ -245,7 +171,7 @@ class ResourcePermissionBuilder:
             )
         }
 
-    def _get_gateway_permission_apply_status(self):
+    def _get_api_permission_apply_status(self):
         apply_status = AppPermissionApplyStatus.objects.filter(
             bk_app_code=self.target_app_code,
             gateway_id=self.gateway.id,
@@ -275,19 +201,15 @@ class AppPermissionBuilder:
         self.target_app_code = target_app_code
 
     def build(self) -> list:
-        gateway_permission_map = self._get_gateway_permission_map()
+        api_permission_map = self._get_api_permission_map()
         resource_permission_map = self._get_resource_permission_map()
         gateway_id_to_permission_apply_status = self._get_gateway_id_to_permission_apply_status()
         resource_id_to_permission_apply_status = self._get_resource_id_to_permission_apply_status()
 
         resource_map: defaultdict = defaultdict(dict)
-        for gateway_id in gateway_permission_map:
+        for gateway_id in api_permission_map:
             for resource in ResourceVersionHandler.get_released_public_resources(gateway_id):
-                resource.update(
-                    {
-                        "gateway_permission": gateway_permission_map.get(gateway_id),
-                    }
-                )
+                resource.update({"api_permission": api_permission_map.get(gateway_id)})
                 resource_map[resource["id"]] = resource
 
         for resource in ReleasedResource.objects.filter_latest_released_resources(
@@ -307,17 +229,15 @@ class AppPermissionBuilder:
         # resource_map由 已有的资源
         for resource_id, resource in resource_map.items():
             resource_fields = resource_id_to_fields.get(resource_id, {})
-            gateway_name = resource_fields.get("gateway__name", "")
-            resource["gateway_name"] = gateway_name
+            resource["api_name"] = resource_fields.get("gateway__name", "")
             resource["gateway_id"] = resource_fields.get("gateway_id")
             resource["doc_link"] = doc_links.get(resource_id, "")
-
-            gateway_apply_status = gateway_id_to_permission_apply_status.get(resource_fields.get("gateway_id"), "")
-            resource["gateway_permission_apply_status"] = gateway_apply_status
-
+            resource["api_permission_apply_status"] = gateway_id_to_permission_apply_status.get(
+                resource_fields.get("gateway_id"), ""
+            )
             # 判断这个资源是否有网关资源的权限,而不是直接通过
             # 如果应用已经有网关权限，则不展示单个资源申请的状态
-            if gateway_permission_map.get(resource["gateway_id"]):
+            if api_permission_map.get(resource["gateway_id"]):
                 resource["resource_permission_apply_status"] = ""
             else:
                 resource["resource_permission_apply_status"] = resource_id_to_permission_apply_status.get(
@@ -327,7 +247,7 @@ class AppPermissionBuilder:
         resource_permissions = TypeAdapter(List[ResourcePermission]).validate_python(list(resource_map.values()))
         return [perm.as_dict() for perm in resource_permissions]
 
-    def _get_gateway_permission_map(self) -> Dict[int, AppGatewayPermission]:
+    def _get_api_permission_map(self) -> Dict[int, AppGatewayPermission]:
         return {
             perm.gateway_id: perm
             for perm in AppGatewayPermission.objects.filter_public_permission_by_app(bk_app_code=self.target_app_code)

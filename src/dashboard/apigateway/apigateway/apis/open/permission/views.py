@@ -28,6 +28,10 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 
+from apigateway.apis.open.permission.helpers import (
+    AppPermissionBuilder,
+    ResourcePermissionBuilder,
+)
 from apigateway.apis.open.permissions import (
     OpenAPIGatewayIdPermission,
     OpenAPIGatewayNamePermission,
@@ -41,14 +45,10 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import (
     AppPermissionRecord,
+    AppResourcePermission,
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
-from apigateway.biz.permission import (
-    AppPermissionBuilder,
-    PermissionDimensionManager,
-    ResourcePermissionBuilder,
-    ResourcePermissionHandler,
-)
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.error_codes import error_codes
@@ -61,12 +61,6 @@ from . import serializers
 from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
-
-
-def _map_gateway_name_to_api_name(resource_permissions: list) -> list:
-    return [
-        {**item, "api_name": item.get("gateway_name") or item.get("api_name", "")} for item in resource_permissions
-    ]
 
 
 class ResourceViewSet(viewsets.ViewSet):
@@ -93,7 +87,6 @@ class ResourceViewSet(viewsets.ViewSet):
             self.request.gateway,
             slz.validated_data["target_app_code"],
         ).build(resources)
-        resource_permissions = _map_gateway_name_to_api_name(resource_permissions)
 
         slz = serializers.AppResourcePermissionOutputSLZ(
             sorted(resource_permissions, key=operator.itemgetter("permission_level", "name")),
@@ -273,11 +266,21 @@ class AppPermissionRenewAPIView(APIView):
 
         data = slz.validated_data
 
-        ResourcePermissionHandler.renew_resource_permissions_by_resource_ids(
-            bk_app_code=data["target_app_code"],
-            resource_ids=data["resource_ids"],
-            expire_days=data["expire_days"],
-        )
+        for gateway_id, resource_ids in ResourceHandler.group_by_gateway_id(data["resource_ids"]).items():
+            gateway = Gateway.objects.get(id=gateway_id)
+            # 如果应用 - 资源权限不存在，则将按网关的权限同步到应用 - 资源权限
+            ResourcePermissionHandler.sync_from_gateway_permission(
+                gateway=gateway,
+                bk_app_code=data["target_app_code"],
+                resource_ids=resource_ids,
+            )
+            AppResourcePermission.objects.renew_by_resource_ids(
+                gateway=gateway,
+                bk_app_code=data["target_app_code"],
+                resource_ids=resource_ids,
+                grant_type=GrantTypeEnum.RENEW.value,
+                expire_days=data["expire_days"],
+            )
 
         return V1OKJsonResponse("OK")
 
@@ -355,7 +358,6 @@ class AppPermissionViewSet(viewsets.ViewSet):
         data = slz.validated_data
 
         permissions = AppPermissionBuilder(data["target_app_code"]).build()
-        permissions = _map_gateway_name_to_api_name(permissions)
         slz = serializers.AppResourcePermissionOutputSLZ(permissions, many=True)
         return V1OKJsonResponse("OK", data=sorted(slz.data, key=operator.itemgetter("api_name", "name")))
 

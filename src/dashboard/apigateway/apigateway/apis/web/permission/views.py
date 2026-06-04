@@ -190,31 +190,6 @@ class AppPermissionListApi(AppPermissionQuerySetMixin, generics.ListAPIView):
     ),
 )
 class AppPermissionRenewApi(generics.CreateAPIView):
-    @staticmethod
-    def _record_renew_permission_audit(
-        *,
-        username: str,
-        gateway_id: int,
-        ids: List[int],
-        bk_app_codes: List[str],
-        data_before,
-        data_after,
-        comment: str,
-    ):
-        if not ids:
-            return
-
-        Auditor.record_permission_op_success(
-            op_type=OpTypeEnum.MODIFY,
-            username=username,
-            gateway_id=gateway_id,
-            instance_id=";".join([str(i) for i in ids]),
-            instance_name=";".join(bk_app_codes),
-            data_before=[get_model_dict(perm) for perm in data_before],
-            data_after=[get_model_dict(perm) for perm in data_after],
-            comment=comment,
-        )
-
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
@@ -243,24 +218,29 @@ class AppPermissionRenewApi(generics.CreateAPIView):
             )
         )
 
-        self._record_renew_permission_audit(
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            ids=resource_dimension_ids,
-            bk_app_codes=resource_bk_app_codes,
-            data_before=resource_data_before,
-            data_after=resource_data_after,
-            comment="批量续期资源",
-        )
-        self._record_renew_permission_audit(
-            username=request.user.username,
-            gateway_id=request.gateway.id,
-            ids=gateway_dimension_ids,
-            bk_app_codes=gateway_bk_app_codes,
-            data_before=gateway_data_before,
-            data_after=gateway_data_after,
-            comment="批量续期网关",
-        )
+        if resource_dimension_ids:
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=";".join([str(i) for i in resource_dimension_ids]),
+                instance_name=";".join(resource_bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in resource_data_before],
+                data_after=[get_model_dict(perm) for perm in resource_data_after],
+                comment="批量续期资源",
+            )
+
+        if gateway_dimension_ids:
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=";".join([str(i) for i in gateway_dimension_ids]),
+                instance_name=";".join(gateway_bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in gateway_data_before],
+                data_after=[get_model_dict(perm) for perm in gateway_data_after],
+                comment="批量续期网关",
+            )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
