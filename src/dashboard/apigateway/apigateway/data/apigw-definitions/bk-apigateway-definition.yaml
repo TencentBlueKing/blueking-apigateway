@@ -138,6 +138,12 @@ grant_permissions:
     grant_dimension: "resource"
     resource_names:
       - v2_inner_itsm_callback
+      - get_apis
+      - get_stages
+      - get_released_resources
+      - get_released_resource
+      - v2_open_get_gateway
+      - v2_open_list_gateways
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"
