@@ -16,6 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from .display import (
+    AppPermissionBuilder,
+    ResourcePermission,
+    ResourcePermissionBuilder,
+    build_resource_permission_display,
+)
 from .manager import (
     GatewayPermissionDimensionManager,
     PermissionDimensionManager,
@@ -33,6 +39,10 @@ __all__ = [
     "PermissionDimensionManager",
     "ResourcePermissionDimensionManager",
     "ResourcePermissionHandler",
+    "AppPermissionBuilder",
+    "ResourcePermission",
+    "ResourcePermissionBuilder",
     # functions
+    "build_resource_permission_display",
     # others
 ]

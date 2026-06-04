@@ -47,7 +47,7 @@ from apigateway.apps.permission.models import (
 )
 from apigateway.apps.permission.tasks import send_mail_for_perm_handle
 from apigateway.biz.audit import Auditor
-from apigateway.biz.permission import PermissionDimensionManager
+from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Resource
 from apigateway.utils.django import get_model_dict
@@ -199,66 +199,45 @@ class AppPermissionRenewApi(generics.CreateAPIView):
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        gateway_dimension_ids = data["gateway_dimension_ids"]
+        resource_dimension_ids = data["resource_dimension_ids"]
+        expire_days = data["expire_days"]
 
-        if data["resource_dimension_ids"]:
-            # 查询更新之前的资源权限
-            before_queryset = list(
-                AppResourcePermission.objects.filter(
+        if resource_dimension_ids:
+            resource_data_before, resource_data_after, resource_bk_app_codes = (
+                ResourcePermissionHandler.renew_resource_permissions_by_ids(
                     gateway=request.gateway,
-                    id__in=data["resource_dimension_ids"],
+                    ids=resource_dimension_ids,
+                    expire_days=expire_days,
                 )
             )
-            AppResourcePermission.objects.renew_by_ids(
-                gateway=request.gateway, ids=data["resource_dimension_ids"], expires=data["expire_days"]
-            )
-            # 查询更新之后的资源权限
-            after_queryset = AppResourcePermission.objects.filter(
-                gateway=request.gateway,
-                id__in=data["resource_dimension_ids"],
-            )
-
-            resource_dimension_ids = [str(dimension_id) for dimension_id in data["resource_dimension_ids"]]
-            bk_app_codes = [perm.bk_app_code for perm in before_queryset]
-
             Auditor.record_permission_op_success(
                 op_type=OpTypeEnum.MODIFY,
                 username=request.user.username,
                 gateway_id=request.gateway.id,
-                instance_id=";".join(resource_dimension_ids),
-                instance_name=";".join(bk_app_codes),
-                data_before=[get_model_dict(perm) for perm in before_queryset],
-                data_after=[get_model_dict(perm) for perm in after_queryset],
+                instance_id=";".join([str(i) for i in resource_dimension_ids]),
+                instance_name=";".join(resource_bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in resource_data_before],
+                data_after=[get_model_dict(perm) for perm in resource_data_after],
                 comment="批量续期资源",
             )
 
-        if data["gateway_dimension_ids"]:
-            # 查询更新之前的网关权限
-            before_queryset = list(
-                AppGatewayPermission.objects.filter(
+        if gateway_dimension_ids:
+            gateway_data_before, gateway_data_after, gateway_bk_app_codes = (
+                ResourcePermissionHandler.renew_gateway_permissions_by_ids(
                     gateway=request.gateway,
-                    id__in=data["gateway_dimension_ids"],
+                    ids=gateway_dimension_ids,
+                    expire_days=expire_days,
                 )
             )
-            AppGatewayPermission.objects.renew_by_ids(
-                gateway=request.gateway, ids=data["gateway_dimension_ids"], expires=data["expire_days"]
-            )
-            # 查询更新之后的网关权限
-            after_queryset = AppGatewayPermission.objects.filter(
-                gateway=request.gateway,
-                id__in=data["gateway_dimension_ids"],
-            )
-
-            gateway_dimension_ids = [str(dimension_id) for dimension_id in data["gateway_dimension_ids"]]
-            bk_app_codes = [perm.bk_app_code for perm in before_queryset]
-
             Auditor.record_permission_op_success(
                 op_type=OpTypeEnum.MODIFY,
                 username=request.user.username,
                 gateway_id=request.gateway.id,
-                instance_id=";".join(gateway_dimension_ids),
-                instance_name=";".join(bk_app_codes),
-                data_before=[get_model_dict(perm) for perm in before_queryset],
-                data_after=[get_model_dict(perm) for perm in after_queryset],
+                instance_id=";".join([str(i) for i in gateway_dimension_ids]),
+                instance_name=";".join(gateway_bk_app_codes),
+                data_before=[get_model_dict(perm) for perm in gateway_data_before],
+                data_after=[get_model_dict(perm) for perm in gateway_data_after],
                 comment="批量续期网关",
             )
 
