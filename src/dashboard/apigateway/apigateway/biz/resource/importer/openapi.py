@@ -17,8 +17,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
+from django.utils.translation import gettext as _
 from openapi_spec_validator.validation.exceptions import UnresolvableParameterError
 from openapi_spec_validator.versions import OPENAPIV2, get_spec_version
 from openapi_spec_validator.versions.exceptions import OpenAPIVersionNotFound
@@ -84,6 +85,10 @@ class OpenAPIImportManager:
         """
         进行校验
         """
+        unsafe_ref_err = self._get_unsafe_ref_err()
+        if unsafe_ref_err:
+            return [unsafe_ref_err]
+
         try:
             # 先获取 openapi版本
             spec_version = get_spec_version(self.data)
@@ -147,6 +152,33 @@ class OpenAPIImportManager:
         self.parser = parser
         self._raw_resource_list = parser.get_resources()
         self._resource_list = ResourceDataConvertor(self.gateway, self._raw_resource_list).convert()
+
+    def _get_unsafe_ref_err(self) -> Optional[SchemaValidateErr]:
+        unsafe_refs = self._collect_unsafe_refs(self.data)
+        if not unsafe_refs:
+            return None
+
+        refs = ", ".join(ref[:120] for ref in unsafe_refs[:5])
+        return SchemaValidateErr(
+            _("openapi 中包含不允许的外部 $ref 引用：{refs}").format(refs=refs),
+            "$",
+            [],
+        )
+
+    @classmethod
+    def _collect_unsafe_refs(cls, node: Any) -> List[str]:
+        unsafe_refs: List[str] = []
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "$ref" and isinstance(value, str) and not value.startswith("#"):
+                    unsafe_refs.append(value)
+                    continue
+
+                unsafe_refs.extend(cls._collect_unsafe_refs(value))
+        elif isinstance(node, list):
+            for item in node:
+                unsafe_refs.extend(cls._collect_unsafe_refs(item))
+        return unsafe_refs
 
     def _get_parser(self, parse_result) -> BaseParser:
         if self.version == OPENAPIV2:
