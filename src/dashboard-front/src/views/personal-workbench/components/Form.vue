@@ -77,7 +77,6 @@
             :tenant-id="getTenantId"
             :multiple="false"
             :placeholder="t('请输入用户')"
-            @change="handleTenantUserChange"
           />
           <MemberSelector
             v-else
@@ -86,7 +85,6 @@
             :copyable="false"
             :placeholder="t('请输入用户')"
             has-delete-icon
-            @change="handleMemberChange"
           />
         </BkFormItem>
       </template>
@@ -151,14 +149,6 @@ const datePickerRef = ref<InstanceType<typeof DatePicker>>();
 const dateKey = ref('dateKey');
 
 const getTenantId = computed(() => userStore?.info?.tenant_id as string);
-
-const handleMemberChange = (members: string[]) => {
-  formData.value.applied_by = members;
-};
-
-const handleTenantUserChange = (member: string) => {
-  formData.value.applied_by = member;
-};
 
 const formatDatetime = (timeRange: (number | string | Date)[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
