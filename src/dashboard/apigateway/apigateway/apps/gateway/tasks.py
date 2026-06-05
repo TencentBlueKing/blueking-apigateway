@@ -94,8 +94,7 @@ class InactiveGatewayNotifier:
         if not released_gateway_ids:
             return []
 
-        end_time = timezone.now()
-        start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
+        start_time = timezone.now() - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
 
         # filter out recently created gateways at DB level
         gateways = list(Gateway.objects.filter(id__in=released_gateway_ids, created_time__lte=start_time))
@@ -108,7 +107,6 @@ class InactiveGatewayNotifier:
             StatisticsGatewayRequestByDay.objects.filter(
                 gateway_id__in=to_check_ids,
                 start_time__gte=start_time,
-                end_time__lte=end_time,
             )
             .values_list("gateway_id", flat=True)
             .distinct()

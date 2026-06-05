@@ -129,7 +129,7 @@ class TestInactiveGatewayNotifierGetInactiveGateways:
             resource_id=0,
             total_count=100,
             start_time=now - timedelta(days=10),
-            end_time=now - timedelta(days=9),
+            end_time=now + timedelta(days=1),
         )
         notifier = InactiveGatewayNotifier()
         result = notifier._get_inactive_gateways()
