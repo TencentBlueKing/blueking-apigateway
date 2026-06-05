@@ -403,9 +403,8 @@ class GatewayHandler:
 
         operation_statuses: Dict[int, dict] = {}
 
-        # start_time and end_time are timezone aware, now - delta_days from module-level constant
-        end_time = timezone.now()
-        start_time = end_time - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
+        # start_time is timezone aware, now - delta_days from module-level constant
+        start_time = timezone.now() - timedelta(days=OPERATION_STATUS_DELTA_DAYS)
 
         to_stats_gateway_ids = []
         for gateway in gateways:
@@ -446,8 +445,9 @@ class GatewayHandler:
 
         # query data and set the result to operation_statuses
         # just check existence, no need to calculate
-        queryset = StatisticsGatewayRequestByDay.objects.filter(gateway_id__in=to_stats_gateway_ids).filter(
-            start_time__gte=start_time, end_time__lte=end_time
+        queryset = StatisticsGatewayRequestByDay.objects.filter(
+            gateway_id__in=to_stats_gateway_ids,
+            start_time__gte=start_time,
         )
 
         has_data_gateway_ids = set(queryset.values_list("gateway_id", flat=True).distinct())
