@@ -37,7 +37,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerPermissionStatusEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -481,11 +481,23 @@ class MCPServerPermissionListApi(generics.ListAPIView):
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
+        mcp_server_ids = list(queryset.values_list("id", flat=True))
+        target_app_code = data["target_app_code"]
+
+        # 1. 查询 MCPServerAppPermission（实际权限表），覆盖主动授权（grant）和申请通过（apply）两种场景
+        granted_mcp_server_ids: set = set(
+            MCPServerAppPermission.objects.filter(
+                bk_app_code=target_app_code,
+                mcp_server_id__in=mcp_server_ids,
+            ).values_list("mcp_server_id", flat=True)
+        )
+
+        # 2. 查询 MCPServerAppPermissionApply（申请记录表），用于展示申请状态和处理人
         mcp_server_permission_status: Dict[int, str] = {}
         mcp_server_permission_apply_status = (
             MCPServerAppPermissionApply.objects.filter(
-                bk_app_code=data["target_app_code"],
-                mcp_server_id__in=list(queryset.values_list("id", flat=True)),
+                bk_app_code=target_app_code,
+                mcp_server_id__in=mcp_server_ids,
                 is_deleted=False,
             )
             .order_by("-applied_time")
@@ -497,6 +509,10 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             mcp_server_permission_handled_by[obj["mcp_server_id"]] = obj["handled_by"]
             if not mcp_server_permission_status.get(obj["mcp_server_id"]):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
+
+        # 3. 已有实际权限的 mcp_server，状态覆盖为 OWNED
+        for mcp_server_id in granted_mcp_server_ids:
+            mcp_server_permission_status[mcp_server_id] = MCPServerPermissionStatusEnum.OWNED.value
 
         mcp_server_permissions = []
         # Build categories map for queryset
