@@ -182,7 +182,7 @@ def delete_old_stats_records():
     """
     logger.info("begin clean old stats records")
 
-    max_records_per_time = 10000
+    max_records_per_time = 100000
 
     delete_end_time = timezone.now() - relativedelta(years=5) - relativedelta(days=1)
 
