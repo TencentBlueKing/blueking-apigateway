@@ -607,6 +607,154 @@ class TestMCPServerAppPermissionListApi:
             f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
         )
 
+    def test_list_with_grant_permission(self, request_view, fake_gateway, fake_stage):
+        """测试主动授权（grant）的 mcp_server 能被查询到"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-grant",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        )
+
+        # 创建主动授权记录（无申请记录）
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        mcp_server_data = result["data"][0]["mcp_server"]
+        assert mcp_server_data["name"] == "test-mcp-server-grant"
+
+    def test_list_grant_and_apply_permissions(self, request_view, fake_gateway, fake_stage):
+        """测试同时有主动授权和申请通过的 mcp_server 不会重复"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-both",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value,
+        )
+
+        # 创建申请通过记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        # 应该只返回一条记录，不重复
+        assert len(result["data"]) == 1
+
+    def test_list_only_approved_applies_shown(self, request_view, fake_gateway, fake_stage):
+        """测试只有申请通过的记录才会显示（待审批和驳回的不显示）"""
+        mcp_server_approved = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-approved",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        mcp_server_pending = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-pending",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        mcp_server_rejected = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-rejected",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 创建已批准的申请记录（有实际权限）
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server_approved,
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+            handled_by="admin",
+        )
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server_approved,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        # 创建待审批的申请记录（无实际权限）
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server_pending,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        # 创建已驳回的申请记录（无实际权限）
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server_rejected,
+            status=MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        # 只有已批准的（有实际权限）才会显示
+        assert len(result["data"]) == 1
+        assert result["data"][0]["mcp_server"]["name"] == "test-mcp-server-approved"
+
 
 class TestMCPServerAppPermissionRecordListApi:
     def test_list_with_approval_url(self, request_view, fake_gateway, fake_stage, settings):
