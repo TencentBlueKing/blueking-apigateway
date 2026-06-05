@@ -463,7 +463,6 @@ type="independence"
 modules = [
     "apigateway.biz.gateway",
     "apigateway.biz.resource",
-    "apigateway.biz.resource_version",
     "apigateway.biz.permission",
     "apigateway.biz.mcp_server",
 ]
