@@ -26,10 +26,12 @@ import apigateway.apis.v2.inner.serializers as inner_serializers
 import apigateway.apis.v2.inner.views as inner_views
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
+    MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
@@ -204,6 +206,186 @@ class TestMCPServerPermissionListApi:
 
         mcp_server_data = result["data"][0]["mcp_server"]
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.STREAMABLE_HTTP.value
+
+    def test_list_with_grant_permission(self, request_view, fake_gateway, fake_stage):
+        """测试主动授权（grant）的 mcp_server 状态为 OWNED"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-grant",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 创建主动授权记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.OWNED.value
+
+    def test_list_with_apply_approved_permission(self, request_view, fake_gateway, fake_stage):
+        """测试申请通过（apply）且有实际权限的 mcp_server 状态为 OWNED"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-apply-approved",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 创建申请通过记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+
+        # 创建实际权限记录（申请通过后会创建）
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.OWNED.value
+
+    def test_list_with_pending_apply_no_grant(self, request_view, fake_gateway, fake_stage):
+        """测试只有申请记录（待审批）且无实际权限的 mcp_server 状态为 PENDING"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-pending",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 创建待审批申请记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.PENDING.value
+
+    def test_list_with_no_permission(self, request_view, fake_gateway, fake_stage):
+        """测试没有任何权限记录的 mcp_server 状态为 NEED_APPLY"""
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-no-permission",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.NEED_APPLY.value
+
+    def test_list_grant_overrides_apply_status(self, request_view, fake_gateway, fake_stage):
+        """测试主动授权（grant）优先级高于申请记录状态"""
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-grant-overrides",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 创建驳回的申请记录
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            applied_by="test-user",
+            applied_time=timezone.now(),
+            status=MCPServerAppPermissionApplyStatusEnum.REJECTED.value,
+        )
+
+        # 创建主动授权记录（覆盖驳回状态）
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        # 主动授权应该覆盖驳回状态
+        assert permission_data["status"] == MCPServerPermissionStatusEnum.OWNED.value
 
 
 class TestMCPServerAppPermissionApplyCreateApi:
