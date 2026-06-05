@@ -38,7 +38,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerPermissionStatusEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.constants import GrantDimensionEnum, GrantTypeEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord, AppResourcePermission
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
@@ -491,6 +491,18 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
 
         mcp_server_permission_status: Dict[int, str] = {}
+        mcp_server_permission_handled_by: Dict[int, str] = {}
+
+        # 1. 检查实际权限表，如果有权限则标记为 OWNED
+        granted_permissions = MCPServerAppPermission.objects.filter(
+            bk_app_code=data["target_app_code"],
+            mcp_server_id__in=list(queryset.values_list("id", flat=True)),
+        ).values_list("mcp_server_id", flat=True)
+
+        for mcp_server_id in granted_permissions:
+            mcp_server_permission_status[mcp_server_id] = MCPServerPermissionStatusEnum.OWNED.value
+
+        # 2. 查询申请记录，获取状态和 handled_by
         mcp_server_permission_apply_status = (
             MCPServerAppPermissionApply.objects.filter(
                 bk_app_code=data["target_app_code"],
@@ -501,9 +513,9 @@ class MCPServerPermissionListApi(generics.ListAPIView):
             .values("mcp_server_id", "status", "handled_by")
         )
 
-        mcp_server_permission_handled_by: Dict[int, str] = {}
         for obj in mcp_server_permission_apply_status:
             mcp_server_permission_handled_by[obj["mcp_server_id"]] = obj["handled_by"]
+            # 如果没有实际权限，则使用申请状态
             if not mcp_server_permission_status.get(obj["mcp_server_id"]):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
 
@@ -606,36 +618,42 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = (
-            MCPServerAppPermissionApply.objects.filter(
-                bk_app_code=slz.validated_data["target_app_code"],
-                status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
-            )
-            .select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
-            .order_by("-applied_time")
-        )
+        target_app_code = slz.validated_data["target_app_code"]
 
-        mcp_servers = [obj.mcp_server for obj in queryset]
+        # 1. 查询 MCPServerAppPermission 表，获取所有有实际权限的 mcp_server（包括主动授权和申请通过）
+        # unique_together = ("bk_app_code", "mcp_server") 保证不会重复
+        granted_permissions = MCPServerAppPermission.objects.filter(
+            bk_app_code=target_app_code,
+        ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
+
+        # 2. 查询申请通过的记录，用于获取 handled_by 信息
+        approved_applies = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=target_app_code,
+            status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
+        ).order_by("-applied_time")
+        handled_by_map = {obj.mcp_server_id: obj.handled_by for obj in approved_applies}
+
+        mcp_servers = [perm.mcp_server for perm in granted_permissions]
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
         least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
         # Build categories map
-        categories_map = MCPServerHandler.build_categories_map([obj.mcp_server_id for obj in queryset])
+        categories_map = MCPServerHandler.build_categories_map([perm.mcp_server_id for perm in granted_permissions])
 
         mcp_server_permissions = [
             {
-                "mcp_server": obj.mcp_server,
+                "mcp_server": perm.mcp_server,
                 "permission": {
                     "status": MCPServerPermissionStatusEnum.OWNED.value,
                     "action": "",
                     "expires_in": None,
-                    "handled_by": [obj.handled_by],
-                    "mcp_server_id": obj.mcp_server_id,
-                    "gateway_id": obj.mcp_server.gateway_id,
+                    "handled_by": [handled_by_map.get(perm.mcp_server_id, "")],
+                    "mcp_server_id": perm.mcp_server_id,
+                    "gateway_id": perm.mcp_server.gateway_id,
                 },
             }
-            for obj in queryset
+            for perm in granted_permissions
         ]
 
         slz = serializers.MCPServerAppPermissionListOutputSLZ(

@@ -24,10 +24,11 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
+    MCPServerAppPermissionGrantTypeEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Stage
@@ -267,6 +268,14 @@ class TestMCPServerAppPermissionListApi:
             handled_by="admin",
         )
 
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.mcp_server.permission.app-permissions",
@@ -305,6 +314,14 @@ class TestMCPServerAppPermissionListApi:
             mcp_server=mcp_server,
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             handled_by="admin",
+        )
+
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
         )
 
         resp = request_view(
