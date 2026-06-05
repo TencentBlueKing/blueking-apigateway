@@ -512,6 +512,13 @@ class TestMCPServerAppPermissionListApi:
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             handled_by="admin",
         )
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
 
         resp = request_view(
             method="GET",
@@ -547,6 +554,13 @@ class TestMCPServerAppPermissionListApi:
             mcp_server=mcp_server,
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             handled_by="admin",
+        )
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
         )
 
         resp = request_view(
@@ -588,6 +602,13 @@ class TestMCPServerAppPermissionListApi:
             mcp_server=mcp_server,
             status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
             handled_by="admin",
+        )
+        # 创建实际权限记录
+        G(
+            MCPServerAppPermission,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
         )
 
         resp = request_view(
