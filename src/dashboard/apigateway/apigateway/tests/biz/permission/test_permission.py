@@ -27,6 +27,7 @@ from apigateway.apps.permission.models import (
     AppResourcePermission,
 )
 from apigateway.biz.permission import (
+    AppPermissionBuilder,
     ResourcePermissionHandler,
     build_resource_permission_display,
 )
@@ -103,6 +104,15 @@ def test_build_permission_display_preserves_gateway_name(fake_gateway):
 
     assert item["gateway_name"] == fake_gateway.name
     assert item["name"] == "get_user"
+
+
+def test_app_permission_builder_uses_released_resource_version_data(fake_gateway, fake_resource_version, fake_release):
+    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+
+    result = AppPermissionBuilder("test").build()
+
+    expected_resource_ids = {item["id"] for item in fake_resource_version.data if item["is_public"]}
+    assert {item["id"] for item in result} == expected_resource_ids
 
 
 class TestConvertAppliedByToDisplayName:

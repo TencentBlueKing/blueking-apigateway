@@ -32,7 +32,8 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.apps.permission.models import AppGatewayPermission, AppPermissionApplyStatus, AppResourcePermission
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, Stage
+from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.core.models import Gateway, ReleasedResource, Resource
 
 
 def build_resource_permission_display(
@@ -64,40 +65,6 @@ def build_resource_permission_display(
         "gateway_permission_apply_status": gateway_permission_apply_status,
         "resource_permission_apply_status": resource_permission_apply_status,
     }
-
-
-class ResourceVersionHandler:
-    @staticmethod
-    def get_released_public_resources(gateway_id: int) -> List[dict]:
-        release_resource_version_ids = list(
-            Release.objects.filter(gateway_id=gateway_id).values_list("resource_version_id", flat=True)
-        )
-        if not release_resource_version_ids:
-            return []
-
-        resource_ids = list(
-            ReleasedResource.objects.filter(
-                gateway_id=gateway_id,
-                resource_version_id__in=release_resource_version_ids,
-            )
-            .order_by("resource_id")
-            .values_list("resource_id", flat=True)
-            .distinct()
-        )
-        if not resource_ids:
-            return []
-
-        resources = ReleasedResource.objects.filter_latest_released_resources(resource_ids)
-        resources = [resource for resource in resources if resource.get("is_public")]
-
-        # 若资源无可用环境，则不展示该资源
-        current_stage_names = set(Stage.objects.get_names(gateway_id))
-        return [
-            resource
-            for resource in resources
-            if not resource.get("disabled_stages")
-            or (current_stage_names - set(resource.get("disabled_stages") or []))
-        ]
 
 
 class ResourcePermission(BaseModel):
