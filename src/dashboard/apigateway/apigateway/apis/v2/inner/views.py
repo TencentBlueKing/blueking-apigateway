@@ -616,41 +616,28 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
         target_app_code = slz.validated_data["target_app_code"]
 
         # 1. 查询 MCPServerAppPermission 表，获取所有有实际权限的 mcp_server（包括主动授权和申请通过）
+        # unique_together = ("bk_app_code", "mcp_server") 保证不会重复
         granted_permissions = (
             MCPServerAppPermission.objects.filter(
                 bk_app_code=target_app_code,
             )
             .select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
         )
-        # Python 层面按 mcp_server_id 去重，保留第一条记录
-        seen_server_ids = set()
-        unique_granted_permissions = []
-        for perm in granted_permissions:
-            if perm.mcp_server_id not in seen_server_ids:
-                seen_server_ids.add(perm.mcp_server_id)
-                unique_granted_permissions.append(perm)
 
         # 2. 查询申请通过的记录，用于获取 handled_by 信息
-        approved_applies = (
-            MCPServerAppPermissionApply.objects.filter(
-                bk_app_code=target_app_code,
-                status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
-            )
-            .order_by("-applied_time")
-        )
-        # Python 层面按 mcp_server_id 去重，保留第一条记录
-        handled_by_map = {}
-        for obj in approved_applies:
-            if obj.mcp_server_id not in handled_by_map:
-                handled_by_map[obj.mcp_server_id] = obj.handled_by
+        approved_applies = MCPServerAppPermissionApply.objects.filter(
+            bk_app_code=target_app_code,
+            status__in=[MCPServerAppPermissionApplyStatusEnum.APPROVED.value],
+        ).order_by("-applied_time")
+        handled_by_map = {obj.mcp_server_id: obj.handled_by for obj in approved_applies}
 
-        mcp_servers = [perm.mcp_server for perm in unique_granted_permissions]
+        mcp_servers = [perm.mcp_server for perm in granted_permissions]
 
         # 计算最低权限级别，用于判断是否展示应用态 URL
         least_privileges = MCPServerHandler.get_least_privileges(mcp_servers)
 
         # Build categories map
-        categories_map = MCPServerHandler.build_categories_map([perm.mcp_server_id for perm in unique_granted_permissions])
+        categories_map = MCPServerHandler.build_categories_map([perm.mcp_server_id for perm in granted_permissions])
 
         mcp_server_permissions = [
             {
@@ -664,7 +651,7 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
                     "gateway_id": perm.mcp_server.gateway_id,
                 },
             }
-            for perm in unique_granted_permissions
+            for perm in granted_permissions
         ]
 
         slz = serializers.MCPServerAppPermissionListOutputSLZ(
