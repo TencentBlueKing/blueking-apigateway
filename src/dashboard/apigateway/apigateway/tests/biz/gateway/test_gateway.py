@@ -15,19 +15,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from datetime import timedelta
+
 import pytest
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from django_dynamic_fixture import G
 
 from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
+from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.support.models import ReleasedResourceDoc
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     ContextTypeEnum,
+    GatewayOperationStatusEnum,
     GatewayStatusEnum,
     GatewayTypeEnum,
     StageStatusEnum,
@@ -111,6 +116,26 @@ class TestGatewayHandler:
         assert released.id in gateway_ids
         assert unreleased.id not in gateway_ids
         assert inactive.id not in gateway_ids
+
+    def test_get_operation_statuses_checks_recent_start_time_only(self):
+        now = timezone.now()
+        gateway = G(
+            Gateway,
+            status=GatewayStatusEnum.ACTIVE.value,
+            created_time=now - timedelta(days=OPERATION_STATUS_DELTA_DAYS + 1),
+        )
+        G(
+            StatisticsGatewayRequestByDay,
+            gateway_id=gateway.id,
+            start_time=now - timedelta(days=1),
+            end_time=now + timedelta(days=1),
+            stage_name="prod",
+            resource_id=1,
+        )
+
+        result = GatewayHandler.get_operation_statuses([gateway])
+
+        assert result[gateway.id]["status"] == GatewayOperationStatusEnum.ACTIVE.value
 
     @pytest.mark.parametrize(
         "user_conf, api_type, allow_update_api_auth, unfiltered_sensitive_keys, allow_auth_from_params, allow_delete_sensitive_params, expected",
