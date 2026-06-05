@@ -213,7 +213,6 @@ CORS_ORIGIN_REGEX_WHITELIST: List[str] = env.list("CORS_ORIGIN_REGEX_WHITELIST",
 # Internationalization
 LANGUAGE_CODE = "zh-hans"
 USE_I18N = True
-USE_L10N = True
 
 # timezone
 TIME_ZONE = "Asia/Shanghai"
@@ -272,6 +271,7 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.common.swagger.BkStandardResponseSwaggerAutoSchema",
 }
+SWAGGER_USE_COMPAT_RENDERERS = False
 
 # https://docs.djangoproject.com/en/3.2/ref/checks/
 # disable warnings: db_table '<table_name>' is used by multiple models
