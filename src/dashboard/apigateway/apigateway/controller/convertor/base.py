@@ -41,10 +41,13 @@ class BaseResourceConvertor(ABC):
 
 
 class GlobalResourceConvertor(BaseResourceConvertor):
+    def __init__(self, apisix_version: str = DEFAULT_APISIX_VERSION):
+        self._apisix_version = apisix_version
+
     def get_labels(self) -> Labels:
         return Labels(
             **{
-                LABEL_KEY_APISIX_VERSION: DEFAULT_APISIX_VERSION,
+                LABEL_KEY_APISIX_VERSION: self._apisix_version,
             }
         )
 

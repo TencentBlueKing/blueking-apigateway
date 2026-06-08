@@ -51,13 +51,19 @@ from apigateway.core.constants import LoadBalanceTypeEnum
 from apigateway.core.models import Backend
 
 from .base import GatewayResourceConvertor
-from .constants import LABEL_KEY_BACKEND_ID
+from .constants import DEFAULT_APISIX_VERSION, LABEL_KEY_BACKEND_ID
 from .utils import UrlInfo, truncate_string
 
 
 class ServiceConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: int, revoke_flag: Optional[bool] = False):
-        super().__init__(release_data=release_data, publish_id=publish_id)
+    def __init__(
+        self,
+        release_data: ReleaseData,
+        publish_id: int,
+        revoke_flag: Optional[bool] = False,
+        apisix_version: str = DEFAULT_APISIX_VERSION,
+    ):
+        super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
 
     def convert(self) -> List[GatewayApisixModel]:

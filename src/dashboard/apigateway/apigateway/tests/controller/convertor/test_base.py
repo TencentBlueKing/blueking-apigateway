@@ -17,7 +17,7 @@
 #
 import pytest
 
-from apigateway.controller.convertor.base import GatewayResourceConvertor
+from apigateway.controller.convertor.base import GatewayResourceConvertor, GlobalResourceConvertor
 from apigateway.controller.convertor.constants import (
     DEFAULT_APISIX_VERSION,
     LABEL_KEY_APISIX_VERSION,
@@ -25,6 +25,27 @@ from apigateway.controller.convertor.constants import (
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
+
+
+class TestGlobalResourceConvertor:
+    """Test GlobalResourceConvertor class"""
+
+    def _make_convertor(self, **kwargs):
+        class _Convertor(GlobalResourceConvertor):
+            def convert(self):
+                return []
+
+        return _Convertor(**kwargs)
+
+    def test_default_apisix_version(self):
+        convertor = self._make_convertor()
+        labels = convertor.get_labels()
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == DEFAULT_APISIX_VERSION
+
+    def test_custom_apisix_version(self):
+        convertor = self._make_convertor(apisix_version="3.16")
+        labels = convertor.get_labels()
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.16"
 
 
 class TestGatewayResourceConvertor:

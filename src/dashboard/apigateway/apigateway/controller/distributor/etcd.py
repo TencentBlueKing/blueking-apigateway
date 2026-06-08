@@ -63,7 +63,7 @@ class GlobalResourceDistributor(BaseDistributor):
         publish_id: int,
     ) -> Tuple[bool, str]:
         """将 release 发布到 global registry 中"""
-        transformer = GlobalApisixResourceTransformer()
+        transformer = GlobalApisixResourceTransformer(apisix_version=self.data_plane.apisix_version)
         registry = self._get_registry()
 
         gateway = Gateway(id=-1, name="global")
@@ -136,6 +136,7 @@ class GatewayResourceDistributor(BaseDistributor):
         transformer = GatewayApisixResourceTransformer(
             release=self.release,
             publish_id=publish_id,
+            apisix_version=self.data_plane.apisix_version,
         )
         registry = self._get_registry(self.gateway, self.stage)
 
@@ -218,6 +219,7 @@ class GatewayResourceDistributor(BaseDistributor):
             release=self.release,
             publish_id=publish_id,
             revoke_flag=True,
+            apisix_version=self.data_plane.apisix_version,
         )
 
         try:

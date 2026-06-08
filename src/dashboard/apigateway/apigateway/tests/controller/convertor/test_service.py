@@ -23,6 +23,7 @@ from django.utils.encoding import force_bytes, force_str
 
 from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
+from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION
 
 
 class TestServiceConvertor:
@@ -52,6 +53,12 @@ class TestServiceConvertor:
         """Test that ServiceConvertor is a GatewayResourceConvertor"""
         convertor = ServiceConvertor(mock_release_data, publish_id=123)
         assert isinstance(convertor, GatewayResourceConvertor)
+
+    def test_service_labels_carry_apisix_version(self, mock_release_data):
+        """ServiceConvertor labels should reflect the configured apisix_version"""
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version="3.16")
+        labels = convertor.get_labels()
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.16"
 
     def test_service_convertor_inherits_gateway_properties(self, mock_release_data):
         """Test that ServiceConvertor inherits properties from GatewayResourceConvertor"""

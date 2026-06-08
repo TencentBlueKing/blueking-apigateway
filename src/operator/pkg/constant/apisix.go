@@ -100,6 +100,7 @@ type APISIXVersion string
 // APISIXVersion313 ...
 const (
 	APISIXVersion313 APISIXVersion = "3.13.X"
+	APISIXVersion316 APISIXVersion = "3.16.X"
 )
 
 func (a APISIXResource) String() string {

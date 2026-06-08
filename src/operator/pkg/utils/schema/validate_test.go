@@ -32,6 +32,7 @@ import (
 
 var APISIXVersionList = []constant.APISIXVersion{
 	constant.APISIXVersion313,
+	constant.APISIXVersion316,
 }
 
 func TestNewResourceSchema(t *testing.T) {

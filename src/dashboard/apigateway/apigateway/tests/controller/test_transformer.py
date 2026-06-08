@@ -98,6 +98,17 @@ class TestGlobalApisixResourceConvertor:
         resources = list(transformer.get_transformed_resources())
         assert resources == []
 
+    def test_transform_passes_apisix_version(self, mocker):
+        """Test that transform() passes the apisix_version into PluginMetadataConvertor"""
+        mock_plugin_convertor = mocker.patch("apigateway.controller.transformer.PluginMetadataConvertor")
+        mock_plugin_convertor.return_value.convert.return_value = []
+
+        transformer = GlobalApisixResourceTransformer(apisix_version="3.16")
+        assert transformer.apisix_version == "3.16"
+        transformer.transform()
+
+        assert mock_plugin_convertor.call_args.kwargs["apisix_version"] == "3.16"
+
 
 class TestGatewayApisixResourceConvertor:
     """Test GatewayApisixResourceConvertor class"""
@@ -185,10 +196,12 @@ class TestGatewayApisixResourceConvertor:
         transformer.transform()
 
         # Verify all convertors were called with correct parameters
-        mock_service_convertor.assert_called_once_with(mock_release_data, 123, True)
+        mock_service_convertor.assert_called_once_with(mock_release_data, 123, True, apisix_version="3.13")
         expected_mapping = {123: "service-1", 456: "service-2"}
-        mock_route_convertor.assert_called_once_with(mock_release_data, expected_mapping, 123, True)
-        mock_bk_release_convertor.assert_called_once_with(mock_release_data, 123)
+        mock_route_convertor.assert_called_once_with(
+            mock_release_data, expected_mapping, 123, True, apisix_version="3.13"
+        )
+        mock_bk_release_convertor.assert_called_once_with(mock_release_data, 123, apisix_version="3.13")
 
         # Verify internal state
         assert len(transformer._converted_services) == 2
@@ -200,6 +213,29 @@ class TestGatewayApisixResourceConvertor:
         # Verify get_transformed_resources returns resources
         resources = list(transformer.get_transformed_resources())
         assert len(resources) == 5  # 2 services + 2 routes + 1 bk_release
+
+    def test_transform_passes_apisix_version(self, mock_release, mocker):
+        """transform() should pass the apisix_version into service/route/bk_release convertors"""
+        mock_release_data = mocker.Mock()
+        mock_release_data.gateway.name = "test-gateway"
+        mock_release_data.stage.name = "prod"
+        mock_release_data.resource_version.version = "v1"
+        mocker.patch("apigateway.controller.transformer.ReleaseData", return_value=mock_release_data)
+
+        mock_service_convertor = mocker.patch("apigateway.controller.transformer.ServiceConvertor")
+        mock_service_convertor.return_value.convert.return_value = []
+        mock_route_convertor = mocker.patch("apigateway.controller.transformer.RouteConvertor")
+        mock_route_convertor.return_value.convert.return_value = []
+        mock_bk_release_convertor = mocker.patch("apigateway.controller.transformer.BkReleaseConvertor")
+        mock_bk_release_convertor.return_value.convert.return_value = []
+
+        transformer = GatewayApisixResourceTransformer(mock_release, publish_id=123, apisix_version="3.16")
+        assert transformer.apisix_version == "3.16"
+        transformer.transform()
+
+        assert mock_service_convertor.call_args.kwargs["apisix_version"] == "3.16"
+        assert mock_route_convertor.call_args.kwargs["apisix_version"] == "3.16"
+        assert mock_bk_release_convertor.call_args.kwargs["apisix_version"] == "3.16"
 
     def test_backend_service_mapping(self, mock_release, mocker):
         """Test backend service mapping creation and edge cases"""

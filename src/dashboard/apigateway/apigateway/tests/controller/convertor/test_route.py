@@ -21,7 +21,11 @@ import json
 import pytest
 
 from apigateway.controller.convertor import RouteConvertor
-from apigateway.controller.convertor.constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
+from apigateway.controller.convertor.constants import (
+    LABEL_KEY_APISIX_VERSION,
+    MATCH_SUB_PATH_PRIORITY,
+    SUBPATH_PARAM_NAME,
+)
 from apigateway.controller.models import Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.core.constants import ProxyTypeEnum
@@ -110,6 +114,21 @@ class TestRouteConvertor:
         assert "builtin-mock-release-version" in route.name
         assert route.uris == ["/api/test-gateway/test-stage/__apigw_version"]
         assert route.methods == [HttpMethodEnum.GET]
+
+    def test_release_version_detect_route_carries_apisix_version(self, mock_release_data, backend_service_mapping):
+        """The __apigw_version detect route body and labels must reflect the data plane apisix_version"""
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping=backend_service_mapping,
+            publish_id=123,
+            revoke_flag=False,
+            apisix_version="3.16",
+        )
+        route = convertor._get_release_version_detect_route()
+
+        body = json.loads(route.plugins["bk-mock"].response_example)
+        assert body["apisix_version"] == "3.16"
+        assert route.labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.16"
 
     def test_convert_http_route(self, convertor, mock_release_data):
         """Test _convert_http_route method"""
