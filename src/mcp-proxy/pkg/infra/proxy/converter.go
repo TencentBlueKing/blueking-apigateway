@@ -26,6 +26,113 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
+const bodyParamDefaultDescription = "HTTP request body in JSON format, " +
+	"containing the main data payload for the API request."
+
+func openapiSchemaRefToJSONSchema(schemaRef *openapi3.SchemaRef) jsonschema.Schema {
+	var jsonSchema jsonschema.Schema
+	if schemaRef == nil {
+		return jsonSchema
+	}
+
+	schemaJSON, err := schemaRef.MarshalJSON()
+	if err != nil {
+		return jsonSchema
+	}
+	schemaJSON = normalizeOpenAPIJSONSchema(schemaJSON)
+	if err := json.Unmarshal(schemaJSON, &jsonSchema); err != nil {
+		var rawSchema map[string]any
+		if err := json.Unmarshal(schemaJSON, &rawSchema); err == nil {
+			jsonSchema.ExtraProperties = rawSchema
+		}
+	}
+	return jsonSchema
+}
+
+func normalizeOpenAPIJSONSchema(schemaJSON []byte) []byte {
+	var schema any
+	if err := json.Unmarshal(schemaJSON, &schema); err != nil {
+		return schemaJSON
+	}
+	normalizeOpenAPIJSONSchemaValue(schema)
+
+	normalizedJSON, err := json.Marshal(schema)
+	if err != nil {
+		return schemaJSON
+	}
+	return normalizedJSON
+}
+
+func normalizeOpenAPIJSONSchemaValue(schema any) {
+	switch value := schema.(type) {
+	case map[string]any:
+		normalizeOpenAPIJSONSchemaObject(value)
+	case []any:
+		for _, item := range value {
+			normalizeOpenAPIJSONSchemaValue(item)
+		}
+	}
+}
+
+func normalizeOpenAPIJSONSchemaObject(schema map[string]any) {
+	normalizeOpenAPIExclusiveBound(schema, "exclusiveMinimum", "minimum")
+	normalizeOpenAPIExclusiveBound(schema, "exclusiveMaximum", "maximum")
+
+	for _, key := range []string{"properties", "patternProperties", "definitions", "$defs", "dependentSchemas"} {
+		childSchemas, ok := schema[key].(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, childSchema := range childSchemas {
+			normalizeOpenAPIJSONSchemaValue(childSchema)
+		}
+	}
+
+	for _, key := range []string{
+		"items", "additionalProperties", "additionalItems", "contains", "propertyNames", "if", "then", "else", "not",
+	} {
+		normalizeOpenAPIJSONSchemaValue(schema[key])
+	}
+
+	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
+		normalizeOpenAPIJSONSchemaValue(schema[key])
+	}
+
+	dependencies, ok := schema["dependencies"].(map[string]any)
+	if !ok {
+		return
+	}
+	for _, dependency := range dependencies {
+		normalizeOpenAPIJSONSchemaValue(dependency)
+	}
+}
+
+func normalizeOpenAPIExclusiveBound(schema map[string]any, exclusiveKey, boundKey string) {
+	exclusive, ok := schema[exclusiveKey].(bool)
+	if !ok {
+		return
+	}
+	if !exclusive {
+		delete(schema, exclusiveKey)
+		return
+	}
+
+	bound, ok := schema[boundKey]
+	if !ok {
+		delete(schema, exclusiveKey)
+		return
+	}
+	schema[exclusiveKey] = bound
+}
+
+func jsonSchemaDescriptionIsEmpty(schema *jsonschema.Schema) bool {
+	if schema.Description != nil && *schema.Description != "" {
+		return false
+	}
+	description, ok := schema.ExtraProperties["description"].(string)
+	return !ok || description == ""
+}
+
 // OpenapiToMcpToolConfig ...
 // nolint:gocyclo
 // This function takes an OpenAPI specification and a map of operation IDs and returns a slice of ToolConfig structs.
@@ -95,15 +202,19 @@ func OpenapiToMcpToolConfig(
 				}
 				for _, param := range operation.Parameters {
 					if param.Value.Schema != nil {
-						schema := param.Value.Schema.Value
-						schema.Description = param.Value.Description
-						schema.Example = param.Value.Example
-						if param.Value.Required {
-							schema.Required = []string{param.Value.Name}
+						jsonSchema := openapiSchemaRefToJSONSchema(param.Value.Schema)
+						if param.Value.Description != "" {
+							jsonSchema.Description = &param.Value.Description
 						}
-						marshalJSON, _ := schema.MarshalJSON()
-						var jsonSchema jsonschema.Schema
-						_ = jsonSchema.UnmarshalJSON(marshalJSON)
+						if param.Value.Example != nil {
+							if jsonSchema.ExtraProperties == nil {
+								jsonSchema.ExtraProperties = map[string]any{}
+							}
+							jsonSchema.ExtraProperties["example"] = param.Value.Example
+						}
+						if param.Value.Required {
+							jsonSchema.Required = []string{param.Value.Name}
+						}
 						if param.Value.In == "header" {
 							headerParamSchema.WithPropertiesItem(
 								param.Value.Name,
@@ -181,18 +292,17 @@ func OpenapiToMcpToolConfig(
 			if operation.RequestBody != nil && operation.RequestBody.Value != nil {
 				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok &&
 					content != nil {
-					schema := content.Schema
-					marshalJSON, _ := schema.MarshalJSON()
-					var jsonSchema jsonschema.Schema
-					_ = json.Unmarshal(marshalJSON, &jsonSchema)
-					// Add description if not already set
-					if jsonSchema.Description == nil || *jsonSchema.Description == "" {
-						bodyParamDesc := "HTTP request body in JSON format, containing the main data payload for the API request."
+					jsonSchema := openapiSchemaRefToJSONSchema(content.Schema)
+					if jsonSchemaDescriptionIsEmpty(&jsonSchema) {
+						bodyParamDesc := bodyParamDefaultDescription
 						jsonSchema.Description = &bodyParamDesc
 					}
 					paramSchema.WithPropertiesItem("body_param", jsonschema.SchemaOrBool{
 						TypeObject: &jsonSchema,
 					})
+					if operation.RequestBody.Value.Required {
+						paramSchema.Required = append(paramSchema.Required, "body_param")
+					}
 				}
 			}
 

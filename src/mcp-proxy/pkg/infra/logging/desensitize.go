@@ -20,7 +20,7 @@
 package logging
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -71,7 +71,7 @@ func (r *Desensitize) Write(entry zapcore.Entry, fields []zapcore.Field) error {
 				for index, value := range result.Array() {
 					fileValue := value.String()
 					maskValue := getSensitiveFieldMaskValue(fileValue)
-					indexJsonPath := strings.ReplaceAll(jsonPath, "#", fmt.Sprintf("%d", index))
+					indexJsonPath := strings.ReplaceAll(jsonPath, "#", strconv.Itoa(index))
 					fields[i].String, _ = sjson.Set(fields[i].String, indexJsonPath, maskValue)
 				}
 			}
