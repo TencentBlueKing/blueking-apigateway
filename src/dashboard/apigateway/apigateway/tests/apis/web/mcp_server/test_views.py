@@ -3392,6 +3392,59 @@ class TestGatewayMCPServerAppPermissionListApi:
         result = resp.json()
         assert result["data"]["count"] == 2
 
+    def test_list_order_by_effective_time(self, request_view, fake_gateway, fake_mcp_server):
+        base_time = now_datetime()
+        grant_permission = G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="grant-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+        )
+        apply_permission = G(
+            MCPServerAppPermission,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+        )
+        MCPServerAppPermission.objects.filter(id=grant_permission.id).update(
+            created_time=base_time - datetime.timedelta(days=2)
+        )
+        MCPServerAppPermission.objects.filter(id=apply_permission.id).update(
+            created_time=base_time - datetime.timedelta(days=3)
+        )
+        G(
+            MCPServerAppPermissionApply,
+            mcp_server=fake_mcp_server,
+            bk_app_code="apply-app",
+            applied_by="admin",
+            applied_time=base_time - datetime.timedelta(days=4),
+            handled_by="admin",
+            handled_time=base_time - datetime.timedelta(days=1),
+            status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"order_by": "effective_time"},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert [item["bk_app_code"] for item in result["data"]["results"]] == ["grant-app", "apply-app"]
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.gateway_app_permission.list",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"order_by": "-effective_time"},
+        )
+        assert resp.status_code == 200
+        result = resp.json()
+        assert [item["bk_app_code"] for item in result["data"]["results"]] == ["apply-app", "grant-app"]
+
     def test_list_filter_by_mcp_server_id(self, request_view, fake_gateway, fake_mcp_server, fake_stage, faker):
         another_mcp = G(
             MCPServer,

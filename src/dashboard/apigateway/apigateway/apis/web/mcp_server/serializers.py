@@ -939,6 +939,16 @@ class GatewayMCPServerAppPermissionListInputSLZ(serializers.Serializer):
         default="",
         help_text="授权类型",
     )
+    order_by = serializers.ChoiceField(
+        choices=[
+            ("effective_time", "按生效时间排序"),
+            ("-effective_time", "按生效时间倒序"),
+        ],
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="排序方式",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionListInputSLZ"
