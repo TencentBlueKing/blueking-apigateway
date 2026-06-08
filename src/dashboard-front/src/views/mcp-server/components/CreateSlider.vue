@@ -144,7 +144,6 @@
                             <AgTable
                               ref="toolTableRef"
                               v-model:table-data="filteredToolList"
-                              resizable
                               show-selection
                               local-page
                               :show-settings="false"

@@ -362,7 +362,7 @@ const menuList = computed<IMenu[]>(() => [
       },
       {
         name: 'MCPServerPermission',
-        title: t('MCP 权限审批'),
+        title: t('MCP 权限管理'),
         enabled: true,
       },
       {

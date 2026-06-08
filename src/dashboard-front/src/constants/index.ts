@@ -302,3 +302,15 @@ export const PRECISION_STEPS_list = [
     value: '12h',
   },
 ];
+
+// 已授权应用操作类型列表
+export const AUTHORIZATION_APPLICATION_OPERATE_TYPE = [
+  {
+    name: t('主动授权'),
+    id: 'grant',
+  },
+  {
+    name: t('申请审批'),
+    id: 'apply',
+  },
+];

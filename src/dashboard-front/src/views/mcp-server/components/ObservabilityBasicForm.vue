@@ -410,13 +410,13 @@ watch(
     route.query.mcp_server_name as string | undefined,
     route.query.request_id as string | undefined,
   ],
-  ([mcpServerName, requestId]) => {
-    const validParams = [mcpServerName, requestId].filter(Boolean);
+  ([serverName, requestId]) => {
+    const validParams = [serverName, requestId].filter(Boolean);
 
     if (validParams.length) {
       searchParams.value = {
         ...searchParams.value,
-        mcp_server_name: mcpServerName ?? '',
+        mcp_server_name: serverName ?? '',
         query: requestId ?? '',
       };
     }

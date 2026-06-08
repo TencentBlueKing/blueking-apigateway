@@ -25,12 +25,22 @@
     />
 
     <div class="flex items-center justify-between mb-16px">
-      <BkButton
-        theme="primary"
-        @click="showAuthorizeDia"
-      >
-        {{ t('主动授权') }}
-      </BkButton>
+      <div class="flex">
+        <BkButton
+          theme="primary"
+          @click="showAuthorizeDia"
+        >
+          {{ t('主动授权') }}
+        </BkButton>
+        <AgDropdown
+          class="ml-8px"
+          placement="bottom"
+          :dropdown-list="exportDropData"
+          :is-disabled="!tableData.length"
+          :text="t('导出')"
+          @on-change="handleExportApp"
+        />
+      </div>
 
       <BkInput
         v-model="filterData.bk_app_code"
@@ -41,55 +51,17 @@
       />
     </div>
 
-    <BkLoading :loading="isLoading">
-      <BkTable
-        size="small"
-        class="audit-table"
-        border="outer"
-        :data="tableData"
-        :pagination="pagination"
-        remote-pagination
-        show-overflow-tooltip
-        @page-value-change="handlePageChange"
-        @page-limit-change="handlePageSizeChange"
-      >
-        <BkTableColumn
-          :label="t('蓝鲸应用ID')"
-          prop="bk_app_code"
-        />
-        <!-- <BkTableColumn :label="t('过期时间')" prop="expires" /> -->
-        <BkTableColumn :label="renderTypeLabel">
-          <template #default="{ row }">
-            {{ getOpTypeText(row.grant_type) || '--' }}
-          </template>
-        </BkTableColumn>
-        <BkTableColumn :label="t('操作')">
-          <template #default="{ row }">
-            <BkPopConfirm
-              placement="top"
-              trigger="click"
-              :content="t('确认删除？')"
-              @confirm="() => handleDel(row?.id)"
-            >
-              <BkButton
-                text
-                theme="primary"
-              >
-                {{ t('删除') }}
-              </BkButton>
-            </BkPopConfirm>
-          </template>
-        </BkTableColumn>
-        <template #empty>
-          <TableEmpty
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @refresh="refreshTableData"
-            @clear-filter="handleClearFilterKey"
-          />
-        </template>
-      </BkTable>
-    </BkLoading>
+    <AgTable
+      ref="tableRef"
+      v-model:table-data="tableData"
+      :api-method="getTableData"
+      :columns="tableColumns"
+      :filter-value="filterData"
+      show-settings
+      @filter-change="handleFilterChange"
+      @sort-change="handleSortChange"
+      @clear-filter="handleClearFilter"
+    />
 
     <BkDialog
       v-model:is-show="isShowAuth"
@@ -137,13 +109,28 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { Message } from 'bkui-vue';
-import { useQueryList } from '@/hooks';
-import { authMcpPermissions, deleteMcpPermissions, getMcpPermissions } from '@/services/source/mcp-market';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import RenderCustomColumn from '@/components/custom-table-header-filter/index.tsx';
-import { useGateway } from '@/stores';
+<script lang="tsx" setup>
+import { Button, Form, Message, PopConfirm } from 'bkui-vue';
+import type {
+  FilterValue,
+  PrimaryTableProps,
+  SortInfo,
+  TableRowData,
+} from '@blueking/tdesign-ui';
+import type { IDropList, IFormMethod } from '@/types/common';
+import { useFeatureFlag, useGateway } from '@/stores';
+import { useMcpPermission } from '@/hooks';
+import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
+import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
+import type { IMCPServerAppPermissionListOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/query/gateways.ts';
+import type { IMCPServerAppPermissionCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
+import {
+  authMcpPermissions,
+  getMcpPermissions,
+} from '@/services/source/mcp-market';
+import AgDropdown from '@/components/ag-dropdown/Index.vue';
+import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { mcpServerId?: number }
 
@@ -151,49 +138,105 @@ const { mcpServerId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
 const gatewayStore = useGateway();
-
-const isShowAuth = ref(false);
-const authLoading = ref(false);
-const formData = ref({ bk_app_code: '' });
-const formRef = ref();
-const filterData = ref<{ [key: string]: any }>({
-  bk_app_code: '',
-  grant_type: '',
-});
-const tableKey = ref(-1);
-
+const featureFlagStore = useFeatureFlag();
 const {
-  tableData,
-  pagination,
-  isLoading,
-  handlePageChange,
-  handlePageSizeChange,
-  getList,
-} = useQueryList({
-  apiMethod: getMcpPermissions,
-  filterData,
-  id: mcpServerId,
-});
+  exportDropData,
+  getExportDropData,
+  handleDelete,
+  handleExport,
+} = useMcpPermission();
 
-const curSelectData = ref<{ [key: string]: any }>({ grant_type: 'ALL' });
-const tableEmptyConf = ref<{
-  emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
-  isAbnormal: boolean
-}>({
-  emptyType: undefined,
-  isAbnormal: false,
-});
-
-const OperateRecordType = ref([
+const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
+const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
-    name: t('授权'),
-    id: 'grant',
+    title: t('蓝鲸应用ID'),
+    colKey: 'bk_app_code',
+    ellipsis: true,
   },
   {
-    name: t('申请'),
-    id: 'apply',
+    title: t('授权类型'),
+    colKey: 'grant_type',
+    ellipsis: true,
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: AUTHORIZATION_APPLICATION_OPERATE_TYPE.map((item: Record<string, string>) => ({
+        label: item.name,
+        value: item.id,
+      })),
+    },
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
+      const grantTypeText = AUTHORIZATION_APPLICATION_OPERATE_TYPE.find(item => item.id === row.grant_type)?.name ?? '--';
+      return (
+        <span>
+          { grantTypeText }
+        </span>
+      );
+    },
+  },
+  {
+    title: t('申请人'),
+    colKey: 'applied_by',
+    ellipsis: true,
+    cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.applied_by),
+  },
+  {
+    title: t('操作人'),
+    colKey: 'handled_by',
+    ellipsis: true,
+    cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.handled_by),
+  },
+  {
+    title: t('生效时间'),
+    colKey: 'effective_time',
+    ellipsis: true,
+    sorter: true,
+    width: 260,
+  },
+  {
+    title: t('操作'),
+    colKey: 'operate',
+    fixed: 'right' as const,
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
+      return (
+        <PopConfirm
+          placement="top"
+          trigger="click"
+          content={t('确认删除？')}
+          onConfirm={async () => {
+            await handleDelete(gatewayId.value, mcpServerId, row?.id);
+            getList();
+          }}
+        >
+          <Button
+            text
+            theme="primary"
+          >
+            { t('删除') }
+          </Button>
+        </PopConfirm>
+      );
+    },
   },
 ]);
+const tableData = ref<IMCPServerAppPermissionListOutput[]>([]);
+const isShowAuth = ref(false);
+const authLoading = ref(false);
+const formData = ref<IMCPServerAppPermissionCreateInputSLZ>({
+  bk_app_code: '',
+});
+const filterData = ref<FilterValue | IGatewaysMcpServersPermissionsListQuery>({
+  bk_app_code: '',
+  grant_type: '',
+  order_by: '',
+});
+const curSelectData = ref<IGatewaysMcpServersPermissionsListQuery>({
+  grant_type: '',
+});
+
+const filterFields = ['bk_app_code', 'grant_type'] as string[];
 const rules = {
   bk_app_code: [
     {
@@ -204,34 +247,40 @@ const rules = {
   ],
 };
 
-const getOpTypeText = (type: string) => {
-  return (
-    (
-      OperateRecordType.value.find((item: Record<string, string>) => item.id === type) || {}
-    )?.name || ''
-  );
+const gatewayId = computed(() => gatewayStore.currentGateway?.id ?? 0);
+
+const getList = () => {
+  const params = {
+    ...filterData.value,
+    mcp_server_id: mcpServerId,
+  };
+  return tableRef.value?.fetchData(filterSimpleEmpty(params), { resetPage: true });
 };
 
-const renderTypeLabel = () => {
-  return h('div', { class: 'operate-records-custom-label' }, [
-    h(
-      RenderCustomColumn,
-      {
-        key: tableKey.value,
-        hasAll: true,
-        columnLabel: t('操作类型'),
-        selectValue: curSelectData.value.grant_type,
-        list: OperateRecordType.value,
-        onSelected: (payload: Record<string, string>) => {
-          const curData = {
-            id: 'grant_type',
-            name: t('操作类型'),
-          };
-          handleFilterData(payload, curData);
-        },
-      },
-    ),
-  ]);
+const getTableData = async (params: {
+  offset: number
+  limit: number
+}) => {
+  const queryParams: IGatewaysMcpServersPermissionsListQuery = {
+    ...params,
+    ...filterData.value,
+    mcp_server_id: mcpServerId,
+  };
+  const res = await getMcpPermissions(gatewayId.value, filterSimpleEmpty(queryParams));
+  return res ?? {
+    count: 0,
+    results: [],
+  };
+};
+
+const renderDisplayNameColumn = (value: string) => {
+  return featureFlagStore.isEnableDisplayName && Boolean(value)
+    ? <span><bk-user-display-name user-id={value} /></span>
+    : <span>{value || '--'}</span>;
+};
+
+const handleExportApp = (payload: IDropList) => {
+  handleExport(gatewayId.value, payload, filterData);
 };
 
 const showAuthorizeDia = () => {
@@ -247,78 +296,60 @@ const submitAuth = async () => {
   try {
     authLoading.value = true;
 
-    await formRef.value.validate();
-    await authMcpPermissions(gatewayStore.currentGateway!.id!, mcpServerId, formData.value);
+    await formRef.value?.validate();
+    await authMcpPermissions(gatewayId.value, mcpServerId, formData.value);
 
     Message({
       theme: 'success',
       message: t('操作成功'),
     });
     cancelAuth();
-    refreshTableData();
+    getList();
   }
   finally {
     authLoading.value = false;
   }
 };
 
-const handleDel = async (id: number) => {
-  await deleteMcpPermissions(gatewayStore.currentGateway!.id!, mcpServerId, id);
-  Message({
-    theme: 'success',
-    message: t('删除成功'),
-  });
-  refreshTableData();
+const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+  filterData.value = { ...filterItem };
 };
 
-const updateTableEmptyConfig = () => {
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal ?? false;
-  if (filterData.value.bk_app_code || filterData.value.grant_type) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
+const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
+  const sortData = sort as SortInfo;
+  if (sortData) {
+    const { sortBy: colKey, descending } = sortData;
+    filterData.value.order_by = descending ? `-${colKey}` : colKey;
   }
-  tableEmptyConf.value.emptyType = undefined;
-};
-
-const refreshTableData = async () => {
-  await getList();
-  updateTableEmptyConfig();
+  else {
+    filterData.value.order_by = '';
+  }
 };
 
 const resetSearch = () => {
-  filterData.value.bk_app_code = '';
-  filterData.value.grant_type = '';
-  curSelectData.value.grant_type = 'ALL';
-  tableKey.value = +new Date();
+  filterData.value = {
+    bk_app_code: '',
+    grant_type: '',
+    order_by: '',
+  };
+  curSelectData.value.grant_type = '';
 };
 
-const handleClearFilterKey = () => {
-  isLoading.value = true;
+const handleClearFilter = () => {
   resetSearch();
 };
 
-const handleFilterData = (payload: Record<string, string>, curData: Record<string, string>) => {
-  filterData.value[curData.id] = payload.id;
-
-  if (['ALL'].includes(payload.id)) {
-    delete filterData.value[curData.id];
-  }
-};
-
-watch(
-  () => filterData.value,
-  () => {
-    updateTableEmptyConfig();
-  },
-  { deep: true },
-);
-
+watch(() => filterData, () => {
+  // 是否存在筛选项
+  getExportDropData(filterFields, filterData);
+  getList();
+}, { deep: true });
 </script>
 
 <style lang="scss" scoped>
 .auth {
   padding: 16px 24px 24px;
-  background: #FFF;
+  background: #ffffff;
 }
 
 .auth-dialog {

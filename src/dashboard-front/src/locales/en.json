@@ -1,5 +1,4 @@
 {
-  "你好世界": "hello world",
   "我的网关": "My Gateway",
   "组件管理": "Components",
   "语言": "English",
@@ -16,7 +15,7 @@
   "文档分类": "Doc Category",
   "权限管理": "Permissions",
   "权限审批": "Pending Approvals",
-  "MCP 权限审批": "MCP Permission Approvals",
+  "MCP 权限管理": "MCP Permission Management",
   "可观测": "Observability",
   "应用权限": "App Permissions",
   "审批历史": "Approval History",
@@ -179,6 +178,7 @@
   "展开": "Expand",
   "收起": "Collapse",
   "有效时间": "Expire Time",
+  "生效时间": "Effective Time",
   "确定导入": "Confirm Import",
   "批量删除成功！": "Batch deleted!",
   "添加": "Add",
@@ -2490,5 +2490,7 @@
   "应用{bk_app_code} 申请{resourceLength}个权限，全部通过": "Application {bk_app_code} requested {resourceLength} permissions, all approved.",
   "应用{bk_app_code} 申请{resourceLength}个权限，全部驳回": "Application {bk_app_code} requested {resourceLength} permissions, all denied",
   "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "Application {bk_app_code} requested {resourceLength} permissions, approved {selectLength} of them, and rejected {rejectLength}",
-  "单据接入了 ITSM，ITSM 不支持批量审批": "The ticket is integrated with ITSM; ITSM does not support batch approvals"
+  "单据接入了 ITSM，ITSM 不支持批量审批": "The ticket is integrated with ITSM; ITSM does not support batch approvals",
+  "导出筛选项": "Export Filters",
+  "请先选择筛选条件": "Please select filter conditions"
 }
