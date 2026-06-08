@@ -306,6 +306,16 @@ if not ENABLE_MULTI_TENANT_MODE:
         },
     }
 
+# Django 5.2 changed the default MySQL connection charset from utf8(mb3) to utf8mb4.
+# Existing tables are utf8mb3, so pin the connection charset to keep the pre-upgrade
+# behavior and avoid "Illegal mix of collations" errors; override via env when the
+# tables are migrated to utf8mb4. Guarded to MySQL only: SQLite (used by tests)
+# would reject a "charset" connection kwarg.
+_DATABASE_CHARSET = env.str("BK_APIGW_DATABASE_CHARSET", "utf8")
+for _db_conf in DATABASES.values():
+    if "mysql" in _db_conf["ENGINE"]:
+        _db_conf.setdefault("OPTIONS", {})["charset"] = _DATABASE_CHARSET
+
 # database ssl
 BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)
 if BK_APIGW_DATABASE_TLS_ENABLED:
