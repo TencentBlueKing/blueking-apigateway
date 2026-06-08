@@ -59,6 +59,7 @@ export interface IDropList {
   value: string
   label: string
   disabled?: boolean
+  tooltips?: string
 }
 
 export interface ISearchSelect {

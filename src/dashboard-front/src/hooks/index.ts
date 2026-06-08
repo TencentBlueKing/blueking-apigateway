@@ -54,3 +54,5 @@ export * from './use-observability-dashboard';
 export * from './use-mcp-batch-copy-config';
 // 个人工作台
 export * from './use-personal-workbench';
+// Mcp权限管理和已授权应用
+export * from './use-mcp-permission';

@@ -185,7 +185,6 @@ export default defineComponent({
       if (spanNameColumnWidth.value < layoutMinWidth.value) {
         spanNameColumnWidth.value = layoutMinWidth.value;
       }
-      console.log(spanNameColumnWidth.value, layoutMinWidth.value, 454444);
     };
 
     const setSpanNameColumnWidth = (width: number) => {

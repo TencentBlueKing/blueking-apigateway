@@ -150,7 +150,7 @@ export interface IGatewaysMcpServersAppPermissionApplyListQuery {
   /** 申请人 */
   applied_by?: string
   /** 审批处理状态 */
-  state: 'processed' | 'unprocessed'
+  state?: 'processed' | 'unprocessed' | 'appPerm'
 }
 
 /** /gateways/{gateway_id}/mcp-servers/-/categories/ [GET] */
@@ -196,7 +196,11 @@ export interface IGatewaysMcpServersPermissionsListQuery {
   /** 蓝鲸应用 ID */
   bk_app_code?: string
   /** 授权类型 */
-  grant_type?: 'grant' | 'apply'
+  grant_type?: 'grant' | 'apply' | ''
+  /** MCP Server */
+  mcp_server_id?: number
+  // 排序
+  order_by?: string
 }
 
 /** /gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/app-permission-apply/applicant/ [GET] */

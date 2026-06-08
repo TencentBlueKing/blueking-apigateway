@@ -1,7 +1,7 @@
 /*
  * TencentBlueKing is pleased to support the open source community by making
  * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
- * Copyright (C) 2025 Tencent. All rights reserved.
+ * Copyright (C) 2026 Tencent. All rights reserved.
  * Licensed under the MIT License (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
  *
@@ -39,7 +39,6 @@ import type {
 } from '@/services/types/query/mcp-marketplace.ts';
 import type {
   IGatewaysMcpServersAppPermissionApplyListQuery,
-  IGatewaysMcpServersPermissionsAppPermissionApplyApplicantListQuery,
   IGatewaysMcpServersPermissionsListQuery,
   IGatewaysMcpServersStageReleaseCheckReadQuery,
 } from '@/services/types/query/gateways.ts';
@@ -133,7 +132,8 @@ export interface IPermissionApprovalFilterValue {
   bk_app_code: string
   applied_by: string
   mcp_server_id: string | number
-  state: string
+  state?: string
+  order_by?: string
 }
 
 export interface IPermissionApprovalAction {
@@ -142,6 +142,21 @@ export interface IPermissionApprovalAction {
   status: 'approved' | 'rejected' | ''
   comment: string
 }
+
+// 网关下 MCPServer 应用权限列表导出接口泛型
+export interface IAppPermissionExport {
+  bk_app_code?: string
+  mcp_server_id?: number | string
+  grant_type?: IGrantType
+  export_type: IExportType
+  selected_ids?: number[]
+}
+
+// 授权类型
+export type IGrantType = 'grant' | 'apply' | '';
+
+// 导出类型
+export type IExportType = 'all' | 'filtered' | 'selected';
 
 //  UI 扩展类型
 export type IMarketplaceItemWithUIState = IMarketplaceItem & { is_checked?: boolean };
@@ -182,10 +197,24 @@ export const getMcpServerToolDoc = (mcp_server_id: number, tool_name: string) =>
  */
 export const getMcpPermissions = (
   apigwId: number,
-  mcp_server_id: number,
   data: IGatewaysMcpServersPermissionsListQuery = {},
 ) =>
-  http.get<ICountAndResults<IMCPServerAppPermissionListOutput>>(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/permissions/`, data);
+  http.get<ICountAndResults<IMCPServerAppPermissionListOutput>>(`${path}/${apigwId}/mcp-servers/-/permissions/app-permissions/`, data);
+
+/**
+ *  导出网关下 MCPServer 应用权限列表
+ * @param apigwId 网关id
+ * @param mcp_server_id
+ * @param data
+ */
+export const exportMcpAppPermissions = (
+  apigwId: number,
+  data: IAppPermissionExport,
+) =>
+  http.post(`${path}/${apigwId}/mcp-servers/-/permissions/app-permissions/-/export/`, data, {
+    responseType: 'blob',
+    catchError: true,
+  });
 
 /**
  *  主动授权
@@ -225,7 +254,7 @@ export const getMcpAppPermissionApply = (apigwId: number, data: IGatewaysMcpServ
 export const getMcpPermissionsApplicant = (
   apigwId: number,
   mcp_server_id: number | string,
-  query: IGatewaysMcpServersPermissionsAppPermissionApplyApplicantListQuery,
+  query: IGatewaysMcpServersAppPermissionApplyListQuery,
 ) =>
   http.get<IMCPServerAppPermissionApplyApplicantOutput>(`${path}/${apigwId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/applicant/`, query);
 

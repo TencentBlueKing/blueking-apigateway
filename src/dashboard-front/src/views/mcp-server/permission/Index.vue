@@ -33,9 +33,11 @@
           <template #label>
             <div class="flex items-center">
               {{ item.label }}
-              <div class="count">
+              <div
+                v-if="item.name === 'unprocessed' && lastCount > 0"
+                class="count"
+              >
                 <div
-                  v-if="item.name === 'unprocessed' && lastCount > 0"
                   class="text"
                   :class="[filterData.state === item.name ? 'on' : 'off']"
                 >
@@ -48,29 +50,27 @@
       </BkTab>
 
       <div class="main">
-        <div class="search-wrapper">
-          <BkForm class="flex">
-            <BkFormItem
-              :label="t('蓝鲸应用ID')"
-              class="mb-20px flex-grow-1"
-              label-width="100"
-              label-position="left"
-            >
-              <BkInput
-                v-model="filterData.bk_app_code"
-                clearable
-                type="search"
-                :placeholder="t('请输入应用ID')"
-              />
-            </BkFormItem>
+        <div class="mcp-permission-header">
+          <BkForm
+            class="flex flex-grow-1 flex-wrap"
+            :class="[
+              {
+                'is-exist-export': isAppPerm,
+              }
+            ]"
+          >
             <BkFormItem
               label="MCP Server"
-              class="mb-20px flex-grow-1"
-              label-width="140"
+              label-width="110"
             >
               <BkSelect
                 v-model="filterData.mcp_server_id"
                 clearable
+                filterable
+                :placeholder="t('请选择 MCP Server')"
+                :scroll-loading="scrollLoading"
+                :remote-method="handleMcpServerSearch"
+                @scroll-end="handleMcpServerScrollEnd"
               >
                 <BkOption
                   v-for="option of mcpList"
@@ -81,9 +81,19 @@
               </BkSelect>
             </BkFormItem>
             <BkFormItem
-              v-if="!featureFlagStore.isTenantMode"
+              :label="t('蓝鲸应用ID')"
+              label-width="140"
+            >
+              <BkInput
+                v-model="filterData.bk_app_code"
+                clearable
+                type="search"
+                :placeholder="t('请输入应用ID')"
+              />
+            </BkFormItem>
+            <BkFormItem
+              v-if="!featureFlagStore.isTenantMode && !isAppPerm"
               :label="t('申请人')"
-              class="mb-20px flex-grow-1"
               label-width="100"
             >
               <BkSelect
@@ -100,6 +110,15 @@
               </BkSelect>
             </BkFormItem>
           </BkForm>
+          <AgDropdown
+            v-if="isAppPerm"
+            class="flex-shrink-0 mr-0!"
+            placement="bottom"
+            :dropdown-list="exportDropData"
+            :is-disabled="!tableData.length"
+            :text="t('导出')"
+            @on-change="handleExportApp"
+          />
         </div>
 
         <AgTable
@@ -113,6 +132,7 @@
           :no-search-fields="['state']"
           :table-empty-type="tableEmptyType"
           @filter-change="handleFilterChange"
+          @sort-change="handleSortChange"
           @clear-filter="handleClearFilter"
         />
       </div>
@@ -172,24 +192,27 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Loading, Message } from 'bkui-vue';
-import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableEmptyType, ITableMethod } from '@/types/common';
+import { Button, Loading, Message, PopConfirm } from 'bkui-vue';
+import { cloneDeep, debounce } from 'lodash-es';
+import type { FilterValue, PrimaryTableProps, SortInfo, TableRowData } from '@blueking/tdesign-ui';
+import type { IDropList, ITableEmptyType, ITableMethod } from '@/types/common';
+import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { useFeatureFlag } from '@/stores';
+import { useMcpPermission } from '@/hooks';
 import {
   type IPermissionApprovalAction,
   type IPermissionApprovalFilterValue,
   getMcpAppPermissionApply,
+  getMcpPermissions,
   getMcpPermissionsApplicant,
   updateMcpPermissions,
 } from '@/services/source/mcp-market.ts';
 import { getServers } from '@/services/source/mcp-server';
 import type { IGatewaysMcpServersAppPermissionApplyListQuery } from '@/services/types/query/gateways.ts';
-import type { IMCPServerAppPermissionApplyListOutput } from '@/services/types/responses/gateways.ts';
+import type { IMCPServerAppPermissionApplyListOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
 import ApprovalDetailSlider from '@/views/mcp-server/permission/components/ApprovalDetailSlider.vue';
+import AgDropdown from '@/components/ag-dropdown/Index.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
 interface IProps { gatewayId?: number }
@@ -197,17 +220,33 @@ interface IProps { gatewayId?: number }
 const { gatewayId = 0 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const featureFlagStore = useFeatureFlag();
 const route = useRoute();
+const featureFlagStore = useFeatureFlag();
+const {
+  exportDropData,
+  getExportDropData,
+  handleDelete,
+  handleExport,
+} = useMcpPermission();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableEmptyType = ref<ITableEmptyType>('empty');
 const filterData = ref<FilterValue | IPermissionApprovalFilterValue>({
   bk_app_code: '',
   applied_by: '',
+  order_by: '',
   mcp_server_id: '',
   state: 'unprocessed',
 });
+const scrollLoading = ref(false);
+const mcpServerName = ref('');
+const defaultPagination = ref({
+  limit: 10,
+  current: 1,
+  count: 0,
+  hasNoMore: false,
+});
+const mcpServerPagination = ref(cloneDeep(defaultPagination.value));
 const tableData = ref([]);
 const settings = ref(null);
 const lastCount = ref(0);
@@ -220,13 +259,17 @@ const panels = ref([
     name: 'processed',
     label: t('已审批'),
   },
+  {
+    name: 'appPerm',
+    label: t('应用权限'),
+  },
 ]);
 const statusMap = reactive({
   approved: t('通过'),
   rejected: t('驳回'),
   pending: t('未审批'),
 });
-const mcpList = ref<any[]>([]);
+const mcpList = ref<IMCPServerListOutput[]>([]);
 const applicantList = ref<string[]>([]);
 const approveForm = ref();
 const applyActionDialogConf = reactive({
@@ -259,6 +302,7 @@ const curAction = ref<IPermissionApprovalAction>({
   comment: '',
 });
 
+const filterFields = ['bk_app_code', 'mcp_server_id', 'grant_type'] as string[];
 const rules = {
   comment: [
     {
@@ -270,61 +314,54 @@ const rules = {
 };
 
 const tableColumns = computed(() => {
-  const columns: PrimaryTableProps['columns'] = [
-    {
-      title: t('蓝鲸应用ID'),
-      colKey: 'bk_app_code',
-      fixed: 'left' as const,
-      ellipsis: true,
-    },
-    {
-      title: 'MCP Server',
-      colKey: 'mcp_server_id',
+  const grantTypeColumn: PrimaryTableProps['columns'] = isAppPerm.value
+    ? [{
+      title: t('授权类型'),
+      colKey: 'grant_type',
       ellipsis: true,
       filter: {
         type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: mcpList.value.map((item: Record<string, string>) => ({
+        list: AUTHORIZATION_APPLICATION_OPERATE_TYPE.map((item: Record<string, string>) => ({
           label: item.name,
           value: item.id,
         })),
       },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        return row?.mcp_server?.name;
-      },
-    },
-    {
-      title: t('申请人'),
-      colKey: 'applied_by',
-      cell: (_: unknown, { row }: { row: TableRowData }) => {
-        if (featureFlagStore.isEnableDisplayName) {
-          return (
-            <TenantUserSelector
-              mode="detail"
-              field="applied_by"
-              width="600px"
-              content={[row.applied_by]}
-            />
-          );
-        }
-
+        const grantTypeText = AUTHORIZATION_APPLICATION_OPERATE_TYPE.find(item => item.id === row.grant_type)?.name ?? '--';
         return (
-          <EditMember
-            mode="detail"
-            field="applied_by"
-            width="600px"
-            content={[row.applied_by]}
-          />
+          <span>
+            { grantTypeText }
+          </span>
         );
       },
+    }]
+    : [];
+  const handledByEffectiveColumn: PrimaryTableProps['columns'] = isAppPerm.value
+    ? [{
+      title: t('操作人'),
+      colKey: 'handled_by',
+      cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.handled_by),
     },
     {
+      title: t('生效时间'),
+      colKey: 'effective_time',
+      ellipsis: true,
+      sorter: true,
+      width: 260,
+    }]
+    : [];
+  const appliedTimeColumn: PrimaryTableProps['columns'] = !isAppPerm.value
+    ? [{
       title: t('申请时间'),
       colKey: 'applied_time',
       ellipsis: true,
-    },
-    {
+      width: 260,
+    }]
+    : [];
+  const approvalColumn: PrimaryTableProps['columns'] = !isAppPerm.value
+    ? [{
       title: t('审批状态'),
       colKey: 'status',
       ellipsis: true,
@@ -355,12 +392,68 @@ const tableColumns = computed(() => {
           </div>
         );
       },
+    }]
+    : [];
+
+  const columns: PrimaryTableProps['columns'] = [
+    {
+      title: 'MCP Server',
+      colKey: 'mcp_server_id',
+      fixed: 'left' as const,
+      ellipsis: true,
+      filter: {
+        type: 'single',
+        showConfirmAndReset: true,
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        list: mcpList.value.map((item: IMCPServerListOutput) => ({
+          label: item.name,
+          value: item.id,
+        })),
+      },
+      cell: (_: unknown, { row }: { row: TableRowData }) => {
+        return row?.mcp_server?.name;
+      },
     },
+    {
+      title: t('蓝鲸应用ID'),
+      colKey: 'bk_app_code',
+      ellipsis: true,
+    },
+    ...grantTypeColumn,
+    {
+      title: t('申请人'),
+      colKey: 'applied_by',
+      cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.applied_by),
+    },
+    ...appliedTimeColumn,
+    ...handledByEffectiveColumn,
+    ...approvalColumn,
     {
       title: t('操作'),
       colKey: 'operate',
       fixed: 'right' as const,
       cell: (_: unknown, { row }: { row: TableRowData }) => {
+        if (isAppPerm.value) {
+          return (
+            <PopConfirm
+              placement="top"
+              trigger="click"
+              content={t('确认删除？')}
+              onConfirm={async () => {
+                await handleDelete(gatewayId, row?.mcp_server?.id, row?.id);
+                getList();
+              }}
+            >
+              <Button
+                text
+                theme="primary"
+              >
+                { t('删除') }
+              </Button>
+            </PopConfirm>
+          );
+        }
+
         const isItsm = isEnabledITSMApply.value && Boolean(row?.itsm_ticket_url) && Boolean(row?.itsm_ticket_id);
 
         if (filterData.value.state === 'unprocessed') {
@@ -426,23 +519,59 @@ const tableColumns = computed(() => {
   return columns;
 });
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
+// 应用权限tab
+const isAppPerm = computed(() => filterData.value.state.includes('appPerm'));
 
-const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: true });
+const getList = () => {
+  const params = { ...filterData.value };
+  if (isAppPerm.value) {
+    delete params.state;
+  }
+  tableRef.value?.fetchData(filterData.value, { resetPage: true });
+};
 
 const getTableData = async (params: {
   offset: number
   limit: number
 }) => {
-  // 触发表格组件watch
+  // 触发表格组件监听刷新
   settings.value = null;
+
   const { state } = filterData.value;
-  const res = await getMcpAppPermissionApply(gatewayId, {
+
+  // 定义 tab 与对应接口的映射
+  const tabApiMap = {
+    processed: getMcpAppPermissionApply,
+    unprocessed: getMcpAppPermissionApply,
+    appPerm: getMcpPermissions,
+  } as const;
+
+  // 获取当前 tab 对应的请求方法
+  const remoteApi = tabApiMap[state as keyof typeof tabApiMap];
+  if (!remoteApi) {
+    return {
+      count: 0,
+      results: [],
+    };
+  }
+
+  // 过滤空值参数
+  const queryParams: IGatewaysMcpServersAppPermissionApplyListQuery = {
     ...params,
     ...filterSimpleEmpty(filterData.value),
-  } as IGatewaysMcpServersAppPermissionApplyListQuery);
-  if (state === 'unprocessed') {
-    lastCount.value = res?.count ?? 0;
+  };
+
+  if (isAppPerm.value) {
+    delete queryParams.state;
   }
+
+  const res = await remoteApi(gatewayId, queryParams);
+
+  // 未处理状态记录数量
+  if (state === 'unprocessed') {
+    lastCount.value = res.count ?? 0;
+  }
+
   return res ?? {
     count: 0,
     results: [],
@@ -450,24 +579,77 @@ const getTableData = async (params: {
 };
 
 const getMcpList = async () => {
-  const page = {
-    offset: 0,
-    limit: 1000,
-  };
-  const res = await getServers(gatewayId, page);
-  mcpList.value = res.results;
+  const { hasNoMore, current, limit } = mcpServerPagination.value;
+  scrollLoading.value = true;
+
+  if (hasNoMore) {
+    scrollLoading.value = false;
+    return;
+  }
+
+  try {
+    const params = {
+      limit,
+      offset: limit * (current - 1),
+      keyword: mcpServerName.value,
+    };
+    const res = await getServers(gatewayId, filterSimpleEmpty(params));
+    const { results = [], count = 0 } = res ?? {};
+    mcpList.value = current === 1 ? results : [...mcpList.value, ...results];
+    mcpServerPagination.value = {
+      ...mcpServerPagination.value,
+      count,
+      hasNoMore: mcpList.value.length >= count,
+      current: current + 1,
+    };
+  }
+  catch {
+    mcpServerPagination.value = cloneDeep(defaultPagination.value);
+    mcpList.value = [];
+  }
+  finally {
+    scrollLoading.value = false;
+  }
 };
 getMcpList();
 
 const getApplicant = async () => {
+  // 如果是多租户模式或者应用权限tab，不展示申请人筛选
+  if (featureFlagStore.isTenantMode || isAppPerm.value) {
+    return;
+  }
   const response = await getMcpPermissionsApplicant(
     gatewayId,
     filterData.value.mcp_server_id || '-',
     {
       state: filterData.value.state,
-    } as any,
+    } as IGatewaysMcpServersAppPermissionApplyListQuery,
   );
   applicantList.value = response?.applicants || [];
+};
+
+const renderDisplayNameColumn = (value: string) => {
+  return featureFlagStore.isEnableDisplayName && Boolean(value)
+    ? <span><bk-user-display-name user-id={value} /></span>
+    : <span>{value || '--'}</span>;
+};
+
+// 搜索McpServer列表
+const handleMcpServerSearch = debounce((value: string) => {
+  mcpServerName.value = value;
+  mcpServerPagination.value = cloneDeep(defaultPagination.value);
+  getMcpList();
+}, 200);
+
+// 滚动加载MCP Server
+const handleMcpServerScrollEnd = debounce(() => {
+  const { hasNoMore } = mcpServerPagination.value;
+  if (hasNoMore) return;
+  getMcpList();
+}, 200);
+
+const handleExportApp = (payload: IDropList) => {
+  handleExport(gatewayId, payload, filterData);
 };
 
 const handleTabChange = (name: string) => {
@@ -476,14 +658,23 @@ const handleTabChange = (name: string) => {
   }
   filterData.value.state = name;
   handleClearFilter();
-  if (!featureFlagStore.isTenantMode) {
-    getApplicant();
-  }
+  getApplicant();
 };
 
-// 处理表头筛选联动搜索框
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   filterData.value = { ...filterItem };
+};
+
+const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
+  const sortData = sort as SortInfo;
+  if (sortData) {
+    const { sortBy: colKey, descending } = sortData;
+    filterData.value.order_by = descending ? `-${colKey}` : colKey;
+  }
+  else {
+    filterData.value.order_by = '';
+  }
+  getList();
 };
 
 const resetSearch = () => {
@@ -491,6 +682,7 @@ const resetSearch = () => {
     ...filterData.value,
     bk_app_code: '',
     applied_by: '',
+    order_by: '',
     mcp_server_id: '',
   };
 };
@@ -499,7 +691,7 @@ const handleClearFilter = () => {
   resetSearch();
 };
 
-const handleApprove = (row: any, status: string) => {
+const handleApprove = (row: TableRowData, status: string) => {
   curAction.value = {
     id: row.id,
     mcp_server_id: row.mcp_server.id,
@@ -524,7 +716,7 @@ const handleSubmitApprove = async () => {
       gatewayId,
       curAction.value.mcp_server_id as number,
       curAction.value.id,
-      curAction.value as any,
+      curAction.value as IPermissionApprovalAction,
     );
     Message({
       message: t('操作成功'),
@@ -555,9 +747,8 @@ watch(() => route.query.serverId as string, (value: string) => {
 watch(
   () => filterData.value.mcp_server_id,
   () => {
-    if (!featureFlagStore.isTenantMode) {
-      getApplicant();
-    }
+    getExportDropData(filterFields, filterData);
+    getApplicant();
     filterData.value.applied_by = '';
     tableEmptyType.value = Boolean(filterData.value.mcp_server_id) ? 'searchEmpty' : 'empty';
     getList();
@@ -568,16 +759,16 @@ watch(
 watch(
   () => [filterData.value.bk_app_code, filterData.value.applied_by],
   () => {
+    getExportDropData(filterFields, filterData);
     getList();
   },
   { immediate: true },
 );
-
 </script>
 
 <style lang="scss" scoped>
 .permission {
-  background: #FFF;
+  background-color: #ffffff;
   border-radius: 2px;
   box-shadow: 0 2px 4px 0 #1919290d;
 
@@ -607,9 +798,8 @@ watch(
     }
 
     &.off {
-      color: #4D4F56;
-
-      // background: #C4C6CC;
+      color: #979ba5;
+      background-color: #f0f1f5;
     }
   }
 }
@@ -631,6 +821,29 @@ watch(
     &.rejected {
       background: #FFE6E6;
       border: 1px solid #EA3636;
+    }
+  }
+}
+
+:deep(.mcp-permission-header) {
+  display: flex;
+  justify-content: space-between;
+
+  .bk-form-item {
+    margin-bottom: 24px;
+    flex-grow: 1;
+  }
+
+  .is-exist-export {
+
+    .bk-form-item {
+      flex-grow: 0;
+
+      .bk-form-content,
+      .bk-input,
+      .bk-select {
+        width: 260px;
+      }
     }
   }
 }
