@@ -712,6 +712,9 @@ class PublishEvent(TimestampedModelMixin, OperatorModelMixin):
         verbose_name_plural = "PublishEvent"
         db_table = "core_publish_event"
         index_together = ("gateway_id", "publish_id")
+        indexes = [
+            models.Index(fields=["created_time"], name="core_pub_evt_ct_idx"),
+        ]
         unique_together = ("gateway_id", "publish_id", "stage_id", "step", "status")
 
 
