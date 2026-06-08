@@ -31,20 +31,38 @@ const bodyParamDefaultDescription = "HTTP request body in JSON format, " +
 
 func openapiSchemaRefToJSONSchema(schemaRef *openapi3.SchemaRef) jsonschema.Schema {
 	var jsonSchema jsonschema.Schema
-	if schemaRef == nil {
+	schemaJSON, err := marshalOpenAPISchemaRefJSON(schemaRef)
+	if err != nil || len(schemaJSON) == 0 {
 		return jsonSchema
 	}
 
-	schemaJSON, err := schemaRef.MarshalJSON()
-	if err != nil {
-		return jsonSchema
-	}
 	schemaJSON = normalizeOpenAPIJSONSchema(schemaJSON)
 	if err := json.Unmarshal(schemaJSON, &jsonSchema); err != nil {
-		var rawSchema map[string]any
-		if err := json.Unmarshal(schemaJSON, &rawSchema); err == nil {
-			jsonSchema.ExtraProperties = rawSchema
-		}
+		return fallbackOpenAPIJSONSchema(schemaJSON)
+	}
+	return jsonSchema
+}
+
+func marshalOpenAPISchemaRefJSON(schemaRef *openapi3.SchemaRef) ([]byte, error) {
+	if schemaRef == nil {
+		return nil, nil
+	}
+	if schemaRef.Value != nil {
+		return schemaRef.Value.MarshalJSON()
+	}
+	return schemaRef.MarshalJSON()
+}
+
+func fallbackOpenAPIJSONSchema(schemaJSON []byte) jsonschema.Schema {
+	var rawSchema map[string]any
+	if err := json.Unmarshal(schemaJSON, &rawSchema); err != nil {
+		return jsonschema.Schema{}
+	}
+
+	jsonSchema := jsonschema.Schema{ExtraProperties: rawSchema}
+	if description, ok := rawSchema["description"].(string); ok && description != "" {
+		jsonSchema.Description = &description
+		delete(rawSchema, "description")
 	}
 	return jsonSchema
 }
@@ -90,11 +108,8 @@ func normalizeOpenAPIJSONSchemaObject(schema map[string]any) {
 
 	for _, key := range []string{
 		"items", "additionalProperties", "additionalItems", "contains", "propertyNames", "if", "then", "else", "not",
+		"allOf", "anyOf", "oneOf",
 	} {
-		normalizeOpenAPIJSONSchemaValue(schema[key])
-	}
-
-	for _, key := range []string{"allOf", "anyOf", "oneOf"} {
 		normalizeOpenAPIJSONSchemaValue(schema[key])
 	}
 
@@ -126,11 +141,7 @@ func normalizeOpenAPIExclusiveBound(schema map[string]any, exclusiveKey, boundKe
 }
 
 func jsonSchemaDescriptionIsEmpty(schema *jsonschema.Schema) bool {
-	if schema.Description != nil && *schema.Description != "" {
-		return false
-	}
-	description, ok := schema.ExtraProperties["description"].(string)
-	return !ok || description == ""
+	return schema.Description == nil || *schema.Description == ""
 }
 
 // OpenapiToMcpToolConfig ...
@@ -211,9 +222,6 @@ func OpenapiToMcpToolConfig(
 								jsonSchema.ExtraProperties = map[string]any{}
 							}
 							jsonSchema.ExtraProperties["example"] = param.Value.Example
-						}
-						if param.Value.Required {
-							jsonSchema.Required = []string{param.Value.Name}
 						}
 						if param.Value.In == "header" {
 							headerParamSchema.WithPropertiesItem(

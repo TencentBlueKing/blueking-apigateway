@@ -386,7 +386,7 @@ VALUES (2, 1, 2, '{
                     "format": "double",
                     "minimum": 0,
                     "exclusiveMinimum": true,
-                    "description": "Bid amount must be greater than 0."
+                    "description": "Schema conversion test field only; bid amount must be greater than 0."
                   }
                 }
               }
