@@ -17,106 +17,171 @@
  */
 
 <template>
+  <!-- 网关创建引导 -->
   <div
-    v-bkloading="{ loading: isLoading || initLoading, opacity: 1, color: '#f5f7fb' }"
-    class="home-loading"
+    v-if="shouldShowGuide"
+    class="gateway-empty"
   >
-    <div
-      v-if="!isGuide"
-      class="home-container"
-    >
-      <div class="title-container">
-        <div class="left">
-          <BkButton
-            theme="primary"
-            class="mr-4px"
-            @click="showAddDialog"
-          >
-            {{ t('新建网关') }}
-          </BkButton>
-        </div>
+    <div class="create-guide">
+      <div class="guide-title">
+        {{ t('当前暂无网关，请先创建') }}
+      </div>
+      <div class="guide-describe">
+        {{ t('蓝鲸 API 网关（ APIGateway ），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API ，') }}
+        {{ t('以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。') }}
+      </div>
+      <div class="guide-opt">
+        <BkButton
+          theme="primary"
+          class="mr8"
+          @click="showAddDialog"
+        >
+          {{ t('新建网关') }}
+        </BkButton>
+        <BkButton @click="handleViewDoc">
+          {{ t('查看 API 文档') }}
+        </BkButton>
+      </div>
+    </div>
 
-        <div class="flex flex-grow-1">
-          <BkSelect
-            v-model="filterNameData.kind"
-            class="min-w-150px"
-            :clearable="false"
-            :filterable="false"
+    <div class="work-progress">
+      <div class="progress-img">
+        <img
+          :src="progressImg"
+          :alt="t('网关工作流')"
+        >
+      </div>
+      <div class="steps">
+        <div
+          v-for="item in filteredSteps"
+          :key="item.name"
+          class="step"
+        >
+          <div class="name">
+            {{ item.name }}
+          </div>
+          <BkLink
+            v-if="item.link"
+            :href="item.link"
+            target="_blank"
+            class="describe link"
           >
-            <BkOption
-              v-for="item in gatewayTypes"
-              :id="item.value"
-              :key="item.value"
-              :name="item.label"
-            />
-          </BkSelect>
-          <BkInput
-            v-model="filterNameData.keyword"
-            class="mx-8px flex-grow-1"
-            :placeholder="t('请输入网关名称')"
-          />
-          <BkSelect
-            v-model="filterKey"
-            :clearable="false"
-            class="select-cls"
-            @change="handleChange"
+            {{ item.describe }}
+          </BkLink>
+          <div
+            v-else
+            class="describe"
           >
-            <template #prefix>
-              <div class="prefix-cls">
-                <AgIcon
-                  name="exchange-line"
-                  class="pb-5px"
-                />
-              </div>
-            </template>
-            <BkOption
-              v-for="(item, index) in filterData"
-              :key="index"
-              :value="item.value"
-              :label="item.label"
-            />
-          </BkSelect>
+            {{ item.describe }}
+          </div>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- 网关列表 -->
+  <div
+    v-else
+    class="home-container"
+  >
+    <div class="title-container">
+      <div class="left">
+        <BkButton
+          theme="primary"
+          class="mr-4px"
+          @click="showAddDialog"
+        >
+          {{ t('新建网关') }}
+        </BkButton>
+      </div>
 
-      <div class="table-container">
-        <section v-if="gatewaysList.length">
-          <div class="table-header">
-            <div
-              class="flex-1 of2"
-            >
-              {{ t('网关名') }}
+      <div class="flex flex-grow-1">
+        <BkSelect
+          v-model="filterData.kind"
+          class="min-w-150px"
+          :clearable="false"
+          :filterable="false"
+        >
+          <BkOption
+            v-for="item in gatewayTypes"
+            :id="item.value"
+            :key="item.value"
+            :name="item.label"
+          />
+        </BkSelect>
+        <BkInput
+          v-model="filterData.keyword"
+          class="mx-8px flex-grow-1"
+          :placeholder="t('请输入网关名称')"
+        />
+        <BkSelect
+          v-model="ordering"
+          :clearable="false"
+          class="select-cls"
+          @change="handleChange"
+        >
+          <template #prefix>
+            <div class="prefix-cls">
+              <AgIcon
+                name="exchange-line"
+                class="pb-5px"
+              />
             </div>
-            <template v-if="featureFlagStore.isTenantMode">
-              <div class="flex-1">
-                {{ t('租户模式') }}
-              </div>
-              <div class="flex-1">
-                {{ t('租户 ID') }}
-              </div>
-            </template>
-            <div class="flex-1">
-              {{ t('创建者') }}
-            </div>
-            <div
-              class="flex-1 of2"
-            >
-              {{ t('环境列表') }}
-            </div>
-            <div
-              v-if="enableGatewayOperationStatus"
-              class="flex-1"
-            >
-              {{ t('运营状态') }}
-            </div>
-            <div class="flex-1">
-              {{ t('资源数量') }}
-            </div>
-            <div class="flex-1 of2">
-              {{ t('操作') }}
-            </div>
+          </template>
+          <BkOption
+            v-for="(item, index) in orderingOptions"
+            :key="index"
+            :value="item.value"
+            :label="item.label"
+          />
+        </BkSelect>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <section>
+        <div class="table-header">
+          <div class="flex-1 of2">
+            {{ t('网关名') }}
           </div>
-          <div class="table-list">
+          <template v-if="featureFlagStore.isTenantMode">
+            <div class="flex-1">
+              {{ t('租户模式') }}
+            </div>
+            <div class="flex-1">
+              {{ t('租户 ID') }}
+            </div>
+          </template>
+          <div class="flex-1">
+            {{ t('创建者') }}
+          </div>
+          <div class="flex-1 of2">
+            {{ t('环境列表') }}
+          </div>
+          <div
+            v-if="enableGatewayOperationStatus"
+            class="flex-1"
+          >
+            {{ t('运营状态') }}
+          </div>
+          <div class="flex-1">
+            {{ t('资源数量') }}
+          </div>
+          <div class="flex-1 of2">
+            {{ t('操作') }}
+          </div>
+        </div>
+        <div class="table-list">
+          <template
+            v-if="['searchEmpty', 'error'].includes(emptyType ?? '') && !gatewaysList.length && !loading"
+          >
+            <TableEmpty
+              background="#f5f7fa"
+              :empty-type="emptyType"
+              @clear-filter="handleClearFilter"
+              @refresh="handleRefresh"
+            />
+          </template>
+          <template v-else>
             <div
               v-for="item in gatewaysList"
               :key="item.id"
@@ -250,14 +315,14 @@
               >
                 <template v-if="item.kind === 0">
                   {{ item.resource_count }}
-                  <!--                <RouterLink -->
-                  <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
-                  <!--                  target="_blank" -->
-                  <!--                > -->
-                  <!--                  <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }"> -->
-                  <!--                    {{ item.resource_count }} -->
-                  <!--                  </span> -->
-                  <!--                </RouterLink> -->
+                <!--                <RouterLink -->
+                <!--                  :to="{ name: 'ResourceSetting', params: { id: item.id } }" -->
+                <!--                  target="_blank" -->
+                <!--                > -->
+                <!--                  <span :style="{ color: item.resource_count === 0 ? '#c4c6cc' : '#3a84ff' }"> -->
+                <!--                    {{ item.resource_count }} -->
+                <!--                  </span> -->
+                <!--                </RouterLink> -->
                 </template>
                 <template v-else>
                   <span class="none">{{ item.resource_count }}</span>
@@ -300,119 +365,22 @@
                 </BkButton>
               </div>
             </div>
-          </div>
-        </section>
-        <div
-          v-else
-          class="empty-container"
-        >
-          <div class="table-header">
-            <div class="flex-1 of2">
-              {{ t('网关名') }}
-            </div>
-            <template v-if="featureFlagStore.isTenantMode">
-              <div class="flex-1">
-                {{ t('租户模式') }}
-              </div>
-              <div class="flex-1">
-                {{ t('租户 ID') }}
-              </div>
-            </template>
-            <div class="flex-1">
-              {{ t('创建者') }}
-            </div>
-            <div class="flex-1 of2">
-              {{ t('环境列表') }}
-            </div>
-            <div
-              v-if="enableGatewayOperationStatus"
-              class="flex-1"
-            >
-              {{ t('运营状态') }}
-            </div>
-            <div class="flex-1">
-              {{ t('资源数量') }}
-            </div>
-            <div class="flex-1 of2">
-              {{ t('操作') }}
-            </div>
-          </div>
-          <TableEmpty
-            background="#f5f7fa"
-            :empty-type="tableEmptyConf.emptyType"
-            :abnormal="tableEmptyConf.isAbnormal"
-            @refresh="getGatewaysListData"
-            @clear-filter="handleClearFilterKey"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-else
-      class="gateway-empty"
-    >
-      <div class="create-guide">
-        <div class="guide-title">
-          {{ t('当前暂无网关，请先创建') }}
-        </div>
-        <div class="guide-describe">
-          {{ t('蓝鲸 API 网关（ APIGateway ），是一种高性能、高可用的 API 托管服务，可以帮助开发者创建、发布、维护、监控和保护 API ，') }}
-          {{ t('以快速、低成本、低风险地对外开放蓝鲸应用或其他系统的数据或服务。') }}
-        </div>
-        <div class="guide-opt">
-          <BkButton
-            theme="primary"
-            class="mr8"
-            @click="showAddDialog"
-          >
-            {{ t('新建网关') }}
-          </BkButton>
-          <bk-button @click="handleViewDoc">
-            {{ t('查看 API 文档') }}
-          </bk-button>
-        </div>
-      </div>
-
-      <div class="work-progress">
-        <div class="progress-img">
-          <img
-            :src="progressImg"
-            :alt="t('网关工作流')"
-          >
-        </div>
-        <div class="steps">
+          </template>
           <div
-            v-for="item in filteredSteps"
-            :key="item.name"
-            class="step"
+            v-intersection-observer="onIntersectionObserver"
+            class="h-40px flex items-center justify-center"
           >
-            <div class="name">
-              {{ item.name }}
-            </div>
-            <BkLink
-              v-if="item.link"
-              :href="item.link"
-              target="_blank"
-              class="describe link"
-            >
-              {{ item.describe }}
-            </BkLink>
-            <div
-              v-else
-              class="describe"
-            >
-              {{ item.describe }}
-            </div>
+            <BkLoading :loading="loading" />
           </div>
         </div>
-      </div>
+      </section>
     </div>
   </div>
+  <!--  </div> -->
 
   <div
     class="footer-container "
-    :class="{'empty': isGuide}"
+    :class="{'empty': shouldShowGuide}"
   >
     <p class="contact">
       <BkLink
@@ -446,7 +414,7 @@
 
   <CreateGateway
     v-model="createGatewayShow"
-    @done="init"
+    @done="resetAndReload"
   />
 </template>
 
@@ -455,15 +423,15 @@ import {
   useEnv,
   useFeatureFlag,
 } from '@/stores';
-import { useGatewaysList } from '@/hooks';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway';
+import { vIntersectionObserver } from '@vueuse/components';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import CreateGateway from '@/components/create-gateway/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
+import TableEmpty from '@/components/table-empty/Index.vue';
 
 type GatewayType = IExtractListApiResults<typeof getGatewayList>;
 
@@ -479,13 +447,46 @@ const { t } = useI18n();
 const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
-const filterKey = ref('updated_time');
-const filterNameData = ref({
+
+const ordering = ref('updated_time');
+const filterData = ref({
   keyword: '',
   kind: 'all',
 });
 const createGatewayShow = ref(false);
-const gatewayTypes = ref([
+
+// 网关列表数据
+const gatewaysList = ref<ConvertedGatewayType[]>([]);
+
+// 是否已初始化过网关列表数据
+const hasInitialized = ref(false);
+const loading = ref(false);
+
+const pagination = ref({
+  current: 1,
+  limit: 10,
+  count: 0,
+  hasNoMore: false,
+});
+
+const emptyType = ref<'empty' | 'searchEmpty' | 'error' | undefined>(undefined);
+
+// 环境标签相关的引用和状态（按网关 id 存储）
+const envContainerRefs = reactive<Record<number, HTMLElement | null>>({});
+const envTagRefsMap = reactive<Record<number, (HTMLElement | undefined)[]>>({});
+const moreTagRefsMap = reactive<Record<number, HTMLElement | null>>({});
+const visibleTagCountMap = reactive<Record<number, number>>({});
+
+const DEFAULT_VISIBLE = 3; // 初始默认
+const MAX_VISIBLE_TAGS = 6; // 最大显示数量上限
+
+// 防抖定时器
+let filterTimer: number | null = null;
+
+// 防抖处理窗口大小变化
+let resizeTimer: number | null = null;
+
+const gatewayTypes = [
   {
     label: t('全部'),
     value: 'all',
@@ -498,28 +499,9 @@ const gatewayTypes = ref([
     label: t('可编程网关'),
     value: '1',
   },
-]);
-// 获取网关数据方法
-const {
-  getGatewaysListData,
-  dataList,
-  pagination,
-  isLoading,
-} = useGatewaysList(filterNameData);
+];
 
-const tableEmptyConf = ref<{
-  emptyType: 'error' | 'empty' | 'search-empty' | 'searchEmpty' | undefined
-  isAbnormal: boolean
-}>({
-  emptyType: undefined,
-  isAbnormal: false,
-});
-
-const initLoading = ref<boolean>(false);
-// 网关列表数据
-const gatewaysList = ref<ConvertedGatewayType[]>([]);
-
-const filterData = ref([
+const orderingOptions = [
   {
     value: 'updated_time',
     label: t('更新时间'),
@@ -532,7 +514,7 @@ const filterData = ref([
     value: 'name',
     label: t('字母 A-Z'),
   },
-]);
+];
 
 const contacts = [
   {
@@ -589,14 +571,205 @@ const filteredSteps = computed(() => {
   return envStore.env.EDITION === 'te' ? steps : steps?.filter(item => item.name !== t('可观测：'));
 });
 
-// 环境标签相关的引用和状态（按网关 id 存储）
-const envContainerRefs = reactive<Record<number, HTMLElement | null>>({});
-const envTagRefsMap = reactive<Record<number, (HTMLElement | undefined)[]>>({});
-const moreTagRefsMap = reactive<Record<number, HTMLElement | null>>({});
-const visibleTagCountMap = reactive<Record<number, number>>({});
+const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 
-const DEFAULT_VISIBLE = 3; // 初始默认
-const MAX_VISIBLE_TAGS = 6; // 最大显示数量上限
+const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
+
+const progressImg = computed(() => {
+  if (envStore.env.EDITION === 'te') {
+    return GatewayEmpty;
+  }
+  return GatewayEmpty2;
+});
+
+const enableGatewayOperationStatus = computed(() => {
+  const flags: any = featureFlagStore.flags || {};
+  return !!flags.ENABLE_GATEWAY_OPERATION_STATUS;
+});
+
+const shouldShowGuide = computed(() => {
+  const hasNoFilters = Object.values(filterData.value).filter(item => (item !== '' && item !== 'all')).length === 0;
+  return hasNoFilters && hasInitialized.value && !gatewaysList.value.length;
+});
+
+watch(gatewaysList, () => {
+  nextTick(() => {
+    calculateVisibleTags();
+  });
+}, { deep: true });
+
+// 监听筛选条件变化
+watch(
+  filterData,
+  () => {
+    emptyType.value = Object.keys(filterData.value).length > 0 ? 'searchEmpty' : undefined;
+    if (filterTimer) {
+      clearTimeout(filterTimer);
+    }
+    filterTimer = window.setTimeout(() => {
+      resetAndReload();
+    }, 300);
+  },
+  { deep: true },
+);
+// 处理列表项
+const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
+  if (!arr) {
+    return [];
+  }
+
+  return arr.map((gateway) => {
+    const item: any = { ...gateway };
+    // item.isAfter24h = isAfter24h(item.created_time);
+    item.tagOrder = '3';
+    item.stages?.sort((a: any, b: any) => (b.released - a.released));
+    item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
+      if (index > item.tagOrder - 1) {
+        prev.push({
+          name: label.name,
+          released: label.released,
+        });
+      }
+      return prev;
+    }, []);
+    return item;
+  });
+};
+
+// 加载更多数据
+const fetchGatewayList = async () => {
+  const { hasNoMore, current, limit } = pagination.value;
+
+  if (hasNoMore) {
+    return;
+  }
+
+  loading.value = true;
+
+  try {
+    const params: Record<string, any> = {
+      limit,
+      offset: limit * (current - 1),
+    };
+
+    // 添加筛选参数
+    if (filterData.value.keyword) {
+      params.keyword = filterData.value.keyword;
+    }
+    if (filterData.value.kind !== 'all') {
+      params.kind = filterData.value.kind;
+    }
+    if (ordering.value) {
+      params.ordering = ordering.value;
+    }
+
+    const response = await getGatewayList(params);
+    const convertedData = convertGatewaysList(response.results || []);
+
+    // 追加数据
+    gatewaysList.value = current === 1 ? convertedData : [...gatewaysList.value, ...convertedData];
+
+    const count = response.count || 0;
+    pagination.value = {
+      ...pagination.value,
+      count,
+      hasNoMore: gatewaysList.value.length >= count,
+      current: current + 1,
+    };
+    hasInitialized.value = true;
+  }
+  catch {
+    emptyType.value = 'error';
+  }
+  finally {
+    setTimeout(() => {
+      loading.value = false;
+    }, 100);
+  }
+};
+
+const onIntersectionObserver = ([entry]: IntersectionObserverEntry[]) => {
+  if (entry?.isIntersecting) {
+    fetchGatewayList();
+  }
+};
+
+// 重置并重新加载
+const resetAndReload = () => {
+  pagination.value.current = 1;
+  pagination.value.count = 0;
+  pagination.value.hasNoMore = false;
+  fetchGatewayList();
+};
+
+const handleClearFilter = () => {
+  filterData.value = {
+    keyword: '',
+    kind: 'all',
+  };
+  emptyType.value = undefined;
+};
+
+const handleRefresh = () => {
+  resetAndReload();
+};
+
+// 计算一屏应拉取的数据条数，会按照页面高度决定
+const calcPageLimit = (): number => {
+  // 通知栏高度40px
+  const noticeH = isShowNoticeAlert.value ? 40 : 0;
+  // 获取列表容器可用高度, 221px = 容器上方被占用的高度
+  const wrapperHeight = window.innerHeight - 221 - noticeH;
+
+  // 列表项高度
+  const listItemHeight = 80;
+
+  // 计算可展示行数
+  return Math.ceil(wrapperHeight / listItemHeight);
+};
+
+const showAddDialog = () => {
+  createGatewayShow.value = true;
+};
+
+const handleViewDoc = () => {
+  router.push({ name: 'Docs' });
+};
+
+const handleGoPage = (routeName: string, gateway: GatewayType) => {
+  router.push({
+    name: routeName,
+    params: { id: gateway.id },
+  });
+};
+
+const openTab = (link?: string) => {
+  window.open(link, '_blank');
+};
+
+// 列表排序
+const handleChange = () => {
+  // 排序变化时，重新从服务端加载数据
+  resetAndReload();
+};
+
+const tipsContent = (data: any[]) => {
+  return h('div', {}, [
+    data.map((item: any) => h('div', {
+      style: 'display: flex; align-items: center; margin-top: 5px',
+      class: 'tips-cls',
+    }, [h('i', {
+      class: `ag-dot ${item.released ? 'success' : ''}`,
+      style: 'margin-right: 5px',
+    }),
+    item.name])),
+  ]);
+};
+
+const getHiddenStages = (item: ConvertedGatewayType) => {
+  const start = visibleTagCountMap[item.id] ?? DEFAULT_VISIBLE;
+  return item?.stages?.slice(start) || [];
+};
 
 const setEnvContainerRef = (el: any, id: number) => {
   envContainerRefs[id] = (el as HTMLElement) || null;
@@ -625,8 +798,6 @@ const makeSetEnvContainerRef = (id: number) => {
   return (el: any) => setEnvContainerRef(el, id);
 };
 
-// 防抖处理窗口大小变化
-let resizeTimer: number | null = null;
 const handleResize = () => {
   if (resizeTimer) {
     window.clearTimeout(resizeTimer);
@@ -722,159 +893,8 @@ const calculateVisibleTags = () => {
   });
 };
 
-const copyright = computed(() => `Copyright © 2012-${new Date().getFullYear()} Tencent BlueKing. All Rights Reserved. V${envStore.env.BK_APIGATEWAY_VERSION}`);
-
-const progressImg = computed(() => {
-  if (envStore.env.EDITION === 'te') {
-    return GatewayEmpty;
-  }
-  return GatewayEmpty2;
-});
-
-const enableGatewayOperationStatus = computed(() => {
-  const flags: any = featureFlagStore.flags || {};
-  return !!flags.ENABLE_GATEWAY_OPERATION_STATUS;
-});
-
-const isGuide = computed(() => {
-  const list = Object.values(filterNameData.value).filter(item => (item !== '' && item !== 'all'));
-  if (!list?.length && !gatewaysList.value?.length) {
-    return true;
-  }
-  return false;
-});
-
-watch(() => dataList.value, (val) => {
-  gatewaysList.value = convertGatewaysList(val as unknown as GatewayType[]);
-  updateTableEmptyConfig();
-});
-
-watch(() => gatewaysList.value, () => {
-  nextTick(() => {
-    calculateVisibleTags();
-  });
-}, { deep: true });
-
-// 处理列表项
-const convertGatewaysList = (arr: GatewayType[]): ConvertedGatewayType[] => {
-  if (!arr) {
-    return [];
-  }
-
-  return arr.map((gateway) => {
-    const item: any = { ...gateway };
-    // item.isAfter24h = isAfter24h(item.created_time);
-    item.tagOrder = '3';
-    item.stages?.sort((a: any, b: any) => (b.released - a.released));
-    item.labelTextData = item.stages.reduce((prev: any, label: any, index: number) => {
-      if (index > item.tagOrder - 1) {
-        prev.push({
-          name: label.name,
-          released: label.released,
-        });
-      }
-      return prev;
-    }, []);
-    return item;
-  });
-};
-
-// 页面初始化
-const init = async () => {
-  initLoading.value = true;
-  const response = await getGatewayList({ limit: 10000 });
-  gatewaysList.value = convertGatewaysList(response.results || []);
-  updateTableEmptyConfig();
-  setTimeout(() => {
-    initLoading.value = false;
-  }, 100);
-};
-
-const showAddDialog = () => {
-  createGatewayShow.value = true;
-};
-
-const handleViewDoc = () => {
-  router.push({ name: 'Docs' });
-};
-
-const handleGoPage = (routeName: string, gateway: GatewayType) => {
-  router.push({
-    name: routeName,
-    params: { id: gateway.id },
-  });
-};
-
-const openTab = (link?: string) => {
-  window.open(link, '_blank');
-};
-
-// 列表排序
-const handleChange = (v: string) => {
-  switch (v) {
-    case 'created_time':
-      // @ts-expect-error ignore
-      gatewaysList.value.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
-      break;
-    case 'updated_time':
-      // @ts-expect-error ignore
-      gatewaysList.value.sort((a, b) => new Date(b.updated_time) - new Date(a.updated_time));
-      break;
-    case 'name':
-      gatewaysList.value.sort((a: ConvertedGatewayType, b: ConvertedGatewayType) =>
-        a.name.charAt(0).localeCompare(b.name.charAt(0)));
-      break;
-    default:
-      break;
-  }
-};
-
-const tipsContent = (data: any[]) => {
-  return h('div', {}, [
-    data.map((item: any) => h('div', {
-      style: 'display: flex; align-items: center; margin-top: 5px',
-      class: 'tips-cls',
-    }, [h('i', {
-      class: `ag-dot ${item.released ? 'success' : ''}`,
-      style: 'margin-right: 5px',
-    }),
-    item.name])),
-  ]);
-};
-
-const getHiddenStages = (item: ConvertedGatewayType) => {
-  const start = visibleTagCountMap[item.id] ?? DEFAULT_VISIBLE;
-  return item?.stages?.slice(start) || [];
-};
-
-const handleClearFilterKey = () => {
-  filterNameData.value = {
-    keyword: '',
-    kind: 'all',
-  };
-  filterKey.value = 'updated_time';
-  getGatewaysListData();
-  updateTableEmptyConfig();
-};
-
-const updateTableEmptyConfig = () => {
-  const searchParams = { ...filterNameData.value };
-  const list = Object.values(searchParams).filter(item => item !== '');
-  tableEmptyConf.value.isAbnormal = pagination.value.abnormal as boolean;
-
-  if (list.length && !gatewaysList.value.length) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
-  }
-  if (list.length) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = undefined;
-};
-
-onMounted(() => {
-  init();
+onMounted(async () => {
+  pagination.value.limit = calcPageLimit();
   window.addEventListener('resize', handleResize);
   nextTick(() => {
     calculateVisibleTags();
@@ -888,6 +908,10 @@ onBeforeUnmount(() => {
   if (resizeTimer) {
     window.clearTimeout(resizeTimer);
     resizeTimer = null;
+  }
+  if (filterTimer) {
+    window.clearTimeout(filterTimer);
+    filterTimer = null;
   }
 });
 </script>
@@ -906,10 +930,6 @@ onBeforeUnmount(() => {
     position: relative;
     top: -24px;
   }
-}
-
-.home-loading {
-  min-height: calc(100vh - 110px);
 }
 
 .home-container {
@@ -992,9 +1012,7 @@ onBeforeUnmount(() => {
     }
 
     .table-list {
-      height: calc(100% - 45px);
       padding-right: 2px;
-      overflow-y: auto;
 
       .table-item {
         display: flex;
@@ -1053,11 +1071,7 @@ onBeforeUnmount(() => {
 
       .table-item:nth-of-type(1) {
         margin-top: 0
-      };
-
-      // .newly-item {
-      //   background: #F2FFF4;
-      // }
+      }
     }
 
     .of1 {
