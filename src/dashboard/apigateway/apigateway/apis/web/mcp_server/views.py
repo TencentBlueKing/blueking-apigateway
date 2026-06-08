@@ -21,7 +21,8 @@ import csv
 from io import StringIO
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Case, DateTimeField, F, OuterRef, Q, Subquery, When
+from django.db.models.functions import Coalesce
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -1106,6 +1107,35 @@ def _filter_gateway_app_permissions(queryset, data):
     return queryset
 
 
+def _order_gateway_app_permissions(queryset, order_by):
+    """网关级 MCPServer 应用权限排序"""
+    if order_by not in ["effective_time", "-effective_time"]:
+        return queryset.order_by("mcp_server__name", "bk_app_code")
+
+    approved_apply_handled_time = MCPServerAppPermissionApply.objects.filter(
+        mcp_server_id=OuterRef("mcp_server_id"),
+        bk_app_code=OuterRef("bk_app_code"),
+        status=MCPServerAppPermissionApplyStatusEnum.APPROVED.value,
+        is_deleted=False,
+    ).order_by("-handled_time", "-id")
+
+    queryset = queryset.annotate(
+        _effective_time=Case(
+            When(
+                grant_type=MCPServerAppPermissionGrantTypeEnum.APPLY.value,
+                then=Coalesce(
+                    Subquery(approved_apply_handled_time.values("handled_time")[:1]),
+                    F("created_time"),
+                ),
+            ),
+            default=F("created_time"),
+            output_field=DateTimeField(),
+        )
+    )
+    order_field = "_effective_time" if order_by == "effective_time" else "-_effective_time"
+    return queryset.order_by(order_field, "mcp_server__name", "bk_app_code")
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -1125,7 +1155,7 @@ class GatewayMCPServerAppPermissionListApi(generics.ListAPIView):
         )
 
         queryset = _filter_gateway_app_permissions(queryset, slz.validated_data)
-        queryset = queryset.order_by("mcp_server__name", "bk_app_code")
+        queryset = _order_gateway_app_permissions(queryset, slz.validated_data.get("order_by"))
         page = self.paginate_queryset(queryset)
 
         slz = GatewayMCPServerAppPermissionListOutputSLZ(
