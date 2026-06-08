@@ -146,6 +146,7 @@ export interface IPermissionApprovalAction {
 // 网关下 MCPServer 应用权限列表导出接口泛型
 export interface IAppPermissionExport {
   bk_app_code?: string
+  state?: string
   mcp_server_id?: number | string
   grant_type?: IGrantType
   export_type: IExportType

@@ -28,6 +28,7 @@ import {
   deleteMcpPermissions,
   exportMcpAppPermissions,
 } from '@/services/source/mcp-market.ts';
+import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 
 const exportType = ref<IExportType>('all');
 // 导出下拉
@@ -65,9 +66,10 @@ export function useMcpPermission() {
   ) => {
     try {
       const params: IAppPermissionExport = {
-        ...filterData.value,
+        ...filterSimpleEmpty(filterData.value),
         export_type: exportData.value as IExportType,
       };
+      delete params.state;
       exportType.value = params.export_type;
       await exportMcpAppPermissions(gatewayId, params);
       Message({
