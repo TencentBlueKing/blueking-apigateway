@@ -100,6 +100,9 @@ class TestGateway:
 
 
 class TestPublishEvent:
+    def test_meta_indexes(self):
+        assert any(index.fields == ["gateway", "publish"] for index in models.PublishEvent._meta.indexes)
+
     @pytest.mark.parametrize(
         "name, expected",
         [

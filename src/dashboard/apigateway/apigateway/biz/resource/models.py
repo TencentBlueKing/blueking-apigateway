@@ -17,7 +17,7 @@
 #
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from apigateway.biz.plugin import PluginConfigData
 from apigateway.core.models import Backend, Resource
@@ -40,6 +40,8 @@ class ResourceBackendConfig(BaseModel):
 
 
 class ResourceData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     resource: Optional[Resource] = Field(default=None)
     # basic
     name: str = Field(...)
@@ -64,9 +66,6 @@ class ResourceData(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     # schema 接口参数
     openapi_schema: Dict[str, Any] = Field(default_factory=dict)
-
-    class Config:
-        arbitrary_types_allowed = True
 
     @property
     def basic_data(self) -> Dict[str, Any]:

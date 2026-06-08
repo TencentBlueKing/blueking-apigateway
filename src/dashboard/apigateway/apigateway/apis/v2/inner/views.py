@@ -617,12 +617,9 @@ class MCPServerAppPermissionListApi(generics.ListAPIView):
 
         # 1. 查询 MCPServerAppPermission 表，获取所有有实际权限的 mcp_server（包括主动授权和申请通过）
         # unique_together = ("bk_app_code", "mcp_server") 保证不会重复
-        granted_permissions = (
-            MCPServerAppPermission.objects.filter(
-                bk_app_code=target_app_code,
-            )
-            .select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
-        )
+        granted_permissions = MCPServerAppPermission.objects.filter(
+            bk_app_code=target_app_code,
+        ).select_related("mcp_server", "mcp_server__gateway", "mcp_server__stage")
 
         # 2. 查询申请通过的记录，用于获取 handled_by 信息
         approved_applies = MCPServerAppPermissionApply.objects.filter(

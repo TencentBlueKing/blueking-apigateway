@@ -88,7 +88,7 @@ def timestamp(value, *args, **kwargs):
 
 def far_away_future():
     if settings.USE_TZ:
-        return datetime.datetime(year=2050, month=1, day=1, tzinfo=timezone.utc)
+        return datetime.datetime(year=2050, month=1, day=1, tzinfo=datetime.timezone.utc)
 
     return datetime.datetime(year=2050, month=1, day=1)
 

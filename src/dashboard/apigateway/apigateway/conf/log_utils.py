@@ -86,7 +86,7 @@ def build_logging_config(log_level: str, to_console: bool, file_directory: Optio
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "verbose_json": {
-                "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                "()": "pythonjsonlogger.json.JsonFormatter",
                 "fmt": (
                     "%(name)s %(levelname)s %(asctime)s %(pathname)s %(lineno)d "
                     "%(funcName)s %(process)d %(thread)d %(message)s"

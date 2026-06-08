@@ -213,7 +213,6 @@ CORS_ORIGIN_REGEX_WHITELIST: List[str] = env.list("CORS_ORIGIN_REGEX_WHITELIST",
 # Internationalization
 LANGUAGE_CODE = "zh-hans"
 USE_I18N = True
-USE_L10N = True
 
 # timezone
 TIME_ZONE = "Asia/Shanghai"
@@ -272,6 +271,7 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     "DEFAULT_AUTO_SCHEMA_CLASS": "apigateway.common.swagger.BkStandardResponseSwaggerAutoSchema",
 }
+SWAGGER_USE_COMPAT_RENDERERS = False
 
 # https://docs.djangoproject.com/en/3.2/ref/checks/
 # disable warnings: db_table '<table_name>' is used by multiple models
@@ -305,6 +305,16 @@ if not ENABLE_MULTI_TENANT_MODE:
             "isolation_level": env.str("BK_ESB_DATABASE_ISOLATION_LEVEL", "READ COMMITTED"),
         },
     }
+
+# Django 5.2 changed the default MySQL connection charset from utf8(mb3) to utf8mb4.
+# Existing tables are utf8mb3, so pin the connection charset to keep the pre-upgrade
+# behavior and avoid "Illegal mix of collations" errors; override via env when the
+# tables are migrated to utf8mb4. Guarded to MySQL only: SQLite (used by tests)
+# would reject a "charset" connection kwarg.
+_DATABASE_CHARSET = env.str("BK_APIGW_DATABASE_CHARSET", "utf8")
+for _db_conf in DATABASES.values():
+    if "mysql" in _db_conf["ENGINE"]:
+        _db_conf.setdefault("OPTIONS", {})["charset"] = _DATABASE_CHARSET
 
 # database ssl
 BK_APIGW_DATABASE_TLS_ENABLED = env.bool("BK_APIGW_DATABASE_TLS_ENABLED", False)

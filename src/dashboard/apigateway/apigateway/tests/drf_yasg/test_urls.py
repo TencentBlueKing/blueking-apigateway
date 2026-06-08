@@ -25,6 +25,19 @@ import apigateway.urls
 
 
 class TestUrls:
+    def test_schema_json_url_uses_non_compat_format(self):
+        try:
+            with override_settings(DEBUG=True):
+                clear_url_caches()
+                importlib.reload(apigateway.urls)
+                set_urlconf(None)
+
+                assert reverse("schema-json", kwargs={"format": "json"}) == "/backend/docs/auto/swagger.json"
+        finally:
+            importlib.reload(apigateway.urls)
+            clear_url_caches()
+            set_urlconf(None)
+
     def test_urls_disabled_when_debug_is_false(self):
         try:
             with override_settings(DEBUG=False):

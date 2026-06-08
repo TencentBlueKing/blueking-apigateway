@@ -21,25 +21,27 @@ from pydantic import BaseModel, Field
 
 
 class ApiDebugHistoryRequest(BaseModel):
-    request_url: Optional[str] = Field(help="请求路由")
+    request_url: Optional[str] = Field(default=None, json_schema_extra={"help": "请求路由"})
     request_method: Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] = Field(
-        "GET", help="HTTP 方法，默认为GET"
+        default="GET", json_schema_extra={"help": "HTTP 方法，默认为GET"}
     )
-    type: Literal["HTTP", "GRPC", "WEBSOCKET"] = Field("HTTP", help="请求类型，默认为HTTP")
-    path_params: Dict[str, str] = Field({}, help="路径参数")
-    query_params: Dict[str, str] = Field({}, help="查询参数")
-    body: Optional[str] = Field(None, help="请求体")
-    headers: Dict[str, str] = Field({}, help="请求头")
-    subpath: Optional[str] = Field(None, help="子路径")
-    use_test_app: bool = Field(False, help="是否使用测试应用")
-    use_user_from_cookies: bool = Field(False, help="是否使用 cookies 中的用户信息")
-    spec_version: Optional[int] = Field(1, help="请求版本")
+    type: Literal["HTTP", "GRPC", "WEBSOCKET"] = Field(
+        default="HTTP", json_schema_extra={"help": "请求类型，默认为HTTP"}
+    )
+    path_params: Dict[str, str] = Field(default_factory=dict, json_schema_extra={"help": "路径参数"})
+    query_params: Dict[str, str] = Field(default_factory=dict, json_schema_extra={"help": "查询参数"})
+    body: Optional[str] = Field(default=None, json_schema_extra={"help": "请求体"})
+    headers: Dict[str, str] = Field(default_factory=dict, json_schema_extra={"help": "请求头"})
+    subpath: Optional[str] = Field(default=None, json_schema_extra={"help": "子路径"})
+    use_test_app: bool = Field(default=False, json_schema_extra={"help": "是否使用测试应用"})
+    use_user_from_cookies: bool = Field(default=False, json_schema_extra={"help": "是否使用 cookies 中的用户信息"})
+    spec_version: Optional[int] = Field(default=1, json_schema_extra={"help": "请求版本"})
 
 
 class ApiDebugHistoryResponse(BaseModel):
-    data: Optional[dict] = Field(None, help="调用成功的时候跟返回结果一致")
-    spec_version: Optional[int] = Field(1, help="返回的结果版本")
-    error: Optional[str] = Field(None, help="错误信息")
+    data: Optional[dict] = Field(default=None, json_schema_extra={"help": "调用成功的时候跟返回结果一致"})
+    spec_version: Optional[int] = Field(default=1, json_schema_extra={"help": "返回的结果版本"})
+    error: Optional[str] = Field(default=None, json_schema_extra={"help": "错误信息"})
 
     # 格式化时间
     def format_proxy_time(self) -> str:

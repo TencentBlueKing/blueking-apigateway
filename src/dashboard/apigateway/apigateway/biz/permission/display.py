@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 from django.utils.functional import cached_property
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from apigateway.apps.permission.constants import (
     GrantDimensionEnum,
@@ -68,9 +68,7 @@ def build_resource_permission_display(
 
 
 class ResourcePermission(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        ignored_types = (cached_property,)
+    model_config = ConfigDict(arbitrary_types_allowed=True, ignored_types=(cached_property,))
 
     id: int
     name: str
