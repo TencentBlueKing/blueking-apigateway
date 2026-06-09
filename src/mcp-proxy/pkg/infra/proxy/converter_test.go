@@ -19,10 +19,21 @@
 package proxy
 
 import (
+	"encoding/json"
+
 	"github.com/getkin/kin-openapi/openapi3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+func buildInputSchemaForTest(tool *ToolConfig) map[string]any {
+	schemaBytes, err := tool.ParamSchema.JSONSchemaBytes()
+	Expect(err).NotTo(HaveOccurred())
+
+	var inputSchema map[string]any
+	Expect(json.Unmarshal(schemaBytes, &inputSchema)).To(Succeed())
+	return inputSchema
+}
 
 var _ = Describe("Converter", func() {
 	Describe("OpenapiToMcpToolConfig", func() {
@@ -189,6 +200,12 @@ var _ = Describe("Converter", func() {
 			Expect(result).To(HaveLen(1))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("query_param"))
 			Expect(result[0].ParamSchema.Required).To(ContainElement("query_param"))
+
+			inputSchema := buildInputSchemaForTest(result[0])
+			queryParam := inputSchema["properties"].(map[string]any)["query_param"].(map[string]any)
+			limit := queryParam["properties"].(map[string]any)["limit"].(map[string]any)
+			Expect(queryParam["required"]).To(ContainElement("limit"))
+			Expect(limit).NotTo(HaveKey("required"))
 		})
 
 		It("should handle path parameters", func() {
@@ -281,6 +298,7 @@ var _ = Describe("Converter", func() {
 					Summary:     "Create a new user",
 					RequestBody: &openapi3.RequestBodyRef{
 						Value: &openapi3.RequestBody{
+							Required: true,
 							Content: openapi3.Content{
 								"application/json": &openapi3.MediaType{
 									Schema: &openapi3.SchemaRef{
@@ -322,6 +340,239 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].Name).To(Equal("createUser"))
 			Expect(result[0].Method).To(Equal("POST"))
 			Expect(result[0].ParamSchema.Properties).To(HaveKey("body_param"))
+
+			schemaBytes, err := result[0].ParamSchema.JSONSchemaBytes()
+			Expect(err).NotTo(HaveOccurred())
+			var inputSchema map[string]any
+			Expect(json.Unmarshal(schemaBytes, &inputSchema)).To(Succeed())
+			Expect(inputSchema["required"]).To(ContainElement("body_param"))
+
+			properties := inputSchema["properties"].(map[string]any)
+			bodyParam := properties["body_param"].(map[string]any)
+			Expect(bodyParam).To(HaveKeyWithValue("type", "object"))
+			Expect(bodyParam["required"]).To(ConsistOf("name", "email"))
+			Expect(bodyParam["properties"].(map[string]any)).To(HaveKey("name"))
+			Expect(bodyParam["properties"].(map[string]any)).To(HaveKey("email"))
+		})
+
+		It("should preserve request body schema with OpenAPI exclusive minimum", func() {
+			minimum := float64(0)
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Post: &openapi3.Operation{
+					OperationID: "updateBudget",
+					Summary:     "Update budget",
+					RequestBody: &openapi3.RequestBodyRef{
+						Value: &openapi3.RequestBody{
+							Required: true,
+							Content: openapi3.Content{
+								"application/json": &openapi3.MediaType{
+									Schema: &openapi3.SchemaRef{
+										Value: &openapi3.Schema{
+											Type: &openapi3.Types{
+												"object",
+											},
+											Required: []string{
+												"raise_budget",
+											},
+											Properties: openapi3.Schemas{
+												"raise_budget": &openapi3.SchemaRef{
+													Value: &openapi3.Schema{
+														Type: &openapi3.Types{
+															"number",
+														},
+														Min:          &minimum,
+														ExclusiveMin: true,
+														Description:  "起量预算（单位元，必须大于 0）。",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/budgets", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
+			Expect(result).To(HaveLen(1))
+
+			schemaBytes, err := result[0].ParamSchema.JSONSchemaBytes()
+			Expect(err).NotTo(HaveOccurred())
+			var inputSchema map[string]any
+			Expect(json.Unmarshal(schemaBytes, &inputSchema)).To(Succeed())
+
+			bodyParam := inputSchema["properties"].(map[string]any)["body_param"].(map[string]any)
+			Expect(bodyParam).To(HaveKeyWithValue("type", "object"))
+			Expect(bodyParam["required"]).To(ContainElement("raise_budget"))
+
+			raiseBudget := bodyParam["properties"].(map[string]any)["raise_budget"].(map[string]any)
+			Expect(raiseBudget).To(HaveKeyWithValue("type", "number"))
+			Expect(raiseBudget).To(HaveKeyWithValue("minimum", float64(0)))
+			Expect(raiseBudget).To(HaveKeyWithValue("exclusiveMinimum", float64(0)))
+		})
+
+		It("should preserve request body schema with OpenAPI exclusive maximum", func() {
+			maximum := float64(100)
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Post: &openapi3.Operation{
+					OperationID: "updateDiscount",
+					Summary:     "Update discount",
+					RequestBody: &openapi3.RequestBodyRef{
+						Value: &openapi3.RequestBody{
+							Content: openapi3.Content{
+								"application/json": &openapi3.MediaType{
+									Schema: &openapi3.SchemaRef{
+										Value: &openapi3.Schema{
+											Type: &openapi3.Types{"object"},
+											Properties: openapi3.Schemas{
+												"discount": &openapi3.SchemaRef{
+													Value: &openapi3.Schema{
+														Type: &openapi3.Types{
+															"number",
+														},
+														Max:          &maximum,
+														ExclusiveMax: true,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/discounts", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
+			Expect(result).To(HaveLen(1))
+
+			inputSchema := buildInputSchemaForTest(result[0])
+			bodyParam := inputSchema["properties"].(map[string]any)["body_param"].(map[string]any)
+			discount := bodyParam["properties"].(map[string]any)["discount"].(map[string]any)
+			Expect(discount).To(HaveKeyWithValue("maximum", float64(100)))
+			Expect(discount).To(HaveKeyWithValue("exclusiveMaximum", float64(100)))
+		})
+
+		It("should use resolved schema ref value instead of dangling ref", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Post: &openapi3.Operation{
+					OperationID: "createUser",
+					Summary:     "Create user",
+					RequestBody: &openapi3.RequestBodyRef{
+						Value: &openapi3.RequestBody{
+							Content: openapi3.Content{
+								"application/json": &openapi3.MediaType{
+									Schema: &openapi3.SchemaRef{
+										Ref: "#/components/schemas/CreateUserRequest",
+										Value: &openapi3.Schema{
+											Type: &openapi3.Types{
+												"object",
+											},
+											Required: []string{"name"},
+											Properties: openapi3.Schemas{
+												"name": &openapi3.SchemaRef{
+													Value: &openapi3.Schema{
+														Type: &openapi3.Types{
+															"string",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
+			Expect(result).To(HaveLen(1))
+
+			inputSchema := buildInputSchemaForTest(result[0])
+			bodyParam := inputSchema["properties"].(map[string]any)["body_param"].(map[string]any)
+			Expect(bodyParam).NotTo(HaveKey("$ref"))
+			Expect(bodyParam).To(HaveKeyWithValue("type", "object"))
+			Expect(bodyParam["required"]).To(ContainElement("name"))
+			Expect(bodyParam["properties"].(map[string]any)).To(HaveKey("name"))
+		})
+
+		It("should use resolved parameter schema ref value", func() {
+			minimum := float64(1)
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Parameters: openapi3.Parameters{
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name:     "limit",
+								In:       "query",
+								Required: true,
+								Schema: &openapi3.SchemaRef{
+									Ref: "#/components/schemas/Limit",
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"integer"},
+										Min:  &minimum,
+									},
+								},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			result := OpenapiToMcpToolConfig(spec, nil, nil)
+			Expect(result).To(HaveLen(1))
+
+			inputSchema := buildInputSchemaForTest(result[0])
+			queryParam := inputSchema["properties"].(map[string]any)["query_param"].(map[string]any)
+			limit := queryParam["properties"].(map[string]any)["limit"].(map[string]any)
+			Expect(limit).NotTo(HaveKey("$ref"))
+			Expect(limit).To(HaveKeyWithValue("type", "integer"))
+			Expect(limit).To(HaveKeyWithValue("minimum", float64(1)))
+			Expect(limit).NotTo(HaveKey("required"))
+			Expect(queryParam["required"]).To(ContainElement("limit"))
 		})
 
 		It("should handle multiple operations in one path", func() {

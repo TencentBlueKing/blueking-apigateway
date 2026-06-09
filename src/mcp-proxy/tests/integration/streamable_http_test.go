@@ -1086,6 +1086,66 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 		})
 	})
 
+	Describe("OpenAPI Schema Conversion", func() {
+		It("should preserve request body schema with OpenAPI exclusive minimum", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-path-param-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			result, err := session.ListTools(ctx, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+
+			var listBizHostsTool *mcp.Tool
+			for _, tool := range result.Tools {
+				if tool.Name == "list_biz_hosts" {
+					listBizHostsTool = tool
+					break
+				}
+			}
+			Expect(listBizHostsTool).NotTo(BeNil())
+
+			inputSchema, ok := listBizHostsTool.InputSchema.(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(inputSchema["required"]).To(ContainElement("body_param"))
+
+			properties, ok := inputSchema["properties"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			bodyParam, ok := properties["body_param"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(bodyParam).To(HaveKeyWithValue("type", "object"))
+
+			bodyProperties, ok := bodyParam["properties"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(bodyProperties).To(HaveKey("fields"))
+			bidAmount, ok := bodyProperties["bid_amount"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(bidAmount).To(HaveKeyWithValue("type", "number"))
+			Expect(bidAmount).To(HaveKeyWithValue("minimum", float64(0)))
+			Expect(bidAmount).To(HaveKeyWithValue("exclusiveMinimum", float64(0)))
+		})
+	})
+
 	Describe("Large Integer Path/Query Params", func() {
 		It("should preserve large integer path and query params without scientific notation", func() {
 			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-path-param-server")
@@ -1117,7 +1177,9 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 				Arguments: map[string]any{
 					"path_param":  map[string]any{"bk_biz_id": 2005000002},
 					"query_param": map[string]any{"limit": 20},
-					"body_param":  map[string]any{"fields": []string{"bk_host_id", "bk_host_innerip"}},
+					"body_param": map[string]any{
+						"fields": []string{"bk_host_id", "bk_host_innerip"},
+					},
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())

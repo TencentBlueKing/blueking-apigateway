@@ -371,6 +371,7 @@ VALUES (2, 1, 2, '{
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -379,6 +380,13 @@ VALUES (2, 1, 2, '{
                   "fields": {
                     "type": "array",
                     "items": {"type": "string"}
+                  },
+                  "bid_amount": {
+                    "type": "number",
+                    "format": "double",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "description": "Schema conversion test field only; bid amount must be greater than 0."
                   }
                 }
               }
