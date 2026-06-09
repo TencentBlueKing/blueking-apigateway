@@ -76,7 +76,7 @@ class ResourcePermissionHandler:
     @staticmethod
     def sync_from_gateway_permission(gateway: Gateway, bk_app_code: str, resource_ids: List[int]):
         api_perm = AppGatewayPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
-        if not api_perm or api_perm.has_expired:
+        if not api_perm:
             return
 
         has_perm_resource_ids = list(
