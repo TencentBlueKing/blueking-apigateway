@@ -26,8 +26,8 @@ from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.biz.bk_itsm import ITSM_PERMISSION_APPROVAL_HANDLER
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.common.tenant.query import (
-    gateway_related_filter_by_user_tenant_id,
-    mcp_server_related_filter_by_user_tenant_id,
+    gateway_related_filter_by_maintainer_tenant_id,
+    mcp_server_related_filter_by_maintainer_tenant_id,
 )
 
 
@@ -45,7 +45,7 @@ class WorkbenchPermissionHandler:
                 gateway_id__in=cls._get_user_gateway_ids(username, tenant_id),
             )
         ).exclude(status=ApplyStatusEnum.PENDING.value)
-        return gateway_related_filter_by_user_tenant_id(queryset, tenant_id)
+        return gateway_related_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
     @classmethod
     def get_handled_mcp_permission_apply_queryset(cls, username: str, tenant_id: str) -> QuerySet:
@@ -57,4 +57,4 @@ class WorkbenchPermissionHandler:
             ),
             is_deleted=False,
         ).exclude(status=MCPServerAppPermissionApplyStatusEnum.PENDING.value)
-        return mcp_server_related_filter_by_user_tenant_id(queryset, tenant_id)
+        return mcp_server_related_filter_by_maintainer_tenant_id(queryset, tenant_id)
