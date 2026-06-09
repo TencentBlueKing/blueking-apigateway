@@ -76,6 +76,9 @@ class ResourcePermissionHandler:
     @staticmethod
     def sync_from_gateway_permission(gateway: Gateway, bk_app_code: str, resource_ids: List[int]):
         api_perm = AppGatewayPermission.objects.filter(bk_app_code=bk_app_code, gateway_id=gateway.id).first()
+        # 原来的判断条件为 if not api_perm or api_perm.has_expired
+        # 当网关维度权限过期，会跳过资源维度权限同步，导致已过期的资源权限无法续期
+        # 调整后无论网关维度权限是否过期，都会继续同步到资源维度权限
         if not api_perm:
             return
 
