@@ -77,9 +77,10 @@ class TestResourcePermissionHandler:
             bk_app_code=bk_app_code,
             expires=now_datetime() - datetime.timedelta(seconds=10),
         )
-        ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [1])
-        assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 0
+        ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
+        assert AppResourcePermission.objects.filter(gateway=gateway, bk_app_code=bk_app_code).count() == 1
 
+        # api-perm unexpired
         api_perm.expires = now_datetime() + datetime.timedelta(seconds=10)
         api_perm.save()
         ResourcePermissionHandler.sync_from_gateway_permission(gateway, bk_app_code, [resource.id])
