@@ -908,6 +908,45 @@ func TestAPISIXJsonSchemaValidatorValidate(t *testing.T) {
 	}
 }
 
+func TestAPISIXJsonSchemaValidatorValidateDashboardBKPluginSchema(t *testing.T) {
+	config := json.RawMessage(`{
+      "name": "route1",
+      "methods": [
+        "GET"
+      ],
+      "uris": [
+        "/test"
+      ],
+      "plugins": {
+        "bk-traffic-label": {}
+      },
+      "upstream": {
+        "scheme": "http",
+        "nodes": [
+          {
+            "host": "1.1.1.1",
+            "port": 80,
+            "weight": 1
+          }
+        ],
+        "pass_host": "pass",
+        "type": "roundrobin"
+      }
+    }`)
+
+	for _, version := range APISIXVersionList {
+		t.Run(string(version), func(t *testing.T) {
+			validator, err := NewAPISIXJsonSchemaValidator(version, constant.Route, "main.route")
+			assert.NoError(t, err)
+
+			err = validator.Validate(config)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "bk-traffic-label")
+			assert.Contains(t, err.Error(), "rules")
+		})
+	}
+}
+
 func TestValidateVarItem(t *testing.T) {
 	tests := []struct {
 		name       string

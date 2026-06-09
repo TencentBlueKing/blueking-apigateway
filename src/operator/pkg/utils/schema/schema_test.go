@@ -119,3 +119,27 @@ func TestGetPluginSchema(t *testing.T) {
 		}
 	}
 }
+
+func TestGetDashboardBKPluginSchemas(t *testing.T) {
+	pluginNames := []string{
+		"bk-access-token-source",
+		"bk-cors",
+		"bk-header-rewrite",
+		"bk-ip-restriction",
+		"bk-mock",
+		"bk-rate-limit",
+		"bk-request-body-limit",
+		"bk-user-restriction",
+		"bk-verified-user-exempted-apps",
+		"bk-traffic-label",
+	}
+
+	for version := range schemaVersionMap {
+		for _, pluginName := range pluginNames {
+			testName := fmt.Sprintf("%s/%s", string(version), pluginName)
+			t.Run(testName, func(t *testing.T) {
+				assert.NotNil(t, GetPluginSchema(version, pluginName, ""))
+			})
+		}
+	}
+}
