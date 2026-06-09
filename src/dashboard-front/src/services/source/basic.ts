@@ -30,6 +30,7 @@ export function getUserInfo() {
     display_name: string
     tenant_id: string | null
     username: string
+    time_zone: string
   }>(`${path}/accounts/userinfo/`);
 }
 
