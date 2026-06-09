@@ -22,7 +22,7 @@ from typing import Dict, List
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum, DataPlaneStatusEnum
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.controller.constants import GLOBAL_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GlobalResourceDistributor
@@ -79,6 +79,13 @@ class Command(BaseCommand):
             required=True,
             help="ETCD namespace prefix.",
         )
+        parser.add_argument(
+            "--apisix-version",
+            type=str,
+            choices=DataPlaneApisixVersionEnum.get_values(),
+            default=DataPlaneApisixVersionEnum.V3_13.value,
+            help=f"APISIX version, allowed values: {DataPlaneApisixVersionEnum.get_values()}.",
+        )
         parser.add_argument("--created-by", type=str, default="system", help="Creator username.")
 
     def _validate_required_non_empty(self, name: str, value: str):
@@ -103,6 +110,11 @@ class Command(BaseCommand):
         allowed = set(DataPlaneStatusEnum.get_values())
         if status not in allowed:
             raise CommandError(f"status should be one of: {sorted(allowed)}")
+
+    def _validate_apisix_version(self, apisix_version: str):
+        allowed = set(DataPlaneApisixVersionEnum.get_values())
+        if apisix_version not in allowed:
+            raise CommandError(f"apisix_version should be one of: {sorted(allowed)}")
 
     def _validate_etcd_conflicts(self, etcd_config: Dict, etcd_namespace_prefix: str):
         normalized_prefix = _normalize_prefix(etcd_namespace_prefix)
@@ -145,12 +157,14 @@ class Command(BaseCommand):
         bk_api_url_tmpl = options["bk_api_url_tmpl"]
         status = options["status"]
         etcd_namespace_prefix = options["etcd_namespace_prefix"]
+        apisix_version = options.get("apisix_version", DataPlaneApisixVersionEnum.V3_13.value)
         created_by = options["created_by"]
 
         self._validate_required_non_empty("name", name)
         self._validate_required_non_empty("bk_api_url_tmpl", bk_api_url_tmpl)
         self._validate_required_non_empty("etcd_namespace_prefix", etcd_namespace_prefix)
         self._validate_status(status)
+        self._validate_apisix_version(apisix_version)
 
         if DataPlane.objects.filter(name=name).exists():
             raise CommandError(f"data_plane name already exists: {name}")
@@ -164,6 +178,7 @@ class Command(BaseCommand):
             bk_api_url_tmpl=bk_api_url_tmpl.strip(),
             etcd_namespace_prefix=_normalize_prefix(etcd_namespace_prefix),
             status=status,
+            apisix_version=apisix_version,
             created_by=created_by,
             updated_by=created_by,
         )

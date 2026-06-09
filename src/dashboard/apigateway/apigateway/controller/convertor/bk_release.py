@@ -23,11 +23,10 @@ from apigateway.controller.release_data import ReleaseData
 from apigateway.utils.time import now_str
 
 from .base import GatewayResourceConvertor
-from .constants import DEFAULT_APISIX_VERSION
 
 
 class BkReleaseConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: int, apisix_version: str = DEFAULT_APISIX_VERSION):
+    def __init__(self, release_data: ReleaseData, publish_id: int, apisix_version: str):
         super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
 
     def convert(self) -> List[GatewayApisixModel]:

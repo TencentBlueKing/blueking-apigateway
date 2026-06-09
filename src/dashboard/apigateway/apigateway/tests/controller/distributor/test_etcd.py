@@ -18,9 +18,13 @@
 
 import pytest
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor, SyncFail
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestSyncFail:
@@ -191,7 +195,7 @@ class TestGatewayResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         mock_data_plane = mocker.Mock()
-        mock_data_plane.apisix_version = "3.13"
+        mock_data_plane.apisix_version = APISIX_VERSION_3_13
         mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         success, message = distributor.revoke(release_task_id="test-task-id", publish_id=DELETE_PUBLISH_ID)
@@ -265,12 +269,12 @@ class TestGatewayResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         mock_data_plane = mocker.Mock()
-        mock_data_plane.apisix_version = "3.16"
+        mock_data_plane.apisix_version = APISIX_VERSION_3_16
         mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
-        assert mock_transformer.call_args.kwargs["apisix_version"] == "3.16"
+        assert mock_transformer.call_args.args[1] == APISIX_VERSION_3_16
 
     def test_revoke_passes_data_plane_apisix_version(self, mocker):
         """revoke should pass the data plane apisix_version into the transformer"""
@@ -287,12 +291,12 @@ class TestGatewayResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         mock_data_plane = mocker.Mock()
-        mock_data_plane.apisix_version = "3.16"
+        mock_data_plane.apisix_version = APISIX_VERSION_3_16
         mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         distributor.revoke(release_task_id="test-task-id", publish_id=123)
 
-        assert mock_transformer.call_args.kwargs["apisix_version"] == "3.16"
+        assert mock_transformer.call_args.args[1] == APISIX_VERSION_3_16
 
 
 class TestGlobalResourceDistributor:
@@ -486,11 +490,11 @@ class TestGlobalResourceDistributor:
         mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
 
         mock_data_plane = mocker.Mock()
-        mock_data_plane.apisix_version = "3.16"
+        mock_data_plane.apisix_version = APISIX_VERSION_3_16
         mock_data_plane.etcd_configs = {"host": "127.0.0.1", "port": 2379}
         mock_data_plane.etcd_namespace_prefix = "/bk-gateway"
         mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
         distributor = GlobalResourceDistributor(mock_data_plane)
         distributor.distribute(release_task_id="test-task-id", publish_id=123)
 
-        assert mock_transformer.call_args.kwargs["apisix_version"] == "3.16"
+        assert mock_transformer.call_args.args[0] == APISIX_VERSION_3_16

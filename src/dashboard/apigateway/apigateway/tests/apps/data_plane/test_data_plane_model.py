@@ -83,7 +83,7 @@ class TestDataPlaneApisixVersion:
     def test_default_is_3_13(self):
         data_plane = DataPlane.objects.create(name="dp-default-version", etcd_namespace_prefix="/bk-gateway")
         data_plane.refresh_from_db()
-        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_13.value == "3.13"
+        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_13.value
 
     def test_explicit_3_16_is_persisted(self):
         data_plane = G(
@@ -92,7 +92,7 @@ class TestDataPlaneApisixVersion:
             apisix_version=DataPlaneApisixVersionEnum.V3_16.value,
         )
         data_plane.refresh_from_db()
-        assert data_plane.apisix_version == "3.16"
+        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestDataPlaneIsDefault:

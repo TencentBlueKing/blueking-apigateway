@@ -17,8 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor.service import ServiceConvertor
 from apigateway.controller.models import ActiveCheck, Check, PassiveCheck
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 
 
 class TestHealthCheckConversion:
@@ -44,7 +47,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         assert len(services) == 1
@@ -95,7 +102,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         assert len(services) == 1
@@ -136,7 +147,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         assert len(services) == 1
@@ -159,7 +174,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         assert len(services) == 1
@@ -190,7 +209,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         assert len(services) == 1
@@ -213,7 +236,11 @@ class TestHealthCheckConversion:
 
         mocker.patch.object(fake_release_data, "get_stage_backend_configs", return_value=backend_configs)
 
-        convertor = ServiceConvertor(release_data=fake_release_data, publish_id=1)
+        convertor = ServiceConvertor(
+            release_data=fake_release_data,
+            publish_id=1,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         services = convertor.convert()
 
         service = services[0]

@@ -21,9 +21,13 @@ import pytest
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestServiceConvertor:
@@ -44,25 +48,30 @@ class TestServiceConvertor:
 
     def test_service_convertor_initialization(self, mock_release_data):
         """Test ServiceConvertor initialization"""
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         assert convertor is not None
         assert convertor._release_data == mock_release_data
         assert convertor._publish_id == 123
 
+    def test_service_convertor_requires_apisix_version(self, mock_release_data):
+        """Test ServiceConvertor requires apisix_version."""
+        with pytest.raises(TypeError):
+            ServiceConvertor(mock_release_data, publish_id=123)
+
     def test_service_convertor_is_gateway_resource_convertor(self, mock_release_data):
         """Test that ServiceConvertor is a GatewayResourceConvertor"""
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         assert isinstance(convertor, GatewayResourceConvertor)
 
     def test_service_labels_carry_apisix_version(self, mock_release_data):
         """ServiceConvertor labels should reflect the configured apisix_version"""
-        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version="3.16")
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_16)
         labels = convertor.get_labels()
-        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.16"
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
 
     def test_service_convertor_inherits_gateway_properties(self, mock_release_data):
         """Test that ServiceConvertor inherits properties from GatewayResourceConvertor"""
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
 
         assert convertor.gateway_id == 123
         assert convertor.gateway_name == "test-gateway"
@@ -73,7 +82,7 @@ class TestServiceConvertor:
         """Test convert with no backend configs"""
         mock_release_data.get_stage_backend_configs.return_value = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert result == []
@@ -84,7 +93,7 @@ class TestServiceConvertor:
             1: {"timeout": 60, "hosts": []},
         }
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
 
         with pytest.raises(ValueError, match="backend 1 has no hosts"):
             convertor.convert()
@@ -114,7 +123,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-key"
         mock_release_data.gateway_auth_config = {"auth": "config"}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert len(result) == 1
@@ -122,7 +131,12 @@ class TestServiceConvertor:
         assert "backend-service" in result[0].name
 
         # revoke_flag
-        convertor = ServiceConvertor(mock_release_data, publish_id=123, revoke_flag=True)
+        convertor = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_13,
+            revoke_flag=True,
+        )
         result = convertor.convert()
         assert result == []
 
@@ -154,7 +168,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-key"
         mock_release_data.gateway_auth_config = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert len(result) == 2
@@ -185,7 +199,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-key"
         mock_release_data.gateway_auth_config = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert len(result) == 1
@@ -218,7 +232,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-key"
         mock_release_data.gateway_auth_config = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert len(result) == 1
@@ -235,7 +249,7 @@ class TestServiceConvertor:
         mocker.patch.object(ServiceConvertor, "_get_stage_binding_plugins", return_value=mock_binding_plugins)
         mocker.patch.object(ServiceConvertor, "_get_stage_extra_plugins", return_value=mock_extra_plugins)
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._build_service_plugins()
 
         # Should contain all plugins from the three methods
@@ -253,7 +267,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-jwt-key"
         mock_release_data.gateway_auth_config = {"auth": "config"}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_default_plugins()
 
         # Check that basic plugins are present
@@ -306,7 +320,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-jwt-key"
         mock_release_data.gateway_auth_config = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_default_plugins()
 
         # Check that concurrency limit plugin is present
@@ -323,7 +337,7 @@ class TestServiceConvertor:
         mock_release_data.jwt_private_key = "test-jwt-key"
         mock_release_data.gateway_auth_config = {}
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_default_plugins()
 
         # Check that multi-tenant plugins are present
@@ -340,7 +354,7 @@ class TestServiceConvertor:
         """Test _get_stage_binding_plugins with no stage plugins"""
         mock_release_data.get_stage_plugins.return_value = []
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_binding_plugins()
 
         assert result == {}
@@ -358,7 +372,7 @@ class TestServiceConvertor:
 
         mock_release_data.get_stage_plugins.return_value = [mock_plugin1, mock_plugin2]
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_binding_plugins()
 
         # Check that plugins are created with correct names and configs
@@ -376,7 +390,7 @@ class TestServiceConvertor:
         """Test _get_stage_extra_plugins with non-legacy gateway"""
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", ["legacy-gateway"])
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_extra_plugins()
 
         assert result == {}
@@ -385,7 +399,7 @@ class TestServiceConvertor:
         """Test _get_stage_extra_plugins with legacy gateway"""
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", ["test-gateway", "other-legacy"])
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_extra_plugins()
 
         assert "bk-legacy-invalid-params" in result
@@ -395,7 +409,7 @@ class TestServiceConvertor:
         """Test _get_stage_extra_plugins with empty legacy gateway list"""
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", [])
 
-        convertor = ServiceConvertor(mock_release_data, publish_id=123)
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_stage_extra_plugins()
 
         assert result == {}

@@ -29,7 +29,7 @@ from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str
 
 from .base import GatewayResourceConvertor
-from .constants import DEFAULT_APISIX_VERSION, MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
+from .constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
 from .utils import truncate_string
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ class RouteConvertor(GatewayResourceConvertor):
         release_data: ReleaseData,
         backend_service_mapping: Dict[int, str],
         publish_id: int,
+        apisix_version: str,
         revoke_flag: Union[bool, None] = False,
-        apisix_version: str = DEFAULT_APISIX_VERSION,
     ):
         super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
