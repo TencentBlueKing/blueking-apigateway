@@ -29,6 +29,7 @@ export const useUserInfo = defineStore('useUserInfo', {
       display_name: '',
       tenant_id: null,
       username: '',
+      time_zone: '',
     },
   }),
   actions: {
