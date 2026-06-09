@@ -49,6 +49,29 @@ class TestAppRequestAppCodeRequiredFilter:
                 },
                 True,
             ),
+            (
+                {
+                    "alarm_record_id": 1,
+                    "event_dimensions": {
+                        "api_id": 2,
+                        "resource_id": 3,
+                        "stage": "prod",
+                        "app_code": None,
+                    },
+                },
+                True,
+            ),
+            (
+                {
+                    "alarm_record_id": 1,
+                    "event_dimensions": {
+                        "api_id": 2,
+                        "resource_id": 3,
+                        "stage": "prod",
+                    },
+                },
+                True,
+            ),
         ],
     )
     def test_do(self, mocker, event, expected_none):

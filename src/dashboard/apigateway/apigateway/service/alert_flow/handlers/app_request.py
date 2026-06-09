@@ -36,7 +36,7 @@ class AppRequestDimension(BaseModel):
     api_id: int
     resource_id: int
     stage: str
-    app_code: str
+    app_code: Optional[str] = None
 
 
 # NOTE: 这里是蓝鲸应用请求网关报错，告警给蓝鲸应用负责人，被动，无法配置/忽略
