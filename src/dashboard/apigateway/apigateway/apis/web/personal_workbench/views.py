@@ -28,8 +28,10 @@ from apigateway.biz.mcp_server import MCPServerPermissionHandler
 from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.personal_workbench import WorkbenchPermissionHandler
 from apigateway.common.tenant.query import (
-    gateway_filter_by_user_tenant_id,
+    gateway_filter_by_app_tenant_id,
+    gateway_filter_by_maintainer_tenant_id,
     gateway_mcp_server_filter_by_user_tenant_id,
+    gateway_related_filter_by_maintainer_tenant_id,
     gateway_related_filter_by_user_tenant_id,
     mcp_server_related_filter_by_user_tenant_id,
 )
@@ -154,14 +156,14 @@ class WorkbenchGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.Lis
                 AppPermissionApply.objects.filter(applied_by=username).values_list("gateway_id", flat=True).distinct()
             )
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
-            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
+            return gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的记录中提取去重的网关；ITSM 回调无实际审批人，按当前用户维护的网关补充
             queryset = WorkbenchPermissionHandler.get_handled_gateway_permission_record_queryset(username, tenant_id)
             gateway_ids = queryset.values_list("gateway_id", flat=True).distinct()
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
-            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
+            return gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
         # pending（默认）：从当前用户待审批的 API 网关权限申请中提取去重的网关
         gateway_ids = (
@@ -218,7 +220,7 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
                 .distinct()
             )
             queryset = MCPServer.objects.select_related("gateway").filter(id__in=mcp_server_ids).order_by("name")
-            return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
+            return gateway_related_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
         # pending（默认）：从当前用户待审批的 MCP Server 权限申请中提取去重的 MCP Server
         mcp_server_ids = (
@@ -265,7 +267,7 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
                 .distinct()
             )
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
-            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
+            return gateway_filter_by_app_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
             # 我的已办：从用户处理过的 MCP 记录中提取去重的网关；ITSM 回调无实际审批人，按当前用户维护的网关补充
@@ -275,7 +277,7 @@ class WorkbenchMCPGatewayFilterOptionListApi(WorkbenchPermissionMixin, generics.
                 .distinct()
             )
             queryset = Gateway.objects.filter(id__in=gateway_ids).order_by("name")
-            return gateway_filter_by_user_tenant_id(queryset, tenant_id)
+            return gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
         # pending（默认）：从当前用户待审批的 MCP Server 权限申请中提取去重的网关
         gateway_ids = (

@@ -34,7 +34,7 @@ from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
 from apigateway.common.constants import CallSourceTypeEnum
-from apigateway.common.tenant.query import gateway_filter_by_user_tenant_id
+from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
     GatewayOperationSourceEnum,
@@ -89,7 +89,7 @@ class GatewayHandler:
         """获取用户有权限的网关列表"""
         queryset = Gateway.objects.filter(_maintainers__contains=username)
         if tenant_id:
-            queryset = gateway_filter_by_user_tenant_id(queryset, tenant_id)
+            queryset = gateway_filter_by_maintainer_tenant_id(queryset, tenant_id)
 
         # 使用 _maintainers 过滤的数据并不准确，需要根据其中人员列表二次过滤
         return [gateway for gateway in queryset if gateway.has_permission(username)]
