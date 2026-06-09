@@ -340,6 +340,12 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         # 删除 prompts
         MCPServerHandler.delete_prompts(instance.id)
 
+        # Delete resource permission records created by sync_permissions
+        MCPServerHandler.cleanup_all_resource_permissions(
+            gateway_id=self.request.gateway.id,
+            mcp_server_id=instance.id,
+        )
+
         instance.delete()
 
         Auditor.record_mcp_server_op_success(
