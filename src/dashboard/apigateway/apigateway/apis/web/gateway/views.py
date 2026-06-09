@@ -43,7 +43,7 @@ from apigateway.common.tenant.constants import (
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.components.bkauth import list_all_apps_of_tenant, list_available_apps_for_tenant
-from apigateway.components.bkpaas import create_paas_app, update_app_maintainers
+from apigateway.components.bkpaas import create_paas_app, get_paas_repo_authorization, update_app_maintainers
 from apigateway.components.bkuser import list_tenants
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
@@ -67,6 +67,7 @@ from .serializers import (
     GatewayListInputSLZ,
     GatewayListOutputSLZ,
     GatewayReleasingStatusOutputSLZ,
+    GatewayRepoAuthorizationOutputSLZ,
     GatewayRetrieveOutputSLZ,
     GatewayTenantAppListOutputSLZ,
     GatewayUpdateInputSLZ,
@@ -187,12 +188,21 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                 ):
                     raise error_codes.INVALID_ARGUMENT.format(_("Git 信息无效。"), replace=True)
 
+            user_credentials = get_user_credentials_from_request(request)
+            if not git_info:
+                repo_authorization = get_paas_repo_authorization(user_credentials=user_credentials)
+                if not repo_authorization["authorized"]:
+                    raise error_codes.NO_PERMISSION.format(
+                        repo_authorization["message"] or _("用户未关联仓库授权。"),
+                        replace=True,
+                    ).set_data(repo_authorization)
+
             app_code = slz.validated_data["name"]
             ok = create_paas_app(
                 app_code=app_code,
                 language=language,
                 git_info=git_info,
-                user_credentials=get_user_credentials_from_request(request),
+                user_credentials=user_credentials,
             )
             if not ok:
                 raise error_codes.INTERNAL.format(_("创建蓝鲸应用失败。"), replace=True)
@@ -200,7 +210,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             update_app_maintainers(
                 app_code,
                 slz.validated_data["maintainers"],
-                user_credentials=get_user_credentials_from_request(request),
+                user_credentials=user_credentials,
             )
 
             # set the related app code, while the programmable gateway is created before the app syncing gateway
@@ -559,4 +569,21 @@ class GatewayCheckNameAvailableApi(generics.RetrieveAPIView):
             is_available = False
 
         slz = self.get_serializer({"is_available": is_available})
+        return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="检查用户是否已授权代码仓库",
+        responses={status.HTTP_200_OK: GatewayRepoAuthorizationOutputSLZ()},
+        tags=["WebAPI.Gateway"],
+    ),
+)
+class GatewayRepoAuthorizationApi(generics.RetrieveAPIView):
+    serializer_class = GatewayRepoAuthorizationOutputSLZ
+
+    def retrieve(self, request, *args, **kwargs):
+        repo_authorization = get_paas_repo_authorization(user_credentials=get_user_credentials_from_request(request))
+        slz = self.get_serializer(repo_authorization)
         return OKJsonResponse(data=slz.data)
