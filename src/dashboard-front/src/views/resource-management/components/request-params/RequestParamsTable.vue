@@ -59,6 +59,7 @@
               v-else
               v-model="row.name"
               :placeholder="t('字段名')"
+              :disabled="parent?.type === 'array'"
               @input="() => clearInvalidState(row.id)"
             >
               <template

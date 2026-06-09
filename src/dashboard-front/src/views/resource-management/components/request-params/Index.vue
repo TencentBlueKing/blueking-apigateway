@@ -495,6 +495,16 @@ const convertSchemaToBodyRow = (schema: JSONSchema7) => {
     }
     body.push(row);
   }
+  else if (['string', 'number', 'integer', 'boolean'].includes(schema.type as string)) {
+    body.push({
+      id: uniqueId(),
+      name: '',
+      type: schema.type as JSONSchema7TypeName,
+      required: false,
+      default: schema.default as string ?? '',
+      description: schema.description ?? '',
+    });
+  }
   else {
     return null;
   }
