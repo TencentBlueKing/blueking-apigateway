@@ -170,9 +170,17 @@ def get_paas_repo_authorization(
         data,
         headers=gen_gateway_headers(user_credentials),
         timeout=REQ_PAAS_API_TIMEOUT,
-        allow_status_codes={403},
     )
     if not ok:
+        if resp_data.get("status_code") == 403:
+            response_data = resp_data.get("response_data", {})
+            return {
+                "authorized": False,
+                "message": response_data.get("message", ""),
+                "address": response_data.get("address", ""),
+                "auth_docs": response_data.get("auth_docs", ""),
+            }
+
         logger.error(
             "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
             "paasv3",
@@ -188,19 +196,11 @@ def get_paas_repo_authorization(
             f"error={resp_data['error']}"
         )
 
-    if "results" in resp_data:
-        return {
-            "authorized": True,
-            "message": "",
-            "address": "",
-            "auth_docs": "",
-        }
-
     return {
-        "authorized": False,
-        "message": resp_data.get("message", ""),
-        "address": resp_data.get("address", ""),
-        "auth_docs": resp_data.get("auth_docs", ""),
+        "authorized": True,
+        "message": "",
+        "address": "",
+        "auth_docs": "",
     }
 
 

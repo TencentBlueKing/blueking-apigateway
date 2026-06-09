@@ -49,7 +49,6 @@ def test_get_paas_repo_authorization__authorized(mocker):
         {},
         headers={"X-Bkapi-Authorization": "authorization"},
         timeout=REQ_PAAS_API_TIMEOUT,
-        allow_status_codes={403},
     )
 
 
@@ -61,11 +60,15 @@ def test_get_paas_repo_authorization__unauthorized(mocker):
     mocker.patch(
         "apigateway.components.bkpaas.http_get",
         return_value=(
-            True,
+            False,
             {
-                "message": "用户未关联 oauth 授权",
-                "address": "https://git.example.com/oauth/authorize",
-                "auth_docs": "http://docs.example.com/tc_git_oauth",
+                "error": "status_code is 403, not 2xx!",
+                "status_code": 403,
+                "response_data": {
+                    "message": "用户未关联 oauth 授权",
+                    "address": "https://git.example.com/oauth/authorize",
+                    "auth_docs": "http://docs.example.com/tc_git_oauth",
+                },
             },
         ),
     )

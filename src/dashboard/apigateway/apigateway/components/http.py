@@ -55,6 +55,13 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 
+def _get_json_response(resp):
+    try:
+        return resp.json() if resp.content else {}
+    except ValueError:
+        return {}
+
+
 def _http_request(
     method,
     url,
@@ -65,7 +72,6 @@ def _http_request(
     cert=None,
     cookies=None,
     request_session=None,
-    allow_status_codes=None,
     **kwargs,
 ):
     if request_session is None:
@@ -73,7 +79,6 @@ def _http_request(
 
     headers = _enrich_header(headers)
     request_id = headers.get("X-Request-Id")
-    allow_status_codes = allow_status_codes or set()
 
     logger.debug(
         (
@@ -169,7 +174,7 @@ def _http_request(
                 latency,
             )
 
-        if resp.status_code > 299 and resp.status_code not in allow_status_codes:
+        if resp.status_code > 299:
             content = resp.content[:256] if resp.content else ""
             logger.error(
                 "http request fail! %s %s, data: %s, request_id: %s, response.status_code: %s, response.body: %s",
@@ -185,7 +190,9 @@ def _http_request(
                 "error": (
                     f"status_code is {resp.status_code}, not 2xx! "
                     f"{method} {urlparse(url).path}, request_id={request_id}, resp.body={content}"
-                )
+                ),
+                "status_code": resp.status_code,
+                "response_data": _get_json_response(resp),
             }
 
         logger.debug(

@@ -48,7 +48,7 @@ def test_http_request_get(mock_session):
     assert response == {"key": "value"}
 
 
-def test_http_request_allowed_status_code(mock_session):
+def test_http_request_error_with_status_code_and_json_response(mock_session):
     mock_response = requests.Response()
     mock_response.status_code = 403
     mock_response._content = b'{"message": "forbidden", "address": "http://example.com/auth"}'
@@ -60,11 +60,30 @@ def test_http_request_allowed_status_code(mock_session):
         headers={"X-Request-Id": "test-request-id"},
         data={"param": "value"},
         timeout=5,
-        allow_status_codes={403},
     )
 
-    assert success is True
-    assert response == {"message": "forbidden", "address": "http://example.com/auth"}
+    assert success is False
+    assert response["status_code"] == 403
+    assert response["response_data"] == {"message": "forbidden", "address": "http://example.com/auth"}
+
+
+def test_http_request_error_with_html_response(mock_session):
+    mock_response = requests.Response()
+    mock_response.status_code = 403
+    mock_response._content = b"<html>forbidden</html>"
+    mock_session.get.return_value = mock_response
+
+    success, response = _http_request(
+        method="GET",
+        url="http://example.com",
+        headers={"X-Request-Id": "test-request-id"},
+        data={"param": "value"},
+        timeout=5,
+    )
+
+    assert success is False
+    assert response["status_code"] == 403
+    assert response["response_data"] == {}
 
 
 def test_http_request_post(mock_session):
