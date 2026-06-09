@@ -57,12 +57,31 @@ class TestMCPServerHandler:
         assert MCPServerHandler._virtual_app_code(1, "test") == "v_mcp_1_test"
 
     def test_cleanup_all_resource_permissions(self, fake_gateway):
-        G(AppResourcePermission, gateway_id=fake_gateway.id, bk_app_code="v_mcp_1_test")
+        AppResourcePermission.objects.create(
+            gateway=fake_gateway,
+            bk_app_code="v_mcp_1_test",
+            resource_id=1,
+            grant_type=GrantTypeEnum.SYNC.value,
+            expires=NeverExpiresTime.time,
+        )
+        AppResourcePermission.objects.create(
+            gateway=fake_gateway,
+            bk_app_code="v_mcp_2_test",
+            resource_id=1,
+            grant_type=GrantTypeEnum.SYNC.value,
+            expires=NeverExpiresTime.time,
+        )
 
-        MCPServerHandler._cleanup_all_resource_permissions(fake_gateway.id, 1)
+        MCPServerHandler.cleanup_all_resource_permissions(gateway_id=fake_gateway.id, mcp_server_id=1)
 
-        records = AppResourcePermission.objects.filter(gateway_id=fake_gateway.id, bk_app_code="v_mcp_1_test").all()
-        assert len(records) == 0
+        assert not AppResourcePermission.objects.filter(
+            gateway_id=fake_gateway.id,
+            bk_app_code="v_mcp_1_test",
+        ).exists()
+        assert AppResourcePermission.objects.filter(
+            gateway_id=fake_gateway.id,
+            bk_app_code="v_mcp_2_test",
+        ).exists()
 
     def test_disable_servers(self, fake_gateway, fake_stage):
         server1 = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
@@ -95,7 +114,7 @@ class TestMCPServerHandler:
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code=f"v_mcp_{mcp_server.id}_test1", resource_id=1)
         G(AppResourcePermission, gateway=fake_gateway, bk_app_code=f"v_mcp_{mcp_server.id}_test2", resource_id=2)
 
-        with patch.object(MCPServerHandler, "_cleanup_all_resource_permissions") as mock_cleanup:
+        with patch.object(MCPServerHandler, "cleanup_all_resource_permissions") as mock_cleanup:
             MCPServerHandler.sync_permissions(mcp_server.id)
 
             # Should call cleanup with correct parameters
@@ -111,7 +130,7 @@ class TestMCPServerHandler:
         # Create app permission
         G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="test_app")
 
-        with patch.object(MCPServerHandler, "_cleanup_all_resource_permissions") as mock_cleanup:
+        with patch.object(MCPServerHandler, "cleanup_all_resource_permissions") as mock_cleanup:
             MCPServerHandler.sync_permissions(mcp_server.id)
 
             # Should not call cleanup since we return early

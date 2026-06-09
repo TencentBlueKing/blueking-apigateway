@@ -753,7 +753,12 @@ class TestMCPServerRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 400
 
-    def test_destroy_inactive_success(self, request_view, fake_gateway, fake_mcp_server_inactive):
+    def test_destroy_inactive_success(self, mocker, request_view, fake_gateway, fake_mcp_server_inactive):
+        mock_cleanup_all_resource_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.cleanup_all_resource_permissions",
+            return_value=None,
+        )
+
         resp = request_view(
             method="DELETE",
             view_name="mcp_server.retrieve_update_destroy",
@@ -763,6 +768,10 @@ class TestMCPServerRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 204
         assert not MCPServer.objects.filter(id=fake_mcp_server_inactive.id).exists()
+        mock_cleanup_all_resource_permissions.assert_called_once_with(
+            gateway_id=fake_gateway.id,
+            mcp_server_id=fake_mcp_server_inactive.id,
+        )
 
 
 class TestMCPServerUpdateStatusApi:

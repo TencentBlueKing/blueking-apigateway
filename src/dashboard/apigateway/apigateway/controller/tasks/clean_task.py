@@ -27,6 +27,7 @@ from django.utils import timezone
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.apps.monitor.models import AlarmRecord
+from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.core.constants import ResourceVersionSchemaEnum
 from apigateway.core.models import PublishEvent, Release, ReleasedResource, ResourceVersion
@@ -111,6 +112,47 @@ def delete_old_alarm_records():
     count, _ = AlarmRecord.objects.filter(id__in=ids_to_delete).delete()
 
     logger.info("deleted %s alarm records older than %s", count, delete_end_time)
+
+
+@shared_task(ignore_result=True)
+def delete_old_app_resource_permission_records():
+    """Clean expired app resource permission records."""
+    logger.info("begin clean app resource permission old records")
+
+    now = timezone.now()
+
+    # 1. delete the test_app expired records
+    default_test_app_delete_end_time = now - timedelta(days=30) - relativedelta(days=1)
+    default_test_app_permission_ids_to_delete = list(
+        AppResourcePermission.objects.filter(
+            bk_app_code=settings.DEFAULT_TEST_APP["bk_app_code"],
+            expires__lt=default_test_app_delete_end_time,
+        )
+        .order_by("id")
+        .values_list("id", flat=True)[:2000]
+    )
+
+    count, _ = AppResourcePermission.objects.filter(id__in=default_test_app_permission_ids_to_delete).delete()
+    logger.info(
+        "deleted %s default test app resource permission records older than %s",
+        count,
+        default_test_app_delete_end_time,
+    )
+
+    # 2. delete the expired 3 years before records
+    all_app_delete_end_time = now - relativedelta(years=3) - relativedelta(days=1)
+    app_resource_permission_ids_to_delete = list(
+        AppResourcePermission.objects.filter(expires__lt=all_app_delete_end_time)
+        .order_by("id")
+        .values_list("id", flat=True)[:2000]
+    )
+
+    count, _ = AppResourcePermission.objects.filter(id__in=app_resource_permission_ids_to_delete).delete()
+    logger.info(
+        "deleted %s app resource permission records older than %s",
+        count,
+        all_app_delete_end_time,
+    )
 
 
 @shared_task(ignore_result=True)

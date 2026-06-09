@@ -75,6 +75,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apigateway.controller.tasks.clean_task.delete_old_stats_records",
         "schedule": crontab(day_of_week="*", hour=1, minute=25),
     },
+    "apigateway.controller.tasks.clean_task.delete_old_app_resource_permission_records": {
+        "task": "apigateway.controller.tasks.clean_task.delete_old_app_resource_permission_records",
+        "schedule": crontab(day_of_week="*", hour=1, minute=30),
+    },
     "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts": {
         "task": "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts",
         "schedule": crontab(minute="*/10"),
