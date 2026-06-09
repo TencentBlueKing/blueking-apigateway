@@ -354,9 +354,10 @@ watch(filterValue, () => {
   tableData.value = initTableData.value.filter((row: any) => {
     let result = true;
     if (filterValue.value.keyword) {
-      result = !!(row.proxy?.backend?.name?.toLowerCase()?.includes(filterValue.value.keyword)
-        || row.name.toLowerCase()?.includes(filterValue.value.keyword)
-        || row.path.toLowerCase()?.includes(filterValue.value.keyword));
+      const keywordInLowerCase = filterValue.value.keyword.toLowerCase();
+      result = !!(row.proxy?.backend?.name?.toLowerCase()?.includes(keywordInLowerCase)
+        || row.name.toLowerCase()?.includes(keywordInLowerCase)
+        || row.path.toLowerCase()?.includes(keywordInLowerCase));
     }
     if (result && filterValue.value.method && filterValue.value.method.length) {
       result = filterValue.value.method.includes(row.method);
