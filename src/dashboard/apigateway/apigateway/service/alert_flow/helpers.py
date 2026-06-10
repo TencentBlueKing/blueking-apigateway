@@ -71,8 +71,14 @@ class MonitorEvent:
     def alarm_subtype(self) -> str:
         code_name = self.event_dimensions.get("code_name", "")
 
+        status = self.event_dimensions.get("status", -1)
+        try:
+            status_code = int(status)
+        except (TypeError, ValueError):
+            status_code = -1
+
         # in apisix, upstream 500 has no code_name, so we need to convert it to status_code_5xx here
-        if code_name == "" and self.event_dimensions.get("status", -1) >= 500:
+        if code_name == "" and status_code >= 500:
             code_name = "REQUEST_RESOURCE_5xx"
 
         return ERROR_CODE_NAME_TO_ALARM_SUBTYPE.get(code_name, "")
