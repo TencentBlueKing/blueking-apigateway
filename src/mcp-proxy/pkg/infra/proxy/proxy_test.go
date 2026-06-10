@@ -21,9 +21,14 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -513,6 +518,70 @@ var _ = Describe("MCPProxy", func() {
 			Expect(result.Content).To(HaveLen(1))
 			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
 			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal(`"plain text response"`))
+		})
+	})
+
+	Describe("genToolHandler response payload behavior", func() {
+		It("returns envelope response with upstream JSON body", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte(`{"items":[{"id":1,"name":"alpha"}]}`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			text := result.Content[0].(*mcp.TextContent).Text
+			Expect(text).To(MatchJSON(`{
+				"status_code": 200,
+				"request_id": "upstream-req-1",
+				"trace_id": "",
+				"x_request_id": "test-x-request-id",
+				"response_body": {"items":[{"id":1,"name":"alpha"}]}
+			}`))
+		})
+
+		It("returns raw upstream JSON body when raw response is enabled", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte(`{"items":[{"id":1,"name":"alpha"}]}`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, true)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(
+				MatchJSON(`{"items":[{"id":1,"name":"alpha"}]}`),
+			)
+		})
+
+		It("returns non-JSON upstream body as a JSON string in the envelope", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte(`plain text response`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(MatchJSON(`{
+				"status_code": 200,
+				"request_id": "upstream-req-1",
+				"trace_id": "",
+				"x_request_id": "test-x-request-id",
+				"response_body": "plain text response"
+			}`))
 		})
 	})
 
@@ -1078,3 +1147,72 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 })
+
+func callTestToolHandler(upstream string, rawResponseEnabled bool) *mcp.CallToolResult {
+	upstreamURL, err := url.Parse(upstream)
+	Expect(err).NotTo(HaveOccurred())
+
+	sharedTransportOnce = sync.Once{}
+	sharedTransport = nil
+	InitSharedTransport(config.Transport{
+		MaxIdleConns:          10,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeoutSecond: 30,
+	})
+
+	toolConfig := &ToolConfig{
+		Name:   "list_items",
+		Method: http.MethodGet,
+		Host:   upstreamURL.Host,
+		Schema: upstreamURL.Scheme,
+		Url:    "/",
+	}
+	handler := genToolHandler(toolConfig, "test-server", func() bool {
+		return rawResponseEnabled
+	})
+	result, err := handler(testToolCallContext(), &mcp.CallToolRequest{
+		Params: &mcp.CallToolParamsRaw{
+			Name:      "list_items",
+			Arguments: json.RawMessage(`{}`),
+		},
+	})
+	Expect(err).NotTo(HaveOccurred())
+	return result
+}
+
+func testToolCallContext() context.Context {
+	config.G = &config.Config{
+		McpServer: config.McpServer{
+			InnerJwtExpireTime: 5 * time.Minute,
+		},
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	Expect(err).NotTo(HaveOccurred())
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, constant.BkGatewayJWTClaims, &util.JWTClaimsForLazySigning{
+		AppCode:      "test-app",
+		AppVerified:  true,
+		Username:     "test-user",
+		UserVerified: true,
+		Issuer:       "test-issuer",
+		Audience:     []string{"test-audience"},
+	})
+	ctx = context.WithValue(ctx, constant.BkGatewayPrivateKey, privateKeyPEM)
+	ctx = context.WithValue(ctx, constant.MCPServerID, 123)
+	ctx = context.WithValue(ctx, constant.MCPServerName, "test-server")
+	ctx = context.WithValue(ctx, constant.GatewayID, 456)
+	ctx = context.WithValue(ctx, constant.GatewayName, "test-gateway")
+	ctx = context.WithValue(ctx, constant.BkAppCode, "test-app")
+	ctx = context.WithValue(ctx, constant.BkUsername, "test-user")
+	ctx = context.WithValue(ctx, constant.RequestID, "test-request-id")
+	ctx = context.WithValue(ctx, constant.XRequestID, "test-x-request-id")
+	ctx = context.WithValue(ctx, constant.ClientIP, "127.0.0.1")
+	ctx = context.WithValue(ctx, constant.ClientID, "test-client")
+	return ctx
+}
