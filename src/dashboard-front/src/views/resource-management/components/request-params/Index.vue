@@ -46,6 +46,8 @@
       class="request-params-table"
       :immediate="false"
       :show-pagination="false"
+      :resizable="false"
+      table-layout="auto"
       bordered
       :expand-icon="false"
       :expanded-row-keys="expandedRowKeys"
@@ -53,6 +55,7 @@
       <TableColumn
         :title="t('参数名')"
         prop="name"
+        width="140"
       >
         <template #default="{ row }">
           <div
@@ -211,7 +214,6 @@
       </TableColumn>
       <TableColumn
         :title="t('备注')"
-        width="260"
       >
         <template #default="{ row }">
           <div
@@ -851,14 +853,6 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
-
-// 默认单元格高度和内边距
-
-:deep(.t-table.t-size-m td) {
-  height: 42px;
-  padding: 0;
-}
-
 .request-params-table-wrapper {
   padding-bottom: 22px;
 }
@@ -939,9 +933,10 @@ defineExpose({
 .request-params-table {
 
   .readonly-value-wrapper {
-    padding-left: 16px;
     font-size: 12px;
     cursor: auto;
+    word-break: break-all;
+    white-space: normal;
   }
 }
 
@@ -972,6 +967,12 @@ defineExpose({
 
     .t-table__body .t-table__expanded-row .t-table__expanded-row-inner .t-table__row-full-element {
       padding: 0;
+    }
+
+    td {
+      height: auto;
+      white-space: normal;
+      word-break: break-all;
     }
   }
 }
