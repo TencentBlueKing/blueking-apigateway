@@ -23,46 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func buildToolResponseEnvelope(statusCode int, requestID, traceID, xRequestID string, responseBody any) map[string]any {
-	return map[string]any{
-		toolResponseStatusCodeField: statusCode,
-		toolResponseRequestIDField:  requestID,
-		toolResponseTraceIDField:    traceID,
-		toolResponseXRequestIDField: xRequestID,
-		toolResponseBodyField:       responseBody,
-	}
-}
-
 var _ = Describe("Helper Functions", func() {
-	Describe("buildToolResponseEnvelope", func() {
-		It("should include all fields when body is provided", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", "body-content")
-
-			Expect(envelope[toolResponseStatusCodeField]).To(Equal(200))
-			Expect(envelope[toolResponseRequestIDField]).To(Equal("req-1"))
-			Expect(envelope[toolResponseTraceIDField]).To(Equal("trace-1"))
-			Expect(envelope[toolResponseXRequestIDField]).To(Equal("x-req-1"))
-			Expect(envelope[toolResponseBodyField]).To(Equal("body-content"))
-		})
-
-		It("should include response_body as nil when body is nil", func() {
-			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", "x-req-1", nil)
-
-			Expect(envelope).To(HaveLen(5))
-			Expect(envelope).To(HaveKey(toolResponseBodyField))
-			Expect(envelope[toolResponseBodyField]).To(BeNil())
-		})
-
-		It("should handle zero status code", func() {
-			envelope := buildToolResponseEnvelope(0, "", "", "", nil)
-
-			Expect(envelope[toolResponseStatusCodeField]).To(Equal(0))
-			Expect(envelope[toolResponseRequestIDField]).To(Equal(""))
-			Expect(envelope[toolResponseTraceIDField]).To(Equal(""))
-			Expect(envelope[toolResponseXRequestIDField]).To(Equal(""))
-		})
-	})
-
 	Describe("buildToolInputSchema", func() {
 		It("should return default schema for nil ParamSchema", func() {
 			toolConfig := &ToolConfig{

@@ -58,14 +58,6 @@ import (
 	"mcp_proxy/pkg/util"
 )
 
-const (
-	toolResponseStatusCodeField = "status_code"
-	toolResponseRequestIDField  = "request_id"
-	toolResponseTraceIDField    = "trace_id"
-	toolResponseXRequestIDField = "x_request_id"
-	toolResponseBodyField       = "response_body"
-)
-
 // sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
 // 通过 InitSharedTransport 从配置初始化，参数可在 config.yaml 的 mcpServer.transport 段调整。
 var (
@@ -1461,7 +1453,7 @@ func extractUpstreamRequestID(result *mcp.CallToolResult) string {
 
 	logging.GetLogger().Debug("extractUpstreamRequestID: envelope keys", zap.Any("keys", getMapKeys(envelope)))
 
-	if requestID, ok := envelope[toolResponseRequestIDField].(string); ok {
+	if requestID, ok := envelope["request_id"].(string); ok {
 		logging.GetLogger().Debug(
 			"extractUpstreamRequestID: found request_id",
 			zap.String("request_id", requestID),

@@ -448,26 +448,18 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
-	Describe("buildToolResponseEnvelope", func() {
-		It("should include response_body as nil when body is nil", func() {
-			envelope := buildToolResponseEnvelope(204, "req-1", "trace-1", "x-req-1", nil)
-
-			Expect(envelope).To(Equal(map[string]any{
-				toolResponseStatusCodeField: 204,
-				toolResponseRequestIDField:  "req-1",
-				toolResponseTraceIDField:    "trace-1",
-				toolResponseXRequestIDField: "x-req-1",
-				toolResponseBodyField:       nil,
-			}))
-		})
-	})
-
 	Describe("buildToolResult", func() {
 		It("should populate text content for envelope with object body", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", map[string]any{
-				"timezone": "Asia/Shanghai",
-				"datetime": "2026-03-19T15:04:05+08:00",
-			})
+			envelope := map[string]any{
+				"status_code":  200,
+				"request_id":   "req-1",
+				"trace_id":     "trace-1",
+				"x_request_id": "x-req-1",
+				"response_body": map[string]any{
+					"timezone": "Asia/Shanghai",
+					"datetime": "2026-03-19T15:04:05+08:00",
+				},
+			}
 			result := buildToolResult(envelope)
 
 			Expect(result).NotTo(BeNil())
@@ -480,7 +472,13 @@ var _ = Describe("MCPProxy", func() {
 		})
 
 		It("should populate text content for envelope with array body", func() {
-			envelope := buildToolResponseEnvelope(200, "req-1", "trace-1", "x-req-1", []any{"a", "b"})
+			envelope := map[string]any{
+				"status_code":   200,
+				"request_id":    "req-1",
+				"trace_id":      "trace-1",
+				"x_request_id":  "x-req-1",
+				"response_body": []any{"a", "b"},
+			}
 			result := buildToolResult(envelope)
 
 			Expect(result).NotTo(BeNil())
