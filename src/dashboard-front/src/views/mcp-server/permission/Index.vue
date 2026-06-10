@@ -70,6 +70,7 @@
                 :placeholder="t('请选择 MCP Server')"
                 :scroll-loading="scrollLoading"
                 :remote-method="handleMcpServerSearch"
+                @toggle="handleMcpToggle"
                 @scroll-end="handleMcpServerScrollEnd"
               >
                 <BkOption
@@ -131,6 +132,7 @@
           :columns="tableColumns"
           :no-search-fields="['state']"
           :table-empty-type="tableEmptyType"
+          @filter-icon-click="handleFilterIconClick"
           @filter-change="handleFilterChange"
           @sort-change="handleSortChange"
           @clear-filter="handleClearFilter"
@@ -302,6 +304,7 @@ const curAction = ref<IPermissionApprovalAction>({
   comment: '',
 });
 
+let filterTimer: number | null = null;
 const filterFields = ['bk_app_code', 'mcp_server_id', 'grant_type'] as string[];
 const rules = {
   comment: [
@@ -401,10 +404,11 @@ const tableColumns = computed(() => {
       colKey: 'mcp_server_id',
       fixed: 'left' as const,
       ellipsis: true,
+      className: 'need-filter-icon-handler',
       filter: {
         type: 'single',
         showConfirmAndReset: true,
-        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper mcp-server-filter-popup' },
         list: mcpList.value.map((item: IMCPServerListOutput) => ({
           label: item.name,
           value: item.id,
@@ -578,7 +582,14 @@ const getTableData = async (params: {
   };
 };
 
-const getMcpList = async () => {
+const getMcpList = async (customLimit?: number) => {
+  // 如果是自定义limit, 重置分页参数
+  if (customLimit) {
+    mcpServerPagination.value = {
+      ...defaultPagination.value,
+      limit: customLimit,
+    };
+  }
   const { hasNoMore, current, limit } = mcpServerPagination.value;
   scrollLoading.value = true;
 
@@ -661,6 +672,26 @@ const handleTabChange = (name: string) => {
   getApplicant();
 };
 
+const handleFilterIconClick = () => {
+  mcpServerName.value = '';
+  if (filterTimer) clearTimeout(filterTimer);
+
+  // 因为popup执行机制是异步的，所以延迟执行, 这里适配表格filter无法滚动加载和搜索未抛出事件
+  filterTimer = setTimeout(() => {
+    const filterPopup = document.querySelector('.mcp-server-filter-popup');
+
+    if (filterPopup) {
+      const MCP_FILTER_ALL_LIMIT = 10000;
+      const { count } = mcpServerPagination.value;
+      const totalCount = Math.max(count, MCP_FILTER_ALL_LIMIT);
+
+      getMcpList(totalCount);
+    }
+
+    filterTimer = null;
+  }, 200);
+};
+
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   filterData.value = { ...filterItem };
 };
@@ -677,7 +708,14 @@ const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
   getList();
 };
 
-const resetSearch = () => {
+const handleMcpToggle = (value: boolean) => {
+  if (value) {
+    mcpServerName.value = '';
+    getMcpList(10);
+  }
+};
+
+const handleClearFilter = () => {
   filterData.value = {
     ...filterData.value,
     bk_app_code: '',
@@ -685,10 +723,6 @@ const resetSearch = () => {
     order_by: '',
     mcp_server_id: '',
   };
-};
-
-const handleClearFilter = () => {
-  resetSearch();
 };
 
 const handleApprove = (row: TableRowData, status: string) => {
@@ -774,6 +808,16 @@ watch(
 
   .tab {
     padding-left: 24px;
+
+    :deep(.bk-tab-header-nav) {
+
+       .bk-tab-header-item {
+
+        &:nth-of-type(2) {
+          padding-left: 4px;
+        }
+      }
+    }
   }
 
   .main {

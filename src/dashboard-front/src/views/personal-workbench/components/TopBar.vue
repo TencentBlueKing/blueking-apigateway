@@ -29,7 +29,7 @@
       />
       <BkTabPanel
         name="mcp"
-        label="MCP server"
+        label="MCP Server"
       />
     </BkTab>
   </div>

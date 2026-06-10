@@ -44,7 +44,7 @@
         <div class="flex flex-col gap-4px">
           <AgUserDisplayName
             :is-enable-display-name="isEnableDisplayName"
-            class="flex flex-col flex-shrink-0 gap-4px mb-4px max-w-800px"
+            class="flex flex-col flex-shrink-0 gap-4px max-w-800px"
           >
             <template #customDisplayName>
               <BkTag
