@@ -41,6 +41,20 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(payload.isJSON).To(BeTrue())
 			Expect(payload.truncatedPreview).To(Equal(`{"items":[...(truncated)`))
 		})
+
+		It("keeps raw response size and preview for audit metadata", func() {
+			payload := newToolResponsePayload(
+				200,
+				"req-1",
+				"application/json",
+				[]byte(`{"hello":"world"}`),
+				8,
+			)
+
+			Expect(payload.upstreamRequestID).To(Equal("req-1"))
+			Expect(int64(len(payload.rawBody))).To(Equal(int64(len(`{"hello":"world"}`))))
+			Expect(payload.truncatedPreview).To(Equal(`{"hello"...(truncated)`))
+		})
 	})
 
 	Describe("marshalEnvelope", func() {

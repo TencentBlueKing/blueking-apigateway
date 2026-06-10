@@ -1025,6 +1025,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				return nil
 			},
 		)
+		var responsePayload *toolResponsePayload
 		operation := &runtime.ClientOperation{
 			ID:          toolApiConfig.Name,
 			Method:      toolApiConfig.Method,
@@ -1047,7 +1048,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						}
 					}
 
-					responsePayload := newToolResponsePayload(
+					responsePayload = newToolResponsePayload(
 						response.Code(),
 						response.GetHeader(constant.BkGatewayRequestIDKey),
 						response.GetHeader("Content-Type"),
@@ -1100,13 +1101,19 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start), nil
 		}
 		duration := time.Since(start)
-		responseBody := util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())
 		// 设置 audit log 变量，供 defer 中的 "call tool complete" 使用
-		auditResponse = responseBody
-		auditResponseSize = int64(len(responseBody))
+		if responsePayload != nil {
+			auditResponse = responsePayload.truncatedPreview
+			auditResponseSize = int64(len(responsePayload.rawBody))
+			auditUpstreamReqID = responsePayload.upstreamRequestID
+		} else {
+			responseBody := util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())
+			auditResponse = responseBody
+			auditResponseSize = int64(len(responseBody))
+			auditUpstreamReqID = extractUpstreamRequestID(buildToolResult(submit))
+		}
 		auditLatency = duration
 		auditStatus = "success"
-		auditUpstreamReqID = extractUpstreamRequestID(buildToolResult(submit))
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
 		responseBytes, ok := submit.(json.RawMessage)
 		if !ok {
