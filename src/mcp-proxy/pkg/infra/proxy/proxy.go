@@ -1123,15 +1123,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		// Reader contract guarantees submit is json.RawMessage on success; see ClientResponseReaderFunc above.
 		responseBytes, ok := submit.(json.RawMessage)
 		if !ok {
-			// Defensive: future reader changes that break the contract should be loud,
-			// not crash; serialize the unexpected payload and continue.
-			logging.GetLogger().Error("unexpected non-RawMessage submit result",
-				zap.String("type", fmt.Sprintf("%T", submit)))
-			raw, marshalErr := json.Marshal(submit)
-			if marshalErr != nil {
-				raw = []byte("null")
-			}
-			return buildToolResultFromJSONBytes(raw), nil
+			return nil, fmt.Errorf("unexpected submit result type %T", submit)
 		}
 		return buildToolResultFromJSONBytes(responseBytes), nil
 	}

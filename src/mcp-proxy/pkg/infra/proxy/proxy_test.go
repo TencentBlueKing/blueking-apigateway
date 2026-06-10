@@ -490,6 +490,21 @@ var _ = Describe("MCPProxy", func() {
 			)
 		})
 
+		It("returns raw non-JSON upstream body as a JSON string when raw response is enabled", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte("plain \"quoted\"\nline"))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, true)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal(`"plain \"quoted\"\nline"`))
+		})
+
 		It("returns non-JSON upstream body as a JSON string in the envelope", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "text/plain")
@@ -592,6 +607,23 @@ var _ = Describe("MCPProxy", func() {
 			}
 			Expect(json.Unmarshal([]byte(payload), &envelope)).To(Succeed())
 			Expect(envelope.ResponseBody).To(Equal(`<html><body>500 Internal Server Error</body></html>`))
+		})
+
+		It("surfaces raw non-JSON error body when raw response is enabled", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("upstream boom"))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, true)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(ContainSubstring(`"upstream boom"`))
 		})
 	})
 

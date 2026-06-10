@@ -39,17 +39,17 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(payload.upstreamRequestID).To(Equal("req-1"))
 			Expect(payload.contentType).To(Equal("application/json"))
 			Expect(payload.rawBody).To(Equal([]byte(`{"items":[{"id":1}]}`)))
-			Expect(payload.isJSON).To(BeTrue())
+			Expect(payload.isDeclaredJSON).To(BeTrue())
 		})
 
-		It("does not classify invalid declared JSON as JSON", func() {
+		It("classifies declared JSON by Content-Type without validating the body", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
-			Expect(payload.isJSON).To(BeFalse())
+			Expect(payload.isDeclaredJSON).To(BeTrue())
 		})
 
 		It("treats non-JSON content type as non-JSON even when body is valid JSON", func() {
 			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte(`{"items":[]}`))
-			Expect(payload.isJSON).To(BeFalse())
+			Expect(payload.isDeclaredJSON).To(BeFalse())
 		})
 	})
 
@@ -202,6 +202,15 @@ var _ = Describe("toolResponsePayload", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(data)).To(MatchJSON(`{"items":[1]}`))
+		})
+
+		It("returns non-JSON response body as a JSON string", func() {
+			body := []byte("plain \"quoted\"\nline")
+			payload := newToolResponsePayload(200, "req-1", "text/plain; charset=utf-8", body)
+			data, err := payload.marshalRawResponse()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(data)).To(Equal(`"plain \"quoted\"\nline"`))
 		})
 
 		It("returns an error for invalid non-empty bodies declared as JSON", func() {
