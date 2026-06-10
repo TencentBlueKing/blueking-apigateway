@@ -14,5 +14,5 @@ assert {
   res.status: eq 400
   res.body["code"]: eq 1640001
   res.body["code_name"]: eq INVALID_ARGS
-  res.body["message"]: contains "No `Authorization` header found in the request"
+  res.body["message"]: contains "No \`Authorization\` header found in the request"
 }
