@@ -600,6 +600,23 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
+	Describe("serializeToolCallResponse", func() {
+		It("uses payload preview and size when payload is available", func() {
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"items":[1]}`), 8)
+
+			response, responseSize, upstreamRequestID := serializeToolCallResponse(
+				&mcp.CallToolResult{},
+				payload,
+				false,
+				config.LogTruncate{APILogResponseSize: 4},
+			)
+
+			Expect(response).To(Equal(payload.truncatedPreview))
+			Expect(responseSize).To(Equal(int64(len(payload.rawBody))))
+			Expect(upstreamRequestID).To(Equal("req-1"))
+		})
+	})
+
 	Describe("buildLoggingTransport", func() {
 		It("should populate gateway name from context", func() {
 			ctx := context.WithValue(context.Background(), constant.GatewayName, "test-gateway")

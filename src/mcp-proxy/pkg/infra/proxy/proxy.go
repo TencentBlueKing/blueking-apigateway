@@ -875,6 +875,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		}
 
 		// MCP protocol-level logging and metrics
+		var responsePayload *toolResponsePayload
 		defer func() {
 			if r := recover(); r != nil {
 				logging.GetAPILogger().Error("panic in tool handler",
@@ -887,8 +888,17 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 					err = fmt.Errorf("panic: %v", r)
 				}
 			}
-			recordToolCallMetrics(ctx, serverName, toolApiConfig.Name, req, result, err, start)
-			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, err, start)
+			recordToolCallMetrics(
+				ctx,
+				serverName,
+				toolApiConfig.Name,
+				req,
+				result,
+				responsePayload,
+				err,
+				start,
+			)
+			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, responsePayload, err, start)
 		}()
 
 		// Prepare audit log with request context
@@ -1025,7 +1035,6 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				return nil
 			},
 		)
-		var responsePayload *toolResponsePayload
 		operation := &runtime.ClientOperation{
 			ID:          toolApiConfig.Name,
 			Method:      toolApiConfig.Method,
@@ -1132,6 +1141,7 @@ func recordToolCallMetrics(
 	serverName, toolName string,
 	req *mcp.CallToolRequest,
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1185,8 +1195,10 @@ func recordToolCallMetrics(
 			}
 		}
 
-		// Calculate response body size from CallToolResult
-		if result != nil {
+		// Calculate response body size from raw payload when available.
+		if payload != nil {
+			responseBodySize = int64(len(payload.rawBody))
+		} else if result != nil {
 			if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 				responseBodySize = int64(len(resultBytes))
 			}
@@ -1208,6 +1220,7 @@ func logToolCall(
 	toolName string,
 	req *mcp.CallToolRequest,
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1222,7 +1235,12 @@ func logToolCall(
 
 	// Serialize request params and response
 	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
-	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(result, hasError, logTruncate)
+	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(
+		result,
+		payload,
+		hasError,
+		logTruncate,
+	)
 
 	// Retrieve extra info from context
 	ctxInfo := extractToolCallContextInfo(ctx, req)
@@ -1308,9 +1326,13 @@ func serializeToolCallRequest(req *mcp.CallToolRequest, logTruncate config.LogTr
 // serializeToolCallResponse serializes the tool call response result.
 func serializeToolCallResponse(
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	hasError bool,
 	logTruncate config.LogTruncate,
 ) (string, int64, string) {
+	if payload != nil {
+		return payload.truncatedPreview, int64(len(payload.rawBody)), payload.upstreamRequestID
+	}
 	if result == nil {
 		return "", 0, ""
 	}
