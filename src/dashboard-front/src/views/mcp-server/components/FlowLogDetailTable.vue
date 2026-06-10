@@ -19,7 +19,7 @@
       class="flow-log-detail-table"
       row-key="tempUniqueId"
       show-settings
-      resizable
+      show-cell-empty-content
       height="auto"
       max-height="none"
       :immediate="false"
@@ -105,13 +105,6 @@
             </div>
           </template>
         </div>
-      </template>
-      <!-- 空单元格占位 -->
-      <template #cellEmptyContent="{ col }">
-        <template v-if="!col.fixed">
-          <span class="empty-placeholder">--</span>
-        </template>
-        <template v-else />
       </template>
     </AgTable>
 

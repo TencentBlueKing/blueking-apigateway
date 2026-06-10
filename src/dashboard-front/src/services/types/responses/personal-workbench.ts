@@ -16,19 +16,13 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
+import type { IResource } from '@/types/permission';
+
 // 个人工作台 - 下拉筛选选项列表返回参数
 export interface IPersonalWorkbenchFilterOptionResponse {
   id: number
   name: string
   title?: string
-}
-
-// 个人工作台 - API 网关资源
-export interface IResources {
-  id: number
-  method: string
-  name: string
-  path: string
 }
 
 // 个人工作台 —> MCP Server 列表/ gateway 列表响应参数
@@ -57,6 +51,6 @@ export interface IPersonalWorkbenchListResponse {
     gateway_name: string
     gateway_id: number
   }
-  resources?: IResources[]
+  resources?: IResource[]
   approvers?: string[]
 }
