@@ -32,6 +32,7 @@
       v-model:selected-row-keys="selectedRowKeys"
       v-model:settings="settings"
       show-settings
+      show-cell-empty-content
       :show-selection="isShowSelection"
       :table-empty-type="tableEmptyType"
       :expand-icon="false"
@@ -49,14 +50,8 @@
       @selection-change="handleSelectionChange"
       @clear-filter="handleClearFilter"
     >
-      <template #cellEmptyContent="{ col }">
-        <template v-if="!col.fixed">
-          <span class="empty-placeholder">--</span>
-        </template>
-        <template v-else />
-      </template>
       <template #expandedRow="{row}">
-        <BkLoading :loading="row?.isLoading">
+        <BkLoading :loading="lastExpandRow?.isLoading">
           <AgTable
             v-model:table-data="row.resources"
             v-model:selected-row-keys="curPermission.resource_ids"
@@ -103,10 +98,11 @@
 
 <script setup lang="tsx">
 import { Button, Loading, Message, Popover } from 'bkui-vue';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, debounce } from 'lodash-es';
 import { t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableEmptyType, ITableMethod } from '@/types/common';
+import type { IResource } from '@/types/permission';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IApplyStatus,
@@ -120,7 +116,6 @@ import type {
 import type {
   IPersonalWorkbenchFilterOptionResponse,
   IPersonalWorkbenchListResponse,
-  IResources,
 } from '@/services/types/responses/personal-workbench.ts';
 import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
@@ -641,7 +636,7 @@ const handleGatewayApproveReject = async () => {
     ) {
       params = Object.assign(params, {
         status: 'partial_approved',
-        part_resource_ids: { [id]: selection?.map((item: IResources) => item.id) },
+        part_resource_ids: { [id]: selection?.map((item: IResource) => item.id) },
       });
     }
     let gatewayIdList: number[] = [curAction.value.gateway_id!];
@@ -727,11 +722,12 @@ const handleRowClick = async ({ e, row }: {
 
   const newIsExpand = !row.isExpand;
 
-  row.isLoading = true;
+  lastExpandRow.value = Object.assign(lastExpandRow.value ?? {}, { isLoading: true });
 
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
     Object.assign(lastExpandRow.value, {
+      isLoading: false,
       isExpand: false,
       selection: [],
       resource_ids: [],
@@ -746,7 +742,7 @@ const handleRowClick = async ({ e, row }: {
   // 初始化选中数据
   if (newIsExpand) {
     row.selection ??= [];
-    row.resource_ids = row.selection.map((item: IResources) => item.id) as number[];
+    row.resource_ids = row.selection.map((item: IResource) => item.id) as number[];
   }
   else {
     Object.assign(row, {
@@ -756,7 +752,9 @@ const handleRowClick = async ({ e, row }: {
   }
 
   setTimeout(() => {
-    row.isLoading = false;
+    if (lastExpandRow.value) {
+      lastExpandRow.value.isLoading = false;
+    }
   }, 300);
 };
 
@@ -781,7 +779,7 @@ const handleChildSelectionChange = (
     selectionsRowKeys: (string | number)[]
   }) => {
   // 保存当前行选中项
-  row.selection = selections as IResources[];
+  row.selection = selections as IResource[];
   row.resource_ids = selectionsRowKeys;
 
   // 是否全选
@@ -915,9 +913,14 @@ const getRowClass = ({ row }: { row: TableRowData }) => {
   return '';
 };
 
+// 搜索McpServer列表
+const debounceSearch = debounce(() => {
+  getList();
+}, 200);
+
 watch(() => filterData, () => {
   tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';
-  getList();
+  debounceSearch();
 }, { deep: true });
 
 watch(isGateway, () => {

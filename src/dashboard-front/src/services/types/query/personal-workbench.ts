@@ -16,7 +16,8 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { IPersonalWorkbenchListResponse, IResources } from '@/services/types/responses/personal-workbench.ts';
+import type { IResource } from '@/types/permission';
+import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
 
 // 个人工作台 —> MCP Server 列表/ gateway tab选项
 export type ITabKey = 'gateway' | 'mcp';
@@ -34,7 +35,7 @@ export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
   isLoading?: boolean
   gateway_id?: number
   resource_ids: number[]
-  selection?: IResources[]
+  selection?: IResource[]
 };
 
 // 个人工作台 —> MCP Server 列表/ gateway 列表请求参数
@@ -72,7 +73,7 @@ export interface IPermission {
   bk_app_code: string
   grant_dimension: string
   isSelectAll: boolean
-  resources?: IResources[]
-  selection?: IResources[]
+  resources?: IResource[]
+  selection?: IResource[]
   resource_ids: number[]
 }
