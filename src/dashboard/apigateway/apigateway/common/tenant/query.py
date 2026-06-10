@@ -24,7 +24,7 @@ from .constants import (
 )
 
 
-def gateway_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+def gateway_filter_by_maintainer_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
     """网关管理员维度查看网关列表，运营租户能看到全租户网关 + 本租户网关，其他租户只能看到本租户网关
 
     Args:
@@ -60,8 +60,8 @@ def gateway_filter_by_app_tenant_id(queryset: QuerySet, app_tenant_id: str) -> Q
     )
 
 
-def gateway_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
-    """按用户租户 ID 过滤通过 gateway 外键关联的 QuerySet（如 AppPermissionApply、AppPermissionRecord）
+def gateway_related_filter_by_maintainer_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """按维护者租户 ID 过滤通过 gateway 外键关联的 QuerySet（如 AppPermissionApply、AppPermissionRecord）
 
     Args:
         queryset (QuerySet): 含 gateway 外键的 queryset
@@ -78,8 +78,24 @@ def gateway_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id:
     return queryset.filter(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
 
 
-def mcp_server_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
-    """按用户租户 ID 过滤通过 mcp_server__gateway 外键关联的 QuerySet（如 MCPServerAppPermissionApply）
+def gateway_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """按用户租户 ID 过滤通过 gateway 外键关联的 QuerySet（如 AppPermissionApply、AppPermissionRecord）
+
+    Args:
+        queryset (QuerySet): 含 gateway 外键的 queryset
+        user_tenant_id (str): user tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
+    return queryset.filter(
+        Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+        | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
+    )
+
+
+def mcp_server_related_filter_by_maintainer_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """按维护者租户 ID 过滤通过 mcp_server__gateway 外键关联的 QuerySet（如 MCPServerAppPermissionApply）
 
     Args:
         queryset (QuerySet): 含 mcp_server__gateway 外键路径的 queryset
@@ -102,10 +118,29 @@ def mcp_server_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_
     )
 
 
+def mcp_server_related_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """按用户租户 ID 过滤通过 mcp_server__gateway 外键关联的 QuerySet（如 MCPServerAppPermissionApply）
+
+    Args:
+        queryset (QuerySet): 含 mcp_server__gateway 外键路径的 queryset
+        user_tenant_id (str): user tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
+    return queryset.filter(
+        Q(mcp_server__gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+        | Q(
+            mcp_server__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+            mcp_server__gateway__tenant_id=user_tenant_id,
+        )
+    )
+
+
 def gateway_mcp_server_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
     """按用户租户 ID 过滤 MCPServer QuerySet（通过 gateway 关联）
 
-    运营租户能看到全租户网关 + 本租户网关的 MCP Server，其他租户只能看到本租户网关的 MCP Server。
+    用户能看到全租户网关 + 本租户网关的 MCP Server。
 
     Args:
         queryset (QuerySet): mcp_server queryset
@@ -114,9 +149,7 @@ def gateway_mcp_server_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_
     Returns:
         QuerySet: filtered queryset
     """
-    if user_tenant_id == TENANT_ID_OPERATION:
-        return queryset.filter(
-            Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
-            | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
-        )
-    return queryset.filter(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
+    return queryset.filter(
+        Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+        | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
+    )
