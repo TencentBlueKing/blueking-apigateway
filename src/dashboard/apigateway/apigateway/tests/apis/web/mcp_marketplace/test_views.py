@@ -28,7 +28,9 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory, MCPServerExtend
+from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Stage
 
 pytestmark = pytest.mark.django_db
 
@@ -761,6 +763,77 @@ class TestMCPMarketplaceCategoryListApi:
         assert result["data"][1]["display_name"] == "运维工具"
         assert result["data"][1]["sort_order"] == 3
         assert result["data"][1]["mcp_server_count"] == 0  # 新增统计字段
+
+    def test_list_categories_includes_global_and_own_tenant_mcp_servers(
+        self,
+        settings,
+        request_view,
+        fake_categories,
+        fake_public_mcp_server,
+    ):
+        """测试非运营租户分类统计包含全租户网关和本租户网关的 MCPServer"""
+        settings.ENABLE_MULTI_TENANT_MODE = True
+        user_tenant_id = "tenant_123"
+
+        request_user = type(
+            "User",
+            (),
+            {
+                "tenant_id": user_tenant_id,
+                "is_active": True,
+                "is_authenticated": True,
+            },
+        )()
+
+        fake_public_mcp_server.gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_public_mcp_server.gateway.tenant_id = "system"
+        fake_public_mcp_server.gateway.save()
+        fake_public_mcp_server.categories.add(fake_categories["official"])
+
+        own_gateway = G(
+            Gateway,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id=user_tenant_id,
+        )
+        own_stage = G(Stage, gateway=own_gateway, status=StageStatusEnum.ACTIVE.value)
+        own_tenant_server = G(
+            MCPServer,
+            gateway=own_gateway,
+            stage=own_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        own_tenant_server.categories.add(fake_categories["official"])
+
+        other_gateway = G(
+            Gateway,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="other_tenant",
+        )
+        other_stage = G(Stage, gateway=other_gateway, status=StageStatusEnum.ACTIVE.value)
+        other_tenant_server = G(
+            MCPServer,
+            gateway=other_gateway,
+            stage=other_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        other_tenant_server.categories.add(fake_categories["official"])
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+            user=request_user,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        official_category = next(cat for cat in result["data"] if cat["name"] == OFFICIAL_MCP_CATEGORY_NAME)
+        assert official_category["mcp_server_count"] == 2
 
     def test_list_categories_with_mcp_server_count(self, request_view, fake_categories, fake_public_mcp_server):
         """测试分类列表接口返回正确的 MCPServer 统计数据"""
