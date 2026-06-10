@@ -983,7 +983,7 @@ onBeforeUnmount(() => {
     .table-header {
       position: sticky;
       top: 88px;
-      z-index: 999;
+      z-index: 990;
       display: flex;
       width: 100%;
       padding: 0 16px 10px;

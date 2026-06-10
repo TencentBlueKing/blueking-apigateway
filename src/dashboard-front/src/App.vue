@@ -72,7 +72,7 @@
             <div class="header-aside-wrap">
               <LanguageToggle />
               <ProductInfo />
-              <UserInfo v-if="isBkUserNameConfigured" />
+              <UserInfoV2 v-if="isBkUserNameConfigured" />
             </div>
           </div>
         </template>
@@ -87,7 +87,7 @@
 <script lang="ts" setup>
 import LanguageToggle from '@/components/language-toggle/Index.vue';
 import ProductInfo from '@/components/product-info/Index.vue';
-import UserInfo from '@/components/user-info/Index.vue';
+import UserInfoV2 from '@/components/user-info-v2/Index.vue';
 import LogoWithoutTitle from '@/images/APIgateway-logo.png';
 import En from '../node_modules/bkui-vue/dist/locale/en.esm.js';
 import ZhCn from '../node_modules/bkui-vue/dist/locale/zh-cn.esm.js';
@@ -338,6 +338,11 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
   background: #f5f7fb;
 
   .navigation-content {
+
+    :deep(.bk-navigation-header) {
+      z-index: 999;
+      overflow: visible;
+    }
 
     :deep(.bk-navigation-wrapper) {
 
