@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 
@@ -71,6 +71,105 @@ class TestGatewayListCreateApi:
         assert auth_config["allow_delete_sensitive_params"] is False
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
+
+    def test_create_programmable_gateway_without_repo_authorization(
+        self,
+        request_view,
+        faker,
+        mocker,
+    ):
+        name = f"pgw-{faker.pyint(min_value=10000, max_value=99999)}"
+        data = {
+            "name": name,
+            "description": faker.pystr(),
+            "maintainers": ["admin"],
+            "is_public": False,
+            "tenant_mode": "single",
+            "tenant_id": "default",
+            "kind": GatewayKindEnum.PROGRAMMABLE.value,
+            "extra_info": {"language": "python"},
+        }
+        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "te")
+        mocker.patch("apigateway.apis.web.gateway.validators.is_app_code_occupied", return_value=False)
+        mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app")
+        mocker.patch(
+            "apigateway.apis.web.gateway.views.get_paas_repo_authorization",
+            return_value={
+                "authorized": False,
+                "message": "用户未关联 oauth 授权",
+                "address": "https://git.example.com/oauth/authorize",
+                "auth_docs": "http://docs.example.com/tc_git_oauth",
+            },
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 403
+        assert result["error"]["message"] == "用户未关联 oauth 授权"
+        assert result["error"]["data"]["address"] == "https://git.example.com/oauth/authorize"
+        assert not Gateway.objects.filter(name=name).exists()
+        mock_create_paas_app.assert_not_called()
+
+    def test_create_programmable_gateway_with_repo_authorization(
+        self,
+        request_view,
+        faker,
+        mocker,
+        default_data_plane,
+    ):
+        name = f"pgw-{faker.pyint(min_value=10000, max_value=99999)}"
+        data = {
+            "name": name,
+            "description": faker.pystr(),
+            "maintainers": ["admin"],
+            "is_public": False,
+            "tenant_mode": "single",
+            "tenant_id": "default",
+            "kind": GatewayKindEnum.PROGRAMMABLE.value,
+            "extra_info": {
+                "language": "python",
+                "repository": f"https://git.example.com/bkapps/{name}.git",
+            },
+        }
+        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "te")
+        mocker.patch("apigateway.apis.web.gateway.validators.is_app_code_occupied", return_value=False)
+        mock_repo_authorization = mocker.patch(
+            "apigateway.apis.web.gateway.views.get_paas_repo_authorization",
+            return_value={
+                "authorized": True,
+                "message": "",
+                "address": "",
+                "auth_docs": "",
+            },
+        )
+        mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app", return_value=True)
+        mock_update_app_maintainers = mocker.patch("apigateway.apis.web.gateway.views.update_app_maintainers")
+
+        resp = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data=data,
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        gateway = Gateway.objects.get(name=name)
+        assert result["data"]["id"] == gateway.id
+        assert gateway.kind == GatewayKindEnum.PROGRAMMABLE.value
+        assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
+        mock_repo_authorization.assert_called_once_with(user_credentials=ANY)
+        mock_create_paas_app.assert_called_once_with(
+            app_code=name,
+            language="python",
+            git_info=None,
+            user_credentials=ANY,
+        )
+        mock_update_app_maintainers.assert_called_once_with(name, ["admin"], user_credentials=ANY)
 
     @pytest.mark.parametrize(
         "data, expected_status_code, expected_error",
@@ -269,3 +368,30 @@ class TestGatewayCheckNameAvailableApi:
 
         assert resp.status_code == 200
         assert result["data"]["is_available"] is False
+
+
+class TestGatewayRepoAuthorizationApi:
+    def test_retrieve(self, request_view, mocker):
+        mocker.patch(
+            "apigateway.apis.web.gateway.views.get_paas_repo_authorization",
+            return_value={
+                "authorized": False,
+                "message": "用户未关联 oauth 授权",
+                "address": "https://git.example.com/oauth/authorize",
+                "auth_docs": "http://docs.example.com/tc_git_oauth",
+            },
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="gateways.repo_authorization",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"] == {
+            "authorized": False,
+            "message": "用户未关联 oauth 授权",
+            "address": "https://git.example.com/oauth/authorize",
+            "auth_docs": "http://docs.example.com/tc_git_oauth",
+        }
