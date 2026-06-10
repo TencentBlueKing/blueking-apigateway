@@ -23,6 +23,16 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func buildToolResponseEnvelope(statusCode int, requestID, traceID, xRequestID string, responseBody any) map[string]any {
+	return map[string]any{
+		toolResponseStatusCodeField: statusCode,
+		toolResponseRequestIDField:  requestID,
+		toolResponseTraceIDField:    traceID,
+		toolResponseXRequestIDField: xRequestID,
+		toolResponseBodyField:       responseBody,
+	}
+}
+
 var _ = Describe("Helper Functions", func() {
 	Describe("buildToolResponseEnvelope", func() {
 		It("should include all fields when body is provided", func() {

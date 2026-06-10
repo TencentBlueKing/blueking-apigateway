@@ -29,7 +29,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -176,19 +175,6 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-func buildToolResponseEnvelope(statusCode int, requestID, traceID, xRequestID string, responseBody any) map[string]any {
-	responseResult := map[string]any{
-		toolResponseStatusCodeField: statusCode,
-		toolResponseRequestIDField:  requestID,
-		toolResponseTraceIDField:    traceID,
-		toolResponseXRequestIDField: xRequestID,
-		// Always include response_body to keep consistency with the outputSchema definition.
-		// When responseBody is nil, the field will be JSON null, which matches the schema expectation.
-		toolResponseBodyField: responseBody,
-	}
-	return responseResult
-}
-
 func buildToolResult(output any) *mcp.CallToolResult {
 	result := &mcp.CallToolResult{}
 	text := cast.ToString(output)
@@ -199,6 +185,14 @@ func buildToolResult(output any) *mcp.CallToolResult {
 		&mcp.TextContent{Text: text},
 	}
 	return result
+}
+
+func buildToolResultFromJSONBytes(output []byte) *mcp.CallToolResult {
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: string(output)},
+		},
+	}
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
@@ -1039,53 +1033,52 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			Client:      client,
 			Context:     ctx,
 			Reader: runtime.ClientResponseReaderFunc(
-				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
+				func(response runtime.ClientResponse, _ runtime.Consumer) (any, error) {
 					if response.Body() != nil {
 						defer func() { _ = response.Body().Close() }()
 					}
 
-					var res any
+					var bodyBytes []byte
 					if response.Body() != nil {
-						contentType := strings.ToLower(response.GetHeader("Content-Type"))
-						// 根据 Content-Type 决定如何解析响应体
-						if strings.Contains(contentType, "application/json") {
-							// JSON 响应：使用 consumer 解析
-							if e := consumer.Consume(response.Body(), &res); e != nil {
-								return nil, e
-							}
-						} else {
-							// 非 JSON 响应（text/plain, text/html 等）：读取为字符串
-							bodyBytes, e := io.ReadAll(response.Body())
-							if e != nil {
-								return nil, e
-							}
-							res = string(bodyBytes)
+						var e error
+						bodyBytes, e = io.ReadAll(response.Body())
+						if e != nil {
+							return nil, e
 						}
 					}
 
-					var responseResult any
+					responsePayload := newToolResponsePayload(
+						response.Code(),
+						response.GetHeader(constant.BkGatewayRequestIDKey),
+						response.GetHeader("Content-Type"),
+						bodyBytes,
+						logTruncate.GetAuditLogMaxResponseSize(),
+					)
+
+					var responseBytes []byte
+					var marshalErr error
 					if rawResponseEnabledGetter() {
 						// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
 						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
 						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
-						responseResult = res
+						responseBytes, marshalErr = responsePayload.marshalRawResponse()
 					} else {
-						responseResult = buildToolResponseEnvelope(
-							response.Code(),
-							response.GetHeader(constant.BkGatewayRequestIDKey),
+						responseBytes, marshalErr = responsePayload.marshalEnvelope(
 							trace.GetTraceIDFromContext(ctx),
 							xRequestID,
-							res,
 						)
+					}
+					if marshalErr != nil {
+						return nil, marshalErr
 					}
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError(
 							"call tool err",
-							responseResult,
+							json.RawMessage(responseBytes),
 							response.Code(),
 						)
 					}
-					return responseResult, nil
+					return json.RawMessage(responseBytes), nil
 				},
 			),
 		}
@@ -1115,7 +1108,11 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditStatus = "success"
 		auditUpstreamReqID = extractUpstreamRequestID(buildToolResult(submit))
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
-		return buildToolResult(submit), nil
+		responseBytes, ok := submit.(json.RawMessage)
+		if !ok {
+			return buildToolResult(submit), nil
+		}
+		return buildToolResultFromJSONBytes(responseBytes), nil
 	}
 	return handler
 }

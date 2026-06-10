@@ -23,10 +23,8 @@ import (
 	"strings"
 )
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 const truncatedSuffix = "...(truncated)"
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 type toolResponsePayload struct {
 	statusCode        int
 	upstreamRequestID string
@@ -36,7 +34,6 @@ type toolResponsePayload struct {
 	truncatedPreview  string
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func newToolResponsePayload(
 	statusCode int,
 	upstreamRequestID string,
@@ -55,12 +52,10 @@ func newToolResponsePayload(
 	return payload
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func isJSONContentType(contentType string) bool {
 	return strings.Contains(strings.ToLower(contentType), "application/json")
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func truncateBytesForLog(body []byte, limit int) string {
 	if limit <= 0 || len(body) == 0 {
 		return ""
@@ -71,7 +66,6 @@ func truncateBytesForLog(body []byte, limit int) string {
 	return string(body[:limit]) + truncatedSuffix
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func (p *toolResponsePayload) responseBodyRawMessage() json.RawMessage {
 	if p == nil || len(p.rawBody) == 0 {
 		return json.RawMessage("null")
@@ -86,7 +80,6 @@ func (p *toolResponsePayload) responseBodyRawMessage() json.RawMessage {
 	return body
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byte, error) {
 	envelope := struct {
 		StatusCode   int             `json:"status_code"`
@@ -104,7 +97,6 @@ func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byt
 	return json.Marshal(envelope)
 }
 
-// nolint:unused // Task 2 wires the raw payload helper into genToolHandler.
 func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
 	if p == nil || len(p.rawBody) == 0 {
 		return []byte("null"), nil

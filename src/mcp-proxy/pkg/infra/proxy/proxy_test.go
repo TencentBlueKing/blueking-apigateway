@@ -583,6 +583,21 @@ var _ = Describe("MCPProxy", func() {
 				"response_body": "plain text response"
 			}`))
 		})
+
+		It("preserves large JSON numbers without float conversion", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte(`{"id":9007199254740993,"items":[{"enabled":true}]}`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(ContainSubstring(`"id":9007199254740993`))
+		})
 	})
 
 	Describe("buildLoggingTransport", func() {
