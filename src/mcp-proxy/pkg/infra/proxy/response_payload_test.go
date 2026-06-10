@@ -19,19 +19,20 @@
 package proxy
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("toolResponsePayload", func() {
 	Describe("newToolResponsePayload", func() {
-		It("captures JSON response metadata and preview", func() {
+		It("captures JSON response metadata", func() {
 			payload := newToolResponsePayload(
 				200,
 				"req-1",
 				"application/json",
 				[]byte(`{"items":[{"id":1}]}`),
-				10,
 			)
 
 			Expect(payload.statusCode).To(Equal(200))
@@ -39,21 +40,109 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(payload.contentType).To(Equal("application/json"))
 			Expect(payload.rawBody).To(Equal([]byte(`{"items":[{"id":1}]}`)))
 			Expect(payload.isJSON).To(BeTrue())
-			Expect(payload.truncatedPreview).To(Equal(`{"items":[...(truncated)`))
 		})
 
-		It("keeps raw response size and preview for audit metadata", func() {
-			payload := newToolResponsePayload(
-				200,
-				"req-1",
-				"application/json",
-				[]byte(`{"hello":"world"}`),
-				8,
-			)
+		It("treats invalid JSON content type as non-JSON for envelope/raw output", func() {
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
+			Expect(payload.isJSON).To(BeFalse())
+		})
 
-			Expect(payload.upstreamRequestID).To(Equal("req-1"))
-			Expect(int64(len(payload.rawBody))).To(Equal(int64(len(`{"hello":"world"}`))))
-			Expect(payload.truncatedPreview).To(Equal(`{"hello"...(truncated)`))
+		It("treats non-JSON content type as non-JSON even when body is valid JSON", func() {
+			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte(`{"items":[]}`))
+			Expect(payload.isJSON).To(BeFalse())
+		})
+	})
+
+	Describe("IsSuccess / PickLimit", func() {
+		It("treats 2xx as success", func() {
+			Expect(newToolResponsePayload(200, "", "", nil).IsSuccess()).To(BeTrue())
+			Expect(newToolResponsePayload(204, "", "", nil).IsSuccess()).To(BeTrue())
+			Expect(newToolResponsePayload(299, "", "", nil).IsSuccess()).To(BeTrue())
+		})
+
+		It("treats non-2xx as failure", func() {
+			Expect(newToolResponsePayload(199, "", "", nil).IsSuccess()).To(BeFalse())
+			Expect(newToolResponsePayload(300, "", "", nil).IsSuccess()).To(BeFalse())
+			Expect(newToolResponsePayload(404, "", "", nil).IsSuccess()).To(BeFalse())
+			Expect(newToolResponsePayload(500, "", "", nil).IsSuccess()).To(BeFalse())
+		})
+
+		It("PickLimit returns success limit for 2xx", func() {
+			Expect(newToolResponsePayload(200, "", "", nil).PickLimit(1024, 8192)).To(Equal(1024))
+		})
+
+		It("PickLimit returns error limit for non-2xx", func() {
+			Expect(newToolResponsePayload(500, "", "", nil).PickLimit(1024, 8192)).To(Equal(8192))
+			Expect(newToolResponsePayload(404, "", "", nil).PickLimit(1024, 8192)).To(Equal(8192))
+		})
+	})
+
+	Describe("EnvelopePreview body field", func() {
+		It("returns null for empty body", func() {
+			payload := newToolResponsePayload(204, "", "application/json", nil)
+			out := payload.EnvelopePreview("", "", 100)
+			Expect(out).To(ContainSubstring(`"response_body":null`))
+			Expect(out).To(ContainSubstring(`"status_code":204`))
+		})
+
+		It("embeds raw JSON when valid and fits within limit", func() {
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"a":1,"b":[2,3]}`))
+			out := payload.EnvelopePreview("trace-1", "x-req-1", 100)
+			Expect(out).To(MatchJSON(`{
+				"status_code": 200,
+				"request_id": "req-1",
+				"trace_id": "trace-1",
+				"x_request_id": "x-req-1",
+				"response_body": {"a":1,"b":[2,3]}
+			}`))
+		})
+
+		It("falls back to JSON string when JSON body needs truncation", func() {
+			big := []byte(`{"items":[` + strings.Repeat(`1,`, 1000) + `0]}`)
+			payload := newToolResponsePayload(200, "", "application/json", big)
+			out := payload.EnvelopePreview("", "", 50)
+			// response_body becomes a quoted string ending with the truncated suffix
+			Expect(out).To(ContainSubstring(`"response_body":"`))
+			Expect(out).To(ContainSubstring(truncatedSuffix))
+		})
+
+		It("preserves non-JSON HTML body as a JSON string", func() {
+			html := []byte(`<html><body>500 Internal Server Error</body></html>`)
+			payload := newToolResponsePayload(500, "upstream-req-1", "text/html", html)
+			out := payload.EnvelopePreview("trace-1", "x-req-1", 16384)
+			Expect(out).To(MatchJSON(`{
+				"status_code": 500,
+				"request_id": "upstream-req-1",
+				"trace_id": "trace-1",
+				"x_request_id": "x-req-1",
+				"response_body": "<html><body>500 Internal Server Error</body></html>"
+			}`))
+			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
+		})
+
+		It("preserves non-JSON plain text body as a JSON string", func() {
+			payload := newToolResponsePayload(
+				500,
+				"",
+				"text/plain; charset=utf-8",
+				[]byte("upstream timeout"),
+			)
+			out := payload.EnvelopePreview("", "", 16384)
+			Expect(out).To(ContainSubstring(`"response_body":"upstream timeout"`))
+		})
+
+		It("preserves malformed JSON body (Content-Type lied) as a JSON string", func() {
+			payload := newToolResponsePayload(500, "", "application/json", []byte(`{not valid json`))
+			out := payload.EnvelopePreview("", "", 16384)
+			Expect(out).To(ContainSubstring(`"response_body":"{not valid json"`))
+			Expect(out).NotTo(ContainSubstring(`"response_body":null`))
+		})
+
+		It("truncates non-JSON bodies that exceed the limit", func() {
+			huge := []byte(strings.Repeat("x", 5000))
+			payload := newToolResponsePayload(500, "", "text/plain", huge)
+			out := payload.EnvelopePreview("", "", 100)
+			Expect(out).To(ContainSubstring(truncatedSuffix))
 		})
 	})
 
@@ -64,7 +153,6 @@ var _ = Describe("toolResponsePayload", func() {
 				"req-1",
 				"application/json",
 				[]byte(`{"items":[1]}`),
-				4096,
 			)
 			data, err := payload.marshalEnvelope("trace-1", "x-req-1")
 
@@ -79,7 +167,7 @@ var _ = Describe("toolResponsePayload", func() {
 		})
 
 		It("marshals non-JSON response body as a JSON string", func() {
-			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte(`plain text`), 4096)
+			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte(`plain text`))
 			data, err := payload.marshalEnvelope("", "")
 
 			Expect(err).NotTo(HaveOccurred())
@@ -100,7 +188,6 @@ var _ = Describe("toolResponsePayload", func() {
 				"req-1",
 				"application/json",
 				[]byte(`{"items":[1]}`),
-				4096,
 			)
 			data, err := payload.marshalRawResponse()
 
@@ -109,7 +196,7 @@ var _ = Describe("toolResponsePayload", func() {
 		})
 
 		It("treats invalid JSON content type as string body", func() {
-			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`), 4096)
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
 			data, err := payload.marshalRawResponse()
 
 			Expect(err).NotTo(HaveOccurred())

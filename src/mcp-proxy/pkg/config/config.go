@@ -175,11 +175,12 @@ type Transport struct {
 
 // LogTruncate default values.
 const (
-	defaultAuditLogMaxBodySize     = 4096
-	defaultAuditLogMaxResponseSize = 4096
-	defaultAPILogRequestSize       = 2048
-	defaultAPILogResponseSize      = 1024
-	defaultAPILogErrorRespSize     = 4096
+	defaultAuditLogMaxBodySize          = 4096
+	defaultAuditLogMaxResponseSize      = 4096
+	defaultAuditLogMaxErrorResponseSize = 16384
+	defaultAPILogRequestSize            = 2048
+	defaultAPILogResponseSize           = 1024
+	defaultAPILogErrorRespSize          = 4096
 )
 
 // LogTruncate is the config for log truncation limits.
@@ -190,9 +191,13 @@ type LogTruncate struct {
 	// AuditLogMaxBodySize limits the audit log body size for tool call requests and body params (string length).
 	// Defaults to 4096 if not set.
 	AuditLogMaxBodySize int
-	// AuditLogMaxResponseSize limits the audit log response size for tool call responses (string length).
-	// Defaults to 4096 if not set.
+	// AuditLogMaxResponseSize limits the audit log response size for successful (2xx) tool call responses
+	// (string length). Defaults to 4096 if not set.
 	AuditLogMaxResponseSize int
+	// AuditLogMaxErrorResponseSize limits the audit log response size for failed (non-2xx) tool call
+	// responses (string length). Failure responses get a larger budget so troubleshooting info such as
+	// upstream error bodies is not truncated. Defaults to 16384 if not set.
+	AuditLogMaxErrorResponseSize int
 	// APILogRequestSize limits the MCP API log request params size (string length).
 	// Defaults to 2048 if not set.
 	APILogRequestSize int
@@ -218,6 +223,14 @@ func (l LogTruncate) GetAuditLogMaxResponseSize() int {
 		return defaultAuditLogMaxResponseSize
 	}
 	return l.AuditLogMaxResponseSize
+}
+
+// GetAuditLogMaxErrorResponseSize returns AuditLogMaxErrorResponseSize with a safe default fallback.
+func (l LogTruncate) GetAuditLogMaxErrorResponseSize() int {
+	if l.AuditLogMaxErrorResponseSize <= 0 {
+		return defaultAuditLogMaxErrorResponseSize
+	}
+	return l.AuditLogMaxErrorResponseSize
 }
 
 // GetAPILogRequestSize returns APILogRequestSize with a safe default fallback.
@@ -410,6 +423,9 @@ func applyMcpServerDefaults(cfg *Config) {
 	}
 	if cfg.McpServer.LogTruncate.AuditLogMaxResponseSize == 0 {
 		cfg.McpServer.LogTruncate.AuditLogMaxResponseSize = defaultAuditLogMaxResponseSize
+	}
+	if cfg.McpServer.LogTruncate.AuditLogMaxErrorResponseSize == 0 {
+		cfg.McpServer.LogTruncate.AuditLogMaxErrorResponseSize = defaultAuditLogMaxErrorResponseSize
 	}
 	if cfg.McpServer.LogTruncate.APILogRequestSize == 0 {
 		cfg.McpServer.LogTruncate.APILogRequestSize = defaultAPILogRequestSize

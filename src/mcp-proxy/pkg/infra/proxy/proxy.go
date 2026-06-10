@@ -39,7 +39,6 @@ import (
 	cli "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -165,18 +164,6 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 		inputSchema["properties"] = map[string]any{}
 	}
 	return inputSchema
-}
-
-func buildToolResult(output any) *mcp.CallToolResult {
-	result := &mcp.CallToolResult{}
-	text := cast.ToString(output)
-	if rawOutput, err := json.Marshal(output); err == nil {
-		text = string(rawOutput)
-	}
-	result.Content = []mcp.Content{
-		&mcp.TextContent{Text: text},
-	}
-	return result
 }
 
 func buildToolResultFromJSONBytes(output []byte) *mcp.CallToolResult {
@@ -1054,7 +1041,6 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 						response.GetHeader(constant.BkGatewayRequestIDKey),
 						response.GetHeader("Content-Type"),
 						bodyBytes,
-						logTruncate.GetAuditLogMaxResponseSize(),
 					)
 
 					var responseBytes []byte
@@ -1094,31 +1080,58 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			duration := time.Since(start)
-			auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
-			auditResponseSize = 0
 			auditLatency = duration
 			auditStatus = "failed"
+			// When the reader populated responsePayload before APIError (typical non-2xx case),
+			// surface the upstream envelope in the audit log instead of the bare error message
+			// so failures retain full diagnostic context. Transport-level errors (DNS, dial,
+			// timeout) leave responsePayload nil and fall back to the error message.
+			if responsePayload != nil {
+				auditResponse = responsePayload.EnvelopePreview(
+					trace.GetTraceIDFromContext(ctx),
+					xRequestID,
+					responsePayload.PickLimit(
+						logTruncate.GetAuditLogMaxResponseSize(),
+						logTruncate.GetAuditLogMaxErrorResponseSize(),
+					),
+				)
+				auditResponseSize = int64(len(responsePayload.rawBody))
+				auditUpstreamReqID = responsePayload.upstreamRequestID
+			} else {
+				auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
+				auditResponseSize = 0
+			}
 			// nolint:nilerr
 			return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start), nil
 		}
 		duration := time.Since(start)
 		// 设置 audit log 变量，供 defer 中的 "call tool complete" 使用
-		if responsePayload != nil {
-			auditResponse = responsePayload.truncatedPreview
-			auditResponseSize = int64(len(responsePayload.rawBody))
-			auditUpstreamReqID = responsePayload.upstreamRequestID
-		} else {
-			responseBody := util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())
-			auditResponse = responseBody
-			auditResponseSize = int64(len(responseBody))
-			auditUpstreamReqID = extractUpstreamRequestID(buildToolResult(submit))
-		}
+		// 注意：responsePayload 在 Reader 中已设置；Submit 成功路径必然非 nil。
+		auditResponse = responsePayload.EnvelopePreview(
+			trace.GetTraceIDFromContext(ctx),
+			xRequestID,
+			responsePayload.PickLimit(
+				logTruncate.GetAuditLogMaxResponseSize(),
+				logTruncate.GetAuditLogMaxErrorResponseSize(),
+			),
+		)
+		auditResponseSize = int64(len(responsePayload.rawBody))
+		auditUpstreamReqID = responsePayload.upstreamRequestID
 		auditLatency = duration
 		auditStatus = "success"
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
+		// Reader contract guarantees submit is json.RawMessage on success; see ClientResponseReaderFunc above.
 		responseBytes, ok := submit.(json.RawMessage)
 		if !ok {
-			return buildToolResult(submit), nil
+			// Defensive: future reader changes that break the contract should be loud,
+			// not crash; serialize the unexpected payload and continue.
+			logging.GetLogger().Error("unexpected non-RawMessage submit result",
+				zap.String("type", fmt.Sprintf("%T", submit)))
+			raw, marshalErr := json.Marshal(submit)
+			if marshalErr != nil {
+				raw = []byte("null")
+			}
+			return buildToolResultFromJSONBytes(raw), nil
 		}
 		return buildToolResultFromJSONBytes(responseBytes), nil
 	}
@@ -1225,16 +1238,7 @@ func logToolCall(
 	// Resolve truncation limits from config
 	logTruncate := config.G.McpServer.LogTruncate
 
-	// Serialize request params and response
-	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
-	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(
-		result,
-		payload,
-		hasError,
-		logTruncate,
-	)
-
-	// Retrieve extra info from context
+	// Retrieve extra info from context (needed by serializeToolCallResponse for envelope preview)
 	ctxInfo := extractToolCallContextInfo(ctx, req)
 
 	// Get session info
@@ -1242,6 +1246,17 @@ func logToolCall(
 
 	// trace_id from HTTP layer
 	traceID := trace.GetTraceIDFromContext(ctx)
+
+	// Serialize request params and response
+	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
+	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(
+		traceID,
+		ctxInfo.xRequestID,
+		result,
+		payload,
+		hasError,
+		logTruncate,
+	)
 
 	// Build log fields
 	status := "success"
@@ -1315,16 +1330,37 @@ func serializeToolCallRequest(req *mcp.CallToolRequest, logTruncate config.LogTr
 	return params, requestBodySize
 }
 
-// serializeToolCallResponse serializes the tool call response result.
+// serializeToolCallResponse serializes the tool call response result for the API log.
+//
+// When payload is non-nil (the typical path after an upstream call), it renders a bounded
+// envelope preview honoring APILogResponseSize / APILogErrorResponseSize.
+//
+// The result-only fallback handles the rare case where the handler panicked or returned
+// before populating payload. In that path no upstream request_id is available.
 func serializeToolCallResponse(
+	traceID, xRequestID string,
 	result *mcp.CallToolResult,
 	payload *toolResponsePayload,
 	hasError bool,
 	logTruncate config.LogTruncate,
 ) (string, int64, string) {
 	if payload != nil {
-		return payload.truncatedPreview, int64(len(payload.rawBody)), payload.upstreamRequestID
+		limit := payload.PickLimit(
+			logTruncate.GetAPILogResponseSize(),
+			logTruncate.GetAPILogErrorResponseSize(),
+		)
+		return payload.EnvelopePreview(traceID, xRequestID, limit),
+			int64(len(payload.rawBody)),
+			payload.upstreamRequestID
 	}
+	// Payload-nil fallback: only reachable when no upstream HTTP response was ever read
+	// (transport error / mid-body-read failure / panic before Reader). There is no
+	// envelope to render and no upstream request_id to surface in any of these paths.
+	// Log a warning so unexpected occurrences are visible in operations.
+	logging.GetLogger().Warn("serializeToolCallResponse fallback: no toolResponsePayload available",
+		zap.Bool("has_error", hasError),
+		zap.Bool("result_nil", result == nil),
+	)
 	if result == nil {
 		return "", 0, ""
 	}
@@ -1333,14 +1369,12 @@ func serializeToolCallResponse(
 		return "", 0, ""
 	}
 	responseBodySize := int64(len(resultBytes))
-	var response string
+	limit := logTruncate.GetAPILogResponseSize()
 	if hasError {
-		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
-	} else {
-		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
+		limit = logTruncate.GetAPILogErrorResponseSize()
 	}
-	upstreamRequestID := extractUpstreamRequestID(result)
-	return response, responseBodySize, upstreamRequestID
+	response := stringx.Truncate(string(resultBytes), limit)
+	return response, responseBodySize, ""
 }
 
 // toolCallContextInfo holds context-derived info for tool call logging.
@@ -1408,67 +1442,4 @@ func extractToolCallSessionInfo(req *mcp.CallToolRequest, clientID string) (stri
 		}
 	}
 	return sessionID, clientID
-}
-
-// extractUpstreamRequestID extracts the upstream API request_id from tool call result.
-// This is the request_id returned by the upstream API (e.g., bk-apigateway),
-// which may differ from the MCP Proxy's own request_id.
-func extractUpstreamRequestID(result *mcp.CallToolResult) string {
-	if result == nil || len(result.Content) == 0 {
-		logging.GetLogger().Debug("extractUpstreamRequestID: result is nil or content is empty")
-		return ""
-	}
-
-	logging.GetLogger().Debug("extractUpstreamRequestID: content count", zap.Int("count", len(result.Content)))
-
-	// Try to get text content from result
-	var textContent string
-	for i, content := range result.Content {
-		if text, ok := content.(*mcp.TextContent); ok && text != nil {
-			textContent = text.Text
-			logging.GetLogger().Debug("extractUpstreamRequestID: found TextContent",
-				zap.Int("index", i), zap.Int("text_length", len(textContent)))
-			break
-		} else {
-			logging.GetLogger().Debug("extractUpstreamRequestID: content type mismatch",
-				zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", content)))
-		}
-	}
-	if textContent == "" {
-		logging.GetLogger().Debug("extractUpstreamRequestID: textContent is empty")
-		return ""
-	}
-
-	// Parse JSON to extract request_id
-	var envelope map[string]any
-	if err := json.Unmarshal([]byte(textContent), &envelope); err != nil {
-		preview := textContent
-		if len(textContent) > 200 {
-			preview = textContent[:200]
-		}
-		logging.GetLogger().Debug("extractUpstreamRequestID: failed to unmarshal textContent",
-			zap.Error(err), zap.String("text_content_preview", preview))
-		return ""
-	}
-
-	logging.GetLogger().Debug("extractUpstreamRequestID: envelope keys", zap.Any("keys", getMapKeys(envelope)))
-
-	if requestID, ok := envelope["request_id"].(string); ok {
-		logging.GetLogger().Debug(
-			"extractUpstreamRequestID: found request_id",
-			zap.String("request_id", requestID),
-		)
-		return requestID
-	}
-	logging.GetLogger().Debug("extractUpstreamRequestID: request_id not found or not a string")
-	return ""
-}
-
-// getMapKeys returns all keys in a map
-func getMapKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }

@@ -518,6 +518,23 @@ var _ = Describe("Config", func() {
 			})
 		})
 
+		Describe("GetAuditLogMaxErrorResponseSize", func() {
+			It("should return configured value when set", func() {
+				lt := config.LogTruncate{AuditLogMaxErrorResponseSize: 32768}
+				Expect(lt.GetAuditLogMaxErrorResponseSize()).To(Equal(32768))
+			})
+
+			It("should return default value when zero", func() {
+				lt := config.LogTruncate{}
+				Expect(lt.GetAuditLogMaxErrorResponseSize()).To(Equal(16384))
+			})
+
+			It("should return default value when negative", func() {
+				lt := config.LogTruncate{AuditLogMaxErrorResponseSize: -1}
+				Expect(lt.GetAuditLogMaxErrorResponseSize()).To(Equal(16384))
+			})
+		})
+
 		Describe("GetAPILogRequestSize", func() {
 			It("should return configured value when set", func() {
 				lt := config.LogTruncate{APILogRequestSize: 4096}
@@ -662,6 +679,7 @@ var _ = Describe("Config", func() {
 
 			Expect(cfg.McpServer.LogTruncate.AuditLogMaxBodySize).To(Equal(4096))
 			Expect(cfg.McpServer.LogTruncate.AuditLogMaxResponseSize).To(Equal(4096))
+			Expect(cfg.McpServer.LogTruncate.AuditLogMaxErrorResponseSize).To(Equal(16384))
 			Expect(cfg.McpServer.LogTruncate.APILogRequestSize).To(Equal(2048))
 			Expect(cfg.McpServer.LogTruncate.APILogResponseSize).To(Equal(1024))
 			Expect(cfg.McpServer.LogTruncate.APILogErrorResponseSize).To(Equal(4096))

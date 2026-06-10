@@ -128,6 +128,57 @@ func BenchmarkGenToolHandlerLargeJSONResponse(b *testing.B) {
 	}
 }
 
+// BenchmarkEnvelopePreview measures the cost of rendering the envelope preview used by
+// audit/API logs. It exercises three regimes: a small JSON body that fits the limit (raw
+// embed), a large JSON body that requires truncation (string-encoded), and a non-JSON HTML
+// body (always string-encoded). Preview cost should be O(min(len(body), limit)) and remain
+// well below the cost of the upstream call itself.
+func BenchmarkEnvelopePreview(b *testing.B) {
+	cases := []struct {
+		name        string
+		contentType string
+		body        []byte
+		limit       int
+	}{
+		{
+			name:        "json-fits-1KB",
+			contentType: "application/json",
+			body:        buildBenchmarkJSONBody(1 << 10),
+			limit:       4096,
+		},
+		{
+			name:        "json-truncated-1MB",
+			contentType: "application/json",
+			body:        buildBenchmarkJSONBody(1 << 20),
+			limit:       16384,
+		},
+		{
+			name:        "html-truncated-1MB",
+			contentType: "text/html",
+			body:        bytes.Repeat([]byte("<p>error</p>"), (1<<20)/12),
+			limit:       16384,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		b.Run(tc.name, func(b *testing.B) {
+			payload := newToolResponsePayload(500, "bench-upstream", tc.contentType, tc.body)
+
+			var sink string
+			b.ReportAllocs()
+			b.SetBytes(int64(len(tc.body)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				sink = payload.EnvelopePreview("bench-trace", "bench-x-request", tc.limit)
+			}
+			benchmarkEnvelopePreviewSink = sink
+		})
+	}
+}
+
+var benchmarkEnvelopePreviewSink string
+
 func initBenchmarkRuntime(b *testing.B) {
 	b.Helper()
 

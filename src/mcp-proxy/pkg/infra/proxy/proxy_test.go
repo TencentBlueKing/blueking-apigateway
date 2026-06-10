@@ -448,77 +448,6 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
-	Describe("buildToolResult", func() {
-		It("should populate text content for envelope with object body", func() {
-			envelope := map[string]any{
-				"status_code":  200,
-				"request_id":   "req-1",
-				"trace_id":     "trace-1",
-				"x_request_id": "x-req-1",
-				"response_body": map[string]any{
-					"timezone": "Asia/Shanghai",
-					"datetime": "2026-03-19T15:04:05+08:00",
-				},
-			}
-			result := buildToolResult(envelope)
-
-			Expect(result).NotTo(BeNil())
-			Expect(result.StructuredContent).To(BeNil())
-			Expect(result.Content).To(HaveLen(1))
-			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
-			Expect(
-				result.Content[0].(*mcp.TextContent).Text,
-			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","x_request_id":"x-req-1","response_body":{"datetime":"2026-03-19T15:04:05+08:00","timezone":"Asia/Shanghai"}}`))
-		})
-
-		It("should populate text content for envelope with array body", func() {
-			envelope := map[string]any{
-				"status_code":   200,
-				"request_id":    "req-1",
-				"trace_id":      "trace-1",
-				"x_request_id":  "x-req-1",
-				"response_body": []any{"a", "b"},
-			}
-			result := buildToolResult(envelope)
-
-			Expect(result).NotTo(BeNil())
-			Expect(result.StructuredContent).To(BeNil())
-			Expect(result.Content).To(HaveLen(1))
-			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
-			Expect(
-				result.Content[0].(*mcp.TextContent).Text,
-			).To(MatchJSON(`{"status_code":200,"request_id":"req-1","trace_id":"trace-1","x_request_id":"x-req-1","response_body":["a","b"]}`))
-		})
-
-		It("should return raw API response directly when rawResponseEnabled is enabled", func() {
-			// When rawResponseEnabled is true, the response result is the raw API response (not wrapped in
-			// envelope)
-			rawBody := map[string]any{
-				"timezone": "Asia/Shanghai",
-				"datetime": "2026-03-19T15:04:05+08:00",
-			}
-			result := buildToolResult(rawBody)
-
-			Expect(result).NotTo(BeNil())
-			Expect(result.Content).To(HaveLen(1))
-			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
-			// Raw response should NOT contain status_code, request_id, trace_id, x_request_id wrapper
-			Expect(
-				result.Content[0].(*mcp.TextContent).Text,
-			).To(MatchJSON(`{"timezone":"Asia/Shanghai","datetime":"2026-03-19T15:04:05+08:00"}`))
-		})
-
-		It("should return raw string response directly when rawResponseEnabled is enabled", func() {
-			rawBody := "plain text response"
-			result := buildToolResult(rawBody)
-
-			Expect(result).NotTo(BeNil())
-			Expect(result.Content).To(HaveLen(1))
-			Expect(result.Content[0]).To(BeAssignableToTypeOf(&mcp.TextContent{}))
-			Expect(result.Content[0].(*mcp.TextContent).Text).To(Equal(`"plain text response"`))
-		})
-	})
-
 	Describe("genToolHandler response payload behavior", func() {
 		It("returns envelope response with upstream JSON body", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -596,22 +525,145 @@ var _ = Describe("MCPProxy", func() {
 			Expect(result.Content).To(HaveLen(1))
 			Expect(result.Content[0].(*mcp.TextContent).Text).To(ContainSubstring(`"id":9007199254740993`))
 		})
+
+		It("returns IsError and surfaces non-2xx envelope to client", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`{"error":{"code":500,"message":"upstream boom"}}`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(result.Content[0].(*mcp.TextContent).Text).To(ContainSubstring("upstream boom"))
+		})
+
+		It("surfaces non-2xx non-JSON HTML body in envelope to client", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte(`<html><body>500 Internal Server Error</body></html>`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			text := result.Content[0].(*mcp.TextContent).Text
+			// Envelope embeds the HTML body as a JSON-encoded string. json.Marshal escapes <>
+			// to \u003c / \u003e by default, so assert via JSON decode round-trip rather than
+			// the raw text shape.
+			Expect(text).To(ContainSubstring(`"status_code":500`))
+			var envelope struct {
+				ResponseBody string `json:"response_body"`
+			}
+			payload := text
+			// Strip the "call tool err (status 500): " prefix when present so we can decode the envelope.
+			if idx := strings.Index(text, "{"); idx > 0 {
+				payload = text[idx:]
+			}
+			Expect(json.Unmarshal([]byte(payload), &envelope)).To(Succeed())
+			Expect(envelope.ResponseBody).To(Equal(`<html><body>500 Internal Server Error</body></html>`))
+		})
 	})
 
 	Describe("serializeToolCallResponse", func() {
-		It("uses payload preview and size when payload is available", func() {
-			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"items":[1]}`), 8)
+		It("renders envelope preview with APILogResponseSize for 2xx", func() {
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"items":[1]}`))
 
 			response, responseSize, upstreamRequestID := serializeToolCallResponse(
+				"trace-1",
+				"x-req-1",
 				&mcp.CallToolResult{},
 				payload,
 				false,
-				config.LogTruncate{APILogResponseSize: 4},
+				config.LogTruncate{
+					APILogResponseSize:      1024,
+					APILogErrorResponseSize: 4096,
+				},
 			)
 
-			Expect(response).To(Equal(payload.truncatedPreview))
+			Expect(response).To(MatchJSON(`{
+				"status_code": 200,
+				"request_id": "req-1",
+				"trace_id": "trace-1",
+				"x_request_id": "x-req-1",
+				"response_body": {"items":[1]}
+			}`))
 			Expect(responseSize).To(Equal(int64(len(payload.rawBody))))
 			Expect(upstreamRequestID).To(Equal("req-1"))
+		})
+
+		It("uses APILogErrorResponseSize for non-2xx", func() {
+			// Body is 200 bytes of JSON; success limit 50 would truncate, error limit 4096 would not.
+			big := []byte(`{"items":[` + strings.Repeat(`1,`, 90) + `0]}`)
+			payload := newToolResponsePayload(500, "req-1", "application/json", big)
+
+			response, _, _ := serializeToolCallResponse(
+				"",
+				"",
+				&mcp.CallToolResult{},
+				payload,
+				true,
+				config.LogTruncate{
+					APILogResponseSize:      50,
+					APILogErrorResponseSize: 4096,
+				},
+			)
+
+			// Error budget large enough to embed raw JSON unchanged
+			Expect(response).To(ContainSubstring(`"response_body":{"items":[1,1,`))
+			Expect(response).NotTo(ContainSubstring(truncatedSuffix))
+		})
+
+		It("preserves non-JSON error body verbatim in envelope preview", func() {
+			payload := newToolResponsePayload(
+				500, "req-1", "text/html",
+				[]byte(`<html><body>upstream 500</body></html>`),
+			)
+
+			response, _, upstreamReq := serializeToolCallResponse(
+				"", "",
+				&mcp.CallToolResult{},
+				payload,
+				true,
+				config.LogTruncate{APILogResponseSize: 1024, APILogErrorResponseSize: 4096},
+			)
+
+			Expect(response).To(MatchJSON(`{
+				"status_code": 500,
+				"request_id": "req-1",
+				"trace_id": "",
+				"x_request_id": "",
+				"response_body": "<html><body>upstream 500</body></html>"
+			}`))
+			Expect(upstreamReq).To(Equal("req-1"))
+		})
+
+		It("falls back to result marshal when payload is nil (panic path)", func() {
+			result := &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: "panic recovery output"}},
+			}
+
+			response, size, upstreamReq := serializeToolCallResponse(
+				"", "",
+				result,
+				nil,
+				true,
+				config.LogTruncate{APILogResponseSize: 1024, APILogErrorResponseSize: 4096},
+			)
+
+			Expect(response).NotTo(BeEmpty())
+			Expect(size).To(BeNumerically(">", 0))
+			Expect(upstreamReq).To(BeEmpty())
 		})
 	})
 
