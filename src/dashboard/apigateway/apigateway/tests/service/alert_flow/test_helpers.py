@@ -66,6 +66,13 @@ class TestMonitorEvent:
         )
         assert event.alarm_subtype == "bad_gateway"
 
+    def test_alarm_subtype_with_string_status(self):
+        event = MonitorEvent(
+            alarm_type=AlarmTypeEnum.RESOURCE_BACKEND,
+            raw={"event": {"dimensions": {"status": "500"}}},
+        )
+        assert event.alarm_subtype == "status_code_5xx"
+
     def test_update_extend_fields(self):
         event = MonitorEvent(alarm_type=AlarmTypeEnum.APP_REQUEST, raw={})
         event.update_extend_fields({"color": "green"})
