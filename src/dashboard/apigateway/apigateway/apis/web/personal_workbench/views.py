@@ -213,7 +213,7 @@ class WorkbenchMCPServerFilterOptionListApi(WorkbenchPermissionMixin, generics.L
             return gateway_mcp_server_filter_by_user_tenant_id(queryset, tenant_id)
 
         if filter_type == WorkbenchFilterTypeEnum.HANDLED.value:
-            # 我的已办：从用户处理过的记录中提取去重的 MCP Server；ITSM 回调无实际审批人，按当前用户维护的网关补充
+            # 我的已办：从管理员处理过的记录中提取去重的 MCP Server；ITSM 回调无实际审批人，按当前用户维护的网关补充
             mcp_server_ids = (
                 WorkbenchPermissionHandler.get_handled_mcp_permission_apply_queryset(username, tenant_id)
                 .values_list("mcp_server_id", flat=True)
