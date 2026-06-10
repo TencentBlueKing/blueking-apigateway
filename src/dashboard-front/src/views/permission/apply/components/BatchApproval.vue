@@ -29,17 +29,11 @@
       <AgTable
         v-model:table-data="tableData"
         local-page
+        show-cell-empty-content
         :size="'small'"
         :max-height="300"
         :columns="approvalColumns"
-      >
-        <template #cellEmptyContent="{ col }">
-          <template v-if="!col.fixed">
-            <span class="empty-placeholder">--</span>
-          </template>
-          <template v-else />
-        </template>
-      </AgTable>
+      />
       <BkForm
         ref="batchApprovalFormRef"
         :model="formData"
