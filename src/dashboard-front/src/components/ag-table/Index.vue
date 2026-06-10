@@ -88,14 +88,21 @@
           v-bind="slotProps"
         />
       </template>
+      <!-- 如果showCellEmptyContent开启，接受自定义空内容插槽内容和默认值 -->
       <template
-        v-if="slots.cellEmptyContent"
+        v-if="showCellEmptyContent"
         #cellEmptyContent="slotProps"
       >
-        <slot
-          name="cellEmptyContent"
-          v-bind="slotProps"
-        />
+        <template v-if="slots.cellEmptyContent">
+          <slot
+            name="cellEmptyContent"
+            v-bind="slotProps"
+          />
+        </template>
+        <!-- 这里需要处理下设置列会出现空占位符 -->
+        <template v-if="!slotProps?.col?.colKey.includes('__col_setting__') && !slots.cellEmptyContent">
+          <span class="empty-placeholder">--</span>
+        </template>
       </template>
       <template #loading>
         <Loading :loading="loading" />
@@ -158,6 +165,7 @@ interface IProps {
   hiddenColumn?: string[]
   noSearchFields?: string[]
   resizable?: boolean
+  showCellEmptyContent?: boolean
   maxHeight?: string | number | undefined
 }
 
@@ -199,7 +207,11 @@ const {
   hiddenColumn = [],
   // 不需要处理成搜索状态的字段
   noSearchFields = [],
+  // 默认tableFixed启用resizable
   resizable = true,
+  // 存在列空值时，是否展示默认空内容或自定义空内容
+  showCellEmptyContent = false,
+  // 父组件限制最大表格高度
   maxHeight = undefined,
 } = defineProps<IProps>();
 

@@ -129,11 +129,10 @@ const approveFormMessage = computed(() => {
   const {
     bk_app_code = '',
     selection = [],
-    resource_ids = [],
     resources = [],
   } = curPermission ?? {};
   const selectLength = selection.length;
-  const resourceLength = resource_ids.length || resources.length;
+  const resourceLength = resources.length;
   const isApproved = formData.value.status === 'approved';
 
   if (curPermission.grant_dimension === 'api') {
@@ -153,6 +152,7 @@ const approveFormMessage = computed(() => {
         rejectLength,
       });
     }
+
     return t('应用{bk_app_code} 申请{resourceLength}个权限，全部通过', {
       bk_app_code,
       resourceLength,
