@@ -180,6 +180,20 @@ var _ = Describe("toolResponsePayload", func() {
 			}`))
 		})
 
+		It("preserves empty non-JSON response body as an empty string in the envelope", func() {
+			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte{})
+			data, err := payload.marshalEnvelope("", "")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(data)).To(MatchJSON(`{
+				"status_code": 200,
+				"request_id": "req-1",
+				"trace_id": "",
+				"x_request_id": "",
+				"response_body": ""
+			}`))
+		})
+
 		It("returns an error for invalid non-empty bodies declared as JSON", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
 			data, err := payload.marshalEnvelope("", "")

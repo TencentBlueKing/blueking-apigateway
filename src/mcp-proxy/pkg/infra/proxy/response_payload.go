@@ -109,7 +109,13 @@ func (p *toolResponsePayload) invalidDeclaredJSONBodyError(cause error) error {
 // sent to MCP clients. Unlike previewBodyAsRawMessage, this method does NOT truncate the body
 // — it preserves full fidelity for the client. Used by marshalEnvelope.
 func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) {
-	if p == nil || len(p.rawBody) == 0 {
+	if p == nil {
+		return json.RawMessage("null"), nil
+	}
+	if len(p.rawBody) == 0 {
+		if p.rawBody != nil && !p.isDeclaredJSON {
+			return json.RawMessage(`""`), nil
+		}
 		return json.RawMessage("null"), nil
 	}
 	if p.isDeclaredJSON {
@@ -137,6 +143,9 @@ func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) 
 // Memory: O(min(len(rawBody), limit)) — independent of full rawBody size.
 func (p *toolResponsePayload) previewBodyAsRawMessage(limit int) json.RawMessage {
 	if len(p.rawBody) == 0 {
+		if p.rawBody != nil && !p.isDeclaredJSON {
+			return json.RawMessage(`""`)
+		}
 		return json.RawMessage("null")
 	}
 
