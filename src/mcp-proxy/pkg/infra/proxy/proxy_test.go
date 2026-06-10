@@ -511,6 +511,26 @@ var _ = Describe("MCPProxy", func() {
 			}`))
 		})
 
+		It("returns IsError when upstream declares JSON but returns an invalid non-empty body", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+				_, _ = w.Write([]byte(`{"bad"`))
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(
+				ContainSubstring("invalid JSON response body"),
+			)
+		})
+
 		It("preserves large JSON numbers without float conversion", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")

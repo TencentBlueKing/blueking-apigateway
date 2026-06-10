@@ -42,7 +42,7 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(payload.isJSON).To(BeTrue())
 		})
 
-		It("treats invalid JSON content type as non-JSON for envelope/raw output", func() {
+		It("does not classify invalid declared JSON as JSON", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
 			Expect(payload.isJSON).To(BeFalse())
 		})
@@ -179,6 +179,15 @@ var _ = Describe("toolResponsePayload", func() {
 				"response_body": "plain text"
 			}`))
 		})
+
+		It("returns an error for invalid non-empty bodies declared as JSON", func() {
+			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
+			data, err := payload.marshalEnvelope("", "")
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid JSON response body"))
+			Expect(data).To(BeNil())
+		})
 	})
 
 	Describe("marshalRawResponse", func() {
@@ -195,12 +204,13 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(string(data)).To(MatchJSON(`{"items":[1]}`))
 		})
 
-		It("treats invalid JSON content type as string body", func() {
+		It("returns an error for invalid non-empty bodies declared as JSON", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
 			data, err := payload.marshalRawResponse()
 
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(data)).To(MatchJSON(`"{\"bad\""`))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid JSON response body"))
+			Expect(data).To(BeNil())
 		})
 	})
 })

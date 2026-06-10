@@ -20,6 +20,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -37,6 +38,7 @@ type toolResponsePayload struct {
 	upstreamRequestID string
 	contentType       string
 	rawBody           []byte
+	isDeclaredJSON    bool
 	isJSON            bool
 }
 
@@ -46,12 +48,14 @@ func newToolResponsePayload(
 	contentType string,
 	rawBody []byte,
 ) *toolResponsePayload {
+	isDeclaredJSON := isJSONContentType(contentType)
 	return &toolResponsePayload{
 		statusCode:        statusCode,
 		upstreamRequestID: upstreamRequestID,
 		contentType:       contentType,
 		rawBody:           rawBody,
-		isJSON:            isJSONContentType(contentType) && json.Valid(rawBody),
+		isDeclaredJSON:    isDeclaredJSON,
+		isJSON:            isDeclaredJSON && json.Valid(rawBody),
 	}
 }
 
@@ -86,21 +90,31 @@ func truncateBytesForLog(body []byte, limit int) string {
 	return string(body[:limit]) + truncatedSuffix
 }
 
+func (p *toolResponsePayload) validateDeclaredJSONBody() error {
+	if p == nil || len(p.rawBody) == 0 || !p.isDeclaredJSON || p.isJSON {
+		return nil
+	}
+	return fmt.Errorf("invalid JSON response body for Content-Type %q", p.contentType)
+}
+
 // responseBodyRawMessage returns a json.RawMessage suitable for embedding into the envelope
 // sent to MCP clients. Unlike previewBodyAsRawMessage, this method does NOT truncate the body
 // — it preserves full fidelity for the client. Used only by marshalEnvelope / marshalRawResponse.
-func (p *toolResponsePayload) responseBodyRawMessage() json.RawMessage {
+func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) {
 	if p == nil || len(p.rawBody) == 0 {
-		return json.RawMessage("null")
+		return json.RawMessage("null"), nil
+	}
+	if err := p.validateDeclaredJSONBody(); err != nil {
+		return nil, err
 	}
 	if p.isJSON {
-		return json.RawMessage(p.rawBody)
+		return json.RawMessage(p.rawBody), nil
 	}
 	body, err := json.Marshal(string(p.rawBody))
 	if err != nil {
-		return json.RawMessage("null")
+		return nil, err
 	}
-	return body
+	return body, nil
 }
 
 // previewBodyAsRawMessage returns a json.RawMessage that is always valid JSON, used as the
@@ -112,6 +126,7 @@ func (p *toolResponsePayload) responseBodyRawMessage() json.RawMessage {
 //	valid JSON body that fits within limit  | raw JSON object/array    | matches client envelope
 //	valid JSON body that needs truncation   | JSON string (truncated)  | truncation breaks JSON
 //	non-JSON body (text/html, text/plain)   | JSON string              | content preserved verbatim
+//	invalid declared JSON body             | JSON string              | preview only; wire path returns error
 //	binary body (invalid UTF-8)             | JSON string with U+FFFD  | json.Marshal stdlib behavior
 //
 // Memory: O(min(len(rawBody), limit)) — independent of full rawBody size.
@@ -163,6 +178,10 @@ func (p *toolResponsePayload) EnvelopePreview(traceID, xRequestID string, limit 
 }
 
 func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byte, error) {
+	responseBody, err := p.responseBodyRawMessage()
+	if err != nil {
+		return nil, err
+	}
 	envelope := struct {
 		StatusCode   int             `json:"status_code"`
 		RequestID    string          `json:"request_id"`
@@ -174,7 +193,7 @@ func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byt
 		RequestID:    p.upstreamRequestID,
 		TraceID:      traceID,
 		XRequestID:   xRequestID,
-		ResponseBody: p.responseBodyRawMessage(),
+		ResponseBody: responseBody,
 	}
 	return json.Marshal(envelope)
 }
@@ -186,5 +205,5 @@ func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
 	if p.isJSON {
 		return p.rawBody, nil
 	}
-	return p.responseBodyRawMessage(), nil
+	return p.responseBodyRawMessage()
 }
