@@ -1187,6 +1187,7 @@ class TestMCPServerAppPermissionListCreateApi:
             mcp_server=fake_mcp_server,
             bk_app_code="test-app",
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            updated_by="operator",
         )
 
         resp = request_view(
@@ -1199,6 +1200,7 @@ class TestMCPServerAppPermissionListCreateApi:
 
         assert resp.status_code == 200
         assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["updater"] == "operator"
 
     def test_list_with_filter(self, request_view, fake_gateway, fake_mcp_server):
         G(
@@ -3383,6 +3385,7 @@ class TestGatewayMCPServerAppPermissionListApi:
             mcp_server=fake_mcp_server,
             bk_app_code="app1",
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            updated_by="operator",
         )
         G(
             MCPServerAppPermission,
@@ -3400,6 +3403,7 @@ class TestGatewayMCPServerAppPermissionListApi:
         assert resp.status_code == 200
         result = resp.json()
         assert result["data"]["count"] == 2
+        assert result["data"]["results"][0]["updater"] == "operator"
 
     def test_list_order_by_effective_time(self, request_view, fake_gateway, fake_mcp_server):
         base_time = now_datetime()

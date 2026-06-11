@@ -27,6 +27,7 @@ from apigateway.apis.web.mcp_server.serializers import (
     GatewayMCPServerAppPermissionExportInputSLZ,
     GatewayMCPServerAppPermissionListInputSLZ,
     GatewayMCPServerAppPermissionListOutputSLZ,
+    MCPServerAppPermissionListOutputSLZ,
     MCPServerCategoryOutputSLZ,
     MCPServerCreateInputSLZ,
     MCPServerListInputSLZ,
@@ -616,6 +617,7 @@ class TestGatewayMCPServerAppPermissionListOutputSLZ:
         assert data["grant_type"] == MCPServerAppPermissionGrantTypeEnum.APPLY.value
         # APPLY 类型应该通过审批单获取 handled_by
         assert data["handled_by"] == "admin"
+        assert data["updater"] == "admin"
 
     def test_output_apply_type_without_record(self, fake_gateway, fake_stage):
         """测试申请授权类型（无关联审批记录）的序列化输出，应回退到 permission 字段"""
@@ -658,6 +660,31 @@ class TestGatewayMCPServerAppPermissionListOutputSLZ:
         slz = GatewayMCPServerAppPermissionListOutputSLZ(permission, context={})
         data = slz.data
         assert data["handled_by"] == "grant_user"
+        assert data["updater"] == "grant_user"
+
+
+class TestMCPServerAppPermissionListOutputSLZ:
+    """测试单个 MCPServer 应用权限列表输出序列化器"""
+
+    def test_output_updater(self, fake_gateway, fake_stage):
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp",
+        )
+        permission = G(
+            MCPServerAppPermission,
+            mcp_server=mcp_server,
+            bk_app_code="test-app",
+            grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
+            created_by="creator_user",
+            updated_by="operator_user",
+        )
+
+        slz = MCPServerAppPermissionListOutputSLZ(permission)
+
+        assert slz.data["updater"] == "operator_user"
 
 
 class TestGatewayMCPServerAppPermissionExportInputSLZ:

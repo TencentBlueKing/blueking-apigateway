@@ -692,12 +692,16 @@ class MCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     bk_app_code = serializers.CharField(required=True, help_text="蓝鲸应用 ID")
     expires = serializers.DateTimeField(help_text="过期时间")
+    updater = serializers.SerializerMethodField(help_text="操作人")
     grant_type = serializers.ChoiceField(
         choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
     )
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionListOutputSLZ"
+
+    def get_updater(self, obj):
+        return obj.updated_by or obj.created_by or ""
 
 
 class MCPServerAppPermissionCreateInputSLZ(serializers.Serializer):
@@ -963,6 +967,7 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
     applied_by = serializers.SerializerMethodField(help_text="申请人")
     effective_time = serializers.SerializerMethodField(help_text="生效时间")
     handled_by = serializers.SerializerMethodField(help_text="审批人/授权人")
+    updater = serializers.SerializerMethodField(help_text="操作人")
     grant_type = serializers.ChoiceField(
         read_only=True, choices=MCPServerAppPermissionGrantTypeEnum.get_choices(), help_text="授权类型"
     )
@@ -997,6 +1002,12 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
         if apply_record:
             return apply_record.handled_by
         return obj.created_by or obj.updated_by or ""
+
+    def get_updater(self, obj):
+        apply_record = self._get_apply_record(obj)
+        if apply_record:
+            return apply_record.handled_by
+        return obj.updated_by or obj.created_by or ""
 
     def get_grant_type_display(self, obj):
         return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(obj.grant_type))
