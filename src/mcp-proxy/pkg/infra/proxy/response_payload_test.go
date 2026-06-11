@@ -53,30 +53,6 @@ var _ = Describe("toolResponsePayload", func() {
 		})
 	})
 
-	Describe("IsSuccess / PickLimit", func() {
-		It("treats 2xx as success", func() {
-			Expect(newToolResponsePayload(200, "", "", nil).IsSuccess()).To(BeTrue())
-			Expect(newToolResponsePayload(204, "", "", nil).IsSuccess()).To(BeTrue())
-			Expect(newToolResponsePayload(299, "", "", nil).IsSuccess()).To(BeTrue())
-		})
-
-		It("treats non-2xx as failure", func() {
-			Expect(newToolResponsePayload(199, "", "", nil).IsSuccess()).To(BeFalse())
-			Expect(newToolResponsePayload(300, "", "", nil).IsSuccess()).To(BeFalse())
-			Expect(newToolResponsePayload(404, "", "", nil).IsSuccess()).To(BeFalse())
-			Expect(newToolResponsePayload(500, "", "", nil).IsSuccess()).To(BeFalse())
-		})
-
-		It("PickLimit returns success limit for 2xx", func() {
-			Expect(newToolResponsePayload(200, "", "", nil).PickLimit(1024, 8192)).To(Equal(1024))
-		})
-
-		It("PickLimit returns error limit for non-2xx", func() {
-			Expect(newToolResponsePayload(500, "", "", nil).PickLimit(1024, 8192)).To(Equal(8192))
-			Expect(newToolResponsePayload(404, "", "", nil).PickLimit(1024, 8192)).To(Equal(8192))
-		})
-	})
-
 	Describe("EnvelopePreview body field", func() {
 		It("returns null for empty body", func() {
 			payload := newToolResponsePayload(204, "", "application/json", nil)

@@ -57,20 +57,6 @@ func newToolResponsePayload(
 	}
 }
 
-// IsSuccess reports whether the upstream returned a 2xx status code.
-func (p *toolResponsePayload) IsSuccess() bool {
-	return p.statusCode >= 200 && p.statusCode <= 299
-}
-
-// PickLimit returns successLimit when the upstream succeeded (2xx) and errorLimit otherwise.
-// Used by log call sites to give failed calls a larger truncation budget for troubleshooting.
-func (p *toolResponsePayload) PickLimit(successLimit, errorLimit int) int {
-	if p.IsSuccess() {
-		return successLimit
-	}
-	return errorLimit
-}
-
 func isJSONContentType(contentType string) bool {
 	if contentType == "" {
 		return false

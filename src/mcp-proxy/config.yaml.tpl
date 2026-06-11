@@ -85,6 +85,8 @@ mcpServer:
     auditLogMaxBodySize: 4096
     # Audit log response size limit for tool call responses
     auditLogMaxResponseSize: 4096
+    # Audit log response size limit for failed tool call responses (keeps more diagnostic info)
+    auditLogMaxErrorResponseSize: 16384
     # MCP API log request params size limit
     apiLogRequestSize: 2048
     # MCP API log response size limit (normal responses)

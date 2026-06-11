@@ -627,6 +627,36 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
+	Describe("handleUnexpectedSubmitResult", func() {
+		It("marks audit as failed and returns an MCP error result", func() {
+			auditStatus := "success"
+			auditLatency := time.Duration(0)
+
+			result := handleUnexpectedSubmitResult(
+				context.Background(),
+				struct{}{},
+				&ToolConfig{Name: "list_items"},
+				zap.NewNop(),
+				nil,
+				nil,
+				time.Now(),
+				&auditStatus,
+				&auditLatency,
+			)
+
+			Expect(auditStatus).To(Equal("failed"))
+			Expect(auditLatency).To(BeNumerically(">", 0))
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(
+				ContainSubstring("unexpected submit result type"),
+			)
+		})
+	})
+
 	Describe("serializeToolCallResponse", func() {
 		It("renders envelope preview with APILogResponseSize for 2xx", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"items":[1]}`))

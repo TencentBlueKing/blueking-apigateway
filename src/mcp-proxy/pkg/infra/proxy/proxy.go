@@ -818,6 +818,28 @@ func handleToolCallError(
 	return result
 }
 
+func handleUnexpectedSubmitResult(
+	ctx context.Context,
+	submit any,
+	toolApiConfig *ToolConfig,
+	auditLog *zap.Logger,
+	headerInfo map[string]string,
+	span oteltrace.Span,
+	start time.Time,
+	auditStatus *string,
+	auditLatency *time.Duration,
+) *mcp.CallToolResult {
+	if auditStatus != nil {
+		*auditStatus = "failed"
+	}
+	if auditLatency != nil {
+		*auditLatency = time.Since(start)
+	}
+
+	err := fmt.Errorf("unexpected submit result type %T", submit)
+	return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start)
+}
+
 func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEnabledGetter func() bool) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
@@ -1120,13 +1142,23 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditResponseSize = int64(len(responsePayload.rawBody))
 		auditUpstreamReqID = responsePayload.upstreamRequestID
 		auditLatency = duration
-		auditStatus = "success"
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
 		// Reader contract guarantees submit is json.RawMessage on success; see ClientResponseReaderFunc above.
 		responseBytes, ok := submit.(json.RawMessage)
 		if !ok {
-			return nil, fmt.Errorf("unexpected submit result type %T", submit)
+			return handleUnexpectedSubmitResult(
+				ctx,
+				submit,
+				toolApiConfig,
+				auditLog,
+				headerInfo,
+				span,
+				start,
+				&auditStatus,
+				&auditLatency,
+			), nil
 		}
+		auditStatus = "success"
 		return buildToolResultFromJSONBytes(responseBytes), nil
 	}
 	return handler
