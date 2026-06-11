@@ -24,8 +24,10 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 
 from apigateway.apis.open.permission.helpers import (
@@ -61,6 +63,15 @@ from . import serializers
 from .serializers import PaaSAppPermissionApplyV2InputSLZ
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_resource_ids_in_released_resources(resource_ids: list[int], released_resources: list[dict]):
+    if not resource_ids:
+        return
+
+    released_resource_ids = {resource["id"] for resource in released_resources}
+    if set(resource_ids) - released_resource_ids:
+        raise ValidationError({"resource_ids": [_("指定的部分资源 ID 不属于当前网关已发布资源。")]})
 
 
 class ResourceViewSet(viewsets.ViewSet):
@@ -147,6 +158,11 @@ class BaseAppPermissionApplyAPIView(APIView, metaclass=ABCMeta):
                     f"app_code={app_code} is belongs to tenant {app_tenant_id}, should not apply the gateway of tenant {gateway_tenant_id}",
                     replace=True,
                 )
+
+        resource_ids = data.get("resource_ids") or []
+        if resource_ids:
+            released_resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
+            _validate_resource_ids_in_released_resources(resource_ids, released_resources)
 
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
         record = manager.create_apply_record(
