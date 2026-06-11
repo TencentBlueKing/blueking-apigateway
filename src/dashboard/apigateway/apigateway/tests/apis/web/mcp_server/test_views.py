@@ -711,6 +711,18 @@ class TestMCPServerRetrieveUpdateDestroyApi:
         assert result["data"]["name"] == fake_mcp_server.name
         assert "updated_time" in result["data"]
 
+    def test_retrieve_from_other_gateway_returns_404(self, request_view, fake_gateway, fake_mcp_server):
+        other_gateway = create_gateway()
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_server.retrieve_update_destroy",
+            path_params={"gateway_id": other_gateway.id, "mcp_server_id": fake_mcp_server.id},
+            gateway=other_gateway,
+        )
+
+        assert resp.status_code == 404
+
     def test_update(self, mocker, request_view, fake_gateway, fake_mcp_server, faker):
         mocker.patch(
             "apigateway.biz.mcp_server.MCPServerHandler.get_valid_resource_names",
@@ -1240,6 +1252,37 @@ class TestMCPServerAppPermissionListCreateApi:
             mcp_server=fake_mcp_server,
             bk_app_code="new-app",
         ).exists()
+
+    def test_create_with_mcp_server_from_other_gateway_returns_404(self, mocker, request_view, fake_gateway, faker):
+        mock_sync_permissions = mocker.patch(
+            "apigateway.biz.mcp_server.MCPServerHandler.sync_permissions",
+            return_value=None,
+        )
+        other_gateway = create_gateway()
+        other_stage = G(Stage, gateway=other_gateway, status=1, name=faker.pystr(), description=faker.pystr())
+        other_mcp_server = G(
+            MCPServer,
+            name=faker.pystr()[:20],
+            gateway=other_gateway,
+            stage=other_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            _resource_names="resource1",
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_server.app-permission.list_create",
+            path_params={"gateway_id": fake_gateway.id, "mcp_server_id": other_mcp_server.id},
+            gateway=fake_gateway,
+            data={"bk_app_code": "new-app"},
+        )
+
+        assert resp.status_code == 404
+        assert not MCPServerAppPermission.objects.filter(
+            mcp_server=other_mcp_server,
+            bk_app_code="new-app",
+        ).exists()
+        mock_sync_permissions.assert_not_called()
 
 
 class TestMCPServerAppPermissionDestroyApi:

@@ -22,6 +22,7 @@ from io import StringIO
 
 from django.db import transaction
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -229,6 +230,11 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
 
 
+class MCPServerQuerySetMixin:
+    def get_queryset(self):
+        return super().get_queryset().filter(gateway=self.request.gateway)
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -263,7 +269,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = MCPServer.objects.select_related("stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -363,7 +369,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerUpdateStatusApi(generics.UpdateAPIView):
+class MCPServerUpdateStatusApi(MCPServerQuerySetMixin, generics.UpdateAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerUpdateStatusInputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -397,7 +403,7 @@ class MCPServerUpdateStatusApi(generics.UpdateAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerToolsListApi(generics.ListAPIView):
+class MCPServerToolsListApi(MCPServerQuerySetMixin, generics.ListAPIView):
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
@@ -427,7 +433,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
+class MCPServerGuidelineRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerGuidelineOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -460,7 +466,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerConfigListApi(generics.RetrieveAPIView):
+class MCPServerConfigListApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     """获取 MCPServer 配置列表，支持多种 AI 工具的配置"""
 
     queryset = MCPServer.objects.all()
@@ -486,7 +492,7 @@ class MCPServerConfigListApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
+class MCPServerToolDocRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerToolDocOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -539,7 +545,7 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
+class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
@@ -731,16 +737,17 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        mcp_server = get_object_or_404(MCPServer, id=kwargs["mcp_server_id"], gateway=request.gateway)
 
         MCPServerAppPermission.objects.save_permission(
-            mcp_server_id=kwargs["mcp_server_id"],
+            mcp_server_id=mcp_server.id,
             bk_app_code=data["bk_app_code"],
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
             expire_days=None,
             operator=request.user.username,
         )
 
-        MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
