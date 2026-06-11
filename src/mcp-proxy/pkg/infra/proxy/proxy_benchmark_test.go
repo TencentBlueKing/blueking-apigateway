@@ -30,6 +30,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -199,6 +200,8 @@ func initBenchmarkRuntime(b *testing.B) {
 		},
 	}
 	logging.InitLogger(config.G)
+	sharedTransportOnce = sync.Once{}
+	sharedTransport = nil
 	InitSharedTransport(config.Transport{
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   100,
