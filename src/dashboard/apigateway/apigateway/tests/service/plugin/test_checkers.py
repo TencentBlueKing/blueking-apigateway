@@ -34,6 +34,7 @@ from apigateway.service.plugin import (
     RedirectChecker,
     RequestValidationChecker,
     ResponseRewriteChecker,
+    UriBlockerChecker,
 )
 from apigateway.utils.yaml import yaml_dumps
 
@@ -279,6 +280,12 @@ class TestPluginConfigYamlChecker:
                     "allow_credential": True,
                 },
             ),
+            (
+                "uri-blocker",
+                {
+                    "block_rules": ["["],
+                },
+            ),
         ],
     )
     def test_check__error(self, type_code, data):
@@ -412,6 +419,54 @@ class TestRequestValidationChecker:
     )
     def test_check(self, data, ctx):
         checker = RequestValidationChecker()
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
+class TestUriBlockerChecker:
+    @pytest.mark.parametrize(
+        "data, ctx",
+        [
+            (
+                {
+                    "block_rules": [
+                        ".*wp-admin.*",
+                        ".*\\.php$",
+                    ],
+                    "case_insensitive": True,
+                    "rejected_code": 403,
+                    "rejected_msg": "access is not allowed",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "block_rules": [],
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "block_rules": ["["],
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "block_rules": ["foo", "foo"],
+                },
+                pytest.raises(ValueError),
+            ),
+            (
+                {
+                    "block_rules": ["foo", 1],
+                },
+                pytest.raises(TypeError),
+            ),
+        ],
+    )
+    def test_check(self, data, ctx):
+        checker = UriBlockerChecker()
         with ctx:
             checker.check(yaml_dumps(data))
 
