@@ -105,9 +105,13 @@ func (p *toolResponsePayload) invalidDeclaredJSONBodyError(cause error) error {
 	return fmt.Errorf("invalid JSON response body for Content-Type %q: %w", p.contentType, cause)
 }
 
-// responseBodyRawMessage returns a json.RawMessage suitable for embedding into the envelope
-// sent to MCP clients. Unlike previewBodyAsRawMessage, this method does NOT truncate the body
-// — it preserves full fidelity for the client. Used by marshalEnvelope.
+// responseBodyRawMessage returns the response_body field value for the normal envelope response.
+// It preserves the upstream body without truncation because marshalEnvelope embeds this value into
+// a larger JSON object together with status_code, request_id, trace_id, and x_request_id.
+//
+// This differs from marshalRawResponse: responseBodyRawMessage returns only one JSON field value
+// for an envelope, while marshalRawResponse returns the whole MCP tool response when
+// raw_response_enabled is on.
 func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) {
 	if p == nil {
 		return json.RawMessage("null"), nil
@@ -219,8 +223,22 @@ func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byt
 	return out, nil
 }
 
+// marshalRawResponse returns the complete MCP tool response for raw_response_enabled mode.
+// It does not wrap the upstream body in the normal envelope, so callers receive only the raw API
+// response shape: declared JSON is returned unchanged, non-JSON bytes are encoded as a JSON
+// string, explicit empty non-JSON bytes become "", and an absent body becomes null.
+//
+// This differs from responseBodyRawMessage: marshalRawResponse produces the entire response bytes
+// returned to the MCP client, while responseBodyRawMessage produces only the response_body value
+// embedded by marshalEnvelope.
 func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
-	if p == nil || len(p.rawBody) == 0 {
+	if p == nil {
+		return []byte("null"), nil
+	}
+	if len(p.rawBody) == 0 {
+		if p.rawBody != nil && !p.isDeclaredJSON {
+			return []byte(`""`), nil
+		}
 		return []byte("null"), nil
 	}
 	if err := p.validateDeclaredJSONBody(); err != nil {

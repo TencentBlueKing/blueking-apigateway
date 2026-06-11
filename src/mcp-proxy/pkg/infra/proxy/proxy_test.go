@@ -676,6 +676,30 @@ var _ = Describe("MCPProxy", func() {
 			Expect(response).NotTo(ContainSubstring(truncatedSuffix))
 		})
 
+		It(
+			"uses APILogErrorResponseSize when final tool result is an error despite a 2xx upstream status",
+			func() {
+				// Body is larger than the success limit but smaller than the error limit.
+				big := []byte(`{"items":[` + strings.Repeat(`1,`, 90) + `0]}`)
+				payload := newToolResponsePayload(200, "req-1", "application/json", big)
+
+				response, _, _ := serializeToolCallResponse(
+					"",
+					"",
+					&mcp.CallToolResult{IsError: true},
+					payload,
+					true,
+					config.LogTruncate{
+						APILogResponseSize:      50,
+						APILogErrorResponseSize: 4096,
+					},
+				)
+
+				Expect(response).To(ContainSubstring(`"response_body":{"items":[1,1,`))
+				Expect(response).NotTo(ContainSubstring(truncatedSuffix))
+			},
+		)
+
 		It("preserves non-JSON error body verbatim in envelope preview", func() {
 			payload := newToolResponsePayload(
 				500, "req-1", "text/html",

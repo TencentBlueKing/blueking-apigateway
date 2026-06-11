@@ -1090,7 +1090,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				auditResponse = responsePayload.EnvelopePreview(
 					trace.GetTraceIDFromContext(ctx),
 					xRequestID,
-					responsePayload.PickLimit(
+					pickToolCallLogLimit(
+						true,
 						logTruncate.GetAuditLogMaxResponseSize(),
 						logTruncate.GetAuditLogMaxErrorResponseSize(),
 					),
@@ -1110,7 +1111,8 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		auditResponse = responsePayload.EnvelopePreview(
 			trace.GetTraceIDFromContext(ctx),
 			xRequestID,
-			responsePayload.PickLimit(
+			pickToolCallLogLimit(
+				false,
 				logTruncate.GetAuditLogMaxResponseSize(),
 				logTruncate.GetAuditLogMaxErrorResponseSize(),
 			),
@@ -1337,7 +1339,8 @@ func serializeToolCallResponse(
 	logTruncate config.LogTruncate,
 ) (string, int64, string) {
 	if payload != nil {
-		limit := payload.PickLimit(
+		limit := pickToolCallLogLimit(
+			hasError,
 			logTruncate.GetAPILogResponseSize(),
 			logTruncate.GetAPILogErrorResponseSize(),
 		)
@@ -1367,6 +1370,13 @@ func serializeToolCallResponse(
 	}
 	response := stringx.Truncate(string(resultBytes), limit)
 	return response, responseBodySize, ""
+}
+
+func pickToolCallLogLimit(hasError bool, successLimit, errorLimit int) int {
+	if hasError {
+		return errorLimit
+	}
+	return successLimit
 }
 
 // toolCallContextInfo holds context-derived info for tool call logging.

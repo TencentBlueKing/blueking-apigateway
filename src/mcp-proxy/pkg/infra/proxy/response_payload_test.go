@@ -227,6 +227,14 @@ var _ = Describe("toolResponsePayload", func() {
 			Expect(string(data)).To(Equal(`"plain \"quoted\"\nline"`))
 		})
 
+		It("preserves empty non-JSON response body as an empty JSON string", func() {
+			payload := newToolResponsePayload(200, "req-1", "text/plain", []byte{})
+			data, err := payload.marshalRawResponse()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(data)).To(Equal(`""`))
+		})
+
 		It("returns an error for invalid non-empty bodies declared as JSON", func() {
 			payload := newToolResponsePayload(200, "req-1", "application/json", []byte(`{"bad"`))
 			data, err := payload.marshalRawResponse()
