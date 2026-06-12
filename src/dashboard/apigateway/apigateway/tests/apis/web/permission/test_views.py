@@ -56,6 +56,7 @@ class TestAppPermissionViewSet:
             models.AppGatewayPermission,
             gateway=fake_gateway,
             bk_app_code="test",
+            handled_by="admin",
         )
 
         data = [
@@ -77,6 +78,16 @@ class TestAppPermissionViewSet:
                 "expected": {
                     "count": 1,
                     "status_code": 200,
+                },
+            },
+            {
+                "params": {
+                    "grant_dimension": "api",
+                },
+                "expected": {
+                    "count": 1,
+                    "status_code": 200,
+                    "updater": "admin",
                 },
             },
             {
@@ -103,6 +114,8 @@ class TestAppPermissionViewSet:
             assert response.status_code == test["expected"]["status_code"], result
             if response.status_code == 200:
                 assert result["data"]["count"] == test["expected"]["count"]
+                if "updater" in test["expected"]:
+                    assert result["data"]["results"][0]["updater"] == test["expected"]["updater"]
 
 
 class TestAppPermissionRenewViewSet(TestCase):
@@ -187,6 +200,11 @@ class TestAppResourcePermissionViewSet:
             )
             result = response.json()
             assert response.status_code == 201, result
+            permission = test["expected"]["permission_model"].objects.get(
+                gateway=fake_gateway,
+                bk_app_code=test["params"]["bk_app_code"],
+            )
+            assert permission.handled_by == "admin"
 
 
 class TestAppGatewayPermissionViewSet:
@@ -233,6 +251,11 @@ class TestAppGatewayPermissionViewSet:
             )
             result = response.json()
             assert response.status_code == 201, result
+            permission = test["expected"]["permission_model"].objects.get(
+                gateway=fake_gateway,
+                bk_app_code=test["params"]["bk_app_code"],
+            )
+            assert permission.handled_by == "admin"
 
 
 class TestAppResourcePermissionBatchViewSet(TestCase):

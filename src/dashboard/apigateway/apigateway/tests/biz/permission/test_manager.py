@@ -89,6 +89,7 @@ class TestGatewayPermissionDimensionManager:
         assert record.id
         permission = AppGatewayPermission.objects.get(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
         assert permission.grant_type == GrantTypeEnum.APPLY.value
+        assert permission.handled_by == "admin"
         assert AppPermissionApplyStatus.objects.filter(gateway=fake_gateway).count() == 0
 
     def test_handle_permission_apply_rejected(self, fake_gateway):
@@ -241,7 +242,9 @@ class TestResourcePermissionDimensionManager:
             part_resource_ids=None,
         )
         assert record.id
-        assert AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 2
+        permissions = AppResourcePermission.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code)
+        assert permissions.count() == 2
+        assert {permission.handled_by for permission in permissions} == {"admin"}
         assert (
             AppPermissionApplyStatus.objects.filter(gateway=fake_gateway, bk_app_code=apply.bk_app_code).count() == 0
         )

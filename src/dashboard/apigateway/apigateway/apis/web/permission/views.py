@@ -113,6 +113,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
                 "id": perm.id,
+                "updater": perm.handled_by,
             }
             for perm in gateway_queryset
         ]
@@ -124,6 +125,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.RESOURCE.value,
                 "id": perm.id,
+                "updater": perm.handled_by,
             }
             for perm in resource_queryset
         ]
@@ -396,6 +398,7 @@ class AppResourcePermissionCreateApi(generics.CreateAPIView):
             bk_app_code=data["bk_app_code"],
             expire_days=data["expire_days"],
             grant_type=GrantTypeEnum.INITIALIZE.value,
+            handled_by=request.user.username,
         )
 
         # 查询授权后的资源权限
@@ -511,6 +514,7 @@ class AppGatewayPermissionCreateApi(generics.CreateAPIView):
             bk_app_code=data["bk_app_code"],
             expire_days=data["expire_days"],
             grant_type=GrantTypeEnum.INITIALIZE.value,
+            handled_by=request.user.username,
         )
 
         Auditor.record_permission_op_success(
