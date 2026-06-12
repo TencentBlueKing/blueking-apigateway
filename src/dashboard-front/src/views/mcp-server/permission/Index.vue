@@ -76,7 +76,7 @@
                   v-for="option of mcpList"
                   :id="option.id"
                   :key="option.id"
-                  :name="option.name"
+                  :name="renderMcpDisplayName(option)"
                 />
               </BkSelect>
             </BkFormItem>
@@ -286,12 +286,18 @@ const tableColumns = computed(() => {
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: mcpList.value.map((item: Record<string, string>) => ({
-          label: item.name,
+          label: renderMcpDisplayName(item),
           value: item.id,
         })),
       },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        return row?.mcp_server?.name;
+        const { name, title = '' } = row?.mcp_server ?? {};
+
+        if (!name) return '--';
+
+        const validTitle = title && typeof title === 'string' ? title : '';
+
+        return validTitle ? `${validTitle} (${name})` : name;
       },
     },
     {
@@ -468,6 +474,10 @@ const getApplicant = async () => {
     } as any,
   );
   applicantList.value = response?.applicants || [];
+};
+
+const renderMcpDisplayName = (option: Record<string, string>) => {
+  return option?.title ? `${option.title} (${option.name})` : option.name;
 };
 
 const handleTabChange = (name: string) => {

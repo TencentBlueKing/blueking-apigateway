@@ -142,6 +142,7 @@ import { useGateway, usePermission } from '@/stores';
 import type { IDropList, ITableMethod } from '@/types/common';
 import type { IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
+import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
 import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
@@ -177,16 +178,7 @@ const tableColumns = shallowRef<any[]>([
       type: 'single',
       showConfirmAndReset: true,
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: [
-        {
-          label: t('按网关'),
-          value: 'api',
-        },
-        {
-          label: t('按资源'),
-          value: 'resource',
-        },
-      ],
+      list: GRANT_DIMENSION_TYPE_LIST,
     },
   },
   {
