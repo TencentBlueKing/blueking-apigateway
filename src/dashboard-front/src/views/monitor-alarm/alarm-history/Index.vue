@@ -391,7 +391,7 @@ const handleToggle = (value: boolean) => {
 };
 
 // 鼠标点击
-const handleRowClick = (e: MouseEvent, row: IAlarmRecord) => {
+const handleRowClick = ({ row }: { row: IAlarmRecord }) => {
   sliderConfig = Object.assign(sliderConfig, {
     isShow: true,
     data: row,
