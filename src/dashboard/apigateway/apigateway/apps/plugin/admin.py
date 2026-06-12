@@ -18,7 +18,7 @@
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
-from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginForm, PluginType
+from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
 
 
 class PluginTypeAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
@@ -26,13 +26,6 @@ class PluginTypeAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ["id", "code", "name", "is_public", "scope"]
     search_fields = ["code", "name"]
     list_filter = ["code", "is_public", "scope"]
-
-
-class PluginFormAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
-    djangoql_completion_enabled_by_default = False
-    list_display = ["id", "type", "style", "language"]
-    search_fields = ["notes"]
-    list_filter = ["type", "language", "style"]
 
 
 class PluginConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
@@ -50,6 +43,5 @@ class PluginBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
 
 admin.site.register(PluginType, PluginTypeAdmin)
-admin.site.register(PluginForm, PluginFormAdmin)
 admin.site.register(PluginConfig, PluginConfigAdmin)
 admin.site.register(PluginBinding, PluginBindingAdmin)
