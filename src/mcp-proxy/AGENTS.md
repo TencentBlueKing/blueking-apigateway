@@ -214,8 +214,8 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 - `BK_API_URL_TMPL` overrides `mcpServer.bkApiUrlTmpl`.
 - `PROMETHEUS_METRIC_NAME_PREFIX` overrides `metric.namePrefix`, default `bk_apigateway_`. Keep metric names
   compatible with dashboard PromQL in `src/dashboard/apigateway/apigateway/service/prometheus/`.
-- `PPROF_USERNAME` and `PPROF_PASSWORD` override pprof credentials. Defaults exist in code, but production
-  config should set real credentials.
+- `PPROF_USERNAME` and `PPROF_PASSWORD` override pprof credentials. Empty username or password disables
+  pprof; set both values through config or env vars to enable it.
 - `BKAI_DEV_TRACE_ENABLE`, `BKAI_DEV_TRACE_ENDPOINT`, `BKAI_DEV_TRACE_SERVICE_NAME`, and
   `BKAI_DEV_TRACE_TOKEN` override the `bkAIDevTrace` config section.
 - `mcpServer.logTruncate` sizes are string lengths, not byte counts.
