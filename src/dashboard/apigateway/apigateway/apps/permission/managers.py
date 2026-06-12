@@ -42,6 +42,7 @@ class AppGatewayPermissionManager(models.Manager):
         bk_app_code=None,
         grant_type=GrantTypeEnum.INITIALIZE.value,
         expire_days=None,
+        handled_by="",
     ):
         obj, _ = self.update_or_create(
             gateway=gateway,
@@ -49,6 +50,7 @@ class AppGatewayPermissionManager(models.Manager):
             defaults={
                 "expires": calculate_expires(expire_days),
                 "grant_type": grant_type,
+                "handled_by": handled_by,
             },
         )
         return obj
@@ -110,7 +112,7 @@ class AppResourcePermissionManager(models.Manager):
             grant_type=grant_type,
         )
 
-    def save_permissions(self, gateway, resource_ids, bk_app_code, grant_type, expire_days=None):
+    def save_permissions(self, gateway, resource_ids, bk_app_code, grant_type, expire_days=None, handled_by=""):
         expires = calculate_expires(expire_days)
 
         # 此处不再重复校验 resource_id 属于网关
@@ -124,6 +126,7 @@ class AppResourcePermissionManager(models.Manager):
                 defaults={
                     "expires": expires,
                     "grant_type": grant_type,
+                    "handled_by": handled_by,
                     "created_time": now_datetime(),
                     "updated_time": now_datetime(),
                 },

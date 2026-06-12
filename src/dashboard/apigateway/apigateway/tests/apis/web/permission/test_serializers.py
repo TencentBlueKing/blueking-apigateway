@@ -124,6 +124,7 @@ class TestAppPermissionOutputSLZ(TestCase):
                 "grant_type": "apply",
                 "renewable": False,
                 "id": app_api_permission.id,
+                "handled_by": "",
             },
             {
                 "bk_app_code": "test",
@@ -136,6 +137,7 @@ class TestAppPermissionOutputSLZ(TestCase):
                 "grant_type": "apply",
                 "renewable": True,
                 "id": app_resource_permission.id,
+                "handled_by": "",
             },
         ]
 
