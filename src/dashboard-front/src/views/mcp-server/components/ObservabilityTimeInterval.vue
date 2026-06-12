@@ -109,7 +109,7 @@
           </div>
         </template>
         <BkOption
-          v-for="st of PRECISION_STEPS_list"
+          v-for="st of PRECISION_STEPS_LIST"
           :id="st.value"
           :key="st.value"
           :name="st.label"
@@ -121,7 +121,7 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import { INTERVAL_TIME_LIST, PRECISION_STEPS_list } from '@/constants';
+import { INTERVAL_TIME_LIST, PRECISION_STEPS_LIST } from '@/constants';
 import { useObservabilityDashboard } from '@/hooks';
 import AgIcon from '@/components/ag-icon/Index.vue';
 
