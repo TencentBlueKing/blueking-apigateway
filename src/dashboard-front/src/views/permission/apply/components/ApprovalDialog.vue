@@ -15,6 +15,7 @@
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
+
 <template>
   <BkDialog
     :is-show="applyActionDialogConf.isShow"
@@ -118,7 +119,7 @@ const approveFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
 
 // 警告框主题
 const alertTheme = computed(() => {
-  if (curPermission.grant_dimension === 'api') {
+  if (curPermission?.grant_dimension === 'api') {
     return formData.value.status === 'approved' ? 'warning' : 'error';
   }
   return 'warning';
@@ -131,6 +132,7 @@ const approveFormMessage = computed(() => {
     selection = [],
     resources = [],
   } = curPermission ?? {};
+
   const selectLength = selection.length;
   const resourceLength = resources.length;
   const isApproved = formData.value.status === 'approved';

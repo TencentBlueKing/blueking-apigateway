@@ -268,7 +268,7 @@ export const INTERVAL_TIME_LIST = [
 ];
 
 // 精度刷新时间列表
-export const PRECISION_STEPS_list = [
+export const PRECISION_STEPS_LIST = [
   {
     label: 'Auto',
     value: 'auto',
@@ -312,5 +312,17 @@ export const AUTHORIZATION_APPLICATION_OPERATE_TYPE = [
   {
     name: t('申请审批'),
     id: 'apply',
+  },
+];
+
+// 授权维度列表
+export const GRANT_DIMENSION_TYPE_LIST = [
+  {
+    label: t('按网关'),
+    value: 'api',
+  },
+  {
+    label: t('按资源'),
+    value: 'resource',
   },
 ];
