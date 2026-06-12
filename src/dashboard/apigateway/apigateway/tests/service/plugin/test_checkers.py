@@ -259,12 +259,6 @@ class TestPluginConfigYamlChecker:
                     "allow_credential": True,
                 },
             ),
-            (
-                "uri-blocker",
-                {
-                    "block_rules": ["["],
-                },
-            ),
         ],
     )
     def test_check(self, type_code, data):
@@ -284,6 +278,12 @@ class TestPluginConfigYamlChecker:
                     "expose_headers": "*",
                     "max_age": 100,
                     "allow_credential": True,
+                },
+            ),
+            (
+                "uri-blocker",
+                {
+                    "block_rules": ["["],
                 },
             ),
         ],
@@ -449,7 +449,7 @@ class TestUriBlockerChecker:
                 {
                     "block_rules": ["["],
                 },
-                does_not_raise(),
+                pytest.raises(ValueError),
             ),
             (
                 {
