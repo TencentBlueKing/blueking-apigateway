@@ -87,7 +87,7 @@ class TestAppPermissionViewSet:
                 "expected": {
                     "count": 1,
                     "status_code": 200,
-                    "updater": "admin",
+                    "handled_by": "admin",
                 },
             },
             {
@@ -114,8 +114,8 @@ class TestAppPermissionViewSet:
             assert response.status_code == test["expected"]["status_code"], result
             if response.status_code == 200:
                 assert result["data"]["count"] == test["expected"]["count"]
-                if "updater" in test["expected"]:
-                    assert result["data"]["results"][0]["updater"] == test["expected"]["updater"]
+                if "handled_by" in test["expected"]:
+                    assert result["data"]["results"][0]["handled_by"] == test["expected"]["handled_by"]
 
 
 class TestAppPermissionRenewViewSet(TestCase):

@@ -113,7 +113,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.API.value,
                 "id": perm.id,
-                "updater": perm.handled_by,
+                "handled_by": perm.handled_by,
             }
             for perm in gateway_queryset
         ]
@@ -125,7 +125,7 @@ class AppPermissionQuerySetMixin(AppGatewayPermissionQuerySetMixin, AppResourceP
                 "expires": perm.expires,
                 "grant_dimension": GrantDimensionEnum.RESOURCE.value,
                 "id": perm.id,
-                "updater": perm.handled_by,
+                "handled_by": perm.handled_by,
             }
             for perm in resource_queryset
         ]
