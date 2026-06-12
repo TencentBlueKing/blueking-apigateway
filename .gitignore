@@ -19,3 +19,5 @@ bkcodeai.json
 .worktrees
 
 *.png
+docs/superpowers
+specs/
