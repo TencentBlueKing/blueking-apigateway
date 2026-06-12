@@ -35,7 +35,23 @@
         └── reports/        # Timestamped test reports (gitignored)
 ```
 
-## Skills
+## Project Relationship
+
+```
+apis create and publish:
+dashboard-front -> dashboard -> mysql -> dashboard(controller) -> etcd -> operator -> etcd -> blueking-apigateway-apisix
+
+publish event report:
+operator -> core-api -> mysql
+
+permission:
+blueking-apigateway-apisix -> core-api -> mysql
+
+mcp server:
+dashboard-front -> dashboard -> mysql -> mcp-proxy
+```
+
+## SKILLs
 
 Agent skills are located in `.agents/skills/`. Before executing any agent task described below, **read the full skill file first** to get detailed instructions, templates, and patterns.
 
