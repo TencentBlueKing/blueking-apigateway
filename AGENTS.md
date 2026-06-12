@@ -61,27 +61,3 @@ These skills are designed to work with **any AI coding agent** (Claude Code, Cod
 |-------|------|-------------|
 | bdd-test-gen | `.agents/skills/bdd-test-gen/SKILL.md` | Generate executable Playwright test scripts from BDD case files by exploring a live environment |
 | bk-apigateway-openapi-check | `.agents/skills/bk-apigateway-openapi-check/SKILL.md` | Check consistency between API code, YAML gateway definitions, and API docs (8 checks incl. parameter consistency). Usage: `cd src/dashboard && make check-openapi` — see [src/dashboard/AGENTS.md](src/dashboard/AGENTS.md) for details |
-
----
-
-## BDD Test Suite (`bdd-test-gen`)
-
-> Full documentation, knowledge base, URL mappings, selectors, and gotchas: **[test-bdd/AGENTS.md](test-bdd/AGENTS.md)**
->
-> Skill file: **`.agents/skills/bdd-test-gen/SKILL.md`** — read this file before executing any script generation commands.
-
-### Workflow
-
-1. **BDD Cases** (`test-bdd/cases/`): ~87 curated Chinese Gherkin scenarios covering 26 functional modules
-2. **Script Generation**: Invoke the `bdd-test-gen` SKILL to convert BDD cases into Playwright scripts by exploring a live environment
-3. **Script Execution**: Run `make test-bdd URL=<url> USER=<user> PASSWORD=<pass>` — no agent needed, pure script execution
-
-### Quick Commands
-
-```bash
-# Run all BDD tests
-make test-bdd URL=https://example.com USER=admin PASSWORD=secret
-
-# Generate scripts from BDD cases (agent-assisted)
-# Invoke the bdd-test-gen SKILL with: --url <URL> --user <USER> --password <PASS> --all
-```

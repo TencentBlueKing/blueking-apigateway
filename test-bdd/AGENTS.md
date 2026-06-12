@@ -4,6 +4,24 @@
 > It supplements the `bdd-test-gen` SKILL (`.agents/skills/bdd-test-gen/SKILL.md`) with
 > information that is too detailed or volatile to include in the SKILL itself.
 
+## Workflow
+
+1. **BDD Cases** (`test-bdd/cases/`): ~87 curated Chinese Gherkin scenarios covering 26 functional modules
+2. **Script Generation**: Invoke the `bdd-test-gen` SKILL to convert BDD cases into Playwright scripts by exploring a live environment
+3. **Script Execution**: Run `make test-bdd URL=<url> USER=<user> PASSWORD=<pass>` — no agent needed, pure script execution
+
+Read `.agents/skills/bdd-test-gen/SKILL.md` before executing any script generation commands.
+
+## Quick Commands
+
+```bash
+# Run all BDD tests
+make test-bdd URL=https://example.com USER=admin PASSWORD=secret
+
+# Generate scripts from BDD cases (agent-assisted)
+# Invoke the bdd-test-gen SKILL with: --url <URL> --user <USER> --password <PASS> --all
+```
+
 ## Module Classification
 
 The BDD test suite covers 26 functional modules organized under 5 top-level navigation sections:
