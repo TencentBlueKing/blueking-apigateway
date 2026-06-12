@@ -1350,3 +1350,58 @@
     - bk-traffic-label
     - plugin
     - '0'
+- model: schema.schema
+  fields:
+    created_time: 2026-06-10 00:00:00.000000+00:00
+    updated_time: 2026-06-10 00:00:00.000000+00:00
+    name: uri-blocker
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "properties": {
+          "block_rules": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "uniqueItems": true
+          },
+          "case_insensitive": {
+            "type": "boolean",
+            "default": false
+          },
+          "rejected_code": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 599,
+            "default": 403
+          },
+          "rejected_msg": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["block_rules"]
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: uri-blocker
+    name: URI 阻断
+    name_en: URI Blocker
+    description: "通过 URI 正则规则阻断请求，可用于提前拦截爬虫、安全扫描等请求。"
+    description_en: Block requests by URI regex rules. It can be used to block crawlers and security scan requests at the gateway layer.
+    is_public: true
+    scope: resource
+    priority: 2900
+    _tags: "安全,Security"
+    schema:
+    - uri-blocker
+    - plugin
+    - '0'
