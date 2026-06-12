@@ -699,11 +699,11 @@ const handleClearSelection = () => {
 
 .perm-approval-header {
   display: flex;
+  min-height: 32px;
+  margin-bottom: 16px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
-  min-height: 32px;
   flex-wrap: wrap;
 
   .batch-approval {
@@ -721,17 +721,17 @@ const handleClearSelection = () => {
     min-width: 0;
 
     :deep(.bk-form-item) {
-      margin: 0;
       display: flex;
+      max-width: fit-content;
+      min-width: 0;
+      margin: 0;
       align-items: center;
       flex: 1;
-      min-width: 0;
-      max-width: fit-content;
 
       .bk-form-label {
         width: auto;
-        white-space: nowrap;
         text-align: right;
+        white-space: nowrap;
       }
 
       .bk-form-content {
