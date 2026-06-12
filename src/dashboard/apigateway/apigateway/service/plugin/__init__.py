@@ -30,6 +30,7 @@ from .checker import (
     RedirectChecker,
     RequestValidationChecker,
     ResponseRewriteChecker,
+    UriBlockerChecker,
     check_vars,
 )
 from .convertor import (
@@ -88,6 +89,7 @@ __all__ = [
     "RequestValidationConvertor",
     "ResponseRewriteChecker",
     "ResponseRewriteConvertor",
+    "UriBlockerChecker",
     # functions
     "check_vars",
     "format_fault_injection_config",
