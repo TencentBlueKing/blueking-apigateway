@@ -413,7 +413,7 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
         )
         permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
 
-        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        username = settings.GATEWAY_DEFAULT_CREATOR
 
         permission_model.objects.save_permissions(
             gateway=request.gateway,
