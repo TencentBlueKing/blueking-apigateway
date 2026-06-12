@@ -26,6 +26,13 @@ class DataPlaneStatusEnum(StructuredEnum):
     INACTIVE = EnumField(0, "inactive")
 
 
+class DataPlaneApisixVersionEnum(StructuredEnum):
+    """APISIX version of the data plane deployment"""
+
+    V3_13 = EnumField("3.13", "3.13")
+    V3_16 = EnumField("3.16", "3.16")
+
+
 class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):
     """Gray stage for BK plugins data plane migration"""
 

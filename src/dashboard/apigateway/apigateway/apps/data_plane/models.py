@@ -26,7 +26,7 @@ from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModel
 from apigateway.core.models import Gateway
 from apigateway.utils.crypto import get_crypto
 
-from .constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
+from .constants import DEFAULT_DATA_PLANE_NAME, DataPlaneApisixVersionEnum, DataPlaneStatusEnum
 from .managers import DataPlaneManager, GatewayDataPlaneBindingManager
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,13 @@ class DataPlane(TimestampedModelMixin, OperatorModelMixin):
         choices=DataPlaneStatusEnum.get_choices(),
         default=DataPlaneStatusEnum.ACTIVE.value,
         help_text=_("Data plane status"),
+    )
+
+    apisix_version = models.CharField(
+        max_length=16,
+        choices=DataPlaneApisixVersionEnum.get_choices(),
+        default=DataPlaneApisixVersionEnum.V3_13.value,
+        help_text=_("APISIX version of the data plane"),
     )
 
     is_recommend = models.BooleanField(default=False, help_text=_("Whether this is the recommended data plane"))

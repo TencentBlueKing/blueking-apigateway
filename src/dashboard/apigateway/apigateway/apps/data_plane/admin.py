@@ -42,6 +42,7 @@ class DataPlaneAdminForm(forms.ModelForm):
             "bk_api_url_tmpl",
             "etcd_namespace_prefix",
             "status",
+            "apisix_version",
             "is_recommend",
             "created_by",
             "updated_by",
@@ -87,18 +88,19 @@ class DataPlaneAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         "name",
         "description",
         "status",
+        "apisix_version",
         "is_recommend",
         "has_etcd_configs",
         "created_time",
         "updated_time",
     ]
-    list_filter = ["status", "is_recommend"]
+    list_filter = ["status", "apisix_version", "is_recommend"]
     search_fields = ["name", "description"]
     readonly_fields = ["created_time", "updated_time"]
     ordering = ["-created_time"]
 
     fieldsets = (
-        (None, {"fields": ("name", "description", "status", "is_recommend")}),
+        (None, {"fields": ("name", "description", "status", "apisix_version", "is_recommend")}),
         ("ETCD Configuration", {"fields": ("etcd_configs_json", "bk_api_url_tmpl", "etcd_namespace_prefix")}),
         ("Audit", {"fields": ("created_by", "updated_by", "created_time", "updated_time")}),
     )

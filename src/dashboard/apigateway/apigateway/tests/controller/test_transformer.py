@@ -19,11 +19,15 @@ from unittest.mock import Mock
 
 import pytest
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.transformer import (
     BaseTransformer,
     GatewayApisixResourceTransformer,
     GlobalApisixResourceTransformer,
 )
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestBaseTransformer:
@@ -55,9 +59,14 @@ class TestBaseTransformer:
 class TestGlobalApisixResourceConvertor:
     """Test GlobalApisixResourceConvertor class"""
 
+    def test_initialization_requires_apisix_version(self):
+        """Global transformer should get apisix_version from data_plane callers."""
+        with pytest.raises(TypeError):
+            GlobalApisixResourceTransformer()
+
     def test_initialization(self):
         """Test GlobalApisixResourceConvertor initialization"""
-        convertor = GlobalApisixResourceTransformer()
+        convertor = GlobalApisixResourceTransformer(APISIX_VERSION_3_13)
         assert convertor._converted_plugin_metadata == []
 
     def test_transform_calls_plugin_metadata_convertor(self, mocker):
@@ -67,7 +76,7 @@ class TestGlobalApisixResourceConvertor:
         mock_instance.convert.return_value = [Mock(), Mock()]
         mock_plugin_convertor.return_value = mock_instance
 
-        transformer = GlobalApisixResourceTransformer()
+        transformer = GlobalApisixResourceTransformer(APISIX_VERSION_3_13)
         transformer.transform()
 
         # Verify PluginMetadataConvertor was instantiated and convert() was called
@@ -84,7 +93,7 @@ class TestGlobalApisixResourceConvertor:
         mock_instance.convert.return_value = [mock_resource1, mock_resource2]
         mock_plugin_convertor.return_value = mock_instance
 
-        transformer = GlobalApisixResourceTransformer()
+        transformer = GlobalApisixResourceTransformer(APISIX_VERSION_3_13)
         transformer.transform()
 
         resources = list(transformer.get_transformed_resources())
@@ -94,9 +103,20 @@ class TestGlobalApisixResourceConvertor:
 
     def test_get_transformed_resources_empty(self):
         """Test get_transformed_resources() when no resources are converted"""
-        transformer = GlobalApisixResourceTransformer()
+        transformer = GlobalApisixResourceTransformer(APISIX_VERSION_3_13)
         resources = list(transformer.get_transformed_resources())
         assert resources == []
+
+    def test_transform_passes_apisix_version(self, mocker):
+        """Test that transform() passes the apisix_version into PluginMetadataConvertor"""
+        mock_plugin_convertor = mocker.patch("apigateway.controller.transformer.PluginMetadataConvertor")
+        mock_plugin_convertor.return_value.convert.return_value = []
+
+        transformer = GlobalApisixResourceTransformer(APISIX_VERSION_3_16)
+        assert transformer.apisix_version == APISIX_VERSION_3_16
+        transformer.transform()
+
+        assert mock_plugin_convertor.call_args.args[0] == APISIX_VERSION_3_16
 
 
 class TestGatewayApisixResourceConvertor:
@@ -130,26 +150,31 @@ class TestGatewayApisixResourceConvertor:
 
         return release
 
+    def test_initialization_requires_apisix_version(self, mock_release):
+        """Gateway transformer should get apisix_version from data_plane callers."""
+        with pytest.raises(TypeError):
+            GatewayApisixResourceTransformer(mock_release)
+
     def test_initialization(self, mock_release):
         """Test GatewayApisixResourceTransformer initialization with various parameters"""
-        # Test default initialization
-        convertor = GatewayApisixResourceTransformer(mock_release)
+        # Test initialization
+        convertor = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
         assert convertor._release_data._release == mock_release
         assert convertor.publish_id is None
         assert convertor.revoke_flag is False
 
         # Test with publish_id
-        convertor_with_publish_id = GatewayApisixResourceTransformer(mock_release, publish_id=999)
+        convertor_with_publish_id = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, publish_id=999)
         assert convertor_with_publish_id.publish_id == 999
 
         # Test with revoke_flag
-        convertor_with_revoke = GatewayApisixResourceTransformer(mock_release, revoke_flag=True)
+        convertor_with_revoke = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, revoke_flag=True)
         assert convertor_with_revoke.revoke_flag is True
 
         # Test schema v2 requirement
         mock_release.resource_version.is_schema_v2 = False
         with pytest.raises(ValueError) as exc_info:
-            GatewayApisixResourceTransformer(mock_release)
+            GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
         assert "Only support resource_version schema v2" in str(exc_info.value)
 
     def test_transform_workflow(self, mock_release, mocker):
@@ -181,14 +206,18 @@ class TestGatewayApisixResourceConvertor:
         mock_bk_release_convertor.return_value.convert.return_value = [Mock()]
 
         # Execute transform
-        transformer = GatewayApisixResourceTransformer(mock_release, publish_id=123, revoke_flag=True)
+        transformer = GatewayApisixResourceTransformer(
+            mock_release, APISIX_VERSION_3_13, publish_id=123, revoke_flag=True
+        )
         transformer.transform()
 
         # Verify all convertors were called with correct parameters
-        mock_service_convertor.assert_called_once_with(mock_release_data, 123, True)
+        mock_service_convertor.assert_called_once_with(mock_release_data, 123, APISIX_VERSION_3_13, True)
         expected_mapping = {123: "service-1", 456: "service-2"}
-        mock_route_convertor.assert_called_once_with(mock_release_data, expected_mapping, 123, True)
-        mock_bk_release_convertor.assert_called_once_with(mock_release_data, 123)
+        mock_route_convertor.assert_called_once_with(
+            mock_release_data, expected_mapping, 123, APISIX_VERSION_3_13, True
+        )
+        mock_bk_release_convertor.assert_called_once_with(mock_release_data, 123, APISIX_VERSION_3_13)
 
         # Verify internal state
         assert len(transformer._converted_services) == 2
@@ -200,6 +229,29 @@ class TestGatewayApisixResourceConvertor:
         # Verify get_transformed_resources returns resources
         resources = list(transformer.get_transformed_resources())
         assert len(resources) == 5  # 2 services + 2 routes + 1 bk_release
+
+    def test_transform_passes_apisix_version(self, mock_release, mocker):
+        """transform() should pass the apisix_version into service/route/bk_release convertors"""
+        mock_release_data = mocker.Mock()
+        mock_release_data.gateway.name = "test-gateway"
+        mock_release_data.stage.name = "prod"
+        mock_release_data.resource_version.version = "v1"
+        mocker.patch("apigateway.controller.transformer.ReleaseData", return_value=mock_release_data)
+
+        mock_service_convertor = mocker.patch("apigateway.controller.transformer.ServiceConvertor")
+        mock_service_convertor.return_value.convert.return_value = []
+        mock_route_convertor = mocker.patch("apigateway.controller.transformer.RouteConvertor")
+        mock_route_convertor.return_value.convert.return_value = []
+        mock_bk_release_convertor = mocker.patch("apigateway.controller.transformer.BkReleaseConvertor")
+        mock_bk_release_convertor.return_value.convert.return_value = []
+
+        transformer = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16, publish_id=123)
+        assert transformer.apisix_version == APISIX_VERSION_3_16
+        transformer.transform()
+
+        assert mock_service_convertor.call_args.args[2] == APISIX_VERSION_3_16
+        assert mock_route_convertor.call_args.args[3] == APISIX_VERSION_3_16
+        assert mock_bk_release_convertor.call_args.args[2] == APISIX_VERSION_3_16
 
     def test_backend_service_mapping(self, mock_release, mocker):
         """Test backend service mapping creation and edge cases"""
@@ -227,7 +279,7 @@ class TestGatewayApisixResourceConvertor:
         mock_bk_release_convertor = mocker.patch("apigateway.controller.transformer.BkReleaseConvertor")
         mock_bk_release_convertor.return_value.convert.return_value = []
 
-        transformer = GatewayApisixResourceTransformer(mock_release, publish_id=123)
+        transformer = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, publish_id=123)
         transformer.transform()
 
         # Verify correct mapping was created
@@ -243,7 +295,7 @@ class TestGatewayApisixResourceConvertor:
 
         mock_service_convertor.return_value.convert.return_value = [mock_service_invalid]
 
-        transformer_invalid = GatewayApisixResourceTransformer(mock_release, publish_id=123)
+        transformer_invalid = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, publish_id=123)
         with pytest.raises(ValueError):
             transformer_invalid.transform()
 
@@ -259,7 +311,7 @@ class TestGatewayApisixResourceConvertor:
         mock_service_convertor = mocker.patch("apigateway.controller.transformer.ServiceConvertor")
         mock_service_convertor.return_value.convert.side_effect = Exception("Service conversion failed")
 
-        transformer = GatewayApisixResourceTransformer(mock_release, publish_id=123)
+        transformer = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, publish_id=123)
         with pytest.raises(Exception, match="Service conversion failed"):
             transformer.transform()
 
@@ -267,4 +319,4 @@ class TestGatewayApisixResourceConvertor:
         mock_release_invalid = mocker.Mock()
         del mock_release_invalid.resource_version
         with pytest.raises(AttributeError):
-            GatewayApisixResourceTransformer(mock_release_invalid)
+            GatewayApisixResourceTransformer(mock_release_invalid, APISIX_VERSION_3_13)

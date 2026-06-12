@@ -35,8 +35,12 @@ func IsInnerPlugin(pluginName string) bool {
 //go:embed 3.13/schema.json
 var rawSchemaV313 []byte
 
+//go:embed 3.16/schema.json
+var rawSchemaV316 []byte
+
 var schemaVersionMap = map[constant.APISIXVersion]gjson.Result{
 	constant.APISIXVersion313: gjson.ParseBytes(rawSchemaV313),
+	constant.APISIXVersion316: gjson.ParseBytes(rawSchemaV316),
 }
 
 // GetResourceSchema 获取资源的schema

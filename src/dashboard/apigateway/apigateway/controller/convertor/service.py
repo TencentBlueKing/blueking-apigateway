@@ -56,8 +56,14 @@ from .utils import UrlInfo, truncate_string
 
 
 class ServiceConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: int, revoke_flag: Optional[bool] = False):
-        super().__init__(release_data=release_data, publish_id=publish_id)
+    def __init__(
+        self,
+        release_data: ReleaseData,
+        publish_id: int,
+        apisix_version: str,
+        revoke_flag: Optional[bool] = False,
+    ):
+        super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
 
     def convert(self) -> List[GatewayApisixModel]:
