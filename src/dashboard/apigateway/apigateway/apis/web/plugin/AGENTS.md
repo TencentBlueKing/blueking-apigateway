@@ -32,7 +32,7 @@ DB storage ──publish──▶ PluginConvertorFactory convertor ──▶ API
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | **PluginTypeCodeEnum** | `apps/plugin/constants.py` | Enum of all plugin type codes |
-| **Fixtures** | `fixtures/plugins.yaml` | Schema, PluginType, PluginForm definitions (loaded via `loaddata`) |
+| **Fixtures** | `fixtures/plugins.yaml` | Schema and PluginType definitions (loaded via `loaddata`) |
 | **Checker** | `service/plugin/checker.py` (`PluginConfigYamlChecker`) | Plugin-specific validation with human-readable error messages |
 | **Validator** | `service/plugin/validator.py` (`PluginConfigYamlValidator`) | Orchestrates checker + JSON Schema validation |
 | **Service-layer convertor** | `service/plugin/convertor.py` (`PluginConvertorFactory`) | Converts DB storage format to APISIX-native config for publishing. New plugins use `DefaultPluginConvertor` (identity) automatically |
@@ -92,7 +92,7 @@ BK_MY_PLUGIN = EnumField("bk-my-plugin", label=_("插件中文名"))
 
 #### 2. `fixtures/plugins.yaml` — Add fixture entries
 
-Append 3 records at the end of the file:
+Append the schema and plugin type records at the end of the file:
 
 **a) `schema.schema`** — JSON Schema for validating the plugin config (matches the Lua plugin's schema):
 ```yaml
@@ -127,26 +127,6 @@ Set `schema: null` in the plugintype entry if no schema validation is needed.
     - plugin
     - '0'
 ```
-
-**c) `plugin.pluginform`** — Form definition for the frontend:
-```yaml
-- model: plugin.pluginform
-  fields:
-    language: ''               # '' = default/zh-cn
-    type:
-      - bk-my-plugin
-    notes: Description of what the plugin does.
-    style: raw                 # raw = YAML textarea, dynamic = form-driven
-    default_value: |-          # pre-filled YAML for new configs
-      key: value
-    config: ''                 # JSON form schema (for style: dynamic), empty for raw
-    example: |-                # usage examples shown in the UI
-      key: value
-```
-
-Form styles:
-- `raw` — user edits YAML directly in a textarea; best for complex/nested configs
-- `dynamic` — rendered from JSON schema in `config` field; best for simple flat configs
 
 #### 3. `service/plugin/checker.py` — Add checker (optional but recommended)
 
@@ -211,7 +191,6 @@ cd src/dashboard/apigateway && \
 - [ ] Add enum to `PluginTypeCodeEnum` in `apps/plugin/constants.py`
 - [ ] Add `schema.schema` entry in `fixtures/plugins.yaml` (derive from the Lua plugin's schema)
 - [ ] Add `plugin.plugintype` entry in `fixtures/plugins.yaml`
-- [ ] Add `plugin.pluginform` entry in `fixtures/plugins.yaml`
 - [ ] Add checker in `service/plugin/checker.py` and register in `type_code_to_checker`
 - [ ] Add tests for the checker in `tests/service/plugin/test_checkers.py`
 - [ ] Verify: no API-layer convertor needed (new plugin rule)
