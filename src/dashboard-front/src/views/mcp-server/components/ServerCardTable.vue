@@ -44,6 +44,7 @@
 <script lang="tsx" setup>
 import { locale, t } from '@/locales';
 import { Button, Tag } from 'bkui-vue';
+import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableMethod } from '@/types/common';
 import type { ICountAndResults } from '@/services/types/utils.ts';
@@ -53,7 +54,8 @@ import {
   type IMCPServerWithUIState,
   getServers,
 } from '@/services/source/mcp-server';
-import type { IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysMcpServersListQuery } from '@/services/types/query/gateways.ts';
+import type { IMCPServerFilterOptionsOutput, IMCPServerListOutput } from '@/services/types/responses/gateways.ts';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import { useFeatureFlag, useGateway } from '@/stores';
 import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
@@ -61,7 +63,7 @@ import AgTable from '@/components/ag-table/Index.vue';
 
 type IMCPServer = IMCPServerWithUIState | TableRowData;
 
-interface IProps { filterCondition?: any }
+interface IProps { filterCondition?: IMCPServerFilterOptionsOutput }
 
 interface IEmits {
   'view': [id: number]
@@ -74,23 +76,24 @@ interface IEmits {
   'clear-filter': [void]
 };
 
-const searchData = defineModel('searchData', {
+const searchData = defineModel<ISearchItem[]>('searchData', {
   required: true,
   type: Array,
 });
 
-const searchValue = defineModel('searchValue', {
+const searchValue = defineModel<ISearchValue[]>('searchValue', {
   required: true,
   type: Array,
 });
 
-const mcpSelections = defineModel<any>('mcpSelections', {
+const mcpSelections = defineModel<Map<number, IMCPServerWithUIState>>('mcpSelections', {
   required: true,
 });
 
-const filterData = defineModel<Partial<IMCPServer>>('filterData', {
+const filterData = defineModel<Record<string, string | string[]>>('filterData', {
   required: false,
   type: Object,
+  default: () => ({}),
 });
 
 const {
@@ -134,14 +137,14 @@ const tableColumns = computed(() => {
     {
       title: t('名称'),
       colKey: 'name',
-      width: 200,
+      width: 360,
       ellipsis: true,
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
         return (
           <div class="flex items-baseline">
             <div
               class={[
-                'mr-12px ag-dot',
+                'mr-8px ag-dot',
                 { 'border-#2caf5e bg-#daf6e5': Boolean(row.status) },
                 { 'border-#c4c6cc bg-#f5f7fa': !row.status },
               ]}
@@ -229,10 +232,7 @@ const tableColumns = computed(() => {
         type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: (filterCondition.stages ?? []).map((item: {
-          name: string
-          id: number
-        }) => {
+        list: (filterCondition.stages ?? []).map((item) => {
           return {
             label: item.name,
             value: item.id,
@@ -268,7 +268,7 @@ const tableColumns = computed(() => {
         }),
       },
       cell: (_: unknown, { row }: { row: IMCPServer }) => {
-        const categoriesFilters = (row.categories as unknown as any[])?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
+        const categoriesFilters = (row.categories as IMCPServerCategory[])?.filter((cg: IMCPServerCategory) => !['Official', 'Featured'].includes(cg.name));
         return categoriesFilters.length
           ? (
             <div class="w-full">
@@ -362,7 +362,7 @@ const tableColumns = computed(() => {
       colKey: 'updated_time',
       ellipsis: true,
       sorter: true,
-      width: 240,
+      width: 220,
     },
     {
       title: t('操作'),
@@ -481,11 +481,11 @@ const getTableData = async (params: IMCPFilterParams): Promise<ICountAndResults<
     }
   });
 
-  const res: any = await getServers(apigwId.value, requestParams as any);
+  const res = await getServers(apigwId.value, requestParams as IGatewaysMcpServersListQuery);
   return res;
 };
 
-const disabledSelection = (row: any): any => {
+const disabledSelection = (row: IMCPServer): boolean => {
   if (!row.status) {
     row.selectionTip = t('已停用的MCP无法批量操作');
   }
@@ -531,7 +531,7 @@ const handleSetRowClass = ({ row }: { row: IMCPServer }) => {
   return '';
 };
 
-const handleSortChange: any = (sort: {
+const handleSortChange = (sort: {
   sortBy: string
   descending: boolean
 } | null) => {
@@ -549,9 +549,9 @@ const handleSortChange: any = (sort: {
 const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
   handleTableFilterChange({
     filterItem,
-    filterData: filterData as any,
-    searchOptions: searchData as any,
-    searchParams: searchValue as any,
+    filterData,
+    searchOptions: searchData,
+    searchParams: searchValue,
   });
   getList();
 };

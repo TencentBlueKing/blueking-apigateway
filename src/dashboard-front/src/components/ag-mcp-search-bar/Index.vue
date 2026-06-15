@@ -99,14 +99,14 @@
 
 <script lang="ts" setup>
 import { t } from '@/locales';
-import type { ISearchSelectData } from '@/types/common';
+import type { ISearchItem } from 'bkui-vue/lib/search-select/utils';
 import type { IMCPServerWithUIState } from '@/services/source/mcp-server';
 import type { IMarketplaceItemWithUIState } from '@/services/source/mcp-market';
 
 interface IProps {
   placeholder?: string
   isShowPublishTime?: boolean
-  searchData?: ISearchSelectData[]
+  searchData?: ISearchItem[]
   selections: Map<string | number, IMCPServerWithUIState | IMarketplaceItemWithUIState>
 }
 
