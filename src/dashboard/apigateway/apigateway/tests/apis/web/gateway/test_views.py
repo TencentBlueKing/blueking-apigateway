@@ -72,7 +72,7 @@ class TestGatewayListCreateApi:
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
-    def test_create_programmable_gateway_without_repo_authorization(
+    def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,
         request_view,
         faker,
@@ -87,9 +87,12 @@ class TestGatewayListCreateApi:
             "tenant_mode": "single",
             "tenant_id": "default",
             "kind": GatewayKindEnum.PROGRAMMABLE.value,
-            "extra_info": {"language": "python"},
+            "extra_info": {
+                "language": "python",
+                "repository": f"https://git.example.com/bkapps/{name}.git",
+            },
         }
-        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "te")
+        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "ce")
         mocker.patch("apigateway.apis.web.gateway.validators.is_app_code_occupied", return_value=False)
         mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app")
         mocker.patch(
@@ -115,7 +118,7 @@ class TestGatewayListCreateApi:
         assert not Gateway.objects.filter(name=name).exists()
         mock_create_paas_app.assert_not_called()
 
-    def test_create_programmable_gateway_with_repo_authorization(
+    def test_create_programmable_gateway_skip_repo_authorization_in_te(
         self,
         request_view,
         faker,
@@ -141,10 +144,10 @@ class TestGatewayListCreateApi:
         mock_repo_authorization = mocker.patch(
             "apigateway.apis.web.gateway.views.get_paas_repo_authorization",
             return_value={
-                "authorized": True,
-                "message": "",
-                "address": "",
-                "auth_docs": "",
+                "authorized": False,
+                "message": "用户未关联 oauth 授权",
+                "address": "https://git.example.com/oauth/authorize",
+                "auth_docs": "http://docs.example.com/tc_git_oauth",
             },
         )
         mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app", return_value=True)
@@ -162,7 +165,7 @@ class TestGatewayListCreateApi:
         assert result["data"]["id"] == gateway.id
         assert gateway.kind == GatewayKindEnum.PROGRAMMABLE.value
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
-        mock_repo_authorization.assert_called_once_with(user_credentials=ANY)
+        mock_repo_authorization.assert_not_called()
         mock_create_paas_app.assert_called_once_with(
             app_code=name,
             language="python",

@@ -189,7 +189,7 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
                     raise error_codes.INVALID_ARGUMENT.format(_("Git 信息无效。"), replace=True)
 
             user_credentials = get_user_credentials_from_request(request)
-            if not git_info:
+            if settings.EDITION != "te" and not git_info:
                 repo_authorization = get_paas_repo_authorization(user_credentials=user_credentials)
                 if not repo_authorization["authorized"]:
                     raise error_codes.NO_PERMISSION.format(
