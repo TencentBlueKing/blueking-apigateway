@@ -46,6 +46,7 @@ export interface IPermission {
   grant_type: string // 授权类型
   renewable: boolean // 是否可续期
   detail?: unknown[] // 详细信息（可选）
+  handled_by?: string // 操作人
 }
 
 export interface IResource {
