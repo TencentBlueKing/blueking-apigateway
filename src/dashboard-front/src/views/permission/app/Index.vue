@@ -207,7 +207,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
-    width: 100,
+    width: 120,
     cell: (h: any, { row }: { row: IPermission }) => {
       const data = row as IPermission;
       return (
@@ -228,18 +228,6 @@ const tableColumns = shallowRef<any[]>([
         <span>
           { t(['initialize'].includes(data.grant_type) ? '主动授权' : '申请审批') }
         </span>
-      );
-    },
-  },
-  {
-    title: t('操作人'),
-    colKey: 'handled_by',
-    ellipsis: true,
-    width: 100,
-    cell: (h: any, { row }: { row: IPermission }) => {
-      const data = row as IPermission;
-      return (
-        <span>{ data.handled_by || '--' }</span>
       );
     },
   },
