@@ -18,6 +18,7 @@
 import http from '../http';
 import type {
   IGatewayCheckNameAvailableOutput,
+  IGatewayCheckRepoAuthOutput,
   IGatewayDevGuidelineOutput,
   IGatewayLabelOutput,
   IGatewayListOutput,
@@ -63,6 +64,9 @@ export const putGatewayBasics = (id: number, data: IGatewayUpdateInputSLZ) =>
 
 export const checkNameAvailable = (param: IGatewaysCheckNameAvailableReadQuery) =>
   http.get<IGatewayCheckNameAvailableOutput>(`${path}/check-name-available/`, param);
+
+export const checkRepoAuthorization = () =>
+  http.get<IGatewayCheckRepoAuthOutput>(`${path}/repo-authorization/`);
 
 // 获取操作指引
 export const getGuideDocs = (id: number) => http.get<IGatewayDevGuidelineOutput>(`${path}/${id}/dev-guideline/`);

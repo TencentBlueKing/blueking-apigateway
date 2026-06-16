@@ -154,6 +154,27 @@
               <span class="common-form-tips form-item-name-tips">
                 {{ t('自动创建开源仓库，将模板代码初始化到仓库中，并将创建者设定为仓库管理员') }}
               </span>
+              <bk-alert
+                v-if="isShowRepoAuthAlert"
+                theme="error"
+                class="common-form-tips form-item-name-tips"
+              >
+                <template #title>
+                  <div class="flex items-center justify-between">
+                    <span>{{ t('代码仓库未授权') }}</span>
+                    <span
+                      class="color-#3A84FF cursor-pointer"
+                      @click="handleGoToAuth"
+                    >
+                      {{ t('去授权') }}
+                      <AgIcon
+                        name="jump"
+                        color="#3A84FF"
+                      />
+                    </span>
+                  </div>
+                </template>
+              </bk-alert>
             </template>
 
             <template v-if="formData.kind === 1 && envStore.env.EDITION === 'ee' && !isEdit">
@@ -378,10 +399,12 @@
 import { getEnv } from '@/services/source/basic.ts';
 import {
   checkNameAvailable,
+  checkRepoAuthorization,
   createGateway,
   getGuideDocs,
   patchGateway,
 } from '@/services/source/gateway.ts';
+import { usePopInfoBox } from '@/hooks';
 import { Form, Message } from 'bkui-vue';
 import { cloneDeep } from 'lodash-es';
 import type { IFormMethod } from '@/types/common';
@@ -453,6 +476,11 @@ const newGateway = ref({
   id: 0,
 });
 const repositoryUrl = ref('');
+// 代码仓库授权状态：null=未检测，true=已授权，false=未授权
+const isRepoAuthorized = ref<boolean | null>(null);
+const authUrl = ref('');
+// 授权状态轮询定时器
+let authPollingTimer: ReturnType<typeof setInterval> | null = null;
 
 const defaultFormData = ref({
   name: '',
@@ -545,6 +573,8 @@ const languageList = [
     label: 'Go',
   },
 ];
+
+const isShowRepoAuthAlert = computed(() => isRepoAuthorized.value === false);
 
 const isEdit = computed(() => {
   return !!formData.value?.id;
@@ -681,9 +711,27 @@ watch(
   },
 );
 
+// 检查代码仓库授权状态
+const checkAuthorization = async () => {
+  if (envStore.env.EDITION !== 'te' || formData.value.kind !== 1) return;
+  try {
+    const res = await checkRepoAuthorization();
+    isRepoAuthorized.value = res?.authorized ?? false;
+    authUrl.value = res?.address ?? '';
+  }
+  catch {
+    isRepoAuthorized.value = false;
+  }
+};
+
 const setRepositoryAddress = () => {
   if (envStore.env.EDITION === 'te' && formData.value.kind === 1) {
     formData.value.extra_info!.repository = `${repositoryUrl.value.replace('{{gateway_name}}', formData.value.name || '')}`;
+    // 代码仓库地址变更后清除旧轮询并重新检测授权状态
+    clearAuthPolling();
+    if (formData.value.name) {
+      checkAuthorization();
+    }
   }
 };
 
@@ -723,6 +771,34 @@ if (envStore.env.EDITION === 'te') {
   getUrlPrefix();
 }
 
+// 清除授权状态轮询
+const clearAuthPolling = () => {
+  if (authPollingTimer !== null) {
+    clearInterval(authPollingTimer);
+    authPollingTimer = null;
+  }
+};
+
+// 启动授权状态轮询
+const startAuthPolling = () => {
+  clearAuthPolling();
+  authPollingTimer = setInterval(async () => {
+    await checkAuthorization();
+    // 已授权则停止轮询
+    if (isRepoAuthorized.value) {
+      clearAuthPolling();
+    }
+  }, 3000);
+};
+
+// 跳转到代码仓库授权页面
+const handleGoToAuth = () => {
+  if (authUrl.value) {
+    startAuthPolling();
+    window.open(authUrl.value);
+  }
+};
+
 const handleTenantModeChange = (tenant_mode: string) => {
   if (tenant_mode === 'global') {
     formData.value.tenant_id = '';
@@ -743,6 +819,26 @@ const handleConfirmCreate = async () => {
     if (!formData.value.maintainers.length) {
       return;
     }
+
+    // 可编程网关在 te 版中需要检测代码仓库授权状态
+    if (formData.value.kind === 1 && envStore.env.EDITION === 'te' && !isEdit.value && isRepoAuthorized.value === false) {
+      usePopInfoBox({
+        isShow: true,
+        type: 'warning',
+        title: t('代码仓库未授权'),
+        subTitle: t('请先完成代码仓库授权后再提交'),
+        confirmText: t('去授权'),
+        cancelText: t('取消'),
+        onConfirm: () => {
+          handleGoToAuth();
+        },
+        onCancel: () => {
+          clearAuthPolling();
+        },
+      });
+      return;
+    }
+
     submitLoading.value = true;
     const payload = cloneDeep(formData.value);
     if (payload.kind === 0) {
@@ -789,6 +885,7 @@ const handleConfirmCreate = async () => {
 };
 
 const handleCancel = () => {
+  clearAuthPolling();
   formRef?.value?.clearValidate();
   formData.value = cloneDeep(defaultFormData.value);
   isShowMemberError.value = false;
