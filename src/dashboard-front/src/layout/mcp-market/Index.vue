@@ -415,9 +415,13 @@ const getList = async () => {
 };
 
 const fetchCategoryList = async () => {
+  const extraCategories = ['Official', 'Featured'] as const;
   // 如果右侧选择了全部，分类接口的categories不需要传
   const params = { ...getFilterParams.value };
-  if (activeStatusTab.value.includes('all')) {
+  if (extraCategories.includes(activeStatusTab.value)) {
+    params.categories = activeStatusTab.value;
+  }
+  else {
     delete params.categories;
   }
   const res = await getMcpMarketplaceCategories(params);

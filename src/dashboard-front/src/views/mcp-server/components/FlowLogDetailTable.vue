@@ -7,6 +7,11 @@
  *
  *     http://opensource.org/licenses/MIT
  *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
  * We undertake not to change the open source license (MIT license) applicable
  * to the current version of the project delivered to anyone in the future.
  */
@@ -74,13 +79,15 @@
                 </span>
                 <span
                   v-else
-                  class="truncate"
+                  class="hover:cursor-pointer"
+                  :class="[isFieldExpanded(row, field) ? 'py-4px' : 'truncate']"
+                  @click.stop="() => handleToggleFieldExpand(row, field)"
                 >
                   {{ formatCellValue(row[field], field) }}
                 </span>
                 <!-- 操作按钮组 -->
                 <div
-                  v-if="row[field]"
+                  v-if="!(formatCellValue(row[field], field) === '--')"
                   class="opt-btns"
                 >
                   <CopyShape
@@ -120,12 +127,13 @@
 <script lang="tsx" setup>
 import dayjs from 'dayjs';
 import { Button, Popover } from 'bkui-vue';
+import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 // 图标组件
 import { CopyShape, EnlargeLine, InfoLine, NarrowLine } from 'bkui-vue/lib/icon';
 // 服务请求
 import {
   type IFlowLogTable,
-  type IObservabilityBasicForm,
+  type IObservabilitySearchParams,
   fetchObservabilityLogList,
 } from '@/services/source/observability';
 // 工具函数
@@ -137,6 +145,11 @@ import AgTable from '@/components/ag-table/Index.vue';
 import AgTraceChainSlider from '@/views/mcp-server/components/TraceChainSlider.vue';
 
 interface IProps { apiGatewayId: string | number }
+
+type IFlowLogTableUIState = IFlowLogTable & {
+  isExpand: boolean
+  [key: string]: any
+};
 
 interface IEmits {
   'clear-filter': [void]
@@ -173,14 +186,16 @@ const emit = defineEmits<IEmits>();
 
 const tableRef = ref<InstanceType<typeof AgTable>>();
 const traceChainSliderRef = ref<InstanceType<typeof AgTraceChainSlider>>();
-const tableData = ref<IFlowLogTable[]>([]);
+const tableData = ref<IFlowLogTableUIState[]>([]);
 const expandableConfig = ref({
   expandColumn: false,
-  expandedRowKeys: [],
+  expandedRowKeys: [] as IFlowLogTableUIState[],
 });
 // 缓存上一个展开行
-const lastExpandRow = ref<IFlowLogTable | null>(null);
-const callChainDetail = ref<IFlowLogTable>({} as IFlowLogTable);
+const lastExpandRow = ref<IFlowLogTableUIState | null>(null);
+const callChainDetail = ref<Partial<IFlowLogTableUIState>>({});
+// 缓存每行文本内容的点击状态
+const fieldExpandMap = ref<Map<string, boolean>>(new Map());
 
 // 展开行显示的字段配置
 interface IFieldItem {
@@ -296,21 +311,21 @@ const expandedFields = shallowRef<IFieldItem[]>([
 })));
 
 // 表格列配置
-const tableColumns = shallowRef<any[]>([
+const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('请求时间'),
     colKey: 'timestamp',
     ellipsis: true,
     width: 240,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
       return (
         <div class="flex items-center">
           <ag-icon
-            name={(row as any).isExpand ? 'down-shape' : 'right-shape'}
-            class={`mr-8px color-${(row as any).isExpand ? '#4d4f56' : '#979ba5'}`}
+            name={row.isExpand ? 'down-shape' : 'right-shape'}
+            class={`mr-8px color-${row.isExpand ? '#4d4f56' : '#979ba5'}`}
             size="14"
           />
-          <span>{formatCellValue(row.timestamp as any, 'timestamp')}</span>
+          <span>{formatCellValue(row.timestamp as number, 'timestamp')}</span>
         </div>
       );
     },
@@ -325,7 +340,7 @@ const tableColumns = shallowRef<any[]>([
     title: 'Tool/Prompt',
     colKey: 'tool_name',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
       return row.tool_name || row.prompt_name || '--';
     },
   },
@@ -339,7 +354,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'latency',
     width: 150,
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
       const duration = row.latency;
       if (!duration) {
         return '--';
@@ -356,12 +371,14 @@ const tableColumns = shallowRef<any[]>([
     title: t('状态'),
     colKey: 'status',
     width: 130,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
+      const curRow = row as IFlowLogTableUIState;
+
       return (
         <AgStatusDot
           class="lh-20px"
-          type={isSuccessStatus(row) ? 'success' : 'error'}
-          text={t(isSuccessStatus(row) ? '成功' : '失败')}
+          type={isSuccessStatus(curRow) ? 'success' : 'error'}
+          text={t(isSuccessStatus(curRow) ? '成功' : '失败')}
         />
       );
     },
@@ -370,7 +387,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('错误'),
     colKey: 'error',
     ellipsis: true,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
       if (!row.error) return '--';
       return <span class="color-#ea3636">{row.error}</span>;
     },
@@ -380,7 +397,7 @@ const tableColumns = shallowRef<any[]>([
     colKey: 'operate',
     fixed: 'right',
     width: 102,
-    cell: (_: VNode, { row }: { row: IFlowLogTable }) => {
+    cell: (_: unknown, { row }: { row: TableRowData }) => {
       const isDisabled = !row.request_id && !row.x_request_id;
       return (
         <div class="flex">
@@ -395,7 +412,7 @@ const tableColumns = shallowRef<any[]>([
               disabled={isDisabled}
               onClick={(e: MouseEvent) => {
                 e.stopPropagation();
-                handleShowCallChain(row);
+                handleShowCallChain(row as IFlowLogTableUIState);
               }}
             >
               {t('调用链')}
@@ -411,7 +428,7 @@ const tableColumns = shallowRef<any[]>([
  * 获取日志列表
  * @param params 筛选参数
  */
-const getList = (params: IObservabilityBasicForm) => {
+const getList = (params: IObservabilitySearchParams) => {
   tableRef.value?.fetchData(params, { resetPage: true });
 };
 
@@ -427,7 +444,7 @@ const getPagination = () => {
  * @param params 筛选参数
  * @param extraStr 额外参数
  */
-const getTableData = async (params: IObservabilityBasicForm = {}, extraStr?: string) => {
+const getTableData = async (params: IObservabilitySearchParams = {}, extraStr?: string) => {
   try {
     const res = await fetchObservabilityLogList(apiGatewayId as number, params as any, extraStr);
     const { fields = [], count = 0 } = res ?? {};
@@ -435,6 +452,8 @@ const getTableData = async (params: IObservabilityBasicForm = {}, extraStr?: str
     expandedFields.value = fields;
     // 更新总条数
     pageCount.value = count;
+    // 清空单元格文本内容展开状态
+    fieldExpandMap.value.clear();
     // 更新表格数据
     return res;
   }
@@ -453,8 +472,12 @@ const getTableData = async (params: IObservabilityBasicForm = {}, extraStr?: str
  * @param value 原始值
  * @param field 字段名
  */
-const formatCellValue = (value: string | undefined, field: string) => {
-  if (!value) return '--';
+const formatCellValue = (value: string | number | null, field: string) => {
+  const emptyValueList = [null, '', '{}', '[]'];
+
+  if (value === null || emptyValueList.includes(String(value))) {
+    return '--';
+  }
 
   if (['timestamp'].includes(field)) {
     return dayjs.unix(Number(value)).format('YYYY-MM-DD HH:mm:ss ZZ');
@@ -469,8 +492,8 @@ const formatCellValue = (value: string | undefined, field: string) => {
 
 // 统一控制字段是否展示
 const isShowField = ({ row, field }: {
-  row: any
-  field: any
+  row: IFlowLogTableUIState
+  field: string
 }) => {
   const EXCLUDE_LOG_PATH = '/app/logs/mcp_proxy_api.log';
   // path 字段且不是指定日志路径才显示
@@ -479,6 +502,16 @@ const isShowField = ({ row, field }: {
   }
 
   return true;
+};
+
+/**
+ * 判断当前字段是否展开
+ * @param field 字段名
+ * @param row 行数据
+ */
+const isFieldExpanded = (row: IFlowLogTableUIState, field: string) => {
+  const key = `${row.tempUniqueId}-${field}`;
+  return fieldExpandMap.value.get(key) ?? false;
 };
 
 /**
@@ -494,9 +527,20 @@ const handleShowTraceSlider = () => {
  * 显示调用链详情
  * @param row 行数据
  */
-const handleShowCallChain = (row: IFlowLogTable) => {
-  callChainDetail.value = { ...row } as IFlowLogTable;
+const handleShowCallChain = (row: IFlowLogTableUIState) => {
+  callChainDetail.value = { ...row } as IFlowLogTableUIState;
   handleShowTraceSlider();
+};
+
+/**
+ * 点击文本切换单行/完整展示
+ * @param field 字段名
+ * @param row 行数据
+ */
+const handleToggleFieldExpand = (row: IFlowLogTableUIState, field: string) => {
+  const key = `${row.tempUniqueId}-${field}`;
+  const map = fieldExpandMap.value;
+  map.set(key, !(map.get(key) ?? false));
 };
 
 /**
@@ -504,9 +548,10 @@ const handleShowCallChain = (row: IFlowLogTable) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleRowCopy = (field: any, row: any) => {
-  const copyContent = formatCellValue(row[field], field);
-  copy(copyContent);
+const handleRowCopy = (field: string, row: IFlowLogTableUIState) => {
+  const rowField = row[field];
+  const copyContent = formatCellValue(rowField, field);
+  copy(copyContent as string);
 };
 
 /**
@@ -514,9 +559,10 @@ const handleRowCopy = (field: any, row: any) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleInclude = (field: any, row: any) => {
-  if (!row[field]) return;
-  const fieldStr = `${field}:${row[field]}`;
+const handleInclude = (field: string, row: IFlowLogTableUIState) => {
+  const rowField = row[field] as string | number;
+  if (!rowField) return;
+  const fieldStr = `${field}:${rowField}`;
   // 去重后添加
   if (!includeQuery.value.includes(fieldStr)) {
     includeQuery.value.push(fieldStr);
@@ -534,7 +580,7 @@ const handleInclude = (field: any, row: any) => {
  * @param field 字段名
  * @param row 行数据
  */
-const handleExclude = (field: any, row: any) => {
+const handleExclude = (field: string, row: IFlowLogTableUIState) => {
   if (!row[field]) return;
   const fieldStr = `${field}:${row[field]}`;
   // 去重后添加
@@ -551,30 +597,29 @@ const handleExclude = (field: any, row: any) => {
 
 /**
  * 行点击事件（展开/收起）
- * @param param0 事件和行数据
  */
 const handleRowClick = async ({ e, row }: {
   e: MouseEvent
-  row: IFlowLogTable
+  row: IFlowLogTableUIState
 }) => {
   e.stopPropagation();
-  const newIsExpand = !(row as any).isExpand;
+  const newIsExpand = !row.isExpand;
 
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
-    (lastExpandRow.value as any).isExpand = false;
-    (lastExpandRow.value as any).selection = [];
+    (lastExpandRow.value as IFlowLogTableUIState).isExpand = false;
+    (lastExpandRow.value as IFlowLogTableUIState).selection = [];
   }
 
   // 更新当前行状态
-  (row as any).isExpand = newIsExpand;
+  row.isExpand = newIsExpand;
   expandableConfig.value.expandedRowKeys = newIsExpand
-    ? [(row as any).tempUniqueId as string] as any
+    ? [(row as IFlowLogTableUIState).tempUniqueId]
     : [];
   lastExpandRow.value = newIsExpand ? row : null;
 
   if (newIsExpand) {
-    (row as any).selection = [];
+    row.selection = [];
   }
 };
 
@@ -589,16 +634,16 @@ const handleClearFilter = () => {
  * 判断是否显示检索按钮
  * @param field 字段名
  */
-const isShowRetrieveBtn = (field: any) => {
-  const allowFields: Array<any> = ['request_id'];
+const isShowRetrieveBtn = (field: string) => {
+  const allowFields: string[] = ['request_id'];
   return allowFields.includes(field);
 };
 
-const isSuccessStatus = (row: IFlowLogTable) => {
+const isSuccessStatus = (row: IFlowLogTableUIState) => {
   return row.status && ((Number(row.status) >= 200 && Number(row.status) < 300) || ['success'].includes(row.status));
 };
 
-const getRowClass = ({ row }: { row: IFlowLogTable }) => {
+const getRowClass = ({ row }: { row: IFlowLogTableUIState }) => {
   return !isSuccessStatus(row) || row.error ? 'error-exception hover:cursor-pointer' : 'hover:cursor-pointer';
 };
 
@@ -630,7 +675,7 @@ defineExpose({
           box-sizing: border-box;
 
           &-row {
-            height: 32px;
+            min-height: 32px;
             padding-left: 24px;
             font-size: 12px;
             line-height: 20px;
@@ -663,7 +708,7 @@ defineExpose({
             }
 
             &:nth-child(odd) {
-              background-color: #fff;
+              background-color: #ffffff;
             }
 
             &:nth-child(even) {
