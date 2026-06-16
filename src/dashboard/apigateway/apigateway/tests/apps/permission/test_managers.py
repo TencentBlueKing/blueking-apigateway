@@ -81,6 +81,7 @@ class TestAppAPIPermissionManager:
         models.AppGatewayPermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
+            handled_by="admin",
         )
         perm_1 = models.AppGatewayPermission.objects.get(id=perm_1.id)
         perm_2 = models.AppGatewayPermission.objects.get(id=perm_2.id)
@@ -88,6 +89,7 @@ class TestAppAPIPermissionManager:
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=170 + 179) < perm_2.expires < to_datetime_from_now(days=170 + 181)
         assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(days=720 + 181)
+        assert {perm_1.handled_by, perm_2.handled_by, perm_3.handled_by} == {"admin"}
 
 
 class TestAppResourcePermissionManager:
@@ -131,6 +133,7 @@ class TestAppResourcePermissionManager:
         models.AppResourcePermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
+            handled_by="admin",
         )
         perm_1 = models.AppResourcePermission.objects.get(id=perm_1.id)
         perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
@@ -138,6 +141,7 @@ class TestAppResourcePermissionManager:
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(181)
         assert to_datetime_from_now(days=70 + 179) < perm_2.expires < to_datetime_from_now(70 + 181)
         assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(720 + 181)
+        assert {perm_1.handled_by, perm_2.handled_by, perm_3.handled_by} == {"admin"}
 
     def test_renew_by_resource_ids(self):
         perm_1 = G(

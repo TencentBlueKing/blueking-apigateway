@@ -17,13 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
-from unittest import mock
 
 import pytest
 from django.test import TestCase
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.permission import views
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.permission import models
 from apigateway.core.models import Resource
 from apigateway.tests.utils.testing import APIRequestFactory, create_gateway, dummy_time, get_response_json
@@ -133,6 +133,7 @@ class TestAppPermissionRenewViewSet(TestCase):
             bk_app_code="test",
             resource_id=resource.id,
             grant_type="initialize",
+            handled_by="old-admin",
         )
 
         data = [
@@ -158,6 +159,12 @@ class TestAppPermissionRenewViewSet(TestCase):
 
             resource_p1_obj = models.AppResourcePermission.objects.get(id=resource_p1.id)
             assert resource_p1_obj.grant_type == "initialize"
+            assert resource_p1_obj.handled_by == "admin"
+
+            audit_log = AuditEventLog.objects.get(op_object_id=str(resource_p1.id), comment="批量续期资源")
+            assert audit_log.username == "admin"
+            assert json.loads(audit_log.data_before)[0]["handled_by"] == "old-admin"
+            assert json.loads(audit_log.data_after)[0]["handled_by"] == "admin"
 
 
 class TestAppResourcePermissionViewSet:
@@ -273,6 +280,7 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
             bk_app_code="test",
             resource_id=resource.id,
             grant_type="apply",
+            handled_by="old-admin",
         )
 
         data = [
@@ -304,6 +312,12 @@ class TestAppResourcePermissionBatchViewSet(TestCase):
                 < (perm_record.expires - now_datetime()).total_seconds()
                 < (180 + 180) * 24 * 3600
             )
+            self.assertEqual(perm_record.handled_by, "admin")
+
+            audit_log = AuditEventLog.objects.get(op_object_id=str(perm_2.id), comment="资源权限续期")
+            self.assertEqual(audit_log.username, "admin")
+            self.assertEqual(json.loads(audit_log.data_before)[0]["handled_by"], "old-admin")
+            self.assertEqual(json.loads(audit_log.data_after)[0]["handled_by"], "admin")
 
     def test_destroy(self):
         resource = G(Resource, gateway=self.gateway)
@@ -349,12 +363,11 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
         cls.gateway = create_gateway()
 
     def test_renew(self):
-        resource = G(Resource, gateway=self.gateway)
-
         perm_1 = G(
             models.AppGatewayPermission,
             gateway=self.gateway,
             bk_app_code="test",
+            handled_by="old-admin",
         )
 
         data = [
@@ -387,10 +400,14 @@ class TestAppGatewayPermissionBatchViewSet(TestCase):
                 < (perm_record.expires - now_datetime()).total_seconds()
                 < (180 + 180) * 24 * 3600
             )
+            self.assertEqual(perm_record.handled_by, "admin")
+
+            audit_log = AuditEventLog.objects.get(op_object_id=str(perm_1.id), comment="网关权限续期")
+            self.assertEqual(audit_log.username, "admin")
+            self.assertEqual(json.loads(audit_log.data_before)[0]["handled_by"], "old-admin")
+            self.assertEqual(json.loads(audit_log.data_after)[0]["handled_by"], "admin")
 
     def test_destroy(self):
-        resource = G(Resource, gateway=self.gateway)
-
         perm_1 = G(
             models.AppGatewayPermission,
             gateway=self.gateway,
@@ -468,13 +485,27 @@ class TestAppPermissionApplyViewSet:
 
 class TestAppPermissionApplyBatchViewSet:
     def test_post(self, mocker, fake_gateway, request_factory):
+        record_1 = G(
+            models.AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-api",
+            status="approved",
+            handled_by="admin",
+        )
+        record_2 = G(
+            models.AppPermissionRecord,
+            gateway=fake_gateway,
+            bk_app_code="test-resource",
+            status="rejected",
+            handled_by="admin",
+        )
         mocker.patch(
             "apigateway.biz.permission.GatewayPermissionDimensionManager.handle_permission_apply",
-            return_value=mock.MagicMock(id=1),
+            return_value=record_1,
         )
         mocker.patch(
             "apigateway.biz.permission.ResourcePermissionDimensionManager.handle_permission_apply",
-            return_value=mock.MagicMock(id=1),
+            return_value=record_2,
         )
         mocker.patch(
             "apigateway.apis.web.permission.views.send_mail_for_perm_handle",
@@ -527,6 +558,11 @@ class TestAppPermissionApplyBatchViewSet:
             assert response.status_code == 201
 
         assert models.AppPermissionApply.objects.filter(gateway=fake_gateway).count() == 0
+        assert AuditEventLog.objects.filter(comment="权限申请审批").count() == 2
+        audit_log = AuditEventLog.objects.get(op_object_id=str(record_1.id), comment="权限申请审批")
+        assert audit_log.username == "admin"
+        assert json.loads(audit_log.data_after)["handled_by"] == "admin"
+        assert json.loads(audit_log.data_after)["bk_app_code"] == "test-api"
 
 
 class TestAppPermissionRecordViewSet(TestCase):
