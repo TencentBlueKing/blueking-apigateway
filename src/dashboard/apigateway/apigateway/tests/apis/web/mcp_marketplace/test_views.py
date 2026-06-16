@@ -1252,9 +1252,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         resp = request_view(
             method="POST",
             view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
             data={
                 "bk_app_code": "test-app",
-                "mcp_server_ids": [fake_public_mcp_server.id],
                 "reason": "for test",
             },
         )
@@ -1281,9 +1281,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         resp = request_view(
             method="POST",
             view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
             data={
                 "bk_app_code": "test-app",
-                "mcp_server_ids": [fake_public_mcp_server.id],
                 "reason": "for test",
             },
         )
@@ -1302,9 +1302,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         resp = request_view(
             method="POST",
             view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
             data={
                 "bk_app_code": "test-app",
-                "mcp_server_ids": [fake_public_mcp_server.id],
                 "reason": "for test",
             },
         )
@@ -1312,7 +1312,7 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         assert resp.status_code == 404
         assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
 
-    def test_create_rejects_partial_invalid_mcp_server_ids(self, mocker, request_view, fake_public_mcp_server):
+    def test_create_rejects_invalid_mcp_server_id(self, mocker, request_view, fake_public_mcp_server):
         mocker.patch(
             "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
             return_value=[{"code": "test-app"}],
@@ -1328,14 +1328,16 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         resp = request_view(
             method="POST",
             view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": inactive_server.id},
             data={
                 "bk_app_code": "test-app",
-                "mcp_server_ids": [fake_public_mcp_server.id, inactive_server.id],
                 "reason": "for test",
             },
         )
 
+        result = resp.json()
         assert resp.status_code == 404
+        assert str(inactive_server.id) in result["error"]["message"]
         assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
 
     def test_create_rejects_existing_pending_apply(self, mocker, request_view, fake_public_mcp_server):
@@ -1355,9 +1357,9 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         resp = request_view(
             method="POST",
             view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
             data={
                 "bk_app_code": "test-app",
-                "mcp_server_ids": [fake_public_mcp_server.id],
                 "reason": "for test",
             },
         )

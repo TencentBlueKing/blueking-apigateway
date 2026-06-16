@@ -721,24 +721,6 @@ class MCPServerAppPermissionApplyListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyListInputSLZ"
 
 
-class MCPServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
-    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
-    mcp_server_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        allow_empty=False,
-        required=True,
-        max_length=50,
-        help_text="MCPServer ID 列表，最多 50 个",
-    )
-    reason = serializers.CharField(required=True, help_text="申请原因")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyCreateInputSLZ"
-
-    def validate_mcp_server_ids(self, value):
-        return list(dict.fromkeys(value))
-
-
 class MCPServerAppPermissionApplyApplicantListInputSLZ(serializers.Serializer):
     state = serializers.ChoiceField(
         choices=MCPServerAppPermissionApplyProcessedStateEnum.get_choices(),

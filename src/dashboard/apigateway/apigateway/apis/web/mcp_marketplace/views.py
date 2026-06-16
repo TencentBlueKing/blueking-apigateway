@@ -22,7 +22,6 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.mcp_server.serializers import (
-    MCPServerAppPermissionApplyCreateInputSLZ,
     MCPServerAppPermissionApplyCreateOutputSLZ,
     MCPServerConfigListOutputSLZ,
 )
@@ -44,6 +43,7 @@ from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
     MCPMarketplaceApplicableAppOutputSLZ,
+    MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
     MCPServerBatchConfigInputSLZ,
     MCPServerBatchConfigOutputSLZ,
     MCPServerCategoryOutputSLZ,
@@ -127,18 +127,18 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="发起 MCPServer 权限申请",
-        request_body=MCPServerAppPermissionApplyCreateInputSLZ,
+        request_body=MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
         responses={status.HTTP_201_CREATED: MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
         tags=["WebAPI.MCPServer"],
     ),
 )
 class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
-        slz = MCPServerAppPermissionApplyCreateInputSLZ(data=request.data)
+        slz = MCPMarketplaceServerAppPermissionApplyCreateInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
-        mcp_server_ids = data["mcp_server_ids"]
+        mcp_server_ids = [kwargs["mcp_server_id"]]
         user_tenant_id = get_user_tenant_id(request)
 
         apps = get_paas_apps_by_username(request.user.username, user_tenant_id)
@@ -156,8 +156,14 @@ class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
 
         valid_ids = set(queryset.values_list("id", flat=True))
-        if valid_ids != set(mcp_server_ids):
-            raise error_codes.NOT_FOUND.format(_("请检查对应 MCPServer / 环境 / 网关是否都已启用。"), replace=True)
+        invalid_ids = set(mcp_server_ids) - valid_ids
+        if invalid_ids:
+            raise error_codes.NOT_FOUND.format(
+                _("请检查对应 MCPServer / 环境 / 网关是否都已启用，不可用 MCPServer ID：{ids}。").format(
+                    ids=", ".join(map(str, sorted(invalid_ids)))
+                ),
+                replace=True,
+            )
 
         queryset = MCPServerPermissionHandler.create_apply(
             bk_app_code=data["bk_app_code"],

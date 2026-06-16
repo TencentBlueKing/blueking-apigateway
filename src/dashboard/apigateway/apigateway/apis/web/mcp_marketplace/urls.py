@@ -43,11 +43,6 @@ urlpatterns = [
                 # list or create gateway mcp server
                 path("", MCPMarketplaceServerListApi.as_view(), name="mcp_marketplace.server.list"),
                 path(
-                    "-/app-permission-apply/",
-                    MCPMarketplaceServerAppPermissionApplyCreateApi.as_view(),
-                    name="mcp_marketplace.server.app_permission_apply.create",
-                ),
-                path(
                     "<int:mcp_server_id>/",
                     include(
                         [
@@ -60,6 +55,11 @@ urlpatterns = [
                                 "configs/",
                                 MCPMarketplaceServerConfigListApi.as_view(),
                                 name="mcp_marketplace.server.config_list",
+                            ),
+                            path(
+                                "app-permission-apply/",
+                                MCPMarketplaceServerAppPermissionApplyCreateApi.as_view(),
+                                name="mcp_marketplace.server.app_permission_apply.create",
                             ),
                             path(
                                 "tools/<str:tool_name>/doc/",
