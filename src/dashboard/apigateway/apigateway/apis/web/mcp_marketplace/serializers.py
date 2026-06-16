@@ -297,3 +297,14 @@ class MCPServerBatchConfigOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigOutputSLZ"
+
+
+class MCPMarketplaceApplicableAppOutputSLZ(serializers.Serializer):
+    """发起 MCPServer 权限申请时，可选择的蓝鲸应用列表"""
+
+    bk_app_code = serializers.CharField(help_text="应用代码")
+    name = serializers.CharField(help_text="应用名称")
+    logo_url = serializers.CharField(help_text="应用 Logo 地址", allow_blank=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPMarketplaceApplicableAppOutputSLZ"

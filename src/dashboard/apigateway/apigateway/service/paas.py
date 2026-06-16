@@ -18,6 +18,12 @@
 
 from django.conf import settings
 
+from apigateway.utils.url import url_join
+
+
+def gen_paas_app_create_link() -> str:
+    return url_join(settings.BK_PAAS3_URL, "/developer-center/app/create")
+
 
 def gen_programmable_gateway_links(app_code: str) -> dict:
     paas3_url = settings.BK_PAAS3_URL

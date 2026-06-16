@@ -19,8 +19,10 @@
 from django.urls import include, path
 
 from .views import (
+    MCPMarketplaceApplicableAppListApi,
     MCPMarketplaceBatchConfigApi,
     MCPMarketplaceCategoryListApi,
+    MCPMarketplaceServerAppPermissionApplyCreateApi,
     MCPMarketplaceServerConfigListApi,
     MCPMarketplaceServerListApi,
     MCPMarketplaceServerRetrieveApi,
@@ -32,12 +34,19 @@ urlpatterns = [
     path("categories/", MCPMarketplaceCategoryListApi.as_view(), name="mcp_marketplace.category.list"),
     # 批量获取配置
     path("batch-configs/", MCPMarketplaceBatchConfigApi.as_view(), name="mcp_marketplace.batch_configs"),
+    # 发起权限申请时可选择的蓝鲸应用列表
+    path("applicable-apps/", MCPMarketplaceApplicableAppListApi.as_view(), name="mcp_marketplace.applicable_apps"),
     path(
         "servers/",
         include(
             [
                 # list or create gateway mcp server
                 path("", MCPMarketplaceServerListApi.as_view(), name="mcp_marketplace.server.list"),
+                path(
+                    "-/app-permission-apply/",
+                    MCPMarketplaceServerAppPermissionApplyCreateApi.as_view(),
+                    name="mcp_marketplace.server.app_permission_apply.create",
+                ),
                 path(
                     "<int:mcp_server_id>/",
                     include(
