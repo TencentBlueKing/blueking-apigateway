@@ -2503,5 +2503,16 @@
   "应用{bk_app_code} 申请{resourceLength}个权限，通过{selectLength}个，驳回{rejectLength}个": "Application {bk_app_code} requested {resourceLength} permissions, approved {selectLength} of them, and rejected {rejectLength}",
   "单据接入了 ITSM，ITSM 不支持批量审批": "The ticket is integrated with ITSM; ITSM does not support batch approvals",
   "导出筛选项": "Export Filters",
-  "请先选择筛选条件": "Please select filter conditions"
+  "请先选择筛选条件": "Please select filter conditions",
+  "拦截规则": "Block Rules",
+  "需要拦截的 URI 列表，支持正则表达式": "List of URIs to be blocked, supports regular expressions",
+  "忽略大小写": "Case Insensitive",
+  "请求被拦截时返回的 HTTP 状态码": "HTTP status code returned when the request is blocked",
+  "拒绝消息": "Reject Message",
+  "请输入拒绝消息": "Please enter reject message",
+  "拒绝消息不能为空": "Reject message cannot be empty",
+  "需要至少填写一个规则": "At least one rule must be filled in",
+  "长度需要在 1 到 4096 个字符之间": "Length must be between 1 and 4096 characters",
+  "规则已存在": "Rule already exists",
+  "请求被拦截时返回的消息": "Message when rejected"
 }
