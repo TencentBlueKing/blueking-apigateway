@@ -78,6 +78,49 @@ class TestGatewayRetrieveApi:
         assert result["data"]["name"] == fake_gateway.name
 
 
+class TestGatewayAppPermissionApplyCreateApi:
+    def test_create_rejects_resource_ids_from_other_gateway(
+        self,
+        request_to_view,
+        request_factory,
+        fake_gateway,
+        mocker,
+    ):
+        get_released_public_resources = mocker.patch(
+            "apigateway.apis.v2.inner.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=[
+                {
+                    "id": 1,
+                    "allow_apply_permission": True,
+                }
+            ],
+        )
+        get_manager = mocker.patch("apigateway.apis.v2.inner.views.PermissionDimensionManager.get_manager")
+
+        request = request_factory.post(
+            "",
+            data={
+                "target_app_code": "test-app",
+                "resource_ids": [2],
+                "grant_dimension": "resource",
+            },
+        )
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.inner.gateway.permission.apply",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 400
+        assert "resource_ids" in result["error"]["message"]
+        get_released_public_resources.assert_called_once_with(fake_gateway.id)
+        get_manager.assert_not_called()
+
+
 class TestMCPServerPermissionListApi:
     def test_list_with_protocol_type(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含协议类型数据"""

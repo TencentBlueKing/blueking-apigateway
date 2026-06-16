@@ -69,6 +69,15 @@ logger = logging.getLogger(__name__)
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
 
 
+def _validate_resource_ids_in_released_resources(resource_ids: list[int], released_resources: list[dict]):
+    if not resource_ids:
+        return
+
+    released_resource_ids = {resource["id"] for resource in released_resources}
+    if set(resource_ids) - released_resource_ids:
+        raise ValidationError({"resource_ids": [_("指定的部分资源 ID 不属于当前网关已发布资源。")]})
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -291,6 +300,11 @@ class GatewayAppPermissionApplyCreateApi(generics.CreateAPIView):
                     f"app_code={app_code} is belongs to tenant {app_tenant_id}, should not apply the gateway of tenant {gateway_tenant_id}",
                     replace=True,
                 )
+
+        resource_ids = data.get("resource_ids") or []
+        if resource_ids:
+            released_resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
+            _validate_resource_ids_in_released_resources(resource_ids, released_resources)
 
         manager = PermissionDimensionManager.get_manager(data["grant_dimension"])
         record = manager.create_apply_record(

@@ -60,6 +60,7 @@ class AppGatewayPermission(TimestampedModelMixin):
         default=GrantTypeEnum.INITIALIZE.value,
         db_index=True,
     )
+    handled_by = models.CharField(max_length=32, blank=True, default="")
 
     objects: ClassVar[managers.AppGatewayPermissionManager] = managers.AppGatewayPermissionManager()
 
@@ -108,6 +109,7 @@ class AppResourcePermission(TimestampedModelMixin):
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
     grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)
+    handled_by = models.CharField(max_length=32, blank=True, default="")
 
     objects: ClassVar[managers.AppResourcePermissionManager] = managers.AppResourcePermissionManager()
 

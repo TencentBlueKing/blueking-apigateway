@@ -16,11 +16,8 @@ targets below from `src/mcp-proxy`.
 ## Runtime And Tooling
 
 - Work from `src/mcp-proxy`, not the monorepo root, when running Go commands.
-- `go.mod`, `Dockerfile`, and `.github/workflows/mcp-proxy.yml` are the build/runtime sources of truth and
-  currently use Go 1.25.x (`go.mod` and `Dockerfile` say `1.25.5`; CI uses `1.25`).
-- `.envrc` and `README.md` still mention Go 1.24.4. Treat that as stale unless the user explicitly asks to
-  use the `.envrc` runtime. If verification fails under Go 1.24.4, switch to the Go version required by
-  `go.mod`/CI before debugging code.
+- `go.mod`, `Dockerfile`, `.envrc`, and `.github/workflows/mcp-proxy.yml` are the build/runtime sources of
+  truth and currently use Go 1.25.x (`go.mod`, `Dockerfile`, and `.envrc` say `1.25.5`; CI uses `1.25`).
 - `vendor/`, `bin/`, `config.yaml`, `.coverage.cov`, and the built binary are ignored local artifacts. Do
   not edit ignored `vendor/` by hand. Run `make dep` to refresh it when a command uses `-mod=vendor`.
 - Local tools are installed into `./bin` by `make init`; prefer those binaries over globally installed
@@ -214,8 +211,8 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 - `BK_API_URL_TMPL` overrides `mcpServer.bkApiUrlTmpl`.
 - `PROMETHEUS_METRIC_NAME_PREFIX` overrides `metric.namePrefix`, default `bk_apigateway_`. Keep metric names
   compatible with dashboard PromQL in `src/dashboard/apigateway/apigateway/service/prometheus/`.
-- `PPROF_USERNAME` and `PPROF_PASSWORD` override pprof credentials. Defaults exist in code, but production
-  config should set real credentials.
+- `PPROF_USERNAME` and `PPROF_PASSWORD` override pprof credentials. Empty username or password disables
+  pprof; set both values through config or env vars to enable it.
 - `BKAI_DEV_TRACE_ENABLE`, `BKAI_DEV_TRACE_ENDPOINT`, `BKAI_DEV_TRACE_SERVICE_NAME`, and
   `BKAI_DEV_TRACE_TOKEN` override the `bkAIDevTrace` config section.
 - `mcpServer.logTruncate` sizes are string lengths, not byte counts.
@@ -254,7 +251,6 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 ## Common Sharp Edges
 
 - Do not trust the nearest ignored `vendor/` directory. It is local state and may not match `go.mod`.
-- Do not silently use Go 1.24.4 from `.envrc` for code verification when `go.mod`/CI require Go 1.25.x.
 - `MCPProxy.InitSharedTransport` uses `sync.Once`; config changes after the first initialization will not
   affect the shared transport in the same process.
 - SSE and Streamable HTTP are protocol-specific. Cross-protocol access should fail; keep

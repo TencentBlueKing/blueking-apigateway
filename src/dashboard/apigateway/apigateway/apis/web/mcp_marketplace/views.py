@@ -34,7 +34,7 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.constants import TENANT_ID_OPERATION, TenantModeEnum
+from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.validators import check_user_can_access_gateway
@@ -343,20 +343,11 @@ class MCPMarketplaceCategoryListApi(generics.ListAPIView):
                 mcp_server_filter &= Q(
                     mcp_servers__categories__name__in=categories, mcp_servers__categories__is_active=True
                 )
-        # 如果有租户过滤，使用和 MCPMarketplaceServerListApi 一样的筛选逻辑
         if user_tenant_id:
-            # 运营租户可以看到 全租户网关 + 自己租户网关的 MCP Server
-            if user_tenant_id == TENANT_ID_OPERATION:
-                mcp_server_filter &= Q(mcp_servers__gateway__tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
-                    mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
-                    mcp_servers__gateway__tenant_id=user_tenant_id,
-                )
-            else:
-                # 其他租户只能看到本租户网关的 MCP Server
-                mcp_server_filter &= Q(
-                    mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
-                    mcp_servers__gateway__tenant_id=user_tenant_id,
-                )
+            mcp_server_filter &= Q(mcp_servers__gateway__tenant_mode=TenantModeEnum.GLOBAL.value) | Q(
+                mcp_servers__gateway__tenant_mode=TenantModeEnum.SINGLE.value,
+                mcp_servers__gateway__tenant_id=user_tenant_id,
+            )
 
         # 使用 annotate 一次性统计每个分类的 MCPServer 数量，避免 N+1 查询
         queryset = (

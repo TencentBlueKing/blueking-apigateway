@@ -412,12 +412,16 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
             )
         )
         permission_model = PermissionDimensionManager.get_permission_model(data["grant_dimension"])
+
+        username = settings.GATEWAY_DEFAULT_CREATOR
+
         permission_model.objects.save_permissions(
             gateway=request.gateway,
             resource_ids=resource_ids,
             bk_app_code=data["target_app_code"],
             expire_days=data.get("expire_days"),
             grant_type=GrantTypeEnum.INITIALIZE.value,
+            handled_by=username,
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)

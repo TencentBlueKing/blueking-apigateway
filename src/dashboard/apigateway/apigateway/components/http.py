@@ -55,6 +55,13 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 
+def _get_json_response(resp):
+    try:
+        return resp.json() if resp.content else {}
+    except ValueError:
+        return {}
+
+
 def _http_request(
     method,
     url,
@@ -183,7 +190,9 @@ def _http_request(
                 "error": (
                     f"status_code is {resp.status_code}, not 2xx! "
                     f"{method} {urlparse(url).path}, request_id={request_id}, resp.body={content}"
-                )
+                ),
+                "status_code": resp.status_code,
+                "response_data": _get_json_response(resp),
             }
 
         logger.debug(

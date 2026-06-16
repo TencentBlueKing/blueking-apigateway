@@ -52,9 +52,11 @@ class TestAppAPIPermissionManager:
             bk_app_code="test",
             grant_type=GrantTypeEnum.APPLY.value,
             expire_days=180,
+            handled_by="admin",
         )
 
         assert permission.grant_type == GrantTypeEnum.APPLY.value
+        assert permission.handled_by == "admin"
 
     def test_renew_by_ids(self):
         perm_1 = G(
@@ -241,12 +243,14 @@ class TestAppResourcePermissionManager:
                 "bk_app_code": "test",
                 "grant_type": "apply",
                 "expire_days": 180,
+                "handled_by": "admin",
             },
             {
                 "resource_ids": [resource_2.id],
                 "bk_app_code": "test",
                 "grant_type": "apply",
                 "expire_days": 180,
+                "handled_by": "admin",
             },
         ]
         for test in data:
@@ -255,6 +259,7 @@ class TestAppResourcePermissionManager:
                 gateway=self.gateway, resource_id=test["resource_ids"][0], bk_app_code=test["bk_app_code"]
             )
             assert permission.grant_type == test["grant_type"]
+            assert permission.handled_by == test["handled_by"]
             assert 180 * 24 * 3600 - 10 < (permission.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
 
 

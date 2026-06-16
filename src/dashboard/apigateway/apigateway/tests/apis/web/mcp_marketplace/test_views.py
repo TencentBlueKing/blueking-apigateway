@@ -34,7 +34,9 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
     MCPServerExtend,
 )
+from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import Gateway, Stage
 from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
@@ -797,6 +799,76 @@ class TestMCPMarketplaceCategoryListApi:
         )
         assert devops_category is not None
         assert devops_category["mcp_server_count"] == 0
+
+    def test_list_categories_count_includes_global_and_user_tenant_servers(
+        self, request_view, fake_categories, fake_public_mcp_server, faker
+    ):
+        """普通租户统计分类时，应包含全租户网关和本租户网关下的 MCPServer"""
+        fake_public_mcp_server.gateway.tenant_mode = TenantModeEnum.GLOBAL.value
+        fake_public_mcp_server.gateway.tenant_id = ""
+        fake_public_mcp_server.gateway.save()
+        fake_public_mcp_server.categories.add(fake_categories["devops"])
+
+        same_tenant_gateway = G(
+            Gateway,
+            name=faker.pystr()[:20],
+            _maintainers="admin",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="default",
+        )
+        same_tenant_stage = G(
+            Stage,
+            gateway=same_tenant_gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            name=faker.pystr()[:20],
+        )
+        same_tenant_server = G(
+            MCPServer,
+            name=faker.pystr()[:20],
+            gateway=same_tenant_gateway,
+            stage=same_tenant_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        same_tenant_server.categories.add(fake_categories["devops"])
+
+        other_tenant_gateway = G(
+            Gateway,
+            name=faker.pystr()[:20],
+            _maintainers="admin",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode=TenantModeEnum.SINGLE.value,
+            tenant_id="other",
+        )
+        other_tenant_stage = G(
+            Stage,
+            gateway=other_tenant_gateway,
+            status=StageStatusEnum.ACTIVE.value,
+            name=faker.pystr()[:20],
+        )
+        other_tenant_server = G(
+            MCPServer,
+            name=faker.pystr()[:20],
+            gateway=other_tenant_gateway,
+            stage=other_tenant_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        other_tenant_server.categories.add(fake_categories["devops"])
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.category.list",
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        devops_category = next((cat for cat in result["data"] if cat["name"] == "DevOps"), None)
+        assert devops_category is not None
+        assert devops_category["mcp_server_count"] == 2
 
     def test_list_categories_empty(self, request_view):
         """测试没有分类时的情况"""

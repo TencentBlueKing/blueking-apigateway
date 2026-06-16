@@ -1,10 +1,10 @@
 # mcp-proxy
-This project is a proxy for mcp
 
+This project is a proxy for mcp
 
 ## develop
 
-- `go >= 1.24.4` required
+- `go >= 1.25.5` required
 
 build and run
 

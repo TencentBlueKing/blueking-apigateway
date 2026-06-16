@@ -142,6 +142,7 @@ import { useGateway, usePermission } from '@/stores';
 import type { IDropList, ITableMethod } from '@/types/common';
 import type { IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
+import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
 import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
@@ -177,16 +178,7 @@ const tableColumns = shallowRef<any[]>([
       type: 'single',
       showConfirmAndReset: true,
       popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-      list: [
-        {
-          label: t('按网关'),
-          value: 'api',
-        },
-        {
-          label: t('按资源'),
-          value: 'resource',
-        },
-      ],
+      list: GRANT_DIMENSION_TYPE_LIST,
     },
   },
   {
@@ -215,7 +207,7 @@ const tableColumns = shallowRef<any[]>([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
-    width: 120,
+    width: 100,
     cell: (h: any, { row }: { row: IPermission }) => {
       const data = row as IPermission;
       return (
@@ -236,6 +228,18 @@ const tableColumns = shallowRef<any[]>([
         <span>
           { t(['initialize'].includes(data.grant_type) ? '主动授权' : '申请审批') }
         </span>
+      );
+    },
+  },
+  {
+    title: t('操作人'),
+    colKey: 'handled_by',
+    ellipsis: true,
+    width: 100,
+    cell: (h: any, { row }: { row: IPermission }) => {
+      const data = row as IPermission;
+      return (
+        <span>{ data.handled_by || '--' }</span>
       );
     },
   },

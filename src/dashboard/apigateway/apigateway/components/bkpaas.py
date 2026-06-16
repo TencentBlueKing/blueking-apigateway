@@ -188,6 +188,52 @@ def get_app_maintainers(bk_app_code: str) -> List[str]:
     return []
 
 
+def get_paas_repo_authorization(
+    source_control_type: str = "tc_git",
+    user_credentials: Optional[UserCredentials] = None,
+) -> Dict[str, Any]:
+    """检查用户是否已授权 PaaS 代码仓库"""
+    url = url_join(get_paas3_url_prefix(), f"/api/sourcectl/{source_control_type}/repos/")
+    data: Dict[str, Any] = {}
+    ok, resp_data = http_get(
+        url,
+        data,
+        headers=gen_gateway_headers(user_credentials),
+        timeout=REQ_PAAS_API_TIMEOUT,
+    )
+    if not ok:
+        if resp_data.get("status_code") == 403:
+            response_data = resp_data.get("response_data", {})
+            return {
+                "authorized": False,
+                "message": response_data.get("message", ""),
+                "address": response_data.get("address", ""),
+                "auth_docs": response_data.get("auth_docs", ""),
+            }
+
+        logger.error(
+            "%s api failed! %s %s, data: %s, request_id: %s, error: %s",
+            "paasv3",
+            "http_get",
+            url,
+            data,
+            local.request_id,
+            resp_data["error"],
+        )
+        raise error_codes.REMOTE_REQUEST_ERROR.format(
+            f"request paasv3 fail! "
+            f"Request=[http_get {urlparse(url).path} request_id={local.request_id}]"
+            f"error={resp_data['error']}"
+        )
+
+    return {
+        "authorized": True,
+        "message": "",
+        "address": "",
+        "auth_docs": "",
+    }
+
+
 def create_paas_app(
     app_code: str,
     language: str,

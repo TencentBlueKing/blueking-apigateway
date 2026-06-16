@@ -71,10 +71,6 @@ class Command(BaseCommand):
 
             yield plugin_type
 
-            # 被依赖的
-            for form in plugin_type.pluginform_set.order_by("language"):
-                yield form
-
     def _load_dumped_models(self, fixture: str, allow_deletion: bool):
         if not os.path.exists(fixture):
             raise ValueError(f"fixture file does not exist: {fixture}")

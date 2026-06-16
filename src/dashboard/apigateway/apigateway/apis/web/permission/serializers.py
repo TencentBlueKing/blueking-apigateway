@@ -67,6 +67,7 @@ class AppPermissionOutputSLZ(serializers.Serializer):
         choices=GrantTypeEnum.get_choices(), default=GrantTypeEnum.INITIALIZE.value, help_text="授权类型"
     )
     renewable = serializers.SerializerMethodField(help_text="是否可续期")
+    handled_by = serializers.CharField(help_text="操作人", required=False, allow_blank=True)
 
     class Meta:
         ref_name = "apigateway.apis.web.permission.serializers.AppPermissionOutputSLZ"

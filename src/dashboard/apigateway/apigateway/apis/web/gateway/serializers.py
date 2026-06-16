@@ -479,3 +479,13 @@ class GatewayCheckNameAvailableOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayCheckNameAvailableOutputSLZ"
+
+
+class GatewayRepoAuthorizationOutputSLZ(serializers.Serializer):
+    authorized = serializers.BooleanField(read_only=True, help_text="用户是否已授权代码仓库")
+    message = serializers.CharField(allow_blank=True, read_only=True, help_text="未授权提示信息")
+    address = serializers.CharField(allow_blank=True, read_only=True, help_text="仓库授权链接")
+    auth_docs = serializers.CharField(allow_blank=True, read_only=True, help_text="仓库授权文档链接")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.gateway.serializers.GatewayRepoAuthorizationOutputSLZ"

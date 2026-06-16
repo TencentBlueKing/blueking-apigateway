@@ -21,12 +21,12 @@ BlueKing API Gateway Dashboard is the Django control plane for managing gateway
 definitions, stages, resources, releases, permissions, plugins, SDK generation,
 MCP servers, and data-plane publication. Apache APISIX is the data plane; this
 service stores and validates gateway state, then turns releases into controller
-configuration.
+configuration that is published through `controller -> etcd -> operator -> APISIX`.
 
 Current stack, from the checked-in files:
 
 - Python `>=3.11,<3.12` in `pyproject.toml`; CI uses Python `3.11.13`.
-- Django `4.2.30`, Django REST Framework `3.16.0`.
+- Django `5.2.15`, Django REST Framework `3.17.1`.
 - Dependencies are managed by `uv` with `pyproject.toml` and `uv.lock`.
 - The Django project root is `apigateway/` and contains `manage.py`.
 - The importable Django package is `apigateway/apigateway/`.
@@ -36,7 +36,7 @@ Current stack, from the checked-in files:
 - `Makefile` - setup, lint, tests, edition switching, Docker image build, OpenAPI checks.
 - `pyproject.toml` - dependencies, ruff, mypy, pytest, import-linter contracts.
 - `uv.lock` - dependency lockfile; keep it in sync with `pyproject.toml`.
-- `Dockerfile` - production image, based on a Python 3.11 BlueKing image.
+- `Dockerfile` - production image, currently based on `hub.bktencent.com/blueking/python:3.11.14-ts4`.
 - `bin/start.sh` - Gunicorn entrypoint; keeps Prometheus multiprocess metrics in `/tmp/`.
 - `bin/start_celery.sh` and `bin/start_beat.sh` - Celery entrypoints.
 - `apigateway/manage.py` - Django management command entrypoint.
@@ -46,6 +46,8 @@ Current stack, from the checked-in files:
 - `apigateway/apigateway/conf/unittest_env` - default test environment, SQLite databases.
 - `apigateway/apigateway/data/apigw-definitions/` - gateway resource YAML definitions.
 - `apigateway/apigateway/data/apidocs/zh/` - markdown API docs used by OpenAPI consistency checks.
+- `apigateway/apigateway/fixtures/plugins.yaml` - plugin type, schema, and form fixtures.
+- `apigateway/apigateway/apis/web/plugin/AGENTS.md` - local plugin subsystem guide; read it before changing plugins.
 - `apigateway/apigateway/tests/` - pytest suite, mirroring source structure.
 
 ## Architecture
@@ -65,7 +67,8 @@ Important call rules:
 - `apis/` view and serializer code may call `biz/` and `service/` directly.
 - `biz/` may call `service/`. Package-local `biz` imports are allowed inside
   one domain or subpackage, but do not add peer-domain imports covered by the
-  `biz-domain-independence` contract.
+  `biz-domain-independence` contract. That contract currently covers
+  `biz.gateway`, `biz.resource`, `biz.permission`, and `biz.mcp_server`.
 - `service/` modules may call each other and may contain cross-model operations
   when the operation is focused and reusable.
 - `service/` is not a dumping ground for code moved only to avoid `biz`-to-`biz`
@@ -114,6 +117,9 @@ Service organization guide:
   `apigateway.service.<domain>`, not from leaf modules such as
   `apigateway.service.<domain>.<capability>`. The package `__init__.py` owns the
   public API and `__all__`; leaf modules must not define `__all__`.
+- For `biz/<domain>/` packages covered by the public API contract, callers from
+  `apis/` and `apps/` must import public symbols from
+  `apigateway.biz.<domain>`, not from leaf modules that import-linter forbids.
 - Service package internals may use single-dot relative imports for local
   leaf modules, but should not use parent relative imports such as `..` inside
   `service/`. When reaching outside the current package, use absolute imports
@@ -174,12 +180,17 @@ Layer intent:
   business queries in managers.
 - `common/` - reusable middleware, permissions, fields, mixins, tenant helpers, factories.
 - `utils/` - low-level utility functions.
+- Top-level packages such as `account/`, `healthz/`, `schema/`, and `tracing/`
+  are outside the main `global-layers` stack. Follow the nearest caller,
+  settings, or middleware pattern instead of forcing them into a layer.
 
-The v2 API surfaces are intentionally independent:
+The API surfaces are intentionally independent:
 
-- `apigateway.apis.v2.sync` - sync APIs for SDK or automation clients that manage gateways.
-- `apigateway.apis.v2.inner` - internal APIs, mainly for BlueKing internal callers.
+- `apigateway.apis.web` - dashboard backend APIs consumed by `dashboard-front`.
+- `apigateway.apis.open` - legacy open APIs with compatibility response formats.
 - `apigateway.apis.v2.open` - public open APIs.
+- `apigateway.apis.v2.inner` - internal APIs, mainly for BlueKing internal callers.
+- `apigateway.apis.v2.sync` - sync APIs for SDK or automation clients that manage gateways.
 
 Do not share view or serializer code across API surfaces by importing from one
 surface into another. Keep view-level logic in the owning API module
@@ -211,15 +222,21 @@ Use `uv` as the source of truth for the environment.
 ```bash
 cd src/dashboard
 make init
-uv sync
 ```
 
-For CI-equivalent dependency installation:
+`make init` installs `uv==0.8.0`, runs `uv sync`, installs pre-commit, and
+installs mypy stub packages. The Docker image copies `uv==0.8.22`; use the
+checked-in lockfile rather than relying on either version detail.
+
+For a local install with CI's locked dependency set:
 
 ```bash
 cd src/dashboard
 uv sync --locked --all-extras --dev
 ```
+
+In GitHub Actions, the workflow also sets `UV_PROJECT_ENVIRONMENT` to the
+action-provided Python location before running the same `uv sync` flags.
 
 Before running Python tools, verify the interpreter matches `pyproject.toml`:
 
@@ -264,6 +281,24 @@ The frontend is developed separately in `src/dashboard-front`. A local nginx
 reverse proxy usually sends `/backend/` to the dashboard server and other paths
 to the frontend dev server.
 
+## Plugin Fixtures
+
+Before changing plugin behavior, read
+`apigateway/apigateway/apis/web/plugin/AGENTS.md`.
+
+For plugin type/schema/form maintenance:
+
+```bash
+cd src/dashboard
+make load_fixtures
+# edit through Django admin or update fixtures intentionally
+make dump_fixtures
+```
+
+New APISIX plugins should normally store APISIX-native YAML and should not add
+API-layer or service-layer convertors unless the plugin guide says the legacy
+compatibility path applies.
+
 ## Edition System
 
 Edition-specific code lives under `apigateway/apigateway/editions/` and is
@@ -279,16 +314,17 @@ make edition-reset
 make edition-modules
 ```
 
-CI runs lint and tests after `make edition-ee`. If imports or tests fail because
-edition links are missing, run `make edition-ee` before debugging application
-logic.
+CI runs lint and tests after `make edition-ee`. Run `make edition-ee` before
+local lint or test gates unless you are intentionally checking a different
+edition.
 
 ## Linting
 
 Configured in `pyproject.toml`:
 
 - `ruff` handles formatting and linting.
-- `mypy` runs with strict optional checks and ignores migrations/conf/editions as configured.
+- `mypy` runs with strict optional checks; migrations, conf, and editions are
+  excluded or error-suppressed as configured.
 - `lint-imports` enforces the layer and API-surface contracts from `pyproject.toml`.
 
 Commands:
@@ -300,7 +336,9 @@ make lint-check
 ```
 
 Use `make lint` for local code edits because it auto-formats and fixes what it
-can. Use `make lint-check` when you need the CI-style non-mutating check.
+can. Use `make lint-check` when you need the CI-style non-mutating check; note
+that `lint-check` does not run `ruff format --check`, so formatting is enforced
+locally by `make lint` or pre-commit rather than by this CI step.
 
 ## Testing
 
@@ -308,8 +346,11 @@ The normal full test gate is:
 
 ```bash
 cd src/dashboard
+make edition-ee
 make test
 ```
+
+`make test` runs pytest with `--reuse-db`, `-n auto`, and `--dist loadscope`.
 
 Useful variants:
 
@@ -324,7 +365,7 @@ Focused pytest pattern for agents:
 
 ```bash
 cd src/dashboard
-uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python3 -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
+uv run bash -lc 'cd apigateway && set -a && . apigateway/conf/unittest_env && set +a && python -m pytest --nomigrations --ds apigateway.settings -q --tb=short apigateway/tests/path/to/test_file.py::TestClass::test_method'
 ```
 
 Notes:
@@ -337,6 +378,8 @@ Notes:
   `fake_resource`, and related fixtures from `tests/conftest.py`.
 - Model setup commonly uses `ddf` / `django_dynamic_fixture` `G()`.
 - API tests usually call the URL by `view_name` and assert through `resp.json()`.
+- When adding `service/<domain>/` packages or package exports, keep
+  `tests/service/test_public_api_contract.py` passing.
 
 ## OpenAPI And API Docs
 
@@ -351,6 +394,9 @@ Run the consistency checker:
 ```bash
 cd src/dashboard
 make check-openapi
+make check-openapi-help
+make check-openapi SCOPE=v2_open
+make check-openapi SCOPE=v2_inner
 make check-openapi SCOPE=v2_sync
 make check-openapi API=v2_sync_gateway
 make check-openapi JSON=1
@@ -359,7 +405,9 @@ make check-openapi FIX=1
 
 For changed or new endpoints, update the matching markdown doc with method,
 path, parameters or request body, response fields, status codes, and error
-examples. The frontend team uses these docs for integration.
+examples. The frontend team uses these docs for integration. CI runs
+`make check-openapi` for dashboard changes, so API, YAML, serializer, and docs
+drift should be fixed before push.
 
 ## Response And Validation Patterns
 
@@ -411,9 +459,11 @@ For code changes:
 1. Add or update focused tests under `apigateway/apigateway/tests/`.
 2. Update API docs and gateway YAML definitions when an API contract changes.
 3. Run the narrow relevant pytest target first.
-4. Run `make lint`.
+4. Run `make edition-ee && make lint-check` for the CI-style lint gate, or
+   `make edition-ee && make lint` first if you want auto-format/fix behavior.
 5. Run `make check-openapi` if any open API, YAML definition, serializer, or API
-   markdown doc changed.
-6. Run `make test` for broad code changes or when shared behavior is touched.
+   markdown doc changed; CI runs it for all dashboard changes.
+6. Run `make edition-ee && make test` for broad code changes or when shared
+   behavior is touched.
 
 If a verification command is skipped, say exactly why.

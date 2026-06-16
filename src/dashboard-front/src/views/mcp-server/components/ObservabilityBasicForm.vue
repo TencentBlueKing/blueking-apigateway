@@ -56,7 +56,7 @@
             v-for="server of mcpServerList"
             :id="server.name"
             :key="server.name"
-            :name="server.name"
+            :name="renderMcpDisplayName(server)"
           />
         </BkSelect>
       </BkFormItem>
@@ -276,6 +276,10 @@ const fetchMcpAppCodeList = async () => {
 
 const formatDatetime = (timeRange: any[]) => {
   return [+new Date(`${timeRange[0]}`) / 1000, +new Date(`${timeRange[1]}`) / 1000];
+};
+
+const renderMcpDisplayName = (option: Record<string, string>) => {
+  return option?.title ? `${option.title} (${option.name})` : option.name;
 };
 
 // 设置日期选择
