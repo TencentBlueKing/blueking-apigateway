@@ -138,7 +138,7 @@ import {
   getResourceListData,
   getResourcePermissionAppList,
 } from '@/services/source/permission';
-import { useGateway, usePermission } from '@/stores';
+import { useFeatureFlag, useGateway, usePermission } from '@/stores';
 import type { IDropList, ITableMethod } from '@/types/common';
 import type { IPermission, IResource } from '@/types/permission';
 import { sortByKey } from '@/utils';
@@ -153,6 +153,7 @@ const { t } = useI18n();
 const { handleTableFilterChange } = useTableFilterChange();
 const gatewayStore = useGateway();
 const permissionStore = usePermission();
+const featureFlagStore = useFeatureFlag();
 
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const tableColumns = shallowRef<any[]>([
@@ -239,7 +240,9 @@ const tableColumns = shallowRef<any[]>([
     cell: (h: any, { row }: { row: IPermission }) => {
       const data = row as IPermission;
       return (
-        <span>{ data.handled_by || '--' }</span>
+        !featureFlagStore.isEnableDisplayName
+          ? <span>{data.handled_by || '--'}</span>
+          : <span><bk-user-display-name user-id={data.handled_by} /></span>
       );
     },
   },
