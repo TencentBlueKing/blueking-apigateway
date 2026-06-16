@@ -55,26 +55,36 @@ class AppGatewayPermissionManager(models.Manager):
         )
         return obj
 
-    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, handled_by=""):
         queryset = self.filter(gateway=gateway, id__in=ids)
         for obj in queryset:
             obj.expires = calculate_renew_time(obj.expires, expires)
             obj.updated_time = now_datetime()
+            if handled_by:
+                obj.handled_by = handled_by
 
-        self.bulk_update(queryset, ["expires", "updated_time"])
+        update_fields = ["expires", "updated_time"]
+        if handled_by:
+            update_fields.append("handled_by")
+        self.bulk_update(queryset, update_fields)
 
 
 class AppResourcePermissionManager(models.Manager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
-    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, handled_by=""):
         queryset = self.filter(gateway=gateway, id__in=ids)
         for obj in queryset:
             obj.expires = calculate_renew_time(obj.expires, expires)
             obj.updated_time = now_datetime()
+            if handled_by:
+                obj.handled_by = handled_by
 
-        self.bulk_update(queryset, ["expires", "updated_time"])
+        update_fields = ["expires", "updated_time"]
+        if handled_by:
+            update_fields.append("handled_by")
+        self.bulk_update(queryset, update_fields)
 
     def renew_by_resource_ids(
         self,

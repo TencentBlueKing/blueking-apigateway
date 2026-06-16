@@ -211,6 +211,7 @@ class AppPermissionRenewApi(generics.CreateAPIView):
                     gateway=request.gateway,
                     ids=resource_dimension_ids,
                     expire_days=expire_days,
+                    handled_by=request.user.username,
                 )
             )
             Auditor.record_permission_op_success(
@@ -230,6 +231,7 @@ class AppPermissionRenewApi(generics.CreateAPIView):
                     gateway=request.gateway,
                     ids=gateway_dimension_ids,
                     expire_days=expire_days,
+                    handled_by=request.user.username,
                 )
             )
             Auditor.record_permission_op_success(
@@ -442,8 +444,21 @@ class AppResourcePermissionRenewApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        AppResourcePermission.objects.renew_by_ids(
-            gateway=request.gateway, ids=data["ids"], expires=data["expire_days"]
+        data_before, data_after, bk_app_codes = ResourcePermissionHandler.renew_resource_permissions_by_ids(
+            gateway=request.gateway,
+            ids=data["ids"],
+            expire_days=data["expire_days"],
+            handled_by=request.user.username,
+        )
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=";".join([str(i) for i in data["ids"]]),
+            instance_name=";".join(bk_app_codes),
+            data_before=[get_model_dict(perm) for perm in data_before],
+            data_after=[get_model_dict(perm) for perm in data_after],
+            comment="资源权限续期",
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -551,8 +566,21 @@ class AppGatewayPermissionRenewApi(generics.CreateAPIView):
 
         data = slz.validated_data
 
-        AppGatewayPermission.objects.renew_by_ids(
-            gateway=request.gateway, ids=data["ids"], expires=data["expire_days"]
+        data_before, data_after, bk_app_codes = ResourcePermissionHandler.renew_gateway_permissions_by_ids(
+            gateway=request.gateway,
+            ids=data["ids"],
+            expire_days=data["expire_days"],
+            handled_by=request.user.username,
+        )
+        Auditor.record_permission_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=";".join([str(i) for i in data["ids"]]),
+            instance_name=";".join(bk_app_codes),
+            data_before=[get_model_dict(perm) for perm in data_before],
+            data_after=[get_model_dict(perm) for perm in data_after],
+            comment="网关权限续期",
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -740,6 +768,16 @@ class AppPermissionApplyApprovalApi(AppPermissionApplyQuerySetMixin, generics.Cr
                 comment=data["comment"],
                 handled_by=request.user.username,
                 part_resource_ids=part_resource_ids.get(f"{apply.id}"),
+            )
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=record.id,
+                instance_name=record.bk_app_code,
+                data_before={},
+                data_after=get_model_dict(record),
+                comment="权限申请审批",
             )
 
             try:

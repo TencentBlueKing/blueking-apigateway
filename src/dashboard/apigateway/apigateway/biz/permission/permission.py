@@ -126,7 +126,7 @@ class ResourcePermissionHandler:
             )
 
     @staticmethod
-    def renew_resource_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int):
+    def renew_resource_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int, handled_by: str = ""):
         if not ids:
             return [], [], []
 
@@ -140,6 +140,7 @@ class ResourcePermissionHandler:
             gateway=gateway,
             ids=ids,
             expires=expire_days,
+            handled_by=handled_by,
         )
         data_after = list(
             AppResourcePermission.objects.filter(
@@ -152,7 +153,7 @@ class ResourcePermissionHandler:
         return data_before, data_after, bk_app_codes
 
     @staticmethod
-    def renew_gateway_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int):
+    def renew_gateway_permissions_by_ids(gateway: Gateway, ids: List[int], expire_days: int, handled_by: str = ""):
         if not ids:
             return [], [], []
 
@@ -166,6 +167,7 @@ class ResourcePermissionHandler:
             gateway=gateway,
             ids=ids,
             expires=expire_days,
+            handled_by=handled_by,
         )
         data_after = list(
             AppGatewayPermission.objects.filter(
