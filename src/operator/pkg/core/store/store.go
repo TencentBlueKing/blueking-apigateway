@@ -198,7 +198,28 @@ func (s *ApisixEtcdStore) Alter(
 	config *entity.ApisixStageResource,
 ) error {
 	st := time.Now()
-	err := s.alterByStage(ctx, stageKey, config)
+	err := s.alterByStage(ctx, stageKey, nil, config)
+
+	// metric
+	metric.ReportStageConfigAlterMetric(stageKey, config, st, err)
+
+	if err != nil {
+		s.logger.Errorw("Alter by stage failed", "err", err, "stage", stageKey)
+		return err
+	}
+
+	return nil
+}
+
+// AlterForRelease syncs one stage config and keeps release context in logs.
+func (s *ApisixEtcdStore) AlterForRelease(
+	ctx context.Context,
+	releaseInfo *entity.ReleaseInfo,
+	config *entity.ApisixStageResource,
+) error {
+	stageKey := releaseInfo.GetStageKey()
+	st := time.Now()
+	err := s.alterByStage(ctx, stageKey, releaseInfo, config)
 
 	// metric
 	metric.ReportStageConfigAlterMetric(stageKey, config, st, err)
@@ -212,8 +233,12 @@ func (s *ApisixEtcdStore) Alter(
 }
 
 func (s *ApisixEtcdStore) alterByStage(
-	ctx context.Context, stageKey string, conf *entity.ApisixStageResource,
+	ctx context.Context, stageKey string, releaseInfo *entity.ReleaseInfo, conf *entity.ApisixStageResource,
 ) (err error) {
+	logFields := []any{"stage_key", stageKey}
+	if releaseInfo != nil {
+		logFields = append(releaseInfo.LogFields(), logFields...)
+	}
 	// get cached config
 	oldConf := s.Get(stageKey)
 
@@ -238,12 +263,14 @@ func (s *ApisixEtcdStore) alterByStage(
 		}
 
 		if len(putConf.Routes)+len(putConf.Services)+len(putConf.SSLs) > 0 {
-			s.logger.Infof(
-				"put gateway[key=%s] conf count:[route:%d,serivce:%d,ssl:%d]",
-				stageKey,
-				len(putConf.Routes),
-				len(putConf.Services),
-				len(putConf.SSLs),
+			s.logger.Infow(
+				"put stage config",
+				append(
+					logFields,
+					"route_count", len(putConf.Routes),
+					"service_count", len(putConf.Services),
+					"ssl_count", len(putConf.SSLs),
+				)...,
 			)
 			putFlag = true
 		}
@@ -270,19 +297,21 @@ func (s *ApisixEtcdStore) alterByStage(
 			}
 		}
 		if len(deleteConf.Routes)+len(deleteConf.Services)+len(deleteConf.SSLs) > 0 {
-			s.logger.Infof(
-				"delete gateway[key=%s] conf count:[route:%d,service:%d,ssl:%d]",
-				stageKey,
-				len(deleteConf.Routes),
-				len(deleteConf.Services),
-				len(deleteConf.SSLs),
+			s.logger.Infow(
+				"delete stage config",
+				append(
+					logFields,
+					"route_count", len(deleteConf.Routes),
+					"service_count", len(deleteConf.Services),
+					"ssl_count", len(deleteConf.SSLs),
+				)...,
 			)
 			delFlag = true
 		}
 	}
 
 	if !putFlag && !delFlag {
-		s.logger.Infof("%s has no change", stageKey)
+		s.logger.Infow("stage config has no change", logFields...)
 	}
 
 	return nil

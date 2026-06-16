@@ -63,7 +63,7 @@ fmt:
 
 .PHONY: lint
 lint:
-	$(GOLANGCI_LINT) run --fix ./...
+	GOMAXPROCS=1 $(GOLANGCI_LINT) run --fix ./...
 
 .PHONY: test
 test: ## Run tests.

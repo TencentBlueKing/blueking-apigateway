@@ -60,19 +60,45 @@ func (as *ApisixConfigSynchronizer) Sync(
 	gatewayName, stageName string,
 	config *entity.ApisixStageResource,
 ) error {
-	key := cfg.GenStagePrimaryKey(gatewayName, stageName)
+	releaseInfo := &entity.ReleaseInfo{
+		ResourceMetadata: entity.ResourceMetadata{
+			Labels: &entity.LabelInfo{
+				Gateway: gatewayName,
+				Stage:   stageName,
+			},
+		},
+	}
+	return as.SyncRelease(ctx, releaseInfo, config)
+}
+
+// SyncRelease syncs one stage config with release-aware log context.
+func (as *ApisixConfigSynchronizer) SyncRelease(
+	ctx context.Context,
+	releaseInfo *entity.ReleaseInfo,
+	config *entity.ApisixStageResource,
+) error {
+	key := cfg.GenStagePrimaryKey("", "")
+	if releaseInfo == nil {
+		releaseInfo = &entity.ReleaseInfo{}
+	} else {
+		key = releaseInfo.GetStageKey()
+	}
 
 	as.flushMux.Lock()
 	defer as.flushMux.Unlock()
 
-	as.logger.Debugw("flush changes", "key", key, "config", config)
-	err := as.store.Alter(ctx, key, config)
+	as.logger.Debugw("flush changes", append(releaseInfo.LogFields(), "key", key, "config", config)...)
+	err := as.store.AlterForRelease(ctx, releaseInfo, config)
 	if err != nil {
-		as.logger.Errorw("Failed to sync stage", "err", err, "key", key, "content", config)
+		fields := append(releaseInfo.LogFields(), "err", err, "key", key, "content", config)
+		as.logger.Errorw(
+			"Failed to sync stage",
+			fields...,
+		)
 		return err
 	}
 
-	metric.ReportStageConfigSyncMetric(gatewayName, stageName)
+	metric.ReportStageConfigSyncMetric(releaseInfo.GetGatewayName(), releaseInfo.GetStageName())
 
 	return nil
 }

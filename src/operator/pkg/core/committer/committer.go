@@ -90,29 +90,47 @@ func (c *Committer) Run(ctx context.Context) {
 		c.logger.Debugw("committer waiting for commit command")
 		select {
 		case resourceList := <-c.commitResourceChan:
-			c.logger.Infow("received commit command", "resourceList", len(resourceList))
+			c.logger.Infow(
+				"received commit command",
+				"resourceCount", len(resourceList),
+				"releaseKeys", entity.ReleaseLogKeys(resourceList),
+			)
 			// 分批处理 resource，避免一次性处理过多 resource
 			segmentLength := 10
 			for offset := 0; offset < len(resourceList); offset += segmentLength {
 				if offset+segmentLength > len(resourceList) {
-					rawResource, err := json.Marshal(resourceList[offset:])
+					batch := resourceList[offset:]
+					rawResource, err := json.Marshal(batch)
 					if err != nil {
 						c.logger.Errorw("marshal resource list failed", "err", err)
 					}
-					c.commitGroup(ctx, resourceList[offset:])
+					c.commitGroup(ctx, batch)
 					c.logger.Infow(
 						"Commit resource group done",
+						"resourceCount",
+						len(batch),
+						"releaseKeys",
+						entity.ReleaseLogKeys(batch),
 						"resourceList",
 						string(rawResource),
 					)
 					break
 				}
-				rawResource, err := json.Marshal(resourceList[offset:(offset + segmentLength)])
+				batch := resourceList[offset : offset+segmentLength]
+				rawResource, err := json.Marshal(batch)
 				if err != nil {
 					c.logger.Errorw("marshal resource list failed", "err", err)
 				}
-				c.commitGroup(ctx, resourceList[offset:(offset+segmentLength)])
-				c.logger.Infow("Commit resource group done", "resourceList", string(rawResource))
+				c.commitGroup(ctx, batch)
+				c.logger.Infow(
+					"Commit resource group done",
+					"resourceCount",
+					len(batch),
+					"releaseKeys",
+					entity.ReleaseLogKeys(batch),
+					"resourceList",
+					string(rawResource),
+				)
 			}
 
 		case <-ctx.Done():
@@ -145,16 +163,28 @@ func (c *Committer) commitGroup(ctx context.Context, releaseInfoList []*entity.R
 			// Global 资源需要单独处理
 			utils.GoroutineWithRecovery(ctx, func() {
 				defer wg.Done()
-				c.logger.Infof("begin commit global resource: %s", tmpResourceInfo)
+				c.logger.Infow(
+					"begin commit global resource",
+					append(
+						tmpResourceInfo.LogFields(),
+						"resourceInfo",
+						tmpResourceInfo.String(),
+					)...)
 				c.commitGlobalResource(ctx, tmpResourceInfo)
-				c.logger.Infof("end commit global resource: %s", tmpResourceInfo)
+				c.logger.Infow(
+					"end commit global resource",
+					append(
+						tmpResourceInfo.LogFields(),
+						"resourceInfo",
+						tmpResourceInfo.String(),
+					)...)
 			})
 		} else {
 			// Stage 资源按 gateway 维度串行处理
 			utils.GoroutineWithRecovery(ctx, func() {
-				c.logger.Infof("begin commit gateway channel: %s", tmpResourceInfo.GetID())
+				c.logger.Infow("begin commit gateway channel", tmpResourceInfo.LogFields()...)
 				c.commitGatewayStage(ctx, tmpResourceInfo, wg)
-				c.logger.Infof("end commit gateway channel: %s", tmpResourceInfo.GetID())
+				c.logger.Infow("end commit gateway channel", tmpResourceInfo.LogFields()...)
 			})
 		}
 	}
@@ -177,9 +207,9 @@ func (c *Committer) commitGatewayStage(ctx context.Context, si *entity.ReleaseIn
 	utils.GoroutineWithRecovery(ctx, func() {
 		defer wg.Done() // Move wg.Done() here to ensure it's called after work completes
 		// Control stage writes for each gateway to be serial
-		c.logger.Infof("begin commit stage channel: %s", si.GetReleaseID())
+		c.logger.Infow("begin commit stage channel", append(si.LogFields(), "stageKey", si.GetStageKey())...)
 		c.commitStage(ctx, si, stageChan)
-		c.logger.Infof("end commit stage channel: %s", si.GetReleaseID())
+		c.logger.Infow("end commit stage channel", append(si.LogFields(), "stageKey", si.GetStageKey())...)
 	})
 }
 
@@ -220,7 +250,9 @@ func (c *Committer) commitStage(ctx context.Context, si *entity.ReleaseInfo, sta
 	// 直接从 etcd 获取原生 apisix 配置，无需转换
 	apisixConf, err := c.GetStageReleaseNativeApisixConfiguration(ctx, si)
 	if err != nil {
-		c.logger.Error(err, "get native apisix configuration failed", "stageInfo", si)
+		c.logger.Errorw(
+			"get native apisix configuration failed",
+			append(si.LogFields(), "stageInfo", si, "err", err)...)
 		// retry
 		c.retryStage(si)
 		span.RecordError(err)
@@ -234,14 +266,15 @@ func (c *Committer) commitStage(ctx context.Context, si *entity.ReleaseInfo, sta
 	eventreporter.ReportApplyConfigurationDoingEvent(ctx, si)
 
 	span.AddEvent("committer.Sync")
-	err = c.synchronizer.Sync(
+	err = c.synchronizer.SyncRelease(
 		ctx,
-		si.GetGatewayName(),
-		si.GetStageName(),
+		si,
 		apisixConf,
 	)
 	if err != nil {
-		c.logger.Error(err, "sync apisix configuration failed", "stageInfo", si)
+		c.logger.Errorw(
+			"sync apisix configuration failed",
+			append(si.LogFields(), "stageInfo", si, "err", err)...)
 		// retry
 		c.retryStage(si)
 		span.RecordError(err)
@@ -255,7 +288,7 @@ func (c *Committer) commitStage(ctx context.Context, si *entity.ReleaseInfo, sta
 	// Mark as released since ReportLoadConfigurationResultEvent will handle it
 	stageChannelReleased = true
 	eventreporter.ReportLoadConfigurationResultEvent(ctx, si, stageChan)
-	c.logger.Infow("commit stage success", "stageInfo", si)
+	c.logger.Infow("commit stage success", append(si.LogFields(), "stageInfo", si)...)
 }
 
 func (c *Committer) retryStage(si *entity.ReleaseInfo) {
