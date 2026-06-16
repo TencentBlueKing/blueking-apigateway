@@ -41,6 +41,16 @@ export interface IGatewayCheckNameAvailableOutput {
 }
 
 /**
+ * GET /gateways/repo-authorization/
+ */
+export interface IGatewayCheckRepoAuthOutput {
+  authorized: boolean
+  message: string
+  address: string
+  auth_docs: string
+}
+
+/**
  * GET /gateways/logs/query/{request_id}/
  */
 export interface IRequestLogOutput {
