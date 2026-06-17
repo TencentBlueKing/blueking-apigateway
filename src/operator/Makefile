@@ -63,6 +63,7 @@ fmt:
 
 .PHONY: lint
 lint:
+	# Use single core to avoid golangci-lint typecheck OOM in this environment.
 	GOMAXPROCS=1 $(GOLANGCI_LINT) run --fix ./...
 
 .PHONY: test

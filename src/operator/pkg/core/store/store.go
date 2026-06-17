@@ -191,54 +191,55 @@ func (s *ApisixEtcdStore) GetAll() map[string]*entity.ApisixStageResource {
 	return configMap
 }
 
-// Alter ...
-func (s *ApisixEtcdStore) Alter(
-	ctx context.Context,
-	stageKey string,
-	config *entity.ApisixStageResource,
-) error {
-	st := time.Now()
-	err := s.alterByStage(ctx, stageKey, nil, config)
-
-	// metric
-	metric.ReportStageConfigAlterMetric(stageKey, config, st, err)
-
-	if err != nil {
-		s.logger.Errorw("Alter by stage failed", "err", err, "stage", stageKey)
-		return err
-	}
-
-	return nil
-}
-
-// AlterForRelease syncs one stage config and keeps release context in logs.
-func (s *ApisixEtcdStore) AlterForRelease(
+// AlterStage syncs one stage config and keeps release context in logs.
+func (s *ApisixEtcdStore) AlterStage(
 	ctx context.Context,
 	releaseInfo *entity.ReleaseInfo,
 	config *entity.ApisixStageResource,
 ) error {
+	if releaseInfo == nil {
+		return fmt.Errorf("releaseInfo is nil")
+	}
 	stageKey := releaseInfo.GetStageKey()
+	logFields := append(releaseInfo.LogFields(), "stage_key", stageKey)
+	return s.alterStageWithMetric(ctx, stageKey, logFields, config)
+}
+
+// AlterVirtualStage syncs the virtual stage without exposing a nil release context.
+func (s *ApisixEtcdStore) AlterVirtualStage(
+	ctx context.Context,
+	stageKey string,
+	config *entity.ApisixStageResource,
+) error {
+	return s.alterStageWithMetric(ctx, stageKey, []any{"stage_key", stageKey}, config)
+}
+
+func (s *ApisixEtcdStore) alterStageWithMetric(
+	ctx context.Context,
+	stageKey string,
+	logFields []any,
+	config *entity.ApisixStageResource,
+) error {
 	st := time.Now()
-	err := s.alterByStage(ctx, stageKey, releaseInfo, config)
+	err := s.alterStage(ctx, stageKey, logFields, config)
 
 	// metric
 	metric.ReportStageConfigAlterMetric(stageKey, config, st, err)
 
 	if err != nil {
-		s.logger.Errorw("Alter by stage failed", "err", err, "stage", stageKey)
+		s.logger.Errorw("Alter by stage failed", append(logFields, "err", err)...)
 		return err
 	}
 
 	return nil
 }
 
-func (s *ApisixEtcdStore) alterByStage(
-	ctx context.Context, stageKey string, releaseInfo *entity.ReleaseInfo, conf *entity.ApisixStageResource,
+func (s *ApisixEtcdStore) alterStage(
+	ctx context.Context,
+	stageKey string,
+	logFields []any,
+	conf *entity.ApisixStageResource,
 ) (err error) {
-	logFields := []any{"stage_key", stageKey}
-	if releaseInfo != nil {
-		logFields = append(releaseInfo.LogFields(), logFields...)
-	}
 	// get cached config
 	oldConf := s.Get(stageKey)
 

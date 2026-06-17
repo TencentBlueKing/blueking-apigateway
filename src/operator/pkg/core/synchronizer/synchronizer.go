@@ -23,6 +23,7 @@ package synchronizer
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
@@ -54,41 +55,22 @@ func NewSynchronizer(store *store.ApisixEtcdStore, apisixHealthzURI string) *Api
 	return syncer
 }
 
-// Sync will sync new staged apisix configuration
-func (as *ApisixConfigSynchronizer) Sync(
-	ctx context.Context,
-	gatewayName, stageName string,
-	config *entity.ApisixStageResource,
-) error {
-	releaseInfo := &entity.ReleaseInfo{
-		ResourceMetadata: entity.ResourceMetadata{
-			Labels: &entity.LabelInfo{
-				Gateway: gatewayName,
-				Stage:   stageName,
-			},
-		},
-	}
-	return as.SyncRelease(ctx, releaseInfo, config)
-}
-
 // SyncRelease syncs one stage config with release-aware log context.
 func (as *ApisixConfigSynchronizer) SyncRelease(
 	ctx context.Context,
 	releaseInfo *entity.ReleaseInfo,
 	config *entity.ApisixStageResource,
 ) error {
-	key := cfg.GenStagePrimaryKey("", "")
 	if releaseInfo == nil {
-		releaseInfo = &entity.ReleaseInfo{}
-	} else {
-		key = releaseInfo.GetStageKey()
+		return fmt.Errorf("releaseInfo is nil")
 	}
+	key := releaseInfo.GetStageKey()
 
 	as.flushMux.Lock()
 	defer as.flushMux.Unlock()
 
 	as.logger.Debugw("flush changes", append(releaseInfo.LogFields(), "key", key, "config", config)...)
-	err := as.store.AlterForRelease(ctx, releaseInfo, config)
+	err := as.store.AlterStage(ctx, releaseInfo, config)
 	if err != nil {
 		fields := append(releaseInfo.LogFields(), "err", err, "key", key, "content", config)
 		as.logger.Errorw(
@@ -120,7 +102,7 @@ func (as *ApisixConfigSynchronizer) SyncGlobal(
 
 	as.logger.Debugw("flush virtual stage", "key", cfg.VirtualStageKey)
 	virtualStage := NewVirtualStage(as.apisixHealthzURI)
-	err = as.store.Alter(ctx, cfg.VirtualStageKey, virtualStage.MakeConfiguration())
+	err = as.store.AlterVirtualStage(ctx, cfg.VirtualStageKey, virtualStage.MakeConfiguration())
 	if err != nil {
 		as.logger.Errorw(
 			"Failed to sync virtual stage",
