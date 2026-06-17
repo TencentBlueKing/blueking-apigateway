@@ -30,8 +30,8 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of core-api",
-	Long:  `All software has versions. This is core-api's`,
+	Short: "Print the version number of mcp-proxy",
+	Long:  `All software has versions. This is mcp-proxy's`,
 	Run: func(cmd *cobra.Command, args []string) {
 		info := []string{
 			"Version: " + version.Version,

@@ -259,6 +259,5 @@ Streamable HTTP is stateless and uses the same handler for user and application 
 - Request ID and trace context may be absent from the MCP SDK context after session initialization. Existing
   code falls back to request headers where possible; preserve that behavior when changing MCP middleware or
   tool handlers.
-- The version command still contains old core-api wording and the Makefile ldflags target `core/pkg/version`.
-  If you work on version/build metadata, inspect `cmd/version.go`, `pkg/version/version.go`, and the Makefile
-  together instead of copying the current strings.
+- Version/build metadata spans `cmd/version.go`, `pkg/version/version.go`, and the Makefile.
+  Keep those three aligned when changing version output or build ldflags.
