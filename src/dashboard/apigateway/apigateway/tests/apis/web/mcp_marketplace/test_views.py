@@ -24,13 +24,20 @@ from ddf import G
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
+    MCPServerAppPermissionApplyStatusEnum,
     MCPServerExtendTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory, MCPServerExtend
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+    MCPServerExtend,
+)
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Stage
+from apigateway.utils.time import now_datetime
 
 pytestmark = pytest.mark.django_db
 
@@ -1230,3 +1237,172 @@ class TestMCPMarketplaceBatchConfigApi:
         server_config = result["data"]["config"]["mcpServers"][fake_public_mcp_server.name]
         if "headers" in server_config:
             assert "X-Bkapi-Authorization" not in server_config["headers"]
+
+
+class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
+    def test_create(self, mocker, request_view, fake_public_mcp_server):
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[{"code": "test-app"}],
+        )
+        mocker.patch(
+            "apigateway.biz.mcp_server.permission.MCPServerPermissionHandler._create_itsm_tickets_for_applies"
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+            data={
+                "bk_app_code": "test-app",
+                "reason": "for test",
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 201
+        assert result["data"][0]["bk_app_code"] == "test-app"
+        assert result["data"][0]["mcp_server_id"] == fake_public_mcp_server.id
+
+        apply = MCPServerAppPermissionApply.objects.get(
+            bk_app_code="test-app",
+            mcp_server=fake_public_mcp_server,
+        )
+        assert apply.reason == "for test"
+        assert apply.applied_by == "admin"
+        assert apply.status == MCPServerAppPermissionApplyStatusEnum.PENDING.value
+
+    def test_create_rejects_app_without_user_permission(self, mocker, request_view, fake_public_mcp_server):
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[{"code": "other-app"}],
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+            data={
+                "bk_app_code": "test-app",
+                "reason": "for test",
+            },
+        )
+
+        assert resp.status_code == 400
+        assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
+
+    def test_create_rejects_non_public_mcp_server(self, mocker, request_view, fake_public_mcp_server):
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[{"code": "test-app"}],
+        )
+        fake_public_mcp_server.is_public = False
+        fake_public_mcp_server.save()
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+            data={
+                "bk_app_code": "test-app",
+                "reason": "for test",
+            },
+        )
+
+        assert resp.status_code == 404
+        assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
+
+    def test_create_rejects_invalid_mcp_server_id(self, mocker, request_view, fake_public_mcp_server):
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[{"code": "test-app"}],
+        )
+        inactive_server = G(
+            MCPServer,
+            gateway=fake_public_mcp_server.gateway,
+            stage=fake_public_mcp_server.stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+            is_public=True,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": inactive_server.id},
+            data={
+                "bk_app_code": "test-app",
+                "reason": "for test",
+            },
+        )
+
+        result = resp.json()
+        assert resp.status_code == 404
+        assert str(inactive_server.id) in result["error"]["message"]
+        assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
+
+    def test_create_rejects_existing_pending_apply(self, mocker, request_view, fake_public_mcp_server):
+        mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[{"code": "test-app"}],
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=fake_public_mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="admin",
+            applied_time=now_datetime(),
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="mcp_marketplace.server.app_permission_apply.create",
+            path_params={"mcp_server_id": fake_public_mcp_server.id},
+            data={
+                "bk_app_code": "test-app",
+                "reason": "for test",
+            },
+        )
+
+        assert resp.status_code == 400
+        assert (
+            MCPServerAppPermissionApply.objects.filter(
+                bk_app_code="test-app",
+                mcp_server=fake_public_mcp_server,
+            ).count()
+            == 1
+        )
+
+
+class TestMCPMarketplaceApplicableAppListApi:
+    def test_list_passes_user_tenant_id_to_paas_component(self, mocker, request_view, settings):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        user = mocker.MagicMock(username="alice", tenant_id="tenant-a")
+        mock_get_apps = mocker.patch(
+            "apigateway.apis.web.mcp_marketplace.views.get_paas_apps_by_username",
+            return_value=[
+                {
+                    "code": "app-001",
+                    "name": "App 001",
+                    "logo_url": "https://example.com/logo.png",
+                }
+            ],
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="mcp_marketplace.applicable_apps",
+            user=user,
+        )
+
+        result = resp.json()
+        assert resp.status_code == 200
+        assert result["data"] == [
+            {
+                "bk_app_code": "app-001",
+                "name": "App 001",
+                "logo_url": "https://example.com/logo.png",
+            }
+        ]
+        mock_get_apps.assert_called_once_with("alice", "tenant-a")

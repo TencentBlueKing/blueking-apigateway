@@ -756,6 +756,20 @@ class MCPServerAppPermissionApplyListOutputSLZ(serializers.Serializer):
         return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
 
 
+class MCPServerAppPermissionApplyCreateOutputSLZ(serializers.Serializer):
+    record_id = serializers.IntegerField(source="id", read_only=True, help_text="申请记录 ID")
+    bk_app_code = serializers.CharField(read_only=True, help_text="蓝鲸应用 ID")
+    mcp_server_id = serializers.IntegerField(read_only=True, help_text="MCPServer ID")
+    itsm_ticket_id = serializers.CharField(read_only=True, help_text="关联的 ITSM 工单 ID")
+    itsm_ticket_url = serializers.SerializerMethodField(help_text="ITSM 单据中心链接")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.MCPServerAppPermissionApplyCreateOutputSLZ"
+
+    def get_itsm_ticket_url(self, obj):
+        return ItsmPermissionApplyHelper.build_ticket_url(obj.itsm_ticket_id)
+
+
 class MCPServerAppPermissionApplyUpdateInputSLZ(serializers.ModelSerializer):
     status = serializers.ChoiceField(
         required=True,

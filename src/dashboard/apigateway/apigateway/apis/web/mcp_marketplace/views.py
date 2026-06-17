@@ -21,23 +21,29 @@ from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
-from apigateway.apis.web.mcp_server.serializers import MCPServerConfigListOutputSLZ
+from apigateway.apis.web.mcp_server.serializers import (
+    MCPServerAppPermissionApplyCreateOutputSLZ,
+    MCPServerConfigListOutputSLZ,
+)
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.validators import check_user_can_access_gateway
+from apigateway.components.bkpaas import get_paas_apps_by_username
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
+    MCPMarketplaceApplicableAppOutputSLZ,
+    MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
     MCPServerBatchConfigInputSLZ,
     MCPServerBatchConfigOutputSLZ,
     MCPServerCategoryOutputSLZ,
@@ -115,6 +121,83 @@ class MCPMarketplaceServerListApi(generics.ListAPIView):
         )
 
         return self.get_paginated_response(slz.data)
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(
+        operation_description="发起 MCPServer 权限申请",
+        request_body=MCPMarketplaceServerAppPermissionApplyCreateInputSLZ,
+        responses={status.HTTP_201_CREATED: MCPServerAppPermissionApplyCreateOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
+    def create(self, request, *args, **kwargs):
+        slz = MCPMarketplaceServerAppPermissionApplyCreateInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+        mcp_server_ids = [kwargs["mcp_server_id"]]
+        user_tenant_id = get_user_tenant_id(request)
+
+        apps = get_paas_apps_by_username(request.user.username, user_tenant_id)
+        if data["bk_app_code"] not in {app.get("code") for app in apps}:
+            raise error_codes.INVALID_ARGUMENT.format(_("请选择当前用户有权限的蓝鲸应用。"))
+
+        queryset = MCPServer.objects.filter(
+            id__in=mcp_server_ids,
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            gateway__status=GatewayStatusEnum.ACTIVE.value,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+        if user_tenant_id:
+            queryset = gateway_mcp_server_filter_by_user_tenant_id(queryset, user_tenant_id)
+
+        valid_ids = set(queryset.values_list("id", flat=True))
+        invalid_ids = set(mcp_server_ids) - valid_ids
+        if invalid_ids:
+            raise error_codes.NOT_FOUND.format(
+                _("请检查对应 MCPServer / 环境 / 网关是否都已启用，不可用 MCPServer ID：{ids}。").format(
+                    ids=", ".join(map(str, sorted(invalid_ids)))
+                ),
+                replace=True,
+            )
+
+        queryset = MCPServerPermissionHandler.create_apply(
+            bk_app_code=data["bk_app_code"],
+            mcp_server_ids=mcp_server_ids,
+            reason=data["reason"],
+            applied_by=request.user.username,
+        )
+
+        output_slz = MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
+        return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="获取发起 MCPServer 权限申请时可选择的蓝鲸应用列表",
+        responses={status.HTTP_200_OK: MCPMarketplaceApplicableAppOutputSLZ(many=True)},
+        tags=["WebAPI.MCPServer"],
+    ),
+)
+class MCPMarketplaceApplicableAppListApi(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        apps = get_paas_apps_by_username(request.user.username, get_user_tenant_id(request))
+        output_data = [
+            {
+                "bk_app_code": app.get("code", ""),
+                "name": app.get("name", ""),
+                "logo_url": app.get("logo_url", ""),
+            }
+            for app in apps
+        ]
+
+        slz = MCPMarketplaceApplicableAppOutputSLZ(output_data, many=True)
+        return OKJsonResponse(data=slz.data)
 
 
 @method_decorator(

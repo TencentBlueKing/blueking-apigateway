@@ -20,7 +20,7 @@ import pytest
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import UserCredentials
-from apigateway.components.bkpaas import REQ_PAAS_API_TIMEOUT, get_paas_repo_authorization
+from apigateway.components.bkpaas import REQ_PAAS_API_TIMEOUT, get_paas_apps_by_username, get_paas_repo_authorization
 
 
 def test_get_paas_repo_authorization__authorized(mocker):
@@ -92,3 +92,24 @@ def test_get_paas_repo_authorization__failed(mocker):
 
     with pytest.raises(error_codes.REMOTE_REQUEST_ERROR.__class__):
         get_paas_repo_authorization()
+
+
+class TestGetPaaSAppsByUsername:
+    def test_get_paas_apps_by_username_sends_tenant_header(self, mocker):
+        mocker.patch("apigateway.components.bkpaas.get_paas3_url_prefix", return_value="https://paas.example.com/prod")
+        mocker.patch("apigateway.components.bkpaas.gen_gateway_headers", return_value={"X-Gateway": "1"})
+        mock_http_get = mocker.patch(
+            "apigateway.components.bkpaas.http_get",
+            return_value=(True, [{"code": "app-001", "name": "App 001"}]),
+        )
+
+        result = get_paas_apps_by_username("alice", "tenant-a")
+
+        assert result == [{"code": "app-001", "name": "App 001"}]
+        mock_http_get.assert_called_once()
+        _, data = mock_http_get.call_args.args[:2]
+        assert data == {"username": "alice"}
+        assert mock_http_get.call_args.kwargs["headers"] == {
+            "X-Gateway": "1",
+            "X-Bk-Tenant-Id": "tenant-a",
+        }
