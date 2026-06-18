@@ -18,11 +18,13 @@
 
 import http from '../http';
 import type {
+  IApplicableAppOutput,
   IMCPServerCategoryOutput,
   IMCPServerConfigListOutput,
   IMCPServerListOutput,
   IMCPServerToolDocOutput,
   IMCPServerToolOutput,
+  IMarketplacePermissionApplyOutput,
   IMcpClientConfig,
 } from '@/services/types/responses/mcp-marketplace.ts';
 import type { ICountAndResults } from '@/services/types/utils.ts';
@@ -293,3 +295,26 @@ export const getMcpAIConfigList = (mcp_server_id: number) =>
  */
 export const getMcpBatchCopyConfigList = (data: IMcpBatchConfigQuery): Promise<{ data: IMcpClientConfig }> =>
   http.post('/mcp-marketplace/batch-configs/', data);
+
+/** MCP 市场权限申请请求体 */
+export interface IMarketplacePermissionApplyInput {
+  bk_app_code: string
+  reason: string
+}
+
+/**
+ *  获取可申请的蓝鲸应用列表
+ */
+export const getApplicableApps = () =>
+  http.get<IApplicableAppOutput[]>('/mcp-marketplace/applicable-apps/');
+
+/**
+ *  发起 MCPServer 权限申请
+ * @param mcp_server_id
+ * @param data 申请参数
+ */
+export const marketplacePermissionApply = (
+  mcp_server_id: number,
+  data: IMarketplacePermissionApplyInput,
+) =>
+  http.post<IMarketplacePermissionApplyOutput>(`/mcp-marketplace/servers/${mcp_server_id}/app-permission-apply/`, data);

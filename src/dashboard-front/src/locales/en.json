@@ -896,7 +896,7 @@
   "申请权限": "Apply Permission",
   "权限申请已提交": "Permission application submitted",
   "请选择要申请权限的应用": "Please select the application to apply for permission",
-  "申请成功后，测试应用 {name} 应用将拥有 {mcp} 所有工具的权限。权限审批通过后即可正常使用。": "After the application is successful, the test application {name} will have permission to use all tools under {mcp}. After the permission is approved, it can be used normally.",
+  "申请成功后，{name} 应用将拥有 {mcp} MCP 所有工具的权限。权限审批通过后即可正常使用。": "After the permission is applied, the {name} application will have permission to use all tools of {mcp} MCP. The permission will be available after approval.",
   "查看默认使用指引": "View default usage guidelines",
   "租户id": "Tenant id",
   "请输入 Cookies 中，字段 bk_token 的值": "Please enter the value of the field bk_token in the cookie",
