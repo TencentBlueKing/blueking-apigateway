@@ -53,7 +53,7 @@ from apigateway.core.constants import (
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
 )
-from apigateway.core.models import Gateway, Stage
+from apigateway.core.models import Gateway, Release, Stage
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.git import check_git_credentials
@@ -409,21 +409,39 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
         slz = self.get_serializer(instance=instance, data=request.data)
         slz.is_valid(raise_exception=True)
 
-        is_need_publish = slz.validated_data["status"] is not instance.status
+        is_need_publish = slz.validated_data["status"] != instance.status
 
         slz.save(updated_by=request.user.username)
 
+        new_gateway_status = slz.validated_data["status"]
+
         # 网关停用时，将网关下所有 MCPServer 设置为停用
-        if slz.validated_data["status"] == GatewayStatusEnum.INACTIVE.value:
+        if new_gateway_status == GatewayStatusEnum.INACTIVE.value:
             MCPServerHandler.disable_servers(gateway_id=instance.id)
 
         # 触发网关发布
         if is_need_publish:
             # 由于没有办法知道停用状态 (网关停用会变更环境的发布状态) 之前的各环境发布状态，则启用会发布所有环境
             source = PublishSourceEnum.GATEWAY_ENABLE if instance.is_active else PublishSourceEnum.GATEWAY_DISABLE
+            release_list = list(Release.objects.filter(gateway_id=instance.id).select_related("stage"))
             trigger_gateway_publish(
                 source, request.user.username, instance.id, user_credentials=get_user_credentials_from_request(request)
             )
+
+            stage_audit_comment = "发布环境" if source == PublishSourceEnum.GATEWAY_ENABLE else "下架环境"
+            for release in release_list:
+                Auditor.record_stage_op_success(
+                    op_type=OpTypeEnum.MODIFY,
+                    username=request.user.username,
+                    gateway_id=instance.id,
+                    instance_id=release.stage_id,
+                    instance_name=release.stage.name,
+                    data_before={"status": release.stage.status},
+                    data_after={"source": source.value},
+                    comment=stage_audit_comment,
+                )
+
+        audit_comment = "启用网关" if new_gateway_status == GatewayStatusEnum.ACTIVE.value else "停用网关"
 
         Auditor.record_gateway_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -433,6 +451,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             instance_name=instance.name,
             data_before=data_before,
             data_after=get_model_dict(slz.instance),
+            comment=audit_comment,
         )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
