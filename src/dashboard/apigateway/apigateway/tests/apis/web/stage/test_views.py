@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from apigateway.apps.audit.models import AuditEventLog
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
 
 
@@ -242,7 +244,7 @@ class TestStageBackendApi:
 
 class TestStageStatusUpdateApi:
     def test_update(self, request_view, fake_stage):
-        data = {"status": 0}
+        data = {"status": StageStatusEnum.INACTIVE.value}
 
         response = request_view(
             "PUT",
@@ -253,4 +255,7 @@ class TestStageStatusUpdateApi:
         )
         assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
-        assert stage.status == 0
+        assert stage.status == StageStatusEnum.INACTIVE.value
+
+        audit_log = AuditEventLog.objects.filter(op_object_id=str(fake_stage.id)).order_by("-id").first()
+        assert audit_log.comment == "下架环境"

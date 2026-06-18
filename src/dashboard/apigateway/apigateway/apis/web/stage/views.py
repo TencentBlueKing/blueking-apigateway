@@ -421,9 +421,11 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
             instance, data["status"], username, user_credentials=get_user_credentials_from_request(request)
         )
 
-        # 环境下架时，将环境下的所有 MCPServer 设置为停用
+        # StageStatusInputSLZ 目前仅允许 status=0(INACTIVE)，此接口只处理环境下架。
         if data["status"] == StageStatusEnum.INACTIVE.value:
             MCPServerHandler.disable_servers(gateway_id=request.gateway.id, stage_id=instance.id)
+
+        audit_comment = "下架环境" if data["status"] == StageStatusEnum.INACTIVE.value else "发布环境"
 
         Auditor.record_stage_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -431,7 +433,7 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=instance.name,
-            comment="环境状态变更",
+            comment=audit_comment,
             data_before=data_before,
             data_after={"status": data["status"]},
         )

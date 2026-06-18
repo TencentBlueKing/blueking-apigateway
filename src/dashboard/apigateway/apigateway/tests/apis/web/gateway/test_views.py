@@ -18,12 +18,14 @@
 from unittest.mock import ANY, patch
 
 import pytest
+from django_dynamic_fixture import G
 
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Stage
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, ResourceVersion, Stage
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 
 
@@ -345,6 +347,44 @@ class TestGatewayUpdateStatusApi:
 
         assert resp.status_code == 204
         assert gateway.status == data["status"]
+
+    @pytest.mark.parametrize(
+        "old_gateway_status, new_gateway_status, expected_comment",
+        [
+            (GatewayStatusEnum.INACTIVE.value, GatewayStatusEnum.ACTIVE.value, "发布环境"),
+            (GatewayStatusEnum.ACTIVE.value, GatewayStatusEnum.INACTIVE.value, "下架环境"),
+        ],
+    )
+    @patch("apigateway.apis.web.gateway.views.trigger_gateway_publish")
+    def test_update_record_stage_audit(
+        self,
+        mock_trigger_gateway_publish,
+        request_view,
+        fake_gateway,
+        old_gateway_status,
+        new_gateway_status,
+        expected_comment,
+    ):
+        fake_gateway.status = old_gateway_status
+        fake_gateway.save()
+        stage = G(Stage, gateway=fake_gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+
+        resp = request_view(
+            method="PUT",
+            view_name="gateways.update_status",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"status": new_gateway_status},
+        )
+
+        assert resp.status_code == 204
+        mock_trigger_gateway_publish.assert_called_once()
+        assert AuditEventLog.objects.filter(
+            op_object_id=str(stage.id),
+            op_object=stage.name,
+            comment=expected_comment,
+        ).exists()
 
 
 class TestGatewayCheckNameAvailableApi:
