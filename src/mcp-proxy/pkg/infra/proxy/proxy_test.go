@@ -24,11 +24,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-openapi/runtime"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -1046,12 +1048,63 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 
+	Describe("setHandlerRequestParams", func() {
+		It("should set array query values as repeated query params", func() {
+			req := newRecordingClientRequest()
+			handlerRequest := &HandlerRequest{
+				QueryParam: QueryParam{
+					"related": {"fields", "storages"},
+				},
+			}
+
+			err := setHandlerRequestParams(req, handlerRequest, map[string]string{}, zap.NewNop())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(req.GetQueryParams()["related"]).To(Equal([]string{"fields", "storages"}))
+			Expect(req.GetQueryParams().Encode()).To(Equal("related=fields&related=storages"))
+			Expect(req.GetQueryParams().Encode()).NotTo(ContainSubstring("%5Bfields+storages%5D"))
+		})
+
+		It("should keep scalar query values unchanged", func() {
+			req := newRecordingClientRequest()
+			handlerRequest := &HandlerRequest{
+				QueryParam: QueryParam{
+					"extra": {"true"},
+					"ratio": {"1.25"},
+				},
+			}
+
+			err := setHandlerRequestParams(req, handlerRequest, map[string]string{}, zap.NewNop())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(req.GetQueryParams()["extra"]).To(Equal([]string{"true"}))
+			Expect(req.GetQueryParams()["ratio"]).To(Equal([]string{"1.25"}))
+		})
+
+		It("should keep header and path params scalar", func() {
+			req := newRecordingClientRequest()
+			headerInfo := map[string]string{}
+			handlerRequest := &HandlerRequest{
+				HeaderParam: StringParamMap{"X-Trace-ID": "2005000002"},
+				PathParam:   StringParamMap{"bk_biz_id": "2005000002"},
+			}
+
+			err := setHandlerRequestParams(req, handlerRequest, headerInfo, zap.NewNop())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(req.GetHeaderParams().Values("X-Trace-ID")).To(Equal([]string{"2005000002"}))
+			Expect(req.pathParams["bk_biz_id"]).To(Equal("2005000002"))
+			Expect(headerInfo["X-Trace-ID"]).To(Equal("2005000002"))
+		})
+	})
+
 	Describe("decodeHandlerRequest with UseNumber", func() {
 		It("should preserve numbers for all request parameter groups", func() {
 			arguments := map[string]any{
 				"header_param": map[string]any{"X-Trace-ID": 2005000002},
-				"query_param":  map[string]any{"bk_biz_id": 2005000002, "ratio": 1.25},
-				"path_param":   map[string]any{"bk_biz_id": 2005000002},
+				"query_param": map[string]any{
+					"bk_biz_id": 2005000002,
+					"ratio":     1.25,
+					"ids":       []any{2005000002, json.Number("9007199254740992")},
+				},
+				"path_param": map[string]any{"bk_biz_id": 2005000002},
 				"body_param": map[string]any{
 					"bk_biz_id": 2005000002,
 					"nested":    map[string]any{"id": 2005000003},
@@ -1068,8 +1121,9 @@ var _ = Describe("MCPProxy", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(handlerRequest.HeaderParam["X-Trace-ID"]).To(Equal("2005000002"))
-			Expect(handlerRequest.QueryParam["bk_biz_id"]).To(Equal("2005000002"))
-			Expect(handlerRequest.QueryParam["ratio"]).To(Equal("1.25"))
+			Expect(handlerRequest.QueryParam["bk_biz_id"]).To(Equal([]string{"2005000002"}))
+			Expect(handlerRequest.QueryParam["ratio"]).To(Equal([]string{"1.25"}))
+			Expect(handlerRequest.QueryParam["ids"]).To(Equal([]string{"2005000002", "9007199254740992"}))
 			Expect(handlerRequest.PathParam["bk_biz_id"]).To(Equal("2005000002"))
 
 			body := handlerRequest.BodyParam.(map[string]any)
@@ -1078,3 +1132,85 @@ var _ = Describe("MCPProxy", func() {
 		})
 	})
 })
+
+type recordingClientRequest struct {
+	headers    http.Header
+	query      url.Values
+	pathParams map[string]string
+	bodyParam  any
+	timeout    time.Duration
+}
+
+func newRecordingClientRequest() *recordingClientRequest {
+	return &recordingClientRequest{
+		headers:    http.Header{},
+		query:      url.Values{},
+		pathParams: map[string]string{},
+	}
+}
+
+var _ runtime.ClientRequest = (*recordingClientRequest)(nil)
+
+func (r *recordingClientRequest) SetHeaderParam(name string, values ...string) error {
+	r.headers.Del(name)
+	for _, value := range values {
+		r.headers.Add(name, value)
+	}
+	return nil
+}
+
+func (r *recordingClientRequest) GetHeaderParams() http.Header {
+	return r.headers.Clone()
+}
+
+func (r *recordingClientRequest) SetQueryParam(name string, values ...string) error {
+	r.query[name] = values
+	return nil
+}
+
+func (r *recordingClientRequest) SetFormParam(string, ...string) error {
+	return nil
+}
+
+func (r *recordingClientRequest) SetPathParam(name, value string) error {
+	r.pathParams[name] = value
+	return nil
+}
+
+func (r *recordingClientRequest) GetQueryParams() url.Values {
+	return r.query
+}
+
+func (r *recordingClientRequest) SetFileParam(string, ...runtime.NamedReadCloser) error {
+	return nil
+}
+
+func (r *recordingClientRequest) SetBodyParam(body any) error {
+	r.bodyParam = body
+	return nil
+}
+
+func (r *recordingClientRequest) SetTimeout(timeout time.Duration) error {
+	r.timeout = timeout
+	return nil
+}
+
+func (r *recordingClientRequest) GetMethod() string {
+	return ""
+}
+
+func (r *recordingClientRequest) GetPath() string {
+	return ""
+}
+
+func (r *recordingClientRequest) GetBody() []byte {
+	return nil
+}
+
+func (r *recordingClientRequest) GetBodyParam() any {
+	return r.bodyParam
+}
+
+func (r *recordingClientRequest) GetFileParam() map[string][]runtime.NamedReadCloser {
+	return nil
+}
