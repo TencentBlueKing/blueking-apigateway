@@ -1284,9 +1284,9 @@ class TestMCPServerAppPermissionListCreateApi:
             bk_app_code="new-app",
         ).exists()
         audit_log = AuditEventLog.objects.get(
-            op_object_type="permission",
+            op_object_type="mcp_server_permission",
             op_object="new-app",
-            comment="创建应用权限",
+            comment="创建 MCPServer 应用权限",
         )
         assert audit_log.op_type == "create"
 
@@ -1350,9 +1350,9 @@ class TestMCPServerAppPermissionDestroyApi:
         assert resp.status_code == 204
         assert not MCPServerAppPermission.objects.filter(id=permission.id).exists()
         audit_log = AuditEventLog.objects.get(
-            op_object_type="permission",
+            op_object_type="mcp_server_permission",
             op_object="test-app",
-            comment="删除应用权限",
+            comment="删除 MCPServer 应用权限",
         )
         assert audit_log.op_type == "delete"
 
@@ -1646,9 +1646,9 @@ class TestMCPServerAppPermissionApplyUpdateStatusApi:
             bk_app_code="test-app",
         ).exists()
         audit_log = AuditEventLog.objects.get(
-            op_object_type="permission",
+            op_object_type="mcp_server_permission",
             op_object="test-app",
-            comment="更新应用权限",
+            comment="更新 MCPServer 应用权限",
         )
         assert audit_log.op_type == "modify"
 

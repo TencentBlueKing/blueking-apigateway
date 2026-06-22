@@ -16,12 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.biz.audit import Auditor
 from apigateway.utils.django import get_model_dict
 
@@ -142,7 +141,7 @@ def record_mcp_server_permission_sync_audits(
                 continue
 
             data_before = data_before_map.get(instance.name, {}).get(app_code, {})
-            Auditor.record_permission_op_success(
+            Auditor.record_mcp_server_permission_op_success(
                 op_type=OpTypeEnum.MODIFY if data_before else OpTypeEnum.CREATE,
                 username=username,
                 gateway_id=gateway_id,
@@ -151,32 +150,6 @@ def record_mcp_server_permission_sync_audits(
                 data_before=data_before,
                 data_after=get_model_dict(permission),
             )
-
-
-def record_mcp_server_permission_apply_audits(
-    username: str,
-    instance_name: str,
-    applies: List[MCPServerAppPermissionApply],
-) -> None:
-    apply_ids = [apply.id for apply in applies if apply.id]
-    if not apply_ids:
-        return
-
-    applies_by_gateway_id = defaultdict(list)
-    for apply in MCPServerAppPermissionApply.objects.filter(id__in=apply_ids).select_related("mcp_server"):
-        applies_by_gateway_id[apply.mcp_server.gateway_id].append(apply)
-
-    for gateway_id, gateway_applies in applies_by_gateway_id.items():
-        Auditor.record_permission_op_success(
-            op_type=OpTypeEnum.CREATE,
-            username=username,
-            gateway_id=gateway_id,
-            instance_id=gateway_applies[0].id,
-            instance_name=instance_name,
-            data_before={},
-            data_after=[get_model_dict(apply) for apply in gateway_applies],
-            comment="MCPServer 权限申请",
-        )
 
 
 def get_active_mcp_server_data_before_map(gateway_id: int, stage_id: int = 0) -> Dict[int, Dict[str, Any]]:

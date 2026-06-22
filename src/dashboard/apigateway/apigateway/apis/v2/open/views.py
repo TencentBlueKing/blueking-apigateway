@@ -34,6 +34,7 @@ from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import (
     MCPServer,
@@ -44,11 +45,11 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.access_log import LogHandler
+from apigateway.biz.audit import Auditor
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPermissionHandler,
-    record_mcp_server_permission_apply_audits,
 )
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
@@ -64,6 +65,7 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
 from apigateway.service.resource import get_resource_id_to_labels
 from apigateway.service.resource_version import get_resource_schema
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -391,11 +393,17 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
                 replace=True,
             )
 
-        record_mcp_server_permission_apply_audits(
-            username=data["applied_by"],
-            instance_name=data["bk_app_code"],
-            applies=applies,
-        )
+        for apply in applies:
+            Auditor.record_mcp_server_permission_op_success(
+                op_type=OpTypeEnum.CREATE,
+                username=data["applied_by"],
+                gateway_id=apply.mcp_server.gateway_id,
+                instance_id=apply.id,
+                instance_name=apply.bk_app_code,
+                data_before={},
+                data_after=get_model_dict(apply),
+                comment="MCPServer 权限申请",
+            )
 
         output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
         return OKJsonResponse(data=output_slz.data)

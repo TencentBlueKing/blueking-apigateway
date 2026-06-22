@@ -1273,7 +1273,7 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         assert apply.applied_by == "admin"
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.PENDING.value
         audit_log = AuditEventLog.objects.get(
-            op_object_type="permission",
+            op_object_type="mcp_server_permission",
             op_object="test-app",
             comment="MCPServer 权限申请",
         )

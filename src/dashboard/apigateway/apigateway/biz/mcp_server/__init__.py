@@ -21,7 +21,6 @@ from .audit import (
     get_mcp_server_permission_sync_data_before_map,
     get_mcp_server_sync_data_before_map,
     record_mcp_server_disable_audits,
-    record_mcp_server_permission_apply_audits,
     record_mcp_server_permission_sync_audits,
     record_mcp_server_sync_audits,
 )
@@ -41,7 +40,6 @@ __all__ = [
     "get_mcp_server_permission_sync_data_before_map",
     "get_mcp_server_sync_data_before_map",
     "record_mcp_server_disable_audits",
-    "record_mcp_server_permission_apply_audits",
     "record_mcp_server_permission_sync_audits",
     "record_mcp_server_sync_audits",
     # others

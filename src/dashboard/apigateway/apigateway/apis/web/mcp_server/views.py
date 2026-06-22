@@ -802,7 +802,7 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
             bk_app_code=data["bk_app_code"],
         )
 
-        Auditor.record_permission_op_success(
+        Auditor.record_mcp_server_permission_op_success(
             op_type=OpTypeEnum.CREATE if not permission_before else OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
@@ -844,7 +844,7 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
         MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
 
-        Auditor.record_permission_op_success(
+        Auditor.record_mcp_server_permission_op_success(
             op_type=OpTypeEnum.DELETE,
             username=request.user.username,
             gateway_id=request.gateway.id,
@@ -959,7 +959,7 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
 
             MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
 
-        Auditor.record_permission_op_success(
+        Auditor.record_mcp_server_permission_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,

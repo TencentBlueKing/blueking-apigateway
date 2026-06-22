@@ -25,16 +25,17 @@ from apigateway.apis.web.mcp_server.serializers import (
     MCPServerAppPermissionApplyCreateOutputSLZ,
     MCPServerConfigListOutputSLZ,
 )
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
+from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPermissionHandler,
-    record_mcp_server_permission_apply_audits,
 )
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
@@ -43,6 +44,7 @@ from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.validators import check_user_can_access_gateway
 from apigateway.components.bkpaas import get_paas_apps_by_username
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import (
@@ -177,11 +179,17 @@ class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
         )
         applies = list(queryset)
 
-        record_mcp_server_permission_apply_audits(
-            username=request.user.username,
-            instance_name=data["bk_app_code"],
-            applies=applies,
-        )
+        for apply in applies:
+            Auditor.record_mcp_server_permission_op_success(
+                op_type=OpTypeEnum.CREATE,
+                username=request.user.username,
+                gateway_id=apply.mcp_server.gateway_id,
+                instance_id=apply.id,
+                instance_name=apply.bk_app_code,
+                data_before={},
+                data_after=get_model_dict(apply),
+                comment="MCPServer 权限申请",
+            )
 
         output_slz = MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
         return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)

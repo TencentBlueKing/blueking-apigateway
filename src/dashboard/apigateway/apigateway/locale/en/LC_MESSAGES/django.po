@@ -909,14 +909,18 @@ msgid "MCPServer"
 msgstr "MCPServer"
 
 #: apigateway/apps/audit/constants.py:49
+msgid "MCPServer 应用权限"
+msgstr "MCPServer app permission"
+
+#: apigateway/apps/audit/constants.py:50
 msgid "应用权限"
 msgstr "App permission"
 
-#: apigateway/apps/audit/constants.py:54
+#: apigateway/apps/audit/constants.py:55
 msgid "创建网关"
 msgstr "Create gateway"
 
-#: apigateway/apps/audit/constants.py:55
+#: apigateway/apps/audit/constants.py:56
 msgid "更新网关"
 msgstr "Update gateway"
 
@@ -1037,18 +1041,30 @@ msgid "删除 MCPServer"
 msgstr "Delete MCPServer"
 
 #: apigateway/apps/audit/constants.py:86
+msgid "创建 MCPServer 应用权限"
+msgstr "Create MCPServer app permission"
+
+#: apigateway/apps/audit/constants.py:87
+msgid "更新 MCPServer 应用权限"
+msgstr "Update MCPServer app permission"
+
+#: apigateway/apps/audit/constants.py:88
+msgid "删除 MCPServer 应用权限"
+msgstr "Delete MCPServer app permission"
+
+#: apigateway/apps/audit/constants.py:89
 msgid "MCPServer 权限申请"
 msgstr "MCPServer permission application"
 
-#: apigateway/apps/audit/constants.py:87
+#: apigateway/apps/audit/constants.py:90
 msgid "环境状态变更"
 msgstr "Stage state changes"
 
-#: apigateway/apps/audit/constants.py:88
+#: apigateway/apps/audit/constants.py:91
 msgid "更新环境变量"
 msgstr "Update Stage Variables"
 
-#: apigateway/apps/audit/constants.py:89
+#: apigateway/apps/audit/constants.py:92
 msgid "发布环境"
 msgstr "Publish stage"
 
