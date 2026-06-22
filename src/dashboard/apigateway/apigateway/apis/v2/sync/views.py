@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
 import logging
 
 from django.conf import settings
@@ -38,7 +39,13 @@ from apigateway.apps.permission.models import (
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server import (
+    MCPServerHandler,
+    get_mcp_server_permission_sync_data_before_map,
+    get_mcp_server_sync_data_before_map,
+    record_mcp_server_permission_sync_audits,
+    record_mcp_server_sync_audits,
+)
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
@@ -626,6 +633,8 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         mcp_servers_data = serializer.validated_data["mcp_servers"]
+        mcp_servers_data_for_audit = copy.deepcopy(mcp_servers_data)
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
 
         if is_releasing:
             sync_mcp_server_after_release.delay(
@@ -635,6 +644,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
                 stage_name=stage.name,
                 release_history_id=stage_status_info["publish_id"],
                 mcp_servers_data=mcp_servers_data,
+                username=username,
             )
 
             results = [
@@ -648,12 +658,37 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
                 for mcp_data in mcp_servers_data
             ]
         else:
+            mcp_server_data_before_map = get_mcp_server_sync_data_before_map(
+                gateway_id=request.gateway.id,
+                gateway_name=request.gateway.name,
+                stage_name=stage.name,
+                mcp_servers_data=mcp_servers_data_for_audit,
+            )
+            permission_data_before_map = get_mcp_server_permission_sync_data_before_map(
+                gateway_id=request.gateway.id,
+                gateway_name=request.gateway.name,
+                stage_name=stage.name,
+                mcp_servers_data=mcp_servers_data,
+            )
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=request.gateway.id,
                 gateway_name=request.gateway.name,
                 stage_id=stage.id,
                 stage_name=stage.name,
                 mcp_servers_data=mcp_servers_data,
+            )
+            record_mcp_server_sync_audits(
+                username=username,
+                gateway_id=request.gateway.id,
+                results=results,
+                data_before_map=mcp_server_data_before_map,
+            )
+            record_mcp_server_permission_sync_audits(
+                username=username,
+                gateway_id=request.gateway.id,
+                results=results,
+                mcp_servers_data=mcp_servers_data_for_audit,
+                data_before_map=permission_data_before_map,
             )
 
         output_slz = StageMcpServersSyncOutputSLZ(results, many=True)

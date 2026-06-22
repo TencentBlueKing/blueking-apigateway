@@ -83,6 +83,7 @@ COMMENTS = (
     _("创建 MCPServer"),
     _("更新 MCPServer"),
     _("删除 MCPServer"),
+    _("MCPServer 权限申请"),
     # extras
     _("环境状态变更"),
     _("更新环境变量"),

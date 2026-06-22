@@ -23,6 +23,7 @@ import pytest
 from ddf import G
 
 from apigateway.apis.web.constants import ExportTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -1064,6 +1065,13 @@ class TestMCPServerUserCustomDocApi:
             type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
         )
         assert extend.content == data["content"]
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="mcp_server",
+            op_object_id=str(fake_mcp_server.id),
+            comment="更新 MCPServer",
+        )
+        assert audit_log.op_type == "modify"
+        assert audit_log.op_object == fake_mcp_server.name
 
     def test_create_already_exists(self, request_view, fake_gateway, fake_mcp_server):
         G(
@@ -1114,6 +1122,13 @@ class TestMCPServerUserCustomDocApi:
             type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
         )
         assert extend.content == data["content"]
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="mcp_server",
+            op_object_id=str(fake_mcp_server.id),
+            comment="更新 MCPServer",
+        )
+        assert audit_log.op_type == "modify"
+        assert audit_log.op_object == fake_mcp_server.name
 
     def test_update_not_exists(self, request_view, fake_gateway, fake_mcp_server):
         data = {
@@ -1150,6 +1165,13 @@ class TestMCPServerUserCustomDocApi:
             mcp_server=fake_mcp_server,
             type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
         ).exists()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="mcp_server",
+            op_object_id=str(fake_mcp_server.id),
+            comment="更新 MCPServer",
+        )
+        assert audit_log.op_type == "modify"
+        assert audit_log.op_object == fake_mcp_server.name
 
 
 class TestMCPServerStageReleaseCheckApi:
@@ -1261,6 +1283,12 @@ class TestMCPServerAppPermissionListCreateApi:
             mcp_server=fake_mcp_server,
             bk_app_code="new-app",
         ).exists()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="permission",
+            op_object="new-app",
+            comment="创建应用权限",
+        )
+        assert audit_log.op_type == "create"
 
     def test_create_with_mcp_server_from_other_gateway_returns_404(self, mocker, request_view, fake_gateway, faker):
         mock_sync_permissions = mocker.patch(
@@ -1321,6 +1349,12 @@ class TestMCPServerAppPermissionDestroyApi:
 
         assert resp.status_code == 204
         assert not MCPServerAppPermission.objects.filter(id=permission.id).exists()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="permission",
+            op_object="test-app",
+            comment="删除应用权限",
+        )
+        assert audit_log.op_type == "delete"
 
 
 class TestMCPServerAppPermissionApplyListApi:
@@ -1611,6 +1645,12 @@ class TestMCPServerAppPermissionApplyUpdateStatusApi:
             mcp_server=fake_mcp_server,
             bk_app_code="test-app",
         ).exists()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="permission",
+            op_object="test-app",
+            comment="更新应用权限",
+        )
+        assert audit_log.op_type == "modify"
 
     def test_reject(self, request_view, fake_gateway, fake_mcp_server):
         apply = G(

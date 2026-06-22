@@ -45,7 +45,11 @@ from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.access_log import LogHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
-from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
+from apigateway.biz.mcp_server import (
+    MCPServerHandler,
+    MCPServerPermissionHandler,
+    record_mcp_server_permission_apply_audits,
+)
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
@@ -379,14 +383,21 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["reason"],
             data["applied_by"],
         )
+        applies = list(queryset)
 
-        if queryset.count() == 0:
+        if not applies:
             raise error_codes.NOT_FOUND.format(
                 "请检查对应 mcp server /环境/网关是否都已启用。",
                 replace=True,
             )
 
-        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
+        record_mcp_server_permission_apply_audits(
+            username=data["applied_by"],
+            instance_name=data["bk_app_code"],
+            applies=applies,
+        )
+
+        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
         return OKJsonResponse(data=output_slz.data)
 
 

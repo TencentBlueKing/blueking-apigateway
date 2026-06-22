@@ -16,13 +16,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
 import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from celery import shared_task
+from django.conf import settings
 
-from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
+from apigateway.biz.mcp_server import (
+    MCPServerHandler,
+    MCPServerPromptHandler,
+    get_mcp_server_permission_sync_data_before_map,
+    get_mcp_server_sync_data_before_map,
+    record_mcp_server_permission_sync_audits,
+    record_mcp_server_sync_audits,
+)
 from apigateway.core.constants import ReleaseHistoryStatusEnum
 from apigateway.service.release import wait_release_done
 
@@ -219,6 +228,8 @@ def sync_mcp_server_after_release(
     stage_name: str,
     release_history_id: int,
     mcp_servers_data: List[Dict[str, Any]],
+    username: str = "",
+    data_before_map: Optional[Dict[str, Dict[str, Any]]] = None,
 ):
     """等待发布完成后同步 MCP Server 数据到 DB
 
@@ -260,12 +271,40 @@ def sync_mcp_server_after_release(
     )
 
     try:
+        mcp_servers_data_for_audit = copy.deepcopy(mcp_servers_data)
+        if data_before_map is None:
+            data_before_map = get_mcp_server_sync_data_before_map(
+                gateway_id=gateway_id,
+                gateway_name=gateway_name,
+                stage_name=stage_name,
+                mcp_servers_data=mcp_servers_data_for_audit,
+            )
+        permission_data_before_map = get_mcp_server_permission_sync_data_before_map(
+            gateway_id=gateway_id,
+            gateway_name=gateway_name,
+            stage_name=stage_name,
+            mcp_servers_data=mcp_servers_data_for_audit,
+        )
         results = MCPServerHandler.save_mcp_servers(
             gateway_id=gateway_id,
             gateway_name=gateway_name,
             stage_id=stage_id,
             stage_name=stage_name,
             mcp_servers_data=mcp_servers_data,
+        )
+        audit_username = username or settings.GATEWAY_DEFAULT_CREATOR
+        record_mcp_server_sync_audits(
+            username=audit_username,
+            gateway_id=gateway_id,
+            results=results,
+            data_before_map=data_before_map,
+        )
+        record_mcp_server_permission_sync_audits(
+            username=audit_username,
+            gateway_id=gateway_id,
+            results=results,
+            mcp_servers_data=mcp_servers_data_for_audit,
+            data_before_map=permission_data_before_map,
         )
         logger.info(
             "sync_mcp_server_after_release: completed, %d mcp servers synced, gateway=%s(%d), stage=%s(%d)",

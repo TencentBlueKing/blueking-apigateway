@@ -42,7 +42,13 @@ from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionA
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
+from apigateway.biz.mcp_server import (
+    MCPServerHandler,
+    MCPServerPermissionHandler,
+    get_active_mcp_server_data_before_map,
+    record_mcp_server_disable_audits,
+    record_mcp_server_permission_apply_audits,
+)
 from apigateway.biz.permission import (
     AppPermissionBuilder,
     PermissionDimensionManager,
@@ -599,14 +605,21 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["reason"],
             data["applied_by"],
         )
+        applies = list(queryset)
 
-        if queryset.count() == 0:
+        if not applies:
             raise error_codes.NOT_FOUND.format(
                 "请检查对应 mcp server /环境/网关是否都已启用。",
                 replace=True,
             )
 
-        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
+        record_mcp_server_permission_apply_audits(
+            username=data["applied_by"],
+            instance_name=data["target_app_code"],
+            applies=applies,
+        )
+
+        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
         return OKJsonResponse(status=status.HTTP_200_OK, data=output_slz.data)
 
 
@@ -921,7 +934,13 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # 网关停用时，将网关下所有 MCPServer 设置为停用
         if new_status == GatewayStatusEnum.INACTIVE.value:
+            mcp_server_data_before_map = get_active_mcp_server_data_before_map(gateway_id=instance.id)
             MCPServerHandler.disable_servers(gateway_id=instance.id)
+            record_mcp_server_disable_audits(
+                username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
+                gateway_id=instance.id,
+                data_before_map=mcp_server_data_before_map,
+            )
 
         # 触发网关发布
         if is_need_publish:

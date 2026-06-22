@@ -21,6 +21,7 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -1271,6 +1272,12 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         assert apply.reason == "for test"
         assert apply.applied_by == "admin"
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.PENDING.value
+        audit_log = AuditEventLog.objects.get(
+            op_object_type="permission",
+            op_object="test-app",
+            comment="MCPServer 权限申请",
+        )
+        assert audit_log.op_type == "create"
 
     def test_create_rejects_app_without_user_permission(self, mocker, request_view, fake_public_mcp_server):
         mocker.patch(

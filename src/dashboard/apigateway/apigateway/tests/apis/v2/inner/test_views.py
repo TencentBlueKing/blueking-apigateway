@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import time
 from unittest import mock
 
@@ -24,6 +25,8 @@ from django_dynamic_fixture import G
 
 import apigateway.apis.v2.inner.serializers as inner_serializers
 import apigateway.apis.v2.inner.views as inner_views
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
@@ -476,6 +479,69 @@ class TestMCPServerAppPermissionApplyCreateApi:
         assert "itsm_ticket_id" in apply_record
         assert "approval_url" in apply_record
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in apply_record["approval_url"]
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.PERMISSION.value,
+            op_object="test-app",
+        )
+        assert audit_log.username == "test-user"
+        assert audit_log.op_type == OpTypeEnum.CREATE.value
+        assert audit_log.op_object == "test-app"
+        assert json.loads(audit_log.data_before) == {}
+        assert json.loads(audit_log.data_after)[0]["bk_app_code"] == "test-app"
+
+    def test_create_records_audit_logs_by_gateway(self, request_view, fake_gateway, fake_stage):
+        """测试跨网关批量申请 MCP Server 权限时，每个网关都记录审计日志"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value)
+        another_stage = G(Stage, gateway=another_gateway, status=StageStatusEnum.ACTIVE.value)
+        another_mcp_server = G(
+            MCPServer,
+            gateway=another_gateway,
+            stage=another_stage,
+            name="another-test-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.inner.mcp_server.permission.apply",
+            data={
+                "target_app_code": "test-app",
+                "mcp_server_ids": [mcp_server.id, another_mcp_server.id],
+                "applied_by": "test-user",
+                "reason": "Test reason",
+            },
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.status_code == 200
+        audit_logs = AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.PERMISSION.value,
+            op_object="test-app",
+            comment="MCPServer 权限申请",
+        )
+        assert audit_logs.count() == 2
+
+        audit_logs_by_gateway_id = {int(log.op_object_group): log for log in audit_logs}
+        assert set(audit_logs_by_gateway_id) == {fake_gateway.id, another_gateway.id}
+        assert json.loads(audit_logs_by_gateway_id[fake_gateway.id].data_after)[0]["mcp_server"] == mcp_server.id
+        assert (
+            json.loads(audit_logs_by_gateway_id[another_gateway.id].data_after)[0]["mcp_server"]
+            == another_mcp_server.id
+        )
 
     def test_create_with_itsm_ticket_returns_itsm_url(self, request_view, fake_gateway, fake_stage, settings, mocker):
         """测试创建 MCP Server 权限申请时，若存在 itsm_ticket_id 且 ITSM 模板已配置，则 approval_url 返回 ITSM 链接"""
@@ -1056,14 +1122,11 @@ class TestGatewayUpdateStatusApi:
         fake_gateway.name = "bp-test-gateway"
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
+        mcp_server = G(MCPServer, gateway=fake_gateway, status=MCPServerStatusEnum.ACTIVE.value)
 
         # Mock 触发发布
         mocker.patch(
             "apigateway.apis.v2.inner.views.trigger_gateway_publish",
-            return_value=None,
-        )
-        mocker.patch(
-            "apigateway.apis.v2.inner.views.MCPServerHandler.disable_servers",
             return_value=None,
         )
 
@@ -1082,6 +1145,13 @@ class TestGatewayUpdateStatusApi:
         # 验证网关状态已更新
         fake_gateway.refresh_from_db()
         assert fake_gateway.status == GatewayStatusEnum.INACTIVE.value
+        mcp_server.refresh_from_db()
+        assert mcp_server.status == MCPServerStatusEnum.INACTIVE.value
+        mcp_server_audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+            op_object_id=mcp_server.id,
+        )
+        assert mcp_server_audit_log.comment == "更新 MCPServer"
 
     def test_enable_gateway_success(self, request_to_view, request_factory, fake_gateway, mocker):
         """测试启用 bp- 开头的网关成功"""

@@ -24,7 +24,11 @@ from rest_framework import generics, status
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
-from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.mcp_server import (
+    MCPServerHandler,
+    get_active_mcp_server_data_before_map,
+    record_mcp_server_disable_audits,
+)
 from apigateway.biz.programmable import ProgrammableGatewayReleaser
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
@@ -423,7 +427,16 @@ class StageStatusUpdateApi(StageQuerySetMixin, generics.UpdateAPIView):
 
         # StageStatusInputSLZ 目前仅允许 status=0(INACTIVE)，此接口只处理环境下架。
         if data["status"] == StageStatusEnum.INACTIVE.value:
+            mcp_server_data_before_map = get_active_mcp_server_data_before_map(
+                gateway_id=request.gateway.id,
+                stage_id=instance.id,
+            )
             MCPServerHandler.disable_servers(gateway_id=request.gateway.id, stage_id=instance.id)
+            record_mcp_server_disable_audits(
+                username=username,
+                gateway_id=request.gateway.id,
+                data_before_map=mcp_server_data_before_map,
+            )
 
         audit_comment = "下架环境" if data["status"] == StageStatusEnum.INACTIVE.value else "发布环境"
 
