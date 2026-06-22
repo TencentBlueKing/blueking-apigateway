@@ -626,9 +626,9 @@ func setHandlerRequestParams(
 		}
 	}
 	if handlerRequest.QueryParam != nil {
-		for k, value := range handlerRequest.QueryParam {
-			if err := req.SetQueryParam(k, value); err != nil {
-				auditLog.Error("set query param err", zap.String(k, value), zap.Error(err))
+		for k, values := range handlerRequest.QueryParam {
+			if err := req.SetQueryParam(k, values...); err != nil {
+				auditLog.Error("set query param err", zap.Strings(k, values), zap.Error(err))
 				return err
 			}
 		}
@@ -917,7 +917,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditStatus        = "success"
 			auditUpstreamReqID string
 			auditHeaderInfo    map[string]string
-			auditQueryParam    StringParamMap
+			auditQueryParam    QueryParam
 			auditPathParam     StringParamMap
 			auditBodyParam     any
 		)
