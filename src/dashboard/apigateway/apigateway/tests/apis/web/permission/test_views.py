@@ -147,6 +147,46 @@ class TestAppPermissionRenewViewSet(TestCase):
             assert resource_p1_obj.grant_type == "initialize"
 
 
+class TestAppPermissionDeleteViewSet(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+
+    def test_destroy(self):
+        resource = G(Resource, gateway=self.gateway)
+        resource_perm = G(
+            models.AppResourcePermission,
+            gateway=self.gateway,
+            bk_app_code="test-resource",
+            resource_id=resource.id,
+            grant_type="apply",
+        )
+        gateway_perm = G(
+            models.AppGatewayPermission,
+            gateway=self.gateway,
+            bk_app_code="test-gateway",
+        )
+
+        request = self.factory.delete(
+            f"/gateways/{self.gateway.id}/permissions/app-permissions/delete/",
+            data={
+                "resource_dimension_ids": [resource_perm.id],
+                "gateway_dimension_ids": [gateway_perm.id],
+            },
+            format="json",
+        )
+
+        view = views.AppPermissionDeleteApi.as_view()
+        response = view(request, gateway_id=self.gateway.id)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(
+            models.AppResourcePermission.objects.filter(gateway=self.gateway, id=resource_perm.id).exists()
+        )
+        self.assertFalse(models.AppGatewayPermission.objects.filter(gateway=self.gateway, id=gateway_perm.id).exists())
+
+
 class TestAppResourcePermissionViewSet:
     def test_create(self, mocker, request_view, fake_resource):
         mocker.patch("apigateway.apps.permission.models.generate_expire_time", return_value=dummy_time.time)

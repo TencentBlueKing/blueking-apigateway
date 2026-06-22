@@ -62,6 +62,7 @@ from .filters import (
 from .serializers import (
     AppPermissionApplyApprovalInputSLZ,
     AppPermissionApplyOutputSLZ,
+    AppPermissionDeleteInputSLZ,
     AppPermissionExportInputSLZ,
     AppPermissionExportOutputSLZ,
     AppPermissionIDsSLZ,
@@ -368,6 +369,72 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
         io_csv.writerows(data)
 
         return content.getvalue()
+
+
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(
+        operation_description="批量删除应用权限",
+        responses={status.HTTP_204_NO_CONTENT: ""},
+        request_body=AppPermissionDeleteInputSLZ,
+        tags=["WebAPI.Permission"],
+    ),
+)
+class AppPermissionDeleteApi(AppPermissionQuerySetMixin, generics.DestroyAPIView):
+    def delete(self, request, *args, **kwargs):
+        slz = AppPermissionDeleteInputSLZ(data=request.data)
+        slz.is_valid(raise_exception=True)
+
+        data = slz.validated_data
+        resource_dimension_ids = data.get("resource_dimension_ids", [])
+        gateway_dimension_ids = data.get("gateway_dimension_ids", [])
+
+        resource_query_set = self.get_resource_queryset().filter(id__in=resource_dimension_ids)
+        gateway_query_set = self.get_gateway_queryset().filter(id__in=gateway_dimension_ids)
+
+        resource_exists = resource_query_set.exists()
+        gateway_exists = gateway_query_set.exists()
+
+        if not resource_exists and not gateway_exists:
+            raise Http404
+
+        if resource_exists:
+            instance = resource_query_set[0]
+            instance_id = instance.id
+            bk_app_code = instance.bk_app_code
+            data_before = get_model_dict(instance)
+            resource_query_set.delete()
+
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.DELETE,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=instance_id,
+                instance_name=bk_app_code,
+                data_before=data_before,
+                data_after={},
+                comment="授权维度：资源",
+            )
+
+        if gateway_exists:
+            instance = gateway_query_set[0]
+            instance_id = instance.id
+            bk_app_code = instance.bk_app_code
+            data_before = get_model_dict(instance)
+            gateway_query_set.delete()
+
+            Auditor.record_permission_op_success(
+                op_type=OpTypeEnum.DELETE,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=instance_id,
+                instance_name=bk_app_code,
+                data_before=data_before,
+                data_after={},
+                comment="授权维度：网关",
+            )
+
+        return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @method_decorator(
