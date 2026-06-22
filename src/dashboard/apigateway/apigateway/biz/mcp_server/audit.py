@@ -171,7 +171,7 @@ def record_mcp_server_permission_apply_audits(
             op_type=OpTypeEnum.CREATE,
             username=username,
             gateway_id=gateway_id,
-            instance_id=";".join(str(apply.id) for apply in gateway_applies),
+            instance_id=gateway_applies[0].id,
             instance_name=instance_name,
             data_before={},
             data_after=[get_model_dict(apply) for apply in gateway_applies],
