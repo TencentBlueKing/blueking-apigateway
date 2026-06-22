@@ -288,8 +288,7 @@ var _ = Describe("MCP Models", func() {
 				arr := model.ArrayString{"item1", "item2", "item3"}
 				result, err := arr.Value()
 				Expect(err).NotTo(HaveOccurred())
-				// Note: Current implementation has a bug - it creates empty strIDs
-				Expect(result).To(Equal(";;"))
+				Expect(result).To(Equal("item1;item2;item3"))
 			})
 		})
 	})
