@@ -71,10 +71,48 @@ func (m *StringParamMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// QueryParam stores HTTP query parameters as multiple string values per key.
+type QueryParam map[string][]string
+
+// UnmarshalJSON decodes JSON query values into strings, preserving numeric precision and arrays.
+func (m *QueryParam) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*m = nil
+		return nil
+	}
+
+	var values map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&values); err != nil {
+		return err
+	}
+
+	result := make(QueryParam, len(values))
+	for key, value := range values {
+		if items, ok := value.([]any); ok {
+			if len(items) == 0 {
+				continue
+			}
+
+			queryValues := make([]string, 0, len(items))
+			for _, item := range items {
+				queryValues = append(queryValues, stringifyRequestParamValue(item))
+			}
+			result[key] = queryValues
+			continue
+		}
+
+		result[key] = []string{stringifyRequestParamValue(value)}
+	}
+	*m = result
+	return nil
+}
+
 // HandlerRequest ...
 type HandlerRequest struct {
 	HeaderParam StringParamMap `json:"header_param,omitempty"`
-	QueryParam  StringParamMap `json:"query_param,omitempty"`
+	QueryParam  QueryParam     `json:"query_param,omitempty"`
 	PathParam   StringParamMap `json:"path_param,omitempty"`
 	BodyParam   any            `json:"body_param,omitempty"`
 }
