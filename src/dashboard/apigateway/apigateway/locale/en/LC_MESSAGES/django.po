@@ -1056,10 +1056,6 @@ msgstr "Update MCPServer app permission"
 msgid "删除 MCPServer 应用权限"
 msgstr "Delete MCPServer app permission"
 
-#: apigateway/apps/audit/constants.py:89
-msgid "MCPServer 权限申请"
-msgstr "MCPServer permission application"
-
 #: apigateway/apps/audit/constants.py:90
 msgid "环境状态变更"
 msgstr "Stage state changes"

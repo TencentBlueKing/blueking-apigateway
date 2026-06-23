@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import time
 from unittest import mock
 
@@ -25,7 +24,7 @@ from django_dynamic_fixture import G
 
 import apigateway.apis.v2.inner.serializers as inner_serializers
 import apigateway.apis.v2.inner.views as inner_views
-from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
+from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -480,18 +479,14 @@ class TestMCPServerAppPermissionApplyCreateApi:
         assert "approval_url" in apply_record
         assert f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in apply_record["approval_url"]
         apply = MCPServerAppPermissionApply.objects.get(bk_app_code="test-app", mcp_server=mcp_server)
-        audit_log = AuditEventLog.objects.get(
+        assert not AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
             op_object=str(apply),
-        )
-        assert audit_log.username == "test-user"
-        assert audit_log.op_type == OpTypeEnum.CREATE.value
-        assert audit_log.op_object == str(apply)
-        assert json.loads(audit_log.data_before) == {}
-        assert json.loads(audit_log.data_after)["bk_app_code"] == "test-app"
+            comment="MCPServer 权限申请",
+        ).exists()
 
-    def test_create_records_audit_logs_by_gateway(self, request_view, fake_gateway, fake_stage):
-        """测试批量申请 MCP Server 权限时，每个申请记录都记录审计日志"""
+    def test_create_does_not_record_audit_logs(self, request_view, fake_gateway, fake_stage):
+        """测试批量申请 MCP Server 权限时，不记录申请单创建审计日志"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.save()
         fake_stage.status = StageStatusEnum.ACTIVE.value
@@ -537,20 +532,11 @@ class TestMCPServerAppPermissionApplyCreateApi:
         )
 
         assert resp.status_code == 200
-        audit_logs = AuditEventLog.objects.filter(
+        assert MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").count() == 3
+        assert not AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
             comment="MCPServer 权限申请",
-        )
-        assert audit_logs.count() == 3
-
-        applies = MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app")
-        assert set(audit_logs.values_list("op_object", flat=True)) == {str(apply) for apply in applies}
-        assert {int(log.op_object_group) for log in audit_logs} == {fake_gateway.id, another_gateway.id}
-        assert {json.loads(log.data_after)["mcp_server"] for log in audit_logs} == {
-            mcp_server.id,
-            same_gateway_mcp_server.id,
-            another_mcp_server.id,
-        }
+        ).exists()
 
     def test_create_with_itsm_ticket_returns_itsm_url(self, request_view, fake_gateway, fake_stage, settings, mocker):
         """测试创建 MCP Server 权限申请时，若存在 itsm_ticket_id 且 ITSM 模板已配置，则 approval_url 返回 ITSM 链接"""
