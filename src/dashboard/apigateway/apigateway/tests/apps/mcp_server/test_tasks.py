@@ -20,7 +20,6 @@ from unittest.mock import patch
 import pytest
 from ddf import G
 
-from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
 from apigateway.core.constants import ReleaseHistoryStatusEnum
@@ -57,9 +56,6 @@ class TestSyncMcpServerAfterRelease:
                 "apigateway.apps.mcp_server.tasks.MCPServerHandler.save_mcp_servers",
                 return_value=[{"name": "s1", "action": "updated", "id": mcp_server.id}],
             ) as mock_save,
-            patch(
-                "apigateway.biz.mcp_server.audit.Auditor.record_mcp_server_op_success",
-            ) as record_mcp_server_op_success,
         ):
             sync_mcp_server_after_release(
                 gateway_id=fake_gateway.id,
@@ -77,11 +73,8 @@ class TestSyncMcpServerAfterRelease:
             stage_id=fake_stage.id,
             stage_name=fake_stage.name,
             mcp_servers_data=mcp_data,
+            username="open-api-user",
         )
-        record_mcp_server_op_success.assert_called_once()
-        assert record_mcp_server_op_success.call_args.kwargs["op_type"] == OpTypeEnum.MODIFY
-        assert record_mcp_server_op_success.call_args.kwargs["username"] == "open-api-user"
-        assert record_mcp_server_op_success.call_args.kwargs["data_before"]["status"] == 0
 
     def test_release_failed_skips_save(self, fake_gateway, fake_stage, release_history):
         """发布失败时跳过写入"""

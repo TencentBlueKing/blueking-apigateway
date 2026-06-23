@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
+import copy
 import json
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
@@ -27,6 +28,7 @@ from django.db.models import Q, QuerySet
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.constants import (
     FEATURED_MCP_CATEGORY_NAME,
     OFFICIAL_MCP_CATEGORY_NAME,
@@ -49,6 +51,7 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
+from apigateway.biz.audit import Auditor
 from apigateway.biz.released_resource import ReleasedResourceData, ReleasedResourceHandler
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
@@ -66,7 +69,15 @@ from apigateway.service.resource_version import (
     get_resource_names_set,
     get_resource_schema,
 )
+from apigateway.utils.django import get_model_dict
 from apigateway.utils.time import NeverExpiresTime
+
+from .audit import (
+    get_mcp_server_permission_sync_data_before_map,
+    get_mcp_server_sync_data_before_map,
+    record_mcp_server_permission_sync_audits,
+    record_mcp_server_sync_audits,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +185,7 @@ class MCPServerHandler:
         stage_id: int,
         stage_name: str,
         mcp_servers_data: List[Dict[str, Any]],
+        username: str = "",
     ) -> List[Dict[str, Any]]:
         """批量创建或更新 MCP Server
 
@@ -187,6 +199,21 @@ class MCPServerHandler:
         Returns:
             操作结果列表，每项包含 name, action, id
         """
+        mcp_servers_data_for_audit = copy.deepcopy(mcp_servers_data)
+        permission_data_before_map: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        data_before_map = get_mcp_server_sync_data_before_map(
+            gateway_id=gateway_id,
+            gateway_name=gateway_name,
+            stage_name=stage_name,
+            mcp_servers_data=mcp_servers_data_for_audit,
+        )
+        permission_data_before_map = get_mcp_server_permission_sync_data_before_map(
+            gateway_id=gateway_id,
+            gateway_name=gateway_name,
+            stage_name=stage_name,
+            mcp_servers_data=mcp_servers_data_for_audit,
+        )
+
         results = []
         for mcp_data in mcp_servers_data:
             mcp_data["gateway_id"] = gateway_id
@@ -222,6 +249,20 @@ class MCPServerHandler:
             MCPServerHandler._sync_mcp_server_categories(instance, category_names)
 
             results.append({"name": instance.name, "action": action, "id": instance.id})
+
+        record_mcp_server_sync_audits(
+            username=username,
+            gateway_id=gateway_id,
+            results=results,
+            data_before_map=data_before_map or {},
+        )
+        record_mcp_server_permission_sync_audits(
+            username=username,
+            gateway_id=gateway_id,
+            results=results,
+            mcp_servers_data=mcp_servers_data_for_audit,
+            data_before_map=permission_data_before_map,
+        )
 
         return results
 
@@ -856,7 +897,7 @@ class MCPServerHandler:
         }
 
     @staticmethod
-    def disable_servers(gateway_id: int, stage_id: int = 0) -> None:
+    def disable_servers(gateway_id: int, stage_id: int = 0, username: str = "") -> None:
         """set the status of the servers to inactive
         e.g. gateway inactivated, stage offline, etc.
 
@@ -868,7 +909,27 @@ class MCPServerHandler:
         if stage_id:
             queryset = queryset.filter(stage_id=stage_id)
 
+        data_before_map = {
+            instance.id: get_model_dict(instance)
+            for instance in queryset.filter(status=MCPServerStatusEnum.ACTIVE.value)
+        }
+
         queryset.update(status=MCPServerStatusEnum.INACTIVE.value)
+
+        if not data_before_map:
+            return
+
+        for instance in MCPServer.objects.filter(id__in=data_before_map.keys()):
+            Auditor.record_mcp_server_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=username,
+                gateway_id=gateway_id,
+                instance_id=instance.id,
+                instance_name=instance.name,
+                data_before=data_before_map.get(instance.id, {}),
+                data_after=get_model_dict(instance),
+                comment=_("停用 MCPServer"),
+            )
 
     # ========== Prompts 相关方法 ==========
 

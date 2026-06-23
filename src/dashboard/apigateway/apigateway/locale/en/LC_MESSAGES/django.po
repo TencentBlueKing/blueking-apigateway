@@ -1036,6 +1036,10 @@ msgstr "Create MCPServer"
 msgid "更新 MCPServer"
 msgstr "Update MCPServer"
 
+#: apigateway/biz/mcp_server/mcp_server.py:931
+msgid "停用 MCPServer"
+msgstr "Disable MCPServer"
+
 #: apigateway/apps/audit/constants.py:85
 msgid "删除 MCPServer"
 msgstr "Delete MCPServer"

@@ -47,8 +47,6 @@ from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import (
     MCPServerHandler,
     MCPServerPermissionHandler,
-    get_active_mcp_server_data_before_map,
-    record_mcp_server_disable_audits,
 )
 from apigateway.biz.permission import (
     AppPermissionBuilder,
@@ -621,7 +619,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
                 username=data["applied_by"],
                 gateway_id=apply.mcp_server.gateway_id,
                 instance_id=apply.id,
-                instance_name=apply.bk_app_code,
+                instance_name=str(apply),
                 data_before={},
                 data_after=get_model_dict(apply),
                 comment="MCPServer 权限申请",
@@ -942,12 +940,9 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # 网关停用时，将网关下所有 MCPServer 设置为停用
         if new_status == GatewayStatusEnum.INACTIVE.value:
-            mcp_server_data_before_map = get_active_mcp_server_data_before_map(gateway_id=instance.id)
-            MCPServerHandler.disable_servers(gateway_id=instance.id)
-            record_mcp_server_disable_audits(
-                username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
+            MCPServerHandler.disable_servers(
                 gateway_id=instance.id,
-                data_before_map=mcp_server_data_before_map,
+                username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
             )
 
         # 触发网关发布

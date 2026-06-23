@@ -294,7 +294,7 @@ class MCPServerAppPermissionApply(TimestampedModelMixin, OperatorModelMixin):
     objects: ClassVar[managers.MCPServerAppPermissionApplyManager] = managers.MCPServerAppPermissionApplyManager()
 
     def __str__(self):
-        return f"<MCPServerAppPermissionApply: {self.pk}>"
+        return f"<MCPServerAppPermissionApply: {self.pk}/{self.bk_app_code}/{self.mcp_server_id}>"
 
     class Meta:
         verbose_name = _("MCPServer 应用申请审批")

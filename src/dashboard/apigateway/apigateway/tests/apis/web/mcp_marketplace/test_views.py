@@ -1274,7 +1274,7 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         assert apply.status == MCPServerAppPermissionApplyStatusEnum.PENDING.value
         audit_log = AuditEventLog.objects.get(
             op_object_type="mcp_server_permission",
-            op_object="test-app",
+            op_object=str(apply),
             comment="MCPServer 权限申请",
         )
         assert audit_log.op_type == "create"

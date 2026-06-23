@@ -29,11 +29,7 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayAppBindingHandler, GatewayHandler, GatewayRelatedAppHandler
-from apigateway.biz.mcp_server import (
-    MCPServerHandler,
-    get_active_mcp_server_data_before_map,
-    record_mcp_server_disable_audits,
-)
+from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.release import ReleaseHandler
 from apigateway.common.constants import UserAuthTypeEnum
 from apigateway.common.django.translation import get_current_language_code
@@ -421,13 +417,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # 网关停用时，将网关下所有 MCPServer 设置为停用
         if new_gateway_status == GatewayStatusEnum.INACTIVE.value:
-            mcp_server_data_before_map = get_active_mcp_server_data_before_map(gateway_id=instance.id)
-            MCPServerHandler.disable_servers(gateway_id=instance.id)
-            record_mcp_server_disable_audits(
-                username=request.user.username,
-                gateway_id=instance.id,
-                data_before_map=mcp_server_data_before_map,
-            )
+            MCPServerHandler.disable_servers(gateway_id=instance.id, username=request.user.username)
 
         # 触发网关发布
         if is_need_publish:

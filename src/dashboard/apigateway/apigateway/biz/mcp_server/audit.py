@@ -16,15 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
 from apigateway.biz.audit import Auditor
 from apigateway.utils.django import get_model_dict
-
-from .mcp_server import MCPServerHandler
 
 
 def get_mcp_server_sync_data_before_map(
@@ -33,14 +30,7 @@ def get_mcp_server_sync_data_before_map(
     stage_name: str,
     mcp_servers_data: List[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
-    full_names = [
-        MCPServerHandler.get_mcp_server_name(
-            gateway_name=gateway_name,
-            stage_name=stage_name,
-            name=mcp_data["name"],
-        )
-        for mcp_data in mcp_servers_data
-    ]
+    full_names = [f"{gateway_name}-{stage_name}-{mcp_data['name']}" for mcp_data in mcp_servers_data]
     instances = MCPServer.objects.filter(gateway_id=gateway_id, name__in=full_names)
     return {instance.name: get_model_dict(instance) for instance in instances}
 
@@ -52,11 +42,7 @@ def get_mcp_server_permission_sync_data_before_map(
     mcp_servers_data: List[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Dict[str, Any]]]:
     full_names = [
-        MCPServerHandler.get_mcp_server_name(
-            gateway_name=gateway_name,
-            stage_name=stage_name,
-            name=mcp_data["name"],
-        )
+        f"{gateway_name}-{stage_name}-{mcp_data['name']}"
         for mcp_data in mcp_servers_data
         if mcp_data.get("target_app_codes")
     ]
@@ -85,7 +71,7 @@ def record_mcp_server_sync_audits(
 
     for result in results:
         action = result.get("action")
-        if action not in {"created", "updated"}:
+        if action not in ["created", "updated"]:
             continue
 
         instance = instances.get(result["id"])
@@ -150,34 +136,3 @@ def record_mcp_server_permission_sync_audits(
                 data_before=data_before,
                 data_after=get_model_dict(permission),
             )
-
-
-def get_active_mcp_server_data_before_map(gateway_id: int, stage_id: int = 0) -> Dict[int, Dict[str, Any]]:
-    queryset = MCPServer.objects.filter(gateway_id=gateway_id, status=MCPServerStatusEnum.ACTIVE.value)
-    if stage_id:
-        queryset = queryset.filter(stage_id=stage_id)
-
-    return {instance.id: get_model_dict(instance) for instance in queryset}
-
-
-def record_mcp_server_disable_audits(
-    username: str,
-    gateway_id: int,
-    data_before_map: Dict[int, Dict[str, Any]],
-    comment: Optional[str] = None,
-) -> None:
-    if not data_before_map:
-        return
-
-    instances = MCPServer.objects.filter(id__in=data_before_map.keys())
-    for instance in instances:
-        Auditor.record_mcp_server_op_success(
-            op_type=OpTypeEnum.MODIFY,
-            username=username,
-            gateway_id=gateway_id,
-            instance_id=instance.id,
-            instance_name=instance.name,
-            data_before=data_before_map.get(instance.id, {}),
-            data_after=get_model_dict(instance),
-            comment=comment,
-        )

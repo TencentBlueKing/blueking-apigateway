@@ -399,7 +399,7 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
                 username=data["applied_by"],
                 gateway_id=apply.mcp_server.gateway_id,
                 instance_id=apply.id,
-                instance_name=apply.bk_app_code,
+                instance_name=str(apply),
                 data_before={},
                 data_after=get_model_dict(apply),
                 comment="MCPServer 权限申请",

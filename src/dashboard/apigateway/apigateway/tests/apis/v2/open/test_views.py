@@ -115,13 +115,14 @@ class TestMCPServerAppPermissionApplyCreateApi:
         for item in result["data"]:
             assert "approval_url" in item
             assert f"/{fake_gateway.id}/mcp/permission?serverId={mcp_server.id}" in item["approval_url"]
+        apply = MCPServerAppPermissionApply.objects.get(bk_app_code="test_app", mcp_server=mcp_server)
         audit_log = AuditEventLog.objects.get(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
-            op_object="test_app",
+            op_object=str(apply),
         )
         assert audit_log.username == "test_user"
         assert audit_log.op_type == OpTypeEnum.CREATE.value
-        assert audit_log.op_object == "test_app"
+        assert audit_log.op_object == str(apply)
         assert json.loads(audit_log.data_before) == {}
         assert json.loads(audit_log.data_after)["bk_app_code"] == "test_app"
 
@@ -170,11 +171,12 @@ class TestMCPServerAppPermissionApplyCreateApi:
         assert resp.status_code == 200
         audit_logs = AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
-            op_object="test_app",
             comment="MCPServer 权限申请",
         )
         assert audit_logs.count() == 3
 
+        applies = MCPServerAppPermissionApply.objects.filter(bk_app_code="test_app")
+        assert set(audit_logs.values_list("op_object", flat=True)) == {str(apply) for apply in applies}
         assert {int(log.op_object_group) for log in audit_logs} == {fake_gateway.id, another_gateway.id}
         assert {json.loads(log.data_after)["mcp_server"] for log in audit_logs} == {
             mcp_server.id,
