@@ -41,5 +41,5 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link():
         bk_paas3_url="https://paas.example.com/",
     )
 
-    assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center/apps"
+    assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
