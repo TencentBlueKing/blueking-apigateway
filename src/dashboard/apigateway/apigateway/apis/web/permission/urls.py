@@ -30,7 +30,7 @@ urlpatterns = [
                 path(
                     "renew/",
                     views.AppPermissionRenewApi.as_view(),
-                    name="permissions.app-resource-permissions.renew",
+                    name="permissions.app-permissions.renew",
                 ),
                 path(
                     "export/",
@@ -41,6 +41,11 @@ urlpatterns = [
                     "bk-app-codes/",
                     views.AppPermissionAppCodeListApi.as_view(),
                     name="permissions.app-permissions.get_bk_app_codes",
+                ),
+                path(
+                    "batch/",
+                    views.AppPermissionDeleteApi.as_view(),
+                    name="permissions.app-permissions.batch_destroy",
                 ),
             ]
         ),
