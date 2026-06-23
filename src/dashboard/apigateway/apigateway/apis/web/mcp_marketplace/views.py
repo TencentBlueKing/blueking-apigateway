@@ -31,10 +31,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
-from apigateway.biz.mcp_server import (
-    MCPServerHandler,
-    MCPServerPermissionHandler,
-)
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_mcp_server_filter_by_user_tenant_id
@@ -174,9 +171,8 @@ class MCPMarketplaceServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             reason=data["reason"],
             applied_by=request.user.username,
         )
-        applies = list(queryset)
 
-        output_slz = MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
+        output_slz = MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)
 
 
