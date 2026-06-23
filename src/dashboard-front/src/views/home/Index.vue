@@ -290,12 +290,17 @@
                 v-if="enableGatewayOperationStatus"
                 class="flex-1"
               >
-                <span v-if="item.operation_status?.status === 'active'">{{ t('活跃') }}</span>
+                <bk-tag
+                  v-if="item.operation_status?.status === 'active'"
+                  theme="success"
+                >
+                  {{ t('活跃') }}
+                </bk-tag>
                 <div
                   v-if="item.operation_status?.status === 'inactive'"
                   class="flex items-center cursor-pointer inactive"
                 >
-                  <span
+                  <bk-tag
                     v-bk-tooltips="{
                       content: item.operation_status?.source === 'apigateway'
                         ? t('网关过去 180 天没有任何调用量，请确认是否停用网关')
@@ -303,7 +308,7 @@
                     class="line-height-20px"
                   >
                     {{ t('闲置') }}
-                  </span>
+                  </bk-tag>
                   <BkButton
                     theme="primary"
                     class="ml-8px inactive-btn"
