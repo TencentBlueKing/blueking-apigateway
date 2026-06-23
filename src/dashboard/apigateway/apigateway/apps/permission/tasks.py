@@ -334,41 +334,49 @@ class AppPermissionExpiringSoonAlerter:
 
     def _send_alert(self, permissions: Dict[str, List]):
         for bk_app_code, app_perms in permissions.items():
-            app_maintainers = get_app_maintainers(bk_app_code)
-            if not app_maintainers:
-                continue
+            try:
+                app_maintainers = get_app_maintainers(bk_app_code)
+                if not app_maintainers:
+                    continue
 
-            sorted_app_perms = sorted(
-                app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"])
-            )
+                sorted_app_perms = sorted(
+                    app_perms, key=lambda x: (x["gateway_name"], x["grant_dimension"], x["resource_name"])
+                )
 
-            title = f"【蓝鲸API网关】你的应用【{bk_app_code}】访问网关资源的权限即将过期，请尽快处理"
+                title = f"【蓝鲸API网关】你的应用【{bk_app_code}】访问网关资源的权限即将过期，请尽快处理"
 
-            mail_content = render_to_string(
-                "permission/alert_app_permission_expiring_soon_template.html",
-                context={
+                mail_content = render_to_string(
+                    "permission/alert_app_permission_expiring_soon_template.html",
+                    context={
+                        "title": title,
+                        "bk_app_code": bk_app_code,
+                        "permissions": sorted_app_perms,
+                        "renew_permission_link": settings.PAAS_RENEW_API_PERMISSION_URL.format(
+                            bk_app_code=bk_app_code
+                        ),
+                    },
+                )
+
+                params = {
                     "title": title,
-                    "bk_app_code": bk_app_code,
-                    "permissions": sorted_app_perms,
-                    "renew_permission_link": settings.PAAS_RENEW_API_PERMISSION_URL.format(bk_app_code=bk_app_code),
-                },
-            )
+                    "receiver__username": app_maintainers,
+                    "content": mail_content,
+                    "attachments": [
+                        {
+                            "filename": "api_gateway.png",
+                            "content": base64.b64encode(read_file(APIGW_LOGO_PATH)).decode("utf-8"),
+                        }
+                    ],
+                }
 
-            params = {
-                "title": title,
-                "receiver__username": app_maintainers,
-                "content": mail_content,
-                "attachments": [
-                    {
-                        "filename": "api_gateway.png",
-                        "content": base64.b64encode(read_file(APIGW_LOGO_PATH)).decode("utf-8"),
-                    }
-                ],
-            }
+                tenant_id = get_tenant_id_for_app_developers(bk_app_code)
 
-            tenant_id = get_tenant_id_for_app_developers(bk_app_code)
-
-            cmsi_component.send_mail(tenant_id, params)
+                cmsi_component.send_mail(tenant_id, params)
+            except Exception:
+                logger.exception(
+                    "failed to send app permission expiring soon alert for bk_app_code=%s",
+                    bk_app_code,
+                )
 
 
 @shared_task(name="apigateway.apps.permission.tasks.alert_app_permission_expiring_soon", ignore_result=True)
