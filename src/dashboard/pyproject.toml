@@ -135,7 +135,6 @@ strict_optional=true
 pretty=true
 exclude = '''(?x)(
     editions.*\.py$
-    | (^|/)zh-hans($|/)
 )'''
 
 [[tool.mypy.overrides]]
