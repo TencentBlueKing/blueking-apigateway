@@ -277,19 +277,17 @@ var _ = Describe("MCP Models", func() {
 		})
 
 		Describe("Value", func() {
-			It("should return empty string for empty array", func() {
-				arr := model.ArrayString{}
-				result, err := arr.Value()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(Equal(""))
-			})
-
-			It("should return joined string for array with items", func() {
-				arr := model.ArrayString{"item1", "item2", "item3"}
-				result, err := arr.Value()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(result).To(Equal("item1;item2;item3"))
-			})
+			DescribeTable("serializes arrays correctly",
+				func(arr model.ArrayString, expected string) {
+					result, err := arr.Value()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(result).To(Equal(expected))
+				},
+				Entry("empty array", model.ArrayString{}, ""),
+				Entry("single item", model.ArrayString{"item1"}, "item1"),
+				Entry("multiple items", model.ArrayString{"item1", "item2", "item3"}, "item1;item2;item3"),
+				Entry("contains empty item", model.ArrayString{"item1", "", "item3"}, "item1;;item3"),
+			)
 		})
 	})
 
