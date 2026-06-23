@@ -114,7 +114,7 @@ class AppResourcePermission(TimestampedModelMixin):
     objects: ClassVar[managers.AppResourcePermissionManager] = managers.AppResourcePermissionManager()
 
     def __str__(self):
-        return f"<AppResourcePermission: {self.bk_app_code}/{self.resource_id}>"
+        return f"<AppResourcePermission: {self.pk}/{self.bk_app_code}/{self.resource_id}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问资源权限")

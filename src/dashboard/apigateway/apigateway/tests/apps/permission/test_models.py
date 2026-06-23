@@ -85,4 +85,4 @@ class TestAppResourcePermission:
 
     def test_str(self, fake_gateway):
         perm = G(AppResourcePermission, gateway=fake_gateway, bk_app_code="test", expires=None)
-        assert str(perm) == f"<AppResourcePermission: test/{perm.resource_id}>"
+        assert str(perm) == f"<AppResourcePermission: {perm.pk}/test/{perm.resource_id}>"
