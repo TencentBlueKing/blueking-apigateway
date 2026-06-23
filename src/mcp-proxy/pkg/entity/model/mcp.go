@@ -162,8 +162,7 @@ func (r ArrayString) Value() (driver.Value, error) {
 	if len(r) == 0 {
 		return "", nil
 	}
-	strIDs := make([]string, len(r))
-	return strings.Join(strIDs, ";"), nil
+	return strings.Join([]string(r), ";"), nil
 }
 
 // MCPServerAppPermission ...
