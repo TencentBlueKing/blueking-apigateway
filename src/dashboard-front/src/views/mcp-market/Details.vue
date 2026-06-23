@@ -88,19 +88,6 @@
           </div>
 
           <div class="permission-guide">
-            <!-- <BkLink
-              theme="primary"
-              :href="envStore.env.DOC_LINKS.MCP_SERVER_PERMISSION_APPLY"
-              target="_blank"
-              class="text-12px"
-              >
-              <AgIcon
-              name="jump"
-              size="12"
-              class="mr-6px icon"
-              />
-              {{ t('权限申请指引') }}
-              </BkLink> -->
             <bk-button
               theme="primary"
               @click="handleApplyPermission"
