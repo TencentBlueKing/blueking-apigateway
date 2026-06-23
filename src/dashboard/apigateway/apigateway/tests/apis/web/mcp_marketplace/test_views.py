@@ -1275,7 +1275,6 @@ class TestMCPMarketplaceServerAppPermissionApplyCreateApi:
         assert not AuditEventLog.objects.filter(
             op_object_type="mcp_server_permission",
             op_object=str(apply),
-            comment="MCPServer 权限申请",
         ).exists()
 
     def test_create_rejects_app_without_user_permission(self, mocker, request_view, fake_public_mcp_server):

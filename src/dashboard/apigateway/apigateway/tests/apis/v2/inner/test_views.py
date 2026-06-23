@@ -482,7 +482,6 @@ class TestMCPServerAppPermissionApplyCreateApi:
         assert not AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
             op_object=str(apply),
-            comment="MCPServer 权限申请",
         ).exists()
 
     def test_create_does_not_record_audit_logs(self, request_view, fake_gateway, fake_stage):
@@ -532,10 +531,11 @@ class TestMCPServerAppPermissionApplyCreateApi:
         )
 
         assert resp.status_code == 200
-        assert MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").count() == 3
+        applies = MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app")
+        assert applies.count() == 3
         assert not AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
-            comment="MCPServer 权限申请",
+            op_object__in=[str(apply) for apply in applies],
         ).exists()
 
     def test_create_with_itsm_ticket_returns_itsm_url(self, request_view, fake_gateway, fake_stage, settings, mocker):
