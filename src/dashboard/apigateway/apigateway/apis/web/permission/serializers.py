@@ -126,6 +126,27 @@ class AppPermissionRenewInputSLZ(serializers.Serializer):
         return data
 
 
+class AppPermissionDeleteInputSLZ(serializers.Serializer):
+    gateway_dimension_ids = serializers.ListField(
+        help_text="网关维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
+    )
+    resource_dimension_ids = serializers.ListField(
+        help_text="资源维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.permission.serializers.AppPermissionDeleteInputSLZ"
+
+    def validate(self, data):
+        gateway_dimension_ids = data.get("gateway_dimension_ids", [])
+        resource_dimension_ids = data.get("resource_dimension_ids", [])
+
+        if not gateway_dimension_ids and not resource_dimension_ids:
+            raise serializers.ValidationError("must select one permission")
+
+        return data
+
+
 class AppPermissionInputSLZ(serializers.Serializer):
     bk_app_code = serializers.CharField(label="", max_length=32, required=True, validators=[BKAppCodeValidator()])
     expire_days = serializers.IntegerField(allow_null=True, required=True, help_text="过期天数")

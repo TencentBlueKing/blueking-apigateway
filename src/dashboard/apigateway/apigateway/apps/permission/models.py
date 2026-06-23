@@ -65,7 +65,7 @@ class AppGatewayPermission(TimestampedModelMixin):
     objects: ClassVar[managers.AppGatewayPermissionManager] = managers.AppGatewayPermissionManager()
 
     def __str__(self):
-        return f"<AppGatewayPermission: {self.id}>"
+        return f"<AppGatewayPermission: {self.pk}/{self.bk_app_code}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问网关权限")
@@ -114,7 +114,7 @@ class AppResourcePermission(TimestampedModelMixin):
     objects: ClassVar[managers.AppResourcePermissionManager] = managers.AppResourcePermissionManager()
 
     def __str__(self):
-        return f"<AppResourcePermission: {self.id}>"
+        return f"<AppResourcePermission: {self.bk_app_code}/{self.resource_id}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问资源权限")

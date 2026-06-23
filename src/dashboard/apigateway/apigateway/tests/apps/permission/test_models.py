@@ -44,6 +44,10 @@ class TestAppGatewayPermission:
         perm = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
         assert perm.allow_apply_permission is False
 
+    def test_str(self, fake_gateway):
+        perm = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+        assert str(perm) == f"<AppGatewayPermission: {perm.pk}/test>"
+
 
 class TestAppResourcePermission:
     @pytest.mark.parametrize(
@@ -78,3 +82,7 @@ class TestAppResourcePermission:
     def test_allow_apply_permission_no_expires(self, fake_gateway):
         perm = G(AppResourcePermission, gateway=fake_gateway, bk_app_code="test", expires=None)
         assert perm.allow_apply_permission is False
+
+    def test_str(self, fake_gateway):
+        perm = G(AppResourcePermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+        assert str(perm) == f"<AppResourcePermission: test/{perm.resource_id}>"

@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+from unittest import mock
 
 import pytest
 from django.test import TestCase
@@ -165,6 +166,68 @@ class TestAppPermissionRenewViewSet(TestCase):
             assert audit_log.username == "admin"
             assert json.loads(audit_log.data_before)[0]["handled_by"] == "old-admin"
             assert json.loads(audit_log.data_after)[0]["handled_by"] == "admin"
+
+
+class TestAppPermissionDeleteViewSet(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = APIRequestFactory()
+        cls.gateway = create_gateway()
+
+    def test_destroy(self):
+        resource = G(Resource, gateway=self.gateway)
+        resource_perm = G(
+            models.AppResourcePermission,
+            gateway=self.gateway,
+            bk_app_code="test-resource",
+            resource_id=resource.id,
+            grant_type="apply",
+        )
+        gateway_perm = G(
+            models.AppGatewayPermission,
+            gateway=self.gateway,
+            bk_app_code="test-gateway",
+        )
+        resource_perm_name = str(resource_perm)
+        gateway_perm_name = str(gateway_perm)
+
+        request = self.factory.delete(
+            f"/gateways/{self.gateway.id}/permissions/app-permissions/batch/",
+            data={
+                "resource_dimension_ids": [resource_perm.id],
+                "gateway_dimension_ids": [gateway_perm.id],
+            },
+            format="json",
+        )
+
+        view = views.AppPermissionDeleteApi.as_view()
+        with mock.patch.object(views.Auditor, "record_permission_op_success") as mocked_record:
+            response = view(request, gateway_id=self.gateway.id)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(
+            models.AppResourcePermission.objects.filter(gateway=self.gateway, id=resource_perm.id).exists()
+        )
+        self.assertFalse(models.AppGatewayPermission.objects.filter(gateway=self.gateway, id=gateway_perm.id).exists())
+        self.assertEqual(mocked_record.call_count, 2)
+        self.assertEqual(mocked_record.call_args_list[0].kwargs["instance_name"], resource_perm_name)
+        self.assertEqual(mocked_record.call_args_list[1].kwargs["instance_name"], gateway_perm_name)
+
+    def test_destroy_permission_not_found(self):
+        request = self.factory.delete(
+            f"/gateways/{self.gateway.id}/permissions/app-permissions/batch/",
+            data={
+                "resource_dimension_ids": [1],
+                "gateway_dimension_ids": [2],
+            },
+            format="json",
+        )
+
+        view = views.AppPermissionDeleteApi.as_view()
+        response = view(request, gateway_id=self.gateway.id)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("权限不存在", str(response.data))
 
 
 class TestAppResourcePermissionViewSet:
