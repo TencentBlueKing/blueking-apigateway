@@ -38,7 +38,6 @@ export const useEnv = defineStore('useEnv', {
       BK_DOCS_URL_PREFIX: '',
       BK_LOGIN_URL: '',
       BK_PAAS_APP_REPO_URL_TMPL: '',
-      PAAS_DEVELOPER_CENTER_LINK: '',
       PAAS_APP_CREATE_LINK: '',
       BK_SHARED_RES_URL: '',
       BK_USER_WEB_API_URL: '',
