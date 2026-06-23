@@ -43,9 +43,9 @@ urlpatterns = [
                     name="permissions.app-permissions.get_bk_app_codes",
                 ),
                 path(
-                    "delete/",
+                    "batch/",
                     views.AppPermissionDeleteApi.as_view(),
-                    name="permissions.app-permissions.delete",
+                    name="permissions.app-permissions.batch_destroy",
                 ),
             ]
         ),
