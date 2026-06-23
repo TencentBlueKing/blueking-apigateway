@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission
@@ -65,6 +65,7 @@ def record_mcp_server_sync_audits(
     gateway_id: int,
     results: List[Dict[str, Any]],
     data_before_map: Dict[str, Dict[str, Any]],
+    comment: Optional[str] = None,
 ) -> None:
     instance_ids = [result["id"] for result in results if result.get("id")]
     instances = {instance.id: instance for instance in MCPServer.objects.filter(id__in=instance_ids)}
@@ -86,6 +87,7 @@ def record_mcp_server_sync_audits(
             instance_name=instance.name,
             data_before=data_before_map.get(instance.name, {}),
             data_after=get_model_dict(instance),
+            comment=comment,
         )
 
 
@@ -95,6 +97,7 @@ def record_mcp_server_permission_sync_audits(
     results: List[Dict[str, Any]],
     mcp_servers_data: List[Dict[str, Any]],
     data_before_map: Dict[str, Dict[str, Dict[str, Any]]],
+    comment: Optional[str] = None,
 ) -> None:
     app_codes_by_name = {
         result["name"]: mcp_data.get("target_app_codes", [])
@@ -135,4 +138,5 @@ def record_mcp_server_permission_sync_audits(
                 instance_name=app_code,
                 data_before=data_before,
                 data_after=get_model_dict(permission),
+                comment=comment,
             )

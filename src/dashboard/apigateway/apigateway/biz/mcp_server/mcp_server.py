@@ -186,6 +186,7 @@ class MCPServerHandler:
         stage_name: str,
         mcp_servers_data: List[Dict[str, Any]],
         username: str = "",
+        comment: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """批量创建或更新 MCP Server
 
@@ -255,6 +256,7 @@ class MCPServerHandler:
             gateway_id=gateway_id,
             results=results,
             data_before_map=data_before_map or {},
+            comment=comment,
         )
         record_mcp_server_permission_sync_audits(
             username=username,
@@ -262,6 +264,7 @@ class MCPServerHandler:
             results=results,
             mcp_servers_data=mcp_servers_data_for_audit,
             data_before_map=permission_data_before_map,
+            comment=comment,
         )
 
         return results
@@ -897,7 +900,12 @@ class MCPServerHandler:
         }
 
     @staticmethod
-    def disable_servers(gateway_id: int, stage_id: int = 0, username: str = "") -> None:
+    def disable_servers(
+        gateway_id: int,
+        stage_id: int = 0,
+        username: str = "",
+        comment: str = "",
+    ) -> None:
         """set the status of the servers to inactive
         e.g. gateway inactivated, stage offline, etc.
 
@@ -928,7 +936,7 @@ class MCPServerHandler:
                 instance_name=instance.name,
                 data_before=data_before_map.get(instance.id, {}),
                 data_after=get_model_dict(instance),
-                comment=_("停用 MCPServer"),
+                comment=comment or _("停用 MCPServer"),
             )
 
     # ========== Prompts 相关方法 ==========

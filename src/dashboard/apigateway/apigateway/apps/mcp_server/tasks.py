@@ -224,6 +224,7 @@ def sync_mcp_server_after_release(
     release_history_id: int,
     mcp_servers_data: List[Dict[str, Any]],
     username: str = "",
+    comment: Optional[str] = None,
 ):
     """等待发布完成后同步 MCP Server 数据到 DB
 
@@ -273,6 +274,7 @@ def sync_mcp_server_after_release(
             stage_name=stage_name,
             mcp_servers_data=mcp_servers_data,
             username=audit_username,
+            comment=comment,
         )
         logger.info(
             "sync_mcp_server_after_release: completed, %d mcp servers synced, gateway=%s(%d), stage=%s(%d)",

@@ -627,6 +627,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
 
         mcp_servers_data = serializer.validated_data["mcp_servers"]
         username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        audit_comment = _("同步 MCPServer")
 
         if is_releasing:
             sync_mcp_server_after_release.delay(
@@ -637,6 +638,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
                 release_history_id=stage_status_info["publish_id"],
                 mcp_servers_data=mcp_servers_data,
                 username=username,
+                comment=audit_comment,
             )
 
             results = [
@@ -657,6 +659,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
                 stage_name=stage.name,
                 mcp_servers_data=mcp_servers_data,
                 username=username,
+                comment=audit_comment,
             )
 
         output_slz = StageMcpServersSyncOutputSLZ(results, many=True)

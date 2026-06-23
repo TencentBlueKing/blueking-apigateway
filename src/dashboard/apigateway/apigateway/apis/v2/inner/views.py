@@ -42,10 +42,7 @@ from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionA
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.biz.mcp_server import (
-    MCPServerHandler,
-    MCPServerPermissionHandler,
-)
+from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import (
     AppPermissionBuilder,
     PermissionDimensionManager,
@@ -602,15 +599,14 @@ class MCPServerAppPermissionApplyCreateApi(generics.CreateAPIView):
             data["reason"],
             data["applied_by"],
         )
-        applies = list(queryset)
 
-        if not applies:
+        if queryset.count() == 0:
             raise error_codes.NOT_FOUND.format(
                 "请检查对应 mcp server /环境/网关是否都已启用。",
                 replace=True,
             )
 
-        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(applies, many=True)
+        output_slz = serializers.MCPServerAppPermissionApplyCreateOutputSLZ(queryset, many=True)
         return OKJsonResponse(status=status.HTTP_200_OK, data=output_slz.data)
 
 
@@ -928,6 +924,7 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
             MCPServerHandler.disable_servers(
                 gateway_id=instance.id,
                 username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
+                comment=_("网关停用，同步停用其 MCP Server"),
             )
 
         # 触发网关发布

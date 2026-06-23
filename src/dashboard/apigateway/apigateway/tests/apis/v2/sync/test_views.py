@@ -305,11 +305,12 @@ class TestSyncApi:
         )
         assert audit_log.username == settings.GATEWAY_DEFAULT_CREATOR
         assert audit_log.op_type == OpTypeEnum.CREATE.value
+        assert audit_log.comment == "同步 MCPServer"
         assert json.loads(audit_log.data_before) == {}
         assert json.loads(audit_log.data_after)["name"] == result["data"][0]["name"]
         permission_audit_logs = AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
-            comment="创建 MCPServer 应用权限",
+            comment="同步 MCPServer",
         )
         assert permission_audit_logs.count() == 2
         assert set(permission_audit_logs.values_list("op_object", flat=True)) == {"app1", "app2"}
@@ -373,11 +374,12 @@ class TestSyncApi:
         )
         assert audit_log.username == settings.GATEWAY_DEFAULT_CREATOR
         assert audit_log.op_type == OpTypeEnum.MODIFY.value
+        assert audit_log.comment == "同步 MCPServer"
         assert json.loads(audit_log.data_before)["status"] == 0
         assert json.loads(audit_log.data_after)["status"] == 1
         permission_audit_logs = AuditEventLog.objects.filter(
             op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
-            comment__in=["创建 MCPServer 应用权限", "更新 MCPServer 应用权限"],
+            comment="同步 MCPServer",
         )
         assert permission_audit_logs.count() == 2
         app_code_to_op_type = {log.op_object: log.op_type for log in permission_audit_logs}

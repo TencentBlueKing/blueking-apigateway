@@ -74,6 +74,7 @@ class TestSyncMcpServerAfterRelease:
             stage_name=fake_stage.name,
             mcp_servers_data=mcp_data,
             username="open-api-user",
+            comment=None,
         )
 
     def test_release_failed_skips_save(self, fake_gateway, fake_stage, release_history):

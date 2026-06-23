@@ -417,7 +417,11 @@ class GatewayUpdateStatusApi(generics.UpdateAPIView):
 
         # 网关停用时，将网关下所有 MCPServer 设置为停用
         if new_gateway_status == GatewayStatusEnum.INACTIVE.value:
-            MCPServerHandler.disable_servers(gateway_id=instance.id, username=request.user.username)
+            MCPServerHandler.disable_servers(
+                gateway_id=instance.id,
+                username=request.user.username,
+                comment=_("网关停用，同步停用其 MCP Server"),
+            )
 
         # 触发网关发布
         if is_need_publish:

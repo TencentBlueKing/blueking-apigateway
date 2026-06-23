@@ -1040,6 +1040,19 @@ msgstr "Update MCPServer"
 msgid "停用 MCPServer"
 msgstr "Disable MCPServer"
 
+#: apigateway/apis/v2/sync/views.py:630
+msgid "同步 MCPServer"
+msgstr "Sync MCPServer"
+
+#: apigateway/apis/v2/inner/views.py:927
+#: apigateway/apis/web/gateway/views.py:423
+msgid "网关停用，同步停用其 MCP Server"
+msgstr "Gateway disabled, automatically disable its MCP Servers"
+
+#: apigateway/apis/web/stage/views.py:430
+msgid "环境停用，同步停用其 MCP Server"
+msgstr "Stage disabled, automatically disable its MCP Servers"
+
 #: apigateway/apps/audit/constants.py:85
 msgid "删除 MCPServer"
 msgstr "Delete MCPServer"

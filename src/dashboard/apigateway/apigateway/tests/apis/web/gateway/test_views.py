@@ -396,7 +396,7 @@ class TestGatewayUpdateStatusApi:
                 op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
                 op_object_id=mcp_server.id,
             )
-            assert mcp_server_audit_log.comment == "停用 MCPServer"
+            assert mcp_server_audit_log.comment == "网关停用，同步停用其 MCP Server"
 
 
 class TestGatewayCheckNameAvailableApi:
