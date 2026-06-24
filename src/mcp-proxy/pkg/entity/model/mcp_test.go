@@ -277,7 +277,8 @@ var _ = Describe("MCP Models", func() {
 		})
 
 		Describe("Value", func() {
-			DescribeTable("serializes arrays correctly",
+			DescribeTable(
+				"serializes arrays correctly",
 				func(arr model.ArrayString, expected string) {
 					result, err := arr.Value()
 					Expect(err).NotTo(HaveOccurred())
@@ -285,7 +286,11 @@ var _ = Describe("MCP Models", func() {
 				},
 				Entry("empty array", model.ArrayString{}, ""),
 				Entry("single item", model.ArrayString{"item1"}, "item1"),
-				Entry("multiple items", model.ArrayString{"item1", "item2", "item3"}, "item1;item2;item3"),
+				Entry(
+					"multiple items",
+					model.ArrayString{"item1", "item2", "item3"},
+					"item1;item2;item3",
+				),
 				Entry("contains empty item", model.ArrayString{"item1", "", "item3"}, "item1;;item3"),
 			)
 		})
