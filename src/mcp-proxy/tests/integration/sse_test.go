@@ -1081,7 +1081,7 @@ var _ = Describe("SSE Protocol", func() {
 						"data": map[string]any{
 							"order_id":   9007199254740993,
 							"account_id": 9223372036854775807,
-							"items":      []any{1234567890123456789, 9876543210987654321},
+							"items":      []any{1234567890123456789, 8876543210987654321},
 						},
 					},
 				},
@@ -1096,7 +1096,7 @@ var _ = Describe("SSE Protocol", func() {
 			Expect(textContent.Text).To(ContainSubstring("9007199254740993"))
 			Expect(textContent.Text).To(ContainSubstring("9223372036854775807"))
 			Expect(textContent.Text).To(ContainSubstring("1234567890123456789"))
-			Expect(textContent.Text).To(ContainSubstring("9876543210987654321"))
+			Expect(textContent.Text).To(ContainSubstring("8876543210987654321"))
 		})
 	})
 })
