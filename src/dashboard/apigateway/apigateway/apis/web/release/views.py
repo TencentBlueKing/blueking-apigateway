@@ -336,7 +336,11 @@ class RelishHistoryEventsRetrieveAPI(generics.RetrieveAPIView):
     lookup_url_kwarg = "history_id"
 
     def get_queryset(self):
-        return ReleaseHistory.objects.filter(gateway=self.request.gateway).select_related("data_plane")
+        return ReleaseHistory.objects.filter(gateway=self.request.gateway).select_related(
+            "stage",
+            "resource_version",
+            "data_plane",
+        )
 
     def retrieve(self, request, *args, **kwargs):
         release_history = self.get_object()
