@@ -102,7 +102,7 @@ class MCPServerPermissionHandler:
         # 创建 ITSM 工单（不阻塞主流程）
         MCPServerPermissionHandler._create_itsm_tickets_for_applies(new_applies)
 
-        return new_applies
+        return new_applies.select_related("mcp_server")
 
     @staticmethod
     def _create_itsm_tickets_for_applies(applies):

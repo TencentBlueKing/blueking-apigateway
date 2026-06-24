@@ -24,6 +24,8 @@ from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
 import apigateway.apis.v2.open.views as open_views
+from apigateway.apps.audit.constants import OpObjectTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
@@ -112,6 +114,61 @@ class TestMCPServerAppPermissionApplyCreateApi:
         for item in result["data"]:
             assert "approval_url" in item
             assert f"/{fake_gateway.id}/mcp/permission?serverId={mcp_server.id}" in item["approval_url"]
+        apply = MCPServerAppPermissionApply.objects.get(bk_app_code="test_app", mcp_server=mcp_server)
+        assert not AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
+            op_object=str(apply),
+        ).exists()
+
+    def test_create_does_not_record_audit_logs(self, request_view, fake_gateway):
+        """测试批量申请 MCP Server 权限时，不记录申请单创建审计日志"""
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        same_gateway_mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        another_gateway = G(Gateway, status=GatewayStatusEnum.ACTIVE.value)
+        another_stage = G(Stage, gateway=another_gateway, status=StageStatusEnum.ACTIVE.value)
+        another_mcp_server = G(
+            MCPServer,
+            gateway=another_gateway,
+            stage=another_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply",
+            app=mock.MagicMock(app_code="test"),
+            data={
+                "bk_app_code": "test_app",
+                "mcp_server_ids": [mcp_server.id, same_gateway_mcp_server.id, another_mcp_server.id],
+                "reason": "test reason",
+                "applied_by": "test_user",
+            },
+        )
+
+        assert resp.status_code == 200
+        applies = MCPServerAppPermissionApply.objects.filter(bk_app_code="test_app")
+        assert applies.count() == 3
+        assert not AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
+            op_object__in=[str(apply) for apply in applies],
+        ).exists()
 
 
 class TestMCPServerAppPermissionRecordListApi:

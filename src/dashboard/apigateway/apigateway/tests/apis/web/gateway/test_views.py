@@ -20,9 +20,12 @@ from unittest.mock import ANY, patch
 import pytest
 from django_dynamic_fixture import G
 
+from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
+from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, ResourceVersion, Stage
@@ -368,6 +371,7 @@ class TestGatewayUpdateStatusApi:
         fake_gateway.status = old_gateway_status
         fake_gateway.save()
         stage = G(Stage, gateway=fake_gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage, status=MCPServerStatusEnum.ACTIVE.value)
         resource_version = G(ResourceVersion, gateway=fake_gateway)
         G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
 
@@ -385,6 +389,14 @@ class TestGatewayUpdateStatusApi:
             op_object=stage.name,
             comment=expected_comment,
         ).exists()
+        if new_gateway_status == GatewayStatusEnum.INACTIVE.value:
+            mcp_server.refresh_from_db()
+            assert mcp_server.status == MCPServerStatusEnum.INACTIVE.value
+            mcp_server_audit_log = AuditEventLog.objects.get(
+                op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+                op_object_id=mcp_server.id,
+            )
+            assert mcp_server_audit_log.comment == "网关停用，同步停用其 MCP Server"
 
 
 class TestGatewayCheckNameAvailableApi:
