@@ -4,7 +4,7 @@ from django.contrib.auth.models import AnonymousUser
 class TestGetCurrentInformation:
     def test_uses_app_tenant_for_anonymous_user_in_multi_tenant_mode(self, mocker, request_view):
         api_call = mocker.patch(
-            "apigateway.notice.views.api_call",
+            "bk_notice_sdk.views.api_call",
             return_value={
                 "result": True,
                 "code": 200,
@@ -18,13 +18,15 @@ class TestGetCurrentInformation:
         mocker.patch("apigateway.notice.views.config.DEFAULT_LANGUAGE", "en")
         mocker.patch("apigateway.notice.views.config.LANGUAGE_COOKIE_NAME", "blueking_language")
 
+        user = AnonymousUser()
         response = request_view(
             method="GET",
             view_name="notice:get_current_information",
-            user=AnonymousUser(),
+            user=user,
         )
 
         assert response.status_code == 200
+        assert user.tenant_id == "system"
         assert response.json()["data"] == [{"id": 1, "title": "announcement"}]
         api_call.assert_called_once_with(
             api_method="announcement_get_current_announcements",
@@ -36,7 +38,7 @@ class TestGetCurrentInformation:
 
     def test_uses_user_tenant_for_authenticated_user(self, mocker, request_view):
         api_call = mocker.patch(
-            "apigateway.notice.views.api_call",
+            "bk_notice_sdk.views.api_call",
             return_value={"result": True, "code": 200, "message": "ok", "data": []},
         )
         mocker.patch("apigateway.notice.views.config.ENABLE_MULTI_TENANT_MODE", True)
