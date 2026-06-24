@@ -117,7 +117,7 @@ urlpatterns = [
         name="mcp_server_log.logs.query.chain",
     ),
     # notice
-    path("backend/notice/", include(("bk_notice_sdk.urls", "notice"), namespace="notice")),
+    path("backend/notice/", include(("apigateway.notice.urls", "notice"), namespace="notice")),
 ]
 
 # 非多租户模式才会有 esb 相关的接口
