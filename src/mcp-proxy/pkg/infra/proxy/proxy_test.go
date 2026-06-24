@@ -1148,6 +1148,27 @@ var _ = Describe("MCPProxy", func() {
 			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("7643696123382648115"))
 			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("1750035600002"))
 		})
+
+		It("should treat explicit null body_param as empty (no body forwarded)", func() {
+			arguments := json.RawMessage(`{
+				"body_param": null
+			}`)
+
+			var handlerRequest HandlerRequest
+			decoder := json.NewDecoder(bytes.NewReader(arguments))
+			decoder.UseNumber()
+			err := decoder.Decode(&handlerRequest)
+			Expect(err).NotTo(HaveOccurred())
+
+			// json.RawMessage decodes JSON null as the literal bytes "null"
+			// but setHandlerRequestParams should skip it (preserve old behavior)
+			Expect(string(handlerRequest.BodyParam)).To(Equal("null"))
+			Expect(
+				len(handlerRequest.BodyParam) > 0 && string(handlerRequest.BodyParam) != "null",
+			).To(
+				BeFalse(),
+			)
+		})
 	})
 })
 

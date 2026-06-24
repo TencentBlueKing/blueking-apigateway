@@ -641,7 +641,7 @@ func setHandlerRequestParams(
 			}
 		}
 	}
-	if len(handlerRequest.BodyParam) > 0 {
+	if len(handlerRequest.BodyParam) > 0 && string(handlerRequest.BodyParam) != "null" {
 		if err := req.SetBodyParam(handlerRequest.BodyParam); err != nil {
 			auditLog.Error(
 				"set body param err",
