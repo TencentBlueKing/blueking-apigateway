@@ -641,7 +641,7 @@ func setHandlerRequestParams(
 			}
 		}
 	}
-	if handlerRequest.BodyParam != nil {
+	if len(handlerRequest.BodyParam) > 0 {
 		if err := req.SetBodyParam(handlerRequest.BodyParam); err != nil {
 			auditLog.Error("set body param err", zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
 			return err
@@ -919,7 +919,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditHeaderInfo    map[string]string
 			auditQueryParam    QueryParam
 			auditPathParam     StringParamMap
-			auditBodyParam     any
+			auditBodyParam     json.RawMessage
 		)
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段
