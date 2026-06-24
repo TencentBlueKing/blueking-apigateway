@@ -643,7 +643,11 @@ func setHandlerRequestParams(
 	}
 	if len(handlerRequest.BodyParam) > 0 {
 		if err := req.SetBodyParam(handlerRequest.BodyParam); err != nil {
-			auditLog.Error("set body param err", zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
+			auditLog.Error(
+				"set body param err",
+				zap.ByteString("body", handlerRequest.BodyParam),
+				zap.Error(err),
+			)
 			return err
 		}
 	}
