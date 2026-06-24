@@ -21,33 +21,44 @@
       <div class="flex items-center header-btn">
         <BkButton
           v-bk-tooltips="{
-            content: t('请选择待续期的权限'),
-            disabled: curSelections.length,
+            content: t('没有选中可续期的权限'),
+            disabled: renewableCount,
           }"
           theme="primary"
-          :disabled="!curSelections.length || !isBatchRenewal"
-          @click="handleBatchApplyPermission"
+          :disabled="!renewableCount || !isBatchRenewal"
+          @click="handleBatchRenew"
         >
-          {{ t("批量续期") }}
+          {{ t('批量续期') }}
         </BkButton>
         <BkButton
-          class="m-l-8px"
+          v-bk-tooltips="{
+            content: t('请选择待删除的权限'),
+            disabled: curSelections.length,
+          }"
+          class="ml-8px"
+          :disabled="!curSelections.length"
+          @click="handleBatchDelete"
+        >
+          {{ t('批量删除') }}
+        </BkButton>
+        <BkButton
+          class="ml-8px"
           :disabled="!tableData.length"
           @click="handleExport"
         >
-          {{ t("导出全部") }}
+          {{ t('导出全部') }}
         </BkButton>
         <BkButton
-          class="m-l-8px"
+          class="ml-8px"
           @click="handleAuthShow"
         >
-          {{ t("主动授权") }}
+          {{ t('主动授权') }}
         </BkButton>
       </div>
       <BkForm class="flex">
         <BkFormItem
           label=""
-          class="m-b-0"
+          class="mb-0"
           label-width="10"
         >
           <BkSearchSelect
@@ -74,7 +85,6 @@
         show-settings
         show-selection
         :show-first-full-row="curSelections.length > 0"
-        :disabled-check-selection="disabledSelection"
         :filter-value="filterData"
         :api-method="getTableData"
         :columns="tableColumns"
@@ -97,19 +107,19 @@
     <BatchRenewal
       v-model:expire-date="expireDays"
       v-model:slider-params="batchApplySliderConf"
-      :api-list="selectedApiPermList"
-      :resource-list="selectedResourcePermList"
-      :apply-count="applyCount"
-      @confirm="handleBatchConfirm"
+      :api-list="selectedRenewableApiPermList"
+      :resource-list="selectedRenewableResourcePermList"
+      :apply-count="renewableCount"
+      @confirm="handleBatchRenewalConfirm"
     />
 
     <!-- 单个续期 -->
     <RenewalDialog
       v-model:expire-date="expireDays"
-      v-model:dialog-params="ApplyDialogConf"
+      v-model:dialog-params="applyDialogConf"
       v-model:selections="curSelections"
-      :apply-count="applyCount"
-      @confirm="handleBatchConfirm"
+      :apply-count="renewableCount"
+      @confirm="handleBatchRenewalConfirm"
     />
 
     <!-- 删除权限 -->
@@ -117,6 +127,14 @@
       v-model:dialog-params="removeDialogConf"
       :permissions="curPermission"
       @confirm="handleRemovePermission"
+    />
+
+    <!-- 批量删除权限 -->
+    <BatchRemove
+      v-model:slider-params="batchRemoveSliderConf"
+      :api-list="selectedApiPermList"
+      :resource-list="selectedResourcePermList"
+      @confirm="handleBatchRemovalConfirm"
     />
   </div>
 </template>
@@ -130,6 +148,7 @@ import { useTableFilterChange } from '@/hooks/use-table-filter-change';
 import {
   type IAuthData,
   type IExportParams,
+  batchDeletePermission,
   batchUpdatePermission,
   deleteApiPermission,
   deleteResourcePermission,
@@ -146,6 +165,7 @@ import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import ProactiveAuthorization from '@/views/permission/app/components/ProactiveAuthorization.vue';
 import RenewalDialog from '@/views/permission/app/components/Renewal.vue';
 import BatchRenewal from '@/views/permission/app/components/BatchRenewal.vue';
+import BatchRemove from '@/views/permission/app/components/BatchRemove.vue';
 import DeletePermission from '@/views/permission/app/components/DeletePermission.vue';
 import AgTable from '@/components/ag-table/Index.vue';
 
@@ -255,7 +275,7 @@ const tableColumns = shallowRef<any[]>([
       return (
         <div>
           <Button
-            class="m-r-10px"
+            class="mr-10px"
             theme="primary"
             text
             v-bk-tooltips={{
@@ -314,7 +334,7 @@ const exportDropData = ref<IDropList[]>([
   },
 ]);
 // 主动授权config
-const authSliderConf = reactive({
+const authSliderConf = ref({
   isShow: false,
   isLoading: false,
   title: t('主动授权'),
@@ -332,21 +352,27 @@ const componentKey = ref(0);
 const expireDays = ref(0);
 const isBatchRenewal = ref(true);
 // 批量续期dialog
-const batchApplySliderConf = reactive({
+const batchApplySliderConf = ref({
   isShow: false,
   saveLoading: false,
   title: t('批量续期'),
 });
 // 单个续期 dialog
-const ApplyDialogConf = reactive({
+const applyDialogConf = ref({
   isShow: false,
   saveLoading: false,
   title: t('续期'),
 });
 // 删除dialog
-const removeDialogConf = reactive({
+const removeDialogConf = ref({
   isShow: false,
   title: '',
+});
+// 批量删除 slider
+const batchRemoveSliderConf = ref({
+  isShow: false,
+  saveLoading: false,
+  title: t('批量删除'),
 });
 // 导出参数
 const exportParams = ref<IExportParams>({ export_type: 'all' });
@@ -394,17 +420,22 @@ const tableData = ref([]);
 
 const apigwId = computed(() => gatewayStore.apigwId);
 // 可续期的数量
-const applyCount = computed(() => {
-  return curSelections.value.filter((item: IPermission) => item.renewable)
-    .length;
-});
+const renewableCount = computed(() => curSelections.value.filter((item: IPermission) => item.renewable).length);
 // 资源维度权限列表
 const selectedResourcePermList = computed(() =>
-  curSelections.value.filter((perm: IPermission) => ['resource'].includes(perm.grant_dimension)),
+  curSelections.value.filter((perm: IPermission) => perm.grant_dimension === 'resource'),
 );
 // 网关维度权限列表
 const selectedApiPermList = computed(() =>
-  curSelections.value.filter((perm: IPermission) => ['api'].includes(perm.grant_dimension)),
+  curSelections.value.filter((perm: IPermission) => perm.grant_dimension === 'api'),
+);
+// 资源维度可续期权限列表
+const selectedRenewableResourcePermList = computed(() =>
+  curSelections.value.filter((perm: IPermission) => perm.grant_dimension === 'resource' && perm.renewable),
+);
+// 网关维度可续期权限列表
+const selectedRenewableApiPermList = computed(() =>
+  curSelections.value.filter((perm: IPermission) => perm.grant_dimension === 'api' && perm.renewable),
 );
 
 // 监听搜索是否变化
@@ -440,11 +471,6 @@ const getTableData = async (params: Record<string, any> = {}) => {
   return results ?? [];
 };
 
-const disabledSelection = (row: any) => {
-  row.selectionTip = row.renewable ? '' : t('权限有效期大于 360 天时，暂无法续期');
-  return !row.renewable;
-};
-
 function getList() {
   tableRef.value?.fetchData(filterData.value, { resetPage: true });
 }
@@ -472,7 +498,6 @@ function handleSearch() {
   getList();
 }
 
-// AgTable emit 类型已修复，无需 ts-expect-error
 const handleSelectionChange = ({ selections }: { selections: any[] }) => {
   isBatchRenewal.value = true;
   curSelections.value = selections as IPermission[];
@@ -489,7 +514,7 @@ const handleFilterChange = (filterItem: any) => {
   getList();
 };
 
-function handleClearSelection() {
+const handleClearSelection = () => {
   tableRef.value?.handleResetSelection();
   curSelections.value = [];
   isBatchRenewal.value = false;
@@ -552,8 +577,8 @@ const handleExport = async () => {
 };
 
 // 确定续期
-const handleBatchConfirm = async () => {
-  batchApplySliderConf.saveLoading = true;
+const handleBatchRenewalConfirm = async () => {
+  batchApplySliderConf.value.saveLoading = true;
   const data = {
     resource_dimension_ids: [] as number[],
     gateway_dimension_ids: [] as number[],
@@ -575,33 +600,70 @@ const handleBatchConfirm = async () => {
       theme: 'success',
       message: t('续期成功！'),
     });
-    batchApplySliderConf.isShow = false;
-    ApplyDialogConf.isShow = false;
+    batchApplySliderConf.value.isShow = false;
+    applyDialogConf.value.isShow = false;
     handleClearSelection();
     getList();
   }
   finally {
-    batchApplySliderConf.saveLoading = false;
-    ApplyDialogConf.saveLoading = false;
+    batchApplySliderConf.value.saveLoading = false;
+    applyDialogConf.value.saveLoading = false;
   }
 };
 
 // 批量续期
-const handleBatchApplyPermission = () => {
-  batchApplySliderConf.isShow = true;
+const handleBatchRenew = () => {
+  batchApplySliderConf.value.isShow = true;
+};
+
+// 批量删除（暂未实现）
+const handleBatchDelete = () => {
+  batchRemoveSliderConf.value.isShow = true;
+};
+
+// 确定批量删除
+const handleBatchRemovalConfirm = async () => {
+  batchRemoveSliderConf.value.saveLoading = true;
+  const params: {
+    resource_dimension_ids?: number[]
+    gateway_dimension_ids?: number[]
+  } = {};
+  if (selectedResourcePermList.value.length > 0) {
+    params.resource_dimension_ids = selectedResourcePermList.value.map(
+      (permission: IPermission) => permission.id,
+    );
+  }
+  if (selectedApiPermList.value.length > 0) {
+    params.gateway_dimension_ids = selectedApiPermList.value.map(
+      (permission: IPermission) => permission.id,
+    );
+  }
+  try {
+    await batchDeletePermission(apigwId.value, params);
+    Message({
+      theme: 'success',
+      message: t('删除成功'),
+    });
+    batchRemoveSliderConf.value.isShow = false;
+    handleClearSelection();
+    getList();
+  }
+  finally {
+    batchRemoveSliderConf.value.saveLoading = false;
+  }
 };
 
 // 单个续期
 const handleSingleApply = (data: IPermission) => {
   isBatchRenewal.value = curSelections.value.length > 0;
   curSelections.value = [data];
-  ApplyDialogConf.isShow = true;
+  applyDialogConf.value.isShow = true;
 };
 
 const handleRemove = (data: IPermission) => {
   curPermission.value = data;
-  removeDialogConf.isShow = true;
-  removeDialogConf.title = t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code });
+  removeDialogConf.value.isShow = true;
+  removeDialogConf.value.title = t('确定要删除蓝鲸应用【{appCode}】的权限？', { appCode: curPermission.value.bk_app_code });
 };
 
 // 删除权限
@@ -610,7 +672,7 @@ const handleRemovePermission = async () => {
   const ids = [id!];
   const fetchMethod = ['resource'].includes(grant_dimension ?? '') ? deleteResourcePermission : deleteApiPermission;
   await fetchMethod(apigwId.value, { ids });
-  removeDialogConf.isShow = false;
+  removeDialogConf.value.isShow = false;
   Message({
     theme: 'success',
     message: t('删除成功！'),
@@ -621,7 +683,7 @@ const handleRemovePermission = async () => {
 
 // 主动授权
 const handleAuthShow = () => {
-  authSliderConf.isShow = true;
+  authSliderConf.value.isShow = true;
 };
 
 // 主动授权保存
