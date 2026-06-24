@@ -232,3 +232,15 @@ export async function exportPermissionList(apigwId: number, params: IAppPermissi
 export function batchUpdatePermission(apigwId: number, params: IAppPermissionRenewInputSLZ) {
   return http.post(`/gateways/${apigwId}/permissions/app-permissions/renew/`, params);
 }
+
+/**
+ *  批量删除权限
+ * @param apigwId 网关id
+ * @param params 删除参数
+ */
+export function batchDeletePermission(apigwId: number, params: {
+  resource_dimension_ids?: number[]
+  gateway_dimension_ids?: number[]
+}) {
+  return http.delete(`/gateways/${apigwId}/permissions/app-permissions/batch/`, params);
+}
