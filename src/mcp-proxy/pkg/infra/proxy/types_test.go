@@ -115,11 +115,11 @@ var _ = Describe("Types", func() {
 
 			It("should unmarshal from JSON string", func() {
 				jsonStr := `{
-					"header_param": {"Authorization": "Bearer token"},
-					"query_param": {"page": ["1"]},
-					"path_param": {"userId": "abc123"},
-					"body_param": {"data": "test"}
-				}`
+				"header_param": {"Authorization": "Bearer token"},
+				"query_param": {"page": ["1"]},
+				"path_param": {"userId": "abc123"},
+				"body_param": {"data": "test"}
+			}`
 
 				var request proxy.HandlerRequest
 				err := json.Unmarshal([]byte(jsonStr), &request)
@@ -132,6 +132,28 @@ var _ = Describe("Types", func() {
 				var body map[string]any
 				Expect(json.Unmarshal(request.BodyParam, &body)).To(Succeed())
 				Expect(body["data"]).To(Equal("test"))
+			})
+
+			It("should handle explicit null body_param", func() {
+				jsonStr := `{"body_param": null}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// json.RawMessage stores "null" literal bytes for JSON null
+				Expect(string(request.BodyParam)).To(Equal("null"))
+			})
+
+			It("should handle missing body_param as nil", func() {
+				jsonStr := `{"query_param": {"page": ["1"]}}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// omitempty + missing field = nil RawMessage
+				Expect(request.BodyParam).To(BeNil())
 			})
 		})
 	})
