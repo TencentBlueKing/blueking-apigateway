@@ -278,3 +278,32 @@ class TestAppPermissionExpiringSoonAlerter:
         result = alerter._get_permissions_expiring_soon()
 
         assert len(result[unique_id]) == 1
+
+    def test_send_alert_skip_failed_app(self, mocker):
+        alerter = AppPermissionExpiringSoonAlerter(30, [])
+        permissions = {
+            "missing-app": [{"gateway_name": "gateway", "grant_dimension": 1, "resource_name": "resource"}],
+            "valid-app": [{"gateway_name": "gateway", "grant_dimension": 1, "resource_name": "resource"}],
+        }
+
+        mocker.patch(
+            "apigateway.apps.permission.tasks.get_app_maintainers",
+            side_effect=[Exception("not found"), ["maintainer"]],
+        )
+        get_tenant_id = mocker.patch(
+            "apigateway.apps.permission.tasks.get_tenant_id_for_app_developers",
+            return_value="tenant-1",
+        )
+        mocker.patch("apigateway.apps.permission.tasks.render_to_string", return_value="mail-content")
+        mocker.patch("apigateway.apps.permission.tasks.read_file", return_value=b"logo")
+        send_mail = mocker.patch("apigateway.apps.permission.tasks.cmsi_component.send_mail")
+        log_exception = mocker.patch("apigateway.apps.permission.tasks.logger.exception")
+
+        alerter._send_alert(permissions)
+
+        log_exception.assert_called_once_with(
+            "failed to send app permission expiring soon alert for bk_app_code=%s",
+            "missing-app",
+        )
+        get_tenant_id.assert_called_once_with("valid-app")
+        send_mail.assert_called_once()
