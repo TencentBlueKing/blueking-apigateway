@@ -57,7 +57,7 @@ class RouteConvertor(GatewayResourceConvertor):
         routes: List[GatewayApisixModel] = []
 
         if not self._revoke_flag:
-            for resource in self._release_data.resource_version.data:
+            for resource in self._release_data.resource_configs:
                 route = self._convert_http_route(resource)
                 if route:
                     routes.append(route)
