@@ -1122,6 +1122,9 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
               objKey,
               objValue: pathValue,
             });
+
+            offset = resourceEditorRef.value?.getValue()
+              ?.search(regex) ?? -1;
           }
           catch {
             return {
@@ -1130,9 +1133,6 @@ const handleCheckData = async ({ changeView }: { changeView: boolean }) => {
               level: 'Error',
             };
           }
-
-          offset = resourceEditorRef.value?.getValue()
-            ?.search(regex) ?? -1;
           // 用 editor 的 api 找到 Position
           if (offset > -1) {
             position = resourceEditorRef.value?.getModel()
