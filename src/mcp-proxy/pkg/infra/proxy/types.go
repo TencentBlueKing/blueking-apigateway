@@ -111,8 +111,8 @@ func (m *QueryParam) UnmarshalJSON(data []byte) error {
 
 // HandlerRequest ...
 type HandlerRequest struct {
-	HeaderParam StringParamMap `json:"header_param,omitempty"`
-	QueryParam  QueryParam     `json:"query_param,omitempty"`
-	PathParam   StringParamMap `json:"path_param,omitempty"`
-	BodyParam   any            `json:"body_param,omitempty"`
+	HeaderParam StringParamMap  `json:"header_param,omitempty"`
+	QueryParam  QueryParam      `json:"query_param,omitempty"`
+	PathParam   StringParamMap  `json:"path_param,omitempty"`
+	BodyParam   json.RawMessage `json:"body_param,omitempty"`
 }
