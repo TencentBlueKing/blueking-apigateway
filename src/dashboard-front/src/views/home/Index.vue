@@ -302,6 +302,7 @@
                 >
                   <bk-tag
                     v-bk-tooltips="{
+                      disabled: item.status === 0,
                       content: item.operation_status?.source === 'apigateway'
                         ? t('网关过去 180 天没有任何调用量，请确认是否停用网关')
                         : t('网关过去 180 天没有任何调用量，请确认是否下架网关对应的插件应用') }"
@@ -310,6 +311,7 @@
                     {{ t('闲置') }}
                   </bk-tag>
                   <BkButton
+                    v-if="item.status !== 0"
                     theme="primary"
                     class="ml-8px inactive-btn"
                     text
