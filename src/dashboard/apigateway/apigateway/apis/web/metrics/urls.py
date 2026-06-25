@@ -18,7 +18,14 @@
 #
 from django.urls import include, path
 
-from .views import QueryInstantApi, QueryRangeApi, QuerySummaryApi, QuerySummaryCallerListApi, QuerySummaryExportApi
+from .views import (
+    QueryInstantApi,
+    QueryRangeApi,
+    QuerySummaryApi,
+    QuerySummaryCallerListApi,
+    QuerySummaryExportApi,
+    QuerySummaryResourceAppExportApi,
+)
 
 urlpatterns = [
     path("query-range/", QueryRangeApi.as_view(), name="metrics.query_range"),
@@ -30,6 +37,11 @@ urlpatterns = [
                 path("", QuerySummaryApi.as_view(), name="metrics.query_summary"),
                 path("caller/", QuerySummaryCallerListApi.as_view(), name="metrics.query_summary_caller"),
                 path("export/", QuerySummaryExportApi.as_view(), name="metrics.query_summary_export"),
+                path(
+                    "resource-app/export/",
+                    QuerySummaryResourceAppExportApi.as_view(),
+                    name="metrics.query_summary_resource_app_export",
+                ),
             ]
         ),
     ),

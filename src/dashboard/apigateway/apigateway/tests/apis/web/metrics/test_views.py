@@ -16,14 +16,16 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import csv
 import datetime
 import time
+from io import StringIO
 
 import pytest
 from ddf import G
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
-from apigateway.core.models import Resource
+from apigateway.core.models import Resource, Stage
 from apigateway.utils.time import utctime
 
 
@@ -437,3 +439,149 @@ class TestQuerySummaryExportApi:
         )
 
         assert response.status_code == 200
+
+
+class TestQuerySummaryResourceAppExportApi:
+    @pytest.fixture(autouse=True)
+    def setup_fixtures(self, fake_stage):
+        self.now = int(time.time())
+        self.stage_obj2 = G(Stage, gateway=fake_stage.gateway, name="stage2")
+        self.resource_obj1 = G(Resource, name="resource1", path="/resource1/", gateway=fake_stage.gateway)
+        self.resource_obj2 = G(Resource, name="resource2", path="/resource2/", gateway=fake_stage.gateway)
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=self.resource_obj1.id,
+            bk_app_code="app1",
+            total_count=100,
+            failed_count=10,
+            start_time=utctime(self.now).datetime,
+            end_time=utctime(self.now).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=self.resource_obj1.id,
+            bk_app_code="app1",
+            total_count=50,
+            failed_count=5,
+            start_time=utctime(self.now).datetime,
+            end_time=utctime(self.now).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=self.resource_obj1.id,
+            bk_app_code="app2",
+            total_count=200,
+            failed_count=20,
+            start_time=utctime(self.now).datetime,
+            end_time=utctime(self.now).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=fake_stage.name,
+            resource_id=self.resource_obj2.id,
+            bk_app_code="app1",
+            total_count=300,
+            failed_count=30,
+            start_time=utctime(self.now).datetime,
+            end_time=utctime(self.now).datetime,
+        )
+        G(
+            StatisticsAppRequestByDay,
+            gateway_id=fake_stage.gateway.id,
+            stage_name=self.stage_obj2.name,
+            resource_id=self.resource_obj1.id,
+            bk_app_code="app1",
+            total_count=400,
+            failed_count=40,
+            start_time=utctime(self.now).datetime,
+            end_time=utctime(self.now).datetime,
+        )
+
+    def _request_export(self, request_view, fake_stage, with_stage=True, **params):
+        data = {
+            "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+            "time_end": int(time.time()),
+        }
+        if with_stage:
+            data["stage_id"] = fake_stage.id
+        data.update(params)
+        return request_view(
+            "GET",
+            "metrics.query_summary_resource_app_export",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data=data,
+        )
+
+    def _get_csv_rows(self, response):
+        content = b"".join(response.streaming_content).decode(response.charset)
+        return list(csv.DictReader(StringIO(content)))
+
+    def test_get(self, request_view, fake_stage):
+        response = self._request_export(request_view, fake_stage)
+
+        assert response.status_code == 200
+        rows = self._get_csv_rows(response)
+        assert len(rows) == 3
+        assert rows[0]["网关"] == fake_stage.gateway.name
+        assert rows[0]["环境"] == fake_stage.name
+        assert rows[0]["资源名称"] == "resource1"
+        assert rows[0]["资源路径"] == "/resource1/"
+        assert rows[0]["蓝鲸应用"] == "app1"
+        assert rows[0]["请求总数"] == "150"
+        assert rows[0]["成功次数"] == "135"
+        assert rows[0]["失败次数"] == "15"
+
+    def test_get_by_resource_id(self, request_view, fake_stage):
+        response = self._request_export(request_view, fake_stage, resource_id=self.resource_obj1.id)
+
+        assert response.status_code == 200
+        rows = self._get_csv_rows(response)
+        assert len(rows) == 2
+        assert {row["资源名称"] for row in rows} == {"resource1"}
+
+    def test_get_by_bk_app_code(self, request_view, fake_stage):
+        response = self._request_export(request_view, fake_stage, bk_app_code="app1")
+
+        assert response.status_code == 200
+        rows = self._get_csv_rows(response)
+        assert len(rows) == 2
+        assert {row["蓝鲸应用"] for row in rows} == {"app1"}
+
+    def test_get_without_stage_id(self, request_view, fake_stage):
+        response = self._request_export(request_view, fake_stage, with_stage=False, bk_app_code="app1")
+
+        assert response.status_code == 200
+        rows = self._get_csv_rows(response)
+        assert len(rows) == 3
+        assert {row["环境"] for row in rows} == {fake_stage.name, self.stage_obj2.name}
+
+    def test_get_empty(self, request_view, fake_stage):
+        response = self._request_export(request_view, fake_stage, bk_app_code="not-exist")
+
+        assert response.status_code == 200
+        assert self._get_csv_rows(response) == []
+
+    def test_stage_not_found(self, request_view, fake_stage):
+        response = request_view(
+            "GET",
+            "metrics.query_summary_resource_app_export",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+            },
+            data={
+                "stage_id": 0,
+                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
+                "time_end": int(time.time()),
+            },
+        )
+
+        assert response.status_code == 404

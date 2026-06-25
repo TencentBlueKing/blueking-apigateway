@@ -34,6 +34,7 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.core.models import Resource, Stage
 from apigateway.service.prometheus import (
+    MetricsAppResourceSummaryFactory,
     MetricsInstantFactory,
     MetricsRangeFactory,
     MetricsSummaryFactory,
@@ -46,6 +47,7 @@ from .serializers import (
     MetricsQueryRangeInputSLZ,
     MetricsQuerySummaryCallerListInputSLZ,
     MetricsQuerySummaryInputSLZ,
+    MetricsQuerySummaryResourceAppExportInputSLZ,
 )
 
 
@@ -312,5 +314,89 @@ class QuerySummaryExportApi(generics.CreateAPIView):
         io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
         io_csv.writerow(header_row)
         io_csv.writerows(data)
+
+        return content.getvalue()
+
+
+class QuerySummaryResourceAppExportApi(generics.CreateAPIView):
+    @swagger_auto_schema(
+        decorator=swagger_auto_schema(
+            operation_description="资源-蓝鲸应用调用统计导出",
+            request_body=MetricsQuerySummaryResourceAppExportInputSLZ,
+            responses={status.HTTP_200_OK: ""},
+            tags=["WebAPI.Metrics"],
+        ),
+    )
+    def get(self, request, *args, **kwargs):
+        slz = MetricsQuerySummaryResourceAppExportInputSLZ(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        stage_name = None
+        if data.get("stage_id") is not None:
+            stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+            if not stage_name:
+                raise Http404
+
+        results = MetricsAppResourceSummaryFactory(
+            request.gateway.id,
+            stage_name,
+            data.get("resource_id", 0),
+            data.get("bk_app_code"),
+            data["time_start"],
+            data["time_end"],
+        ).list()
+
+        content = self._get_csv_content(request.gateway.name, data["time_start"], data["time_end"], results)
+        response = DownloadableResponse(
+            content,
+            filename=f"bk_apigw_resource_app_metrics_{self.request.gateway.name}.csv",
+        )
+        # use utf-8-sig for windows
+        response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
+
+        return response
+
+    def _get_csv_content(self, gateway_name: str, time_start: int, time_end: int, data: List[Any]) -> str:
+        headers = [
+            "gateway_name",
+            "stage_name",
+            "resource_name",
+            "resource_path",
+            "bk_app_code",
+            "total_count",
+            "success_count",
+            "failed_count",
+            "time_range",
+        ]
+        header_row = {
+            "gateway_name": _("网关"),
+            "stage_name": _("环境"),
+            "resource_name": _("资源名称"),
+            "resource_path": _("资源路径"),
+            "bk_app_code": _("蓝鲸应用"),
+            "total_count": _("请求总数"),
+            "success_count": _("成功次数"),
+            "failed_count": _("失败次数"),
+            "time_range": _("时间范围"),
+        }
+
+        time_range = "{} ~ {}".format(
+            timezone.datetime.fromtimestamp(time_start, timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M:%S"),
+            timezone.datetime.fromtimestamp(time_end, timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M:%S"),
+        )
+        rows = [
+            {
+                **obj,
+                "gateway_name": gateway_name,
+                "time_range": time_range,
+            }
+            for obj in data
+        ]
+
+        content = StringIO()
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv.writerow(header_row)
+        io_csv.writerows(rows)
 
         return content.getvalue()
