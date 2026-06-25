@@ -1,3 +1,23 @@
+<!-- 2026-06-25 -->
+# V1.22.1 Release Log
+
+### Bug Fixes
+
+- Fix: personal workbench todo table loading hidden when search conditions exist
+- Fix: optimize MCP Server display and search on personal workbench, support previous selection data display
+- Fix: fix alarm detail data not displayed issue
+- Fix: fix resource version internationalization issue
+- Fix: fix resource configuration table tag column filter error
+- Fix: mcp-proxy support querystring array parameter conversion error
+- Fix: mcp-proxy request body large integer precision issue
+
+### Other
+
+- Validate web MCPServer belongs to gateway
+- Validate resource ID when applying for permission to belong to released resources
+
+---
+
 <!-- 2026-05-15 -->
 # V1.22.0 Release Log
 
