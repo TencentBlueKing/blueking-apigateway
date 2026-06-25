@@ -1133,4 +1133,112 @@ var _ = Describe("Streamable HTTP Protocol", func() {
 			Expect(textContent.Text).To(ContainSubstring("limit=20"))
 		})
 	})
+
+	Describe("Large Integer Body Param Precision", func() {
+		It("should preserve large integers in body_param without precision loss", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Call echo tool with large integers that exceed float64 precision (>2^53)
+			// 7643696123382648115 is a typical large int64 value that loses precision
+			// if parsed through float64 intermediary
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"video_kol_item_list": []any{7643696123382648115},
+						"unique_id":           1750035600002,
+						"message":             "precision test",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			// go-httpbin /anything echoes back the JSON body in the "json" field
+			// Verify the large integer is preserved exactly
+			textContent, ok := result.Content[0].(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			// The response should contain the exact large integer, not a truncated/rounded version
+			Expect(textContent.Text).To(ContainSubstring("7643696123382648115"))
+			Expect(textContent.Text).To(ContainSubstring("1750035600002"))
+			// Ensure no scientific notation is present for these numbers
+			Expect(textContent.Text).NotTo(ContainSubstring("7.643"))
+			Expect(textContent.Text).NotTo(ContainSubstring("1.750"))
+		})
+
+		It("should preserve nested large integers in body_param", func() {
+			mcpURL := fmt.Sprintf("%s/%s/mcp", client.BaseURL, "test-http-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.StreamableClientTransport{
+				Endpoint:   mcpURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Test with nested structures containing large integers
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"message": "nested precision test",
+						"data": map[string]any{
+							"order_id":   9007199254740993,
+							"account_id": 9223372036854775807,
+							"items":      []any{1234567890123456789, 8876543210987654321},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			textContent, ok := result.Content[0].(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			// Verify all large integers are preserved
+			Expect(textContent.Text).To(ContainSubstring("9007199254740993"))
+			Expect(textContent.Text).To(ContainSubstring("9223372036854775807"))
+			Expect(textContent.Text).To(ContainSubstring("1234567890123456789"))
+			Expect(textContent.Text).To(ContainSubstring("8876543210987654321"))
+		})
+	})
 })

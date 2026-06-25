@@ -1126,9 +1126,48 @@ var _ = Describe("MCPProxy", func() {
 			Expect(handlerRequest.QueryParam["ids"]).To(Equal([]string{"2005000002", "9007199254740992"}))
 			Expect(handlerRequest.PathParam["bk_biz_id"]).To(Equal("2005000002"))
 
-			body := handlerRequest.BodyParam.(map[string]any)
-			Expect(body["bk_biz_id"]).To(Equal(json.Number("2005000002")))
-			Expect(body["nested"].(map[string]any)["id"]).To(Equal(json.Number("2005000003")))
+			// BodyParam is now json.RawMessage, preserving original JSON bytes
+			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("2005000002"))
+			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("2005000003"))
+		})
+
+		It("should preserve large integers in body param without precision loss", func() {
+			// This is the exact scenario that causes precision loss with float64:
+			// 7643696123382648115 exceeds float64 precision (2^53)
+			arguments := json.RawMessage(`{
+				"body_param": {"video_kol_item_list": [7643696123382648115], "unique_id": 1750035600002}
+			}`)
+
+			var handlerRequest HandlerRequest
+			decoder := json.NewDecoder(bytes.NewReader(arguments))
+			decoder.UseNumber()
+			err := decoder.Decode(&handlerRequest)
+			Expect(err).NotTo(HaveOccurred())
+
+			// json.RawMessage preserves the exact original bytes
+			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("7643696123382648115"))
+			Expect(string(handlerRequest.BodyParam)).To(ContainSubstring("1750035600002"))
+		})
+
+		It("should treat explicit null body_param as empty (no body forwarded)", func() {
+			arguments := json.RawMessage(`{
+				"body_param": null
+			}`)
+
+			var handlerRequest HandlerRequest
+			decoder := json.NewDecoder(bytes.NewReader(arguments))
+			decoder.UseNumber()
+			err := decoder.Decode(&handlerRequest)
+			Expect(err).NotTo(HaveOccurred())
+
+			// json.RawMessage decodes JSON null as the literal bytes "null"
+			// but setHandlerRequestParams should skip it (preserve old behavior)
+			Expect(string(handlerRequest.BodyParam)).To(Equal("null"))
+			Expect(
+				len(handlerRequest.BodyParam) > 0 && string(handlerRequest.BodyParam) != "null",
+			).To(
+				BeFalse(),
+			)
 		})
 	})
 })

@@ -35,7 +35,7 @@ var _ = Describe("Types", func() {
 					HeaderParam: proxy.StringParamMap{"Content-Type": "application/json"},
 					QueryParam:  proxy.QueryParam{"limit": {"10"}, "offset": {"0"}},
 					PathParam:   proxy.StringParamMap{"id": "123"},
-					BodyParam:   map[string]any{"name": "test"},
+					BodyParam:   json.RawMessage(`{"name":"test"}`),
 				}
 
 				data, err := json.Marshal(request)
@@ -48,7 +48,10 @@ var _ = Describe("Types", func() {
 				Expect(result.HeaderParam["Content-Type"]).To(Equal("application/json"))
 				Expect(result.QueryParam["limit"]).To(Equal([]string{"10"}))
 				Expect(result.PathParam["id"]).To(Equal("123"))
-				Expect(result.BodyParam.(map[string]any)["name"]).To(Equal("test"))
+
+				var body map[string]any
+				Expect(json.Unmarshal(result.BodyParam, &body)).To(Succeed())
+				Expect(body["name"]).To(Equal("test"))
 			})
 
 			It("should handle empty fields", func() {
@@ -77,13 +80,9 @@ var _ = Describe("Types", func() {
 
 			It("should handle complex body param", func() {
 				request := proxy.HandlerRequest{
-					BodyParam: map[string]any{
-						"user": map[string]any{
-							"name":  "John",
-							"email": "john@example.com",
-							"roles": []string{"admin", "user"},
-						},
-					},
+					BodyParam: json.RawMessage(
+						`{"user":{"name":"John","email":"john@example.com","roles":["admin","user"]}}`,
+					),
 				}
 
 				data, err := json.Marshal(request)
@@ -93,19 +92,34 @@ var _ = Describe("Types", func() {
 				err = json.Unmarshal(data, &result)
 				Expect(err).NotTo(HaveOccurred())
 
-				body := result.BodyParam.(map[string]any)
+				var body map[string]any
+				Expect(json.Unmarshal(result.BodyParam, &body)).To(Succeed())
 				user := body["user"].(map[string]any)
 				Expect(user["name"]).To(Equal("John"))
 				Expect(user["email"]).To(Equal("john@example.com"))
 			})
 
+			It("should preserve large integer precision in body param", func() {
+				jsonStr := `{
+					"body_param": {"video_kol_item_list": [7643696123382648115], "unique_id": 1750035600002}
+				}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// BodyParam is json.RawMessage, so it preserves the original bytes exactly
+				Expect(string(request.BodyParam)).To(ContainSubstring("7643696123382648115"))
+				Expect(string(request.BodyParam)).To(ContainSubstring("1750035600002"))
+			})
+
 			It("should unmarshal from JSON string", func() {
 				jsonStr := `{
-					"header_param": {"Authorization": "Bearer token"},
-					"query_param": {"page": ["1"]},
-					"path_param": {"userId": "abc123"},
-					"body_param": {"data": "test"}
-				}`
+				"header_param": {"Authorization": "Bearer token"},
+				"query_param": {"page": ["1"]},
+				"path_param": {"userId": "abc123"},
+				"body_param": {"data": "test"}
+			}`
 
 				var request proxy.HandlerRequest
 				err := json.Unmarshal([]byte(jsonStr), &request)
@@ -114,7 +128,32 @@ var _ = Describe("Types", func() {
 				Expect(request.HeaderParam["Authorization"]).To(Equal("Bearer token"))
 				Expect(request.QueryParam["page"]).To(Equal([]string{"1"}))
 				Expect(request.PathParam["userId"]).To(Equal("abc123"))
-				Expect(request.BodyParam.(map[string]any)["data"]).To(Equal("test"))
+
+				var body map[string]any
+				Expect(json.Unmarshal(request.BodyParam, &body)).To(Succeed())
+				Expect(body["data"]).To(Equal("test"))
+			})
+
+			It("should handle explicit null body_param", func() {
+				jsonStr := `{"body_param": null}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// json.RawMessage stores "null" literal bytes for JSON null
+				Expect(string(request.BodyParam)).To(Equal("null"))
+			})
+
+			It("should handle missing body_param as nil", func() {
+				jsonStr := `{"query_param": {"page": ["1"]}}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// omitempty + missing field = nil RawMessage
+				Expect(request.BodyParam).To(BeNil())
 			})
 		})
 	})
