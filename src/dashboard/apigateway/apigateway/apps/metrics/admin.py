@@ -21,6 +21,7 @@ from djangoql.admin import DjangoQLSearchMixin
 
 # Register your models here.
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 from apigateway.core.models import Gateway
 
 
@@ -37,13 +38,13 @@ class StatisticsRequestFilter(SimpleListFilter):
         return queryset
 
 
-class StatisticsGatewayRequestByDayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class StatisticsGatewayRequestByDayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway_id", "stage_name", "total_count", "failed_count", "start_time", "end_time"]
     list_filter = [StatisticsRequestFilter]
 
 
-class StatisticsAppRequestByDayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class StatisticsAppRequestByDayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway_id", "stage_name", "bk_app_code", "total_count", "failed_count", "start_time", "end_time"]
     list_filter = [StatisticsRequestFilter]

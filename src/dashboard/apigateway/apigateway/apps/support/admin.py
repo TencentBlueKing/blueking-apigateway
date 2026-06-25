@@ -19,16 +19,17 @@ from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
-class ResourceDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ResourceDocAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_id", "language", "source", "updated_by", "updated_time"]
     search_fields = ["id", "resource_id"]
     list_filter = ["gateway", "language", "source"]
 
 
-class ResourceDocVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ResourceDocVersionAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_version"]
     search_fields = ["gateway__id", "gateway__name"]
@@ -37,14 +38,14 @@ class ResourceDocVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     raw_id_fields = ["resource_version"]
 
 
-class ReleasedResourceDocAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ReleasedResourceDocAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "resource_version_id", "resource_id", "language"]
     list_filter = ["gateway", "language"]
     search_fields = ["resource_id"]
 
 
-class APISDKAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class APISDKAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",

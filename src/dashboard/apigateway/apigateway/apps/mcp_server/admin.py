@@ -25,9 +25,10 @@ from apigateway.apps.mcp_server.models import (
     MCPServerAppPermissionApply,
     MCPServerCategory,
 )
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
-class MCPServerCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class MCPServerCategoryAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     """MCPServer 分类管理"""
 
     djangoql_completion_enabled_by_default = False
@@ -53,7 +54,7 @@ class MCPServerCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """官方和精选分类的名称不允许修改"""
-        readonly_fields = ["created_time", "updated_time"]
+        readonly_fields = list(super().get_readonly_fields(request, obj))
         if obj and obj.is_special_category:
             readonly_fields.append("name")
         return readonly_fields
@@ -66,7 +67,7 @@ class MCPServerCategoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     is_special_category_display.boolean = True  # type: ignore
 
 
-class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class MCPServerAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
@@ -107,14 +108,14 @@ class MCPServerAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         return super().get_queryset(request).prefetch_related("categories")
 
 
-class MCPServerAppPermissionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class MCPServerAppPermissionAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "bk_app_code", "mcp_server", "expires", "grant_type", "created_time", "updated_time"]
     search_fields = ["bk_app_code", "mcp_server__name"]
     list_filter = ["mcp_server", "grant_type"]
 
 
-class MCPServerAppPermissionApplyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class MCPServerAppPermissionApplyAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",

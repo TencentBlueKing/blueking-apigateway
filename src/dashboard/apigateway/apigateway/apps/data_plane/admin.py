@@ -22,6 +22,7 @@ from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
 class DataPlaneAdminForm(forms.ModelForm):
@@ -112,7 +113,7 @@ class DataPlaneAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
 
 
 @admin.register(GatewayDataPlaneBinding)
-class GatewayDataPlaneBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class GatewayDataPlaneBindingAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
 
     list_display = [

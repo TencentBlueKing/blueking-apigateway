@@ -19,6 +19,7 @@
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 from apigateway.core.constants import ContextScopeTypeEnum
 from apigateway.core.models import (
     JWT,
@@ -39,7 +40,7 @@ from apigateway.core.models import (
 )
 
 
-class GatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class GatewayAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
@@ -57,33 +58,33 @@ class GatewayAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ["status", "is_public", "kind"]
 
 
-class StageAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class StageAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "gateway", "status", "created_by", "updated_by", "created_time", "updated_time"]
     search_fields = ["id", "name", "gateway__id", "gateway__name"]
     list_filter = ["gateway", "status"]
 
 
-class ResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ResourceAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "method", "path", "gateway", "proxy_id", "is_public"]
     search_fields = ["id", "name", "path"]
     list_filter = ["gateway"]
 
 
-class StageResourceDisabledAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class StageResourceDisabledAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["resource", "stage"]
     search_fields = ["resource__id"]
 
 
-class ProxyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ProxyAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "type", "resource", "backend"]
     search_fields = ["resource__id", "resource_name", "id"]
 
 
-class ResourceVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ResourceVersionAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "version", "schema_version", "created_by", "created_time"]
     search_fields = ["gateway__id", "gateway__name", "version"]
@@ -91,7 +92,7 @@ class ResourceVersionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     exclude = ["_data"]
 
 
-class ReleaseAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ReleaseAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway", "stage", "resource_version"]
     list_filter = ["gateway"]
@@ -99,7 +100,7 @@ class ReleaseAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     search_fields = ["gateway__id", "gateway__name"]
 
 
-class ReleasedResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ReleasedResourceAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "gateway",
@@ -113,7 +114,7 @@ class ReleasedResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     search_fields = ["resource_version_id", "resource_id", "resource_name", "gateway_name"]
 
 
-class ReleaseHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ReleaseHistoryAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "data_plane", "stage", "resource_version", "created_by", "created_time"]
     list_filter = ["gateway", "data_plane", "created_time"]
@@ -121,14 +122,14 @@ class ReleaseHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     raw_id_fields = ["resource_version"]
 
 
-class PublishEventAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class PublishEventAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway", "stage", "publish_id", "name", "status", "created_by", "created_time"]
     search_fields = ["gateway__id", "gateway__name", "publish_id"]
     list_filter = ["gateway", "status", "name"]
 
 
-class ContextAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class ContextAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "scope_type", "scope_id", "type"]
     list_filter = ["scope_type", "type"]
@@ -151,28 +152,28 @@ class ContextAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
         return queryset, use_distinct
 
 
-class JWTAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class JWTAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway"]
     search_fields = ["gateway__id", "gateway__name"]
     exclude = ["private_key"]
 
 
-class GatewayRelatedAppAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class GatewayRelatedAppAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["gateway", "bk_app_code"]
     search_fields = ["gateway__id", "gateway__name", "bk_app_code"]
     list_filter = ["gateway"]
 
 
-class BackendAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class BackendAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "type", "name", "description"]
     search_fields = ["name", "gateway__id", "gateway__name", "description"]
     list_filter = ["gateway"]
 
 
-class BackendConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class BackendConfigAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "backend", "stage", "config"]
     search_fields = ["gateway__id", "gateway__name", "backend_id"]

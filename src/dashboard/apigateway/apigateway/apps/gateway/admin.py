@@ -36,10 +36,12 @@ from django_celery_beat.admin import (
 from django_celery_beat.models import ClockedSchedule, CrontabSchedule, IntervalSchedule, PeriodicTask, SolarSchedule
 from djangoql.admin import DjangoQLSearchMixin
 
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
+
 from .models import GatewayAppBinding
 
 
-class GatewayAppBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class GatewayAppBindingAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "bk_app_code", "updated_time"]
     search_fields = ["gateway__id", "bk_app_code"]

@@ -19,9 +19,10 @@ from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.api_debug.models import APIDebugHistory
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
-class APIDebugHistoryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class APIDebugHistoryAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "stage", "resource_name", "created_by", "created_time"]
     search_fields = ["gateway__id", "gateway__name", "stage__id", "stage__name", "resource_name", "created_by"]
