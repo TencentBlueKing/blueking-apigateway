@@ -257,6 +257,9 @@ const {
 const TDesignTableRef = useTemplateRef<InstanceType<typeof PrimaryTable> & ITableMethod>('primaryTableRef');
 
 let radioClickHandler: ((e: Event) => void) | null = null;
+// 标记filterPopup是否已经触发过一次emit
+let hasEmitFilterPopup = false;
+
 const paramsData: Record<string, any> = ref({});
 
 const radioEl = ref<HTMLElement | undefined | null>(null);
@@ -641,14 +644,17 @@ const handleSettingChange = (setting: BkUiSettings) => {
 
 // 处理自定义重置功能和点击单选直接关闭弹框
 const handleRadioFilterClick = () => {
+  // 获取filterPopup内容区域，没获取到代表已关闭弹框重置默认值
+  const popupWrapper = document.querySelector('.t-table__filter-pop-wrapper');
+  if (!popupWrapper) {
+    hasEmitFilterPopup = false;
+  }
+
   setTimeout(() => {
     const filterIconEl = document.querySelector('.need-filter-icon-handler .t-table__filter-icon-wrap');
     const filterPopup = document.querySelector('.t-table__filter-pop-content');
     radioEl.value = filterPopup?.querySelector('.t-radio-group');
-    if (filterIconEl && filterPopup) {
-      // 抛出filter Icon点击事件用于处理相关功能业务
-      emit('filter-icon-click');
-    }
+
     if (radioEl.value) {
       const confirmBtn = document.querySelector('.t-table__filter--bottom-buttons > .t-button--theme-primary');
       // @ts-ignore
@@ -662,6 +668,12 @@ const handleRadioFilterClick = () => {
         }
       };
       radioEl.value.addEventListener('click', radioClickHandler);
+    }
+
+    // 抛出filter Icon点击事件用于处理相关功能业务
+    if (filterIconEl && !hasEmitFilterPopup) {
+      hasEmitFilterPopup = true;
+      emit('filter-icon-click');
     }
   }, 0);
 };
