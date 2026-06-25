@@ -1,5 +1,5 @@
 <!-- 2026-06-25 -->
-# V1.22.0 Release Log
+# V1.22.1 Release Log
 
 ### Bug Fixes
 
