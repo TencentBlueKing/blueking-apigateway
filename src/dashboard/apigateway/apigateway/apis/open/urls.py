@@ -70,7 +70,7 @@ from django.urls import include, path
 # 2. 使用新的协议，废弃旧的协议
 # 3. 统一 apis 改成 gateways, api_name 改成 gateway_name
 # 4. /api/v2/gateways/{gateway_name}/  开头
-# 5. 合并成同一套网关 bk-apigateway，去掉 bk-apigateway-inner, 给 inner 用的接口隐藏 + 主动授权
+# 5. 合并成同一套网关 bk-apigateway，给 inner 用的接口隐藏 + 主动授权
 
 
 urlpatterns = [

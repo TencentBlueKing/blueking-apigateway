@@ -6,11 +6,10 @@
 |---|---------------------|------|----------|
 | 1 | `v2_open_get_gateway_public_key` | URL 使用 `gateway/` 而非 `gateways/`（历史兼容），backend 转发到 core-api | 跳过代码层检查 |
 | 2 | `v2_open_get_gateway_public_key_new` | 同上，`gateways/` 版本，backend 转发到 core-api | 跳过代码层检查 |
-| 3 | bk-apigateway-inner 旧版资源 | `bk-apigateway-inner-resources.yaml` 是 Swagger 2.0 格式，与 `bk-apigateway-resources.yaml` 中 `v2_inner_*` 并行 | 不做格式比较，仅检查存在性 |
-| 4 | ESB 相关接口 | 仅在非多租户模式下注册（`if not settings.ENABLE_MULTI_TENANT_MODE`） | 检查时标注条件注册 |
-| 5 | core-api / mcp-proxy backend | 后端路径不指向 dashboard 代码 | 跳过代码层检查 |
-| 6 | `v2_open_oauth_protected_resource` | `.well-known` 路径，无需文档 | 跳过文档存在性检查 |
-| 7 | v1 旧版 API | `tags: [v1]` 的 API，代码不在 `apis/v2/` 目录下 | 跳过代码路径检查 |
+| 3 | ESB 相关接口 | 仅在非多租户模式下注册（`if not settings.ENABLE_MULTI_TENANT_MODE`） | 检查时标注条件注册 |
+| 4 | core-api / mcp-proxy backend | 后端路径不指向 dashboard 代码 | 跳过代码层检查 |
+| 5 | `v2_open_oauth_protected_resource` | `.well-known` 路径，无需文档 | 跳过文档存在性检查 |
+| 6 | v1 旧版 API | `tags: [v1]` 的 API，代码不在 `apis/v2/` 目录下 | 跳过代码路径检查 |
 
 ## 自动跳过规则
 
