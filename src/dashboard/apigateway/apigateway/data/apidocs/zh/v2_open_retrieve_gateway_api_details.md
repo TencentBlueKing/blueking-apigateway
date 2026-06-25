@@ -7,6 +7,19 @@
 - 包含完整的资源文档（Markdown 格式）
 - 包含 OpenAPI Schema 参数定义
 
+### v1 兼容映射
+
+用于承接原 v1 `get_released_resource` 能力，推荐新接入统一使用当前 v2 接口。
+
+| v1 operationId | v1 路径 | v2 operationId | v2 路径 |
+|----------------|---------|----------------|---------|
+| `get_released_resource` | `/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/{resource_name}/` | `v2_open_retrieve_gateway_api_details` | `/api/v2/open/gateways/{gateway_name}/resources/{resource_name}/?stage_name={stage_name}` |
+
+差异说明：
+- v1 使用 `api_name`，v2 使用 `gateway_name`
+- v1 的 `stage_name` 在 path 中，v2 详情接口通过 query 参数 `stage_name` 传入
+- v2 返回体中 `doc` 字段可能为 `null`（资源无文档时）
+
 ### 输入参数
 
 ### 路径参数
