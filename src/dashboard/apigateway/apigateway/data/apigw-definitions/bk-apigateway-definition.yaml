@@ -142,8 +142,8 @@ grant_permissions:
       - get_stages
       - get_released_resources
       - get_released_resource
-      - v2_open_list_gateway_resources
-      - v2_open_retrieve_gateway_api_details
+      - v2_open_get_released_resources
+      - v2_open_get_released_resource
       - v2_open_get_gateway
       - v2_open_list_gateways
 

@@ -2514,6 +2514,104 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: false
         descriptionEn: None
+  /api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/:
+    get:
+      operationId: v2_open_get_released_resources
+      description: 查询指定环境下已发布资源列表
+      tags:
+        - v2_open
+      parameters:
+        - in: path
+          name: gateway_name
+          description: 网关名称
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: stage_name
+          description: 环境名称
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回已发布资源列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Query released resources in stage
+  /api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/{resource_name}/:
+    get:
+      operationId: v2_open_get_released_resource
+      description: 查询指定环境下已发布资源详情
+      tags:
+        - v2_open
+      parameters:
+        - in: path
+          name: gateway_name
+          description: 网关名称
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: stage_name
+          description: 环境名称
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: resource_name
+          description: 资源名称
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回已发布资源详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/{resource_name}/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: [ ]
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: Query released resource detail in stage
   /api/v2/open/gateways/{gateway_name}/resources/{resource_name}/info/:
     get:
       operationId: v2_open_retrieve_gateway_resource_info

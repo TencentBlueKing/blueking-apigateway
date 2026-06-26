@@ -6,19 +6,6 @@
 - 支持 `fields` 参数指定需要返回的字段，逗号分隔
 - 不传 `fields` 时默认只返回 `id` 和 `name`，适用于 MCP Server 工具调用等需要减少上下文占用的场景
 
-### v1 兼容映射
-
-用于承接原 v1 `get_released_resources` 能力，推荐新接入统一使用当前 v2 接口。
-
-| v1 operationId | v1 路径 | v2 operationId | v2 路径 |
-|----------------|---------|----------------|---------|
-| `get_released_resources` | `/api/v1/apis/{api_name}/released/stages/{stage_name}/resources/` | `v2_open_list_gateway_resources` | `/api/v2/open/gateways/{gateway_name}/resources/` |
-
-差异说明：
-- v1 使用 `api_name`，v2 使用 `gateway_name`
-- v1 的 `stage_name` 在 path 中，v2 列表接口不要求 `stage_name`
-- v2 默认仅返回 `id`、`name`，如需更多字段请通过 `fields` 指定
-
 ### 输入参数
 
 ### 路径参数

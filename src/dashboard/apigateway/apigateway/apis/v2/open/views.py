@@ -26,7 +26,7 @@ from blue_krill.async_utils.django_utils import apply_async_on_commit
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -49,17 +49,19 @@ from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandl
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
+from apigateway.biz.resource_version import ResourceVersionHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Resource, Stage
+from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
-from apigateway.service.resource import get_resource_id_to_labels
+from apigateway.service.resource import get_resource_id_to_labels, get_resource_url_tmpl
 from apigateway.service.resource_version import get_resource_schema
+from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -703,6 +705,74 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
                 resource_data.name,
             )
             return None
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询指定环境下已发布资源列表",
+        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceListItemOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayReleasedResourceListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+
+    def list(self, request, gateway_name, stage_name, *args, **kwargs):
+        if not request.gateway.is_active_and_public:
+            raise Http404
+
+        resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id, stage_name=stage_name)
+        paginator = LimitOffsetPaginator(count=len(resources), offset=0, limit=len(resources))
+        output_slz = serializers.GatewayReleasedResourceListItemOutputSLZ(
+            resources,
+            many=True,
+            context={
+                "resource_url_tmpl": get_resource_url_tmpl(),
+                "gateway_name": request.gateway.name,
+                "stage_name": stage_name,
+            },
+        )
+        return OKJsonResponse(data=paginator.get_paginated_data(output_slz.data))
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询指定环境下已发布资源详情",
+        responses={status.HTTP_200_OK: serializers.GatewayReleasedResourceOutputSLZ()},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class GatewayReleasedResourceRetrieveApi(generics.RetrieveAPIView):
+    permission_classes = [OpenAPIV2GatewayNamePermission]
+    serializer_class = serializers.GatewayReleasedResourceOutputSLZ
+
+    def get_object(self):
+        if not self.request.gateway.is_active_and_public:
+            raise Http404
+
+        stage_name = self.kwargs["stage_name"]
+        resource_name = self.kwargs["resource_name"]
+
+        resource_version_id = Release.objects.get_released_resource_version_id(self.request.gateway.id, stage_name)
+        if not resource_version_id:
+            raise Http404
+
+        resource = ReleasedResource.objects.get_released_resource(
+            self.request.gateway.id, resource_version_id, resource_name
+        )
+        # 资源在已发布版本中不存在，或者资源未公开
+        if not resource or not resource["is_public"]:
+            raise Http404
+
+        resource["schema"] = get_resource_schema(resource_version_id, resource["id"])
+        return resource
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return OKJsonResponse(data=serializer.data)
 
 
 @method_decorator(
