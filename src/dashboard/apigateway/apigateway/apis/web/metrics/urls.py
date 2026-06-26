@@ -24,7 +24,6 @@ from .views import (
     QuerySummaryApi,
     QuerySummaryCallerListApi,
     QuerySummaryExportApi,
-    QuerySummaryResourceAppExportApi,
 )
 
 urlpatterns = [
@@ -37,11 +36,6 @@ urlpatterns = [
                 path("", QuerySummaryApi.as_view(), name="metrics.query_summary"),
                 path("caller/", QuerySummaryCallerListApi.as_view(), name="metrics.query_summary_caller"),
                 path("export/", QuerySummaryExportApi.as_view(), name="metrics.query_summary_export"),
-                path(
-                    "resource-app/export/",
-                    QuerySummaryResourceAppExportApi.as_view(),
-                    name="metrics.query_summary_resource_app_export",
-                ),
             ]
         ),
     ),

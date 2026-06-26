@@ -23,6 +23,7 @@ from io import StringIO
 
 import pytest
 from ddf import G
+from django.utils import timezone
 
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.core.models import Resource, Stage
@@ -421,27 +422,6 @@ class TestQuerySummaryCallerListApi:
 
 
 class TestQuerySummaryExportApi:
-    def test_get(self, request_view, fake_stage):
-        response = request_view(
-            "GET",
-            "metrics.query_summary_export",
-            path_params={
-                "gateway_id": fake_stage.gateway.id,
-            },
-            data={
-                "type": "gateway",
-                "stage_id": fake_stage.id,
-                "metrics": "requests_total",
-                "time_dimension": "day",
-                "time_start": int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()),
-                "time_end": int(time.time()),
-            },
-        )
-
-        assert response.status_code == 200
-
-
-class TestQuerySummaryResourceAppExportApi:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self, fake_stage):
         self.now = int(time.time())
@@ -514,7 +494,7 @@ class TestQuerySummaryResourceAppExportApi:
         data.update(params)
         return request_view(
             "GET",
-            "metrics.query_summary_resource_app_export",
+            "metrics.query_summary_export",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
@@ -526,9 +506,23 @@ class TestQuerySummaryResourceAppExportApi:
         return list(csv.DictReader(StringIO(content)))
 
     def test_get(self, request_view, fake_stage):
-        response = self._request_export(request_view, fake_stage)
+        time_start = int((datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp())
+        time_end = int(time.time())
+        response = self._request_export(request_view, fake_stage, time_start=time_start, time_end=time_end)
 
         assert response.status_code == 200
+        formatted_time_start = timezone.datetime.fromtimestamp(
+            time_start,
+            timezone.get_current_timezone(),
+        ).strftime("%Y%m%d%H%M%S")
+        formatted_time_end = timezone.datetime.fromtimestamp(
+            time_end,
+            timezone.get_current_timezone(),
+        ).strftime("%Y%m%d%H%M%S")
+        assert (
+            response["Content-Disposition"]
+            == f'attachment;filename="bk_apigw_resource_app_metrics_{fake_stage.gateway.name}_{formatted_time_start}_{formatted_time_end}.csv"'
+        )
         rows = self._get_csv_rows(response)
         assert len(rows) == 3
         assert rows[0]["网关"] == fake_stage.gateway.name
@@ -539,6 +533,7 @@ class TestQuerySummaryResourceAppExportApi:
         assert rows[0]["请求总数"] == "150"
         assert rows[0]["成功次数"] == "135"
         assert rows[0]["失败次数"] == "15"
+        assert "时间范围" not in rows[0]
 
     def test_get_by_resource_id(self, request_view, fake_stage):
         response = self._request_export(request_view, fake_stage, resource_id=self.resource_obj1.id)
@@ -573,7 +568,7 @@ class TestQuerySummaryResourceAppExportApi:
     def test_stage_not_found(self, request_view, fake_stage):
         response = request_view(
             "GET",
-            "metrics.query_summary_resource_app_export",
+            "metrics.query_summary_export",
             path_params={
                 "gateway_id": fake_stage.gateway.id,
             },
