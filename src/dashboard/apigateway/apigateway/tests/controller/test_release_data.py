@@ -150,6 +150,22 @@ class TestReleaseData:
         assert resource_version == mock_release.resource_version
         assert resource_version.pk == 101
 
+    def test_resource_configs_reuses_parsed_resource_version_data(self, mock_release, mocker):
+        """Large releases should parse resource_version.data once per release publish."""
+
+        class ResourceVersionStub:
+            pk = 101
+
+        data_property = mocker.PropertyMock(return_value=[{"id": 1, "plugins": []}])
+        ResourceVersionStub.data = data_property
+        mock_release.resource_version = ResourceVersionStub()
+
+        release_data = ReleaseData(mock_release)
+
+        assert release_data.resource_configs == [{"id": 1, "plugins": []}]
+        assert release_data.resource_configs == [{"id": 1, "plugins": []}]
+        assert data_property.call_count == 1
+
     def test_release_data_jwt_private_key(self, mock_release, mocker):
         """Test jwt_private_key cached property"""
         mocker.patch(

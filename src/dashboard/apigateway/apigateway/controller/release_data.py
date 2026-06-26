@@ -70,6 +70,10 @@ class ReleaseData:
         return self._release.resource_version
 
     @cached_property
+    def resource_configs(self) -> List[Dict[str, Any]]:
+        return self.resource_version.data
+
+    @cached_property
     def jwt_private_key(self) -> str:
         return GatewayJWTHandler.get_private_key(self.gateway.pk)
 
@@ -125,8 +129,7 @@ class ReleaseData:
         resource_id_to_plugins: Dict[int, List[PluginData]] = defaultdict(list)
 
         # 插件
-        resource_configs = self.resource_version.data
-        for resource in resource_configs:
+        for resource in self.resource_configs:
             resource_id_to_plugins[resource["id"]].extend(
                 [
                     PluginData(

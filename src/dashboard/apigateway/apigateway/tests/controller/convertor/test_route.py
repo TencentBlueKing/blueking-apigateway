@@ -37,7 +37,7 @@ class TestRouteConvertor:
         mock_data.gateway.name = "test-gateway"
         mock_data.stage.name = "test-stage"
         mock_data.stage.vars = {"env": "test"}
-        mock_data.resource_version.data = []
+        mock_data.resource_configs = []
         mock_data.get_resource_plugins.return_value = []
         return mock_data
 
