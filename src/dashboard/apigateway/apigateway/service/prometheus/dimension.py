@@ -554,13 +554,13 @@ class MetricsSummaryFactory:
     def __init__(
         self,
         gateway_id: int,
-        stage_name: str,
+        stage_name: Optional[str],
         resource_id: Optional[int],
         bk_app_code: Optional[str],
-        metrics: str,
-        time_dimension: str,
         time_start: int,
         time_end: int,
+        metrics: str = MetricsSummaryEnum.REQUESTS_TOTAL.value,
+        time_dimension: str = MetricsSummaryTimeDimensionEnum.DAY.value,
     ):
         self.gateway_id = gateway_id
         self.stage_name = stage_name
@@ -574,11 +574,12 @@ class MetricsSummaryFactory:
     def _build_query_params(self):
         query_params = {
             "gateway_id": self.gateway_id,
-            "stage_name": self.stage_name,
             "start_time__gte": timezone.datetime.fromtimestamp(self.time_start, timezone.get_current_timezone()),
-            "end_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
+            "start_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
         }
 
+        if self.stage_name:
+            query_params["stage_name"] = self.stage_name
         if self.bk_app_code:
             query_params["bk_app_code"] = self.bk_app_code
         if self.resource_id:
@@ -604,41 +605,7 @@ class MetricsSummaryFactory:
             .order_by("time_period")
         )
 
-
-class MetricsAppResourceSummaryFactory:
-    def __init__(
-        self,
-        gateway_id: int,
-        stage_name: Optional[str],
-        resource_id: Optional[int],
-        bk_app_code: Optional[str],
-        time_start: int,
-        time_end: int,
-    ):
-        self.gateway_id = gateway_id
-        self.stage_name = stage_name
-        self.resource_id = resource_id
-        self.bk_app_code = bk_app_code
-        self.time_start = time_start
-        self.time_end = time_end
-
-    def _build_query_params(self):
-        query_params = {
-            "gateway_id": self.gateway_id,
-            "start_time__gte": timezone.datetime.fromtimestamp(self.time_start, timezone.get_current_timezone()),
-            "start_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
-        }
-
-        if self.stage_name:
-            query_params["stage_name"] = self.stage_name
-        if self.resource_id:
-            query_params["resource_id"] = self.resource_id
-        if self.bk_app_code:
-            query_params["bk_app_code"] = self.bk_app_code
-
-        return query_params
-
-    def list(self) -> List[Dict[str, Any]]:
+    def export_list(self) -> List[Dict[str, Any]]:
         queryset = list(
             StatisticsAppRequestByDay.objects.filter(**self._build_query_params())
             .values("stage_name", "resource_id", "bk_app_code")

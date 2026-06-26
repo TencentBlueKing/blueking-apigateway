@@ -34,7 +34,6 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay
 from apigateway.core.models import Resource, Stage
 from apigateway.service.prometheus import (
-    MetricsAppResourceSummaryFactory,
     MetricsInstantFactory,
     MetricsRangeFactory,
     MetricsSummaryFactory,
@@ -217,14 +216,14 @@ class QuerySummaryApi(generics.ListAPIView):
             raise Http404
 
         queryset = MetricsSummaryFactory(
-            request.gateway.id,
-            stage_name,
-            data.get("resource_id", 0),
-            data.get("bk_app_code"),
-            data["metrics"],
-            data["time_dimension"],
-            data["time_start"],
-            data["time_end"],
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            bk_app_code=data.get("bk_app_code"),
+            time_start=data["time_start"],
+            time_end=data["time_end"],
+            metrics=data["metrics"],
+            time_dimension=data["time_dimension"],
         ).queryset()
         datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
 
@@ -252,7 +251,7 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
                 gateway_id=request.gateway.id,
                 stage_name=stage_name,
                 start_time__gte=timezone.datetime.fromtimestamp(data["time_start"], timezone.get_current_timezone()),
-                end_time__lte=timezone.datetime.fromtimestamp(data["time_end"], timezone.get_current_timezone()),
+                start_time__lte=timezone.datetime.fromtimestamp(data["time_end"], timezone.get_current_timezone()),
             )
             .values_list("bk_app_code", flat=True)
             .distinct()
@@ -281,14 +280,14 @@ class QuerySummaryExportApi(generics.CreateAPIView):
             if not stage_name:
                 raise Http404
 
-        results = MetricsAppResourceSummaryFactory(
-            request.gateway.id,
-            stage_name,
-            data.get("resource_id", 0),
-            data.get("bk_app_code"),
-            data["time_start"],
-            data["time_end"],
-        ).list()
+        results = MetricsSummaryFactory(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            bk_app_code=data.get("bk_app_code"),
+            time_start=data["time_start"],
+            time_end=data["time_end"],
+        ).export_list()
 
         content = self._get_csv_content(request.gateway.name, data["time_start"], data["time_end"], results)
         response = DownloadableResponse(
