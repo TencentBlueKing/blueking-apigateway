@@ -255,17 +255,17 @@ const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
 
 const syncParamsToCharts = () => {
   const params = { ...searchParams.value };
-  requestsRef.value?.syncParams(params as any);
-  successRequestsRef.value?.syncParams(params as any);
-  errorRequestsRef.value?.syncParams(params as any);
-  methodRequestsRef.value?.syncParams(params as any);
-  appRequestsRef.value?.syncParams(params as any);
-  toolRequestsRef.value?.syncParams(params as any);
-  requestBodySizeRef.value?.syncParams(params as any);
-  responseBodySizeRef.value?.syncParams(params as any);
-  responseTime50Ref.value?.syncParams(params as any);
-  responseTime95Ref.value?.syncParams(params as any);
-  responseTime99Ref.value?.syncParams(params as any);
+  requestsRef.value?.syncParams(params);
+  successRequestsRef.value?.syncParams(params);
+  errorRequestsRef.value?.syncParams(params);
+  methodRequestsRef.value?.syncParams(params);
+  appRequestsRef.value?.syncParams(params);
+  toolRequestsRef.value?.syncParams(params);
+  requestBodySizeRef.value?.syncParams(params);
+  responseBodySizeRef.value?.syncParams(params);
+  responseTime50Ref.value?.syncParams(params);
+  responseTime95Ref.value?.syncParams(params);
+  responseTime99Ref.value?.syncParams(params);
 };
 
 const handleClearParams = () => {
