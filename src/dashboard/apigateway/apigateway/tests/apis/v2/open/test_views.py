@@ -1260,6 +1260,113 @@ class TestGatewayResourceRetrieveByNameApi:
         assert response.status_code == 404
 
 
+class TestGatewayReleasedResourceListApi:
+    def test_list_by_stage(self, settings, mocker, request_to_view, request_factory, fake_gateway):
+        settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{resource_path}"
+
+        mocked_resources = [
+            {
+                "id": 1,
+                "name": "test",
+                "description": "test",
+                "method": "GET",
+                "path": "/test/",
+                "match_subpath": False,
+                "enable_websocket": False,
+                "app_verified_required": True,
+                "resource_perm_required": True,
+                "user_verified_required": True,
+            }
+        ]
+        get_released_public_resources_mock = mocker.patch(
+            "apigateway.apis.v2.open.views.ResourceVersionHandler.get_released_public_resources",
+            return_value=mocked_resources,
+        )
+
+        request = request_factory.get("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.released_resources.list",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": "prod"},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["name"] == "test"
+        get_released_public_resources_mock.assert_called_once_with(fake_gateway.id, stage_name="prod")
+
+
+class TestGatewayReleasedResourceRetrieveApi:
+    def test_retrieve(self, mocker, request_to_view, request_factory, fake_gateway):
+        get_released_resource_version_id_mock = mocker.patch(
+            "apigateway.apis.v2.open.views.Release.objects.get_released_resource_version_id",
+            return_value=1,
+        )
+        get_released_resource_mock = mocker.patch(
+            "apigateway.apis.v2.open.views.ReleasedResource.objects.get_released_resource",
+            return_value={
+                "is_public": True,
+                "id": 1,
+                "name": "test",
+                "method": "GET",
+                "path": "/test/",
+            },
+        )
+        get_resource_schema_mock = mocker.patch(
+            "apigateway.apis.v2.open.views.get_resource_schema",
+            return_value={"parameters": []},
+        )
+
+        request = request_factory.get("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.released_resources.retrieve",
+            path_params={
+                "gateway_name": fake_gateway.name,
+                "stage_name": "prod",
+                "resource_name": "test",
+            },
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"]["name"] == "test"
+        assert result["data"]["schema"] == {"parameters": []}
+        get_released_resource_version_id_mock.assert_called_once_with(fake_gateway.id, "prod")
+        get_released_resource_mock.assert_called_once_with(fake_gateway.id, 1, "test")
+        get_resource_schema_mock.assert_called_once_with(1, 1)
+
+    def test_retrieve_not_found(self, mocker, request_to_view, request_factory, fake_gateway):
+        mocker.patch(
+            "apigateway.apis.v2.open.views.Release.objects.get_released_resource_version_id",
+            return_value=1,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.open.views.ReleasedResource.objects.get_released_resource",
+            return_value=None,
+        )
+
+        request = request_factory.get("")
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.released_resources.retrieve",
+            path_params={
+                "gateway_name": fake_gateway.name,
+                "stage_name": "prod",
+                "resource_name": "not-exist",
+            },
+        )
+
+        assert response.status_code == 404
+
+
 class TestGatewayResourceListApiKeyword:
     def test_list_with_keyword_matches_name(self, request_to_view, request_factory, fake_gateway):
         G(

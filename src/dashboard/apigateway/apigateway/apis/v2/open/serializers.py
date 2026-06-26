@@ -39,11 +39,13 @@ from apigateway.biz.permission import PermissionDimensionManager, ResourcePermis
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.models import Resource
+from apigateway.core.utils import get_path_display
 from apigateway.service.mcp import (
     build_mcp_server_application_url,
     build_mcp_server_detail_url,
     build_mcp_server_permission_approval_url,
 )
+from apigateway.service.utils import get_resource_url
 
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
@@ -790,6 +792,45 @@ class GatewayResourceRetrieveByNameOutputSLZ(serializers.Serializer):
 
     def get_path(self, obj):
         return obj.path_display
+
+
+class GatewayReleasedResourceOutputSLZ(serializers.Serializer):
+    """已发布资源详情输出"""
+
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    method = serializers.CharField(read_only=True)
+    path = serializers.CharField(read_only=True)
+    schema = serializers.DictField(read_only=True, help_text="参数协议")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceOutputSLZ"
+
+
+class GatewayReleasedResourceListItemOutputSLZ(serializers.Serializer):
+    """已发布资源列表项输出"""
+
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = SerializerTranslatedField(translated_fields={"en": "description_en"})
+    method = serializers.CharField(read_only=True)
+    url = serializers.SerializerMethodField()
+    match_subpath = serializers.BooleanField(read_only=True)
+    enable_websocket = serializers.BooleanField(read_only=True)
+    app_verified_required = serializers.BooleanField(read_only=True)
+    resource_perm_required = serializers.BooleanField(read_only=True)
+    user_verified_required = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.open.serializers.GatewayReleasedResourceListItemOutputSLZ"
+
+    def get_url(self, obj):
+        return get_resource_url(
+            resource_url_tmpl=self.context["resource_url_tmpl"],
+            gateway_name=self.context["gateway_name"],
+            stage_name=self.context["stage_name"],
+            resource_path=get_path_display(obj["path"], obj["match_subpath"]),
+        )
 
 
 class MCPServerBatchQueryInputSLZ(serializers.Serializer):
