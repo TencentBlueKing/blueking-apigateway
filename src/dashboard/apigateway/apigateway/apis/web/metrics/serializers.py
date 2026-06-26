@@ -67,19 +67,11 @@ class MetricsQueryInstantInputSLZ(serializers.Serializer):
         return data
 
 
-class MetricsQuerySummaryInputSLZ(serializers.Serializer):
-    stage_id = serializers.IntegerField(required=True, help_text="环境 id")
+class MetricsQuerySummaryBaseInputSLZ(serializers.Serializer):
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
     bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="app code")
-    metrics = serializers.ChoiceField(choices=MetricsSummaryEnum.get_choices(), help_text="metric 类型")
-    time_dimension = serializers.ChoiceField(
-        choices=MetricsSummaryTimeDimensionEnum.get_choices(), help_text="时间维度"
-    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.metrics.serializers.MetricsQuerySummaryInputSLZ"
 
     def validate(self, data):
         if not (data.get("time_start") and data.get("time_end")):
@@ -89,6 +81,24 @@ class MetricsQuerySummaryInputSLZ(serializers.Serializer):
         if data["time_start"] < time_interval:
             raise serializers.ValidationError(_("查询时间范围不可超过半年"))
         return data
+
+
+class MetricsQuerySummaryInputSLZ(MetricsQuerySummaryBaseInputSLZ):
+    stage_id = serializers.IntegerField(required=True, help_text="环境 id")
+    metrics = serializers.ChoiceField(choices=MetricsSummaryEnum.get_choices(), help_text="metric 类型")
+    time_dimension = serializers.ChoiceField(
+        choices=MetricsSummaryTimeDimensionEnum.get_choices(), help_text="时间维度"
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.metrics.serializers.MetricsQuerySummaryInputSLZ"
+
+
+class MetricsQuerySummaryExportInputSLZ(MetricsQuerySummaryBaseInputSLZ):
+    stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境 id")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.metrics.serializers.MetricsQuerySummaryExportInputSLZ"
 
 
 class MetricsQuerySummaryCallerListInputSLZ(serializers.Serializer):
@@ -102,26 +112,6 @@ class MetricsQuerySummaryCallerListInputSLZ(serializers.Serializer):
     def validate(self, data):
         if not (data.get("time_start") and data.get("time_end")):
             raise serializers.ValidationError(_("参数 time_start+time_end 必须同时有效。"))
-
-        time_interval = int((timezone.now() - relativedelta(months=6)).timestamp())
-        if data["time_start"] < time_interval:
-            raise serializers.ValidationError(_("查询时间范围不可超过半年"))
-        return data
-
-
-class MetricsQuerySummaryResourceAppExportInputSLZ(serializers.Serializer):
-    stage_id = serializers.IntegerField(allow_null=True, required=False, help_text="环境 id")
-    resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
-    bk_app_code = serializers.CharField(allow_blank=True, required=False, help_text="app code")
-    time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
-    time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
-
-    class Meta:
-        ref_name = "apigateway.apis.web.metrics.serializers.MetricsQuerySummaryResourceAppExportInputSLZ"
-
-    def validate(self, data):
-        if not (data.get("time_start") and data.get("time_end")):
-            raise serializers.ValidationError(_("缺少 time_start 或 time_end 参数。"))
 
         time_interval = int((timezone.now() - relativedelta(months=6)).timestamp())
         if data["time_start"] < time_interval:

@@ -45,8 +45,8 @@ from .serializers import (
     MetricsQueryInstantInputSLZ,
     MetricsQueryRangeInputSLZ,
     MetricsQuerySummaryCallerListInputSLZ,
+    MetricsQuerySummaryExportInputSLZ,
     MetricsQuerySummaryInputSLZ,
-    MetricsQuerySummaryResourceAppExportInputSLZ,
 )
 
 
@@ -264,13 +264,13 @@ class QuerySummaryExportApi(generics.CreateAPIView):
     @swagger_auto_schema(
         decorator=swagger_auto_schema(
             operation_description="资源-蓝鲸应用调用统计导出",
-            request_body=MetricsQuerySummaryResourceAppExportInputSLZ,
+            request_body=MetricsQuerySummaryExportInputSLZ,
             responses={status.HTTP_200_OK: ""},
             tags=["WebAPI.Metrics"],
         ),
     )
     def get(self, request, *args, **kwargs):
-        slz = MetricsQuerySummaryResourceAppExportInputSLZ(data=request.query_params)
+        slz = MetricsQuerySummaryExportInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
