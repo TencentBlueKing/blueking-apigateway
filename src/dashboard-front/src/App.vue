@@ -68,14 +68,25 @@
                   <span class="text">{{ item.name }}</span>
                 </div>
               </template>
-              <!-- 开发者中心菜单项 -->
               <div
-                v-if="envStore.env.PAAS_DEVELOPER_CENTER_LINK"
-                class="header-nav-item dev-center"
+                v-if="showMicroGatewayNav || showDevCenterNav"
+                class="header-nav-divider"
+              />
+              <!-- 微网关导航项 -->
+              <div
+                v-if="showMicroGatewayNav"
+                class="header-nav-item mr-40px"
+                @click="handleMicroGatewayClick"
+              >
+                <div>{{ t('微网关') }}</div>
+              </div>
+              <!-- 开发者中心导航项 -->
+              <div
+                v-if="showDevCenterNav"
+                class="header-nav-item"
                 @click="handleDeveloperCenterClick"
               >
-                <div class="divider" />
-                <div>{{ t('开发者中心') }}</div>
+                {{ t('开发者中心') }}
               </div>
             </div>
             <div class="header-aside-wrap">
@@ -190,24 +201,17 @@ const menuList = ref<IHeaderNav[]>([
     link: '',
   },
   {
-    name: t('个人工作台'),
+    name: 'BK-CLI',
     id: 6,
-    url: 'PersonalWorkbench',
-    enabled: true,
+    url: 'BkCli',
+    enabled: false,
     link: '',
   },
   {
-    name: t('微网关'),
+    name: t('个人工作台'),
     id: 7,
-    url: envStore.env.BK_APISIX_URL,
-    enabled: envStore.env.EDITION === 'te',
-    link: envStore.env.BK_APISIX_URL,
-  },
-  {
-    name: 'BK-CLI',
-    id: 8,
-    url: 'BkCli',
-    enabled: false,
+    url: 'PersonalWorkbench',
+    enabled: true,
     link: '',
   },
 ]);
@@ -224,6 +228,10 @@ const apigwId = computed(() => {
 });
 
 const noticeApi = computed(() => `${envStore.env.BK_DASHBOARD_FE_URL}/backend/notice/announcements/`);
+
+const showMicroGatewayNav = computed(() => envStore.env.EDITION === 'te' && envStore.env.BK_APISIX_URL);
+
+const showDevCenterNav = computed(() => !!envStore.env.PAAS_DEVELOPER_CENTER_LINK);
 
 const fetchInitData = async () => {
   await getUserInfo();
@@ -349,6 +357,12 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
   featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
 };
 
+const handleMicroGatewayClick = () => {
+  if (envStore.env.EDITION === 'te' && envStore.env.BK_APISIX_URL) {
+    window.open(envStore.env.BK_APISIX_URL);
+  }
+};
+
 const handleDeveloperCenterClick = () => {
   if (envStore.env.PAAS_DEVELOPER_CENTER_LINK) {
     window.open(envStore.env.PAAS_DEVELOPER_CENTER_LINK);
@@ -423,21 +437,14 @@ const handleDeveloperCenterClick = () => {
               color: #D3D9E4;
             }
           }
+        }
 
-          // 开发者中心菜单项
-
-          &.dev-center {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-            margin-left: -15px;
-
-            .divider {
-              width: 1px;
-              height: 16px;
-              background-color: #444a57;
-            }
-          }
+        .header-nav-divider {
+          width: 1px;
+          height: 21px;
+          margin-right: 25px;
+          margin-left: -15px;
+          background-color: #444a57;
         }
       }
 
