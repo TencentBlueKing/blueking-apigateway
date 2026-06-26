@@ -68,6 +68,15 @@
                   <span class="text">{{ item.name }}</span>
                 </div>
               </template>
+              <!-- 开发者中心菜单项 -->
+              <div
+                v-if="envStore.env.PAAS_DEVELOPER_CENTER_LINK"
+                class="header-nav-item dev-center"
+                @click="handleDeveloperCenterClick"
+              >
+                <div class="divider" />
+                <div>{{ t('开发者中心') }}</div>
+              </div>
             </div>
             <div class="header-aside-wrap">
               <LanguageToggle />
@@ -144,20 +153,7 @@ const curLeavePageData = ref({});
 // 是否配置了bk用户名配置，配置了才能渲染 bk-user-name 组件
 const isBkUserNameConfigured = ref(false);
 
-const bkuiLocale = computed(() => {
-  if (locale.value === 'zh-cn') {
-    return ZhCn;
-  }
-  return En;
-});
-
-const apigwId = computed(() => {
-  return route.params.id;
-});
-
-const noticeApi = computed(() => `${envStore.env.BK_DASHBOARD_FE_URL}/backend/notice/announcements/`);
-
-const menuList: IHeaderNav[] = [
+const menuList = ref<IHeaderNav[]>([
   {
     name: t('我的网关'),
     id: 1,
@@ -207,7 +203,27 @@ const menuList: IHeaderNav[] = [
     enabled: envStore.env.EDITION === 'te',
     link: envStore.env.BK_APISIX_URL,
   },
-];
+  {
+    name: 'BK-CLI',
+    id: 8,
+    url: 'BkCli',
+    enabled: false,
+    link: '',
+  },
+]);
+
+const bkuiLocale = computed(() => {
+  if (locale.value === 'zh-cn') {
+    return ZhCn;
+  }
+  return En;
+});
+
+const apigwId = computed(() => {
+  return route.params.id;
+});
+
+const noticeApi = computed(() => `${envStore.env.BK_DASHBOARD_FE_URL}/backend/notice/announcements/`);
 
 const fetchInitData = async () => {
   await getUserInfo();
@@ -221,7 +237,7 @@ watch(
       return;
     }
     const { meta } = route;
-    activeIndex.value = menuList.findIndex(menu => menu.url === meta?.topMenu);
+    activeIndex.value = menuList.value.findIndex(menu => menu.url === meta?.topMenu);
     if (activeIndex.value === -1) {
       activeIndex.value = 0;
     }
@@ -255,9 +271,18 @@ async function getFlagList() {
     featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
     featureFlagStore.setDisplayComManagement(isEnabledComManagement);
 
-    const comNav = menuList.find(item => ['ComponentsMain'].includes(item.url));
+    const comNav = menuList.value.find(item => ['ComponentsMain'].includes(item.url));
     if (comNav) {
       comNav.enabled = isEnabledComManagement;
+    }
+
+    // 如果开启了bk-cli菜单，则需要将bk-cli菜单显示出来
+    const isBkCliEnabled = featureFlagStore.flags?.ENABLE_BK_CLI;
+    if (isBkCliEnabled) {
+      const menuItem = menuList.value.find(menu => menu.url === 'BkCli');
+      if (menuItem) {
+        menuItem.enabled = true;
+      }
     }
   }
   finally {
@@ -322,6 +347,12 @@ const handleLogoClick = () => {
 const handleShowAlertChange = (isShowNotice: boolean) => {
   showNoticeAlert.value = isShowNotice;
   featureFlagStore.setNoticeAlert(enableShowNotice.value && showNoticeAlert.value);
+};
+
+const handleDeveloperCenterClick = () => {
+  if (envStore.env.PAAS_DEVELOPER_CENTER_LINK) {
+    window.open(envStore.env.PAAS_DEVELOPER_CENTER_LINK);
+  }
 };
 
 </script>
@@ -390,6 +421,21 @@ const handleShowAlertChange = (isShowNotice: boolean) => {
 
             &:hover {
               color: #D3D9E4;
+            }
+          }
+
+          // 开发者中心菜单项
+
+          &.dev-center {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            margin-left: -15px;
+
+            .divider {
+              width: 1px;
+              height: 16px;
+              background-color: #444a57;
             }
           }
         }

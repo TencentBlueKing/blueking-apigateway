@@ -2516,5 +2516,6 @@
   "需要至少填写一个规则": "At least one rule must be filled in",
   "长度需要在 1 到 4096 个字符之间": "Length must be between 1 and 4096 characters",
   "规则已存在": "Rule already exists",
-  "请求被拦截时返回的消息": "Message when rejected"
+  "请求被拦截时返回的消息": "Message when rejected",
+  "开发者中心": "Developer Center"
 }

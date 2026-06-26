@@ -88,6 +88,7 @@ export function getEnv() {
     BK_LOGIN_URL: string
     BK_PAAS_APP_REPO_URL_TMPL: string
     PAAS_APP_CREATE_LINK: string
+    PAAS_DEVELOPER_CENTER_LINK: string
     BK_SDK_LANGUAGES: string[]
     BK_SHARED_RES_URL: string
     BK_USER_WEB_API_URL: string
