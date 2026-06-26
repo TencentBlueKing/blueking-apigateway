@@ -18,7 +18,7 @@
 #
 import logging
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from django.conf import settings
 from django.db import connection
@@ -34,7 +34,7 @@ from apigateway.apps.metrics.constants import (
 from apigateway.apps.metrics.models import StatisticsAppRequestByDay, StatisticsGatewayRequestByDay
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkmonitor import query_range
-from apigateway.core.models import Backend
+from apigateway.core.models import Backend, Resource
 
 from .base import BasePrometheusMetrics
 
@@ -554,13 +554,13 @@ class MetricsSummaryFactory:
     def __init__(
         self,
         gateway_id: int,
-        stage_name: str,
+        stage_name: Optional[str],
         resource_id: Optional[int],
         bk_app_code: Optional[str],
-        metrics: str,
-        time_dimension: str,
         time_start: int,
         time_end: int,
+        metrics: str = MetricsSummaryEnum.REQUESTS_TOTAL.value,
+        time_dimension: str = MetricsSummaryTimeDimensionEnum.DAY.value,
     ):
         self.gateway_id = gateway_id
         self.stage_name = stage_name
@@ -574,11 +574,12 @@ class MetricsSummaryFactory:
     def _build_query_params(self):
         query_params = {
             "gateway_id": self.gateway_id,
-            "stage_name": self.stage_name,
             "start_time__gte": timezone.datetime.fromtimestamp(self.time_start, timezone.get_current_timezone()),
-            "end_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
+            "start_time__lte": timezone.datetime.fromtimestamp(self.time_end, timezone.get_current_timezone()),
         }
 
+        if self.stage_name:
+            query_params["stage_name"] = self.stage_name
         if self.bk_app_code:
             query_params["bk_app_code"] = self.bk_app_code
         if self.resource_id:
@@ -603,6 +604,44 @@ class MetricsSummaryFactory:
             .annotate(count_sum=Sum(count_field))
             .order_by("time_period")
         )
+
+    def export_list(self) -> List[Dict[str, Any]]:
+        queryset = list(
+            StatisticsAppRequestByDay.objects.filter(**self._build_query_params())
+            .values("stage_name", "resource_id", "bk_app_code")
+            .annotate(total_count_sum=Sum("total_count"), failed_count_sum=Sum("failed_count"))
+            .order_by("stage_name", "resource_id", "bk_app_code")
+        )
+
+        resource_ids = [obj["resource_id"] for obj in queryset]
+        resources = {
+            obj["id"]: obj
+            for obj in Resource.objects.filter(gateway_id=self.gateway_id, id__in=resource_ids).values(
+                "id",
+                "name",
+                "path",
+            )
+        }
+
+        results = []
+        for obj in queryset:
+            total_count = obj["total_count_sum"] or 0
+            failed_count = obj["failed_count_sum"] or 0
+            resource = resources.get(obj["resource_id"], {})
+            results.append(
+                {
+                    "stage_name": obj["stage_name"],
+                    "resource_id": obj["resource_id"],
+                    "resource_name": resource.get("name", ""),
+                    "resource_path": resource.get("path", ""),
+                    "bk_app_code": obj["bk_app_code"],
+                    "total_count": total_count,
+                    "success_count": total_count - failed_count,
+                    "failed_count": failed_count,
+                }
+            )
+
+        return results
 
 
 MetricsRangeFactory.register(RequestsMetrics)
