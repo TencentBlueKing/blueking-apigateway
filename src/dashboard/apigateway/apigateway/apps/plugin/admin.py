@@ -19,6 +19,7 @@ from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
 class PluginTypeAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
@@ -28,14 +29,14 @@ class PluginTypeAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ["code", "is_public", "scope"]
 
 
-class PluginConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class PluginConfigAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "name", "type"]
     search_fields = ["type", "gateway__id", "gateway__name"]
     list_filter = ["type", "gateway"]
 
 
-class PluginBindingAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class PluginBindingAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "scope_type", "scope_id", "config", "gateway", "source"]
     search_fields = ["scope_id", "gateway__id", "gateway__name"]

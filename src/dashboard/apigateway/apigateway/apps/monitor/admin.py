@@ -18,17 +18,19 @@
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
+
 from . import models
 
 
-class AlarmFilterConfigAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AlarmFilterConfigAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["alarm_type", "gateway"]
     search_fields = ["gateway__id", "gateway__name"]
     list_filter = ["gateway", "alarm_type"]
 
 
-class AlarmStrategyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AlarmStrategyAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = (
         "id",
@@ -43,7 +45,7 @@ class AlarmStrategyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     filter_horizontal = ["api_labels"]
 
 
-class AlarmRecordAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AlarmRecordAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = (
         "gateway",

@@ -18,11 +18,13 @@
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
+
 # Register your models here.
 from apigateway.schema.models import Schema
 
 
-class SchemaAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class SchemaAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "name", "type", "version"]
     search_fields = ["name", "type"]

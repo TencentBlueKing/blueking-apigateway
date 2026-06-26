@@ -25,23 +25,24 @@ from apigateway.apps.permission.models import (
     AppPermissionRecord,
     AppResourcePermission,
 )
+from apigateway.common.admin import AuditFieldsDisplayAdminMixin
 
 
-class AppAPIPermissionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AppAPIPermissionAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "bk_app_code", "gateway", "expires", "grant_type"]
     search_fields = ["bk_app_code", "gateway__id", "gateway__name"]
     list_filter = ["gateway", "expires", "grant_type"]
 
 
-class AppResourcePermissionAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AppResourcePermissionAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "bk_app_code", "gateway", "resource_id", "expires", "grant_type"]
     search_fields = ["bk_app_code", "resource_id", "gateway__id", "gateway__name"]
     list_filter = ["gateway", "expires"]
 
 
-class AppPermissionApplyAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AppPermissionApplyAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = [
         "id",
@@ -74,7 +75,7 @@ class AppPermissionRecordAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = ["gateway", "grant_dimension", "status"]
 
 
-class AppPermissionApplyStatusAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
+class AppPermissionApplyStatusAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "bk_app_code", "apply", "resource", "status"]
     search_fields = ["bk_app_code"]
