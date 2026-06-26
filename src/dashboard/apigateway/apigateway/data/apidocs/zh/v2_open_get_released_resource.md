@@ -12,13 +12,41 @@
 | stage_name     | string   | 是   | 环境名称 |
 | resource_name  | string   | 是   | 资源名称 |
 
+### 响应示例
+
+```json
+{
+  "data": {
+    "id": 2448,
+    "name": "updatePet",
+    "method": "PUT",
+    "path": "/api/v3/pet",
+    "schema": {
+      "parameters": [
+        {
+          "name": "petId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful operation"
+        }
+      }
+    }
+  }
+}
+```
+
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-|---------|--------|------------------------------------|
-| code    | int    | 返回码，0 表示成功，其它值表示失败 |
-| message | string | 错误信息                           |
-| data    | object | 资源详情                           |
+| 字段 | 类型 | 描述     |
+|------|------|----------|
+| data | object | 资源详情 |
 
 #### data
 

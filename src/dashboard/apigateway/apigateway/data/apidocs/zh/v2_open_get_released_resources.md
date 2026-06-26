@@ -11,13 +11,37 @@
 | gateway_name   | string   | 是   | 网关名称 |
 | stage_name     | string   | 是   | 环境名称 |
 
+### 响应示例
+
+```json
+{
+  "data": {
+    "count": 1,
+    "has_next": false,
+    "has_previous": false,
+    "results": [
+      {
+        "id": 3,
+        "name": "echo",
+        "description": "",
+        "method": "GET",
+        "url": "https://bkapi.example.com/api/bk-apigateway/prod/echo/",
+        "match_subpath": false,
+        "enable_websocket": false,
+        "app_verified_required": true,
+        "resource_perm_required": true,
+        "user_verified_required": false
+      }
+    ]
+  }
+}
+```
+
 ### 响应参数说明
 
-| 字段    | 类型   | 描述                               |
-|---------|--------|------------------------------------|
-| code    | int    | 返回码，0 表示成功，其它值表示失败 |
-| message | string | 错误信息                           |
-| data    | object | 分页数据                           |
+| 字段 | 类型 | 描述     |
+|------|------|----------|
+| data | object | 分页数据 |
 
 #### data
 
