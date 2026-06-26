@@ -87,6 +87,16 @@ const routes: RouteRecordRaw[] = [
   },
   ...getMcpMarketRoutes(),
   {
+    path: '/bk-cli',
+    name: 'BkCli',
+    component: () => import('@/views/platform-tools/cli/Index.vue'),
+    meta: {
+      title: 'BK-CLI',
+      matchRoute: 'BkCli',
+      topMenu: 'BkCli',
+    },
+  },
+  {
     path: '/components',
     name: 'ComponentsMain',
     component: () => import('@/layout/component-management/Index.vue'),
