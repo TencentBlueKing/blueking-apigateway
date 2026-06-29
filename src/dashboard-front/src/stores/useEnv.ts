@@ -44,6 +44,7 @@ export const useEnv = defineStore('useEnv', {
       EDITION: '',
       BK_SDK_LANGUAGES: [] as string[],
       SEND_CHAT_API: '',
+      BK_USER_PERSONAL_CENTER_LINK: '',
       CLI: {
         DETAIL_URL: '',
         USER_KEY: '',
