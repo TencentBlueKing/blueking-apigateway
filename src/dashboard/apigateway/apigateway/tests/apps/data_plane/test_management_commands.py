@@ -23,7 +23,11 @@ import pytest
 from ddf import G
 from django.core.management.base import CommandError
 
-from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum, DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
+    DataPlaneApisixVersionEnum,
+    DataPlaneStatusEnum,
+)
 from apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane import Command as BindCommand
 from apigateway.apps.data_plane.management.commands.create_data_plane import Command as CreateCommand
 from apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways import Command as DeployCommand
@@ -74,6 +78,7 @@ class TestCreateDataPlaneCommand:
         data_plane = DataPlane.objects.get(name="plane-a")
         assert data_plane.etcd_namespace_prefix == "/foo/bar"
         assert data_plane.etcd_configs == etcd_config
+        assert data_plane.apisix_version == CURRENT_DATA_PLANE_APISIX_VERSION
         mock_distributor_cls.assert_called_once_with(data_plane=data_plane)
         mock_distributor_cls.return_value.distribute.assert_called_once()
 

@@ -33,6 +33,9 @@ class DataPlaneApisixVersionEnum(StructuredEnum):
     V3_16 = EnumField("3.16", "3.16")
 
 
+CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+
+
 class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):
     """Gray stage for BK plugins data plane migration"""
 

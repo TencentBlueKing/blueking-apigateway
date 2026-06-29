@@ -22,7 +22,11 @@ from typing import Dict, List
 
 from django.core.management.base import BaseCommand, CommandError
 
-from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum, DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
+    DataPlaneApisixVersionEnum,
+    DataPlaneStatusEnum,
+)
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.controller.constants import GLOBAL_PUBLISH_ID
 from apigateway.controller.distributor.etcd import GlobalResourceDistributor
@@ -83,7 +87,7 @@ class Command(BaseCommand):
             "--apisix-version",
             type=str,
             choices=DataPlaneApisixVersionEnum.get_values(),
-            default=DataPlaneApisixVersionEnum.V3_13.value,
+            default=CURRENT_DATA_PLANE_APISIX_VERSION,
             help=f"APISIX version, allowed values: {DataPlaneApisixVersionEnum.get_values()}.",
         )
         parser.add_argument("--created-by", type=str, default="system", help="Creator username.")
@@ -157,7 +161,7 @@ class Command(BaseCommand):
         bk_api_url_tmpl = options["bk_api_url_tmpl"]
         status = options["status"]
         etcd_namespace_prefix = options["etcd_namespace_prefix"]
-        apisix_version = options.get("apisix_version", DataPlaneApisixVersionEnum.V3_13.value)
+        apisix_version = options.get("apisix_version", CURRENT_DATA_PLANE_APISIX_VERSION)
         created_by = options["created_by"]
 
         self._validate_required_non_empty("name", name)

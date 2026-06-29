@@ -19,6 +19,7 @@ import pytest
 from ddf import G
 
 from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
     DEFAULT_DATA_PLANE_NAME,
     DataPlaneApisixVersionEnum,
     DataPlaneStatusEnum,
@@ -80,10 +81,10 @@ class TestDataPlaneIsActive:
 
 
 class TestDataPlaneApisixVersion:
-    def test_default_is_3_13(self):
+    def test_default_is_current_data_plane_apisix_version(self):
         data_plane = DataPlane.objects.create(name="dp-default-version", etcd_namespace_prefix="/bk-gateway")
         data_plane.refresh_from_db()
-        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_13.value
+        assert data_plane.apisix_version == CURRENT_DATA_PLANE_APISIX_VERSION
 
     def test_explicit_3_16_is_persisted(self):
         data_plane = G(
