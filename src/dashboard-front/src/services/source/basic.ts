@@ -95,6 +95,7 @@ export function getEnv() {
     CREATE_CHAT_API: string
     EDITION: string
     SEND_CHAT_API: string
+    BK_USER_PERSONAL_CENTER_LINK: string
     CLI: {
       DETAIL_URL: string
       USER_KEY: string
