@@ -18,15 +18,18 @@
 
 import pytest
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor import BkReleaseConvertor
 from apigateway.controller.convertor.constants import (
-    DEFAULT_APISIX_VERSION,
     LABEL_KEY_APISIX_VERSION,
     LABEL_KEY_GATEWAY,
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
 from apigateway.controller.models import BkRelease
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestBkReleaseConvertor:
@@ -67,7 +70,16 @@ class TestBkReleaseConvertor:
     @pytest.fixture
     def convertor(self, mock_release_data):
         """Create a BkReleaseConvertor instance"""
-        return BkReleaseConvertor(release_data=mock_release_data, publish_id=789)
+        return BkReleaseConvertor(
+            release_data=mock_release_data,
+            publish_id=789,
+            apisix_version=APISIX_VERSION_3_13,
+        )
+
+    def test_init_requires_apisix_version(self, mock_release_data):
+        """Test BkReleaseConvertor requires apisix_version."""
+        with pytest.raises(TypeError):
+            BkReleaseConvertor(release_data=mock_release_data, publish_id=789)
 
     def test_convert_returns_correct_bk_release(self, convertor, mocker):
         """Test that convert method returns correct BkRelease model with all fields"""
@@ -89,7 +101,7 @@ class TestBkReleaseConvertor:
         assert bk_release.publish_time == mock_time
         assert bk_release.resource_version == "v1.0.0"
         assert bk_release.kind == "_bk_release"
-        assert bk_release.apisix_version == DEFAULT_APISIX_VERSION
+        assert bk_release.apisix_version == APISIX_VERSION_3_13
 
         # Test labels
         labels = bk_release.labels
@@ -118,10 +130,26 @@ class TestBkReleaseConvertor:
         release_data.stage = stage
         release_data.resource_version = resource_version
 
-        convertor = BkReleaseConvertor(release_data=release_data, publish_id=555)
+        convertor = BkReleaseConvertor(
+            release_data=release_data,
+            publish_id=555,
+            apisix_version=APISIX_VERSION_3_13,
+        )
         result = convertor.convert()
         bk_release = result[0]
 
         assert bk_release.id == "bk.release.my-api-gateway.staging"
         assert bk_release.publish_id == 555
         assert bk_release.resource_version == "v2.1.0"
+
+    def test_convert_propagates_apisix_version(self, mock_release_data):
+        """apisix_version should flow into both the BkRelease body and its label"""
+        convertor = BkReleaseConvertor(
+            release_data=mock_release_data,
+            publish_id=789,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+        bk_release = convertor.convert()[0]
+
+        assert bk_release.apisix_version == APISIX_VERSION_3_16
+        assert bk_release.labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16

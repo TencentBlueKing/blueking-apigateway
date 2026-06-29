@@ -3656,6 +3656,52 @@
       "scope": "resource",
       "version": 0.1
     },
+    "bk-traffic-label": {
+      "priority": 17460,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "match": {
+                  "type": "array"
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "set_headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "weight": {
+                        "description": "percentage of all matched which would do the actions",
+                        "type": "integer",
+                        "default": 1,
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "minItems": 1,
+                  "maxItems": 20
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "rules"
+        ]
+      },
+      "scope": "stage_and_resource",
+      "version": 0.1
+    },
     "proxy-cache": {
       "priority": 1085,
       "schema": {

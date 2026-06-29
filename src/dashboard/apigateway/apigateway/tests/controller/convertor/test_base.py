@@ -17,14 +17,37 @@
 #
 import pytest
 
-from apigateway.controller.convertor.base import GatewayResourceConvertor
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
+from apigateway.controller.convertor.base import GatewayResourceConvertor, GlobalResourceConvertor
 from apigateway.controller.convertor.constants import (
-    DEFAULT_APISIX_VERSION,
     LABEL_KEY_APISIX_VERSION,
     LABEL_KEY_GATEWAY,
     LABEL_KEY_PUBLISH_ID,
     LABEL_KEY_STAGE,
 )
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
+
+
+class TestGlobalResourceConvertor:
+    """Test GlobalResourceConvertor class"""
+
+    def _make_convertor(self, *args, **kwargs):
+        class _Convertor(GlobalResourceConvertor):
+            def convert(self):
+                return []
+
+        return _Convertor(*args, **kwargs)
+
+    def test_apisix_version_is_required(self):
+        with pytest.raises(TypeError):
+            self._make_convertor()
+
+    def test_custom_apisix_version(self):
+        convertor = self._make_convertor(APISIX_VERSION_3_16)
+        labels = convertor.get_labels()
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
 
 
 class TestGatewayResourceConvertor:
@@ -62,7 +85,7 @@ class TestGatewayResourceConvertor:
             def convert(self):
                 return []
 
-        return TestConvertor(mock_release_data, publish_id=123)
+        return TestConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
 
     def test_gateway_property(self, convertor, mock_gateway):
         """Test gateway property"""
@@ -95,7 +118,7 @@ class TestGatewayResourceConvertor:
         assert labels.get_label(LABEL_KEY_GATEWAY) == "test-gateway"
         assert labels.get_label(LABEL_KEY_STAGE) == "prod"
         assert labels.get_label(LABEL_KEY_PUBLISH_ID) == "123"
-        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == DEFAULT_APISIX_VERSION
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_13
 
     def test_get_labels_custom_version(self, mock_release_data):
         """Test get_gateway_resource_labels with custom apisix version"""
@@ -104,20 +127,20 @@ class TestGatewayResourceConvertor:
             def convert(self):
                 return []
 
-        convertor = TestConvertor(mock_release_data, publish_id=123, apisix_version="3.14")
+        convertor = TestConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_16)
         labels = convertor.get_labels()
 
-        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == "3.14"
+        assert labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
 
-    def test_convertor_initialization_with_default_version(self, mock_release_data):
-        """Test convertor initialization with default version"""
+    def test_convertor_initialization_requires_apisix_version(self, mock_release_data):
+        """Test convertor initialization requires apisix_version"""
 
         class TestConvertor(GatewayResourceConvertor):
             def convert(self):
                 return []
 
-        convertor = TestConvertor(mock_release_data, publish_id=123)
-        assert convertor._apisix_version == DEFAULT_APISIX_VERSION
+        with pytest.raises(TypeError):
+            TestConvertor(mock_release_data, publish_id=123)
 
     def test_convertor_initialization_with_custom_version(self, mock_release_data):
         """Test convertor initialization with custom version"""
@@ -126,8 +149,8 @@ class TestGatewayResourceConvertor:
             def convert(self):
                 return []
 
-        convertor = TestConvertor(mock_release_data, publish_id=123, apisix_version="4.0")
-        assert convertor._apisix_version == "4.0"
+        convertor = TestConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_16)
+        assert convertor._apisix_version == APISIX_VERSION_3_16
 
     def test_convert_method_must_be_implemented(self, mock_release_data):
         """Test that convert method must be implemented"""

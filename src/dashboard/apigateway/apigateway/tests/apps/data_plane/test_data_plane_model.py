@@ -18,7 +18,12 @@
 import pytest
 from ddf import G
 
-from apigateway.apps.data_plane.constants import DEFAULT_DATA_PLANE_NAME, DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
+    DEFAULT_DATA_PLANE_NAME,
+    DataPlaneApisixVersionEnum,
+    DataPlaneStatusEnum,
+)
 from apigateway.apps.data_plane.models import DataPlane
 
 pytestmark = pytest.mark.django_db
@@ -73,6 +78,22 @@ class TestDataPlaneIsActive:
     def test_inactive(self):
         data_plane = G(DataPlane, name="test-inactive", status=DataPlaneStatusEnum.INACTIVE.value)
         assert data_plane.is_active is False
+
+
+class TestDataPlaneApisixVersion:
+    def test_default_is_current_data_plane_apisix_version(self):
+        data_plane = DataPlane.objects.create(name="dp-default-version", etcd_namespace_prefix="/bk-gateway")
+        data_plane.refresh_from_db()
+        assert data_plane.apisix_version == CURRENT_DATA_PLANE_APISIX_VERSION
+
+    def test_explicit_3_16_is_persisted(self):
+        data_plane = G(
+            DataPlane,
+            name="dp-3-16",
+            apisix_version=DataPlaneApisixVersionEnum.V3_16.value,
+        )
+        data_plane.refresh_from_db()
+        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestDataPlaneIsDefault:

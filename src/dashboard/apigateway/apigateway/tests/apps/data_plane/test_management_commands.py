@@ -23,7 +23,11 @@ import pytest
 from ddf import G
 from django.core.management.base import CommandError
 
-from apigateway.apps.data_plane.constants import DataPlaneStatusEnum
+from apigateway.apps.data_plane.constants import (
+    CURRENT_DATA_PLANE_APISIX_VERSION,
+    DataPlaneApisixVersionEnum,
+    DataPlaneStatusEnum,
+)
 from apigateway.apps.data_plane.management.commands.bind_gateways_to_data_plane import Command as BindCommand
 from apigateway.apps.data_plane.management.commands.create_data_plane import Command as CreateCommand
 from apigateway.apps.data_plane.management.commands.deploy_data_plane_gateways import Command as DeployCommand
@@ -74,6 +78,7 @@ class TestCreateDataPlaneCommand:
         data_plane = DataPlane.objects.get(name="plane-a")
         assert data_plane.etcd_namespace_prefix == "/foo/bar"
         assert data_plane.etcd_configs == etcd_config
+        assert data_plane.apisix_version == CURRENT_DATA_PLANE_APISIX_VERSION
         mock_distributor_cls.assert_called_once_with(data_plane=data_plane)
         mock_distributor_cls.return_value.distribute.assert_called_once()
 
@@ -106,6 +111,34 @@ class TestCreateDataPlaneCommand:
         assert data_plane.etcd_namespace_prefix == "/foo/bar"
         assert data_plane.etcd_configs == etcd_config
         mock_logger.error.assert_called_once()
+
+    @patch("apigateway.apps.data_plane.management.commands.create_data_plane.GlobalResourceDistributor")
+    def test_create_sets_apisix_version(self, mock_distributor_cls):
+        mock_distributor_cls.return_value.distribute.return_value = (True, "")
+        cmd = CreateCommand()
+        etcd_config = {
+            "host": "127.0.0.1",
+            "port": 2379,
+            "user": "root",
+            "password": "secret",
+            "ca_cert": "/tmp/ca",
+            "cert_cert": "/tmp/cert",
+            "cert_key": "/tmp/key",
+        }
+
+        cmd.handle(
+            name="plane-a",
+            description="desc",
+            bk_api_url_tmpl="https://{api_name}.example.com",
+            status=DataPlaneStatusEnum.ACTIVE.value,
+            etcd_config=json.dumps(etcd_config),
+            etcd_namespace_prefix="foo/bar",
+            apisix_version=DataPlaneApisixVersionEnum.V3_16.value,
+            created_by="tester",
+        )
+
+        data_plane = DataPlane.objects.get(name="plane-a")
+        assert data_plane.apisix_version == DataPlaneApisixVersionEnum.V3_16.value
 
     def test_create_with_invalid_etcd_config_keys_raises(self):
         cmd = CreateCommand()

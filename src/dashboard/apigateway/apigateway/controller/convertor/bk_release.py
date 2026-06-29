@@ -26,8 +26,8 @@ from .base import GatewayResourceConvertor
 
 
 class BkReleaseConvertor(GatewayResourceConvertor):
-    def __init__(self, release_data: ReleaseData, publish_id: int):
-        super().__init__(release_data=release_data, publish_id=publish_id)
+    def __init__(self, release_data: ReleaseData, publish_id: int, apisix_version: str):
+        super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
 
     def convert(self) -> List[GatewayApisixModel]:
         return [
