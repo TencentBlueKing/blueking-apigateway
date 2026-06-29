@@ -28,18 +28,6 @@ sync_bk_apigateway() {
     echo "API gateway bk-apigateway sync definition end"
 }
 
-sync_bk_apigateway_inner() {
-    # sync gateway bk-apigateway-inner
-    echo "API gateway bk-apigateway-inner sync definition start ..."
-    python manage.py sync_apigw_config --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
-    python manage.py sync_apigw_stage --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
-    python manage.py sync_apigw_resources --delete --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-resources.yaml"
-    python manage.py grant_apigw_permissions --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
-    python manage.py fetch_apigw_public_key --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend
-    python manage.py create_version_and_release_apigw --gateway-name=bk-apigateway-inner --host=${DASHBOARD_INNER_URL}/backend --file="${APIGW_DEFINITIONS_DIR}/bk-apigateway-inner-definition.yaml"
-    echo "API gateway bk-apigateway-inner sync definition end"
-}
-
 sync_bk_esb() {
     # sync gateway bk-esb
     echo "API gateway bk-esb sync definition start ..."
@@ -62,6 +50,3 @@ sync_bk_apigateway
 if [ "${ENABLE_MULTI_TENANT_MODE}" != "true" ] && [ "${ENABLE_MULTI_TENANT_MODE}" != "True" ]; then
     sync_bk_esb
 fi
-
-# TODO: should been merged into sync_bk_apigateway, and remove this
-sync_bk_apigateway_inner
