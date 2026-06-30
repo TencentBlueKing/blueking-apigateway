@@ -565,7 +565,7 @@ const handleStageChange = () => {
 
 const getHighlightedHtml = (value: string) => {
   if (keyword.value) {
-    return value.replace(new RegExp(`(${keyword.value})`, 'i'), '<em class="ag-keyword">$1</em>');
+    return value.replace(new RegExp(`(${keyword.value})`, 'i'), '<b class="ag-keyword">$1</b>');
   }
   return value;
 };
