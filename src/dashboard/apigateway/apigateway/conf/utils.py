@@ -264,6 +264,7 @@ def get_frontend_env_vars(
         "BK_LOGIN_URL": bk_login_url,
         "PAAS_DEVELOPER_CENTER_LINK": f"{bk_paas3_url}/developer-center",
         "PAAS_APP_CREATE_LINK": f"{bk_paas3_url}/developer-center/app/create",
+        "BK_USER_PERSONAL_CENTER_LINK": env.str("BK_USER_URL", default="") + "/personal-center",
         "BK_APISIX_URL": env.str("BK_APISIX_URL", default=""),
         "BK_APISIX_DOC_URL": env.str("BK_APISIX_DOC_URL", default=""),
         "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),
