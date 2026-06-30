@@ -29,7 +29,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -40,7 +39,6 @@ import (
 	cli "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/spf13/cast"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -57,14 +55,6 @@ import (
 	"mcp_proxy/pkg/infra/trace"
 	"mcp_proxy/pkg/metric"
 	"mcp_proxy/pkg/util"
-)
-
-const (
-	toolResponseStatusCodeField = "status_code"
-	toolResponseRequestIDField  = "request_id"
-	toolResponseTraceIDField    = "trace_id"
-	toolResponseXRequestIDField = "x_request_id"
-	toolResponseBodyField       = "response_body"
 )
 
 // sharedTransport 是所有 tool call 共用的 HTTP Transport，避免每次调用创建新连接池。
@@ -176,29 +166,12 @@ func buildToolInputSchema(toolConfig *ToolConfig, serverName string) map[string]
 	return inputSchema
 }
 
-func buildToolResponseEnvelope(statusCode int, requestID, traceID, xRequestID string, responseBody any) map[string]any {
-	responseResult := map[string]any{
-		toolResponseStatusCodeField: statusCode,
-		toolResponseRequestIDField:  requestID,
-		toolResponseTraceIDField:    traceID,
-		toolResponseXRequestIDField: xRequestID,
-		// Always include response_body to keep consistency with the outputSchema definition.
-		// When responseBody is nil, the field will be JSON null, which matches the schema expectation.
-		toolResponseBodyField: responseBody,
+func buildToolResultFromJSONBytes(output []byte) *mcp.CallToolResult {
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: string(output)},
+		},
 	}
-	return responseResult
-}
-
-func buildToolResult(output any) *mcp.CallToolResult {
-	result := &mcp.CallToolResult{}
-	text := cast.ToString(output)
-	if rawOutput, err := json.Marshal(output); err == nil {
-		text = string(rawOutput)
-	}
-	result.Content = []mcp.Content{
-		&mcp.TextContent{Text: text},
-	}
-	return result
 }
 
 func buildMCPTool(toolConfig *ToolConfig, serverName string) *mcp.Tool {
@@ -849,6 +822,79 @@ func handleToolCallError(
 	return result
 }
 
+func handleUnexpectedSubmitResult(
+	ctx context.Context,
+	submit any,
+	toolApiConfig *ToolConfig,
+	auditLog *zap.Logger,
+	headerInfo map[string]string,
+	span oteltrace.Span,
+	start time.Time,
+	auditStatus *string,
+	auditLatency *time.Duration,
+	auditResponse *string,
+	auditResponseSize *int64,
+	auditUpstreamReqID *string,
+	responsePayload *toolResponsePayload,
+	traceID string,
+	xRequestID string,
+	logTruncate config.LogTruncate,
+) *mcp.CallToolResult {
+	err := fmt.Errorf("unexpected submit result type %T", submit)
+	markAuditCallFailed(start, err, auditStatus, auditLatency, auditResponse)
+	if auditResponseSize != nil {
+		*auditResponseSize = 0
+	}
+	if auditUpstreamReqID != nil {
+		*auditUpstreamReqID = ""
+	}
+	if responsePayload != nil {
+		limit := pickToolCallLogLimit(
+			true,
+			logTruncate.GetAuditLogMaxResponseSize(),
+			logTruncate.GetAuditLogMaxErrorResponseSize(),
+		)
+		if auditResponse != nil {
+			*auditResponse = responsePayload.EnvelopePreview(traceID, xRequestID, limit)
+		}
+		if auditResponseSize != nil {
+			*auditResponseSize = int64(len(responsePayload.rawBody))
+		}
+		if auditUpstreamReqID != nil {
+			*auditUpstreamReqID = responsePayload.upstreamRequestID
+		}
+	}
+	return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start)
+}
+
+func markAuditCallFailed(
+	start time.Time,
+	err error,
+	auditStatus *string,
+	auditLatency *time.Duration,
+	auditResponse *string,
+) {
+	if auditStatus != nil {
+		*auditStatus = "failed"
+	}
+	if auditLatency != nil {
+		*auditLatency = time.Since(start)
+	}
+	if auditResponse != nil && err != nil {
+		*auditResponse = err.Error()
+	}
+}
+
+func markAuditPanic(recovered any, auditStatus *string) any {
+	if recovered == nil {
+		return nil
+	}
+	if auditStatus != nil {
+		*auditStatus = "failed"
+	}
+	return recovered
+}
+
 func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEnabledGetter func() bool) ToolHandler {
 	// 生成handler
 	handler := func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
@@ -885,6 +931,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		}
 
 		// MCP protocol-level logging and metrics
+		var responsePayload *toolResponsePayload
 		defer func() {
 			if r := recover(); r != nil {
 				logging.GetAPILogger().Error("panic in tool handler",
@@ -897,8 +944,17 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 					err = fmt.Errorf("panic: %v", r)
 				}
 			}
-			recordToolCallMetrics(ctx, serverName, toolApiConfig.Name, req, result, err, start)
-			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, err, start)
+			recordToolCallMetrics(
+				ctx,
+				serverName,
+				toolApiConfig.Name,
+				req,
+				result,
+				responsePayload,
+				err,
+				start,
+			)
+			logToolCall(ctx, serverName, toolApiConfig.Name, req, result, responsePayload, err, start)
 		}()
 
 		// Prepare audit log with request context
@@ -928,8 +984,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段
 		defer func() {
+			var recoveredPanic any
 			if r := recover(); r != nil {
-				auditStatus = "failed"
+				recoveredPanic = markAuditPanic(r, &auditStatus)
 			}
 			// 记录完整的调用信息（合并了之前的 "call tool" 和 "call tool request params" 日志）
 			auditLog.Info(
@@ -950,6 +1007,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 					util.TruncateJSON(auditBodyParam, logTruncate.GetAuditLogMaxBodySize()),
 				),
 			)
+			if recoveredPanic != nil {
+				panic(recoveredPanic)
+			}
 		}()
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
@@ -959,6 +1019,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				zap.Any("arguments", req.Params.Arguments),
 				zap.Error(err),
 			)
+			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		decoder := json.NewDecoder(bytes.NewReader(argsBytes))
@@ -967,6 +1028,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
 				string(argsBytes)), zap.Error(err))
+			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		// Build HTTP client with shared transport
@@ -1043,53 +1105,51 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			Client:      client,
 			Context:     ctx,
 			Reader: runtime.ClientResponseReaderFunc(
-				func(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
+				func(response runtime.ClientResponse, _ runtime.Consumer) (any, error) {
 					if response.Body() != nil {
 						defer func() { _ = response.Body().Close() }()
 					}
 
-					var res any
+					var bodyBytes []byte
 					if response.Body() != nil {
-						contentType := strings.ToLower(response.GetHeader("Content-Type"))
-						// 根据 Content-Type 决定如何解析响应体
-						if strings.Contains(contentType, "application/json") {
-							// JSON 响应：使用 consumer 解析
-							if e := consumer.Consume(response.Body(), &res); e != nil {
-								return nil, e
-							}
-						} else {
-							// 非 JSON 响应（text/plain, text/html 等）：读取为字符串
-							bodyBytes, e := io.ReadAll(response.Body())
-							if e != nil {
-								return nil, e
-							}
-							res = string(bodyBytes)
+						var e error
+						bodyBytes, e = io.ReadAll(response.Body())
+						if e != nil {
+							return nil, e
 						}
 					}
 
-					var responseResult any
+					responsePayload = newToolResponsePayload(
+						response.Code(),
+						response.GetHeader(constant.BkGatewayRequestIDKey),
+						response.GetHeader("Content-Type"),
+						bodyBytes,
+					)
+
+					var responseBytes []byte
+					var marshalErr error
 					if rawResponseEnabledGetter() {
 						// raw_response_enabled 模式：直接返回 API 响应结果，不添加 request_id 等额外信息。
 						// 注意：无论成功或失败（非 2xx）都直接透传原始响应，
 						// 由 MCP 协议层的 IsError 标记来区分调用方是否为错误场景。
-						responseResult = res
+						responseBytes, marshalErr = responsePayload.marshalRawResponse()
 					} else {
-						responseResult = buildToolResponseEnvelope(
-							response.Code(),
-							response.GetHeader(constant.BkGatewayRequestIDKey),
+						responseBytes, marshalErr = responsePayload.marshalEnvelope(
 							trace.GetTraceIDFromContext(ctx),
 							xRequestID,
-							res,
 						)
+					}
+					if marshalErr != nil {
+						return nil, marshalErr
 					}
 					if response.Code() < 200 || response.Code() > 299 {
 						return nil, runtime.NewAPIError(
 							"call tool err",
-							responseResult,
+							json.RawMessage(responseBytes),
 							response.Code(),
 						)
 					}
-					return responseResult, nil
+					return json.RawMessage(responseBytes), nil
 				},
 			),
 		}
@@ -1103,23 +1163,71 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		submit, err := openAPIClient.Submit(operation)
 		if err != nil {
 			duration := time.Since(start)
-			auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
-			auditResponseSize = 0
 			auditLatency = duration
 			auditStatus = "failed"
+			// When the reader populated responsePayload before APIError (typical non-2xx case),
+			// surface the upstream envelope in the audit log instead of the bare error message
+			// so failures retain full diagnostic context. Transport-level errors (DNS, dial,
+			// timeout) leave responsePayload nil and fall back to the error message.
+			if responsePayload != nil {
+				auditResponse = responsePayload.EnvelopePreview(
+					trace.GetTraceIDFromContext(ctx),
+					xRequestID,
+					pickToolCallLogLimit(
+						true,
+						logTruncate.GetAuditLogMaxResponseSize(),
+						logTruncate.GetAuditLogMaxErrorResponseSize(),
+					),
+				)
+				auditResponseSize = int64(len(responsePayload.rawBody))
+				auditUpstreamReqID = responsePayload.upstreamRequestID
+			} else {
+				auditResponse = fmt.Sprintf("call %s error:%s", toolApiConfig, err.Error())
+				auditResponseSize = 0
+			}
 			// nolint:nilerr
 			return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start), nil
 		}
 		duration := time.Since(start)
-		responseBody := util.TruncateJSON(submit, logTruncate.GetAuditLogMaxResponseSize())
 		// 设置 audit log 变量，供 defer 中的 "call tool complete" 使用
-		auditResponse = responseBody
-		auditResponseSize = int64(len(responseBody))
+		// 注意：responsePayload 在 Reader 中已设置；Submit 成功路径必然非 nil。
+		auditResponse = responsePayload.EnvelopePreview(
+			trace.GetTraceIDFromContext(ctx),
+			xRequestID,
+			pickToolCallLogLimit(
+				false,
+				logTruncate.GetAuditLogMaxResponseSize(),
+				logTruncate.GetAuditLogMaxErrorResponseSize(),
+			),
+		)
+		auditResponseSize = int64(len(responsePayload.rawBody))
+		auditUpstreamReqID = responsePayload.upstreamRequestID
 		auditLatency = duration
-		auditStatus = "success"
-		auditUpstreamReqID = extractUpstreamRequestID(buildToolResult(submit))
 		// 注意：完整的调用结果会在 defer 中的 "call tool complete" 日志中记录
-		return buildToolResult(submit), nil
+		// Reader contract guarantees submit is json.RawMessage on success; see ClientResponseReaderFunc above.
+		responseBytes, ok := submit.(json.RawMessage)
+		if !ok {
+			return handleUnexpectedSubmitResult(
+				ctx,
+				submit,
+				toolApiConfig,
+				auditLog,
+				headerInfo,
+				span,
+				start,
+				&auditStatus,
+				&auditLatency,
+				&auditResponse,
+				&auditResponseSize,
+				&auditUpstreamReqID,
+				responsePayload,
+				trace.GetTraceIDFromContext(ctx),
+				xRequestID,
+				logTruncate,
+			), nil
+		}
+		auditStatus = "success"
+		return buildToolResultFromJSONBytes(responseBytes), nil
 	}
 	return handler
 }
@@ -1132,6 +1240,7 @@ func recordToolCallMetrics(
 	serverName, toolName string,
 	req *mcp.CallToolRequest,
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1185,8 +1294,10 @@ func recordToolCallMetrics(
 			}
 		}
 
-		// Calculate response body size from CallToolResult
-		if result != nil {
+		// Calculate response body size from raw payload when available.
+		if payload != nil {
+			responseBodySize = int64(len(payload.rawBody))
+		} else if result != nil {
 			if resultBytes, marshalErr := json.Marshal(result); marshalErr == nil {
 				responseBodySize = int64(len(resultBytes))
 			}
@@ -1208,6 +1319,7 @@ func logToolCall(
 	toolName string,
 	req *mcp.CallToolRequest,
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	err error,
 	start time.Time,
 ) {
@@ -1220,11 +1332,7 @@ func logToolCall(
 	// Resolve truncation limits from config
 	logTruncate := config.G.McpServer.LogTruncate
 
-	// Serialize request params and response
-	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
-	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(result, hasError, logTruncate)
-
-	// Retrieve extra info from context
+	// Retrieve extra info from context (needed by serializeToolCallResponse for envelope preview)
 	ctxInfo := extractToolCallContextInfo(ctx, req)
 
 	// Get session info
@@ -1232,6 +1340,17 @@ func logToolCall(
 
 	// trace_id from HTTP layer
 	traceID := trace.GetTraceIDFromContext(ctx)
+
+	// Serialize request params and response
+	params, requestBodySize := serializeToolCallRequest(req, logTruncate)
+	response, responseBodySize, upstreamRequestID := serializeToolCallResponse(
+		traceID,
+		ctxInfo.xRequestID,
+		result,
+		payload,
+		hasError,
+		logTruncate,
+	)
 
 	// Build log fields
 	status := "success"
@@ -1305,12 +1424,38 @@ func serializeToolCallRequest(req *mcp.CallToolRequest, logTruncate config.LogTr
 	return params, requestBodySize
 }
 
-// serializeToolCallResponse serializes the tool call response result.
+// serializeToolCallResponse serializes the tool call response result for the API log.
+//
+// When payload is non-nil (the typical path after an upstream call), it renders a bounded
+// envelope preview honoring APILogResponseSize / APILogErrorResponseSize.
+//
+// The result-only fallback handles the rare case where the handler panicked or returned
+// before populating payload. In that path no upstream request_id is available.
 func serializeToolCallResponse(
+	traceID, xRequestID string,
 	result *mcp.CallToolResult,
+	payload *toolResponsePayload,
 	hasError bool,
 	logTruncate config.LogTruncate,
 ) (string, int64, string) {
+	if payload != nil {
+		limit := pickToolCallLogLimit(
+			hasError,
+			logTruncate.GetAPILogResponseSize(),
+			logTruncate.GetAPILogErrorResponseSize(),
+		)
+		return payload.EnvelopePreview(traceID, xRequestID, limit),
+			int64(len(payload.rawBody)),
+			payload.upstreamRequestID
+	}
+	// Payload-nil fallback: only reachable when no upstream HTTP response was ever read
+	// (transport error / mid-body-read failure / panic before Reader). There is no
+	// envelope to render and no upstream request_id to surface in any of these paths.
+	// Log a warning so unexpected occurrences are visible in operations.
+	logging.GetLogger().Warn("serializeToolCallResponse fallback: no toolResponsePayload available",
+		zap.Bool("has_error", hasError),
+		zap.Bool("result_nil", result == nil),
+	)
 	if result == nil {
 		return "", 0, ""
 	}
@@ -1319,14 +1464,19 @@ func serializeToolCallResponse(
 		return "", 0, ""
 	}
 	responseBodySize := int64(len(resultBytes))
-	var response string
+	limit := logTruncate.GetAPILogResponseSize()
 	if hasError {
-		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogErrorResponseSize())
-	} else {
-		response = stringx.Truncate(string(resultBytes), logTruncate.GetAPILogResponseSize())
+		limit = logTruncate.GetAPILogErrorResponseSize()
 	}
-	upstreamRequestID := extractUpstreamRequestID(result)
-	return response, responseBodySize, upstreamRequestID
+	response := stringx.Truncate(string(resultBytes), limit)
+	return response, responseBodySize, ""
+}
+
+func pickToolCallLogLimit(hasError bool, successLimit, errorLimit int) int {
+	if hasError {
+		return errorLimit
+	}
+	return successLimit
 }
 
 // toolCallContextInfo holds context-derived info for tool call logging.
@@ -1394,67 +1544,4 @@ func extractToolCallSessionInfo(req *mcp.CallToolRequest, clientID string) (stri
 		}
 	}
 	return sessionID, clientID
-}
-
-// extractUpstreamRequestID extracts the upstream API request_id from tool call result.
-// This is the request_id returned by the upstream API (e.g., bk-apigateway),
-// which may differ from the MCP Proxy's own request_id.
-func extractUpstreamRequestID(result *mcp.CallToolResult) string {
-	if result == nil || len(result.Content) == 0 {
-		logging.GetLogger().Debug("extractUpstreamRequestID: result is nil or content is empty")
-		return ""
-	}
-
-	logging.GetLogger().Debug("extractUpstreamRequestID: content count", zap.Int("count", len(result.Content)))
-
-	// Try to get text content from result
-	var textContent string
-	for i, content := range result.Content {
-		if text, ok := content.(*mcp.TextContent); ok && text != nil {
-			textContent = text.Text
-			logging.GetLogger().Debug("extractUpstreamRequestID: found TextContent",
-				zap.Int("index", i), zap.Int("text_length", len(textContent)))
-			break
-		} else {
-			logging.GetLogger().Debug("extractUpstreamRequestID: content type mismatch",
-				zap.Int("index", i), zap.String("type", fmt.Sprintf("%T", content)))
-		}
-	}
-	if textContent == "" {
-		logging.GetLogger().Debug("extractUpstreamRequestID: textContent is empty")
-		return ""
-	}
-
-	// Parse JSON to extract request_id
-	var envelope map[string]any
-	if err := json.Unmarshal([]byte(textContent), &envelope); err != nil {
-		preview := textContent
-		if len(textContent) > 200 {
-			preview = textContent[:200]
-		}
-		logging.GetLogger().Debug("extractUpstreamRequestID: failed to unmarshal textContent",
-			zap.Error(err), zap.String("text_content_preview", preview))
-		return ""
-	}
-
-	logging.GetLogger().Debug("extractUpstreamRequestID: envelope keys", zap.Any("keys", getMapKeys(envelope)))
-
-	if requestID, ok := envelope[toolResponseRequestIDField].(string); ok {
-		logging.GetLogger().Debug(
-			"extractUpstreamRequestID: found request_id",
-			zap.String("request_id", requestID),
-		)
-		return requestID
-	}
-	logging.GetLogger().Debug("extractUpstreamRequestID: request_id not found or not a string")
-	return ""
-}
-
-// getMapKeys returns all keys in a map
-func getMapKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
 }
