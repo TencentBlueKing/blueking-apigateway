@@ -205,6 +205,14 @@ class TestMCPServerPromptHandler:
         assert len(updated_prompts) == 2
         assert updated_prompts[0]["id"] == "prompt_001"
 
+    def test_update_prompts_content_invalid_item_type(self, fake_mcp_server):
+        """测试更新 prompts 内容（列表项类型非法）"""
+        with pytest.raises(TypeError, match="prompt item must be a dict"):
+            MCPServerPromptHandler.update_prompts_content(
+                mcp_server_id=fake_mcp_server.id,
+                prompts=["invalid-item"],
+            )
+
     def test_update_prompts_content_not_exists(self, fake_mcp_server, sample_prompts):
         """测试更新不存在的 prompts（不应创建新记录）"""
         MCPServerPromptHandler.update_prompts_content(

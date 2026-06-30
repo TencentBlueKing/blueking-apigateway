@@ -78,6 +78,7 @@ from .audit import (
     record_mcp_server_permission_sync_audits,
     record_mcp_server_sync_audits,
 )
+from .prompt import validate_prompts_payload
 
 logger = logging.getLogger(__name__)
 
@@ -986,7 +987,8 @@ class MCPServerHandler:
             prompts: prompts 列表
             username: 操作用户名
         """
-        content = json.dumps(prompts, ensure_ascii=False)
+        validated_prompts = validate_prompts_payload(prompts)
+        content = json.dumps(validated_prompts, ensure_ascii=False)
 
         extend, created = MCPServerExtend.objects.get_or_create(
             mcp_server_id=mcp_server_id,

@@ -451,6 +451,13 @@ class TestMCPServerHandler:
         assert extend.created_by == "creator"  # 创建者不变
         assert extend.updated_by == "updater"  # 更新者变化
 
+    def test_save_prompts_invalid_item_type(self, fake_gateway, fake_stage):
+        """测试保存 prompts（列表项类型非法）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with pytest.raises(TypeError, match="prompt item must be a dict"):
+            MCPServerHandler.save_prompts(mcp_server.id, ["invalid-item"], "admin")
+
     def test_delete_prompts(self, fake_gateway, fake_stage):
         """测试删除 prompts"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

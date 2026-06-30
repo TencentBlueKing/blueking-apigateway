@@ -26,6 +26,21 @@ from apigateway.components import bkaidev
 logger = logging.getLogger(__name__)
 
 
+def validate_prompts_payload(prompts: Any) -> List[Dict[str, Any]]:
+    """校验 prompts 数据结构。
+
+    仅做最小约束，确保可安全序列化并在读取时按列表处理。
+    """
+    if not isinstance(prompts, list):
+        raise TypeError("prompts must be a list")
+
+    for prompt in prompts:
+        if not isinstance(prompt, dict):
+            raise TypeError("prompt item must be a dict")
+
+    return prompts
+
+
 class MCPServerPromptHandler:
     """MCPServer Prompt 相关处理器（供异步任务调用）"""
 
@@ -84,7 +99,8 @@ class MCPServerPromptHandler:
             mcp_server_id: MCPServer ID
             prompts: 更新后的 prompts 列表
         """
-        content = json.dumps(prompts, ensure_ascii=False)
+        validated_prompts = validate_prompts_payload(prompts)
+        content = json.dumps(validated_prompts, ensure_ascii=False)
 
         MCPServerExtend.objects.filter(
             mcp_server_id=mcp_server_id,
