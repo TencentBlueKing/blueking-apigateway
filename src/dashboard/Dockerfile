@@ -1,5 +1,5 @@
 ARG IMAGE=hub.bktencent.com/blueking/python
-ARG TAG=3.11.14-ts4
+ARG TAG=3.14-tencentos4
 FROM ${IMAGE}:${TAG}
 
 RUN dnf install -y vim mysql curl zip unzip git java-17-konajdk maven
