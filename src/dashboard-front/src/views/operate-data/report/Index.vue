@@ -18,7 +18,7 @@
 
 <template>
   <div class="page-wrapper-padding app-content">
-    <div class="ag-top-header">
+    <div class="flex align-items-center justify-between">
       <BkForm
         class="search-form"
         form-type="vertical"
@@ -75,6 +75,13 @@
           </BkSelect>
         </BkFormItem>
       </BkForm>
+      <BkButton
+        :loading="downloading"
+        @click="() => handleDownload()"
+      >
+        {{ t('导出') }}
+        <AgIcon name="download" />
+      </BkButton>
     </div>
 
     <div class="page-content">
@@ -108,12 +115,6 @@
             >
               <AgIcon name="refresh-line" />
             </div>
-            <div
-              class="tool download"
-              @click="() => handleDownload('requests_total')"
-            >
-              <AgIcon name="download" />
-            </div>
           </div>
           <div class="charts-item">
             <BkLoading :loading="chartLoading['requests_total']">
@@ -135,12 +136,6 @@
               @click="() => handleRefresh('requests_failed_total')"
             >
               <AgIcon name="refresh-line" />
-            </div>
-            <div
-              class="tool download"
-              @click="() => handleDownload('requests_failed_total')"
-            >
-              <AgIcon name="download" />
             </div>
           </div>
           <div class="charts-item">
@@ -168,7 +163,7 @@ import { useAccessLog, useGateway } from '@/stores';
 import DatePicker from '@blueking/date-picker';
 import '@blueking/date-picker/vue3/vue3.css';
 import {
-  exportReportSummary,
+  exportMetricsSummary,
   getCallers,
   getReportSummary,
 } from '@/services/source/report';
@@ -206,6 +201,7 @@ const stageList = ref<any>([]);
 const resourceList = ref<any>([]);
 const callerOptions = ref<any>([]);
 const chartData = ref<Record<string, any>>({});
+const downloading = ref(false);
 const chartLoading = ref<Record<string, boolean>>({});
 const requestsTotalRef = ref();
 const requestsFailedTotalRef = ref();
@@ -299,15 +295,17 @@ const handleRefresh = async (metrics: string) => {
   }
 };
 
-const handleDownload = async (metrics: string) => {
+const handleDownload = async () => {
+  downloading.value = true;
   try {
     setSearchTimeRange();
     const params = {
       ...searchParams,
-      metrics,
+      metrics: undefined,
+      time_dimension: undefined,
     };
 
-    await exportReportSummary(apigwId.value, params);
+    await exportMetricsSummary(apigwId.value, params);
 
     Message({
       theme: 'success',
@@ -320,6 +318,9 @@ const handleDownload = async (metrics: string) => {
       theme: 'error',
       message: t('导出失败'),
     });
+  }
+  finally {
+    downloading.value = false;
   }
 };
 
@@ -463,11 +464,6 @@ init();
           i {
             color: #979BA5;
             font-size: 16px;
-          }
-          &.download {
-            i {
-              font-size: 20px;
-            }
           }
           &:not(:nth-last-child(1)) {
             margin-right: 4px;

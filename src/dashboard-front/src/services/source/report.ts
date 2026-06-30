@@ -74,11 +74,11 @@ export const getReportSummary = (apigwId: number, params: IGatewaysMetricsQueryS
   http.get<IMetricSummaryOutput>(`${path}/${apigwId}/metrics/query-summary/`, params);
 
 /**
- *  请求总量/失败请求总量导出接口
+ *  资源应用统计导出接口
  * @param apigwId 网关id
  * @param data 导出参数
  */
-export const exportReportSummary = (apigwId: number, data: IGatewaysMetricsQuerySummaryExportListQuery = {}) =>
+export const exportMetricsSummary = (apigwId: number, data: IGatewaysMetricsQuerySummaryExportListQuery = {}) =>
   http.get<unknown>(`${path}/${apigwId}/metrics/query-summary/export/`, data, { responseType: 'blob' });
 
 /**
