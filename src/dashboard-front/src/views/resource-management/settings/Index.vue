@@ -227,7 +227,7 @@
                   v-model="searchValue"
                   :data="searchData"
                   :placeholder="t('请输入资源名称或选择条件搜索, 按Enter确认')"
-                  :value-split-code="'+'"
+                  value-split-code="+"
                   class="w-full! bg-#fff!"
                   unique-select
                 />
@@ -1031,7 +1031,10 @@ watch(
     if (Number(route.params.id) !== gatewayId) {
       return;
     }
-    tableQueries.value = { order_by: tableQueries.value.order_by };
+    tableQueries.value = {
+      order_by: tableQueries.value.order_by,
+      label_ids: tableQueries.value.label_ids,
+    };
 
     if (route.query?.backend_id) {
       const { backend_id } = route.query;
@@ -1080,7 +1083,7 @@ watch(
       });
     }
     else {
-      tableQueries.value = {};
+      tableQueries.value = { label_ids: tableQueries.value.label_ids };
       queryKeyword.value = undefined;
       queryName.value = undefined;
       queryPath.value = undefined;

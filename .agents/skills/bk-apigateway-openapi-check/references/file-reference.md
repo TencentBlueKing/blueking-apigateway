@@ -30,7 +30,6 @@
 |------|------|------|------|
 | bk-apigateway 资源定义 | `data/apigw-definitions/bk-apigateway-resources.yaml` | OpenAPI 3.0 | 主资源定义，`operationId` 为唯一标识 |
 | bk-apigateway 网关定义 | `data/apigw-definitions/bk-apigateway-definition.yaml` | — | 包含 `grant_permissions`、`resource_docs.basedir`、`stages[].mcp_servers` |
-| bk-apigateway-inner 资源定义 | `data/apigw-definitions/bk-apigateway-inner-resources.yaml` | Swagger 2.0 | 旧版 inner 网关，与 resources.yaml 中 `v2_inner_*` 并行 |
 
 ### x-bk-apigateway-resource 扩展字段
 

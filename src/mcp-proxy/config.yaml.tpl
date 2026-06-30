@@ -119,5 +119,5 @@ bkAIDevTrace:
 
 ## config for pprof
 pprof:
-  username: "bk-apigateway"  # 环境变量 PPROF_USERNAME 优先
-  password: "xxxxx"  # 环境变量 PPROF_PASSWORD 优先，生产环境请使用强密码
+  username: ""  # 环境变量 PPROF_USERNAME 优先；为空时禁用 pprof
+  password: ""  # 环境变量 PPROF_PASSWORD 优先；为空时禁用 pprof

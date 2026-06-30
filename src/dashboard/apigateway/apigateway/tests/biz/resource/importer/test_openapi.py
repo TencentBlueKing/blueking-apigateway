@@ -906,6 +906,56 @@ paths:
         assert resources[0]["is_public"] is False
         assert resources[0]["auth_config"]["auth_verified_required"] is False
 
+    def test_validate_returns_schema_err_for_recursive_ref(self):
+        data = {
+            "swagger": "2.0",
+            "basePath": "/",
+            "info": {"version": "0.1", "title": "Test"},
+            "schemes": ["http"],
+            "paths": {
+                "/tree/": {
+                    "get": {
+                        "operationId": "get_tree",
+                        "description": "test recursive ref",
+                        "tags": [],
+                        "responses": {
+                            "200": {
+                                "description": "success",
+                                "schema": {"$ref": "#/definitions/v3TopoNodeInfo"},
+                            },
+                        },
+                        "x-bk-apigateway-resource": {
+                            "isPublic": True,
+                            "backend": {
+                                "type": "HTTP",
+                                "path": "/tree/",
+                                "method": "get",
+                                "timeout": 30,
+                            },
+                        },
+                    }
+                }
+            },
+            "definitions": {
+                "v3TopoNodeInfo": {
+                    "type": "object",
+                    "properties": {
+                        "children": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/v3TopoNodeInfo"},
+                        }
+                    },
+                }
+            },
+        }
+        manager = self._make_manager(data)
+
+        validate_err_list = manager.validate()
+
+        assert len(validate_err_list) == 1
+        assert "Recursion reached limit" in validate_err_list[0].message
+        assert "#/definitions/v3TopoNodeInfo" in validate_err_list[0].message
+
 
 class TestOpenAPIExporter:
     def test_get_swagger_by_paths(self):

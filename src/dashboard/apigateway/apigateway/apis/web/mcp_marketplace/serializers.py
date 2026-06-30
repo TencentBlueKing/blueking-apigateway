@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.biz.mcp_server import MCPServerHandler
+from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.django.translation import get_current_language_code
 
@@ -90,6 +91,16 @@ class MCPServerListInputSLZ(serializers.Serializer):
             return []
         # 解析逗号分隔的分类名称，去除空白
         return [cat.strip() for cat in value.split(",") if cat.strip()]
+
+
+class MCPMarketplaceServerAppPermissionApplyCreateInputSLZ(serializers.Serializer):
+    bk_app_code = serializers.CharField(required=True, validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
+    reason = serializers.CharField(required=True, help_text="申请原因")
+
+    class Meta:
+        ref_name = (
+            "apigateway.apis.web.mcp_marketplace.serializers.MCPMarketplaceServerAppPermissionApplyCreateInputSLZ"
+        )
 
 
 def _get_active_categories_from_prefetch(obj) -> List:
@@ -297,3 +308,14 @@ class MCPServerBatchConfigOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPServerBatchConfigOutputSLZ"
+
+
+class MCPMarketplaceApplicableAppOutputSLZ(serializers.Serializer):
+    """发起 MCPServer 权限申请时，可选择的蓝鲸应用列表"""
+
+    bk_app_code = serializers.CharField(help_text="应用代码")
+    name = serializers.CharField(help_text="应用名称")
+    logo_url = serializers.CharField(help_text="应用 Logo 地址", allow_blank=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_marketplace.serializers.MCPMarketplaceApplicableAppOutputSLZ"

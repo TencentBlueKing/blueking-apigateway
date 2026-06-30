@@ -599,9 +599,9 @@ func setHandlerRequestParams(
 		}
 	}
 	if handlerRequest.QueryParam != nil {
-		for k, value := range handlerRequest.QueryParam {
-			if err := req.SetQueryParam(k, value); err != nil {
-				auditLog.Error("set query param err", zap.String(k, value), zap.Error(err))
+		for k, values := range handlerRequest.QueryParam {
+			if err := req.SetQueryParam(k, values...); err != nil {
+				auditLog.Error("set query param err", zap.Strings(k, values), zap.Error(err))
 				return err
 			}
 		}
@@ -614,9 +614,13 @@ func setHandlerRequestParams(
 			}
 		}
 	}
-	if handlerRequest.BodyParam != nil {
+	if len(handlerRequest.BodyParam) > 0 && string(handlerRequest.BodyParam) != "null" {
 		if err := req.SetBodyParam(handlerRequest.BodyParam); err != nil {
-			auditLog.Error("set body param err", zap.Any("body", handlerRequest.BodyParam), zap.Error(err))
+			auditLog.Error(
+				"set body param err",
+				zap.ByteString("body", handlerRequest.BodyParam),
+				zap.Error(err),
+			)
 			return err
 		}
 	}
@@ -922,9 +926,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 			auditStatus        = "success"
 			auditUpstreamReqID string
 			auditHeaderInfo    map[string]string
-			auditQueryParam    StringParamMap
+			auditQueryParam    QueryParam
 			auditPathParam     StringParamMap
-			auditBodyParam     any
+			auditBodyParam     json.RawMessage
 		)
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段

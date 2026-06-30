@@ -46,6 +46,7 @@ class OpObjectTypeEnum(StructuredEnum):
     PLUGIN = EnumField("plugin", label=_("插件"))
     RESOURCE_DOC = EnumField("resource_doc", label=_("资源文档"))
     MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
+    MCP_SERVER_PERMISSION = EnumField("mcp_server_permission", label=_("MCPServer 应用权限"))
     PERMISSION = EnumField("permission", label=_("应用权限"))
 
 
@@ -54,6 +55,8 @@ COMMENTS = (
     _("创建网关"),
     _("更新网关"),
     _("删除网关"),
+    _("启用网关"),
+    _("停用网关"),
     _("创建网关标签"),
     _("更新网关标签"),
     _("删除网关标签"),
@@ -81,9 +84,14 @@ COMMENTS = (
     _("创建 MCPServer"),
     _("更新 MCPServer"),
     _("删除 MCPServer"),
+    _("创建 MCPServer 应用权限"),
+    _("更新 MCPServer 应用权限"),
+    _("删除 MCPServer 应用权限"),
     # extras
     _("环境状态变更"),
     _("更新环境变量"),
+    _("发布环境"),
+    _("下架环境"),
     _("批量更新资源"),
     _("批量删除资源"),
     _("创建环境后端配置"),

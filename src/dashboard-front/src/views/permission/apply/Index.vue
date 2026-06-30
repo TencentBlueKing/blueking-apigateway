@@ -100,7 +100,7 @@
       >
         <template #expandedRow="{row}">
           <AgTable
-            v-model:table-data="row.resourceList"
+            v-model:table-data="row.resources"
             size="small"
             class="ag-expand-table"
             local-page
@@ -148,10 +148,11 @@ import {
   usePermission,
   useUserInfo,
 } from '@/stores';
-import type { IApprovalListItem } from '@/types/permission';
+import type { IApprovalListItem, IResource } from '@/types/permission';
 import type { ITableMethod } from '@/types/common';
 import type { IApplyStatus, IFomDataQuery } from '@/services/types/query/personal-workbench.ts';
 import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_STATUS_MAP } from '@/enums';
@@ -167,7 +168,8 @@ interface IApprovalListItemExt extends IApprovalListItem {
   grant_dimension: string
   selectionTip: string
   isExpand?: boolean
-  selection?: any[]
+  resources?: IResource[]
+  selection?: IResource[]
   isSelectAll?: boolean
 }
 
@@ -186,7 +188,7 @@ const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
 const tableData = ref<any[]>([]);
 const selections = ref<any[]>([]);
 const selectedRowKeys = ref<any[]>([]);
-const resourceList = ref<any[]>([]);
+const resourceList = ref<IResourceListPageOutput[]>([]);
 const childrenColumns = shallowRef<any[]>([
   {
     title: '',
@@ -220,14 +222,14 @@ const curAction = ref<IFomDataQuery>({
 });
 const curPermission = ref<{
   bk_app_code: string
-  resourceList: any[]
-  selection: any[]
+  resources: IResource[]
+  selection: IResource[]
   grant_dimension: string
   isSelectAll: boolean
-  resource_ids: any[]
+  resource_ids: number[]
 }>({
   bk_app_code: '',
-  resourceList: [],
+  resources: [],
   selection: [],
   grant_dimension: '',
   isSelectAll: true,
@@ -272,7 +274,7 @@ const setRowResources = () => {
   tableData.value.forEach((row: any) => {
     row.isSelectAll = true;
     row.selection = [];
-    row.resourceList = sortByKey(resourceList.value.filter((resource: any) => row.resource_ids.includes(resource.id)), 'path');
+    row.resources = sortByKey(resourceList.value.filter((resource: IResourceListPageOutput) => row.resource_ids.includes(resource.id)), 'path');
   });
 };
 
@@ -324,7 +326,7 @@ const getTableColumns = computed((): any[] => {
                 size="10"
                 class="mr-4px"
               />
-              {`${row.grant_dimension_display} (${row.resourceList?.length || '--'})`}
+              {`${row.grant_dimension_display} (${row.resources?.length || '--'})`}
             </div>
           );
         }
@@ -524,7 +526,7 @@ const handleSelectionChange = ({ selections: selected, selectionsRowKeys }: any)
 // 折叠table 多选发生变化触发
 const handleRowSelectionChange = (row: any, rowSelections: any) => {
   const { selections } = rowSelections;
-  const isSelectAll = row.resourceList.length === selections.length;
+  const isSelectAll = row.resources.length === selections.length;
   row.selection = selections;
   row.isSelectAll = isSelectAll;
   curPermission.value = Object.assign(curPermission.value, {
@@ -697,11 +699,11 @@ const handleClearSelection = () => {
 
 .perm-approval-header {
   display: flex;
+  min-height: 32px;
+  margin-bottom: 16px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
-  min-height: 32px;
   flex-wrap: wrap;
 
   .batch-approval {
@@ -719,17 +721,17 @@ const handleClearSelection = () => {
     min-width: 0;
 
     :deep(.bk-form-item) {
-      margin: 0;
       display: flex;
+      max-width: fit-content;
+      min-width: 0;
+      margin: 0;
       align-items: center;
       flex: 1;
-      min-width: 0;
-      max-width: fit-content;
 
       .bk-form-label {
         width: auto;
-        white-space: nowrap;
         text-align: right;
+        white-space: nowrap;
       }
 
       .bk-form-content {

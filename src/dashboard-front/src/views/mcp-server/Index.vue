@@ -209,6 +209,7 @@ import { debounce } from 'lodash-es';
 import { Message } from 'bkui-vue';
 import { Plus } from 'bkui-vue/lib/icon';
 import { vIntersectionObserver } from '@vueuse/components';
+import type { ISearchItem } from 'bkui-vue/lib/search-select/utils';
 import {
   type IMCPFilterParams,
   type IMCPServerCategory,
@@ -219,7 +220,7 @@ import {
   getServers,
   patchServerStatus,
 } from '@/services/source/mcp-server';
-import type { ISearchSelect, ISearchSelectData } from '@/types/common.ts';
+import type { ISearchSelect } from '@/types/common.ts';
 import { useFeatureFlag } from '@/stores';
 import { useMcpBatchCopyConfig, usePopInfoBox } from '@/hooks';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
@@ -254,7 +255,7 @@ const pagination = ref({
   count: 0,
   hasNoMore: false,
 });
-const filterData = ref<any>({
+const filterData = ref<IMCPFilterParams>({
   order_by: '-updated_time',
   status: activeStatusTab.value,
 });
@@ -277,7 +278,7 @@ const {
   gatewayId,
 });
 
-const searchData = computed<ISearchSelectData[]>(() => [
+const searchData = computed<ISearchItem[]>(() => [
   {
     name: t('模糊搜索'),
     id: 'keyword',

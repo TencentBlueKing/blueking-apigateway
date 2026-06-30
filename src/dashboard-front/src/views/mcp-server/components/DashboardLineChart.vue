@@ -23,14 +23,19 @@
     </div>
     <div v-show="!isEmpty">
       <div
+        :id="instanceId"
+        class="line-chart"
+        :class="[isMiniLayout ? 'mini' : 'middle']"
+      />
+      <div
         v-if="chartLegend[instanceId]"
         class="chart-legend custom-scroll-bar"
-        :class="[{ 'side-legend': ['non_2xx_status'].includes(instanceId) }]"
+        :class="[{ 'side-legend': isFailedStatus }]"
       >
         <div
           v-for="({ color, name, selected }, legendIndex) in chartLegend[instanceId]"
           :key="legendIndex"
-          class="mt-8px legend-item"
+          class="legend-item"
           :class="[selected]"
           @click.stop="() => handleClickLegend(legendIndex)"
         >
@@ -43,11 +48,6 @@
           </div>
         </div>
       </div>
-      <div
-        :id="instanceId"
-        class="line-chart"
-        :class="[['requests', 'requests_2xx', 'non_2xx_status'].includes(instanceId) ? 'mini' : 'middle']"
-      />
     </div>
     <div
       v-show="isEmpty"
@@ -81,7 +81,7 @@ import type {
 } from 'echarts/types/dist/shared';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { ISearchParamsType, ISeriesItemType } from '@/services/source/observability';
+import type { IObservabilitySearchParams, ISeriesItemType } from '@/services/source/observability';
 import TableEmpty from '@/components/table-empty/Index.vue';
 
 // 图例类型定义
@@ -141,6 +141,8 @@ const isEmpty = computed(() => {
   const seriesList = chartData.series;
   return !Array.isArray(seriesList) || seriesList.length === 0;
 });
+const isMiniLayout = computed(() => ['requests', 'requests_2xx', 'non_2xx_status'].includes(instanceId));
+const isFailedStatus = computed(() => ['non_2xx_status'].includes(instanceId));
 
 // 更新空状态置
 const updateTableEmptyConfig = () => {
@@ -452,7 +454,7 @@ const renderChart = () => {
 };
 
 // 同步搜索参数
-const syncParams = (params: ISearchParamsType) => {
+const syncParams = (params: IObservabilitySearchParams) => {
   searchParams.value = params;
 };
 
@@ -533,13 +535,14 @@ defineExpose({
 
   .chart-legend {
     display: flex;
-    justify-content: flex-end;
     flex-wrap: wrap;
+    max-height: 90px;
     overflow-y: auto;
 
     .legend-item {
       display: flex;
-      margin-right: 16px;
+      margin-bottom: 8px;
+      margin-right: 12px;
       font-size: 12px;
       line-height: 22px;
       white-space: nowrap;

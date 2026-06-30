@@ -50,6 +50,8 @@ class PluginTypeCodeEnum(StructuredEnum):
     BK_OAUTH2_VERIFY = EnumField("bk-oauth2-verify", label=_("OAuth2 验证"))
     BK_OAUTH2_AUDIENCE_VALIDATE = EnumField("bk-oauth2-audience-validate", label=_("OAuth2 受众验证"))
 
+    URI_BLOCKER = EnumField("uri-blocker", label=_("URI 阻断"))
+
 
 class PluginTypeScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
@@ -61,12 +63,6 @@ class PluginTypeScopeEnum(StructuredEnum):
 class PluginBindingScopeEnum(StructuredEnum):
     STAGE = EnumField(ScopeTypeEnum.STAGE.value, label=_("环境"))
     RESOURCE = EnumField(ScopeTypeEnum.RESOURCE.value, label=_("资源"))
-
-
-class PluginStyleEnum(StructuredEnum):
-    RAW = EnumField("raw", label=_("原生"))
-    DYNAMIC = EnumField("dynamic", label=_("动态"))
-    FIX = EnumField("fix", label=_("固定"))
 
 
 class PluginBindingSourceEnum(StructuredEnum):

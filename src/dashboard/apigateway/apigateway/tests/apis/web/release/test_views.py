@@ -273,3 +273,35 @@ class TestReleaseHistoryEventsRetrieveAPI:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) >= 1
+
+    def test_retrieve_prefetches_stage_and_resource_version(
+        self, request_view, django_assert_num_queries, fake_gateway
+    ):
+        stage = G(Stage, gateway=fake_gateway)
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
+        history = G(
+            ReleaseHistory,
+            gateway=fake_gateway,
+            stage=stage,
+            resource_version=resource_version,
+            created_time=dummy_time.time,
+        )
+        G(
+            PublishEvent,
+            publish=history,
+            name=PublishEventNameTypeEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusTypeEnum.FAILURE.value,
+            created_time=dummy_time.time + datetime.timedelta(seconds=10),
+        )
+
+        with django_assert_num_queries(4):
+            resp = request_view(
+                method="GET",
+                view_name="gateway.release_histories.events",
+                path_params={"gateway_id": fake_gateway.id, "history_id": history.id},
+            )
+            result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["stage"] == {"id": stage.id, "name": stage.name}
+        assert result["data"]["resource_version_display"] == resource_version.object_display

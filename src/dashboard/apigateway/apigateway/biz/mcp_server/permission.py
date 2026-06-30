@@ -64,6 +64,9 @@ class MCPServerPermissionHandler:
         )
 
         selected_mcp_server_ids = list(queryset.values_list("id", flat=True))
+        if set(selected_mcp_server_ids) != set(mcp_server_ids):
+            raise error_codes.NOT_FOUND.format(_("请检查对应 mcp server /环境/网关是否都已启用。"), replace=True)
+
         existing_permissions = MCPServerAppPermissionApply.objects.filter(
             bk_app_code=bk_app_code,
             mcp_server_id__in=selected_mcp_server_ids,
@@ -99,7 +102,7 @@ class MCPServerPermissionHandler:
         # 创建 ITSM 工单（不阻塞主流程）
         MCPServerPermissionHandler._create_itsm_tickets_for_applies(new_applies)
 
-        return new_applies
+        return new_applies.select_related("mcp_server")
 
     @staticmethod
     def _create_itsm_tickets_for_applies(applies):

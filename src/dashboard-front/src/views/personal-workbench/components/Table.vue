@@ -32,6 +32,7 @@
       v-model:selected-row-keys="selectedRowKeys"
       v-model:settings="settings"
       show-settings
+      show-cell-empty-content
       :show-selection="isShowSelection"
       :table-empty-type="tableEmptyType"
       :expand-icon="false"
@@ -49,15 +50,13 @@
       @selection-change="handleSelectionChange"
       @clear-filter="handleClearFilter"
     >
-      <template #cellEmptyContent="{ col }">
-        <template v-if="!col.fixed">
-          <span class="empty-placeholder">--</span>
-        </template>
-        <template v-else />
-      </template>
-      <template #expandedRow="{row}">
-        <BkLoading :loading="row?.isLoading">
+      <template #expandedRow="{ row }">
+        <BkLoading
+          :loading="lastExpandRow?.isLoading"
+          :z-index="999"
+        >
           <AgTable
+            ref="childTableRef"
             v-model:table-data="row.resources"
             v-model:selected-row-keys="curPermission.resource_ids"
             size="small"
@@ -103,10 +102,11 @@
 
 <script setup lang="tsx">
 import { Button, Loading, Message, Popover } from 'bkui-vue';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, debounce } from 'lodash-es';
 import { t } from '@/locales';
 import type { FilterValue, PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type { ITableEmptyType, ITableMethod } from '@/types/common';
+import type { IResource } from '@/types/permission';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IApplyStatus,
@@ -120,7 +120,6 @@ import type {
 import type {
   IPersonalWorkbenchFilterOptionResponse,
   IPersonalWorkbenchListResponse,
-  IResources,
 } from '@/services/types/responses/personal-workbench.ts';
 import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
@@ -133,6 +132,7 @@ import { updatePermissionStatus } from '@/services/source/permission.ts';
 import { updateMcpPermissions } from '@/services/source/mcp-market.ts';
 import { useFeatureFlag } from '@/stores';
 import { usePersonalWorkbench } from '@/hooks';
+import { GRANT_DIMENSION_TYPE_LIST } from '@/constants';
 import { APPROVAL_HISTORY_STATUS_MAP, APPROVAL_STATUS_MAP } from '@/enums';
 import { DEFAULT_FORM_DATA } from '@/views/personal-workbench/common/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
@@ -160,6 +160,7 @@ const { getMyPendingData } = usePersonalWorkbench();
 
 const basicFormRef = useTemplateRef<InstanceType<typeof BasicForm>>('basicFormRef');
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const childTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('childTableRef');
 const tableData = ref<IPersonalWorkbenchListResponse[]>([]);
 const selectedRows = ref<IPersonalWorkbenchUIState[]>([]);
 const selectedRowKeys = ref<(string | number)[]>([]);
@@ -377,7 +378,7 @@ const tableColumns = computed(() => {
             const isExpandResource = expandableConfig.value.expandedRowKeys.includes(row.id) && !['api'].includes(row.grant_dimension);
 
             // 当前行自己的选中数量
-            const selectedLen = row.selection?.length ?? 0;
+            const selectedLen = row.selection?.length || lastExpandRow.value?.resource_ids?.length || 0;
             const totalLen = row.resources?.length ?? 0;
 
             // 没展开 → 全部通过
@@ -493,23 +494,14 @@ const tableColumns = computed(() => {
         type: 'single' as const,
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: [
-          {
-            label: t('按网关'),
-            value: 'api',
-          },
-          {
-            label: t('按资源'),
-            value: 'resource',
-          },
-        ],
+        list: GRANT_DIMENSION_TYPE_LIST,
       },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
         if (['resource'].includes(row.grant_dimension)) {
           return (
             <div class="flex items-center">
               <ag-icon
-                name={row.isExpand ? 'down-shape' : 'right-shape'}
+                name={expandableConfig.value.expandedRowKeys.includes(Number(row.id)) ? 'down-shape' : 'right-shape'}
                 size="10"
                 class="mr-4px"
               />
@@ -546,12 +538,18 @@ const tableColumns = computed(() => {
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
         list: mcpServerList.value.map((item: IPersonalWorkbenchFilterOptionResponse) => ({
-          label: item.name,
+          label: `${item.title} (${item.name})`,
           value: item.id,
         })),
       },
       cell: (_: unknown, { row }: { row: TableRowData }) => {
-        return row?.mcp_server?.name || '--';
+        const { name, title = '' } = row?.mcp_server ?? {};
+
+        if (!name) return '--';
+
+        const validTitle = title && typeof title === 'string' ? title : '';
+
+        return validTitle ? `${validTitle} (${name})` : name;
       },
     },
     ...columns!,
@@ -641,7 +639,7 @@ const handleGatewayApproveReject = async () => {
     ) {
       params = Object.assign(params, {
         status: 'partial_approved',
-        part_resource_ids: { [id]: selection?.map((item: IResources) => item.id) },
+        part_resource_ids: { [id]: selection?.map((item: IResource) => item.id) },
       });
     }
     let gatewayIdList: number[] = [curAction.value.gateway_id!];
@@ -717,7 +715,7 @@ const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: Fil
   filterData.value = { ...filterItem };
 };
 
-const handleRowClick = async ({ e, row }: {
+const handleRowClick = ({ e, row }: {
   e: MouseEvent
   row: TableRowData
 }) => {
@@ -725,38 +723,29 @@ const handleRowClick = async ({ e, row }: {
 
   if (!row?.grant_dimension?.includes('resource')) return;
 
-  const newIsExpand = !row.isExpand;
+  const rowId = Number(row.id);
+  const isNowExpand = expandableConfig.value.expandedRowKeys.includes(rowId);
 
-  row.isLoading = true;
+  // 切换展开/收起
+  expandableConfig.value.expandedRowKeys = isNowExpand ? [] : [rowId];
 
   // 重置上一个展开行
   if (lastExpandRow.value && lastExpandRow.value !== row) {
+    handleResetExpandSelection();
     Object.assign(lastExpandRow.value, {
+      isLoading: false,
       isExpand: false,
-      selection: [],
-      resource_ids: [],
     });
   }
 
-  // 更新当前行状态
-  row.isExpand = newIsExpand;
-  expandableConfig.value.expandedRowKeys = newIsExpand ? [Number(row.id)] : [];
-  lastExpandRow.value = newIsExpand ? row : null;
+  lastExpandRow.value = !isNowExpand ? row : null;
 
-  // 初始化选中数据
-  if (newIsExpand) {
-    row.selection ??= [];
-    row.resource_ids = row.selection.map((item: IResources) => item.id) as number[];
-  }
-  else {
-    Object.assign(row, {
-      selection: [],
-      resource_ids: [],
-    });
-  }
+  if (lastExpandRow.value) lastExpandRow.value.isLoading = true;
 
   setTimeout(() => {
-    row.isLoading = false;
+    if (lastExpandRow.value) {
+      lastExpandRow.value.isLoading = false;
+    }
   }, 300);
 };
 
@@ -773,42 +762,51 @@ const handleSelectionChange = ({
 
 const handleChildSelectionChange = (
   row: TableRowData,
+  { selections,
+    selectionsRowKeys }:
   {
-    selections,
-    selectionsRowKeys,
-  }: {
     selections: TableRowData[]
     selectionsRowKeys: (string | number)[]
-  }) => {
-  // 保存当前行选中项
-  row.selection = selections as IResources[];
-  row.resource_ids = selectionsRowKeys;
+  },
+) => {
+  const selectedIds = selectionsRowKeys as number[];
+  const total = row.resources?.length ?? 0;
 
-  // 是否全选
-  const total = row.resources?.length || 0;
-  row.isSelectAll = total > 0 && selections.length === total;
+  const rowState = {
+    selection: selections as IResource[],
+    resource_ids: selectedIds,
+    isSelectAll: total > 0 && selectedIds.length === total,
+  };
 
-  // 更新全局审批数据
+  Object.assign(row, rowState);
+
+  if (lastExpandRow.value?.id === row.id) {
+    Object.assign(lastExpandRow.value!, rowState);
+  }
+
   curPermission.value = {
     ...curPermission.value,
-    selection: row.selection,
-    resource_ids: selectionsRowKeys as number[],
-    isSelectAll: row.isSelectAll,
+    ...rowState,
   };
 };
 
 // 全部通过/部分通过 Dialog
 const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
   e.stopPropagation();
-  curPermission.value = row as IPersonalWorkbenchUIState;
+  curPermission.value = (lastExpandRow.value || row) as IPersonalWorkbenchUIState;
   curAction.value = {
     ids: [row.id],
-    gateway_id: row.gateway_id as number,
+    gateway_id: row.gateway_id,
     status: 'approved',
     comment: t('全部通过'),
     part_resource_ids: {},
   };
-  if (!curPermission.value.isSelectAll) {
+  // 全部通过不需要带 resource_ids
+  if (curPermission.value.isSelectAll) {
+    curPermission.value.resource_ids = [];
+    curPermission.value.selection = [];
+  }
+  else {
     curAction.value.comment = t('部分通过');
   }
   applyActionDialogConf.value = Object.assign(applyActionDialogConf.value, {
@@ -820,10 +818,14 @@ const handleShowGatewayApprove = (e: MouseEvent, row: TableRowData) => {
 // 全部驳回 Dialog
 const handleShowGatewayReject = (e: MouseEvent, row: TableRowData) => {
   e.stopPropagation();
-  curPermission.value = row as IPersonalWorkbenchUIState;
+  curPermission.value = (lastExpandRow.value || row) as IPersonalWorkbenchUIState;
+  if (curPermission.value.isSelectAll) {
+    curPermission.value.resource_ids = [];
+    curPermission.value.selection = [];
+  }
   curAction.value = {
     ids: [row.id!],
-    gateway_id: row.gateway_id as number,
+    gateway_id: row.gateway_id,
     status: 'rejected',
     comment: t('全部驳回'),
     part_resource_ids: {},
@@ -892,14 +894,26 @@ const handleBatchApproval = () => {
   batchApplyDialogConf.value.isShow = true;
 };
 
-const handleClearSelection = () => {
-  tableRef.value?.handleResetSelection();
-  selectedRows.value = [];
-  selectedRowKeys.value = [];
-  curPermission.value = Object.assign(curPermission.value, {
+const handleResetExpandSelection = () => {
+  const rowState = {
     selection: [],
     resource_ids: [],
-  });
+    isSelectAll: true,
+  };
+
+  if (lastExpandRow.value) {
+    Object.assign(lastExpandRow.value, rowState);
+  }
+
+  Object.assign(curPermission.value, rowState);
+};
+
+const handleClearSelection = () => {
+  selectedRows.value = [];
+  selectedRowKeys.value = [];
+  tableRef.value?.handleResetSelection();
+  childTableRef.value?.handleResetSelection();
+  handleResetExpandSelection();
 };
 
 const handleClearFilter = () => {
@@ -915,9 +929,20 @@ const getRowClass = ({ row }: { row: TableRowData }) => {
   return '';
 };
 
+// 搜索McpServer列表
+const debounceSearch = debounce(() => {
+  getList();
+  // 处理非清除筛选条件后勾选数据回显
+  if (lastExpandRow.value?.selection?.length) {
+    setTimeout(() => {
+      childTableRef.value?.setSelectionData(lastExpandRow.value?.selection);
+    }, 200);
+  }
+}, 200);
+
 watch(() => filterData, () => {
   tableEmptyType.value = Object.keys(filterSimpleEmpty(filterData.value))?.length > 0 ? 'searchEmpty' : 'empty';
-  getList();
+  debounceSearch();
 }, { deep: true });
 
 watch(isGateway, () => {

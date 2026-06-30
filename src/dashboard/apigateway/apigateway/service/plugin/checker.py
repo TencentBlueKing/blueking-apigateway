@@ -191,6 +191,37 @@ class RequestValidationChecker(BaseChecker):
             self._validate_json_schema("header_schema", header_schema)
 
 
+class UriBlockerChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        block_rules = loaded_data.get("block_rules")
+        if not block_rules:
+            raise ValueError("block_rules cannot be empty")
+
+        if not isinstance(block_rules, list):
+            raise TypeError("block_rules should be list")
+
+        flags = re.IGNORECASE if loaded_data.get("case_insensitive") else 0
+        for index, rule in enumerate(block_rules):
+            if not isinstance(rule, str):
+                raise TypeError(f"block_rules[{index}] should be string")
+
+            if not rule:
+                raise ValueError(f"block_rules[{index}] cannot be empty")
+
+            try:
+                re.compile(rule, flags)
+            except re.error as err:
+                raise ValueError(f"block_rules[{index}] is not a valid regex: {err}")
+
+        duplicate_rules = [rule for rule, count in Counter(block_rules).items() if count >= 2]
+        if duplicate_rules:
+            raise ValueError("block_rules has duplicate elements: {}".format(", ".join(duplicate_rules)))
+
+
 class FaultInjectionChecker(BaseChecker):
     def check(self, payload: str):
         loaded_data = yaml_loads(payload)
@@ -443,6 +474,7 @@ class PluginConfigYamlChecker:
         PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteChecker(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
+        PluginTypeCodeEnum.URI_BLOCKER.value: UriBlockerChecker(),
         PluginTypeCodeEnum.FAULT_INJECTION.value: FaultInjectionChecker(),
         PluginTypeCodeEnum.RESPONSE_REWRITE.value: ResponseRewriteChecker(),
         PluginTypeCodeEnum.REDIRECT.value: RedirectChecker(),

@@ -33,9 +33,9 @@ var _ = Describe("Types", func() {
 			It("should marshal and unmarshal correctly", func() {
 				request := proxy.HandlerRequest{
 					HeaderParam: proxy.StringParamMap{"Content-Type": "application/json"},
-					QueryParam:  proxy.StringParamMap{"limit": "10", "offset": "0"},
+					QueryParam:  proxy.QueryParam{"limit": {"10"}, "offset": {"0"}},
 					PathParam:   proxy.StringParamMap{"id": "123"},
-					BodyParam:   map[string]any{"name": "test"},
+					BodyParam:   json.RawMessage(`{"name":"test"}`),
 				}
 
 				data, err := json.Marshal(request)
@@ -46,9 +46,12 @@ var _ = Describe("Types", func() {
 				err = json.Unmarshal(data, &result)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result.HeaderParam["Content-Type"]).To(Equal("application/json"))
-				Expect(result.QueryParam["limit"]).To(Equal("10"))
+				Expect(result.QueryParam["limit"]).To(Equal([]string{"10"}))
 				Expect(result.PathParam["id"]).To(Equal("123"))
-				Expect(result.BodyParam.(map[string]any)["name"]).To(Equal("test"))
+
+				var body map[string]any
+				Expect(json.Unmarshal(result.BodyParam, &body)).To(Succeed())
+				Expect(body["name"]).To(Equal("test"))
 			})
 
 			It("should handle empty fields", func() {
@@ -60,7 +63,7 @@ var _ = Describe("Types", func() {
 
 			It("should handle partial fields", func() {
 				request := proxy.HandlerRequest{
-					QueryParam: proxy.StringParamMap{"search": "test"},
+					QueryParam: proxy.QueryParam{"search": {"test"}},
 				}
 
 				data, err := json.Marshal(request)
@@ -77,13 +80,9 @@ var _ = Describe("Types", func() {
 
 			It("should handle complex body param", func() {
 				request := proxy.HandlerRequest{
-					BodyParam: map[string]any{
-						"user": map[string]any{
-							"name":  "John",
-							"email": "john@example.com",
-							"roles": []string{"admin", "user"},
-						},
-					},
+					BodyParam: json.RawMessage(
+						`{"user":{"name":"John","email":"john@example.com","roles":["admin","user"]}}`,
+					),
 				}
 
 				data, err := json.Marshal(request)
@@ -93,28 +92,122 @@ var _ = Describe("Types", func() {
 				err = json.Unmarshal(data, &result)
 				Expect(err).NotTo(HaveOccurred())
 
-				body := result.BodyParam.(map[string]any)
+				var body map[string]any
+				Expect(json.Unmarshal(result.BodyParam, &body)).To(Succeed())
 				user := body["user"].(map[string]any)
 				Expect(user["name"]).To(Equal("John"))
 				Expect(user["email"]).To(Equal("john@example.com"))
 			})
 
-			It("should unmarshal from JSON string", func() {
+			It("should preserve large integer precision in body param", func() {
 				jsonStr := `{
-					"header_param": {"Authorization": "Bearer token"},
-					"query_param": {"page": 1},
-					"path_param": {"userId": "abc123"},
-					"body_param": {"data": "test"}
+					"body_param": {"video_kol_item_list": [7643696123382648115], "unique_id": 1750035600002}
 				}`
 
 				var request proxy.HandlerRequest
 				err := json.Unmarshal([]byte(jsonStr), &request)
 				Expect(err).NotTo(HaveOccurred())
 
+				// BodyParam is json.RawMessage, so it preserves the original bytes exactly
+				Expect(string(request.BodyParam)).To(ContainSubstring("7643696123382648115"))
+				Expect(string(request.BodyParam)).To(ContainSubstring("1750035600002"))
+			})
+
+			It("should unmarshal from JSON string", func() {
+				jsonStr := `{
+				"header_param": {"Authorization": "Bearer token"},
+				"query_param": {"page": ["1"]},
+				"path_param": {"userId": "abc123"},
+				"body_param": {"data": "test"}
+			}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
 				Expect(request.HeaderParam["Authorization"]).To(Equal("Bearer token"))
-				Expect(request.QueryParam["page"]).To(Equal("1"))
+				Expect(request.QueryParam["page"]).To(Equal([]string{"1"}))
 				Expect(request.PathParam["userId"]).To(Equal("abc123"))
-				Expect(request.BodyParam.(map[string]any)["data"]).To(Equal("test"))
+
+				var body map[string]any
+				Expect(json.Unmarshal(request.BodyParam, &body)).To(Succeed())
+				Expect(body["data"]).To(Equal("test"))
+			})
+
+			It("should handle explicit null body_param", func() {
+				jsonStr := `{"body_param": null}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// json.RawMessage stores "null" literal bytes for JSON null
+				Expect(string(request.BodyParam)).To(Equal("null"))
+			})
+
+			It("should handle missing body_param as nil", func() {
+				jsonStr := `{"query_param": {"page": ["1"]}}`
+
+				var request proxy.HandlerRequest
+				err := json.Unmarshal([]byte(jsonStr), &request)
+				Expect(err).NotTo(HaveOccurred())
+
+				// omitempty + missing field = nil RawMessage
+				Expect(request.BodyParam).To(BeNil())
+			})
+		})
+	})
+
+	Describe("QueryParam", func() {
+		Describe("UnmarshalJSON", func() {
+			It("should decode array values as multiple query values", func() {
+				jsonStr := `{"related": ["fields", "storages"]}`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m["related"]).To(Equal([]string{"fields", "storages"}))
+			})
+
+			It("should decode single-item arrays as one query value", func() {
+				jsonStr := `{"related": ["fields"]}`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m["related"]).To(Equal([]string{"fields"}))
+			})
+
+			It("should skip empty arrays instead of stringifying them", func() {
+				jsonStr := `{"related": []}`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m).NotTo(HaveKey("related"))
+			})
+
+			It("should decode scalar values using existing string conversion semantics", func() {
+				jsonStr := `{"extra": true, "ratio": 1.25, "bk_biz_id": 2005000002}`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m["extra"]).To(Equal([]string{"true"}))
+				Expect(m["ratio"]).To(Equal([]string{"1.25"}))
+				Expect(m["bk_biz_id"]).To(Equal([]string{"2005000002"}))
+			})
+
+			It("should preserve large integers in arrays without scientific notation", func() {
+				jsonStr := `{"ids": [2005000002, 9007199254740992]}`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m["ids"]).To(Equal([]string{"2005000002", "9007199254740992"}))
+			})
+
+			It("should handle null input", func() {
+				jsonStr := `null`
+				var m proxy.QueryParam
+				err := json.Unmarshal([]byte(jsonStr), &m)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(m).To(BeNil())
 			})
 		})
 	})

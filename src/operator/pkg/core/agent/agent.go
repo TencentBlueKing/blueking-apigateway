@@ -100,12 +100,20 @@ func (w *EventAgent) Run(ctx context.Context) {
 			// NOTE: 事件实际只是记录有哪个stage需要更新, 更新的单位为stage, 而不是细粒度的资源本身
 			// 处理bk-release事件,需要触发commit,如果不是删除stage事件发布
 			if event.Kind == constant.BkRelease && !event.IsDeleteRelease() {
+				releaseInfo := event.GetReleaseInfo()
+				w.logger.Infow(
+					"release event triggered timer flush",
+					append(releaseInfo.LogFields(), "reason", "release_event")...)
 				w.handleTicker(ctx)
 				continue
 			}
 			if event.Kind == constant.BkRelease && event.IsDeleteRelease() {
 				// 删除stage事件的releaseInfo需要提交到commitChan
-				w.commitChan <- []*entity.ReleaseInfo{event.GetReleaseInfo()}
+				releaseInfo := event.GetReleaseInfo()
+				w.logger.Infow(
+					"delete release triggered immediate commit",
+					append(releaseInfo.LogFields(), "reason", "delete_release")...)
+				w.commitChan <- []*entity.ReleaseInfo{releaseInfo}
 				continue
 			}
 			w.handleEvent(event)
@@ -159,8 +167,12 @@ func (w *EventAgent) handleEvent(event *entity.ResourceMetadata) {
 
 func (w *EventAgent) handleTicker(ctx context.Context) {
 	resourceList := w.resourceTimer.ListReleaseForCommit()
-	w.logger.Infow("timer trigger resources to be committed", "resourceList",
-		resourceList)
+	w.logger.Infow(
+		"timer trigger resources to be committed",
+		"resourceCount", len(resourceList),
+		"releaseKeys", entity.ReleaseLogKeys(resourceList),
+		"resourceList", resourceList,
+	)
 	if len(resourceList) != 0 {
 		w.commitChan <- resourceList
 	}

@@ -16,6 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from django_dynamic_fixture import G
+
+from apigateway.apps.audit.constants import OpObjectTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
+from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer
+from apigateway.core.constants import StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
 
 
@@ -242,7 +249,10 @@ class TestStageBackendApi:
 
 class TestStageStatusUpdateApi:
     def test_update(self, request_view, fake_stage):
-        data = {"status": 0}
+        mcp_server = G(
+            MCPServer, gateway=fake_stage.gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value
+        )
+        data = {"status": StageStatusEnum.INACTIVE.value}
 
         response = request_view(
             "PUT",
@@ -253,4 +263,14 @@ class TestStageStatusUpdateApi:
         )
         assert response.status_code == 204
         stage = Stage.objects.get(id=fake_stage.id)
-        assert stage.status == 0
+        assert stage.status == StageStatusEnum.INACTIVE.value
+
+        audit_log = AuditEventLog.objects.filter(op_object_id=str(fake_stage.id)).order_by("-id").first()
+        assert audit_log.comment == "下架环境"
+        mcp_server.refresh_from_db()
+        assert mcp_server.status == MCPServerStatusEnum.INACTIVE.value
+        mcp_server_audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+            op_object_id=mcp_server.id,
+        )
+        assert mcp_server_audit_log.comment == "环境停用，同步停用其 MCP Server"

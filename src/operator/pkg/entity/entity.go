@@ -518,6 +518,57 @@ func (ri *ReleaseInfo) String() string {
 		ri.ID, ri.PublishId, ri.PublishTime, ri.ApisixVersion, ri.ResourceVersion)
 }
 
+// LogAction returns the log action for the current release lifecycle.
+func (ri *ReleaseInfo) LogAction() string {
+	if ri == nil {
+		return "unknown"
+	}
+	if cast.ToString(ri.PublishId) == constant.DeletePublishID {
+		return "unpublish"
+	}
+	if ri.PublishId > 0 {
+		return "publish"
+	}
+	return "sync"
+}
+
+// LogKey returns a stable grep key for one release flow.
+func (ri *ReleaseInfo) LogKey() string {
+	if ri == nil {
+		return "unknown"
+	}
+	return fmt.Sprintf("%s|%d|%s", ri.GetReleaseID(), ri.PublishId, ri.LogAction())
+}
+
+// LogFields returns the structured log fields shared across the release flow.
+func (ri *ReleaseInfo) LogFields() []any {
+	if ri == nil {
+		return []any{"action", "unknown", "log_key", "unknown"}
+	}
+	return []any{
+		"action", ri.LogAction(),
+		"gateway", ri.GetGatewayName(),
+		"stage", ri.GetStageName(),
+		"publish_id", ri.PublishId,
+		"release_id", ri.GetReleaseID(),
+		"resource_id", ri.GetID(),
+		"apisix_version", ri.ApisixVersion,
+		"log_key", ri.LogKey(),
+	}
+}
+
+// ReleaseLogKeys extracts stable grep keys from a batch of releases.
+func ReleaseLogKeys(releaseInfos []*ReleaseInfo) []string {
+	keys := make([]string, 0, len(releaseInfos))
+	for _, releaseInfo := range releaseInfos {
+		if releaseInfo == nil {
+			continue
+		}
+		keys = append(keys, releaseInfo.LogKey())
+	}
+	return keys
+}
+
 // IsNoNeedReport check if the release info is no need report
 func (ri *ReleaseInfo) IsNoNeedReport() bool {
 	publishID := cast.ToString(ri.PublishId)

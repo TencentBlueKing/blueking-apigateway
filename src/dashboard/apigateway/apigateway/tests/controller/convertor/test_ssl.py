@@ -17,8 +17,12 @@
 #
 import pytest
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor.base import GatewayResourceConvertor
 from apigateway.controller.convertor.ssl import SSLConvertor
+
+APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
+APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
 
 
 class TestSSLConvertor:
@@ -38,25 +42,25 @@ class TestSSLConvertor:
 
     def test_ssl_convertor_initialization(self, mock_release_data):
         """Test SSLConvertor initialization"""
-        convertor = SSLConvertor(mock_release_data, publish_id=123)
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         assert convertor is not None
         assert convertor._release_data == mock_release_data
 
     def test_convert_not_implemented(self, mock_release_data):
         """Test that convert method raises NotImplementedError"""
-        convertor = SSLConvertor(mock_release_data, publish_id=123)
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
 
         with pytest.raises(NotImplementedError):
             convertor.convert()
 
     def test_ssl_convertor_is_gateway_resource_convertor(self, mock_release_data):
         """Test that SSLConvertor is a GatewayResourceConvertor"""
-        convertor = SSLConvertor(mock_release_data, publish_id=123)
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         assert isinstance(convertor, GatewayResourceConvertor)
 
     def test_ssl_convertor_inherits_gateway_properties(self, mock_release_data):
         """Test that SSLConvertor inherits properties from GatewayResourceConvertor"""
-        convertor = SSLConvertor(mock_release_data, publish_id=123)
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
 
         # Test inherited properties
         assert convertor.gateway_id == 123
@@ -66,5 +70,5 @@ class TestSSLConvertor:
 
     def test_ssl_convertor_with_custom_apisix_version(self, mock_release_data):
         """Test SSLConvertor with custom apisix version"""
-        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version="3.14")
-        assert convertor._apisix_version == "3.14"
+        convertor = SSLConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_16)
+        assert convertor._apisix_version == APISIX_VERSION_3_16

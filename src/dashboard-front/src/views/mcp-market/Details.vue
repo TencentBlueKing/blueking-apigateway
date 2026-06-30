@@ -88,19 +88,12 @@
           </div>
 
           <div class="permission-guide">
-            <BkLink
+            <bk-button
               theme="primary"
-              :href="envStore.env.DOC_LINKS.MCP_SERVER_PERMISSION_APPLY"
-              target="_blank"
-              class="text-12px"
+              @click="handleApplyPermission"
             >
-              <AgIcon
-                name="jump"
-                size="12"
-                class="mr-6px icon"
-              />
-              {{ t('权限申请指引') }}
-            </BkLink>
+              {{ t('申请权限') }}
+            </bk-button>
           </div>
         </div>
         <div class="info-content">
@@ -331,10 +324,67 @@
       v-model:is-show="isShowGuideSlider"
       :markdown-text="defaultMarkdownStr"
     />
+
+    <BkDialog
+      v-model:is-show="isShowApplyPermissionDialog"
+      :title="t('申请权限')"
+      :quick-close="false"
+      width="480"
+      @closed="handleCloseApplyPermissionDialog"
+    >
+      <BkForm
+        ref="formRef"
+        :model="permissionFormData"
+        :rules="rules"
+        form-type="vertical"
+      >
+        <BkFormItem
+          :label="t('选择应用')"
+          property="application"
+          class="relative"
+          required
+        >
+          <BkSelect
+            v-model="permissionFormData.application"
+            :placeholder="t('请选择要申请权限的应用')"
+          >
+            <BkOption
+              v-for="app in applicableApps"
+              :key="app.bk_app_code"
+              :label="app.name"
+              :value="app.bk_app_code"
+            />
+          </BkSelect>
+          <div
+            class="new-application flex align-items-center cursor-pointer"
+            @click="handleCreateNewApp"
+          >
+            <AgIcon
+              name="add-small"
+              size="22"
+              color="#3A84FF"
+            />
+            <span class="color-#3A84FF ml--2px">{{ t('新建应用') }}</span>
+          </div>
+        </BkFormItem>
+      </BkForm>
+      <template #footer>
+        <BkButton
+          theme="primary"
+          class="mr-8px"
+          @click="handleApplyConfirm"
+        >
+          {{ t('确定') }}
+        </BkButton>
+        <BkButton @click="handleCloseApplyPermissionDialog()">
+          {{ t('取消') }}
+        </BkButton>
+      </template>
+    </BkDialog>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 // @ts-nocheck
 import { copy } from '@/utils';
 import { useMcpConfigDivideRatio } from '@/hooks';
@@ -342,13 +392,19 @@ import {
   useEnv,
   useFeatureFlag,
 } from '@/stores';
+import {
+  InfoBox,
+} from 'bkui-vue';
 import AgIcon from '@/components/ag-icon/Index.vue';
 import {
   type IMarketplaceConfig,
   type IMarketplaceDetails,
+  getApplicableApps,
   getMcpAIConfigList,
   getMcpServerDetails,
+  marketplacePermissionApply,
 } from '@/services/source/mcp-market';
+import type { IApplicableAppOutput } from '@/services/types/responses/mcp-marketplace.ts';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
 import Guideline from './components/GuideLine.vue';
@@ -391,6 +447,23 @@ const markdownStr = ref('');
 const isExistCustomGuide = ref(false);
 const isShowGuideSlider = ref(false);
 const mcpConfigList = ref<IMarketplaceConfig[]>([]);
+const isShowApplyPermissionDialog = ref<boolean>(false);
+const formRef = ref('');
+const applicableApps = ref<IApplicableAppOutput[]>([]);
+const itsmTicketUrl = ref('');
+const permissionFormData = ref<{
+  application: string
+}>({
+  application: '',
+});
+const rules = {
+  application: [
+    {
+      required: true,
+      message: t('请选择应用'),
+    },
+  ],
+};
 
 const mcpId = computed(() => {
   return route.params.id;
@@ -400,6 +473,11 @@ const isEnabledOAuth = computed(() =>
   featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PUBLIC_CLIENT && mcpDetails.value?.oauth2_public_client_enabled,
 );
 const isShowConfig = computed(() => ['tools', 'guide'].includes(active.value) && mcpConfigList.value.length > 0);
+
+const selectedAppName = computed(() => {
+  const app = applicableApps.value.find(a => a.bk_app_code === permissionFormData.value.application);
+  return app?.name ?? '';
+});
 
 const handleCopy = (str: string) => {
   copy(str);
@@ -429,6 +507,75 @@ const fetchMcpAIConfigList = async () => {
 
 const handleShowGuide = () => {
   isShowGuideSlider.value = true;
+};
+
+const handleApplyPermission = async () => {
+  try {
+    const res = await getApplicableApps();
+    applicableApps.value = res ?? [];
+    isShowApplyPermissionDialog.value = true;
+  }
+  catch (e) {
+    console.error(e);
+  }
+};
+
+const handleCreateNewApp = () => {
+  const url = envStore.env.PAAS_APP_CREATE_LINK;
+  if (url) {
+    window.open(url, '_blank');
+  }
+};
+
+const handleApplyConfirm = async () => {
+  try {
+    await formRef.value?.validate();
+    const name = selectedAppName.value;
+
+    const res = await marketplacePermissionApply(Number(mcpId.value), {
+      reason: t('申请权限'),
+      bk_app_code: permissionFormData.value.application,
+    });
+
+    itsmTicketUrl.value = res[0]?.itsm_ticket_url ?? '';
+    permissionFormData.value.application = '';
+    isShowApplyPermissionDialog.value = false;
+
+    InfoBox({
+      type: 'success',
+      title: t('权限申请已提交'),
+      confirmText: t('完成'),
+      content: () => (
+        <div class="info-content">
+          <div class="py-12px px-16px text-align-left bg-#f5f7fa mb-16px">
+            {t('申请成功后，{name} 应用将拥有 {mcp} MCP 所有工具的权限。权限审批通过后即可正常使用。',
+              { name,
+                mcp: mcpDetails.value?.title ?? '' })}
+          </div>
+          {
+            itsmTicketUrl.value && (
+              <div
+                class="color-#3A84FF font-size-14px cursor-pointer"
+                onClick={() => window.open(itsmTicketUrl.value, '_blank')}
+              >
+                {t('查看审批进度')}
+                <AgIcon name="jump" color="#3A84FF" size="16" class="ml-6px" />
+              </div>
+            )
+          }
+        </div>
+      ),
+    });
+  }
+  catch (e) {
+    console.error(e);
+  }
+};
+
+const handleCloseApplyPermissionDialog = () => {
+  permissionFormData.value.application = '';
+  isShowApplyPermissionDialog.value = false;
+  formRef.value?.clearValidate();
 };
 
 const handleMouseenter = (e: MouseEvent & { target: HTMLElement }, row: IMarketplaceDetailsWithOverflow) => {
@@ -618,6 +765,13 @@ watch(
       transform: translate(-50%, -50%);
     }
   }
+}
+
+.new-application {
+  cursor: pointer;
+  position: absolute;
+  top: -32px;
+  right: 0;
 }
 
 </style>

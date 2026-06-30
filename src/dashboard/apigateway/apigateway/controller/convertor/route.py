@@ -41,9 +41,10 @@ class RouteConvertor(GatewayResourceConvertor):
         release_data: ReleaseData,
         backend_service_mapping: Dict[int, str],
         publish_id: int,
+        apisix_version: str,
         revoke_flag: Union[bool, None] = False,
     ):
-        super().__init__(release_data=release_data, publish_id=publish_id)
+        super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
         self._backend_service_mapping = backend_service_mapping
 
@@ -57,7 +58,7 @@ class RouteConvertor(GatewayResourceConvertor):
         routes: List[GatewayApisixModel] = []
 
         if not self._revoke_flag:
-            for resource in self._release_data.resource_version.data:
+            for resource in self._release_data.resource_configs:
                 route = self._convert_http_route(resource)
                 if route:
                     routes.append(route)

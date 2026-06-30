@@ -60,11 +60,12 @@ class AppGatewayPermission(TimestampedModelMixin):
         default=GrantTypeEnum.INITIALIZE.value,
         db_index=True,
     )
+    handled_by = models.CharField(max_length=32, blank=True, default="")
 
     objects: ClassVar[managers.AppGatewayPermissionManager] = managers.AppGatewayPermissionManager()
 
     def __str__(self):
-        return f"<AppGatewayPermission: {self.id}>"
+        return f"<AppGatewayPermission: {self.pk}/{self.bk_app_code}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问网关权限")
@@ -108,11 +109,12 @@ class AppResourcePermission(TimestampedModelMixin):
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
     grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)
+    handled_by = models.CharField(max_length=32, blank=True, default="")
 
     objects: ClassVar[managers.AppResourcePermissionManager] = managers.AppResourcePermissionManager()
 
     def __str__(self):
-        return f"<AppResourcePermission: {self.id}>"
+        return f"<AppResourcePermission: {self.pk}/{self.bk_app_code}/{self.resource_id}>"
 
     class Meta:
         verbose_name = _("蓝鲸应用访问资源权限")

@@ -52,9 +52,11 @@ class TestAppAPIPermissionManager:
             bk_app_code="test",
             grant_type=GrantTypeEnum.APPLY.value,
             expire_days=180,
+            handled_by="admin",
         )
 
         assert permission.grant_type == GrantTypeEnum.APPLY.value
+        assert permission.handled_by == "admin"
 
     def test_renew_by_ids(self):
         perm_1 = G(
@@ -79,6 +81,7 @@ class TestAppAPIPermissionManager:
         models.AppGatewayPermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
+            handled_by="admin",
         )
         perm_1 = models.AppGatewayPermission.objects.get(id=perm_1.id)
         perm_2 = models.AppGatewayPermission.objects.get(id=perm_2.id)
@@ -86,6 +89,7 @@ class TestAppAPIPermissionManager:
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(days=181)
         assert to_datetime_from_now(days=170 + 179) < perm_2.expires < to_datetime_from_now(days=170 + 181)
         assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(days=720 + 181)
+        assert {perm_1.handled_by, perm_2.handled_by, perm_3.handled_by} == {"admin"}
 
 
 class TestAppResourcePermissionManager:
@@ -129,6 +133,7 @@ class TestAppResourcePermissionManager:
         models.AppResourcePermission.objects.renew_by_ids(
             self.gateway,
             ids=[perm_1.id, perm_2.id, perm_3.id],
+            handled_by="admin",
         )
         perm_1 = models.AppResourcePermission.objects.get(id=perm_1.id)
         perm_2 = models.AppResourcePermission.objects.get(id=perm_2.id)
@@ -136,6 +141,7 @@ class TestAppResourcePermissionManager:
         assert to_datetime_from_now(days=179) < perm_1.expires < to_datetime_from_now(181)
         assert to_datetime_from_now(days=70 + 179) < perm_2.expires < to_datetime_from_now(70 + 181)
         assert to_datetime_from_now(days=720 + 179) < perm_3.expires < to_datetime_from_now(720 + 181)
+        assert {perm_1.handled_by, perm_2.handled_by, perm_3.handled_by} == {"admin"}
 
     def test_renew_by_resource_ids(self):
         perm_1 = G(
@@ -241,12 +247,14 @@ class TestAppResourcePermissionManager:
                 "bk_app_code": "test",
                 "grant_type": "apply",
                 "expire_days": 180,
+                "handled_by": "admin",
             },
             {
                 "resource_ids": [resource_2.id],
                 "bk_app_code": "test",
                 "grant_type": "apply",
                 "expire_days": 180,
+                "handled_by": "admin",
             },
         ]
         for test in data:
@@ -255,6 +263,7 @@ class TestAppResourcePermissionManager:
                 gateway=self.gateway, resource_id=test["resource_ids"][0], bk_app_code=test["bk_app_code"]
             )
             assert permission.grant_type == test["grant_type"]
+            assert permission.handled_by == test["handled_by"]
             assert 180 * 24 * 3600 - 10 < (permission.expires - now_datetime()).total_seconds() < 180 * 24 * 3600
 
 

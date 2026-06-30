@@ -52,6 +52,17 @@ func createPluginMetadata(id string, configData map[string]any) *entity.PluginMe
 	}
 }
 
+func createReleaseInfo(gateway, stage string) *entity.ReleaseInfo {
+	return &entity.ReleaseInfo{
+		ResourceMetadata: entity.ResourceMetadata{
+			Labels: &entity.LabelInfo{
+				Gateway: gateway,
+				Stage:   stage,
+			},
+		},
+	}
+}
+
 var _ = Describe("ApisixConfigSynchronizer", func() {
 	var (
 		syncer           *synchronizer.ApisixConfigSynchronizer
@@ -96,7 +107,18 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 		})
 	})
 
-	Describe("Sync", func() {
+	Describe("SyncRelease", func() {
+		It("should return error when release info is nil", func() {
+			config := &entity.ApisixStageResource{
+				Routes:   make(map[string]*entity.Route),
+				Services: make(map[string]*entity.Service),
+				SSLs:     make(map[string]*entity.SSL),
+			}
+
+			err := syncer.SyncRelease(ctx, nil, config)
+			Expect(err).To(MatchError("releaseInfo is nil"))
+		})
+
 		Context("when store is nil", func() {
 			It("should panic when store is nil", func() {
 				config := &entity.ApisixStageResource{
@@ -107,7 +129,11 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 
 				// This will panic because store is nil
 				Expect(func() {
-					_ = syncer.Sync(ctx, "test-gateway", "test-stage", config)
+					_ = syncer.SyncRelease(
+						ctx,
+						createReleaseInfo("test-gateway", "test-stage"),
+						config,
+					)
 				}).To(Panic())
 			})
 		})
@@ -147,7 +173,7 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 						Services: make(map[string]*entity.Service),
 						SSLs:     make(map[string]*entity.SSL),
 					}
-					_ = syncer.Sync(ctx, "gateway", "stage", config)
+					_ = syncer.SyncRelease(ctx, createReleaseInfo("gateway", "stage"), config)
 				}(i)
 			}
 
@@ -243,7 +269,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 		}
 	})
 
-	Describe("Sync", func() {
+	Describe("SyncRelease", func() {
 		It("should sync new configuration to etcd", func() {
 			stageConfig := &entity.ApisixStageResource{
 				Routes: map[string]*entity.Route{
@@ -264,7 +290,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				SSLs:     make(map[string]*entity.SSL),
 			}
 
-			err := syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify data was written to etcd
@@ -294,7 +320,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 			}
 
 			// First sync
-			err := syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Get the revision after first sync
@@ -325,7 +351,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				Services: make(map[string]*entity.Service),
 				SSLs:     make(map[string]*entity.SSL),
 			}
-			err = syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig2)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig2)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Get the revision after second sync
@@ -359,7 +385,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				SSLs:     make(map[string]*entity.SSL),
 			}
 
-			err := syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig1)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig1)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Get revision after first sync
@@ -390,7 +416,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				SSLs:     make(map[string]*entity.SSL),
 			}
 
-			err = syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig2)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig2)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Get revision after second sync
@@ -435,7 +461,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				SSLs:     make(map[string]*entity.SSL),
 			}
 
-			err := syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig1)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig1)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify both routes exist
@@ -473,7 +499,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				SSLs:     make(map[string]*entity.SSL),
 			}
 
-			err = syncer.Sync(ctx, "test-gateway", "test-stage", stageConfig2)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("test-gateway", "test-stage"), stageConfig2)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify route-4b was deleted
@@ -531,10 +557,10 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 			}
 
 			// Sync both gateways
-			err := syncer.Sync(ctx, "gateway-1", "prod", config1)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("gateway-1", "prod"), config1)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			err = syncer.Sync(ctx, "gateway-2", "prod", config2)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("gateway-2", "prod"), config2)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify both routes exist
@@ -590,10 +616,10 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 			}
 
 			// Sync both stages
-			err := syncer.Sync(ctx, "gateway", "stage1", stageConfig1)
+			err := syncer.SyncRelease(ctx, createReleaseInfo("gateway", "stage1"), stageConfig1)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			err = syncer.Sync(ctx, "gateway", "stage2", stageConfig2)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("gateway", "stage2"), stageConfig2)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify both routes exist
@@ -614,7 +640,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 				Services: make(map[string]*entity.Service),
 				SSLs:     make(map[string]*entity.SSL),
 			}
-			err = syncer.Sync(ctx, "gateway", "stage2", emptyConfig)
+			err = syncer.SyncRelease(ctx, createReleaseInfo("gateway", "stage2"), emptyConfig)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Verify stage1 route still exists

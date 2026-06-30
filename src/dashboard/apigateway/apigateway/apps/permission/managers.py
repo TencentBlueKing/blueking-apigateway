@@ -42,6 +42,7 @@ class AppGatewayPermissionManager(models.Manager):
         bk_app_code=None,
         grant_type=GrantTypeEnum.INITIALIZE.value,
         expire_days=None,
+        handled_by="",
     ):
         obj, _ = self.update_or_create(
             gateway=gateway,
@@ -49,30 +50,41 @@ class AppGatewayPermissionManager(models.Manager):
             defaults={
                 "expires": calculate_expires(expire_days),
                 "grant_type": grant_type,
+                "handled_by": handled_by,
             },
         )
         return obj
 
-    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, handled_by=""):
         queryset = self.filter(gateway=gateway, id__in=ids)
         for obj in queryset:
             obj.expires = calculate_renew_time(obj.expires, expires)
             obj.updated_time = now_datetime()
+            if handled_by:
+                obj.handled_by = handled_by
 
-        self.bulk_update(queryset, ["expires", "updated_time"])
+        update_fields = ["expires", "updated_time"]
+        if handled_by:
+            update_fields.append("handled_by")
+        self.bulk_update(queryset, update_fields)
 
 
 class AppResourcePermissionManager(models.Manager):
     def filter_public_permission_by_app(self, bk_app_code: str):
         return self.filter(bk_app_code=bk_app_code, gateway__is_public=True)
 
-    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS):
+    def renew_by_ids(self, gateway, ids, expires=DEFAULT_PERMISSION_EXPIRE_DAYS, handled_by=""):
         queryset = self.filter(gateway=gateway, id__in=ids)
         for obj in queryset:
             obj.expires = calculate_renew_time(obj.expires, expires)
             obj.updated_time = now_datetime()
+            if handled_by:
+                obj.handled_by = handled_by
 
-        self.bulk_update(queryset, ["expires", "updated_time"])
+        update_fields = ["expires", "updated_time"]
+        if handled_by:
+            update_fields.append("handled_by")
+        self.bulk_update(queryset, update_fields)
 
     def renew_by_resource_ids(
         self,
@@ -110,7 +122,7 @@ class AppResourcePermissionManager(models.Manager):
             grant_type=grant_type,
         )
 
-    def save_permissions(self, gateway, resource_ids, bk_app_code, grant_type, expire_days=None):
+    def save_permissions(self, gateway, resource_ids, bk_app_code, grant_type, expire_days=None, handled_by=""):
         expires = calculate_expires(expire_days)
 
         # 此处不再重复校验 resource_id 属于网关
@@ -124,6 +136,7 @@ class AppResourcePermissionManager(models.Manager):
                 defaults={
                     "expires": expires,
                     "grant_type": grant_type,
+                    "handled_by": handled_by,
                     "created_time": now_datetime(),
                     "updated_time": now_datetime(),
                 },

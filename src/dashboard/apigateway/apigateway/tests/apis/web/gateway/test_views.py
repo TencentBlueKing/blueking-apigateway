@@ -18,12 +18,17 @@
 from unittest.mock import ANY, patch
 
 import pytest
+from django_dynamic_fixture import G
 
+from apigateway.apps.audit.constants import OpObjectTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.apps.gateway.models import GatewayAppBinding
+from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
+from apigateway.apps.mcp_server.models import MCPServer
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum
-from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Stage
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
+from apigateway.core.models import JWT, Gateway, GatewayRelatedApp, Release, ResourceVersion, Stage
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 
 
@@ -72,7 +77,7 @@ class TestGatewayListCreateApi:
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
-    def test_create_programmable_gateway_without_repo_authorization(
+    def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,
         request_view,
         faker,
@@ -87,9 +92,12 @@ class TestGatewayListCreateApi:
             "tenant_mode": "single",
             "tenant_id": "default",
             "kind": GatewayKindEnum.PROGRAMMABLE.value,
-            "extra_info": {"language": "python"},
+            "extra_info": {
+                "language": "python",
+                "repository": f"https://git.example.com/bkapps/{name}.git",
+            },
         }
-        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "te")
+        mocker.patch("apigateway.apis.web.gateway.views.settings.EDITION", "ce")
         mocker.patch("apigateway.apis.web.gateway.validators.is_app_code_occupied", return_value=False)
         mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app")
         mocker.patch(
@@ -115,7 +123,7 @@ class TestGatewayListCreateApi:
         assert not Gateway.objects.filter(name=name).exists()
         mock_create_paas_app.assert_not_called()
 
-    def test_create_programmable_gateway_with_repo_authorization(
+    def test_create_programmable_gateway_skip_repo_authorization_in_te(
         self,
         request_view,
         faker,
@@ -141,10 +149,10 @@ class TestGatewayListCreateApi:
         mock_repo_authorization = mocker.patch(
             "apigateway.apis.web.gateway.views.get_paas_repo_authorization",
             return_value={
-                "authorized": True,
-                "message": "",
-                "address": "",
-                "auth_docs": "",
+                "authorized": False,
+                "message": "用户未关联 oauth 授权",
+                "address": "https://git.example.com/oauth/authorize",
+                "auth_docs": "http://docs.example.com/tc_git_oauth",
             },
         )
         mock_create_paas_app = mocker.patch("apigateway.apis.web.gateway.views.create_paas_app", return_value=True)
@@ -162,7 +170,7 @@ class TestGatewayListCreateApi:
         assert result["data"]["id"] == gateway.id
         assert gateway.kind == GatewayKindEnum.PROGRAMMABLE.value
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
-        mock_repo_authorization.assert_called_once_with(user_credentials=ANY)
+        mock_repo_authorization.assert_not_called()
         mock_create_paas_app.assert_called_once_with(
             app_code=name,
             language="python",
@@ -342,6 +350,53 @@ class TestGatewayUpdateStatusApi:
 
         assert resp.status_code == 204
         assert gateway.status == data["status"]
+
+    @pytest.mark.parametrize(
+        "old_gateway_status, new_gateway_status, expected_comment",
+        [
+            (GatewayStatusEnum.INACTIVE.value, GatewayStatusEnum.ACTIVE.value, "发布环境"),
+            (GatewayStatusEnum.ACTIVE.value, GatewayStatusEnum.INACTIVE.value, "下架环境"),
+        ],
+    )
+    @patch("apigateway.apis.web.gateway.views.trigger_gateway_publish")
+    def test_update_record_stage_audit(
+        self,
+        mock_trigger_gateway_publish,
+        request_view,
+        fake_gateway,
+        old_gateway_status,
+        new_gateway_status,
+        expected_comment,
+    ):
+        fake_gateway.status = old_gateway_status
+        fake_gateway.save()
+        stage = G(Stage, gateway=fake_gateway, name="prod", status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=stage, status=MCPServerStatusEnum.ACTIVE.value)
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        G(Release, gateway=fake_gateway, stage=stage, resource_version=resource_version)
+
+        resp = request_view(
+            method="PUT",
+            view_name="gateways.update_status",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"status": new_gateway_status},
+        )
+
+        assert resp.status_code == 204
+        mock_trigger_gateway_publish.assert_called_once()
+        assert AuditEventLog.objects.filter(
+            op_object_id=str(stage.id),
+            op_object=stage.name,
+            comment=expected_comment,
+        ).exists()
+        if new_gateway_status == GatewayStatusEnum.INACTIVE.value:
+            mcp_server.refresh_from_db()
+            assert mcp_server.status == MCPServerStatusEnum.INACTIVE.value
+            mcp_server_audit_log = AuditEventLog.objects.get(
+                op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+                op_object_id=mcp_server.id,
+            )
+            assert mcp_server_audit_log.comment == "网关停用，同步停用其 MCP Server"
 
 
 class TestGatewayCheckNameAvailableApi:

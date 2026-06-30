@@ -203,8 +203,8 @@ class ItsmPermissionApplyHelper:
     ) -> str:
         """根据授权维度构建工单标题"""
         if grant_dimension == FormattedGrantDimensionEnum.MCP_SERVER.value:
-            return f"MCP Server 权限申请【{bk_app_code}】【{gateway_name}】【{apply_resources}】"
-        return f"网关权限申请【{gateway_name}】【{bk_app_code}】"
+            return f"应用 [{bk_app_code}] 申请蓝鲸 MCP [{apply_resources}] 权限"
+        return f"应用 [{bk_app_code}] 申请蓝鲸 API 网关 [{gateway_name}] 权限"
 
     def _build_apply_resources_display(
         self,

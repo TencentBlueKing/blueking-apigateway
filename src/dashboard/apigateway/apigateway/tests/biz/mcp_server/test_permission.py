@@ -26,6 +26,7 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
+from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Resource
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -275,6 +276,32 @@ class TestMCPServerPermissionHandler:
         dispatched_applies = mock_dispatch.call_args[0][0]
         dispatched_ids = sorted(dispatched_applies.values_list("id", flat=True))
         assert dispatched_ids == apply_ids
+
+    def test_create_apply_should_reject_partial_invalid_mcp_server_ids(self, mocker, fake_gateway, fake_stage):
+        active_mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        inactive_mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.INACTIVE.value,
+        )
+        mock_dispatch = mocker.patch.object(MCPServerPermissionHandler, "_create_itsm_tickets_for_applies")
+
+        with pytest.raises(error_codes.NOT_FOUND.__class__):
+            MCPServerPermissionHandler.create_apply(
+                bk_app_code="test-app",
+                mcp_server_ids=[active_mcp_server.id, inactive_mcp_server.id],
+                reason="for test",
+                applied_by="tester",
+            )
+
+        assert not MCPServerAppPermissionApply.objects.filter(bk_app_code="test-app").exists()
+        mock_dispatch.assert_not_called()
 
 
 class TestMCPServerPermissionHandlerItsm:

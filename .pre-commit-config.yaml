@@ -4,28 +4,30 @@ repos:
     hooks:
       - id: format
         name: ruff-formatter
-        language: python
+        language: system
         types: [python]
-        entry: bash -c 'cd src/dashboard && ruff format --config=pyproject.toml --force-exclude .'
+        entry: bash -c 'uv run --project src/dashboard --locked ruff format --config=src/dashboard/pyproject.toml --force-exclude "$@"' --
         files: src/dashboard/
       - id: ruff
         name: ruff
-        language: python
+        language: system
         types: [python]
-        entry: bash -c 'cd src/dashboard && ruff check --config=pyproject.toml --force-exclude --fix .'
+        entry: bash -c 'uv run --project src/dashboard --locked ruff check --config=src/dashboard/pyproject.toml --force-exclude --fix "$@"' --
         files: src/dashboard/
       - id: mypy
         name: mypy
-        language: python
+        language: system
         types: [python]
-        entry: mypy --config-file=src/dashboard/pyproject.toml
+        entry: bash -c 'cd src/dashboard && uv run --locked mypy --config-file=pyproject.toml .'
         files: src/dashboard/
+        pass_filenames: false
       - id: import-linter
         name: import-linter
-        language: python
+        language: system
         types: [python]
-        entry: bash -c 'cd src/dashboard/apigateway && lint-imports --config=../pyproject.toml'
+        entry: bash -c 'cd src/dashboard && uv run --locked bash -c "cd apigateway && lint-imports --config=../pyproject.toml"'
         files: src/dashboard/
+        pass_filenames: false
   - repo: local
     hooks:
       - id: black

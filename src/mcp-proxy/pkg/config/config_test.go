@@ -685,6 +685,54 @@ var _ = Describe("Config", func() {
 			Expect(cfg.McpServer.LogTruncate.APILogErrorResponseSize).To(Equal(4096))
 		})
 
+		It("should leave pprof credentials empty when config and env are empty", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]any{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+
+			DeferCleanup(func() {
+				_ = os.Unsetenv("PPROF_USERNAME")
+				_ = os.Unsetenv("PPROF_PASSWORD")
+			})
+			Expect(os.Unsetenv("PPROF_USERNAME")).To(Succeed())
+			Expect(os.Unsetenv("PPROF_PASSWORD")).To(Succeed())
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.PProf.Username).To(BeEmpty())
+			Expect(cfg.PProf.Password).To(BeEmpty())
+		})
+
+		It("should override pprof config file values with env vars", func() {
+			v := viper.New()
+			v.Set("databases", []map[string]any{
+				{
+					"id": "default", "host": "localhost", "port": 3306,
+					"user": "root", "password": "password", "name": "testdb",
+				},
+			})
+			v.Set("pprof.username", "config-user")
+			v.Set("pprof.password", "config-password")
+
+			Expect(os.Setenv("PPROF_USERNAME", "env-user")).To(Succeed())
+			Expect(os.Setenv("PPROF_PASSWORD", "env-password")).To(Succeed())
+			DeferCleanup(func() {
+				_ = os.Unsetenv("PPROF_USERNAME")
+				_ = os.Unsetenv("PPROF_PASSWORD")
+			})
+
+			cfg, err := config.Load(v)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.PProf.Username).To(Equal("env-user"))
+			Expect(cfg.PProf.Password).To(Equal("env-password"))
+		})
+
 		It("should set MaxConcurrentPrefetch default", func() {
 			v := viper.New()
 			v.Set("databases", []map[string]any{

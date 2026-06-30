@@ -39,6 +39,11 @@ func TestGetResourceSchema(t *testing.T) {
 			shouldFail: false,
 		},
 		{
+			name:       "APISIX 3.16 - Existing Resource",
+			version:    constant.APISIXVersion316,
+			shouldFail: false,
+		},
+		{
 			name:       "Invalid Version",
 			version:    "invalid_version",
 			shouldFail: true,
@@ -110,6 +115,30 @@ func TestGetPluginSchema(t *testing.T) {
 				} else {
 					assert.NotNil(t, result)
 				}
+			})
+		}
+	}
+}
+
+func TestGetDashboardBKPluginSchemas(t *testing.T) {
+	pluginNames := []string{
+		"bk-access-token-source",
+		"bk-cors",
+		"bk-header-rewrite",
+		"bk-ip-restriction",
+		"bk-mock",
+		"bk-rate-limit",
+		"bk-request-body-limit",
+		"bk-user-restriction",
+		"bk-verified-user-exempted-apps",
+		"bk-traffic-label",
+	}
+
+	for version := range schemaVersionMap {
+		for _, pluginName := range pluginNames {
+			testName := fmt.Sprintf("%s/%s", string(version), pluginName)
+			t.Run(testName, func(t *testing.T) {
+				assert.NotNil(t, GetPluginSchema(version, pluginName, ""))
 			})
 		}
 	}

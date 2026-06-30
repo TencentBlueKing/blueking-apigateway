@@ -994,6 +994,111 @@ var _ = Describe("SSE Protocol", func() {
 			}
 		})
 	})
+
+	Describe("SSE Large Integer Body Param Precision", func() {
+		It("should preserve large integers in body_param without precision loss via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Call echo tool with large integers that exceed float64 precision (>2^53)
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"video_kol_item_list": []any{7643696123382648115},
+						"unique_id":           1750035600002,
+						"message":             "precision test via SSE",
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			// go-httpbin /anything echoes back the JSON body in the "json" field
+			textContent, ok := result.Content[0].(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			// The response should contain the exact large integer, not truncated/rounded
+			Expect(textContent.Text).To(ContainSubstring("7643696123382648115"))
+			Expect(textContent.Text).To(ContainSubstring("1750035600002"))
+			// Ensure no scientific notation
+			Expect(textContent.Text).NotTo(ContainSubstring("7.643"))
+			Expect(textContent.Text).NotTo(ContainSubstring("1.750"))
+		})
+
+		It("should preserve nested large integers in body_param via SSE", func() {
+			sseURL := fmt.Sprintf("%s/%s/sse", client.BaseURL, "test-sse-server")
+
+			httpClient := &http.Client{
+				Timeout: 30 * time.Second,
+				Transport: &jwtRoundTripper{
+					token: jwtToken,
+					base:  http.DefaultTransport,
+				},
+			}
+
+			transport := &mcp.SSEClientTransport{
+				Endpoint:   sseURL,
+				HTTPClient: httpClient,
+			}
+
+			mcpClient := mcp.NewClient(&mcp.Implementation{
+				Name:    "test-client",
+				Version: "1.0.0",
+			}, nil)
+
+			session, err := mcpClient.Connect(ctx, transport, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer session.Close()
+
+			// Test with nested structures containing large integers
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name: "echo",
+				Arguments: map[string]any{
+					"body_param": map[string]any{
+						"message": "nested precision test via SSE",
+						"data": map[string]any{
+							"order_id":   9007199254740993,
+							"account_id": 9223372036854775807,
+							"items":      []any{1234567890123456789, 8876543210987654321},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Content).NotTo(BeEmpty())
+
+			textContent, ok := result.Content[0].(*mcp.TextContent)
+			Expect(ok).To(BeTrue())
+			// Verify all large integers are preserved
+			Expect(textContent.Text).To(ContainSubstring("9007199254740993"))
+			Expect(textContent.Text).To(ContainSubstring("9223372036854775807"))
+			Expect(textContent.Text).To(ContainSubstring("1234567890123456789"))
+			Expect(textContent.Text).To(ContainSubstring("8876543210987654321"))
+		})
+	})
 })
 
 // jwtRoundTripper 是一个自定义的 http.RoundTripper，用于在每个请求中添加 JWT 认证头

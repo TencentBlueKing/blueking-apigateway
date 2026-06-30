@@ -191,28 +191,54 @@ func (s *ApisixEtcdStore) GetAll() map[string]*entity.ApisixStageResource {
 	return configMap
 }
 
-// Alter ...
-func (s *ApisixEtcdStore) Alter(
+// AlterStage syncs one stage config and keeps release context in logs.
+func (s *ApisixEtcdStore) AlterStage(
+	ctx context.Context,
+	releaseInfo *entity.ReleaseInfo,
+	config *entity.ApisixStageResource,
+) error {
+	if releaseInfo == nil {
+		return fmt.Errorf("releaseInfo is nil")
+	}
+	stageKey := releaseInfo.GetStageKey()
+	logFields := append(releaseInfo.LogFields(), "stage_key", stageKey)
+	return s.alterStageWithMetric(ctx, stageKey, logFields, config)
+}
+
+// AlterVirtualStage syncs the virtual stage without exposing a nil release context.
+func (s *ApisixEtcdStore) AlterVirtualStage(
 	ctx context.Context,
 	stageKey string,
 	config *entity.ApisixStageResource,
 ) error {
+	return s.alterStageWithMetric(ctx, stageKey, []any{"stage_key", stageKey}, config)
+}
+
+func (s *ApisixEtcdStore) alterStageWithMetric(
+	ctx context.Context,
+	stageKey string,
+	logFields []any,
+	config *entity.ApisixStageResource,
+) error {
 	st := time.Now()
-	err := s.alterByStage(ctx, stageKey, config)
+	err := s.alterStage(ctx, stageKey, logFields, config)
 
 	// metric
 	metric.ReportStageConfigAlterMetric(stageKey, config, st, err)
 
 	if err != nil {
-		s.logger.Errorw("Alter by stage failed", "err", err, "stage", stageKey)
+		s.logger.Errorw("Alter by stage failed", append(logFields, "err", err)...)
 		return err
 	}
 
 	return nil
 }
 
-func (s *ApisixEtcdStore) alterByStage(
-	ctx context.Context, stageKey string, conf *entity.ApisixStageResource,
+func (s *ApisixEtcdStore) alterStage(
+	ctx context.Context,
+	stageKey string,
+	logFields []any,
+	conf *entity.ApisixStageResource,
 ) (err error) {
 	// get cached config
 	oldConf := s.Get(stageKey)
@@ -238,12 +264,14 @@ func (s *ApisixEtcdStore) alterByStage(
 		}
 
 		if len(putConf.Routes)+len(putConf.Services)+len(putConf.SSLs) > 0 {
-			s.logger.Infof(
-				"put gateway[key=%s] conf count:[route:%d,serivce:%d,ssl:%d]",
-				stageKey,
-				len(putConf.Routes),
-				len(putConf.Services),
-				len(putConf.SSLs),
+			s.logger.Infow(
+				"put stage config",
+				append(
+					logFields,
+					"route_count", len(putConf.Routes),
+					"service_count", len(putConf.Services),
+					"ssl_count", len(putConf.SSLs),
+				)...,
 			)
 			putFlag = true
 		}
@@ -270,19 +298,21 @@ func (s *ApisixEtcdStore) alterByStage(
 			}
 		}
 		if len(deleteConf.Routes)+len(deleteConf.Services)+len(deleteConf.SSLs) > 0 {
-			s.logger.Infof(
-				"delete gateway[key=%s] conf count:[route:%d,service:%d,ssl:%d]",
-				stageKey,
-				len(deleteConf.Routes),
-				len(deleteConf.Services),
-				len(deleteConf.SSLs),
+			s.logger.Infow(
+				"delete stage config",
+				append(
+					logFields,
+					"route_count", len(deleteConf.Routes),
+					"service_count", len(deleteConf.Services),
+					"ssl_count", len(deleteConf.SSLs),
+				)...,
 			)
 			delFlag = true
 		}
 	}
 
 	if !putFlag && !delFlag {
-		s.logger.Infof("%s has no change", stageKey)
+		s.logger.Infow("stage config has no change", logFields...)
 	}
 
 	return nil

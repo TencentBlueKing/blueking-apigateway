@@ -45,6 +45,7 @@ from .serializers import (
     MetricsQueryInstantInputSLZ,
     MetricsQueryRangeInputSLZ,
     MetricsQuerySummaryCallerListInputSLZ,
+    MetricsQuerySummaryExportInputSLZ,
     MetricsQuerySummaryInputSLZ,
 )
 
@@ -215,14 +216,14 @@ class QuerySummaryApi(generics.ListAPIView):
             raise Http404
 
         queryset = MetricsSummaryFactory(
-            request.gateway.id,
-            stage_name,
-            data.get("resource_id", 0),
-            data.get("bk_app_code"),
-            data["metrics"],
-            data["time_dimension"],
-            data["time_start"],
-            data["time_end"],
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            bk_app_code=data.get("bk_app_code"),
+            time_start=data["time_start"],
+            time_end=data["time_end"],
+            metrics=data["metrics"],
+            time_dimension=data["time_dimension"],
         ).queryset()
         datapoints = [[obj["count_sum"], obj["time_period"]] for obj in queryset.iterator(chunk_size=1000)]
 
@@ -250,7 +251,7 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
                 gateway_id=request.gateway.id,
                 stage_name=stage_name,
                 start_time__gte=timezone.datetime.fromtimestamp(data["time_start"], timezone.get_current_timezone()),
-                end_time__lte=timezone.datetime.fromtimestamp(data["time_end"], timezone.get_current_timezone()),
+                start_time__lte=timezone.datetime.fromtimestamp(data["time_end"], timezone.get_current_timezone()),
             )
             .values_list("bk_app_code", flat=True)
             .distinct()
@@ -262,55 +263,86 @@ class QuerySummaryCallerListApi(generics.ListAPIView):
 class QuerySummaryExportApi(generics.CreateAPIView):
     @swagger_auto_schema(
         decorator=swagger_auto_schema(
-            operation_description="请求总量/失败请求总量导出",
-            request_body=MetricsQuerySummaryInputSLZ,
+            operation_description="资源-蓝鲸应用调用统计导出",
+            request_body=MetricsQuerySummaryExportInputSLZ,
             responses={status.HTTP_200_OK: ""},
             tags=["WebAPI.Metrics"],
         ),
     )
     def get(self, request, *args, **kwargs):
-        slz = MetricsQuerySummaryInputSLZ(data=request.query_params)
+        slz = MetricsQuerySummaryExportInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
-        if not stage_name:
-            raise Http404
+        stage_name = None
+        if data.get("stage_id") is not None:
+            stage_name = Stage.objects.get_name(request.gateway.id, data["stage_id"])
+            if not stage_name:
+                raise Http404
 
-        queryset = MetricsSummaryFactory(
-            request.gateway.id,
-            stage_name,
-            data.get("resource_id", 0),
-            data.get("bk_app_code"),
-            data["metrics"],
-            data["time_dimension"],
-            data["time_start"],
-            data["time_end"],
-        ).queryset()
+        results = MetricsSummaryFactory(
+            gateway_id=request.gateway.id,
+            stage_name=stage_name,
+            resource_id=data.get("resource_id", 0),
+            bk_app_code=data.get("bk_app_code"),
+            time_start=data["time_start"],
+            time_end=data["time_end"],
+        ).export_list()
 
-        content = self._get_csv_content(queryset)
-        response = DownloadableResponse(content, filename=f"bk_apigw_metrics_{self.request.gateway.name}.csv")
+        content = self._get_csv_content(request.gateway.name, data["time_start"], data["time_end"], results)
+        response = DownloadableResponse(
+            content,
+            filename=self._get_export_filename(self.request.gateway.name, data["time_start"], data["time_end"]),
+        )
         # use utf-8-sig for windows
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
 
         return response
 
-    def _get_csv_content(self, data: List[Any]) -> str:
-        """
-        将筛选出的权限数据，整理为 csv 格式内容
-        """
+    def _get_csv_content(self, gateway_name: str, time_start: int, time_end: int, data: List[Any]) -> str:
         headers = [
-            "time_period",
-            "count_sum",
+            "gateway_name",
+            "stage_name",
+            "resource_name",
+            "resource_path",
+            "bk_app_code",
+            "total_count",
+            "success_count",
+            "failed_count",
         ]
         header_row = {
-            "time_period": _("日期"),
-            "count_sum": _("请求总数"),
+            "gateway_name": _("网关"),
+            "stage_name": _("环境"),
+            "resource_name": _("资源名称"),
+            "resource_path": _("资源路径"),
+            "bk_app_code": _("蓝鲸应用"),
+            "total_count": _("请求总数"),
+            "success_count": _("成功次数"),
+            "failed_count": _("失败次数"),
         }
+
+        rows = [
+            {
+                **obj,
+                "gateway_name": gateway_name,
+            }
+            for obj in data
+        ]
 
         content = StringIO()
         io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
         io_csv.writerow(header_row)
-        io_csv.writerows(data)
+        io_csv.writerows(rows)
 
         return content.getvalue()
+
+    def _get_export_filename(self, gateway_name: str, time_start: int, time_end: int) -> str:
+        formatted_time_start = timezone.datetime.fromtimestamp(
+            time_start,
+            timezone.get_current_timezone(),
+        ).strftime("%Y%m%d%H%M%S")
+        formatted_time_end = timezone.datetime.fromtimestamp(
+            time_end,
+            timezone.get_current_timezone(),
+        ).strftime("%Y%m%d%H%M%S")
+        return f"bk_apigw_resource_app_metrics_{gateway_name}_{formatted_time_start}_{formatted_time_end}.csv"

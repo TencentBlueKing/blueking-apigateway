@@ -22,10 +22,6 @@ from apigateway.controller.convertor import constants
 class TestConvertorConstants:
     """Test convertor constants"""
 
-    def test_default_apisix_version(self):
-        """Test DEFAULT_APISIX_VERSION constant"""
-        assert constants.DEFAULT_APISIX_VERSION == "3.13"
-
     def test_label_keys(self):
         """Test label key constants"""
         assert constants.LABEL_KEY_GATEWAY == "gateway.bk.tencent.com/gateway"

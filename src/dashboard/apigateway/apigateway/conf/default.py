@@ -912,6 +912,7 @@ ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     bk_docs_url_prefix=BK_DOCS_URL_PREFIX,
     bk_login_url=BK_LOGIN_URL,
     bk_sdk_languages=BK_SDK_LANGUAGES,
+    bk_paas3_url=BK_PAAS3_URL,
 )
 
 

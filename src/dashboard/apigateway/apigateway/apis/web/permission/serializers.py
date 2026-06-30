@@ -67,6 +67,7 @@ class AppPermissionOutputSLZ(serializers.Serializer):
         choices=GrantTypeEnum.get_choices(), default=GrantTypeEnum.INITIALIZE.value, help_text="授权类型"
     )
     renewable = serializers.SerializerMethodField(help_text="是否可续期")
+    handled_by = serializers.CharField(help_text="操作人", required=False, allow_blank=True)
 
     class Meta:
         ref_name = "apigateway.apis.web.permission.serializers.AppPermissionOutputSLZ"
@@ -114,6 +115,27 @@ class AppPermissionRenewInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.permission.serializers.AppPermissionRenewInputSLZ"
+
+    def validate(self, data):
+        gateway_dimension_ids = data.get("gateway_dimension_ids", [])
+        resource_dimension_ids = data.get("resource_dimension_ids", [])
+
+        if not gateway_dimension_ids and not resource_dimension_ids:
+            raise serializers.ValidationError("must select one permission")
+
+        return data
+
+
+class AppPermissionDeleteInputSLZ(serializers.Serializer):
+    gateway_dimension_ids = serializers.ListField(
+        help_text="网关维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
+    )
+    resource_dimension_ids = serializers.ListField(
+        help_text="资源维度权限id列表", child=serializers.IntegerField(), allow_empty=True, required=False
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.permission.serializers.AppPermissionDeleteInputSLZ"
 
     def validate(self, data):
         gateway_dimension_ids = data.get("gateway_dimension_ids", [])

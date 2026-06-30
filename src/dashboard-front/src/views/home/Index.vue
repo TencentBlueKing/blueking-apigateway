@@ -188,7 +188,7 @@
               class="table-item"
             >
               <div
-                class="flex-1 flex items-center of2"
+                class="flex-1 flex items-center of2 overflow-hidden"
               >
                 <div
                   :class="item.status ? '' : 'deact'"
@@ -208,6 +208,13 @@
                   {{ item.name[0].toUpperCase() }}
                 </div>
                 <span
+                  :ref="(el: any) => setNameRef(el, item.id)"
+                  v-bk-tooltips="{
+                    content: item.name,
+                    theme: 'light',
+                    placement: 'top',
+                    disabled: !overflowMap[item.id]
+                  }"
                   :class="item.status ? '' : 'deact-name'"
                   class="name"
                   @click.stop="() => handleGoPage('StageManagement', item)"
@@ -283,21 +290,28 @@
                 v-if="enableGatewayOperationStatus"
                 class="flex-1"
               >
-                <span v-if="item.operation_status?.status === 'active'">{{ t('活跃') }}</span>
+                <bk-tag
+                  v-if="item.operation_status?.status === 'active'"
+                  theme="success"
+                >
+                  {{ t('活跃') }}
+                </bk-tag>
                 <div
                   v-if="item.operation_status?.status === 'inactive'"
                   class="flex items-center cursor-pointer inactive"
                 >
-                  <span
+                  <bk-tag
                     v-bk-tooltips="{
+                      disabled: item.status === 0,
                       content: item.operation_status?.source === 'apigateway'
                         ? t('网关过去 180 天没有任何调用量，请确认是否停用网关')
                         : t('网关过去 180 天没有任何调用量，请确认是否下架网关对应的插件应用') }"
                     class="line-height-20px"
                   >
                     {{ t('闲置') }}
-                  </span>
+                  </bk-tag>
                   <BkButton
+                    v-if="item.status !== 0"
                     theme="primary"
                     class="ml-8px inactive-btn"
                     text
@@ -480,6 +494,25 @@ const visibleTagCountMap = reactive<Record<number, number>>({});
 const DEFAULT_VISIBLE = 3; // 初始默认
 const MAX_VISIBLE_TAGS = 6; // 最大显示数量上限
 
+// 名称溢出检测
+const nameRefs = new Map<number, HTMLElement>();
+const overflowMap = reactive<Record<number, boolean>>({});
+
+const setNameRef = (el: any, id: number) => {
+  const node = el instanceof HTMLElement ? el : (el?.$el instanceof HTMLElement ? el.$el : null);
+  if (!node) {
+    nameRefs.delete(id);
+    return;
+  }
+  nameRefs.set(id, node);
+};
+
+const checkOverflow = () => {
+  nameRefs.forEach((el, id) => {
+    overflowMap[id] = el.scrollWidth > el.clientWidth;
+  });
+};
+
 // 防抖定时器
 let filterTimer: number | null = null;
 
@@ -595,6 +628,7 @@ const shouldShowGuide = computed(() => {
 watch(gatewaysList, () => {
   nextTick(() => {
     calculateVisibleTags();
+    checkOverflow();
   });
 }, { deep: true });
 
@@ -1050,10 +1084,14 @@ onBeforeUnmount(() => {
         }
 
         .name {
+          min-width: 0;
           margin-right: 10px;
           font-weight: 700;
           color: #313238;
           cursor: pointer;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
 
           &:hover {
             color: #3a84ff;

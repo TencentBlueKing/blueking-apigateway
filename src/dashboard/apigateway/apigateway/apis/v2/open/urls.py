@@ -69,6 +69,20 @@ urlpatterns = [
                                 views.GatewayResourceRetrieveByNameApi.as_view(),
                                 name="openapi.v2.open.gateway.resources.info",
                             ),
+                            # GET /api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/
+                            # release-specific: returns released resources from target stage
+                            path(
+                                "released/stages/<slug:stage_name>/resources/",
+                                views.GatewayReleasedResourceListApi.as_view(),
+                                name="openapi.v2.open.gateway.released_resources.list",
+                            ),
+                            # GET /api/v2/open/gateways/{gateway_name}/released/stages/{stage_name}/resources/{resource_name}/
+                            # release-specific: returns released resource detail from target stage
+                            path(
+                                "released/stages/<slug:stage_name>/resources/<str:resource_name>/",
+                                views.GatewayReleasedResourceRetrieveApi.as_view(),
+                                name="openapi.v2.open.gateway.released_resources.retrieve",
+                            ),
                             # POST /api/v2/open/gateways/{gateway_name}/permissions/apply/
                             path(
                                 "permissions/apply/",

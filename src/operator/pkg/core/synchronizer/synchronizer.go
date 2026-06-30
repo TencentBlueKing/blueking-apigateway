@@ -23,6 +23,7 @@ package synchronizer
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
@@ -54,25 +55,32 @@ func NewSynchronizer(store *store.ApisixEtcdStore, apisixHealthzURI string) *Api
 	return syncer
 }
 
-// Sync will sync new staged apisix configuration
-func (as *ApisixConfigSynchronizer) Sync(
+// SyncRelease syncs one stage config with release-aware log context.
+func (as *ApisixConfigSynchronizer) SyncRelease(
 	ctx context.Context,
-	gatewayName, stageName string,
+	releaseInfo *entity.ReleaseInfo,
 	config *entity.ApisixStageResource,
 ) error {
-	key := cfg.GenStagePrimaryKey(gatewayName, stageName)
+	if releaseInfo == nil {
+		return fmt.Errorf("releaseInfo is nil")
+	}
+	key := releaseInfo.GetStageKey()
 
 	as.flushMux.Lock()
 	defer as.flushMux.Unlock()
 
-	as.logger.Debugw("flush changes", "key", key, "config", config)
-	err := as.store.Alter(ctx, key, config)
+	as.logger.Debugw("flush changes", append(releaseInfo.LogFields(), "key", key, "config", config)...)
+	err := as.store.AlterStage(ctx, releaseInfo, config)
 	if err != nil {
-		as.logger.Errorw("Failed to sync stage", "err", err, "key", key, "content", config)
+		fields := append(releaseInfo.LogFields(), "err", err, "key", key, "content", config)
+		as.logger.Errorw(
+			"Failed to sync stage",
+			fields...,
+		)
 		return err
 	}
 
-	metric.ReportStageConfigSyncMetric(gatewayName, stageName)
+	metric.ReportStageConfigSyncMetric(releaseInfo.GetGatewayName(), releaseInfo.GetStageName())
 
 	return nil
 }
@@ -94,7 +102,7 @@ func (as *ApisixConfigSynchronizer) SyncGlobal(
 
 	as.logger.Debugw("flush virtual stage", "key", cfg.VirtualStageKey)
 	virtualStage := NewVirtualStage(as.apisixHealthzURI)
-	err = as.store.Alter(ctx, cfg.VirtualStageKey, virtualStage.MakeConfiguration())
+	err = as.store.AlterVirtualStage(ctx, cfg.VirtualStageKey, virtualStage.MakeConfiguration())
 	if err != nil {
 		as.logger.Errorw(
 			"Failed to sync virtual stage",

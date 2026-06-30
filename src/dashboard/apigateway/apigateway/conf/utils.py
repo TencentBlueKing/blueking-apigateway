@@ -240,7 +240,10 @@ def get_frontend_env_vars(
     bk_docs_url_prefix: str,
     bk_login_url: str,
     bk_sdk_languages: list,
+    bk_paas3_url: str,
 ) -> dict:
+    bk_paas3_url = bk_paas3_url.rstrip("/")
+
     return {
         "EDITION": edition,
         "BK_APP_CODE": bk_app_code,
@@ -259,6 +262,8 @@ def get_frontend_env_vars(
         "BK_DOCS_URL_PREFIX": bk_docs_url_prefix,
         "BK_USER_WEB_API_URL": bk_api_url_tmpl.format(api_name="bk-user-web") + "/prod",
         "BK_LOGIN_URL": bk_login_url,
+        "PAAS_DEVELOPER_CENTER_LINK": f"{bk_paas3_url}/developer-center",
+        "PAAS_APP_CREATE_LINK": f"{bk_paas3_url}/developer-center/app/create",
         "BK_APISIX_URL": env.str("BK_APISIX_URL", default=""),
         "BK_APISIX_DOC_URL": env.str("BK_APISIX_DOC_URL", default=""),
         "BK_ANALYSIS_SCRIPT_SRC": env.str("BK_ANALYSIS_SCRIPT_SRC", default=""),

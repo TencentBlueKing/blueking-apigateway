@@ -409,6 +409,44 @@ var _ = Describe("Entity", func() {
 			})
 		})
 
+		Context("LogAction", func() {
+			It("should return publish for positive publish id", func() {
+				Expect(ri.LogAction()).To(Equal("publish"))
+			})
+
+			It("should return unpublish for delete publish id", func() {
+				ri.PublishId = -2
+				Expect(ri.LogAction()).To(Equal("unpublish"))
+			})
+
+			It("should return sync for empty publish id", func() {
+				ri.PublishId = 0
+				Expect(ri.LogAction()).To(Equal("sync"))
+			})
+		})
+
+		Context("LogKey", func() {
+			It("should build a stable grep key", func() {
+				ri.Labels = &LabelInfo{Gateway: "test-gateway", Stage: "prod"}
+				Expect(ri.LogKey()).To(Equal("bk.release.test-gateway.prod|100|publish"))
+			})
+		})
+
+		Context("LogFields", func() {
+			It("should include action and log key", func() {
+				ri.Labels = &LabelInfo{Gateway: "test-gateway", Stage: "prod"}
+				Expect(ri.LogFields()).To(ContainElements(
+					"action", "publish",
+					"gateway", "test-gateway",
+					"stage", "prod",
+					"publish_id", 100,
+					"release_id", "bk.release.test-gateway.prod",
+					"resource_id", "test-release",
+					"log_key", "bk.release.test-gateway.prod|100|publish",
+				))
+			})
+		})
+
 		Context("IsNoNeedReport", func() {
 			It("should return true when PublishId is NoNeedReportPublishID (-1)", func() {
 				ri.PublishId = -1
@@ -429,6 +467,14 @@ var _ = Describe("Entity", func() {
 			It("should return false when PublishId is a valid positive number", func() {
 				ri.PublishId = 100
 				Expect(ri.IsNoNeedReport()).To(BeFalse())
+			})
+		})
+
+		Context("ReleaseLogKeys", func() {
+			It("should skip nil release info and keep stable order", func() {
+				ri.Labels = &LabelInfo{Gateway: "test-gateway", Stage: "prod"}
+				keys := ReleaseLogKeys([]*ReleaseInfo{ri, nil})
+				Expect(keys).To(Equal([]string{"bk.release.test-gateway.prod|100|publish"}))
 			})
 		})
 	})

@@ -26,7 +26,7 @@
         @change="handleTabChange"
       >
         <BkTabPanel
-          v-for="item in panels"
+          v-for="item of panels"
           :key="item.name"
           :name="item.name"
         >
@@ -52,12 +52,7 @@
       <div class="main">
         <div class="mcp-permission-header">
           <BkForm
-            class="flex flex-grow-1 flex-wrap"
-            :class="[
-              {
-                'is-exist-export': isAppPerm,
-              }
-            ]"
+            class="flex-grow-1 flex-wrap permission-filter-form"
           >
             <BkFormItem
               label="MCP Server"
@@ -77,7 +72,7 @@
                   v-for="option of mcpList"
                   :id="option.id"
                   :key="option.id"
-                  :name="option.name"
+                  :name="renderMcpDisplayName(option)"
                 />
               </BkSelect>
             </BkFormItem>
@@ -95,7 +90,6 @@
             <BkFormItem
               v-if="!featureFlagStore.isTenantMode && !isAppPerm"
               :label="t('申请人')"
-              label-width="100"
             >
               <BkSelect
                 v-model="filterData.applied_by"
@@ -111,15 +105,20 @@
               </BkSelect>
             </BkFormItem>
           </BkForm>
-          <AgDropdown
+
+          <div
             v-if="isAppPerm"
-            class="flex-shrink-0 mr-0!"
-            placement="bottom"
-            :dropdown-list="exportDropData"
-            :is-disabled="!tableData.length"
-            :text="t('导出')"
-            @on-change="handleExportApp"
-          />
+            class="export-dropdown"
+          >
+            <AgDropdown
+              class="flex-shrink-0 mr-0!"
+              placement="bottom"
+              :dropdown-list="exportDropData"
+              :is-disabled="!tableData.length"
+              :text="t('导出')"
+              @on-change="handleExportApp"
+            />
+          </div>
         </div>
 
         <AgTable
@@ -194,10 +193,10 @@
 </template>
 
 <script lang="tsx" setup>
-import { Button, Loading, Message, PopConfirm } from 'bkui-vue';
+import { Button, Form, Loading, Message, PopConfirm } from 'bkui-vue';
 import { cloneDeep, debounce } from 'lodash-es';
 import type { FilterValue, PrimaryTableProps, SortInfo, TableRowData } from '@blueking/tdesign-ui';
-import type { IDropList, ITableEmptyType, ITableMethod } from '@/types/common';
+import type { IDropList, IFormMethod, ITableEmptyType, ITableMethod } from '@/types/common';
 import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { useFeatureFlag } from '@/stores';
 import { useMcpPermission } from '@/hooks';
@@ -273,7 +272,7 @@ const statusMap = reactive({
 });
 const mcpList = ref<IMCPServerListOutput[]>([]);
 const applicantList = ref<string[]>([]);
-const approveForm = ref();
+const approveForm = ref<InstanceType<typeof Form> & IFormMethod>();
 const applyActionDialogConf = reactive({
   isShow: false,
   isLoading: false,
@@ -405,12 +404,13 @@ const tableColumns = computed(() => {
       fixed: 'left' as const,
       ellipsis: true,
       className: 'need-filter-icon-handler',
+      width: 360,
       filter: {
         type: 'single',
         showConfirmAndReset: true,
         popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper mcp-server-filter-popup' },
         list: mcpList.value.map((item: IMCPServerListOutput) => ({
-          label: item.name,
+          label: renderMcpDisplayName(item),
           value: item.id,
         })),
       },
@@ -637,6 +637,10 @@ const getApplicant = async () => {
     } as IGatewaysMcpServersAppPermissionApplyListQuery,
   );
   applicantList.value = response?.applicants || [];
+};
+
+const renderMcpDisplayName = (option: Record<string, string>) => {
+  return option?.title ? `${option.title} (${option.name})` : option.name;
 };
 
 const renderDisplayNameColumn = (value: string) => {
@@ -870,25 +874,25 @@ watch(
 }
 
 :deep(.mcp-permission-header) {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  align-items: flex-start;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 24px;
+  flex-wrap: wrap;
 
-  .bk-form-item {
-    margin-bottom: 24px;
-    flex-grow: 1;
-  }
-
-  .is-exist-export {
+  .permission-filter-form {
+    display: contents;
 
     .bk-form-item {
-      flex-grow: 0;
-
-      .bk-form-content,
-      .bk-input,
-      .bk-select {
-        width: 260px;
-      }
+      min-width: 230px;
+      margin-bottom: 24px;
     }
+  }
+
+  .export-dropdown {
+    grid-column: 3;
+    grid-row: 1;
+    text-align: right;
   }
 }
 </style>

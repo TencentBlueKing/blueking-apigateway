@@ -17,10 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
 import pytest
 from ddf import G
 from django.conf import settings
 
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
+from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
@@ -295,6 +299,22 @@ class TestSyncApi:
         assert result["data"][0]["name"] == f"{fake_gateway.name}-{fake_stage.name}-server1"
         assert result["data"][0]["action"] == "created"
         assert MCPServerAppPermission.objects.filter(mcp_server_id=result["data"][0]["id"]).count() == 2
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+            op_object_id=result["data"][0]["id"],
+        )
+        assert audit_log.username == settings.GATEWAY_DEFAULT_CREATOR
+        assert audit_log.op_type == OpTypeEnum.CREATE.value
+        assert audit_log.comment == "同步 MCPServer"
+        assert json.loads(audit_log.data_before) == {}
+        assert json.loads(audit_log.data_after)["name"] == result["data"][0]["name"]
+        permission_audit_logs = AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
+            comment="同步 MCPServer",
+        )
+        assert permission_audit_logs.count() == 2
+        assert set(permission_audit_logs.values_list("op_object", flat=True)) == {"app1", "app2"}
+        assert set(permission_audit_logs.values_list("op_type", flat=True)) == {OpTypeEnum.CREATE.value}
 
     def test_mcp_server_sync_with_update(
         self,
@@ -348,6 +368,23 @@ class TestSyncApi:
         assert result["data"][0]["action"] == "updated"
         assert MCPServerAppPermission.objects.filter(mcp_server_id=result["data"][0]["id"]).count() == 3
         assert MCPServer.objects.get(id=result["data"][0]["id"]).status == 1
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER.value,
+            op_object_id=result["data"][0]["id"],
+        )
+        assert audit_log.username == settings.GATEWAY_DEFAULT_CREATOR
+        assert audit_log.op_type == OpTypeEnum.MODIFY.value
+        assert audit_log.comment == "同步 MCPServer"
+        assert json.loads(audit_log.data_before)["status"] == 0
+        assert json.loads(audit_log.data_after)["status"] == 1
+        permission_audit_logs = AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.MCP_SERVER_PERMISSION.value,
+            comment="同步 MCPServer",
+        )
+        assert permission_audit_logs.count() == 2
+        app_code_to_op_type = {log.op_object: log.op_type for log in permission_audit_logs}
+        assert app_code_to_op_type["app1"] == OpTypeEnum.MODIFY.value
+        assert app_code_to_op_type["app3"] == OpTypeEnum.CREATE.value
 
     def test_mcp_server_sync_with_no_schema_resource(
         self, request_view, fake_gateway, fake_stage, fake_resource, fake_release_v2, disable_app_permission

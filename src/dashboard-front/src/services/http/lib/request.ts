@@ -59,7 +59,7 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 //   console.warn('Can not find csrftoken in document.cookie');
 // }
 const defaultConfig: Record<string, any> = {
-  timeout: 60000,
+  timeout: 120000,
   headers: {},
   withCredentials: true,
   paramsSerializer,

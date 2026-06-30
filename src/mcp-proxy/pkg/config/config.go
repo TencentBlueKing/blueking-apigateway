@@ -468,14 +468,8 @@ func applyPProfDefaults(cfg *Config) {
 	if env := os.Getenv("PPROF_USERNAME"); env != "" {
 		cfg.PProf.Username = env
 	}
-	if cfg.PProf.Username == "" {
-		cfg.PProf.Username = "bk-mcp" // 默认用户名
-	}
 	if env := os.Getenv("PPROF_PASSWORD"); env != "" {
 		cfg.PProf.Password = env
-	}
-	if cfg.PProf.Password == "" {
-		cfg.PProf.Password = "DebugModel@bk" // 默认密码，生产环境应该修改
 	}
 }
 

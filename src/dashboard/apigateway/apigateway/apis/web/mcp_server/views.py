@@ -23,6 +23,7 @@ from io import StringIO
 from django.db import transaction
 from django.db.models import Case, DateTimeField, F, OuterRef, Q, Subquery, When
 from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
@@ -230,6 +231,11 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         return OKJsonResponse(status=status.HTTP_201_CREATED, data={"id": slz.instance.id})
 
 
+class MCPServerQuerySetMixin:
+    def get_queryset(self):
+        return super().get_queryset().filter(gateway=self.request.gateway)
+
+
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -264,7 +270,7 @@ class MCPServerListCreateApi(generics.ListCreateAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
+class MCPServerRetrieveUpdateDestroyApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = MCPServer.objects.select_related("stage").prefetch_related("categories")
     serializer_class = MCPServerRetrieveOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -370,7 +376,7 @@ class MCPServerRetrieveUpdateDestroyApi(generics.RetrieveUpdateDestroyAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerUpdateStatusApi(generics.UpdateAPIView):
+class MCPServerUpdateStatusApi(MCPServerQuerySetMixin, generics.UpdateAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerUpdateStatusInputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -404,7 +410,7 @@ class MCPServerUpdateStatusApi(generics.UpdateAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerToolsListApi(generics.ListAPIView):
+class MCPServerToolsListApi(MCPServerQuerySetMixin, generics.ListAPIView):
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
@@ -434,7 +440,7 @@ class MCPServerToolsListApi(generics.ListAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
+class MCPServerGuidelineRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerGuidelineOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -467,7 +473,7 @@ class MCPServerGuidelineRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerConfigListApi(generics.RetrieveAPIView):
+class MCPServerConfigListApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     """获取 MCPServer 配置列表，支持多种 AI 工具的配置"""
 
     queryset = MCPServer.objects.all()
@@ -493,7 +499,7 @@ class MCPServerConfigListApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
+class MCPServerToolDocRetrieveApi(MCPServerQuerySetMixin, generics.RetrieveAPIView):
     queryset = MCPServer.objects.all()
     serializer_class = MCPServerToolDocOutputSLZ
     lookup_url_kwarg = "mcp_server_id"
@@ -546,7 +552,7 @@ class MCPServerToolDocRetrieveApi(generics.RetrieveAPIView):
         tags=["WebAPI.MCPServer"],
     ),
 )
-class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
+class MCPServerUserCustomDocApi(MCPServerQuerySetMixin, generics.RetrieveUpdateDestroyAPIView, generics.CreateAPIView):
     queryset = MCPServer.objects.all()
     lookup_url_kwarg = "mcp_server_id"
 
@@ -574,12 +580,23 @@ class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.
         slz = MCPServerUserCustomDocInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        MCPServerExtend.objects.create(
+        extend = MCPServerExtend.objects.create(
             mcp_server=instance,
             type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value,
             content=slz.validated_data["content"],
             created_by=request.user.username,
             updated_by=request.user.username,
+        )
+
+        # 用户自定义文档属于 MCPServer 扩展配置，审计统一记录为更新 MCPServer。
+        Auditor.record_mcp_server_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before={},
+            data_after=get_model_dict(extend),
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
@@ -594,6 +611,7 @@ class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.
         if not extend:
             raise error_codes.NOT_FOUND.format(_("用户自定义文档不存在，请先创建。"), replace=True)
 
+        data_before = get_model_dict(extend)
         slz = MCPServerUserCustomDocInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
@@ -601,14 +619,39 @@ class MCPServerUserCustomDocApi(generics.RetrieveUpdateDestroyAPIView, generics.
         extend.updated_by = request.user.username
         extend.save(update_fields=["content", "updated_by", "updated_time"])
 
+        # 用户自定义文档属于 MCPServer 扩展配置，审计统一记录为更新 MCPServer。
+        Auditor.record_mcp_server_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance.id,
+            instance_name=instance.name,
+            data_before=data_before,
+            data_after=get_model_dict(extend),
+        )
+
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        MCPServerExtend.objects.filter(
+        extend = MCPServerExtend.objects.filter(
             mcp_server=instance, type=MCPServerExtendTypeEnum.USER_CUSTOM_DOC.value
-        ).delete()
+        ).first()
+        if extend:
+            data_before = get_model_dict(extend)
+            extend.delete()
+
+            # 用户自定义文档属于 MCPServer 扩展配置，审计统一记录为更新 MCPServer。
+            Auditor.record_mcp_server_op_success(
+                op_type=OpTypeEnum.MODIFY,
+                username=request.user.username,
+                gateway_id=request.gateway.id,
+                instance_id=instance.id,
+                instance_name=instance.name,
+                data_before=data_before,
+                data_after={},
+            )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
@@ -738,16 +781,36 @@ class MCPServerAppPermissionListCreateApi(MCPServerAppPermissionQuerySetMixin, g
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
+        mcp_server = get_object_or_404(MCPServer, id=kwargs["mcp_server_id"], gateway=request.gateway)
+        permission_before = MCPServerAppPermission.objects.filter(
+            mcp_server_id=mcp_server.id,
+            bk_app_code=data["bk_app_code"],
+        ).first()
+        data_before = get_model_dict(permission_before) if permission_before else {}
 
         MCPServerAppPermission.objects.save_permission(
-            mcp_server_id=kwargs["mcp_server_id"],
+            mcp_server_id=mcp_server.id,
             bk_app_code=data["bk_app_code"],
             grant_type=MCPServerAppPermissionGrantTypeEnum.GRANT.value,
             expire_days=None,
             operator=request.user.username,
         )
 
-        MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+        MCPServerHandler.sync_permissions(mcp_server.id)
+        permission_after = MCPServerAppPermission.objects.get(
+            mcp_server_id=mcp_server.id,
+            bk_app_code=data["bk_app_code"],
+        )
+
+        Auditor.record_mcp_server_permission_op_success(
+            op_type=OpTypeEnum.CREATE if not permission_before else OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=permission_after.id,
+            instance_name=permission_after.bk_app_code,
+            data_before=data_before,
+            data_after=get_model_dict(permission_after),
+        )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
 
@@ -765,6 +828,8 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
+        instance_id = instance.id
         bk_app_code = instance.bk_app_code
         mcp_server = instance.mcp_server
         instance.delete()
@@ -778,6 +843,16 @@ class MCPServerAppPermissionDestroyApi(MCPServerAppPermissionQuerySetMixin, gene
         ).update(is_deleted=True)
 
         MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+
+        Auditor.record_mcp_server_permission_op_success(
+            op_type=OpTypeEnum.DELETE,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=instance_id,
+            instance_name=bk_app_code,
+            data_before=data_before,
+            data_after={},
+        )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
@@ -867,6 +942,7 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        data_before = get_model_dict(instance)
 
         slz = MCPServerAppPermissionApplyUpdateInputSLZ(instance, data=request.data)
         slz.is_valid(raise_exception=True)
@@ -882,6 +958,16 @@ class MCPServerAppPermissionApplyUpdateStatusApi(MCPServerAppPermissionApplyQuer
             )
 
             MCPServerHandler.sync_permissions(kwargs["mcp_server_id"])
+
+        Auditor.record_mcp_server_permission_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username=request.user.username,
+            gateway_id=request.gateway.id,
+            instance_id=slz.instance.id,
+            instance_name=slz.instance.bk_app_code,
+            data_before=data_before,
+            data_after=get_model_dict(slz.instance),
+        )
 
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 

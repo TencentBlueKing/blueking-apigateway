@@ -128,6 +128,20 @@ class TestMetricsQuerySummaryInputSLZ(TestCase):
             slz.is_valid(raise_exception=True)
             self.assertEqual(slz.validated_data, test["expected"])
 
+    def test_validate_required_fields(self):
+        timestamp = int(time.time())
+        slz = serializers.MetricsQuerySummaryInputSLZ(
+            data={
+                "time_start": timestamp,
+                "time_end": timestamp,
+            }
+        )
+
+        self.assertFalse(slz.is_valid())
+        self.assertIn("stage_id", slz.errors)
+        self.assertIn("metrics", slz.errors)
+        self.assertIn("time_dimension", slz.errors)
+
 
 class TestMetricsQuerySummaryCallerListInputSLZ(TestCase):
     def test_validate(self):
@@ -149,3 +163,53 @@ class TestMetricsQuerySummaryCallerListInputSLZ(TestCase):
             slz = serializers.MetricsQuerySummaryCallerListInputSLZ(data=test["data"])
             slz.is_valid(raise_exception=True)
             self.assertEqual(slz.validated_data, test["expected"])
+
+
+class TestMetricsQuerySummaryExportInputSLZ(TestCase):
+    def test_validate(self):
+        timestamp = int(time.time())
+        data = {
+            "stage_id": 1,
+            "resource_id": 1,
+            "bk_app_code": "app01",
+            "time_start": timestamp,
+            "time_end": timestamp,
+        }
+
+        slz = serializers.MetricsQuerySummaryExportInputSLZ(data=data)
+        slz.is_valid(raise_exception=True)
+
+        self.assertEqual(
+            slz.validated_data,
+            {
+                "stage_id": 1,
+                "resource_id": 1,
+                "bk_app_code": "app01",
+                "time_start": timestamp,
+                "time_end": timestamp,
+            },
+        )
+
+    def test_validate_missing_time_range(self):
+        slz = serializers.MetricsQuerySummaryExportInputSLZ(data={"stage_id": 1})
+
+        self.assertFalse(slz.is_valid())
+        self.assertEqual(str(slz.errors["non_field_errors"][0]), "参数 time_start+time_end 必须同时有效。")
+
+    def test_validate_without_stage_id(self):
+        timestamp = int(time.time())
+        slz = serializers.MetricsQuerySummaryExportInputSLZ(
+            data={
+                "time_start": timestamp,
+                "time_end": timestamp,
+            }
+        )
+
+        slz.is_valid(raise_exception=True)
+        self.assertEqual(
+            slz.validated_data,
+            {
+                "time_start": timestamp,
+                "time_end": timestamp,
+            },
+        )

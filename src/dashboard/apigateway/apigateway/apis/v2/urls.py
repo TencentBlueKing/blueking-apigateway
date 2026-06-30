@@ -20,7 +20,7 @@ from django.urls import include, path
 
 # NOTE:
 # 1. 新版 http 协议
-# 2. 统一注册到 bk-apigateway 网关，并且 inner api 需要隐藏 + 主动授权 (未来需要下掉 bk-apigateway-inner)
+# 2. 统一注册到 bk-apigateway 网关，并且 inner api 需要隐藏 + 主动授权
 # 3. 三类 api 即使功能一模一样，也不允许复用代码 (这已经是最上层使用层，现在功能一致不代表随时间推移还会保持一致)
 
 # FIXME: resource.yaml 改成新版格式，并且切换到 openapi3.0 协议，自动生成文档和示例

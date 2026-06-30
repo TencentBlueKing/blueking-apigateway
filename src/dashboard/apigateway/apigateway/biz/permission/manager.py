@@ -276,6 +276,7 @@ class GatewayPermissionDimensionManager(PermissionDimensionManager):
                 bk_app_code=apply.bk_app_code,
                 grant_type=GrantTypeEnum.APPLY.value,
                 expire_days=apply.expire_days,
+                handled_by=handled_by,
             )
 
         self._handle_apply_status(apply, status)
@@ -378,6 +379,7 @@ class ResourcePermissionDimensionManager(PermissionDimensionManager):
                 bk_app_code=apply.bk_app_code,
                 grant_type=GrantTypeEnum.APPLY.value,
                 expire_days=apply.expire_days,
+                handled_by=handled_by,
             )
 
         # 更新应用访问资源权限申请状态
