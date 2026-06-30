@@ -21,6 +21,7 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -61,7 +62,8 @@ func isJSONContentType(contentType string) bool {
 	if contentType == "" {
 		return false
 	}
-	return strings.Contains(strings.ToLower(contentType), "application/json")
+	mediaType := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	return mediaType == "application/json" || strings.HasSuffix(mediaType, "+json")
 }
 
 func truncateBytesForLog(body []byte, limit int) string {
@@ -74,8 +76,20 @@ func truncateBytesForLog(body []byte, limit int) string {
 	return string(body[:limit]) + truncatedSuffix
 }
 
+func isNoContentStatus(statusCode int) bool {
+	return statusCode == http.StatusNoContent ||
+		statusCode == http.StatusResetContent ||
+		statusCode == http.StatusNotModified
+}
+
 func (p *toolResponsePayload) validateDeclaredJSONBody() error {
-	if p == nil || len(p.rawBody) == 0 || !p.isDeclaredJSON {
+	if p == nil || !p.isDeclaredJSON {
+		return nil
+	}
+	if len(p.rawBody) == 0 {
+		if p.rawBody != nil && !isNoContentStatus(p.statusCode) {
+			return p.invalidDeclaredJSONBodyError(fmt.Errorf("empty body"))
+		}
 		return nil
 	}
 	if json.Valid(p.rawBody) {
@@ -101,6 +115,9 @@ func (p *toolResponsePayload) invalidDeclaredJSONBodyError(cause error) error {
 func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) {
 	if p == nil {
 		return json.RawMessage("null"), nil
+	}
+	if err := p.validateDeclaredJSONBody(); err != nil {
+		return nil, err
 	}
 	if len(p.rawBody) == 0 {
 		if p.rawBody != nil && !p.isDeclaredJSON {
@@ -218,6 +235,9 @@ func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byt
 // returned to the MCP client, while responseBodyRawMessage produces only the response_body value
 // embedded by marshalEnvelope.
 func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
+	if err := p.validateDeclaredJSONBody(); err != nil {
+		return nil, err
+	}
 	if p == nil {
 		return []byte("null"), nil
 	}
@@ -226,9 +246,6 @@ func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
 			return []byte(`""`), nil
 		}
 		return []byte("null"), nil
-	}
-	if err := p.validateDeclaredJSONBody(); err != nil {
-		return nil, err
 	}
 	if p.isDeclaredJSON {
 		return p.rawBody, nil

@@ -832,16 +832,67 @@ func handleUnexpectedSubmitResult(
 	start time.Time,
 	auditStatus *string,
 	auditLatency *time.Duration,
+	auditResponse *string,
+	auditResponseSize *int64,
+	auditUpstreamReqID *string,
+	responsePayload *toolResponsePayload,
+	traceID string,
+	xRequestID string,
+	logTruncate config.LogTruncate,
 ) *mcp.CallToolResult {
+	err := fmt.Errorf("unexpected submit result type %T", submit)
+	markAuditCallFailed(start, err, auditStatus, auditLatency, auditResponse)
+	if auditResponseSize != nil {
+		*auditResponseSize = 0
+	}
+	if auditUpstreamReqID != nil {
+		*auditUpstreamReqID = ""
+	}
+	if responsePayload != nil {
+		limit := pickToolCallLogLimit(
+			true,
+			logTruncate.GetAuditLogMaxResponseSize(),
+			logTruncate.GetAuditLogMaxErrorResponseSize(),
+		)
+		if auditResponse != nil {
+			*auditResponse = responsePayload.EnvelopePreview(traceID, xRequestID, limit)
+		}
+		if auditResponseSize != nil {
+			*auditResponseSize = int64(len(responsePayload.rawBody))
+		}
+		if auditUpstreamReqID != nil {
+			*auditUpstreamReqID = responsePayload.upstreamRequestID
+		}
+	}
+	return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start)
+}
+
+func markAuditCallFailed(
+	start time.Time,
+	err error,
+	auditStatus *string,
+	auditLatency *time.Duration,
+	auditResponse *string,
+) {
 	if auditStatus != nil {
 		*auditStatus = "failed"
 	}
 	if auditLatency != nil {
 		*auditLatency = time.Since(start)
 	}
+	if auditResponse != nil && err != nil {
+		*auditResponse = err.Error()
+	}
+}
 
-	err := fmt.Errorf("unexpected submit result type %T", submit)
-	return handleToolCallError(ctx, err, toolApiConfig, auditLog, headerInfo, span, start)
+func markAuditPanic(recovered any, auditStatus *string) any {
+	if recovered == nil {
+		return nil
+	}
+	if auditStatus != nil {
+		*auditStatus = "failed"
+	}
+	return recovered
 }
 
 func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEnabledGetter func() bool) ToolHandler {
@@ -933,8 +984,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 
 		// 在函数返回时记录完整的 audit log，包含 response, latency 等字段
 		defer func() {
+			var recoveredPanic any
 			if r := recover(); r != nil {
-				auditStatus = "failed"
+				recoveredPanic = markAuditPanic(r, &auditStatus)
 			}
 			// 记录完整的调用信息（合并了之前的 "call tool" 和 "call tool request params" 日志）
 			auditLog.Info(
@@ -955,6 +1007,9 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 					util.TruncateJSON(auditBodyParam, logTruncate.GetAuditLogMaxBodySize()),
 				),
 			)
+			if recoveredPanic != nil {
+				panic(recoveredPanic)
+			}
 		}()
 		var handlerRequest HandlerRequest
 		argsBytes, err := json.Marshal(req.Params.Arguments)
@@ -964,6 +1019,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				zap.Any("arguments", req.Params.Arguments),
 				zap.Error(err),
 			)
+			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		decoder := json.NewDecoder(bytes.NewReader(argsBytes))
@@ -972,6 +1028,7 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 		if err != nil {
 			auditLog.Error("unmarshal handler request err", zap.String("request",
 				string(argsBytes)), zap.Error(err))
+			markAuditCallFailed(start, err, &auditStatus, &auditLatency, &auditResponse)
 			return nil, trace.WrapErrorWithTraceID(ctx, err)
 		}
 		// Build HTTP client with shared transport
@@ -1160,6 +1217,13 @@ func genToolHandler(toolApiConfig *ToolConfig, serverName string, rawResponseEna
 				start,
 				&auditStatus,
 				&auditLatency,
+				&auditResponse,
+				&auditResponseSize,
+				&auditUpstreamReqID,
+				responsePayload,
+				trace.GetTraceIDFromContext(ctx),
+				xRequestID,
+				logTruncate,
 			), nil
 		}
 		auditStatus = "success"

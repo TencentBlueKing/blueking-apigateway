@@ -26,6 +26,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -547,6 +548,25 @@ var _ = Describe("MCPProxy", func() {
 			)
 		})
 
+		It("returns IsError when upstream declares JSON but returns an empty body", func() {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set(constant.BkGatewayRequestIDKey, "upstream-req-1")
+			}))
+			defer upstream.Close()
+
+			result := callTestToolHandler(upstream.URL, false)
+
+			Expect(result).NotTo(BeNil())
+			Expect(result.IsError).To(BeTrue())
+			Expect(result.Content).To(HaveLen(1))
+			Expect(
+				result.Content[0].(*mcp.TextContent).Text,
+			).To(
+				ContainSubstring("invalid JSON response body"),
+			)
+		})
+
 		It("preserves large JSON numbers without float conversion", func() {
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -632,6 +652,9 @@ var _ = Describe("MCPProxy", func() {
 		It("marks audit as failed and returns an MCP error result", func() {
 			auditStatus := "success"
 			auditLatency := time.Duration(0)
+			auditResponse := ""
+			auditResponseSize := int64(0)
+			auditUpstreamReqID := ""
 
 			result := handleUnexpectedSubmitResult(
 				context.Background(),
@@ -643,10 +666,20 @@ var _ = Describe("MCPProxy", func() {
 				time.Now(),
 				&auditStatus,
 				&auditLatency,
+				&auditResponse,
+				&auditResponseSize,
+				&auditUpstreamReqID,
+				nil,
+				"",
+				"",
+				config.LogTruncate{},
 			)
 
 			Expect(auditStatus).To(Equal("failed"))
 			Expect(auditLatency).To(BeNumerically(">", 0))
+			Expect(auditResponse).To(ContainSubstring("unexpected submit result type"))
+			Expect(auditResponseSize).To(Equal(int64(0)))
+			Expect(auditUpstreamReqID).To(BeEmpty())
 			Expect(result).NotTo(BeNil())
 			Expect(result.IsError).To(BeTrue())
 			Expect(result.Content).To(HaveLen(1))
@@ -655,6 +688,78 @@ var _ = Describe("MCPProxy", func() {
 			).To(
 				ContainSubstring("unexpected submit result type"),
 			)
+		})
+
+		It("rerenders audit response with error budget after final type assertion failure", func() {
+			auditStatus := "success"
+			auditLatency := time.Duration(0)
+			auditResponse := ""
+			auditResponseSize := int64(0)
+			auditUpstreamReqID := ""
+			payload := newToolResponsePayload(
+				http.StatusOK,
+				"upstream-req-1",
+				"application/json",
+				[]byte(`{"items":[`+strings.Repeat(`1,`, 90)+`0]}`),
+			)
+
+			result := handleUnexpectedSubmitResult(
+				context.Background(),
+				struct{}{},
+				&ToolConfig{Name: "list_items"},
+				zap.NewNop(),
+				nil,
+				nil,
+				time.Now(),
+				&auditStatus,
+				&auditLatency,
+				&auditResponse,
+				&auditResponseSize,
+				&auditUpstreamReqID,
+				payload,
+				"trace-1",
+				"x-req-1",
+				config.LogTruncate{
+					AuditLogMaxResponseSize:      50,
+					AuditLogMaxErrorResponseSize: 4096,
+				},
+			)
+
+			Expect(result).NotTo(BeNil())
+			Expect(auditStatus).To(Equal("failed"))
+			Expect(auditResponse).To(ContainSubstring(`"response_body":{"items":[1,1,`))
+			Expect(auditResponse).NotTo(ContainSubstring(truncatedSuffix))
+			Expect(auditResponseSize).To(Equal(int64(len(payload.rawBody))))
+			Expect(auditUpstreamReqID).To(Equal("upstream-req-1"))
+		})
+	})
+
+	Describe("audit state helpers", func() {
+		It("marks early failures as failed with latency and response details", func() {
+			status := "success"
+			latency := time.Duration(0)
+			response := ""
+			err := errors.New("decode arguments failed")
+
+			markAuditCallFailed(time.Now().Add(-time.Second), err, &status, &latency, &response)
+
+			Expect(status).To(Equal("failed"))
+			Expect(latency).To(BeNumerically(">", 0))
+			Expect(response).To(Equal("decode arguments failed"))
+		})
+
+		It("marks panic as failed and keeps the panic available for outer recovery", func() {
+			status := "success"
+
+			Expect(func() {
+				defer func() {
+					if panicValue := markAuditPanic(recover(), &status); panicValue != nil {
+						panic(panicValue)
+					}
+				}()
+				panic("boom")
+			}).To(PanicWith("boom"))
+			Expect(status).To(Equal("failed"))
 		})
 	})
 

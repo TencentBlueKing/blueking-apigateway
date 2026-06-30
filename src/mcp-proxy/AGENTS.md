@@ -215,7 +215,8 @@ Streamable HTTP is stateless and uses the same handler for user and application 
   pprof; set both values through config or env vars to enable it.
 - `BKAI_DEV_TRACE_ENABLE`, `BKAI_DEV_TRACE_ENDPOINT`, `BKAI_DEV_TRACE_SERVICE_NAME`, and
   `BKAI_DEV_TRACE_TOKEN` override the `bkAIDevTrace` config section.
-- `mcpServer.logTruncate` sizes are string lengths, not byte counts.
+- `mcpServer.logTruncate` values are byte-oriented log preview limits in current Go paths. Do not assume
+  truncation is rune-safe unless the helper being changed explicitly documents that behavior.
 - `mcpServer.transport.insecureSkipVerify` defaults from config. It is acceptable for internal test networks
   but should be false for public network paths.
 
