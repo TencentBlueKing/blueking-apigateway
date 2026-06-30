@@ -16,14 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-# isort: off
 import pytest
+from ddf import G
+from django.core.management.base import CommandError
+
 from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
 from apigateway.apps.esb.management.commands.sync_to_gateway_and_release import Command
 from apigateway.core.models import Gateway
-from ddf import G
-from django.core.management.base import CommandError
-# isort: on
 
 pytestmark = pytest.mark.django_db(databases=["default", "bkcore"])
 
