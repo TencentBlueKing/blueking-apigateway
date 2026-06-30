@@ -22,7 +22,9 @@ from environ import Env
 from apigateway.conf.utils import get_frontend_env_vars
 
 
-def test_get_frontend_env_vars_includes_paas_developer_center_link():
+def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
+    monkeypatch.setenv("BK_USER_URL", "https://user.example.com")
+
     env_vars = get_frontend_env_vars(
         env=Env(),
         edition="ce",
@@ -43,3 +45,4 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link():
 
     assert env_vars["PAAS_DEVELOPER_CENTER_LINK"] == "https://paas.example.com/developer-center"
     assert env_vars["PAAS_APP_CREATE_LINK"] == "https://paas.example.com/developer-center/app/create"
+    assert env_vars["BK_USER_PERSONAL_CENTER_LINK"] == "https://user.example.com/personal-center"
