@@ -25,7 +25,7 @@ configuration that is published through `controller -> etcd -> operator -> APISI
 
 Current stack, from the checked-in files:
 
-- Python `>=3.11,<3.12` in `pyproject.toml`; CI uses Python `3.11.13`.
+- Python `>=3.14,<3.15` in `pyproject.toml`; CI uses Python `3.14`.
 - Django `5.2.15`, Django REST Framework `3.17.1`.
 - Dependencies are managed by `uv` with `pyproject.toml` and `uv.lock`.
 - The Django project root is `apigateway/` and contains `manage.py`.

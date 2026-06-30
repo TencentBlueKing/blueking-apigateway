@@ -3,7 +3,7 @@ name = "apigateway-dashboard"
 version = "1.0.0"
 description = ""
 authors = []
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.14,<3.15"
 dependencies = [
     "django==5.2.15",
     "djangorestframework==3.17.1",
@@ -29,15 +29,15 @@ dependencies = [
     "pyyaml==6.0.3",
     "PyJWT==2.12.0",
     "pydantic==2.13.4",
-    "django-environ==0.13.0",
+    "django-environ==0.12.0",
     "jsonfield==3.2.0",
     "importlib-metadata==9.0.0",
     "greenlet==3.5.1",
     "bkpaas-auth==3.2.1",
-    "blue-krill==3.0.0",
-    "bk-crypto-python-sdk==2.0.1",
+    "blue-krill==3.1.0",
+    "bk-crypto-python-sdk==3.0.0",
     "cryptography==48.0.0",
-    "apigw-manager==4.2.4",
+    "apigw-manager==5.0.0",
     "bkapi-client-generator==0.1.30",
     "curlify==2.2.1",
     "bkapi-component-open>=1.0.3,<2",
@@ -45,7 +45,7 @@ dependencies = [
     "bkapi-client-core==1.2.0",
     "python-redis-lock==4.0.0",
     "etcd3==0.12.0",
-    "grpcio==1.73.1",
+    "grpcio==1.81.1",
     "protobuf==6.33.5",
     "bkapi-bk-apigateway>=1.0.12,<2",
     "docutils>=0.20.1",
