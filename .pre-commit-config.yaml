@@ -6,13 +6,13 @@ repos:
         name: ruff-formatter
         language: system
         types: [python]
-        entry: bash -c 'uv run --project src/dashboard --locked ruff format --config=src/dashboard/pyproject.toml --force-exclude "$@"' --
+        entry: bash -c 'cd src/dashboard && uv run --locked ruff format --config=pyproject.toml --force-exclude "${@#src/dashboard/}"' --
         files: src/dashboard/
       - id: ruff
         name: ruff
         language: system
         types: [python]
-        entry: bash -c 'uv run --project src/dashboard --locked ruff check --config=src/dashboard/pyproject.toml --force-exclude --fix "$@"' --
+        entry: bash -c 'cd src/dashboard && uv run --locked ruff check --config=pyproject.toml --force-exclude --fix "${@#src/dashboard/}"' --
         files: src/dashboard/
       - id: mypy
         name: mypy
