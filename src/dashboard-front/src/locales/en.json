@@ -2517,5 +2517,6 @@
   "长度需要在 1 到 4096 个字符之间": "Length must be between 1 and 4096 characters",
   "规则已存在": "Rule already exists",
   "请求被拦截时返回的消息": "Message when rejected",
-  "开发者中心": "Developer Center"
+  "开发者中心": "Developer Center",
+  "显示仅存在文档更新的资源": "Show resources diff only in document update"
 }

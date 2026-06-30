@@ -20,7 +20,7 @@
   <div>
     <BkSideslider
       v-model:is-show="isShow"
-      :width="960"
+      :width="1120"
       :title="t('生成资源版本')"
       quick-close
       class="scroll"
