@@ -105,14 +105,9 @@ func (p *toolResponsePayload) invalidDeclaredJSONBodyError(cause error) error {
 	return fmt.Errorf("invalid JSON response body for Content-Type %q: %w", p.contentType, cause)
 }
 
-// responseBodyRawMessage returns the response_body field value for the normal envelope response.
-// It preserves the upstream body without truncation because marshalEnvelope embeds this value into
-// a larger JSON object together with status_code, request_id, trace_id, and x_request_id.
-//
-// This differs from marshalRawResponse: responseBodyRawMessage returns only one JSON field value
-// for an envelope, while marshalRawResponse returns the whole MCP tool response when
-// raw_response_enabled is on.
-func (p *toolResponsePayload) responseBodyRawMessage() (json.RawMessage, error) {
+// bodyAsJSONValue returns a valid JSON value for the upstream body. Declared JSON is preserved
+// as raw bytes; non-JSON bodies are encoded as JSON strings to match the MCP text-content contract.
+func (p *toolResponsePayload) bodyAsJSONValue() (json.RawMessage, error) {
 	if p == nil {
 		return json.RawMessage("null"), nil
 	}
@@ -199,7 +194,7 @@ func (p *toolResponsePayload) EnvelopePreview(traceID, xRequestID string, limit 
 }
 
 func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byte, error) {
-	responseBody, err := p.responseBodyRawMessage()
+	responseBody, err := p.bodyAsJSONValue()
 	if err != nil {
 		return nil, err
 	}
@@ -231,28 +226,12 @@ func (p *toolResponsePayload) marshalEnvelope(traceID, xRequestID string) ([]byt
 // response shape: declared JSON is returned unchanged, non-JSON bytes are encoded as a JSON
 // string, explicit empty non-JSON bytes become "", and an absent body becomes null.
 //
-// This differs from responseBodyRawMessage: marshalRawResponse produces the entire response bytes
-// returned to the MCP client, while responseBodyRawMessage produces only the response_body value
-// embedded by marshalEnvelope.
+// This differs from marshalEnvelope: marshalRawResponse produces the entire response bytes returned
+// to the MCP client, while marshalEnvelope embeds the value as its response_body field.
 func (p *toolResponsePayload) marshalRawResponse() ([]byte, error) {
-	if err := p.validateDeclaredJSONBody(); err != nil {
-		return nil, err
-	}
-	if p == nil {
-		return []byte("null"), nil
-	}
-	if len(p.rawBody) == 0 {
-		if p.rawBody != nil && !p.isDeclaredJSON {
-			return []byte(`""`), nil
-		}
-		return []byte("null"), nil
-	}
-	if p.isDeclaredJSON {
-		return p.rawBody, nil
-	}
-	body, err := json.Marshal(string(p.rawBody))
+	body, err := p.bodyAsJSONValue()
 	if err != nil {
 		return nil, err
 	}
-	return body, nil
+	return []byte(body), nil
 }
