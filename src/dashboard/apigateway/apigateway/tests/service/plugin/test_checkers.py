@@ -367,6 +367,11 @@ class TestQueryStringRewriteChecker:
             ),
             (
                 "bk-query-string-rewrite",
+                {"set": [{"key": "source", "value": "gateway"}, {"key": "source", "value": "edge"}]},
+                pytest.raises(ValueError),
+            ),
+            (
+                "bk-query-string-rewrite",
                 {},
                 pytest.raises(ValueError),
             ),

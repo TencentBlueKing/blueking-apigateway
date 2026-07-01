@@ -1468,7 +1468,7 @@
     description: 对请求 Query 参数进行新增、更新、删除操作。
     description_en: Add, set, or remove request query string parameters.
     is_public: true
-    scope: stage_and_resource
+    scope: resource
     priority: 17410
     _tags: "转换,Transformation"
     schema:
