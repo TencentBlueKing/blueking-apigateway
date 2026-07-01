@@ -1405,3 +1405,73 @@
     - uri-blocker
     - plugin
     - '0'
+- model: schema.schema
+  fields:
+    created_time: 2026-07-01 00:00:00.000000+00:00
+    updated_time: 2026-07-01 00:00:00.000000+00:00
+    name: bk-query-string-rewrite
+    type: plugin
+    version: '0'
+    _schema: |-
+      {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "add": {
+            "type": "object",
+            "patternProperties": {
+              "^[^=&#?]+$": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "set": {
+            "type": "object",
+            "patternProperties": {
+              "^[^=&#?]+$": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "remove": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[^=&#?]+$"
+            }
+          }
+        }
+      }
+    description: '-'
+    example: '-'
+- model: plugin.plugintype
+  fields:
+    code: bk-query-string-rewrite
+    name: Query 参数转换
+    name_en: Query String Rewrite
+    description: 对请求 Query 参数进行新增、更新、删除操作。
+    description_en: Add, set, or remove request query string parameters.
+    is_public: true
+    scope: stage_and_resource
+    priority: 17410
+    _tags: "转换,Transformation"
+    schema:
+    - bk-query-string-rewrite
+    - plugin
+    - '0'

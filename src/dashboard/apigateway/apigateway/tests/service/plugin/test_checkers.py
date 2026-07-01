@@ -351,6 +351,34 @@ class TestHeaderRewriteChecker:
             checker.check(yaml_dumps(data))
 
 
+class TestQueryStringRewriteChecker:
+    @pytest.mark.parametrize(
+        "type_code, data, ctx",
+        [
+            (
+                "bk-query-string-rewrite",
+                {"add": {"version": "v2"}, "set": {"source": "gateway"}, "remove": ["debug"]},
+                does_not_raise(),
+            ),
+            (
+                "bk-query-string-rewrite",
+                {"remove": ["debug", "DEBUG"]},
+                pytest.raises(ValueError),
+            ),
+            (
+                "bk-query-string-rewrite",
+                {},
+                pytest.raises(ValueError),
+            ),
+        ],
+    )
+    def test_check_plugin(self, type_code, data, ctx):
+        checker = PluginConfigYamlChecker(type_code)
+
+        with ctx:
+            checker.check(yaml_dumps(data))
+
+
 class TestRequestValidationChecker:
     @pytest.mark.parametrize(
         "data, ctx",

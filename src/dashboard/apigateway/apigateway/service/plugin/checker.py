@@ -118,6 +118,18 @@ class HeaderRewriteChecker(BaseChecker):
             raise ValueError(_("remove 存在重复的元素：{}。").format(", ".join(remove_duplicate_keys)))
 
 
+class QueryStringRewriteChecker(BaseChecker):
+    def check(self, payload: str):
+        loaded_data = yaml_loads(payload)
+        if not loaded_data:
+            raise ValueError("YAML cannot be empty")
+
+        remove_keys = [item.lower() for item in loaded_data.get("remove", [])]
+        remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
+        if remove_duplicate_keys:
+            raise ValueError(_("remove 存在重复的元素：{}。").format(", ".join(remove_duplicate_keys)))
+
+
 class BkIPRestrictionChecker(BaseChecker):
     def _check_ip_content(self, ip_content: str):
         """check each line is a valid ipv4/ipv6 or ipv4 cidr/ipv6 cidr
@@ -472,6 +484,7 @@ class PluginConfigYamlChecker:
     type_code_to_checker: ClassVar[Dict[str, BaseChecker]] = {
         PluginTypeCodeEnum.BK_CORS.value: BkCorsChecker(),
         PluginTypeCodeEnum.BK_HEADER_REWRITE.value: HeaderRewriteChecker(),
+        PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value: QueryStringRewriteChecker(),
         PluginTypeCodeEnum.BK_IP_RESTRICTION.value: BkIPRestrictionChecker(),
         PluginTypeCodeEnum.REQUEST_VALIDATION.value: RequestValidationChecker(),
         PluginTypeCodeEnum.URI_BLOCKER.value: UriBlockerChecker(),
