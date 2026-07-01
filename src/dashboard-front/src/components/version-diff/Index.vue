@@ -20,35 +20,35 @@
   <div class="ag-version-diff-box">
     <p class="summary-data">
       <span class="font-bold color-#63656e">
-        {{ t("对比结果") }}：
+        {{ t('对比结果') }}：
       </span>
       <template v-if="isDataLoading">
         <span>
           <Spinner fill="#3a84ff" />
-          {{ t("正在努力对比中…") }}
+          {{ t('正在努力对比中…') }}
         </span>
       </template>
       <template v-else-if="localSourceId || localTargetId">
         <span>
-          {{ t("新增") }}
+          {{ t('新增') }}
           <span class="font-bold color-#2dcb56 m-5px">
             {{ diffData.add.length }}
           </span>
-          {{ t("个资源") }}，
+          {{ t('个资源') }}，
         </span>
         <span>
-          {{ t("更新") }}
+          {{ t('更新') }}
           <span class="font-bold color-#ff9c01! m-5px">
             {{ diffData.update.length }}
           </span>
-          {{ t("个资源") }}，
+          {{ t('个资源') }}，
         </span>
         <span>
-          {{ t("删除") }}
+          {{ t('删除') }}
           <span class="font-bold color-#ea3636 m-5px">
             {{ diffData.delete.length }}
           </span>
-          {{ t("个资源") }}
+          {{ t('个资源') }}
         </span>
       </template>
       <template v-else>
@@ -56,52 +56,61 @@
       </template>
     </p>
 
-    <div class="search-data mb-15px">
-      <BkInput
-        v-model="searchParams.keyword"
-        clearable
-        class="w-310px! float-left mr-10px"
-        :placeholder="t('请输入资源名称、资源地址或请求路径，回车结束')"
-        type="search"
-        @enter="handleSearch"
-        @clear="handleClear"
-        @change="updateTableEmptyConfig"
-      />
-      <BkSelect
-        v-model="searchParams.diffType"
-        class="w-140px float-left mr-10px"
-        clearable
-        :placeholder="t('全部差异类型')"
-        @change="updateTableEmptyConfig"
-      >
-        <BkOption
-          v-for="option in diffTypeList"
-          :id="option.id"
-          :key="option.id"
-          :name="option.name"
+    <div class="flex justify-between items-center mb-15px">
+      <div class="flex items-center gap-10px">
+        <BkInput
+          v-model="searchParams.keyword"
+          clearable
+          class="w-310px!"
+          :placeholder="t('请输入资源名称、资源地址或请求路径，回车结束')"
+          type="search"
+          @enter="handleSearch"
+          @clear="handleClear"
+          @change="updateTableEmptyConfig"
         />
-      </BkSelect>
-      <BkCheckbox
-        v-model="searchParams.onlyUpdated"
-        class="float-left mt-6px"
-        true-value
-        :false-value="false"
-      >
-        {{ t("仅显示有差异的资源属性") }}
-      </BkCheckbox>
+        <BkSelect
+          v-model="searchParams.diffType"
+          class="w-140px"
+          clearable
+          :placeholder="t('全部差异类型')"
+          @change="updateTableEmptyConfig"
+        >
+          <BkOption
+            v-for="option in diffTypeList"
+            :id="option.id"
+            :key="option.id"
+            :name="option.name"
+          />
+        </BkSelect>
+        <BkCheckbox
+          v-model="searchParams.onlyUpdated"
+          true-value
+          :false-value="false"
+        >
+          {{ t('仅显示有差异的资源属性') }}
+        </BkCheckbox>
+        <BkCheckbox
+          v-model="searchParams.showOnlyDiffInDocUpdatedTime"
+          true-value
+          :false-value="false"
+          @change="updateTableEmptyConfig"
+        >
+          {{ t('显示仅存在文档更新的资源') }}
+        </BkCheckbox>
+      </div>
 
       <div class="tag-list">
         <div class="legend-group">
           <div class="tag success" />
-          <div>{{ t("新增") }}</div>
+          <div>{{ t('新增') }}</div>
         </div>
         <div class="legend-group">
           <div class="tag danger" />
-          <div>{{ t("删除") }}</div>
+          <div>{{ t('删除') }}</div>
         </div>
         <div class="legend-group">
           <div class="tag warning" />
-          <div>{{ t("更新") }}</div>
+          <div>{{ t('更新') }}</div>
         </div>
       </div>
     </div>
@@ -112,7 +121,7 @@
     >
       <div class="diff-header">
         <div class="source-header">
-          <!-- <div class="marked">{{ t("源版本") }}</div> -->
+          <!-- <div class="marked">{{ t('源版本') }}</div> -->
           <div class="version">
             <template
               v-if="localSourceId && (localSourceId !== 'current' || localTargetId !== 'current')"
@@ -215,7 +224,7 @@
               </template>
             </span>
           </div>
-          <!-- <div class="marked">{{ t("目标版本") }}</div> -->
+          <!-- <div class="marked">{{ t('目标版本') }}</div> -->
         </div>
         <button
           v-if="targetSwitch && sourceSwitch && localSourceId"
@@ -265,7 +274,7 @@
                     type="empty"
                     scene="part"
                   >
-                    {{ t("此版本无该资源") }}
+                    {{ t('此版本无该资源') }}
                   </BkException>
                 </div>
               </div>
@@ -464,8 +473,8 @@
             >
               {{
                 !localTargetId
-                  ? t("请选择目标版本")
-                  : t("版本资源配置无差异")
+                  ? t('请选择目标版本')
+                  : t('版本资源配置无差异')
               }}
             </BkException>
           </template>
@@ -546,6 +555,8 @@ const searchParams = reactive({
   keyword: '',
   diffType: '',
   onlyUpdated: false,
+  // 是否显示仅存在文档更新的资源，默认显示
+  showOnlyDiffInDocUpdatedTime: true,
 });
 const diffTypeList = reactive([
   {
@@ -565,24 +576,19 @@ const diffTypeList = reactive([
 const backendsList = ref([]);
 
 const hasResult = computed(() => {
-  const addItem = diffData.add.some((item: any) => {
-    return checkMatch(item, 'add');
-  });
+  const addItem = diffData.add.some((item: any) => checkMatch(item, 'add'));
 
-  const deleteItem = diffData.delete.some((item: any) => {
-    return checkMatch(item, 'delete');
-  });
+  const deleteItem = diffData.delete.some((item: any) => checkMatch(item, 'delete'));
 
-  const updateItem = diffData.update.some((item: any) => {
-    return (
-      checkMatch(item.source, 'update') || checkMatch(item.target, 'update')
-    );
-  });
+  const updateItem = diffData.update.some((item: any) =>
+    checkMatch(item.source, 'update') || checkMatch(item.target, 'update'));
 
   return addItem || deleteItem || updateItem || isDataLoading.value;
 });
 
-const hasFilter = computed(() => searchKeyword.value || searchParams.diffType);
+const hasFilter = computed(() =>
+  searchKeyword.value || searchParams.diffType || !searchParams.showOnlyDiffInDocUpdatedTime,
+);
 
 const sourceVersion = computed(() => {
   const match = localVersionList.value.find((item: any) => item.id === localSourceId.value);
@@ -658,21 +664,27 @@ const handleSwitch = async () => {
   await getDiffData();
 };
 
-const checkMatch = (item: any, type: any) => {
+const checkMatch = (item: any, type: string) => {
   if (searchParams.diffType && searchParams.diffType !== type) {
     return false;
   }
-  const method = item?.method?.toLowerCase();
-  const path = item?.path?.toLowerCase();
-  const backendPath = item?.proxy?.config?.path?.toLowerCase();
-  const name = item?.name?.toLowerCase();
+  // 检查是否匹配搜索关键词
   const keyword = searchKeyword.value.toLowerCase();
-  return (
-    method.indexOf(keyword) > -1
+  const method = item?.method?.toLowerCase() ?? '';
+  const path = item?.path?.toLowerCase() ?? '';
+  const backendPath = item?.proxy?.config?.path?.toLowerCase() ?? '';
+  const name = item?.name?.toLowerCase() ?? '';
+  const isKeywordMatched = method.indexOf(keyword) > -1
     || path.indexOf(keyword) > -1
     || backendPath.indexOf(keyword) > -1
-    || name.indexOf(keyword) > -1
-  );
+    || name.indexOf(keyword) > -1;
+
+  // 检查是否满足文档更新时间过滤
+  const shouldBlockDocTimeDiffOnly = type === 'update' && !searchParams.showOnlyDiffInDocUpdatedTime;
+  const hasOnlyDocTimeDiff = Object.keys(item.diff || {}).length === 1 && item.diff.doc_updated_time;
+  const shouldShow = shouldBlockDocTimeDiffOnly ? !hasOnlyDocTimeDiff : true;
+
+  return isKeywordMatched && shouldShow;
 };
 
 const renderTitle = (item: any) => {
@@ -715,7 +727,7 @@ const renderTitle = (item: any) => {
 };
 
 const updateTableEmptyConfig = () => {
-  const isSearch = !!searchParams.keyword || !!searchParams.diffType;
+  const isSearch = !!searchParams.keyword || !!searchParams.diffType || !searchParams.showOnlyDiffInDocUpdatedTime;
   if (isSearch && !hasResult.value) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -730,6 +742,7 @@ const updateTableEmptyConfig = () => {
 const handleClearFilterKey = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
+  searchParams.showOnlyDiffInDocUpdatedTime = true;
   searchKeyword.value = '';
   await getDiffData();
   updateTableEmptyConfig();
@@ -739,6 +752,7 @@ const handleVersionChange = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
   searchParams.onlyUpdated = false;
+  searchParams.showOnlyDiffInDocUpdatedTime = true;
   searchKeyword.value = '';
   await getDiffData();
 };
@@ -865,15 +879,6 @@ onMounted(() => {
   line-height: 40px;
   color: #63656e;
   background-color: #f5f7fa;
-}
-
-.search-data {
-
-  &::after {
-    display: table;
-    clear: both;
-    content: "";
-  }
 }
 
 .tag-list {
