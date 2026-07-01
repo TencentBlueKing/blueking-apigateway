@@ -172,7 +172,7 @@ class ProgrammableGatewayVersionValidator(GetGatewayFromContextMixin):
 
 
 class ProgrammableGatewayStageNameValidator(GetGatewayFromContextMixin):
-    """可编程网关环境名称校验：环境名称只能为 stage 或 prod"""
+    """可编程网关环境名称校验：环境名称只能为 stag 或 prod"""
 
     requires_context = True
 
@@ -184,7 +184,7 @@ class ProgrammableGatewayStageNameValidator(GetGatewayFromContextMixin):
         name = attrs.get("name", "")
         if name and name not in PROGRAMMABLE_GATEWAY_ALLOWED_STAGE_NAMES:
             raise serializers.ValidationError(
-                _("可编程网关环境名称只能为 stage 或 prod，当前名称：{name}").format(name=name)
+                _("可编程网关环境名称只能为 stag 或 prod，当前名称：{name}").format(name=name)
             )
 
 
