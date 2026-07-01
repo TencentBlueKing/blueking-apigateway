@@ -21,9 +21,25 @@ import pytest
 from ddf import G
 
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.apps.mcp_server.tasks import sync_mcp_server_after_release
+from apigateway.apps.mcp_server.tasks import _fetch_updated_prompts, sync_mcp_server_after_release
 from apigateway.core.constants import ReleaseHistoryStatusEnum
 from apigateway.core.models import ReleaseHistory
+
+
+class TestFetchUpdatedPrompts:
+    def test_skip_invalid_payload_items(self, caplog):
+        with (
+            patch(
+                "apigateway.apps.mcp_server.tasks.MCPServerPromptHandler.fetch_remote_prompts_by_ids",
+                return_value=[{"id": 1, "name": "ok"}, {"name": "no-id"}, "invalid-item"],
+            ),
+            caplog.at_level("WARNING"),
+        ):
+            result = _fetch_updated_prompts({1, 2, 3})
+
+        assert result == {1: {"id": 1, "name": "ok"}}
+        assert "without id" in caplog.text
+        assert "expected dict" in caplog.text
 
 
 class TestSyncMcpServerAfterRelease:

@@ -62,7 +62,7 @@ from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
-from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
+from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
@@ -78,6 +78,7 @@ from .audit import (
     record_mcp_server_permission_sync_audits,
     record_mcp_server_sync_audits,
 )
+from .prompt import parse_prompts_content
 
 logger = logging.getLogger(__name__)
 
@@ -971,11 +972,7 @@ class MCPServerHandler:
         if not extend or not extend.content:
             return []
 
-        try:
-            return json.loads(extend.content)
-        except json.JSONDecodeError:
-            logger.exception("Failed to parse prompts content for mcp_server_id=%s", mcp_server_id)
-            return []
+        return parse_prompts_content(extend.content, mcp_server_id)
 
     @staticmethod
     def save_prompts(mcp_server_id: int, prompts: List[Dict[str, Any]], username: str) -> None:
@@ -986,6 +983,7 @@ class MCPServerHandler:
             prompts: prompts 列表
             username: 操作用户名
         """
+        validate_mcp_prompts_payload(prompts)
         content = json.dumps(prompts, ensure_ascii=False)
 
         extend, created = MCPServerExtend.objects.get_or_create(
@@ -1046,11 +1044,8 @@ class MCPServerHandler:
         prompts_count_map: Dict[int, int] = dict.fromkeys(mcp_server_ids, 0)
         for extend in extends:
             if extend.content:
-                try:
-                    prompts = json.loads(extend.content)
-                    prompts_count_map[extend.mcp_server_id] = len(prompts)
-                except json.JSONDecodeError:
-                    logger.exception("Failed to parse prompts content for mcp_server_id=%s", extend.mcp_server_id)
+                prompts = parse_prompts_content(extend.content, extend.mcp_server_id)
+                prompts_count_map[extend.mcp_server_id] = len(prompts)
 
         return prompts_count_map
 

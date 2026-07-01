@@ -164,6 +164,36 @@ class TestMCPServerPromptHandler:
         assert len(result) == 1
         assert result[0][0] == mcp_server1.id
 
+    def test_get_all_mcp_servers_with_prompts_invalid_payload_not_list(self, fake_gateway, fake_stage):
+        """测试 prompts 为非列表结构时应跳过"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps({"id": 1}),
+        )
+
+        result = MCPServerPromptHandler.get_all_mcp_servers_with_prompts()
+
+        assert result == []
+
+    def test_get_all_mcp_servers_with_prompts_invalid_payload_item_not_dict(self, fake_gateway, fake_stage):
+        """测试 prompts 列表项非 dict 时应跳过"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([1, 2]),
+        )
+
+        result = MCPServerPromptHandler.get_all_mcp_servers_with_prompts()
+
+        assert result == []
+
     def test_get_all_mcp_servers_with_prompts_empty_list(self, fake_gateway, fake_stage):
         """测试 prompts 为空列表的情况"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -204,6 +234,14 @@ class TestMCPServerPromptHandler:
         updated_prompts = json.loads(extend.content)
         assert len(updated_prompts) == 2
         assert updated_prompts[0]["id"] == "prompt_001"
+
+    def test_update_prompts_content_invalid_item_type(self, fake_mcp_server):
+        """测试更新 prompts 内容（列表项类型非法）"""
+        with pytest.raises(TypeError, match="prompt item must be a dict"):
+            MCPServerPromptHandler.update_prompts_content(
+                mcp_server_id=fake_mcp_server.id,
+                prompts=["invalid-item"],
+            )
 
     def test_update_prompts_content_not_exists(self, fake_mcp_server, sample_prompts):
         """测试更新不存在的 prompts（不应创建新记录）"""

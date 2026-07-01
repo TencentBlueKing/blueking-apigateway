@@ -153,7 +153,20 @@ def _fetch_updated_prompts(need_update_prompt_ids: Set[int]) -> Optional[Dict[in
     if not updated_prompts:
         return {}
 
-    return {p["id"]: p for p in updated_prompts if p.get("id")}
+    result: Dict[int, Dict[str, Any]] = {}
+    for prompt in updated_prompts:
+        if not isinstance(prompt, dict):
+            logger.warning("Skip invalid prompt payload item, expected dict, got type=%s", type(prompt).__name__)
+            continue
+
+        prompt_id = prompt.get("id")
+        if not prompt_id:
+            logger.warning("Skip invalid prompt payload item without id")
+            continue
+
+        result[prompt_id] = prompt
+
+    return result
 
 
 @shared_task(name="apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts", ignore_result=True)

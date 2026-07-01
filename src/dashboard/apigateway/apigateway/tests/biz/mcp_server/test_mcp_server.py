@@ -392,6 +392,36 @@ class TestMCPServerHandler:
 
         assert result == []
 
+    def test_get_prompts_invalid_payload_not_list(self, fake_gateway, fake_stage):
+        """测试获取 prompts（结构非法：非列表）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps({"id": 1}),
+        )
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert result == []
+
+    def test_get_prompts_invalid_payload_item_not_dict(self, fake_gateway, fake_stage):
+        """测试获取 prompts（结构非法：列表项非 dict）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([1, 2]),
+        )
+
+        result = MCPServerHandler.get_prompts(mcp_server.id)
+
+        assert result == []
+
     def test_get_prompts_empty_content(self, fake_gateway, fake_stage):
         """测试获取 prompts（空内容）"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
@@ -450,6 +480,13 @@ class TestMCPServerHandler:
         assert json.loads(extend.content) == new_prompts
         assert extend.created_by == "creator"  # 创建者不变
         assert extend.updated_by == "updater"  # 更新者变化
+
+    def test_save_prompts_invalid_item_type(self, fake_gateway, fake_stage):
+        """测试保存 prompts（列表项类型非法）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        with pytest.raises(TypeError, match="prompt item must be a dict"):
+            MCPServerHandler.save_prompts(mcp_server.id, ["invalid-item"], "admin")
 
     def test_delete_prompts(self, fake_gateway, fake_stage):
         """测试删除 prompts"""
@@ -555,6 +592,21 @@ class TestMCPServerHandler:
             mcp_server=mcp_server,
             type=MCPServerExtendTypeEnum.PROMPTS.value,
             content="invalid json",
+        )
+
+        result = MCPServerHandler.get_prompts_count_map([mcp_server.id])
+
+        assert result == {mcp_server.id: 0}
+
+    def test_get_prompts_count_map_invalid_payload_not_list(self, fake_gateway, fake_stage):
+        """测试批量获取 prompts 数量（结构非法：非列表）"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps({"id": 1}),
         )
 
         result = MCPServerHandler.get_prompts_count_map([mcp_server.id])

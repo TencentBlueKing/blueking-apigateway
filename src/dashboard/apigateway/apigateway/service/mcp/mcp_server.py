@@ -16,7 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import List
+from typing import Any, List
 
 from django.conf import settings
 
@@ -61,6 +61,16 @@ def update_stage_mcp_server_related_resource_names(
 
     if to_update:
         MCPServer.objects.bulk_update(to_update, fields=["_resource_names"])
+
+
+def validate_mcp_prompts_payload(prompts: Any) -> None:
+    """Validate MCP prompts payload shape."""
+    if not isinstance(prompts, list):
+        raise TypeError("prompts must be a list")
+
+    for prompt in prompts:
+        if not isinstance(prompt, dict):
+            raise TypeError("prompt item must be a dict")
 
 
 def build_mcp_server_url(mcp_server_name: str, protocol_type: str = MCPServerProtocolTypeEnum.SSE.value) -> str:
