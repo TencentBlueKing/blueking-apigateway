@@ -184,7 +184,7 @@ exclude = [
 # Same as Black.
 line-length = 119
 
-# Assume Python 3.8
+# Keep Ruff below Python 3.14 until the existing TC001/TC002/TC003 import cleanup is done.
 target-version = "py310"
 
 [tool.ruff.lint]

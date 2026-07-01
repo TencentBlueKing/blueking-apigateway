@@ -8,5 +8,6 @@ if [ -f "${envfile}" ]; then
     set +a
 fi
 
-command="celery -A apigateway.apigateway worker -l INFO -c 12"
+celery_worker_concurrency="${BK_APIGW_CELERY_WORKER_CONCURRENCY:-12}"
+command="celery -A apigateway.apigateway worker -l INFO -c ${celery_worker_concurrency}"
 exec bash -c "$command"
