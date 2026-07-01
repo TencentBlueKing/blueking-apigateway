@@ -1087,13 +1087,13 @@ class TestProgrammableGatewayStageNameValidator:
     @pytest.mark.parametrize(
         "name, will_error",
         [
-            ("stage", False),
+            ("stage", True),
             ("prod", False),
             ("dev", True),
             ("test", True),
             ("staging", True),
             ("production", True),
-            ("stag", True),
+            ("stag", False),
         ],
     )
     def test_validate_programmable_gateway(self, fake_gateway, name, will_error):
