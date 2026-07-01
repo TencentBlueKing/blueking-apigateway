@@ -24,6 +24,7 @@ from django.utils import timezone
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServerExtend
+from apigateway.common.validators import validate_prompts_payload
 
 
 def _parse_mcp_server_ids(value: str) -> List[int]:
@@ -43,18 +44,10 @@ def _parse_mcp_server_ids(value: str) -> List[int]:
     return ids
 
 
-def _validate_prompts_payload(prompts):
-    if not isinstance(prompts, list):
-        raise TypeError("prompts must be a list")
-
-    for prompt in prompts:
-        if not isinstance(prompt, dict):
-            raise TypeError("prompt item must be a dict")
-
-
 class Command(BaseCommand):
     help = """
     Check or fix invalid MCP prompts JSON content.
+    Default mode is dry-run when neither --dry-run nor --apply is specified.
 
     Examples:
       python manage.py fix_invalid_mcp_prompts --dry-run
@@ -100,6 +93,7 @@ class Command(BaseCommand):
 
         if not dry_run and not apply_fix:
             dry_run = True
+            self.stdout.write(self.style.WARNING("No mode specified, fallback to --dry-run."))
 
         queryset = MCPServerExtend.objects.filter(
             type=MCPServerExtendTypeEnum.PROMPTS.value,
@@ -117,7 +111,7 @@ class Command(BaseCommand):
         for extend in queryset.iterator(chunk_size=200):
             try:
                 prompts = json.loads(extend.content)
-                _validate_prompts_payload(prompts)
+                validate_prompts_payload(prompts)
             except json.JSONDecodeError as err:
                 invalid_extends.append(extend)
                 self.stdout.write(

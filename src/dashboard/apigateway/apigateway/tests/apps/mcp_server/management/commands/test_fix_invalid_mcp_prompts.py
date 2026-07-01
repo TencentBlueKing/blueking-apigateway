@@ -29,6 +29,23 @@ pytestmark = pytest.mark.django_db
 
 
 class TestCommand:
+    def test_default_mode_fallback_to_dry_run(self, fake_gateway, fake_stage, capsys):
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        extend = G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content='{"test":"2"',
+        )
+
+        Command().handle(dry_run=False, apply=False, mcp_server_ids="", updated_by="system")
+
+        extend.refresh_from_db()
+        captured = capsys.readouterr()
+        assert "No mode specified, fallback to --dry-run." in captured.out
+        assert "Dry run mode: no data changed." in captured.out
+        assert extend.content == '{"test":"2"'
+
     def test_dry_run_only_list_invalid(self, fake_gateway, fake_stage, capsys):
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
         extend = G(

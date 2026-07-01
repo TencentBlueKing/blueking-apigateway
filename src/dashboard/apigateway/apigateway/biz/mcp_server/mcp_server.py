@@ -78,7 +78,7 @@ from .audit import (
     record_mcp_server_permission_sync_audits,
     record_mcp_server_sync_audits,
 )
-from .prompt import validate_prompts_payload
+from .prompt import parse_prompts_content, validate_prompts_payload
 
 logger = logging.getLogger(__name__)
 
@@ -972,11 +972,7 @@ class MCPServerHandler:
         if not extend or not extend.content:
             return []
 
-        try:
-            return json.loads(extend.content)
-        except json.JSONDecodeError:
-            logger.exception("Failed to parse prompts content for mcp_server_id=%s", mcp_server_id)
-            return []
+        return parse_prompts_content(extend.content, mcp_server_id)
 
     @staticmethod
     def save_prompts(mcp_server_id: int, prompts: List[Dict[str, Any]], username: str) -> None:
@@ -987,8 +983,8 @@ class MCPServerHandler:
             prompts: prompts 列表
             username: 操作用户名
         """
-        validated_prompts = validate_prompts_payload(prompts)
-        content = json.dumps(validated_prompts, ensure_ascii=False)
+        validate_prompts_payload(prompts)
+        content = json.dumps(prompts, ensure_ascii=False)
 
         extend, created = MCPServerExtend.objects.get_or_create(
             mcp_server_id=mcp_server_id,
@@ -1048,11 +1044,8 @@ class MCPServerHandler:
         prompts_count_map: Dict[int, int] = dict.fromkeys(mcp_server_ids, 0)
         for extend in extends:
             if extend.content:
-                try:
-                    prompts = json.loads(extend.content)
-                    prompts_count_map[extend.mcp_server_id] = len(prompts)
-                except json.JSONDecodeError:
-                    logger.exception("Failed to parse prompts content for mcp_server_id=%s", extend.mcp_server_id)
+                prompts = parse_prompts_content(extend.content, extend.mcp_server_id)
+                prompts_count_map[extend.mcp_server_id] = len(prompts)
 
         return prompts_count_map
 

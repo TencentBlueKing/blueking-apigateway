@@ -164,6 +164,36 @@ class TestMCPServerPromptHandler:
         assert len(result) == 1
         assert result[0][0] == mcp_server1.id
 
+    def test_get_all_mcp_servers_with_prompts_invalid_payload_not_list(self, fake_gateway, fake_stage):
+        """测试 prompts 为非列表结构时应跳过"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps({"id": 1}),
+        )
+
+        result = MCPServerPromptHandler.get_all_mcp_servers_with_prompts()
+
+        assert result == []
+
+    def test_get_all_mcp_servers_with_prompts_invalid_payload_item_not_dict(self, fake_gateway, fake_stage):
+        """测试 prompts 列表项非 dict 时应跳过"""
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        G(
+            MCPServerExtend,
+            mcp_server=mcp_server,
+            type=MCPServerExtendTypeEnum.PROMPTS.value,
+            content=json.dumps([1, 2]),
+        )
+
+        result = MCPServerPromptHandler.get_all_mcp_servers_with_prompts()
+
+        assert result == []
+
     def test_get_all_mcp_servers_with_prompts_empty_list(self, fake_gateway, fake_stage):
         """测试 prompts 为空列表的情况"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)

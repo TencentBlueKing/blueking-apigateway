@@ -21,24 +21,24 @@ from typing import Any, Dict, List, Tuple
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServerExtend
+from apigateway.common.validators import validate_prompts_payload
 from apigateway.components import bkaidev
 
 logger = logging.getLogger(__name__)
 
 
-def validate_prompts_payload(prompts: Any) -> List[Dict[str, Any]]:
-    """校验 prompts 数据结构。
+def parse_prompts_content(content: str, mcp_server_id: int) -> List[Dict[str, Any]]:
+    """解析并校验 prompts 内容，异常时降级为空列表。"""
+    try:
+        prompts = json.loads(content)
+        validate_prompts_payload(prompts)
+        return prompts
+    except json.JSONDecodeError:
+        logger.exception("Failed to parse prompts content for mcp_server_id=%s", mcp_server_id)
+    except TypeError:
+        logger.exception("Invalid prompts payload for mcp_server_id=%s", mcp_server_id)
 
-    仅做最小约束，确保可安全序列化并在读取时按列表处理。
-    """
-    if not isinstance(prompts, list):
-        raise TypeError("prompts must be a list")
-
-    for prompt in prompts:
-        if not isinstance(prompt, dict):
-            raise TypeError("prompt item must be a dict")
-
-    return prompts
+    return []
 
 
 class MCPServerPromptHandler:
@@ -81,13 +81,9 @@ class MCPServerPromptHandler:
 
         result = []
         for extend in extends:
-            try:
-                prompts = json.loads(extend.content)
-                if prompts:
-                    result.append((extend.mcp_server_id, prompts))
-            except json.JSONDecodeError:
-                logger.exception("Failed to parse prompts content for mcp_server_id=%s", extend.mcp_server_id)
-                continue
+            prompts = parse_prompts_content(extend.content, extend.mcp_server_id)
+            if prompts:
+                result.append((extend.mcp_server_id, prompts))
 
         return result
 
@@ -99,8 +95,8 @@ class MCPServerPromptHandler:
             mcp_server_id: MCPServer ID
             prompts: 更新后的 prompts 列表
         """
-        validated_prompts = validate_prompts_payload(prompts)
-        content = json.dumps(validated_prompts, ensure_ascii=False)
+        validate_prompts_payload(prompts)
+        content = json.dumps(prompts, ensure_ascii=False)
 
         MCPServerExtend.objects.filter(
             mcp_server_id=mcp_server_id,
