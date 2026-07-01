@@ -50,7 +50,7 @@
     <AgTable
       ref="tableRef"
       show-settings
-      resizable
+      show-cell-empty-content
       :api-method="getTableData"
       :columns="columns"
       @clear-filter="handleClearFilter"
@@ -75,19 +75,17 @@
 <script lang="tsx" setup>
 import { useDatePicker } from '@/hooks';
 import { Spinner } from 'bkui-vue/lib/icon';
+import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import { getReleaseHistories } from '@/services/source/release';
 import {
   type IEventResponse,
   getDeployHistories,
 } from '@/services/source/programmable';
 import { useFeatureFlag, useGateway } from '@/stores';
+import { t } from '@/locales';
 import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
 import ReleaseProgrammableEvent from '../components/ReleaseProgrammableEvent.vue';
-import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
-import { t } from '@/locales';
 import AgTable from '@/components/ag-table/Index.vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import CopyButton from '@/components/copy-button/Index.vue';
 
 type Enums = typeof publishSourceEnum | typeof publishStatusEnum;
@@ -145,190 +143,167 @@ const programmableLogDetailsRef = ref();
 let timerId: any = null;
 
 const apigwId = computed(() => gatewayStore.apigwId);
+const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway);
+const columns = computed(() => {
+  // 普通网关列
+  const normalGatewayColumns: PrimaryTableProps['columns'] = [
+    {
+      title: t('已发布的环境'),
+      colKey: 'stage.name',
+      ellipsis: true,
+    },
+    {
+      colKey: 'type',
+      title: t('类型'),
+      ellipsis: true,
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <span>{getTextFromEnum(publishSourceEnum, row.source)}</span>
+      ),
+    },
+    {
+      colKey: 'version',
+      title: t('版本号'),
+      ellipsis: true,
+      width: 200,
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <span
+          class="color-#3a84ff cursor-pointer"
+          onClick={() => goVersionList(row)}
+        >
+          {row.resource_version_display}
+        </span>
+      ),
+    },
+    {
+      colKey: 'status',
+      title: t('操作状态'),
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <div>
+          {
+            row?.status === 'doing'
+              ? <Spinner fill="#3a84ff" />
+              : <span class={`dot ${row?.status}`}></span>
+          }
+          <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
+        </div>
+      ),
+    },
+    {
+      title: t('操作时间'),
+      colKey: 'created_time',
+      width: 260,
+    },
+    {
+      colKey: 'created_by',
+      title: t('操作人'),
+      cell: (h: unknown, { row }: { row: TableRowData }) => {
+        return (
+          !featureFlagStore.isEnableDisplayName
+            ? <span>{row.created_by || '--'}</span>
+            : <span><bk-user-display-name user-id={row.created_by} /></span>
+        );
+      },
+    },
+    {
+      title: t('耗时'),
+      colKey: 'duration',
+      ellipsis: true,
+    },
+    {
+      colKey: 'actions',
+      title: t('操作'),
+      fixed: 'right' as const,
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <bk-button text theme="primary" onClick={() => showLogs(row.id)}>
+          {t('发布日志')}
+        </bk-button>
+      ),
+    },
+  ];
 
-const columns = computed<PrimaryTableProps['columns']>(() =>
-  gatewayStore.isProgrammableGateway
-    ? [
-      {
-        title: t('已发布的环境'),
-        colKey: 'stage.name',
-        ellipsis: true,
+  // 可编程网关列
+  const programmableGatewayColumns: PrimaryTableProps['columns'] = [
+    {
+      title: t('已发布的环境'),
+      colKey: 'stage.name',
+      ellipsis: true,
+    },
+    {
+      colKey: 'type',
+      title: t('类型'),
+      ellipsis: true,
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <span>{getTextFromEnum(publishSourceEnum, row.source)}</span>
+      ),
+    },
+    {
+      title: t('分支'),
+      colKey: 'branch',
+      ellipsis: true,
+    },
+    {
+      title: 'commit_id',
+      colKey: 'commit_id',
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <div v-bk-tooltips={row?.commit_id}>
+          { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
+          <CopyButton class="ml-4px" source={row?.commit_id} />
+        </div>
+      ),
+    },
+    {
+      title: t('版本号'),
+      colKey: 'version',
+      ellipsis: true,
+      width: 200,
+    },
+    {
+      colKey: 'deployStatus',
+      title: t('部署状态'),
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <div>
+          {
+            row?.status === 'doing'
+              ? <Spinner fill="#3a84ff" />
+              : <span class={`dot ${row?.status}`}></span>
+          }
+          <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
+        </div>
+      ),
+    },
+    {
+      title: t('操作时间'),
+      colKey: 'created_time',
+      width: 260,
+    },
+    {
+      colKey: 'created_by',
+      title: t('操作人'),
+      ellipsis: true,
+      cell: (h: unknown, { row }: { row: TableRowData }) => {
+        return (
+          !featureFlagStore.isEnableDisplayName
+            ? <span>{row.created_by || '--'}</span>
+            : <span><bk-user-display-name user-id={row.created_by} /></span>
+        );
       },
-      {
-        colKey: 'type',
-        title: t('类型'),
-        width: 100,
-        cell: (h: any, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
-      },
-      {
-        title: t('分支'),
-        colKey: 'branch',
-      },
-      {
-        title: 'commit_id',
-        colKey: 'commit_id',
-        cell: (h: any, { row }: any) => (
-          <div v-bk-tooltips={row?.commit_id}>
-            { row?.commit_id ? (row.commit_id.length > 8 ? `${row.commit_id.slice(0, 8)}...` : row.commit_id) : '--' }
-            <CopyButton class="ml-4px" source={row?.commit_id} />
-          </div>
-        ),
-      },
-      {
-        title: t('版本号'),
-        colKey: 'version',
-        width: 200,
-      },
-      {
-        colKey: 'deployStatus',
-        title: t('部署状态'),
-        width: 120,
-        cell: (h: any, { row }: any) => (
-          <div>
-            {
-              row?.status === 'doing'
-                ? <Spinner fill="#3A84FF" />
-                : <span class={`dot ${row?.status}`}></span>
-            }
-            <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
-          </div>
-        ),
-      },
-      {
-        title: t('操作时间'),
-        colKey: 'created_time',
-        width: 220,
-      },
-      {
-        colKey: 'operator',
-        title: t('操作人'),
-        width: 100,
-        cell: (h: any, { row }: any) => (
-          <div>
-            {
-              !featureFlagStore.isEnableDisplayName
-                ? (
-                  <EditMember
-                    mode="detail"
-                    width="600px"
-                    field="created_by"
-                    content={[row?.created_by]}
-                  />
-                )
-                : (
-                  <TenantUserSelector
-                    mode="detail"
-                    width="600px"
-                    field="created_by"
-                    content={[row?.created_by]}
-                  />
-                )
-            }
-          </div>
-        ),
-      },
-      {
-        colKey: 'actions',
-        title: t('操作'),
-        cell: (h: any, { row }: any) => (
-          <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
-            {t('发布日志')}
-          </bk-button>
-        ),
-      },
-    ]
-    : [
-      {
-        title: t('已发布的环境'),
-        colKey: 'stage.name',
-        ellipsis: true,
-      },
-      {
-        colKey: 'type',
-        title: t('类型'),
-        width: 100,
-        cell: (h: any, { row }: any) => <div>{getTextFromEnum(publishSourceEnum, row.source)}</div>,
-      },
-      {
-        colKey: 'version',
-        title: t('版本号'),
-        width: 200,
-        cell: (h: any, { row }: any) => (
-          <bk-button
-            text
-            theme="primary"
-            onClick={() => goVersionList(row)}
-          >
-            {row.resource_version_display}
-          </bk-button>
-        ),
-      },
-      {
-        colKey: 'actionStatus',
-        title: t('操作状态'),
-        width: 120,
-        cell: (h: any, { row }: any) => (
-          <div>
-            {
-              row?.status === 'doing'
-                ? <Spinner fill="#3A84FF" />
-                : <span class={`dot ${row?.status}`}></span>
-            }
-            <span>{getTextFromEnum(publishStatusEnum, row?.status)}</span>
-          </div>
-        ),
-      },
-      {
-        title: t('操作时间'),
-        colKey: 'created_time',
-        width: 220,
-      },
-      {
-        colKey: 'operator',
-        title: t('操作人'),
-        width: 100,
-        cell: (h: any, { row }: any) => (
-          <div>
-            {
-              !featureFlagStore.isEnableDisplayName
-                ? (
-                  <EditMember
-                    mode="detail"
-                    width="600px"
-                    field="created_by"
-                    content={[row?.created_by]}
-                  />
-                )
-                : (
-                  <TenantUserSelector
-                    mode="detail"
-                    width="600px"
-                    field="created_by"
-                    content={[row?.created_by]}
-                  />
-                )
-            }
-          </div>
-        ),
-      },
-      {
-        title: t('耗时'),
-        colKey: 'duration',
-        width: 100,
-      },
-      {
-        colKey: 'actions',
-        title: t('操作'),
-        cell: (h: any, { row }: any) => (
-          <bk-button text theme="primary" onClick={() => showLogs(row.id)}>
-            {t('发布日志')}
-          </bk-button>
-        ),
-      },
-    ],
-);
+    },
+    {
+      colKey: 'actions',
+      title: t('操作'),
+      fixed: 'right' as const,
+      cell: (_: unknown, { row }: { row: TableRowData }) => (
+        <bk-button text theme="primary" disabled={!row.deploy_id} onClick={() => showLogs(row.deploy_id, row)}>
+          {t('发布日志')}
+        </bk-button>
+      ),
+    },
+  ];
 
-watch(() => gatewayStore.isProgrammableGateway, () => {
+  return isProgrammableGateway.value ? programmableGatewayColumns : normalGatewayColumns;
+});
+
+watch(() => isProgrammableGateway.value, () => {
   clearInterval(timerId);
   timerId = setInterval(() => {
     tableRef.value!.fetchData(filterData.value);
@@ -340,15 +315,15 @@ watch(filterData, () => {
 }, { deep: true });
 
 const getTableData = async (params: Record<string, any> = {}) =>
-  gatewayStore.isProgrammableGateway
+  isProgrammableGateway.value
     ? getDeployHistories(apigwId.value, params)
     : getReleaseHistories(apigwId.value, params);
 
-const showLogs = (id: number | string, row?: IEventResponse) => {
+const showLogs = (id: number | string, row?: TableRowData) => {
   // 可编程网关
-  if (gatewayStore.isProgrammableGateway) {
+  if (isProgrammableGateway.value) {
     deployId.value = id as string;
-    currentHistory.value = row;
+    currentHistory.value = row as IEventResponse;
     programmableLogDetailsRef.value?.showSideslider();
   }
   else {
