@@ -62,7 +62,7 @@ from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.contexts import GatewayAuthContext
-from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url
+from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
@@ -78,7 +78,7 @@ from .audit import (
     record_mcp_server_permission_sync_audits,
     record_mcp_server_sync_audits,
 )
-from .prompt import parse_prompts_content, validate_prompts_payload
+from .prompt import parse_prompts_content
 
 logger = logging.getLogger(__name__)
 
@@ -983,7 +983,7 @@ class MCPServerHandler:
             prompts: prompts 列表
             username: 操作用户名
         """
-        validate_prompts_payload(prompts)
+        validate_mcp_prompts_payload(prompts)
         content = json.dumps(prompts, ensure_ascii=False)
 
         extend, created = MCPServerExtend.objects.get_or_create(

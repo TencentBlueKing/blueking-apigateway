@@ -21,8 +21,8 @@ from typing import Any, Dict, List, Tuple
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServerExtend
-from apigateway.common.validators import validate_prompts_payload
 from apigateway.components import bkaidev
+from apigateway.service.mcp import validate_mcp_prompts_payload
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def parse_prompts_content(content: str, mcp_server_id: int) -> List[Dict[str, An
     """解析并校验 prompts 内容，异常时降级为空列表。"""
     try:
         prompts = json.loads(content)
-        validate_prompts_payload(prompts)
+        validate_mcp_prompts_payload(prompts)
         return prompts
     except json.JSONDecodeError:
         logger.exception("Failed to parse prompts content for mcp_server_id=%s", mcp_server_id)
@@ -95,7 +95,7 @@ class MCPServerPromptHandler:
             mcp_server_id: MCPServer ID
             prompts: 更新后的 prompts 列表
         """
-        validate_prompts_payload(prompts)
+        validate_mcp_prompts_payload(prompts)
         content = json.dumps(prompts, ensure_ascii=False)
 
         MCPServerExtend.objects.filter(

@@ -24,7 +24,6 @@ from django.utils import timezone
 
 from apigateway.apps.mcp_server.constants import MCPServerExtendTypeEnum
 from apigateway.apps.mcp_server.models import MCPServerExtend
-from apigateway.common.validators import validate_prompts_payload
 
 
 def _parse_mcp_server_ids(value: str) -> List[int]:
@@ -42,6 +41,15 @@ def _parse_mcp_server_ids(value: str) -> List[int]:
         raise CommandError("No valid mcp_server_ids provided.")
 
     return ids
+
+
+def _validate_prompts_payload(prompts):
+    if not isinstance(prompts, list):
+        raise TypeError("prompts must be a list")
+
+    for prompt in prompts:
+        if not isinstance(prompt, dict):
+            raise TypeError("prompt item must be a dict")
 
 
 class Command(BaseCommand):
@@ -111,7 +119,7 @@ class Command(BaseCommand):
         for extend in queryset.iterator(chunk_size=200):
             try:
                 prompts = json.loads(extend.content)
-                validate_prompts_payload(prompts)
+                _validate_prompts_payload(prompts)
             except json.JSONDecodeError as err:
                 invalid_extends.append(extend)
                 self.stdout.write(

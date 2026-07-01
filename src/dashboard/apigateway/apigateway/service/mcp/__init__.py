@@ -22,6 +22,7 @@ from .mcp_server import (
     build_mcp_server_url,
     build_mcp_streamable_http_url,
     update_stage_mcp_server_related_resource_names,
+    validate_mcp_prompts_payload,
 )
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "build_mcp_server_url",
     "build_mcp_streamable_http_url",
     "update_stage_mcp_server_related_resource_names",
+    "validate_mcp_prompts_payload",
     # others
 ]
