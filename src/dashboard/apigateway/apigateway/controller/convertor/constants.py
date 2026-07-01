@@ -15,9 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-DEFAULT_APISIX_VERSION = "3.13"
-
-
 LABEL_KEY_PREFIX = "gateway.bk.tencent.com"
 
 LABEL_KEY_GATEWAY = f"{LABEL_KEY_PREFIX}/gateway"

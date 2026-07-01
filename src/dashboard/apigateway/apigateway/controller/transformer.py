@@ -46,11 +46,12 @@ class BaseTransformer(ABC):
 class GlobalApisixResourceTransformer(BaseTransformer):
     """全局资源转换器"""
 
-    def __init__(self):
+    def __init__(self, apisix_version: str):
+        self.apisix_version = apisix_version
         self._converted_plugin_metadata: List[ApisixModel] = []
 
     def transform(self):
-        plugin_metadata_convertor = PluginMetadataConvertor()
+        plugin_metadata_convertor = PluginMetadataConvertor(self.apisix_version)
         self._converted_plugin_metadata = plugin_metadata_convertor.convert()
 
     def get_transformed_resources(self) -> Iterable[ApisixModel]:
@@ -69,7 +70,13 @@ class GatewayApisixResourceTransformer(BaseTransformer):
     # 2. 转换过程也会从 registry 查询，如果使用目标 registry，会有历史数据的干扰
     # 3. 中间 registry 应该看做目标 registry 的最终状态
 
-    def __init__(self, release: Release, publish_id: Optional[int] = None, revoke_flag: Optional[bool] = False):
+    def __init__(
+        self,
+        release: Release,
+        apisix_version: str,
+        publish_id: Optional[int] = None,
+        revoke_flag: Optional[bool] = False,
+    ):
         if release.resource_version.is_schema_v2 or revoke_flag:
             # note: revoke_flag is True, allow to use schema v1 to revoke resources
             self._release_data = ReleaseData(release)
@@ -79,6 +86,8 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         self.publish_id = publish_id
         # 是否是撤销资源
         self.revoke_flag = revoke_flag
+        # 数据面的 apisix 版本，用于生成资源 label
+        self.apisix_version = apisix_version
 
         # 转换后的资源
         self._converted_services: List[GatewayApisixModel] = []
@@ -93,7 +102,12 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         # 2. should check the ssl_id of service.upstream are all exists
         # 3. distribute the ssl/proto
 
-        service_convertor = ServiceConvertor(self._release_data, self.publish_id, self.revoke_flag)
+        service_convertor = ServiceConvertor(
+            self._release_data,
+            self.publish_id,
+            self.apisix_version,
+            self.revoke_flag,
+        )
         self._converted_services = service_convertor.convert()
 
         backend_service_mapping: Dict[int, str] = {}
@@ -110,6 +124,7 @@ class GatewayApisixResourceTransformer(BaseTransformer):
             self._release_data,
             backend_service_mapping,
             self.publish_id,
+            self.apisix_version,
             self.revoke_flag,
         )
         self._converted_routes = route_convertor.convert()
@@ -117,14 +132,18 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         # NOTE: other resource should care about the revoke_flag too
 
         # FIXME: impl it
-        # ssl_convertor = SSLConvertor(self._release_data)
+        # ssl_convertor = SSLConvertor(self._release_data, self.publish_id, self.apisix_version)
         # self._converted_ssls = ssl_convertor.convert()
 
         # FIXME: impl it
-        # proto_convertor = ProtoConvertor(self._release_data)
+        # proto_convertor = ProtoConvertor(self._release_data, self.publish_id, self.apisix_version)
         # self._converted_protos = proto_convertor.convert()
 
-        bk_release_convertor = BkReleaseConvertor(self._release_data, self.publish_id)
+        bk_release_convertor = BkReleaseConvertor(
+            self._release_data,
+            self.publish_id,
+            self.apisix_version,
+        )
         self._converted_bk_releases = bk_release_convertor.convert()
 
     def get_transformed_resources(self) -> Iterable[ApisixModel]:

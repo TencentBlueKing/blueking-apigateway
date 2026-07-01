@@ -44,7 +44,7 @@ test.describe('功能: 网关管理 - 网关列表', () => {
   });
 
   test('场景: 查看网关详情', async ({ page }) => {
-    // 使用 gateway ID 6 (bk-apigateway-inner) 进行只读操作
+    // 使用列表中的第一个网关进行只读操作
     // 点击网关的资源数量
     const resourceCount = page.locator('a, .link, [class*="link"]').filter({ hasText: /\d+/ }).first();
     if (await resourceCount.isVisible().catch(() => false)) {

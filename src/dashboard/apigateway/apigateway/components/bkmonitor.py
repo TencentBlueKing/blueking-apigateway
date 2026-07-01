@@ -54,7 +54,7 @@ def _call_bkmonitor_promql_query(bk_biz_id: str, promql: str, start: int, end: i
     host = settings.BK_API_URL_TMPL.format(api_name="bk-monitor")
 
     url = url_join(host, "/prod/app/data_query/graph_promql_query/")
-    timeout = 30
+    timeout = 60
 
     # FIXME: {"code": 200} as ok response should be tested
     return do_legacy_blueking_http_request("bk-monitor", http_post, url, data, headers, timeout)

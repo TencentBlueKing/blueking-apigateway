@@ -40,6 +40,6 @@ def esquery_dsl(index: str, body: Any) -> Any:
     host = settings.BK_API_URL_TMPL.format(api_name=gateway_name)
 
     url = url_join(host, "/prod/esquery_dsl/")
-    timeout = 30
+    timeout = 60
 
     return do_legacy_blueking_http_request("bklog", http_post, url, data, headers, timeout)
