@@ -56,7 +56,7 @@ class DataPlaneAdminForm(forms.ModelForm):
                 etcd_configs = self.instance.etcd_configs
                 if etcd_configs:
                     self.fields["etcd_configs_json"].initial = json.dumps(etcd_configs, indent=2)
-            except (ValueError, Exception):
+            except ValueError, Exception:
                 self.fields["etcd_configs_json"].initial = ""
 
     def clean_etcd_configs_json(self):

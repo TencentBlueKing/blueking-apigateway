@@ -19,7 +19,7 @@ import base64
 import copy
 import json
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, Tuple
 from urllib.parse import quote
 
 from django.conf import settings
@@ -57,7 +57,6 @@ from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceD
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components import bkaidev
 from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
@@ -79,6 +78,9 @@ from .audit import (
     record_mcp_server_sync_audits,
 )
 from .prompt import parse_prompts_content
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
 

@@ -16,11 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from apigateway.apps.support.constants import DocLanguageEnum
-from apigateway.apps.support.models import ResourceDoc
-from apigateway.core.models import Resource
+if TYPE_CHECKING:
+    from apigateway.apps.support.constants import DocLanguageEnum
+    from apigateway.apps.support.models import ResourceDoc
+    from apigateway.core.models import Resource
 
 
 @dataclass

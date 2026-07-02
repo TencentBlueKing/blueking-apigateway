@@ -16,11 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.db import models
 
-from apigateway.apps.plugin.constants import PluginBindingScopeEnum
+if TYPE_CHECKING:
+    from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 
 
 class PluginConfigManager(models.Manager):

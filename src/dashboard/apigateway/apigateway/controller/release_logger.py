@@ -16,11 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import uuid
-from logging import Logger
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from apigateway.core.models import Gateway, Stage
 from apigateway.utils.procedure_logger import ProcedureLogger
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+    from apigateway.core.models import Gateway, Stage
 
 
 class ReleaseProcedureLogger(ProcedureLogger):

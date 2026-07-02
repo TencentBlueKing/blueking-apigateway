@@ -255,7 +255,7 @@ class Command(BaseCommand):
     def _load_existing_config(system_code: str):
         try:
             return ItsmSystemConfig.objects.filter(system_code=system_code).first()
-        except (OperationalError, ProgrammingError):
+        except OperationalError, ProgrammingError:
             logger.warning("skip loading ItsmSystemConfig, table is not ready", exc_info=True)
             return None
 

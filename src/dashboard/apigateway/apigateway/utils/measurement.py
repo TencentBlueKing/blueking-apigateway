@@ -18,12 +18,14 @@
 import logging
 from dataclasses import asdict, dataclass, field, fields
 from enum import Enum
-from typing import ClassVar, Generic, Optional, Set, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, Optional, Set, Type, TypeVar
 
 from django.utils.encoding import smart_str
-from redis import Redis
 
 from apigateway.utils.redis_utils import get_default_redis_client, get_redis_key
+
+if TYPE_CHECKING:
+    from redis import Redis
 
 logger = logging.getLogger(__name__)
 

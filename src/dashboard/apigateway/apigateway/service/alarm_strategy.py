@@ -17,6 +17,8 @@
 #
 
 
+from typing import TYPE_CHECKING
+
 from apigateway.apps.monitor.constants import (
     AlarmTypeEnum,
     NoticeRoleEnum,
@@ -25,7 +27,9 @@ from apigateway.apps.monitor.constants import (
 )
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.models import Gateway
+
+if TYPE_CHECKING:
+    from apigateway.core.models import Gateway
 
 
 def create_default_alarm_strategy(gateway: Gateway, created_by: str = ""):

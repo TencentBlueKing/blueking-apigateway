@@ -3,7 +3,7 @@ FORCE:
 .PHONY: init
 init:
 	pip install -U pip setuptools
-	pip install uv==0.8.0
+	pip install uv==0.11.26
 	uv sync
 	pip install pre-commit
 	pre-commit install

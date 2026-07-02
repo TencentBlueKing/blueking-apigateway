@@ -17,7 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections import defaultdict
-from typing import Any, Dict, List, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Set
 
 from blue_krill.cubing_case import shortcuts
 from django.conf import settings
@@ -25,7 +25,6 @@ from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
 from apigateway.apps.plugin.models import PluginType
-from apigateway.biz.resource import ResourceData
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY
 from apigateway.core.models import Backend, Gateway, Resource
@@ -33,6 +32,9 @@ from apigateway.service.plugin import PluginConfigYamlValidator
 from apigateway.utils.list import get_duplicate_items
 
 from .schema import SchemaValidateErr
+
+if TYPE_CHECKING:
+    from apigateway.biz.resource import ResourceData
 
 
 class ResourceImportValidator:

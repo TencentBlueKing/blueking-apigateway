@@ -1,8 +1,10 @@
 ARG IMAGE=hub.bktencent.com/blueking/python
-ARG TAG=3.11.14-ts4
+ARG TAG=3.14-tencentos4
 FROM ${IMAGE}:${TAG}
 
-RUN dnf install -y vim mysql curl zip unzip git java-17-konajdk maven
+RUN dnf install -y vim mysql curl zip unzip git java-17-konajdk-headless maven \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /var/cache/yum
 
 # install mvn dep
 # replace the source
@@ -21,14 +23,13 @@ RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-compiler-plugin:3.8.1 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-jar-plugin:3.1.0
 
-COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /uvx /bin/
 
 WORKDIR /app
 COPY build/pyproject.toml build/uv.lock /app/
-RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked && uv clean
+RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ && uv sync --locked --no-dev && uv clean
 
 ADD build /app
 
-RUN dnf clean all
 
 CMD ["bash", "/app/bin/start.sh"]

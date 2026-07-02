@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Q
@@ -26,7 +26,6 @@ from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeplo
 from apigateway.biz.audit import Auditor
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.released_resource import ReleasedResourceHandler
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import (
     deploy_paas_app,
     get_paas_deployment_result,
@@ -43,6 +42,9 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.utils.django import get_model_dict
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 
 class ProgrammableGatewayReleaser:
@@ -104,7 +106,7 @@ class ProgrammableGatewayReleaser:
             stage=stage.name,
             env={
                 # "1.0.0+prod": 代码模版有通过版本号和环境名拼接的方式获取版本号，所以这里需要去掉
-                "BK_APIGW_RELEASE_VERSION": version.split("+")[0],  # 不带环境 name
+                "BK_APIGW_RELEASE_VERSION": version.split("+", maxsplit=1)[0],  # 不带环境 name
                 "BK_APIGW_RELEASE_COMMENT": comment,
             },
             user_credentials=user_credentials,

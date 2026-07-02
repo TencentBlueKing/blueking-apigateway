@@ -16,12 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 
 from apigateway.components.ai import get_ai_client
 
-from .constant import AIContentTypeEnum
 from .prompt import PromptBuilder
+
+if TYPE_CHECKING:
+    from .constant import AIContentTypeEnum
 
 
 class AIHandler:

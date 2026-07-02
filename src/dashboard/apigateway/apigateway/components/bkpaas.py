@@ -19,7 +19,7 @@
 import logging
 import os
 from functools import lru_cache
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 from urllib.parse import urlparse
 
 from cachetools import TTLCache, cached
@@ -30,13 +30,15 @@ from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
 )
 from apigateway.common.tenant.request import gen_tenant_header, get_tenant_id_for_gateway_maintainers
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
 from apigateway.utils.url import url_join
 
 from .bkauth import get_app_tenant_info as bkauth_get_app_tenant_info
 from .http import http_get, http_post
 from .utils import gen_gateway_headers
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
 

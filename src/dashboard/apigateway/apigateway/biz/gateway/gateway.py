@@ -20,7 +20,7 @@
 import logging
 from collections import defaultdict
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db.models import Count
@@ -33,7 +33,6 @@ from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.release import ReleaseHandler
 from apigateway.biz.stage import StageHandler
-from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
@@ -52,6 +51,9 @@ from apigateway.utils.dict import deep_update
 
 from .app_binding import GatewayAppBindingHandler
 from .related_app import GatewayRelatedAppHandler
+
+if TYPE_CHECKING:
+    from apigateway.common.constants import CallSourceTypeEnum
 
 logger = logging.getLogger(__name__)
 

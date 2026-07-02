@@ -54,7 +54,7 @@ def _parse_expires_from_record(s: str):
         if timezone.is_naive(dt):
             dt = timezone.make_aware(dt, timezone.get_current_timezone())
         return dt
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
 
 

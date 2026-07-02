@@ -17,16 +17,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
 
 from apigateway.common.error_codes import error_codes
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.url import url_join
 
 from .http import http_get, http_post
 from .utils import do_blueking_http_request, gen_gateway_headers
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
 

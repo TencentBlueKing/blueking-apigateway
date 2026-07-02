@@ -25,7 +25,7 @@ configuration that is published through `controller -> etcd -> operator -> APISI
 
 Current stack, from the checked-in files:
 
-- Python `>=3.11,<3.12` in `pyproject.toml`; CI uses Python `3.11.13`.
+- Python `>=3.14,<3.15` in `pyproject.toml`; CI uses Python `3.14.6`.
 - Django `5.2.15`, Django REST Framework `3.17.1`.
 - Dependencies are managed by `uv` with `pyproject.toml` and `uv.lock`.
 - The Django project root is `apigateway/` and contains `manage.py`.
@@ -36,9 +36,9 @@ Current stack, from the checked-in files:
 - `Makefile` - setup, lint, tests, edition switching, Docker image build, OpenAPI checks.
 - `pyproject.toml` - dependencies, ruff, mypy, pytest, import-linter contracts.
 - `uv.lock` - dependency lockfile; keep it in sync with `pyproject.toml`.
-- `Dockerfile` - production image, currently based on `hub.bktencent.com/blueking/python:3.11.14-ts4`.
+- `Dockerfile` - production image, currently based on `hub.bktencent.com/blueking/python:3.14-tencentos4`.
 - `bin/start.sh` - Gunicorn entrypoint; keeps Prometheus multiprocess metrics in `/tmp/`.
-- `bin/start_celery.sh` and `bin/start_beat.sh` - Celery entrypoints.
+- `bin/start_celery.sh` and `bin/start_beat.sh` - Celery entrypoints; worker concurrency defaults to `12` and can be overridden with `BK_APIGW_CELERY_WORKER_CONCURRENCY`.
 - `apigateway/manage.py` - Django management command entrypoint.
 - `apigateway/apigateway/urls.py` - top-level URL routing.
 - `apigateway/apigateway/conf/default.py` - base settings.
@@ -224,8 +224,8 @@ cd src/dashboard
 make init
 ```
 
-`make init` installs `uv==0.8.0`, runs `uv sync`, installs pre-commit, and
-installs mypy stub packages. The Docker image copies `uv==0.8.22`; use the
+`make init` installs `uv==0.11.26`, runs `uv sync`, installs pre-commit, and
+installs mypy stub packages. The Docker image copies `uv==0.11.26`; use the
 checked-in lockfile rather than relying on either version detail.
 
 For a local install with CI's locked dependency set:

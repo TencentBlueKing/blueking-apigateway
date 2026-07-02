@@ -15,8 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import TYPE_CHECKING
+
 from django.utils.translation import gettext as _
-from jinja2.exceptions import TemplateSyntaxError
+
+if TYPE_CHECKING:
+    from jinja2.exceptions import TemplateSyntaxError
 
 
 class NoResourceDocError(Exception):

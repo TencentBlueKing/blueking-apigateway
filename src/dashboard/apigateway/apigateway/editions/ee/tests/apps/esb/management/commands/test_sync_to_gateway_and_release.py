@@ -24,7 +24,7 @@ from apigateway.apps.esb.component.constants import ESB_RELEASE_TASK_EXPIRES
 from apigateway.apps.esb.management.commands.sync_to_gateway_and_release import Command
 from apigateway.core.models import Gateway
 
-pytestmark = pytest.mark.django_db
+pytestmark = pytest.mark.django_db(databases=["default", "bkcore"])
 
 
 class TestCommand:
@@ -50,16 +50,15 @@ class TestCommand:
             "apigateway.apps.esb.management.commands.sync_to_gateway_and_release.sync_and_release_esb_components",
         )
         command.handle(False)
-        mock_sync_and_release.called_once_with(mock_api.id, "admin", True)
+        mock_sync_and_release.assert_called_once_with(mock_api.id, mocker.ANY, "admin", True)
 
         # async
-        mock_sync_and_release_async = mocker.patch(
-            (
-                "apigateway.apps.esb.management.commands."
-                "sync_to_gateway_and_release.sync_and_release_esb_components.apply_async"
-            ),
+        mock_apply_async_on_commit = mocker.patch(
+            "apigateway.apps.esb.management.commands.sync_to_gateway_and_release.apply_async_on_commit",
         )
         command.handle(True)
-        mock_sync_and_release_async.asset_called_once_with(
-            args=(mock_api.id, "admin", True), expires=ESB_RELEASE_TASK_EXPIRES
+        mock_apply_async_on_commit.assert_called_once_with(
+            mock_sync_and_release,
+            args=(mock_api.id, mocker.ANY, "admin", True),
+            expires=ESB_RELEASE_TASK_EXPIRES,
         )

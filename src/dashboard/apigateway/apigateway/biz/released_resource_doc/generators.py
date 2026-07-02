@@ -18,18 +18,22 @@
 #
 import re
 import textwrap
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 
-from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.core.models import Gateway
 from apigateway.core.utils import get_path_display
 from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
 from apigateway.utils.jinja2 import render_to_string
 
 from .constants import BKAPI_AUTHORIZATION_DESCRIPTIONS, RESOURCE_URL_PARTS, APIDocTypeEnum
-from .released_resource_doc import ResourceDocData
+
+if TYPE_CHECKING:
+    from apigateway.biz.released_resource import ReleasedResourceData
+    from apigateway.core.models import Gateway
+
+    from .released_resource_doc import ResourceDocData
 
 
 class DocGenerator:

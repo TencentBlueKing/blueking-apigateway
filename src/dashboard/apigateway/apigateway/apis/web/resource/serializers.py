@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -31,7 +31,6 @@ from apigateway.apis.web.resource.validators import (
     LowerDashCaseNameDuplicationValidator,
     PathVarsValidator,
 )
-from apigateway.apps.plugin.models import PluginConfig
 from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
@@ -47,6 +46,9 @@ from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
 from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
+
+if TYPE_CHECKING:
+    from apigateway.apps.plugin.models import PluginConfig
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):

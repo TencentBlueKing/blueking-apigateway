@@ -19,13 +19,15 @@
 import logging
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.biz.resource import ResourceData
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.service.plugin import HeaderRewriteConvertor
+
+if TYPE_CHECKING:
+    from apigateway.biz.resource import ResourceData
 
 logger = logging.getLogger(__name__)
 

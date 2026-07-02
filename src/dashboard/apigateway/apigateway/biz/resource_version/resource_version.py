@@ -16,9 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
 
@@ -47,6 +46,9 @@ from apigateway.service.resource_version import (
 )
 from apigateway.utils import time as time_utils
 from apigateway.utils.version import max_version
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class ResourceVersionHandler:

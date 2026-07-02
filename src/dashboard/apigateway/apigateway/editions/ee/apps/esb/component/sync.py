@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.db import transaction
 
@@ -26,7 +26,9 @@ from apigateway.apps.esb.component.convertor import ComponentConvertor
 from apigateway.biz.esb import ComponentResourceBindingHandler
 from apigateway.biz.openapi import ResourceDataConvertor
 from apigateway.biz.resource.importer import ResourcesImporter
-from apigateway.core.models import Gateway
+
+if TYPE_CHECKING:
+    from apigateway.core.models import Gateway
 
 
 class ComponentSynchronizer:

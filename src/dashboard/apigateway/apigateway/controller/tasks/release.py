@@ -18,13 +18,13 @@
 import logging
 import time
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from celery import shared_task
 
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.support.models import ReleasedResourceDoc, ResourceDocVersion
 from apigateway.common.constants import RELEASE_GATEWAY_INTERVAL_SECOND
-from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
 from apigateway.controller.release_logger import ReleaseProcedureLogger
 from apigateway.core.constants import ReleaseHistoryStatusEnum, StageStatusEnum
@@ -40,6 +40,9 @@ from apigateway.service.event import PublishEventReporter
 from apigateway.service.mcp import update_stage_mcp_server_related_resource_names
 from apigateway.service.resource_doc import clear_unreleased_resource_doc
 from apigateway.utils.time import now_datetime
+
+if TYPE_CHECKING:
+    from apigateway.controller.distributor.base import BaseDistributor
 
 logger = logging.getLogger(__name__)
 

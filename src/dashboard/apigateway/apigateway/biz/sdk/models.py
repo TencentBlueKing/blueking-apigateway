@@ -17,17 +17,20 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
 
 from django.conf import settings
 from django.utils.timezone import now as timezone_now
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import GatewaySDK
 from apigateway.common.pypi.pip import PipHelper
-from apigateway.core.models import ResourceVersion
 from apigateway.utils.pypi import RepositoryConfig
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from apigateway.apps.support.models import GatewaySDK
+    from apigateway.core.models import ResourceVersion
 
 
 @dataclass
