@@ -175,6 +175,7 @@
             'api-breaker',
             'bk-traffic-label',
             'uri-blocker',
+            'bk-query-string-rewrite',
           ].includes(choosePlugin)"
         >
           <Component
@@ -308,6 +309,7 @@ import FaultInjection from '@/components/plugin-form/fault-injection/Index.vue';
 import RequestValidate from '@/components/plugin-form/request-validation/Index.vue';
 import ApiBreaker from '@/components/plugin-form/api-breaker/Index.vue';
 import UriBlocker from '@/components/plugin-form/uri-blocker/Index.vue';
+import BkQueryStringRewrite from '@/components/plugin-form/bk-query-string-rewrite/Index.vue';
 import { PLUGIN_FORM_EXAMPLE_MAP } from '@/constants/plugin-form-examples.ts';
 
 interface IProps {
@@ -389,6 +391,7 @@ const pluginFormCompMap = {
   'bk-cors': BkCors,
   'bk-traffic-label': BkTrafficLabel,
   'uri-blocker': UriBlocker,
+  'bk-query-string-rewrite': BkQueryStringRewrite,
 };
 
 const dynamicFormPlugin = ['bk-cors', 'bk-ip-restriction', 'bk-header-rewrite', 'bk-rate-limit'];
@@ -489,6 +492,7 @@ const handleAdd = async () => {
       'api-breaker',
       'bk-traffic-label',
       'uri-blocker',
+      'bk-query-string-rewrite',
       ...dynamicFormPlugin,
     ].includes(choosePlugin.value)) {
       if (isDynamicFormPlugin.value) {
