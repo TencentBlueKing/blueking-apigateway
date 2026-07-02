@@ -517,13 +517,10 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         queryset = queryset.order_by("-id")
 
         page = self.paginate_queryset(queryset)
-        records = page if page is not None else list(queryset)
 
-        output_data = self._build_output_data(records)
+        output_data = self._build_output_data(page)
         output_slz = serializers.AppAlarmRecordListOutputSLZ(output_data, many=True)
-        if page is not None:
-            return self.get_paginated_response(output_slz.data)
-        return OKJsonResponse(data=output_slz.data)
+        return self.get_paginated_response(output_slz.data)
 
     def _build_output_data(self, records):
         dimension_map = {}
@@ -567,15 +564,17 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         if gateway_name:
             resource_queryset = resource_queryset.filter(gateway__name=gateway_name)
 
-        resource_ids = list(resource_queryset.values_list("id", flat=True))
+        resource_ids = set(resource_queryset.values_list("id", flat=True))
         if not resource_ids:
             return queryset.none()
 
-        resource_id_filter = Q()
-        for resource_id in resource_ids:
-            resource_id_filter |= Q(match_dimension__contains=f'"resource_id": {resource_id}')
+        alarm_record_ids = []
+        for alarm_record_id, match_dimension in queryset.values_list("id", "match_dimension").iterator():
+            resource_id = self._parse_match_dimension(match_dimension).get("resource_id")
+            if resource_id in resource_ids:
+                alarm_record_ids.append(alarm_record_id)
 
-        return queryset.filter(resource_id_filter)
+        return queryset.filter(id__in=alarm_record_ids)
 
     def _parse_match_dimension(self, match_dimension: str) -> Dict:
         if not match_dimension:

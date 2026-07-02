@@ -12,8 +12,10 @@
 | status | string | 否 | 告警状态：received、skipped、success、failure |
 | gateway_name | string | 否 | 网关名称（精确匹配） |
 | resource_name | string | 否 | 资源名称（精确匹配） |
-| time_start | int | 否 | 开始时间（Unix 时间戳，秒） |
-| time_end | int | 否 | 结束时间（Unix 时间戳，秒） |
+| time_start | int | 是 | 开始时间（Unix 时间戳，秒） |
+| time_end | int | 是 | 结束时间（Unix 时间戳，秒） |
+| offset | int | 否 | 偏移量，默认 0 |
+| limit | int | 否 | 限制条数，默认 10 |
 
 ### 响应示例
 

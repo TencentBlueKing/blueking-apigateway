@@ -1309,6 +1309,13 @@ class TestAppPermissionRecordListApi:
 
 
 class TestAppAlarmRecordListApi:
+    def _get_time_range_params(self):
+        now = int(time.time())
+        return {
+            "time_start": now - 3600,
+            "time_end": now + 60,
+        }
+
     def test_list(self, request_view, fake_gateway):
         app_code = "bk-test-app"
         resource = G(Resource, gateway=fake_gateway, name="test-resource")
@@ -1347,7 +1354,7 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": app_code},
+            data={"target_app_code": app_code, **self._get_time_range_params()},
             app=mock.MagicMock(app_code=app_code),
         )
         result = resp.json()
@@ -1364,7 +1371,16 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": "another-app"},
+            data={"target_app_code": "another-app", **self._get_time_range_params()},
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+    def test_reject_missing_time_range(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            data={"target_app_code": "current-app"},
             app=mock.MagicMock(app_code="current-app"),
         )
         assert resp.status_code == 400
@@ -1406,7 +1422,7 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": app_code, "resource_name": "target-resource"},
+            data={"target_app_code": app_code, "resource_name": "target-resource", **self._get_time_range_params()},
             app=mock.MagicMock(app_code=app_code),
         )
         result = resp.json()
@@ -1415,6 +1431,57 @@ class TestAppAlarmRecordListApi:
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["alarm_id"] == "alarm-target"
         assert result["data"]["results"][0]["resource_name"] == "target-resource"
+
+    def test_filter_by_resource_name_with_resource_id_prefix(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        target_resource = G(Resource, id=120001, gateway=fake_gateway, name="target-resource-prefix")
+        other_resource = G(Resource, id=1200019, gateway=fake_gateway, name="other-resource-prefix")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-target-prefix",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": target_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-other-prefix",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": other_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            data={
+                "target_app_code": app_code,
+                "resource_name": "target-resource-prefix",
+                **self._get_time_range_params(),
+            },
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["alarm_id"] == "alarm-target-prefix"
+        assert result["data"]["results"][0]["resource_id"] == target_resource.id
 
 
 class TestAppRequestLogListApi:

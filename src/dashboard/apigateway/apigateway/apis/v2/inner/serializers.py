@@ -770,8 +770,10 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
         required=False,
         help_text="资源名称（精确匹配）",
     )
-    time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
-    time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
+    time_start = TimestampField(help_text="开始时间")
+    time_end = TimestampField(help_text="结束时间")
+    offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
+    limit = serializers.IntegerField(label="限制条数", required=False, min_value=1, default=10, help_text="限制条数")
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"
@@ -785,8 +787,9 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
     def validate(self, attrs):
         time_start = attrs.get("time_start")
         time_end = attrs.get("time_end")
-        if bool(time_start) ^ bool(time_end):
+        if not (time_start and time_end):
             raise serializers.ValidationError(_("参数 time_start 和 time_end 需要同时提供。"))
+
         return attrs
 
 

@@ -4245,16 +4245,30 @@ paths:
           description: 资源名称（精确匹配）
         - name: time_start
           in: query
-          required: false
+          required: true
           schema:
             type: integer
           description: 开始时间（Unix 时间戳，秒）
         - name: time_end
           in: query
-          required: false
+          required: true
           schema:
             type: integer
           description: 结束时间（Unix 时间戳，秒）
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: 偏移量
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: 限制条数
       responses:
         '200':
           description: 成功
