@@ -18,51 +18,82 @@
 
 // TDesign表格设置隐藏列
 import type { ITableSettings } from '@/types/common';
+import type { BkUiSettings } from '@blueking/tdesign-ui';
 import { isEqual } from 'lodash-es';
-import i18n from '@/locales';
-import router from '@/router';
-import type { ShallowRef } from 'vue';
+import { useEnv } from '@/stores';
 
-export function useTableSetting(setting: ShallowRef<ITableSettings>, name?: string) {
-  const lang = i18n.global.locale;
-  let tempName: string;
-  if (!name) {
-    tempName = router?.currentRoute?.value?.name as string;
+export function useTableSetting(settings: Ref<BkUiSettings>, useCache: boolean = false, cacheIdentifier?: string) {
+  const { locale } = useI18n();
+  const route = useRoute();
+  const envStore = useEnv();
+
+  let shouldUseCache = false;
+  let localStorageKey = '';
+  const tableIdentifier = cacheIdentifier || String(route.name);
+
+  if (useCache && tableIdentifier) {
+    shouldUseCache = true;
+    localStorageKey = `table-settings-${tableIdentifier}-${locale.value}-${envStore.env.BK_APIGATEWAY_VERSION}`;
   }
   else {
-    tempName = name;
+    if (useCache) {
+      console.warn('invalid table identifier: ', tableIdentifier);
+    }
   }
-  const tableName = `table-setting-${lang.value}-${tempName}`;
 
-  onMounted(() => {
-    const cache = localStorage.getItem(tableName);
-    if (cache && setting) {
-      try {
-        setting.value = { ...JSON.parse(cache) };
+  const writeCache = () => {
+    if (shouldUseCache) {
+      localStorage.setItem(localStorageKey, JSON.stringify(settings.value));
+    }
+  };
+
+  const readCache = () => {
+    if (shouldUseCache) {
+      const cache = localStorage.getItem(localStorageKey);
+      if (cache && settings.value) {
+        try {
+          settings.value = { ...JSON.parse(cache) };
+        }
+        catch (e) {
+          console.error(e);
+        }
       }
-      catch (e) {
-        console.error(e);
+      else if (settings.value) {
+        console.warn(`table(cacheIdentifier: ${cacheIdentifier}) settings are not initialized yet`);
       }
     }
-  });
+  };
 
-  function changeTableSetting(curSetting: ITableSettings) {
-    // 这里需要对比下数据是否一致，避免重复回调
-    if (isEqual(curSetting, setting?.value)) {
+  const isEqualSettings = (newSettings: ITableSettings | BkUiSettings, oldSettings: BkUiSettings) =>
+    isEqual(
+      (newSettings as ITableSettings).columns || (newSettings as BkUiSettings).checked,
+      oldSettings.checked,
+    )
+    && newSettings.fontSize === oldSettings.fontSize
+    && newSettings.rowSize === oldSettings.rowSize;
+
+  const changeTableSettings = (curSettings: ITableSettings) => {
+    if (isEqualSettings(curSettings, settings.value)) {
       return;
     }
-    if (setting) {
-      setting.value = { ...curSetting };
-      localStorage.setItem(tableName, JSON.stringify(setting.value));
+    if (settings.value) {
+      const { columns, fontSize, rowSize } = curSettings;
+      settings.value.checked = columns;
+      settings.value.fontSize = fontSize;
+      settings.value.rowSize = rowSize;
+      writeCache();
     }
-  }
+    else {
+      console.log('settings not initialized yet');
+    }
+  };
 
-  function isDiffSize(value: ITableSettings) {
-    return setting?.value?.rowSize !== value.rowSize;
-  }
+  onMounted(() => {
+    readCache();
+  });
 
   return {
-    changeTableSetting,
-    isDiffSize,
+    changeTableSettings,
+    isEqualSettings,
   };
 }

@@ -28,7 +28,7 @@
           'primary-table-show-pagination': showPagination
         }
       ]"
-      :size="tableSetting?.rowSize ?? 'medium'"
+      :size="tableSettings?.rowSize ?? 'medium'"
       :data="localTableData"
       :columns="tableColumns"
       :pagination="showPagination ? pagination : null"
@@ -39,7 +39,7 @@
       :table-layout="tableLayout"
       :row-key="isExistUniqueKey ? tableRowKey : 'tempUniqueId'"
       :max-height="maxHeight || clientHeight"
-      :bk-ui-settings="tableSetting"
+      :bk-ui-settings="tableSettings"
       :resizable="resizable"
       v-bind="$attrs"
       @bk-ui-settings-change="handleSettingChange"
@@ -125,7 +125,7 @@
 
 <script setup lang="tsx">
 // @ts-nocheck
-import { cloneDeep, memoize, sortBy, sortedUniq, throttle } from 'lodash-es';
+import { cloneDeep, memoize, sortBy, sortedUniq, throttle, uniq } from 'lodash-es';
 import {
   type BkUiSettings,
   PrimaryTable,
@@ -137,14 +137,11 @@ import cnConfig from 'tdesign-vue-next/es/locale/zh_CN';
 import enConfig from 'tdesign-vue-next/es/locale/en_US';
 import { Checkbox, Loading } from 'bkui-vue';
 import { useRequest } from 'vue-request';
-import type { ITableMethod } from '@/types/common';
+import type { ITableMethod, ITableSettings } from '@/types/common';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 import { useMaxTableLimit, useTDesignSelection, useTableSetting } from '@/hooks';
 import i18n from '@/locales';
-import router from '@/router';
 import TableEmpty from '@/components/table-empty/Index.vue';
-// @ts-ignore ShallowRef 类型兼容
-import type { ShallowRef } from 'vue';
 
 interface IProps {
   apiMethod?: (params?: any) => Promise<unknown>
@@ -167,13 +164,15 @@ interface IProps {
   resizable?: boolean
   showCellEmptyContent?: boolean
   maxHeight?: string | number | undefined
+  cacheSettingsInLocalStorage?: boolean
+  cacheIdentifier?: string
 }
 
 const selectedRowKeys = defineModel<any[]>('selectedRowKeys', { default: () => [] });
 
 const tableData = defineModel<any[]>('tableData', { default: () => [] });
 
-const tableSetting = defineModel<null | ShallowRef<BkUiSettings>>('settings', { default: () => null });
+const tableSettings = defineModel<BkUiSettings | null>('settings', { default: () => null });
 
 const {
   apiMethod = undefined,
@@ -213,6 +212,10 @@ const {
   showCellEmptyContent = false,
   // 父组件限制最大表格高度
   maxHeight = undefined,
+  // 是否缓存表格设置到 LocalStorage，默认开启
+  cacheSettingsInLocalStorage = true,
+  // 表格设置缓存唯一标识符，注意不是 LocalStorage 的 key，而是用于区分不同表格的标识符，不传的话会自动生成一个
+  cacheIdentifier = undefined,
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
@@ -244,6 +247,8 @@ const { t, locale } = i18n.global;
 const slots = useSlots();
 
 const { maxTableLimit, clientHeight } = useMaxTableLimit(maxLimitConfig);
+
+const { changeTableSettings } = useTableSetting(tableSettings, cacheSettingsInLocalStorage, cacheIdentifier);
 
 const {
   selections,
@@ -286,8 +291,6 @@ if (Object.keys(maxLimitConfig)?.length) {
     pageSizeOptions: sortedUniq(sortBy([10, 20, 50, 100, maxTableLimit])),
   });
 }
-
-const { changeTableSetting, isDiffSize } = useTableSetting(tableSetting.value);
 
 const isShowSelectionRow = computed(() => {
   return showFirstFullRow && selections.value.length > 0;
@@ -455,44 +458,55 @@ const { params: requestParams, loading, error, refresh, run } = useRequest(apiMe
   },
 });
 
-watch(tableSetting, () => {
-  if (!tableSetting.value && showSettings) {
-    // 过滤掉需要隐藏的列
-    const visibleColumn = tableColumns.value?.filter((tc: any) => !hiddenColumn.includes(tc.colKey));
-    tableSetting.value = {
-      size: 'medium',
-      rowSize: 'medium',
-      checked: visibleColumn.map((col: any) => col.colKey),
-      fields: visibleColumn.map((col: any) => {
-        return {
-          label: col.displayTitle ?? col.title,
-          field: col.colKey,
-        };
-      }),
-      // 默认禁用第一项展示文本的表列，不允许取消全部表列
-      disabled: [tableColumns.value?.filter((col: any) => !['row-select', 'serial-number'].includes(col.colKey))?.[0]?.colKey],
-    };
-  }
-}, { immediate: true });
-
-watch(tableData, (newTableData: any) => {
-  setTimeout(() => {
-    localTableData.value = cloneDeep(newTableData || []);
-    if (localPage) {
-      pagination.value.total = localTableData.value.length;
+watch(
+  tableSettings,
+  () => {
+    if (!tableSettings.value && showSettings) {
+      // 过滤掉需要隐藏的列
+      const visibleColumn = tableColumns.value?.filter((tc: any) => !hiddenColumn.includes(tc.colKey));
+      tableSettings.value = {
+        fontSize: 'medium',
+        rowSize: 'medium',
+        checked: visibleColumn.map((col: any) => col.colKey),
+        fields: visibleColumn.map((col: any) => {
+          return {
+            label: col.displayTitle ?? col.title,
+            field: col.colKey,
+          };
+        }),
+        // 默认禁用第一项展示文本的表列，不允许取消全部表列
+        disabled: [tableColumns.value?.filter((col: any) => !['row-select', 'serial-number'].includes(col.colKey))?.[0]?.colKey],
+      };
     }
-  }, 0);
+  },
+  {
+    deep: true,
+    immediate: true,
+  },
+);
 
-  // 缓存清空仍同步执行，避免数据不一致
-  const rowKeys = (newTableData || []).map((item: any) => item?.[tableRowKey]);
-  if (rowKeys.length > 0) {
-    // @ts-ignore
-    memoizedFilter?.cache?.clear();
-  }
-}, {
-  immediate: true,
-  deep: true,
-});
+watch(
+  tableData,
+  (newTableData: any) => {
+    setTimeout(() => {
+      localTableData.value = cloneDeep(newTableData || []);
+      if (localPage) {
+        pagination.value.total = localTableData.value.length;
+      }
+    }, 0);
+
+    // 缓存清空仍同步执行，避免数据不一致
+    const rowKeys = (newTableData || []).map((item: any) => item?.[tableRowKey]);
+    if (rowKeys.length > 0) {
+      // @ts-ignore
+      memoizedFilter?.cache?.clear();
+    }
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
 
 watch([selections, selectedRowKeys], () => {
   emit('selection-change', {
@@ -629,17 +643,13 @@ const handlePageChange = ({ current, pageSize }: {
   });
 };
 
-const handleSettingChange = (setting: BkUiSettings) => {
-  // @ts-ignore
-  const isExistDiff = isDiffSize(setting);
-  // @ts-ignore
-  changeTableSetting(setting);
-  tableSetting.value = Object.assign(tableSetting.value, setting ?? {});
-  delete tableSetting.value.value;
-  if (!isExistDiff) {
-    // 这里处理高级设置事件回调后需要处理的业务
-    return;
-  }
+const handleSettingChange = (settings: ITableSettings) => {
+  // 事件回调偶尔会发生 columns 重复问题，这里做去重处理
+  const correctSettings = {
+    ...settings,
+    columns: uniq(settings.columns),
+  };
+  changeTableSettings(correctSettings);
 };
 
 // 处理自定义重置功能和点击单选直接关闭弹框
@@ -685,7 +695,7 @@ const handleSettingColumnClick = (e: MouseEvent) => {
   const isIconClick = e.target?.closest('.t-icon-setting');
   if (!isIconClick && settingColumnEl.value) {
     settingColumnEl.value?.querySelector('.column-settings-icon')?.click();
-  };
+  }
 };
 
 const handleListenerRadio = () => {
@@ -756,16 +766,6 @@ const handleRefresh = () => {
 onMounted(() => {
   if (immediate && !localPage) {
     fetchData({ ...offsetAndLimit.value });
-  }
-  const tableSet = localStorage.getItem(`table-setting-${locale.value}-${router?.currentRoute?.value?.name}`);
-  if (tableSet && tableSetting.value) {
-    const storageCache = JSON.parse(tableSet);
-    tableSetting.value = {
-      ...tableSetting.value,
-      ...storageCache,
-      size: storageCache.rowSize,
-    };
-    delete tableSetting.value.value;
   }
   handleListenerRadio();
   handleListenerSetting();
