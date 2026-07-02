@@ -5510,6 +5510,7 @@
         "additionalProperties": false,
         "properties": {
           "add": {
+            "additionalProperties": false,
             "type": "object",
             "patternProperties": {
               "^[^=&#?]+$": {
@@ -5525,6 +5526,7 @@
             }
           },
           "set": {
+            "additionalProperties": false,
             "type": "object",
             "patternProperties": {
               "^[^=&#?]+$": {

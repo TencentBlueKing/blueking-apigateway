@@ -125,15 +125,12 @@ class QueryStringRewriteChecker(BaseChecker):
             raise ValueError("YAML cannot be empty")
 
         set_data = loaded_data.get("set", {})
-        if isinstance(set_data, list):
-            set_keys = [item["key"].lower() for item in set_data]
-        else:
-            set_keys = [key.lower() for key in set_data]
+        set_keys = [item["key"] for item in set_data] if isinstance(set_data, list) else list(set_data)
         set_duplicate_keys = [key for key, count in Counter(set_keys).items() if count >= 2]
         if set_duplicate_keys:
             raise ValueError(_("set 存在重复的元素：{}。").format(", ".join(set_duplicate_keys)))
 
-        remove_keys = [item.lower() for item in loaded_data.get("remove", [])]
+        remove_keys = list(loaded_data.get("remove", []))
         remove_duplicate_keys = [key for key, count in Counter(remove_keys).items() if count >= 2]
         if remove_duplicate_keys:
             raise ValueError(_("remove 存在重复的元素：{}。").format(", ".join(remove_duplicate_keys)))
