@@ -17,11 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from collections.abc import Mapping
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
-from django.db import models
 from django.utils.translation import get_language
 from rest_framework.fields import CharField
+
+if TYPE_CHECKING:
+    from django.db import models
 
 
 class I18nProperty:

@@ -18,16 +18,18 @@
 #
 import json
 import logging
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from django.utils.html import escape as html_escape
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.resource_doc.importer import DocImporter, OpenAPIParser
-from apigateway.core.models import Gateway
 
 from .importers import ResourcesImporter
+
+if TYPE_CHECKING:
+    from apigateway.core.models import Gateway
 
 logger = logging.getLogger(__name__)
 

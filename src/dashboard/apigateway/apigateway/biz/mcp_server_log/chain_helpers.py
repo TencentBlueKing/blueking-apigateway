@@ -87,7 +87,7 @@ def _is_http_error_status(status) -> bool:
     """判断 HTTP 状态码是否为错误（>= 400）"""
     try:
         return int(status) >= 400
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
 
 

@@ -16,14 +16,16 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import re
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.conf import settings
 
 from apigateway.common.tenant.constants import TENANT_ID_OPERATION
-from apigateway.service.alert_flow.helpers import MonitorEvent
 
 from .base import Alerter
+
+if TYPE_CHECKING:
+    from apigateway.service.alert_flow.helpers import MonitorEvent
 
 
 class NginxErrorAlerter(Alerter):

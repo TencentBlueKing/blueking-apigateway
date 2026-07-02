@@ -16,8 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import TYPE_CHECKING
+
 from django.db.models import Q
-from django.db.models.query import QuerySet
 
 from apigateway.apps.mcp_server.constants import MCPServerAppPermissionApplyStatusEnum
 from apigateway.apps.mcp_server.models import MCPServerAppPermissionApply
@@ -29,6 +30,9 @@ from apigateway.common.tenant.query import (
     gateway_related_filter_by_maintainer_tenant_id,
     mcp_server_related_filter_by_maintainer_tenant_id,
 )
+
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
 
 
 class WorkbenchPermissionHandler:

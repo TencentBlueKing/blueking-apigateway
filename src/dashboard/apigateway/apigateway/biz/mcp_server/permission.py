@@ -15,9 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -35,6 +34,9 @@ from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils.time import now_datetime
+
+if TYPE_CHECKING:
+    import datetime
 
 logger = logging.getLogger(__name__)
 

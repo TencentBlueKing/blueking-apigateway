@@ -19,7 +19,7 @@
 import copy
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -27,8 +27,10 @@ from django.utils.translation import get_language
 
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import gen_operation_tenant_header
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.utils.local import local
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger("component")
 

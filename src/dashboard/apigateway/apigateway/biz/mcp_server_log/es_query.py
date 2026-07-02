@@ -16,16 +16,18 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 from elasticsearch_dsl import Q, Search
 
 from apigateway.common.error_codes import error_codes
-from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
 from apigateway.utils.time import SmartTimeRange
 
 from .constants import CHAIN_OUTPUT_FIELDS
+
+if TYPE_CHECKING:
+    from apigateway.service.es import BKLogESClient
 
 logger = logging.getLogger(__name__)
 

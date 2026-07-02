@@ -15,15 +15,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.common.constants import LanguageCodeEnum
 
 from .constants import EN_RESOURCE_DOC_TMPL, ZH_RESOURCE_DOC_TMPL
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class ResourceDocHandler:

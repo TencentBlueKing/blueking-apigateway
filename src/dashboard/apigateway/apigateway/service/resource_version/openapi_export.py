@@ -18,18 +18,20 @@
 """OpenAPI export helpers for resource-version data."""
 
 import json
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from openapi_spec_validator.versions import OPENAPIV31
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
 from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
-from apigateway.core.models import ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.resource import get_gateway_resource_id_to_labels
 from apigateway.utils.yaml import yaml_dumps, yaml_export_dumps
 
 from .schema import get_resource_id_to_schema_by_resource_version
+
+if TYPE_CHECKING:
+    from apigateway.core.models import ResourceVersion
 
 OPENAPI_METHOD_ANY_EXTENSION = "x-bk-apigateway-method-any"
 OPENAPI_RESOURCE_EXTENSION = "x-bk-apigateway-resource"

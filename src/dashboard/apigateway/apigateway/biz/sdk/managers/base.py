@@ -17,7 +17,7 @@
 #
 import logging
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
 from apigateway.biz.sdk.exceptions import DistributeError, ResourcesIsEmpty, SDKRepoConfigError
 from apigateway.biz.sdk.models import (
@@ -29,7 +29,9 @@ from apigateway.biz.sdk.models import (
     SDKManager,
 )
 from apigateway.core.constants import HTTP_METHOD_ANY
-from apigateway.core.models import ResourceVersion
+
+if TYPE_CHECKING:
+    from apigateway.core.models import ResourceVersion
 
 logger = logging.getLogger(__name__)
 

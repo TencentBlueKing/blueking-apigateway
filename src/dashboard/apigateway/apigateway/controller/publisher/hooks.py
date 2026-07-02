@@ -16,11 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.components.bkpaas import paas_app_module_offline
 from apigateway.core.constants import (
     GatewayStatusEnum,
@@ -30,6 +28,10 @@ from apigateway.core.constants import (
     TriggerPublishTypeEnum,
 )
 from apigateway.core.models import Gateway, Release, ReleaseHistory
+
+if TYPE_CHECKING:
+    from apigateway.apps.data_plane.models import DataPlane
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 
 def _pre_publish_check_is_gateway_ready_for_releasing(release: Release, source: PublishSourceEnum) -> Tuple[bool, str]:

@@ -18,11 +18,10 @@
 
 """Resource snapshot construction and snapshot-related read helpers."""
 
-import datetime
 import itertools
 import json
 import operator
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from django.conf import settings
 
@@ -31,6 +30,9 @@ from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, P
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.schema.models import Schema
 from apigateway.utils import time
+
+if TYPE_CHECKING:
+    import datetime
 
 
 def get_resource_id_to_proxy_snapshot(resource_ids: List[int]) -> Dict[int, Dict]:

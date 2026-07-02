@@ -15,6 +15,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import TYPE_CHECKING
+
 from blue_krill.cubing_case import shortcuts
 from django.conf import settings
 
@@ -22,8 +24,10 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.sdk.exceptions import TooManySDKVersion
 from apigateway.biz.sdk.models import SDKContext
-from apigateway.core.models import ResourceVersion
 from apigateway.utils import time as time_utils
+
+if TYPE_CHECKING:
+    from apigateway.core.models import ResourceVersion
 
 
 class SDKManagerMixin:

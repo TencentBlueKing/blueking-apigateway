@@ -17,12 +17,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import copy
-import datetime
 from dataclasses import InitVar, dataclass, field
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 
 from apigateway.apps.monitor.constants import ERROR_CODE_NAME_TO_ALARM_SUBTYPE, AlarmTypeEnum
 from apigateway.utils import time as time_utils
+
+if TYPE_CHECKING:
+    import datetime
 
 
 @dataclass
@@ -74,7 +76,7 @@ class MonitorEvent:
         status = self.event_dimensions.get("status", -1)
         try:
             status_code = int(status)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             status_code = -1
 
         # in apisix, upstream 500 has no code_name, so we need to convert it to status_code_5xx here

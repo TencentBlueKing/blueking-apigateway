@@ -16,11 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import itertools
 import json
 import operator
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from django.db import models
 from django.db.models import Count, Q
@@ -32,6 +31,9 @@ from apigateway.common.constants import LanguageCodeEnum
 from apigateway.common.time import calculate_expires
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import to_datetime_from_now
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class ComponentSystemManager(models.Manager):

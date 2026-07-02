@@ -20,10 +20,9 @@ from functools import partial
 from html import escape as html_escape
 from importlib.resources import as_file, files
 from os import path
-from typing import Any, Dict, Hashable, Iterator, List, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Hashable, Iterator, List, Mapping, Optional, Tuple
 
 from jsonschema.validators import Draft4Validator, Draft202012Validator
-from jsonschema_path import SchemaPath
 from jsonschema_path.readers import FilePathReader
 from lazy_object_proxy import Proxy
 from openapi_spec_validator import versions
@@ -36,8 +35,11 @@ from openapi_spec_validator.validation import (
 )
 from openapi_spec_validator.validation.exceptions import DuplicateOperationIDError
 from openapi_spec_validator.validation.keywords import OperationValidator
-from openapi_spec_validator.versions.datatypes import SpecVersion
-from prance import ValidationError
+
+if TYPE_CHECKING:
+    from jsonschema_path import SchemaPath
+    from openapi_spec_validator.versions.datatypes import SpecVersion
+    from prance import ValidationError
 
 openapi_validator_mapping: Mapping[SpecVersion, SpecValidatorProxy] = {
     versions.OPENAPIV2: openapi_v2_spec_validator,

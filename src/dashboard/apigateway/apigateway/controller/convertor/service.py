@@ -17,7 +17,7 @@
 #
 
 import base64
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
@@ -45,7 +45,6 @@ from apigateway.controller.models.constants import (
     UpstreamSchemeEnum,
     UpstreamTypeEnum,
 )
-from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.constants import LoadBalanceTypeEnum
 from apigateway.core.models import Backend
@@ -53,6 +52,9 @@ from apigateway.core.models import Backend
 from .base import GatewayResourceConvertor
 from .constants import LABEL_KEY_BACKEND_ID
 from .utils import UrlInfo, truncate_string
+
+if TYPE_CHECKING:
+    from apigateway.controller.release_data import ReleaseData
 
 
 class ServiceConvertor(GatewayResourceConvertor):

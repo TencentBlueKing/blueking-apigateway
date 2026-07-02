@@ -17,10 +17,12 @@
 #
 import logging
 from copy import deepcopy
-from typing import ClassVar, Dict, Iterable, List, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, Iterable, List, Type
 
-from apigateway.controller.models import ApisixModel
 from apigateway.controller.registry.base import Registry
+
+if TYPE_CHECKING:
+    from apigateway.controller.models import ApisixModel
 
 logger = logging.getLogger(__name__)
 

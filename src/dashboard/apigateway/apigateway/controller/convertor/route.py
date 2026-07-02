@@ -18,12 +18,11 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from apigateway.controller.constants import DELETE_PUBLISH_ID
 from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
-from apigateway.controller.release_data import ReleaseData
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
 from apigateway.core.constants import ProxyTypeEnum
 from apigateway.utils.time import now_str
@@ -31,6 +30,9 @@ from apigateway.utils.time import now_str
 from .base import GatewayResourceConvertor
 from .constants import MATCH_SUB_PATH_PRIORITY, SUBPATH_PARAM_NAME
 from .utils import truncate_string
+
+if TYPE_CHECKING:
+    from apigateway.controller.release_data import ReleaseData
 
 logger = logging.getLogger(__name__)
 

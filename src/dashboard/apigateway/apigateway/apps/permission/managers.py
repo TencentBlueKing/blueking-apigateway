@@ -16,8 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from django.db import models
 
@@ -29,6 +28,9 @@ from apigateway.apps.permission.constants import (
 )
 from apigateway.common.time import calculate_expires, calculate_renew_time
 from apigateway.utils.time import now_datetime, to_datetime_from_now
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class AppGatewayPermissionManager(models.Manager):

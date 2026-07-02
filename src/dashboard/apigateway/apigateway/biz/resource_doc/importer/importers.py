@@ -15,13 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from apigateway.apps.support.constants import DocSourceEnum, DocTypeEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.utils.time import now_datetime
 
-from .models import BaseDoc
+if TYPE_CHECKING:
+    from .models import BaseDoc
 
 
 class DocImporter:

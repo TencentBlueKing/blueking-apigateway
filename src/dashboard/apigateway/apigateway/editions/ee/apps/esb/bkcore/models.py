@@ -16,9 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import operator
-from typing import ClassVar, List, Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional
 
 from django.db import models
 from django.utils import timezone
@@ -33,6 +32,9 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import OperatorModelMixin, TimestampedModelMixin
 from apigateway.core.constants import ReleaseStatusEnum
 from apigateway.utils.time import NeverExpiresTime
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class ModelWithBoard(models.Model):

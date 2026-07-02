@@ -17,13 +17,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import operator
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.db.models.query import QuerySet
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, serializers, status
@@ -59,6 +58,9 @@ from .serializers import (
     GatewaySyncInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
+
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
 
 
 @method_decorator(

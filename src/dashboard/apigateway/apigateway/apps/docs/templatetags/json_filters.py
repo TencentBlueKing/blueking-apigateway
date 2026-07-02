@@ -28,7 +28,7 @@ register = template.Library()
 def pretty_json(value, indent=2):
     try:
         return json.dumps(value, indent=indent)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return value
 
 
@@ -38,5 +38,5 @@ def indent_json(value, indent=2):
         json_str = json.dumps(value, indent=indent)
         lines = json_str.split("\n")
         return "\n".join([lines[0]] + [" " * indent + line for line in lines[1:]])
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return value

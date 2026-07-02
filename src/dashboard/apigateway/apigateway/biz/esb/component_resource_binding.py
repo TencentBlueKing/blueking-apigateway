@@ -15,10 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from apigateway.apps.esb.bkcore.models import ComponentResourceBinding
-from apigateway.biz.resource import ResourceData
+
+if TYPE_CHECKING:
+    from apigateway.biz.resource import ResourceData
 
 
 class ComponentResourceBindingHandler:

@@ -17,7 +17,7 @@
 #
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from apigateway.controller.convertor import (
     BkReleaseConvertor,
@@ -26,9 +26,11 @@ from apigateway.controller.convertor import (
 )
 from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
 from apigateway.controller.convertor.plugin_metadata import PluginMetadataConvertor
-from apigateway.controller.models import ApisixModel, GatewayApisixModel
 from apigateway.controller.release_data import ReleaseData
-from apigateway.core.models import Release
+
+if TYPE_CHECKING:
+    from apigateway.controller.models import ApisixModel, GatewayApisixModel
+    from apigateway.core.models import Release
 
 logger = logging.getLogger(__name__)
 

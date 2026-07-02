@@ -18,10 +18,10 @@
 import logging
 from typing import TYPE_CHECKING, Tuple
 
-from apigateway.apps.data_plane.models import DataPlane
-
 if TYPE_CHECKING:
     import etcd3
+
+    from apigateway.apps.data_plane.models import DataPlane
 from apigateway.controller.distributor.base import BaseDistributor
 from apigateway.controller.registry.etcd import EtcdRegistry
 from apigateway.controller.release_logger import ReleaseProcedureLogger

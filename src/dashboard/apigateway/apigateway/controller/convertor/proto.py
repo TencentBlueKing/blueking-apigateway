@@ -16,11 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import List
-
-from apigateway.controller.models import GatewayApisixModel
+from typing import TYPE_CHECKING, List
 
 from .base import GatewayResourceConvertor
+
+if TYPE_CHECKING:
+    from apigateway.controller.models import GatewayApisixModel
 
 
 class ProtoConvertor(GatewayResourceConvertor):

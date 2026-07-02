@@ -224,8 +224,8 @@ cd src/dashboard
 make init
 ```
 
-`make init` installs `uv==0.8.0`, runs `uv sync`, installs pre-commit, and
-installs mypy stub packages. The Docker image copies `uv==0.8.22`; use the
+`make init` installs `uv==0.11.26`, runs `uv sync`, installs pre-commit, and
+installs mypy stub packages. The Docker image copies `uv==0.11.26`; use the
 checked-in lockfile rather than relying on either version detail.
 
 For a local install with CI's locked dependency set:

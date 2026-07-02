@@ -17,14 +17,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.db import transaction
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING, CallSourceTypeEnum
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
@@ -34,6 +33,9 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, BackendConfig, Release, Stage
 from apigateway.utils.time import now_datetime
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 
 class StageHandler:

@@ -88,7 +88,7 @@ class DocImportBySwaggerApi(generics.CreateAPIView):
                 swagger=slz.validated_data["swagger"],
                 language=DocLanguageEnum(slz.validated_data["language"]),
             )
-        except (ExpandSwaggerError, SchemaValidationError):
+        except ExpandSwaggerError, SchemaValidationError:
             raise error_codes.INVALID_ARGUMENT.format(_("swagger 描述内容不符合规范。"))
         except GenerateMarkdownError:
             raise error_codes.INTERNAL.format(_("根据 swagger 描述生成 markdown 格式文档出现错误。"))

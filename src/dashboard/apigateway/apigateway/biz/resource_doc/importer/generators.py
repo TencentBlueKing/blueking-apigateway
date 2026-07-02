@@ -18,19 +18,22 @@
 import logging
 import os
 from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
 
 from bkapi_client_generator import generate_markdown
 from jinja2 import FileSystemLoader
 from jinja2.exceptions import TemplateNotFound, TemplatesNotFound, TemplateSyntaxError
 from jinja2.sandbox import SandboxedEnvironment
 
-from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc import (
     ResourceDocJinja2TemplateError,
     ResourceDocJinja2TemplateNotFound,
     ResourceDocJinja2TemplateSyntaxError,
 )
 from apigateway.utils.file import read_file, write_to_file
+
+if TYPE_CHECKING:
+    from apigateway.apps.support.constants import DocLanguageEnum
 
 logger = logging.getLogger(__name__)
 

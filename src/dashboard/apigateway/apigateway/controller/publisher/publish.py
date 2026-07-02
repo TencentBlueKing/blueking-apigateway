@@ -16,12 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
 from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
-from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
 from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.constants import (
@@ -37,6 +36,9 @@ from .hooks import (
     _pre_publish_programmable_gateway_offline,
     _pre_publish_save_release_history,
 )
+
+if TYPE_CHECKING:
+    from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
 

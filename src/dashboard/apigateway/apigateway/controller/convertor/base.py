@@ -16,12 +16,14 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from abc import ABC, abstractmethod
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from apigateway.controller.models import ApisixModel, Labels
-from apigateway.controller.release_data import ReleaseData
 
 from .constants import LABEL_KEY_APISIX_VERSION, LABEL_KEY_GATEWAY, LABEL_KEY_PUBLISH_ID, LABEL_KEY_STAGE
+
+if TYPE_CHECKING:
+    from apigateway.controller.release_data import ReleaseData
 
 
 class BaseResourceConvertor(ABC):

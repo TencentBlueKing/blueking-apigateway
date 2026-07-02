@@ -16,9 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import datetime
 import json
-from typing import ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
 
 from django.db import models
 from django.utils import timezone
@@ -37,6 +36,9 @@ from apigateway.apps.permission.constants import (
 from apigateway.common.mixins.models import TimestampedModelMixin
 from apigateway.core.models import Gateway, Resource
 from apigateway.utils.time import NeverExpiresTime, to_datetime_from_now, to_seconds
+
+if TYPE_CHECKING:
+    import datetime
 
 
 def generate_expire_time() -> datetime.datetime:

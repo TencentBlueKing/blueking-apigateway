@@ -23,7 +23,7 @@ RUN mvn dependency:get -Dartifact=com.squareup.okhttp3:okhttp:4.12.0 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-compiler-plugin:3.8.1 && \
     mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-jar-plugin:3.1.0
 
-COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /uvx /bin/
 
 WORKDIR /app
 COPY build/pyproject.toml build/uv.lock /app/
