@@ -129,8 +129,8 @@ export type ITableMethod = {
 // tdesign-table设置
 export type ITableSettings = {
   columns: string[]
-  fontSize: string
-  rowSize: string
+  fontSize: 'large' | 'medium' | undefined
+  rowSize: 'large' | 'medium' | 'small' | undefined
 };
 
 // 表单实例函数
