@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import time
 from unittest import mock
 
@@ -34,9 +35,11 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.monitor.constants import AlarmStatusEnum
+from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Stage
+from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
@@ -1303,6 +1306,122 @@ class TestAppPermissionRecordListApi:
         # 验证分页参数存在
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+
+class TestAppAlarmRecordListApi:
+    def test_list(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        resource = G(Resource, gateway=fake_gateway, name="test-resource")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-1",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+            message="请求 ID: req-001",
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-2",
+            status=AlarmStatusEnum.FAILURE.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": "other-app",
+                }
+            ),
+            message="请求 ID: req-002",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            data={"target_app_code": app_code},
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        record = result["data"]["results"][0]
+        assert record["alarm_id"] == "alarm-1"
+        assert record["request_id"] == "req-001"
+        assert record["resource_name"] == "test-resource"
+        assert record["gateway_name"] == fake_gateway.name
+
+    def test_reject_non_self_target_app_code(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            data={"target_app_code": "another-app"},
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+
+class TestAppRequestLogListApi:
+    def test_list(self, request_view, mocker):
+        mock_search_logs = mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(
+                1,
+                [
+                    {
+                        "request_id": "req-001",
+                        "timestamp": 1751366500,
+                        "api_name": "bk-user-api",
+                        "stage": "prod",
+                        "resource_id": 12,
+                        "resource_name": "list_users",
+                        "method": "GET",
+                        "http_host": "bk-user-api.example.com",
+                        "http_path": "/prod/users",
+                        "status": 200,
+                        "request_duration": 32,
+                        "code_name": "",
+                        "error": "",
+                        "response_desc": "OK",
+                        "backend_host": "private-backend.example.com",
+                    }
+                ],
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            data={"target_app_code": "bk-test-app", "time_range": 3600},
+            app=mock.MagicMock(app_code="bk-test-app"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        record = result["data"]["results"][0]
+        assert record["request_id"] == "req-001"
+        assert record["gateway_name"] == "bk-user-api"
+        assert "backend_host" not in record
+        mock_search_logs.assert_called_once()
+
+    def test_reject_non_self_target_app_code(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            data={"target_app_code": "another-app", "time_range": 3600},
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
 
 
 class TestMCPServerListApi:

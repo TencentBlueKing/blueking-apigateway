@@ -84,8 +84,8 @@ def monitor_app_request(event_data: Dict[str, Any]):
     flow = AlertFlow()
     flow.append(AlarmRecordCreator())
     flow.append(GatewayExistFilter())
-    flow.append(AppRequestAppCodeRequiredFilter())
     flow.append(RelatedLogRecordsFetcher(es_index=get_es_index(alarm_type), output_fields=API_ERRORLOG_OUTPUT_FIELDS))
+    flow.append(AppRequestAppCodeRequiredFilter())
     # FIXME: the notice_way should be from the alarm_strategy
     flow.append(AppRequestAlerter(notice_ways=[NoticeWayEnum.IM.value, NoticeWayEnum.WECHAT.value]))
 
