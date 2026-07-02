@@ -4206,6 +4206,312 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Monitor alarm callback
+  /api/v2/inner/monitor/app-alarm-records/:
+    get:
+      operationId: v2_inner_list_app_alarm_records
+      description: 应用维度告警记录列表
+      tags:
+        - v2_inner
+      parameters:
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 目标应用编码，必须与当前请求应用一致
+          example: bk-apigateway
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - received
+              - skipped
+              - success
+              - failure
+          description: 告警状态
+        - name: gateway_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关名称（精确匹配）
+        - name: resource_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 资源名称（精确匹配）
+        - name: time_start
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 开始时间（Unix 时间戳，秒）
+        - name: time_end
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 结束时间（Unix 时间戳，秒）
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: 偏移量
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: 限制条数
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            alarm_id:
+                              type: string
+                              example: "26661111"
+                            status:
+                              type: string
+                              example: success
+                            status_display:
+                              type: string
+                              example: 告警成功
+                            created_time:
+                              type: string
+                              example: "2026-07-02 10:00:00 +0800"
+                            gateway_name:
+                              type: string
+                              example: bk-example
+                            stage:
+                              type: string
+                              example: prod
+                            resource_id:
+                              type: integer
+                              nullable: true
+                              example: 12
+                            resource_name:
+                              type: string
+                              example: list_users
+                            request_id:
+                              type: string
+                              example: f1a0f0f4aef149d88b36e5
+                            message:
+                              type: string
+                              example: ...
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/monitor/app-alarm-records/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: list app alarm records
+  /api/v2/inner/monitor/app-request-logs/:
+    get:
+      operationId: v2_inner_list_app_request_logs
+      description: 应用维度调用流水日志列表（开发者视角）
+      tags:
+        - v2_inner
+      parameters:
+        - name: target_app_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 目标应用编码，必须与当前请求应用一致
+          example: bk-apigateway
+        - name: gateway_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 网关名称（精确匹配）
+        - name: resource_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 资源名称（精确匹配）
+        - name: request_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 请求 ID
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: 响应状态码
+        - name: time_range
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: 时间范围（秒）
+        - name: time_start
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: 开始时间（Unix 时间戳，秒）
+        - name: time_end
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: 结束时间（Unix 时间戳，秒）
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: 偏移量
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: 限制条数
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  result:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: OK
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                      has_next:
+                        type: boolean
+                        example: false
+                      has_previous:
+                        type: boolean
+                        example: false
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            request_id:
+                              type: string
+                              example: f1a0f0f4aef149d88b36e5
+                            timestamp:
+                              type: integer
+                              example: 1751366500
+                            gateway_name:
+                              type: string
+                              example: bk-user-api
+                            stage:
+                              type: string
+                              example: prod
+                            resource_id:
+                              type: integer
+                              nullable: true
+                              example: 12
+                            resource_name:
+                              type: string
+                              example: list_users
+                            method:
+                              type: string
+                              example: GET
+                            http_host:
+                              type: string
+                              example: bk-user-api.example.com
+                            http_path:
+                              type: string
+                              example: /prod/users
+                            status:
+                              type: integer
+                              example: 200
+                            request_duration:
+                              type: integer
+                              example: 32
+                            code_name:
+                              type: string
+                              example: ""
+                            error:
+                              type: string
+                              example: ""
+                            response_desc:
+                              type: string
+                              example: OK
+      x-bk-apigateway-resource:
+        isPublic: false
+        allowApplyPermission: false
+        matchSubpath: false
+        enableWebsocket: false
+        backend:
+          name: default
+          method: get
+          path: /backend/api/v2/inner/monitor/app-request-logs/
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+        descriptionEn: list app request logs
   /api/v2/sync/gateways/{gateway_name}/public_key/:
     get:
       operationId: v2_sync_get_gateway_public_key_new
