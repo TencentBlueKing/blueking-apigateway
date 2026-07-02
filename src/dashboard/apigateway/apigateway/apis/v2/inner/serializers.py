@@ -765,6 +765,11 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
         required=False,
         help_text="网关名称（精确匹配）",
     )
+    resource_name = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="资源名称（精确匹配）",
+    )
     time_start = TimestampField(allow_null=True, required=False, help_text="开始时间")
     time_end = TimestampField(allow_null=True, required=False, help_text="结束时间")
 

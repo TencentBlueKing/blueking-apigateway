@@ -1369,6 +1369,53 @@ class TestAppAlarmRecordListApi:
         )
         assert resp.status_code == 400
 
+    def test_filter_by_resource_name(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        target_resource = G(Resource, gateway=fake_gateway, name="target-resource")
+        other_resource = G(Resource, gateway=fake_gateway, name="other-resource")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-target",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": target_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            alarm_id="alarm-other",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": other_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            data={"target_app_code": app_code, "resource_name": "target-resource"},
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["alarm_id"] == "alarm-target"
+        assert result["data"]["results"][0]["resource_name"] == "target-resource"
+
 
 class TestAppRequestLogListApi:
     def test_list(self, request_view, mocker):

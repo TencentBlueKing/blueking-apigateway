@@ -504,6 +504,13 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         if data.get("gateway_name"):
             queryset = queryset.filter(gateway__name=data["gateway_name"])
 
+        if data.get("resource_name"):
+            queryset = self._filter_by_resource_name(
+                queryset,
+                resource_name=data["resource_name"],
+                gateway_name=data.get("gateway_name"),
+            )
+
         if data.get("time_start") and data.get("time_end"):
             queryset = queryset.filter(created_time__range=(data["time_start"], data["time_end"]))
 
@@ -554,6 +561,21 @@ class AppAlarmRecordListApi(generics.ListAPIView):
                 }
             )
         return output_data
+
+    def _filter_by_resource_name(self, queryset, resource_name: str, gateway_name: str = ""):
+        resource_queryset = Resource.objects.filter(name=resource_name)
+        if gateway_name:
+            resource_queryset = resource_queryset.filter(gateway__name=gateway_name)
+
+        resource_ids = list(resource_queryset.values_list("id", flat=True))
+        if not resource_ids:
+            return queryset.none()
+
+        resource_id_filter = Q()
+        for resource_id in resource_ids:
+            resource_id_filter |= Q(match_dimension__contains=f'"resource_id": {resource_id}')
+
+        return queryset.filter(resource_id_filter)
 
     def _parse_match_dimension(self, match_dimension: str) -> Dict:
         if not match_dimension:

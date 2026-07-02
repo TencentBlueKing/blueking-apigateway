@@ -4237,6 +4237,12 @@ paths:
           schema:
             type: string
           description: 网关名称（精确匹配）
+        - name: resource_name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 资源名称（精确匹配）
         - name: time_start
           in: query
           required: false
