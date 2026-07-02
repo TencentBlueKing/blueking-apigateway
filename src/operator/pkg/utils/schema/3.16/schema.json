@@ -5501,6 +5501,58 @@
       "scope": "stage_and_resource",
       "version": 0.1
     },
+    "bk-query-string-rewrite": {
+      "priority": 17410,
+      "schema": {
+        "$comment": "this is a mark for our injected plugin schema",
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "add": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+              "^[^=&#?]+$": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "set": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+              "^[^=&#?]+$": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "remove": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[^=&#?]+$"
+            }
+          }
+        }
+      },
+      "scope": "resource",
+      "version": 0.1
+    },
     "bk-ip-restriction": {
       "priority": 17662,
       "schema": {
