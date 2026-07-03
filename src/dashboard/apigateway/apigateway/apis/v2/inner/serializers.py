@@ -752,12 +752,6 @@ class MonitorCallbackRequestBodySLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.MonitorCallbackRequestBodySLZ"
 
 
-def _validate_path_app_code(context) -> str:
-    app_code = context["app_code"]
-    BKAppCodeValidator()(app_code)
-    return app_code
-
-
 class AppAlarmRecordListInputSLZ(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=AlarmStatusEnum.get_choices(),
@@ -778,14 +772,19 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
     time_start = TimestampField(help_text="开始时间")
     time_end = TimestampField(help_text="结束时间")
     offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
-    limit = serializers.IntegerField(label="限制条数", required=False, min_value=1, default=10, help_text="限制条数")
+    limit = serializers.IntegerField(
+        label="限制条数",
+        required=False,
+        min_value=1,
+        max_value=100,
+        default=10,
+        help_text="限制条数",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"
 
     def validate(self, attrs):
-        attrs["app_code"] = _validate_path_app_code(self.context)
-
         time_start = attrs.get("time_start")
         time_end = attrs.get("time_end")
         if not (time_start and time_end):
@@ -835,8 +834,6 @@ class AppRequestLogListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListInputSLZ"
 
     def validate(self, attrs):
-        attrs["app_code"] = _validate_path_app_code(self.context)
-
         max_time_range_days = 180
         time_start = attrs["time_start"]
         time_end = attrs["time_end"]

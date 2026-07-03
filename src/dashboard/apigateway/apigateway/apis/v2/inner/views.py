@@ -56,6 +56,7 @@ from apigateway.biz.permission import (
 )
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
@@ -490,15 +491,15 @@ class AppAlarmRecordListApi(generics.ListAPIView):
     serializer_class = serializers.AppAlarmRecordListInputSLZ
 
     def list(self, request, *args, **kwargs):
-        slz = self.get_serializer(
-            data=request.query_params,
-            context={"request": request, "app_code": kwargs["app_code"]},
-        )
+        app_code = kwargs["app_code"]
+        BKAppCodeValidator()(app_code)
+
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
         queryset = AlarmRecord.objects.filter(
-            app_code=data["app_code"],
+            app_code=app_code,
             alarm_type=AlarmTypeEnum.APP_REQUEST.value,
         ).select_related("gateway")
 
@@ -637,14 +638,14 @@ class AppRequestLogListApi(generics.ListAPIView):
     ]
 
     def list(self, request, *args, **kwargs):
-        slz = self.get_serializer(
-            data=request.query_params,
-            context={"request": request, "app_code": kwargs["app_code"]},
-        )
+        app_code = kwargs["app_code"]
+        BKAppCodeValidator()(app_code)
+
+        slz = self.get_serializer(data=request.query_params)
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        include_conditions = [("app_code", data["app_code"])]
+        include_conditions = [("app_code", app_code)]
         if data.get("gateway_name"):
             include_conditions.append(("gateway_name", data["gateway_name"]))
         if data.get("resource_name"):
