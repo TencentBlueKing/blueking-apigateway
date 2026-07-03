@@ -195,6 +195,7 @@ const handleRejectPermission = async () => {
 
 const handleClose = () => {
   batchApplyDialogConf.value.isShow = false;
+  batchApprovalFormRef.value?.clearValidate();
 };
 
 defineExpose({

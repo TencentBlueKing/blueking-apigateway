@@ -23,7 +23,7 @@
       v-bk-tooltips="{ content: t('请选择要审批的权限'), disabled: selectedRows.length > 0 }"
       theme="primary"
       :disabled="!selectedRows.length"
-      class="batch-approva"
+      class="batch-approval"
       @click="handleBatchApply"
     >
       {{ t("批量审批") }}
