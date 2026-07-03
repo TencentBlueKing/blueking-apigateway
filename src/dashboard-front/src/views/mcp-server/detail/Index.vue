@@ -409,16 +409,18 @@ const handleGuideChange = (tabName: string) => {
   return tabMap[tabName as keyof typeof tabMap]?.();
 };
 
-watch(() => route.params, async () => {
-  const { serverId: id } = route.params;
-  if (id) {
-    serverId.value = Number(id);
-    Promise.allSettled([handleUpdated(), fetchMcpAIConfigList()]);
-  }
-}, {
-  immediate: true,
-  deep: true,
-});
+watch(
+  () => [route.params.id, route.params.serverId],
+  ([id, mcpId]) => {
+    if (id && mcpId) {
+      serverId.value = Number(mcpId);
+      if (gatewayId === Number(id)) {
+        Promise.allSettled([handleUpdated(), fetchMcpAIConfigList()]);
+      }
+    }
+  },
+  { immediate: true },
+);
 
 watch(() => gatewayStore.currentGateway, (newGateway, oldGateway) => {
   // 切换了网关，需要返回列表页
