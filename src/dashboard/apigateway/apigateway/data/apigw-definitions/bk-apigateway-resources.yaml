@@ -4206,7 +4206,7 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Monitor alarm callback
-  /api/v2/apps/{app_code}/monitor/alarm-records/:
+  /api/v2/inner/apps/{app_code}/monitor/alarm-records/:
     get:
       operationId: v2_inner_list_app_alarm_records
       description: 应用维度告警记录列表
@@ -4348,7 +4348,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: list app alarm records
-  /api/v2/apps/{app_code}/monitor/request-logs/:
+  /api/v2/inner/apps/{app_code}/monitor/request-logs/:
     get:
       operationId: v2_inner_list_app_request_logs
       description: 应用维度调用流水日志列表（开发者视角）
