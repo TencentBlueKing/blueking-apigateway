@@ -85,6 +85,11 @@
       @clear-filter="handleClearFilter"
       @filter-change="handleFilterChange"
     />
+
+    <Detail
+      v-model:is-show="showDetails"
+      :data="details"
+    />
   </div>
 </template>
 
@@ -108,6 +113,8 @@ import {
   getAuditLogList,
 } from '@/services/source/audit-log.ts';
 import AgTable from '@/components/ag-table/Index.vue';
+import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
+import Detail from './detail/Index.vue';
 
 const { t, locale } = useI18n();
 const accessLogStore = useAccessLog();
@@ -132,6 +139,8 @@ const defaultSearchData = ref<IAuditLog>({
   order_by: '',
 });
 
+const showDetails = ref<boolean>(false);
+const details = ref<IAuditEventLogOutput>();
 const tableData = ref([]);
 const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));
@@ -241,7 +250,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作对象'),
     colKey: 'op_object_type',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditLog }) => {
+    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
       return (
         <div class="cell-field">
           <span class="content">{ getOpObjectTypeText(row.op_object_type) }</span>
@@ -262,7 +271,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('实例'),
     colKey: 'op_object',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditLog }) => {
+    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
       return (
         <span>{ row.op_object || '--' }</span>
       );
@@ -272,7 +281,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作类型'),
     colKey: 'op_type',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditLog }) => {
+    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
       return (
         <span>{ getOpTypeText(row.op_type) || '--' }</span>
       );
@@ -291,7 +300,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作状态'),
     colKey: 'op_status',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditLog }) => {
+    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
       return (
         <div class="flex items-center">
           <span class={['mr-5px ag-dot', row.op_status]} />
@@ -313,7 +322,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作人'),
     colKey: 'username',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditLog }) =>
+    cell: (h: any, { row }: { row: IAuditEventLogOutput }) =>
       !featureFlagStore.isEnableDisplayName
         ? <span>{row.username}</span>
         : <span><bk-user-display-name user-id={row.username} /></span>,
@@ -322,11 +331,22 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作时间'),
     colKey: 'op_time',
     ellipsis: true,
+    width: 260,
   },
   {
     title: t('描述'),
     colKey: 'comment',
     ellipsis: true,
+  },
+  {
+    title: t('操作'),
+    colKey: 'actions',
+    width: 120,
+    cell: (h: any, { row }: any) => (
+      <bk-button text theme="primary" onClick={() => showDiff(row)}>
+        {t('查看详情')}
+      </bk-button>
+    ),
   },
 ]);
 
@@ -342,6 +362,11 @@ const handleClearFilter = () => {
   searchValue.value = [];
   handleClear();
   dateKey.value = String(+new Date());
+};
+
+const showDiff = (row: IAuditEventLogOutput) => {
+  details.value = row;
+  showDetails.value = true;
 };
 
 // 处理表头筛选联动搜索框
