@@ -4,14 +4,19 @@
 
 ### 输入参数
 
+#### 路径参数
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+|---|---|---|---|
+| app_code | string | 是 | 应用编码，必须与当前请求应用一致 |
+
 #### 请求参数
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
-| target_app_code | string | 是 | 目标应用编码，必须与当前请求应用一致 |
 | status | string | 否 | 告警状态：received、skipped、success、failure |
 | gateway_name | string | 否 | 网关名称（精确匹配） |
-| resource_name | string | 否 | 资源名称（精确匹配） |
+| resource_name | string | 否 | 资源名称（精确匹配），传此参数时必须同时传 gateway_name |
 | time_start | int | 是 | 开始时间（Unix 时间戳，秒） |
 | time_end | int | 是 | 结束时间（Unix 时间戳，秒） |
 | offset | int | 否 | 偏移量，默认 0 |

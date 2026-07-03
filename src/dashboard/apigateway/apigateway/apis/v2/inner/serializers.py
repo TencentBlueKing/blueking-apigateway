@@ -54,6 +54,8 @@ from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
 
+APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS = 180
+
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
     least_privileges = context.get("least_privileges", {})
@@ -752,8 +754,18 @@ class MonitorCallbackRequestBodySLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.inner.serializers.MonitorCallbackRequestBodySLZ"
 
 
+def _validate_path_app_code(context) -> str:
+    app_code = context["app_code"]
+    BKAppCodeValidator()(app_code)
+
+    request = context["request"]
+    if request.app.app_code != app_code:
+        raise serializers.ValidationError({"app_code": _("app_code must be the same as current app_code")})
+
+    return app_code
+
+
 class AppAlarmRecordListInputSLZ(serializers.Serializer):
-    target_app_code = serializers.CharField(validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     status = serializers.ChoiceField(
         choices=AlarmStatusEnum.get_choices(),
         allow_blank=True,
@@ -778,17 +790,16 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"
 
-    def validate_target_app_code(self, value: str) -> str:
-        request = self.context["request"]
-        if request.app.app_code != value:
-            raise serializers.ValidationError(_("target_app_code must be the same as current app_code"))
-        return value
-
     def validate(self, attrs):
+        attrs["app_code"] = _validate_path_app_code(self.context)
+
         time_start = attrs.get("time_start")
         time_end = attrs.get("time_end")
         if not (time_start and time_end):
             raise serializers.ValidationError(_("参数 time_start 和 time_end 需要同时提供。"))
+
+        if attrs.get("resource_name") and not attrs.get("gateway_name"):
+            raise serializers.ValidationError({"gateway_name": _("传 resource_name 时，必须同时传 gateway_name。")})
 
         return attrs
 
@@ -811,29 +822,48 @@ class AppAlarmRecordListOutputSLZ(serializers.Serializer):
 
 
 class AppRequestLogListInputSLZ(serializers.Serializer):
-    target_app_code = serializers.CharField(validators=[BKAppCodeValidator()], help_text="蓝鲸应用 ID")
     gateway_name = serializers.CharField(allow_blank=True, required=False, help_text="网关名称（精确匹配）")
     resource_name = serializers.CharField(allow_blank=True, required=False, help_text="资源名称（精确匹配）")
     request_id = serializers.CharField(allow_blank=True, required=False, help_text="请求 ID")
     status = serializers.IntegerField(required=False, min_value=100, max_value=599, help_text="响应状态码")
-    time_range = serializers.IntegerField(label="时间范围", required=False, min_value=0, help_text="时间范围（秒）")
-    time_start = serializers.IntegerField(label="起始时间", required=False, min_value=0, help_text="起始时间")
-    time_end = serializers.IntegerField(label="结束时间", required=False, min_value=0, help_text="结束时间")
+    time_start = TimestampField(label="起始时间", help_text="起始时间")
+    time_end = TimestampField(label="结束时间", help_text="结束时间")
     offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
-    limit = serializers.IntegerField(label="限制条数", required=False, min_value=1, default=10, help_text="限制条数")
+    limit = serializers.IntegerField(
+        label="限制条数",
+        required=False,
+        min_value=1,
+        max_value=100,
+        default=10,
+        help_text="限制条数",
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListInputSLZ"
 
-    def validate_target_app_code(self, value: str) -> str:
-        request = self.context["request"]
-        if request.app.app_code != value:
-            raise serializers.ValidationError(_("target_app_code must be the same as current app_code"))
-        return value
-
     def validate(self, attrs):
-        if not ((attrs.get("time_start") and attrs.get("time_end")) or attrs.get("time_range")):
-            raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
+        attrs["app_code"] = _validate_path_app_code(self.context)
+
+        time_start = attrs["time_start"]
+        time_end = attrs["time_end"]
+        now = time.to_datetime_from_now()
+        min_time_start = time.to_datetime_from_now(days=-APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS)
+
+        if time_start < min_time_start:
+            raise serializers.ValidationError(
+                {
+                    "time_start": _("time_start must be within the last {days} days.").format(
+                        days=APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS
+                    )
+                }
+            )
+
+        if time_end <= time_start:
+            raise serializers.ValidationError({"time_end": _("time_end must be greater than time_start.")})
+
+        if time_end >= now:
+            raise serializers.ValidationError({"time_end": _("time_end must be less than current time.")})
+
         return attrs
 
 

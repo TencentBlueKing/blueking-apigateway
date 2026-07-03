@@ -33,15 +33,15 @@ urlpatterns = [
         monitor_views.AlarmCallbackApi.as_view(),
         name="openapi.v2.inner.monitor.alarm_callback",
     ),
-    # GET /api/v2/inner/monitor/app-alarm-records/
+    # GET /api/v2/inner/apps/{app_code}/monitor/alarm-records/
     path(
-        "monitor/app-alarm-records/",
+        "apps/<slug:app_code>/monitor/alarm-records/",
         views.AppAlarmRecordListApi.as_view(),
         name="openapi.v2.inner.monitor.app_alarm_records",
     ),
-    # GET /api/v2/inner/monitor/app-request-logs/
+    # GET /api/v2/inner/apps/{app_code}/monitor/request-logs/
     path(
-        "monitor/app-request-logs/",
+        "apps/<slug:app_code>/monitor/request-logs/",
         views.AppRequestLogListApi.as_view(),
         name="openapi.v2.inner.monitor.app_request_logs",
     ),

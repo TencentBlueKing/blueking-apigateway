@@ -91,36 +91,6 @@ class TestAppRequestAppCodeRequiredFilter:
             assert result == event
             mock_update_alarm.assert_not_called()
 
-    def test_do_with_app_code_from_log_records(self, mocker):
-        event = mocker.MagicMock(
-            alarm_record_id=1,
-            event_dimensions={
-                "api_id": 2,
-                "resource_id": 3,
-                "stage": "prod",
-            },
-            extend={
-                "log_records": [
-                    {
-                        "_source": {
-                            "app_code": "test",
-                        }
-                    }
-                ]
-            },
-        )
-        mock_update_alarm = mocker.patch(
-            "apigateway.service.alert_flow.app_request.AlarmRecord.objects.update_alarm",
-            return_value=None,
-        )
-
-        filter = app_request.AppRequestAppCodeRequiredFilter()
-        result = filter._do(event)
-
-        assert result == event
-        assert event.event_dimensions["app_code"] == "test"
-        mock_update_alarm.assert_not_called()
-
 
 class TestAppRequestAlerter:
     @pytest.fixture(autouse=True)

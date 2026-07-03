@@ -55,6 +55,8 @@ class AlarmRecordCreator(AlertHandler):
             return None
 
         record = AlarmRecord.objects.create(
+            app_code=event.event_dimensions.get("app_code", ""),
+            alarm_type=event.alarm_type.value,
             alarm_id=event.id,
             alarm_attr_id=event.strategy_id,
             source_time=event.event_begin_time,

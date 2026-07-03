@@ -20,6 +20,7 @@ import json
 import time
 from unittest import mock
 
+import pytest
 from django.utils import timezone
 from django_dynamic_fixture import G
 
@@ -35,7 +36,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
-from apigateway.apps.monitor.constants import AlarmStatusEnum
+from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
@@ -1323,6 +1324,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-1",
             status=AlarmStatusEnum.SUCCESS.value,
             match_dimension=json.dumps(
@@ -1338,6 +1341,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code="other-app",
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-2",
             status=AlarmStatusEnum.FAILURE.value,
             match_dimension=json.dumps(
@@ -1350,11 +1355,28 @@ class TestAppAlarmRecordListApi:
             ),
             message="请求 ID: req-002",
         )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.RESOURCE_BACKEND.value,
+            alarm_id="alarm-resource-backend",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
 
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": app_code, **self._get_time_range_params()},
+            path_params={"app_code": app_code},
+            data=self._get_time_range_params(),
             app=mock.MagicMock(app_code=app_code),
         )
         result = resp.json()
@@ -1371,7 +1393,8 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": "another-app", **self._get_time_range_params()},
+            path_params={"app_code": "another-app"},
+            data=self._get_time_range_params(),
             app=mock.MagicMock(app_code="current-app"),
         )
         assert resp.status_code == 400
@@ -1380,7 +1403,7 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": "current-app"},
+            path_params={"app_code": "current-app"},
             app=mock.MagicMock(app_code="current-app"),
         )
         assert resp.status_code == 400
@@ -1393,6 +1416,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-target",
             status=AlarmStatusEnum.SUCCESS.value,
             match_dimension=json.dumps(
@@ -1407,6 +1432,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-other",
             status=AlarmStatusEnum.SUCCESS.value,
             match_dimension=json.dumps(
@@ -1422,7 +1449,12 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
-            data={"target_app_code": app_code, "resource_name": "target-resource", **self._get_time_range_params()},
+            path_params={"app_code": app_code},
+            data={
+                "gateway_name": fake_gateway.name,
+                "resource_name": "target-resource",
+                **self._get_time_range_params(),
+            },
             app=mock.MagicMock(app_code=app_code),
         )
         result = resp.json()
@@ -1440,6 +1472,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-target-prefix",
             status=AlarmStatusEnum.SUCCESS.value,
             match_dimension=json.dumps(
@@ -1454,6 +1488,8 @@ class TestAppAlarmRecordListApi:
         _ = G(
             AlarmRecord,
             gateway=fake_gateway,
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-other-prefix",
             status=AlarmStatusEnum.SUCCESS.value,
             match_dimension=json.dumps(
@@ -1469,8 +1505,9 @@ class TestAppAlarmRecordListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
             data={
-                "target_app_code": app_code,
+                "gateway_name": fake_gateway.name,
                 "resource_name": "target-resource-prefix",
                 **self._get_time_range_params(),
             },
@@ -1483,8 +1520,31 @@ class TestAppAlarmRecordListApi:
         assert result["data"]["results"][0]["alarm_id"] == "alarm-target-prefix"
         assert result["data"]["results"][0]["resource_id"] == target_resource.id
 
+    def test_reject_resource_name_without_gateway_name(self, request_view):
+        app_code = "bk-test-app"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
+            data={
+                "resource_name": "target-resource",
+                **self._get_time_range_params(),
+            },
+            app=mock.MagicMock(app_code=app_code),
+        )
+
+        assert resp.status_code == 400
+
 
 class TestAppRequestLogListApi:
+    def _get_time_range_params(self):
+        now = int(time.time())
+        return {
+            "time_start": now - 3600,
+            "time_end": now - 60,
+        }
+
     def test_list(self, request_view, mocker):
         mock_search_logs = mocker.patch(
             "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
@@ -1494,7 +1554,7 @@ class TestAppRequestLogListApi:
                     {
                         "request_id": "req-001",
                         "timestamp": 1751366500,
-                        "api_name": "bk-user-api",
+                        "gateway_name": "bk-user-api",
                         "stage": "prod",
                         "resource_id": 12,
                         "resource_name": "list_users",
@@ -1515,7 +1575,8 @@ class TestAppRequestLogListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_request_logs",
-            data={"target_app_code": "bk-test-app", "time_range": 3600},
+            path_params={"app_code": "bk-test-app"},
+            data=self._get_time_range_params(),
             app=mock.MagicMock(app_code="bk-test-app"),
         )
         result = resp.json()
@@ -1532,7 +1593,37 @@ class TestAppRequestLogListApi:
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_request_logs",
-            data={"target_app_code": "another-app", "time_range": 3600},
+            path_params={"app_code": "another-app"},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {},
+            {"time_start": int(time.time()) - 181 * 24 * 3600, "time_end": int(time.time()) - 60},
+            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) - 3600},
+            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) + 60},
+        ],
+    )
+    def test_reject_invalid_time_range(self, request_view, data):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "current-app"},
+            data=data,
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+    def test_reject_limit_greater_than_100(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "current-app"},
+            data={**self._get_time_range_params(), "limit": 101},
             app=mock.MagicMock(app_code="current-app"),
         )
         assert resp.status_code == 400

@@ -4206,19 +4206,19 @@ paths:
           appVerifiedRequired: false
           resourcePermissionRequired: false
         descriptionEn: Monitor alarm callback
-  /api/v2/inner/monitor/app-alarm-records/:
+  /api/v2/apps/{app_code}/monitor/alarm-records/:
     get:
       operationId: v2_inner_list_app_alarm_records
       description: 应用维度告警记录列表
       tags:
         - v2_inner
       parameters:
-        - name: target_app_code
-          in: query
+        - name: app_code
+          in: path
           required: true
           schema:
             type: string
-          description: 目标应用编码，必须与当前请求应用一致
+          description: 应用编码，必须与当前请求应用一致
           example: bk-apigateway
         - name: status
           in: query
@@ -4339,7 +4339,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/monitor/app-alarm-records/
+          path: /backend/api/v2/inner/apps/{app_code}/monitor/alarm-records/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []
@@ -4348,19 +4348,19 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
         descriptionEn: list app alarm records
-  /api/v2/inner/monitor/app-request-logs/:
+  /api/v2/apps/{app_code}/monitor/request-logs/:
     get:
       operationId: v2_inner_list_app_request_logs
       description: 应用维度调用流水日志列表（开发者视角）
       tags:
         - v2_inner
       parameters:
-        - name: target_app_code
-          in: query
+        - name: app_code
+          in: path
           required: true
           schema:
             type: string
-          description: 目标应用编码，必须与当前请求应用一致
+          description: 应用编码，必须与当前请求应用一致
           example: bk-apigateway
         - name: gateway_name
           in: query
@@ -4386,24 +4386,18 @@ paths:
           schema:
             type: integer
           description: 响应状态码
-        - name: time_range
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: 时间范围（秒）
         - name: time_start
           in: query
-          required: false
+          required: true
           schema:
             type: integer
-          description: 开始时间（Unix 时间戳，秒）
+          description: 开始时间（Unix 时间戳，秒），不能早于当前时间前 180 天
         - name: time_end
           in: query
-          required: false
+          required: true
           schema:
             type: integer
-          description: 结束时间（Unix 时间戳，秒）
+          description: 结束时间（Unix 时间戳，秒），必须大于 time_start 且小于当前时间
         - name: offset
           in: query
           required: false
@@ -4417,7 +4411,8 @@ paths:
           schema:
             type: integer
             default: 10
-          description: 限制条数
+            maximum: 100
+          description: 限制条数，最大 100
       responses:
         '200':
           description: 成功
@@ -4503,7 +4498,7 @@ paths:
         backend:
           name: default
           method: get
-          path: /backend/api/v2/inner/monitor/app-request-logs/
+          path: /backend/api/v2/inner/apps/{app_code}/monitor/request-logs/
           matchSubpath: false
           timeout: 0
         pluginConfigs: []

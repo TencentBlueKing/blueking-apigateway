@@ -40,7 +40,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
-from apigateway.apps.monitor.constants import AlarmStatusEnum
+from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord
@@ -64,6 +64,7 @@ from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.utils import time as time_utils
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -490,12 +491,16 @@ class AppAlarmRecordListApi(generics.ListAPIView):
     serializer_class = serializers.AppAlarmRecordListInputSLZ
 
     def list(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.query_params, context={"request": request})
+        slz = self.get_serializer(
+            data=request.query_params,
+            context={"request": request, "app_code": kwargs["app_code"]},
+        )
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
         queryset = AlarmRecord.objects.filter(
-            match_dimension__contains=f'"app_code": "{data["target_app_code"]}"',
+            app_code=data["app_code"],
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
         ).select_related("gateway")
 
         if data.get("status"):
@@ -617,7 +622,7 @@ class AppRequestLogListApi(generics.ListAPIView):
     _output_fields = [
         "request_id",
         "timestamp",
-        "api_name",
+        "gateway_name",
         "stage",
         "resource_id",
         "resource_name",
@@ -632,13 +637,16 @@ class AppRequestLogListApi(generics.ListAPIView):
     ]
 
     def list(self, request, *args, **kwargs):
-        slz = self.get_serializer(data=request.query_params, context={"request": request})
+        slz = self.get_serializer(
+            data=request.query_params,
+            context={"request": request, "app_code": kwargs["app_code"]},
+        )
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        include_conditions = [("app_code", data["target_app_code"])]
+        include_conditions = [("app_code", data["app_code"])]
         if data.get("gateway_name"):
-            include_conditions.append(("api_name", data["gateway_name"]))
+            include_conditions.append(("gateway_name", data["gateway_name"]))
         if data.get("resource_name"):
             include_conditions.append(("resource_name", data["resource_name"]))
         if data.get("request_id"):
@@ -648,9 +656,8 @@ class AppRequestLogListApi(generics.ListAPIView):
 
         client = LogSearchClient(
             include_conditions=include_conditions,
-            time_start=data.get("time_start"),
-            time_end=data.get("time_end"),
-            time_range=data.get("time_range"),
+            time_start=time_utils.timestamp(data["time_start"]),
+            time_end=time_utils.timestamp(data["time_end"]),
             output_fields=self._output_fields,
         )
         total_count, logs = client.search_logs(offset=data["offset"], limit=data["limit"])
@@ -665,7 +672,7 @@ class AppRequestLogListApi(generics.ListAPIView):
             {
                 "request_id": log.get("request_id", ""),
                 "timestamp": log.get("timestamp"),
-                "gateway_name": log.get("api_name", ""),
+                "gateway_name": log.get("gateway_name", ""),
                 "stage": log.get("stage", ""),
                 "resource_id": log.get("resource_id"),
                 "resource_name": log.get("resource_name", ""),

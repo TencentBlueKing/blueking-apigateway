@@ -4,22 +4,24 @@
 
 ### 输入参数
 
+#### 路径参数
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+|---|---|---|---|
+| app_code | string | 是 | 应用编码，必须与当前请求应用一致 |
+
 #### 请求参数
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |---|---|---|---|
-| target_app_code | string | 是 | 目标应用编码，必须与当前请求应用一致 |
 | gateway_name | string | 否 | 网关名称（精确匹配） |
 | resource_name | string | 否 | 资源名称（精确匹配） |
 | request_id | string | 否 | 请求 ID |
 | status | int | 否 | 响应状态码（100-599） |
-| time_range | int | 否 | 时间范围（秒） |
-| time_start | int | 否 | 开始时间（Unix 时间戳，秒） |
-| time_end | int | 否 | 结束时间（Unix 时间戳，秒） |
+| time_start | int | 是 | 开始时间（Unix 时间戳，秒），不能早于当前时间前 180 天 |
+| time_end | int | 是 | 结束时间（Unix 时间戳，秒），必须大于 time_start 且小于当前时间 |
 | offset | int | 否 | 偏移量，默认 0 |
-| limit | int | 否 | 限制条数，默认 10 |
-
-> 说明：`time_range` 与 `time_start + time_end` 需要至少提供一组有效参数。
+| limit | int | 否 | 限制条数，默认 10，最大 100 |
 
 ### 响应示例
 

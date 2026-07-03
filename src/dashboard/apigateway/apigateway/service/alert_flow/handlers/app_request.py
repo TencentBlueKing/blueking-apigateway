@@ -52,11 +52,6 @@ class AppRequestAppCodeRequiredFilter(AlertHandler):
         if dimension.app_code:
             return event
 
-        app_code = self._get_app_code_from_log_records(event)
-        if app_code:
-            event.event_dimensions["app_code"] = app_code
-            return event
-
         # app_code 为空，过滤
         AlarmRecord.objects.update_alarm(
             event.alarm_record_id,
@@ -64,13 +59,6 @@ class AppRequestAppCodeRequiredFilter(AlertHandler):
             comment="app_code 为空",
         )
         return None
-
-    def _get_app_code_from_log_records(self, event: MonitorEvent) -> Optional[str]:
-        log_records = event.extend.get("log_records") or []
-        if not isinstance(log_records, list) or not log_records:
-            return None
-
-        return log_records[0].get("_source", {}).get("app_code")
 
 
 class AppRequestAlerter(Alerter):

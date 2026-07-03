@@ -96,6 +96,9 @@ grant_permissions:
       - v2_inner_list_app_resource_permissions
       - v2_inner_list_resource_permission_apply_records
       - v2_inner_retrieve_resource_permission_apply_record
+      # monitor related
+      - v2_inner_list_app_alarm_records
+      - v2_inner_list_app_request_logs
       # esb related
       - v2_inner_list_esb_systems
       - v2_inner_list_esb_system_permission_components

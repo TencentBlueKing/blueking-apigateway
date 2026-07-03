@@ -142,6 +142,8 @@ class AlarmStrategy(ConfigModelMixin):
 class AlarmRecord(models.Model):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE, blank=True, null=True)
     alarm_strategies = models.ManyToManyField(AlarmStrategy)
+    app_code = models.CharField(max_length=32, blank=True, default="")
+    alarm_type = models.CharField(max_length=64, choices=AlarmTypeEnum.get_choices(), blank=True, default="")
     alarm_attr_id = models.IntegerField(_("监控平台告警特性ID"))
     alarm_id = models.CharField(_("监控平台告警ID"), max_length=32, db_index=True)
     source_time = models.DateTimeField(_("监控平台事件源时间"), null=True, blank=True)
@@ -161,3 +163,6 @@ class AlarmRecord(models.Model):
         verbose_name = _("监控告警记录")
         verbose_name_plural = _("监控告警记录")
         db_table = "monitor_alarm_record"
+        indexes = [
+            models.Index(fields=["app_code", "alarm_type", "-id"], name="monitor_ar_app_type_id_idx"),
+        ]
