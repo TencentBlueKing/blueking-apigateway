@@ -410,7 +410,12 @@ func applyServerChange(
 	}
 
 	// 如果mcp server已经存在，更新mcp server
-	if updateMCPServer(ctx, mcpProxy, svr, result.conf) {
+	updated, updateErr := updateMCPServer(ctx, mcpProxy, svr, result.conf)
+	if updateErr != nil {
+		stats.errorCount++
+		return
+	}
+	if updated {
 		stats.updatedCount++
 	} else {
 		stats.skippedCount++
@@ -469,20 +474,11 @@ func updateMCPServer(
 	mcpProxy *proxy.MCPProxy,
 	svr *model.MCPServer,
 	conf *Config,
-) bool {
+) (bool, error) {
 	mcpServer := mcpProxy.GetMCPServer(svr.Name)
 	if mcpServer == nil {
 		logging.GetLogger().Warnf("mcp server[%s] does not exist, skip tool cleanup", svr.Name)
-		return false
-	}
-
-	toolNames := svr.GetToolNames()
-	var toolUpdated bool
-	for _, tool := range mcpServer.GetTools() {
-		if !arrutil.Contains(toolNames, tool) {
-			mcpServer.RemoveTool(tool)
-			toolUpdated = true
-		}
+		return false, fmt.Errorf("mcp server[%s] does not exist", svr.Name)
 	}
 
 	var resourceVersionUpdated bool
@@ -494,9 +490,18 @@ func updateMCPServer(
 		)
 		if err != nil {
 			logging.GetLogger().Errorf("update mcp server[%s] from openapi spec error: %v", svr.Name, err)
-			return false
+			return false, err
 		}
 		resourceVersionUpdated = true
+	}
+
+	toolNames := svr.GetToolNames()
+	var toolUpdated bool
+	for _, tool := range mcpServer.GetTools() {
+		if !arrutil.Contains(toolNames, tool) {
+			mcpServer.RemoveTool(tool)
+			toolUpdated = true
+		}
 	}
 
 	// 更新 Prompts（每次都检查更新）
@@ -507,9 +512,9 @@ func updateMCPServer(
 		logging.GetLogger().Infof(
 			"updated prompts:%d, tools_changed:%v, resource_version_changed:%v for mcp server[%s]",
 			len(prompts), toolUpdated, resourceVersionUpdated, svr.Name)
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 // cleanupStaleMCPServers 删除已经不存在的 mcp server，返回删除数量

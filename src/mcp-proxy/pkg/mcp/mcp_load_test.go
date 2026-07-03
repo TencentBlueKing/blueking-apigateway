@@ -462,6 +462,106 @@ var _ = Describe("MCP Load Functions", func() {
 			Expect(mcpProxy.IsMCPServerExist("good-server")).To(BeTrue())
 		})
 
+		It("should keep existing tools when an update panics before applying the new spec", func() {
+			initialSpec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Initial API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://initial.example.com"}},
+				Paths:   &openapi3.Paths{},
+			}
+			initialSpec.Paths.Set("/keep", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "keepTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+			initialSpec.Paths.Set("/remove", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "removeTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+			err := mcpProxy.AddMCPServerFromOpenAPISpec(
+				"bad-server",
+				1,
+				initialSpec,
+				[]string{"keepTool", "removeTool"},
+				nil,
+				constant.MCPServerProtocolTypeSSE,
+				false,
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			badSpec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Bad API", Version: "1.0.0"},
+				Paths:   &openapi3.Paths{},
+			}
+			badSpec.Paths.Set("/keep", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "keepTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+			results := []*mcppkg.ServerLoadResult{
+				mcppkg.NewServerLoadResult(
+					&model.MCPServer{
+						ID:            1,
+						Name:          "bad-server",
+						ResourceNames: model.ArrayString{"keepTool"},
+						ProtocolType:  constant.MCPServerProtocolTypeSSE,
+					},
+					nil,
+					mcppkg.NewConfigWithOpenAPISpec(2, badSpec),
+					nil,
+					false,
+					false,
+					true,
+				),
+			}
+
+			var stats *mcppkg.LoadStats
+			Expect(func() {
+				stats, _ = mcppkg.ApplyServerChangesForTest(ctx, mcpProxy, results)
+			}).NotTo(Panic())
+
+			_, updated, skipped, errCount := mcppkg.GetLoadStatsValues(stats)
+			Expect(updated).To(Equal(0))
+			Expect(skipped).To(Equal(0))
+			Expect(errCount).To(Equal(1))
+			Expect(
+				mcpProxy.GetMCPServer("bad-server").GetTools(),
+			).To(
+				ContainElements("keepTool", "removeTool"),
+			)
+		})
+
+		It("should count update failures as errors", func() {
+			results := []*mcppkg.ServerLoadResult{
+				mcppkg.NewServerLoadResult(
+					&model.MCPServer{
+						ID:           1,
+						Name:         "missing-server",
+						ProtocolType: constant.MCPServerProtocolTypeSSE,
+					},
+					nil,
+					nil,
+					nil,
+					false,
+					false,
+					true,
+				),
+			}
+
+			stats, _ := mcppkg.ApplyServerChangesForTest(ctx, mcpProxy, results)
+
+			added, updated, skipped, errCount := mcppkg.GetLoadStatsValues(stats)
+			Expect(added).To(Equal(0))
+			Expect(updated).To(Equal(0))
+			Expect(skipped).To(Equal(0))
+			Expect(errCount).To(Equal(1))
+		})
+
 		It("should isolate panic from one server and continue applying later servers", func() {
 			previousPromptCache := cacheimpls.GetMCPServerPromptCache()
 			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
