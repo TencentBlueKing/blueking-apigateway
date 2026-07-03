@@ -1,3 +1,14 @@
+<!-- 2026-07-03 -->
+# V1.22.2 Release Log
+
+### Bug Fixes
+
+- Fix: programming gateway synchronization verification failure
+- Fix: mcp-proxy openapi schema problem causing synchronization failure
+- Fix: home page display personal center
+
+---
+
 <!-- 2026-06-25 -->
 # V1.22.1 Release Log
 
