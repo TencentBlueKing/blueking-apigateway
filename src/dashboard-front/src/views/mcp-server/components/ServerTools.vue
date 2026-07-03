@@ -44,10 +44,7 @@
             </main>
           </header>
           <!--  API 列表  -->
-          <main
-            class="tool-list custom-scroll-bar"
-            :style="{ height: setSideMaxH }"
-          >
+          <main class="tool-list custom-scroll-bar h-full">
             <template v-if="filteredToolList.length">
               <BkCollapse
                 v-model="activeGroupPanelNames"
@@ -257,7 +254,7 @@
 import { truncate } from 'lodash-es';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useRouteParams } from '@vueuse/router';
-import { useFeatureFlag, useGateway } from '@/stores';
+import { useGateway } from '@/stores';
 import {
   type IMCPServerTool,
   getServer,
@@ -292,7 +289,6 @@ const router = useRouter();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 const gatewayStore = useGateway();
-const featureFlagStore = useFeatureFlag();
 
 const md = new MarkdownIt({
   linkify: false,
@@ -370,14 +366,6 @@ const toolGroupList = computed(() => {
     name: string
     toolList: any[]
   }[]);
-});
-const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
-const setSideMaxH = computed(() => {
-  if (page === 'market') {
-    return '100%';
-  }
-  const offsetH = isShowNoticeAlert.value ? 530 : 490;
-  return `calc(100vh - ${offsetH}px)`;
 });
 
 // 这里初始化、或者修改别名的时候触发监听
