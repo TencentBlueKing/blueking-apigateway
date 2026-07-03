@@ -54,8 +54,6 @@ from apigateway.utils import time
 
 logger = logging.getLogger(__name__)
 
-APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS = 180
-
 
 def _get_mcp_server_url_from_context(context, obj) -> str:
     least_privileges = context.get("least_privileges", {})
@@ -844,18 +842,15 @@ class AppRequestLogListInputSLZ(serializers.Serializer):
     def validate(self, attrs):
         attrs["app_code"] = _validate_path_app_code(self.context)
 
+        max_time_range_days = 180
         time_start = attrs["time_start"]
         time_end = attrs["time_end"]
         now = time.to_datetime_from_now()
-        min_time_start = time.to_datetime_from_now(days=-APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS)
+        min_time_start = time.to_datetime_from_now(days=-max_time_range_days)
 
         if time_start < min_time_start:
             raise serializers.ValidationError(
-                {
-                    "time_start": _("time_start must be within the last {days} days.").format(
-                        days=APP_REQUEST_LOG_MAX_TIME_RANGE_DAYS
-                    )
-                }
+                {"time_start": _("time_start must be within the last {days} days.").format(days=max_time_range_days)}
             )
 
         if time_end <= time_start:

@@ -71,7 +71,6 @@ from apigateway.utils.responses import OKJsonResponse
 from . import serializers
 
 logger = logging.getLogger(__name__)
-REQUEST_ID_PATTERN = re.compile(r"请求\s*ID[:：]\s*([^\s]+)")
 
 
 # 注意：请使用 OpenAPIV2Permission / OpenAPIV2GatewayNamePermission, 有特殊情况请在类注释中说明
@@ -599,7 +598,8 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         if not message:
             return ""
 
-        matched = REQUEST_ID_PATTERN.search(message)
+        request_id_pattern = re.compile(r"请求\s*ID[:：]\s*([^\s]+)")
+        matched = request_id_pattern.search(message)
         if not matched:
             return ""
 
