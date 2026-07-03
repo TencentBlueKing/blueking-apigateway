@@ -54,6 +54,7 @@ func marshalOpenAPISchemaRefJSON(schemaRef *openapi3.SchemaRef) ([]byte, error) 
 }
 
 func openapiSchemaRefHasSchema(schemaRef *openapi3.SchemaRef) bool {
+	// LoadFromData resolves valid refs and rejects dangling refs before reload conversion.
 	return schemaRef != nil && (schemaRef.Value != nil || schemaRef.Ref != "")
 }
 
