@@ -36,6 +36,7 @@ import ConfigDisplayTableIpRestriction from './ConfigDisplayTableIpRestriction.v
 import ConfigDisplayTableStatusRewrite from './ConfigDisplayTableStatusRewrite.vue';
 import ConfigDisplayTableGeneric from './ConfigDisplayTableGeneric.vue';
 import ConfigDisplayTableBkTrafficLabel from './ConfigDisplayTableBkTrafficLabel.vue';
+import ConfigDisplayTableBkQueryStringRewrite from './ConfigDisplayTableBkQueryStringRewrite.vue';
 import type {
   IBaseTableRow,
   IColumn,
@@ -75,7 +76,7 @@ const {
   },
 } = defineProps<IProps>();
 
-// Header转换插件、频率控制插件、IP访问限制插件、网关错误使用HTTP状态码200插件、强制要求调用方传递X-Bk-Username header 头插件配置展示表格
+// 需要另外的组件来展示的插件配置
 const tableComponentMap: { [key: string]: Component } = {
   'bk-header-rewrite': ConfigDisplayTableHeaderRewrite,
   'bk-rate-limit': ConfigDisplayTableRateLimit,
@@ -86,6 +87,7 @@ const tableComponentMap: { [key: string]: Component } = {
   'bk-oauth2-protected-resource': ConfigDisplayTableStatusRewrite,
   'bk-oauth2-audience-validate': ConfigDisplayTableStatusRewrite,
   'bk-traffic-label': ConfigDisplayTableBkTrafficLabel,
+  'bk-query-string-rewrite': ConfigDisplayTableBkQueryStringRewrite,
 };
 
 // 根据 code 或 type 动态获取表格组件
