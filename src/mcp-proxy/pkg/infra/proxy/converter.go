@@ -299,7 +299,7 @@ func OpenapiToMcpToolConfig(
 
 			if operation.RequestBody != nil && operation.RequestBody.Value != nil {
 				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok &&
-					content != nil {
+					content != nil && content.Schema != nil {
 					jsonSchema := openapiSchemaRefToJSONSchema(content.Schema)
 					if jsonSchemaDescriptionIsEmpty(&jsonSchema) {
 						bodyParamDesc := bodyParamDefaultDescription
