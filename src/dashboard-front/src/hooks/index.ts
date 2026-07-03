@@ -56,3 +56,5 @@ export * from './use-mcp-batch-copy-config';
 export * from './use-personal-workbench';
 // Mcp权限管理和已授权应用
 export * from './use-mcp-permission';
+// JSON转换
+export * from './use-json-transformer';
