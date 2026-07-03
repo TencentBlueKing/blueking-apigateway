@@ -34,6 +34,7 @@ class TestAlarmRecordCreator:
         assert result.alarm_record_id != 0
         record = AlarmRecord.objects.get(id=result.alarm_record_id)
         assert record.app_code == mock_event.event_dimensions["app_code"]
+        assert record.resource_id == mock_event.event_dimensions["resource_id"]
         assert record.alarm_type == mock_event.alarm_type.value
 
 

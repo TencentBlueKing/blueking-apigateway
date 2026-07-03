@@ -534,7 +534,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
             match_dimension = self._parse_match_dimension(record.match_dimension)
             dimension_map[record.id] = match_dimension
 
-            resource_id = match_dimension.get("resource_id")
+            resource_id = record.resource_id or match_dimension.get("resource_id")
             if isinstance(resource_id, int):
                 resource_ids.add(resource_id)
 
@@ -543,9 +543,9 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         output_data = []
         for record in records:
             match_dimension = dimension_map.get(record.id, {})
-            resource_id = (
-                match_dimension.get("resource_id") if isinstance(match_dimension.get("resource_id"), int) else None
-            )
+            resource_id = record.resource_id or match_dimension.get("resource_id")
+            if not isinstance(resource_id, int):
+                resource_id = None
 
             output_data.append(
                 {
@@ -565,21 +565,15 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         return output_data
 
     def _filter_by_resource_name(self, queryset, resource_name: str, gateway_name: str = ""):
-        resource_queryset = Resource.objects.filter(name=resource_name)
-        if gateway_name:
-            resource_queryset = resource_queryset.filter(gateway__name=gateway_name)
-
-        resource_ids = set(resource_queryset.values_list("id", flat=True))
-        if not resource_ids:
+        resource_id = (
+            Resource.objects.filter(gateway__name=gateway_name, name=resource_name)
+            .values_list("id", flat=True)
+            .first()
+        )
+        if not resource_id:
             return queryset.none()
 
-        alarm_record_ids = []
-        for alarm_record_id, match_dimension in queryset.values_list("id", "match_dimension").iterator():
-            resource_id = self._parse_match_dimension(match_dimension).get("resource_id")
-            if resource_id in resource_ids:
-                alarm_record_ids.append(alarm_record_id)
-
-        return queryset.filter(id__in=alarm_record_ids)
+        return queryset.filter(resource_id=resource_id)
 
     def _parse_match_dimension(self, match_dimension: str) -> Dict:
         if not match_dimension:
