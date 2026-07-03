@@ -191,6 +191,7 @@ func prefetchServerConfigs(
 		idx, s := i, svr
 		util.GoroutineWithRecovery(ctx, func() {
 			defer wg.Done()
+			defer recoverPrefetchPanic(results[idx])
 			sem <- struct{}{}        // acquire
 			defer func() { <-sem }() // release
 			prefetchSingleServer(ctx, mcpProxy, results[idx], s)
@@ -198,6 +199,17 @@ func prefetchServerConfigs(
 	}
 	wg.Wait()
 	return results
+}
+
+func recoverPrefetchPanic(result *serverLoadResult) {
+	if panicErr := recover(); panicErr != nil {
+		result.err = fmt.Errorf("prefetch panic: %v", panicErr)
+		serverName := "<nil>"
+		if result.server != nil {
+			serverName = result.server.Name
+		}
+		logging.GetLogger().Errorf("mcp server[%s] prefetch failed with panic: %v", serverName, panicErr)
+	}
 }
 
 // prefetchSingleServer 预取单个 server 的 release 和 openapi spec
@@ -297,48 +309,64 @@ func applyServerChanges(
 	for _, result := range results {
 		svr := result.server
 		activeMcpServer[svr.Name] = struct{}{}
-
-		if result.err != nil {
-			logging.GetLogger().Errorf("mcp server[%s] load failed: %v", svr.Name, result.err)
-			stats.errorCount++
-			continue
-		}
-
-		// 处理协议类型变化（需要在主线程中执行 delete）
-		if mcpProxy.IsMCPServerExist(svr.Name) {
-			existingServer := mcpProxy.GetMCPServer(svr.Name)
-			if existingServer.GetProtocolType() != svr.GetProtocolType() {
-				mcpProxy.DeleteMCPServer(svr.Name)
-			}
-		}
-
-		// 如果不需要重新加载 openapi spec（版本未变化）
-		if result.skipped {
-			prompts := loadMCPServerPrompts(ctx, svr.ID)
-			mcpProxy.UpdateMCPServerPrompts(svr.Name, prompts)
-			stats.skippedCount++
-			continue
-		}
-
-		// 如果mcp server不存在，添加mcp server
-		if !mcpProxy.IsMCPServerExist(svr.Name) && result.conf != nil {
-			if addMCPServer(ctx, mcpProxy, svr, result.conf) {
-				stats.addedCount++
-			} else {
-				stats.errorCount++
-			}
-			continue
-		}
-
-		// 如果mcp server已经存在，更新mcp server
-		if updateMCPServer(ctx, mcpProxy, svr, result.conf) {
-			stats.updatedCount++
-		} else {
-			stats.skippedCount++
-		}
+		applyServerChange(ctx, mcpProxy, result, stats)
 	}
 
 	return stats, activeMcpServer
+}
+
+func applyServerChange(
+	ctx context.Context,
+	mcpProxy *proxy.MCPProxy,
+	result *serverLoadResult,
+	stats *loadStats,
+) {
+	svr := result.server
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			logging.GetLogger().Errorf("mcp server[%s] apply failed with panic: %v", svr.Name, panicErr)
+			stats.errorCount++
+		}
+	}()
+
+	if result.err != nil {
+		logging.GetLogger().Errorf("mcp server[%s] load failed: %v", svr.Name, result.err)
+		stats.errorCount++
+		return
+	}
+
+	// 处理协议类型变化（需要在主线程中执行 delete）
+	if mcpProxy.IsMCPServerExist(svr.Name) {
+		existingServer := mcpProxy.GetMCPServer(svr.Name)
+		if existingServer.GetProtocolType() != svr.GetProtocolType() {
+			mcpProxy.DeleteMCPServer(svr.Name)
+		}
+	}
+
+	// 如果不需要重新加载 openapi spec（版本未变化）
+	if result.skipped {
+		prompts := loadMCPServerPrompts(ctx, svr.ID)
+		mcpProxy.UpdateMCPServerPrompts(svr.Name, prompts)
+		stats.skippedCount++
+		return
+	}
+
+	// 如果mcp server不存在，添加mcp server
+	if !mcpProxy.IsMCPServerExist(svr.Name) && result.conf != nil {
+		if addMCPServer(ctx, mcpProxy, svr, result.conf) {
+			stats.addedCount++
+		} else {
+			stats.errorCount++
+		}
+		return
+	}
+
+	// 如果mcp server已经存在，更新mcp server
+	if updateMCPServer(ctx, mcpProxy, svr, result.conf) {
+		stats.updatedCount++
+	} else {
+		stats.skippedCount++
+	}
 }
 
 // addMCPServer 添加新的 mcp server，返回是否成功

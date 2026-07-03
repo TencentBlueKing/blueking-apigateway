@@ -21,11 +21,17 @@ package mcp_test
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/TencentBlueKing/gopkg/cache"
+	"github.com/TencentBlueKing/gopkg/cache/memory"
 	"github.com/getkin/kin-openapi/openapi3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"gorm.io/gorm"
 
+	"mcp_proxy/pkg/cacheimpls"
+	"mcp_proxy/pkg/config"
 	"mcp_proxy/pkg/constant"
 	"mcp_proxy/pkg/entity/model"
 	"mcp_proxy/pkg/infra/proxy"
@@ -286,6 +292,21 @@ var _ = Describe("MCP Load Functions", func() {
 		})
 	})
 
+	Describe("prefetchServerConfigs", func() {
+		It("should record panic as a server load error", func() {
+			previousMaxConcurrentPrefetch := config.G.McpServer.MaxConcurrentPrefetch
+			config.G.McpServer.MaxConcurrentPrefetch = 1
+			DeferCleanup(func() {
+				config.G.McpServer.MaxConcurrentPrefetch = previousMaxConcurrentPrefetch
+			})
+
+			results := mcppkg.PrefetchServerConfigsForTest(ctx, mcpProxy, []*model.MCPServer{nil})
+
+			Expect(results).To(HaveLen(1))
+			Expect(mcppkg.GetServerLoadResultError(results[0])).To(HaveOccurred())
+		})
+	})
+
 	Describe("applyServerChanges", func() {
 		It("should count errors for failed results", func() {
 			r := mcppkg.NewServerLoadResult(
@@ -356,6 +377,90 @@ var _ = Describe("MCP Load Functions", func() {
 			_, _, _, errCount := mcppkg.GetLoadStatsValues(stats)
 
 			Expect(errCount).To(Equal(3))
+		})
+
+		It("should isolate panic from one server and continue applying later servers", func() {
+			previousPromptCache := cacheimpls.GetMCPServerPromptCache()
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
+				return nil, gorm.ErrRecordNotFound
+			}
+			cacheimpls.SetMCPServerPromptCache(
+				memory.NewCache("mockPromptCache", retrieveFunc, time.Minute, nil),
+			)
+			DeferCleanup(func() {
+				cacheimpls.SetMCPServerPromptCache(previousPromptCache)
+			})
+
+			badSpec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Bad API", Version: "1.0.0"},
+				Paths:   &openapi3.Paths{},
+			}
+			badSpec.Paths.Set("/bad", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "badTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+
+			goodSpec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Good API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://good.example.com"}},
+				Paths:   &openapi3.Paths{},
+			}
+			goodSpec.Paths.Set("/good", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "goodTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+
+			results := []*mcppkg.ServerLoadResult{
+				mcppkg.NewServerLoadResult(
+					&model.MCPServer{
+						ID:            1,
+						Name:          "bad-server",
+						ResourceNames: model.ArrayString{"badTool"},
+						ProtocolType:  constant.MCPServerProtocolTypeSSE,
+					},
+					nil,
+					mcppkg.NewConfigWithOpenAPISpec(1, badSpec),
+					nil,
+					false,
+					true,
+					true,
+				),
+				mcppkg.NewServerLoadResult(
+					&model.MCPServer{
+						ID:            2,
+						Name:          "good-server",
+						ResourceNames: model.ArrayString{"goodTool"},
+						ProtocolType:  constant.MCPServerProtocolTypeSSE,
+					},
+					nil,
+					mcppkg.NewConfigWithOpenAPISpec(1, goodSpec),
+					nil,
+					false,
+					true,
+					true,
+				),
+			}
+
+			var stats *mcppkg.LoadStats
+			var activeServers map[string]struct{}
+			Expect(func() {
+				stats, activeServers = mcppkg.ApplyServerChangesForTest(ctx, mcpProxy, results)
+			}).NotTo(Panic())
+
+			added, updated, skipped, errCount := mcppkg.GetLoadStatsValues(stats)
+			Expect(added).To(Equal(1))
+			Expect(updated).To(Equal(0))
+			Expect(skipped).To(Equal(0))
+			Expect(errCount).To(Equal(1))
+			Expect(activeServers).To(HaveKey("bad-server"))
+			Expect(activeServers).To(HaveKey("good-server"))
+			Expect(mcpProxy.IsMCPServerExist("good-server")).To(BeTrue())
 		})
 	})
 
