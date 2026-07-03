@@ -22,6 +22,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
+	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/util"
 )
 
@@ -203,13 +205,46 @@ func prefetchServerConfigs(
 
 func recoverPrefetchPanic(result *serverLoadResult) {
 	if panicErr := recover(); panicErr != nil {
-		result.err = fmt.Errorf("prefetch panic: %v", panicErr)
 		serverName := "<nil>"
-		if result.server != nil {
+		if result != nil && result.server != nil {
 			serverName = result.server.Name
 		}
-		logging.GetLogger().Errorf("mcp server[%s] prefetch failed with panic: %v", serverName, panicErr)
+		err := reportReloadPanic("prefetch", serverName, panicErr)
+		if result != nil {
+			result.err = err
+		}
 	}
+}
+
+func buildReloadPanicReport(
+	phase string,
+	serverName string,
+	panicErr any,
+) (string, map[string]string, map[string]any, error) {
+	stack := string(debug.Stack())
+	err := fmt.Errorf("%s panic: %v", phase, panicErr)
+	tags := map[string]string{
+		"mcp_server_name": serverName,
+		"phase":           phase,
+	}
+	extra := map[string]any{
+		"panic":      fmt.Sprint(panicErr),
+		"stacktrace": stack,
+	}
+	return stack, tags, extra, err
+}
+
+func reportReloadPanic(phase, serverName string, panicErr any) error {
+	stack, tags, extra, err := buildReloadPanicReport(phase, serverName, panicErr)
+	logging.GetLogger().Errorf(
+		"mcp server[%s] %s failed with panic: %v\nstacktrace:\n%s",
+		serverName,
+		phase,
+		panicErr,
+		stack,
+	)
+	sentry.ReportToSentry("mcp server reload panic", tags, extra)
+	return err
 }
 
 // prefetchSingleServer 预取单个 server 的 release 和 openapi spec
@@ -337,7 +372,7 @@ func applyServerChange(
 			if svr != nil {
 				serverName = svr.Name
 			}
-			logging.GetLogger().Errorf("mcp server[%s] apply failed with panic: %v", serverName, panicErr)
+			_ = reportReloadPanic("apply", serverName, panicErr)
 			stats.errorCount++
 		}
 	}()

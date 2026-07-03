@@ -123,6 +123,15 @@ func GetServerLoadResultError(result *serverLoadResult) error {
 	return result.err
 }
 
+// BuildReloadPanicReportForTest exposes buildReloadPanicReport for testing.
+func BuildReloadPanicReportForTest(
+	phase string,
+	serverName string,
+	panicErr any,
+) (string, map[string]string, map[string]any, error) {
+	return buildReloadPanicReport(phase, serverName, panicErr)
+}
+
 // PrefetchServerConfigsForTest exposes prefetchServerConfigs for benchmark testing.
 func PrefetchServerConfigsForTest(
 	ctx context.Context,

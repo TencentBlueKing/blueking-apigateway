@@ -188,6 +188,23 @@ var _ = Describe("MCP Load Functions", func() {
 		})
 	})
 
+	Describe("reload panic reporting", func() {
+		It("should include stack and sentry context", func() {
+			stack, tags, extra, err := mcppkg.BuildReloadPanicReportForTest(
+				"prefetch",
+				"bad-server",
+				"boom",
+			)
+
+			Expect(err).To(MatchError(ContainSubstring("prefetch panic: boom")))
+			Expect(stack).To(ContainSubstring("goroutine"))
+			Expect(tags).To(HaveKeyWithValue("mcp_server_name", "bad-server"))
+			Expect(tags).To(HaveKeyWithValue("phase", "prefetch"))
+			Expect(extra).To(HaveKeyWithValue("panic", "boom"))
+			Expect(extra).To(HaveKeyWithValue("stacktrace", stack))
+		})
+	})
+
 	Describe("cleanupAllMCPServers", func() {
 		It("should remove all MCP servers from proxy", func() {
 			// Add two servers
