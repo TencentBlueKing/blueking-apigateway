@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="alarmrecord",
             index=models.Index(
-                fields=["app_code", "alarm_type", "-id"],
+                fields=["app_code", "alarm_type", "id"],
                 name="monitor_ar_app_type_id_idx",
             ),
         ),

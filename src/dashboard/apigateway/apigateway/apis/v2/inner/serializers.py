@@ -755,11 +755,6 @@ class MonitorCallbackRequestBodySLZ(serializers.Serializer):
 def _validate_path_app_code(context) -> str:
     app_code = context["app_code"]
     BKAppCodeValidator()(app_code)
-
-    request = context["request"]
-    if request.app.app_code != app_code:
-        raise serializers.ValidationError({"app_code": _("app_code must be the same as current app_code")})
-
     return app_code
 
 

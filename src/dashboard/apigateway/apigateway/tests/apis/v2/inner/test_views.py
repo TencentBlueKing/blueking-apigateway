@@ -1389,16 +1389,6 @@ class TestAppAlarmRecordListApi:
         assert record["resource_name"] == "test-resource"
         assert record["gateway_name"] == fake_gateway.name
 
-    def test_reject_non_self_target_app_code(self, request_view):
-        resp = request_view(
-            method="GET",
-            view_name="openapi.v2.inner.monitor.app_alarm_records",
-            path_params={"app_code": "another-app"},
-            data=self._get_time_range_params(),
-            app=mock.MagicMock(app_code="current-app"),
-        )
-        assert resp.status_code == 400
-
     def test_reject_missing_time_range(self, request_view):
         resp = request_view(
             method="GET",
@@ -1589,7 +1579,12 @@ class TestAppRequestLogListApi:
         assert "backend_host" not in record
         mock_search_logs.assert_called_once()
 
-    def test_reject_non_self_target_app_code(self, request_view):
+    def test_allow_path_app_code_different_from_request_app(self, request_view, mocker):
+        mock_search_logs = mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(0, []),
+        )
+
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_request_logs",
@@ -1597,7 +1592,9 @@ class TestAppRequestLogListApi:
             data=self._get_time_range_params(),
             app=mock.MagicMock(app_code="current-app"),
         )
-        assert resp.status_code == 400
+
+        assert resp.status_code == 200
+        mock_search_logs.assert_called_once()
 
     @pytest.mark.parametrize(
         "data",
