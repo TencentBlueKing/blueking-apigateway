@@ -307,6 +307,15 @@ func applyServerChanges(
 	stats := &loadStats{}
 
 	for _, result := range results {
+		if result == nil || result.server == nil {
+			err := fmt.Errorf("missing server")
+			if result != nil && result.err != nil {
+				err = result.err
+			}
+			logging.GetLogger().Errorf("mcp server[<nil>] load failed: %v", err)
+			stats.errorCount++
+			continue
+		}
 		svr := result.server
 		activeMcpServer[svr.Name] = struct{}{}
 		applyServerChange(ctx, mcpProxy, result, stats)
@@ -324,7 +333,11 @@ func applyServerChange(
 	svr := result.server
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			logging.GetLogger().Errorf("mcp server[%s] apply failed with panic: %v", svr.Name, panicErr)
+			serverName := "<nil>"
+			if svr != nil {
+				serverName = svr.Name
+			}
+			logging.GetLogger().Errorf("mcp server[%s] apply failed with panic: %v", serverName, panicErr)
 			stats.errorCount++
 		}
 	}()

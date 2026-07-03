@@ -379,6 +379,72 @@ var _ = Describe("MCP Load Functions", func() {
 			Expect(errCount).To(Equal(3))
 		})
 
+		It("should count nil-server apply results as errors and continue later servers", func() {
+			previousPromptCache := cacheimpls.GetMCPServerPromptCache()
+			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
+				return nil, gorm.ErrRecordNotFound
+			}
+			cacheimpls.SetMCPServerPromptCache(
+				memory.NewCache("mockPromptCache", retrieveFunc, time.Minute, nil),
+			)
+			DeferCleanup(func() {
+				cacheimpls.SetMCPServerPromptCache(previousPromptCache)
+			})
+
+			goodSpec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Good API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://good.example.com"}},
+				Paths:   &openapi3.Paths{},
+			}
+			goodSpec.Paths.Set("/good", &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "goodTool",
+					Responses:   &openapi3.Responses{},
+				},
+			})
+
+			results := []*mcppkg.ServerLoadResult{
+				mcppkg.NewServerLoadResult(
+					nil,
+					nil,
+					nil,
+					errors.New("prefetch panic"),
+					false,
+					false,
+					false,
+				),
+				mcppkg.NewServerLoadResult(
+					&model.MCPServer{
+						ID:            2,
+						Name:          "good-server",
+						ResourceNames: model.ArrayString{"goodTool"},
+						ProtocolType:  constant.MCPServerProtocolTypeSSE,
+					},
+					nil,
+					mcppkg.NewConfigWithOpenAPISpec(1, goodSpec),
+					nil,
+					false,
+					true,
+					true,
+				),
+			}
+
+			var stats *mcppkg.LoadStats
+			var activeServers map[string]struct{}
+			Expect(func() {
+				stats, activeServers = mcppkg.ApplyServerChangesForTest(ctx, mcpProxy, results)
+			}).NotTo(Panic())
+
+			added, updated, skipped, errCount := mcppkg.GetLoadStatsValues(stats)
+			Expect(added).To(Equal(1))
+			Expect(updated).To(Equal(0))
+			Expect(skipped).To(Equal(0))
+			Expect(errCount).To(Equal(1))
+			Expect(activeServers).To(HaveKey("good-server"))
+			Expect(mcpProxy.IsMCPServerExist("good-server")).To(BeTrue())
+		})
+
 		It("should isolate panic from one server and continue applying later servers", func() {
 			previousPromptCache := cacheimpls.GetMCPServerPromptCache()
 			retrieveFunc := func(ctx context.Context, key cache.Key) (any, error) {
