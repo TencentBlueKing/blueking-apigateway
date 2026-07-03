@@ -267,6 +267,38 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].ParamSchema.Required).To(ContainElement("header_param"))
 		})
 
+		It("should skip JSON request body without schema", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Post: &openapi3.Operation{
+					OperationID: "createUser",
+					Summary:     "Create a new user",
+					RequestBody: &openapi3.RequestBodyRef{
+						Value: &openapi3.RequestBody{
+							Content: openapi3.Content{
+								"application/json": &openapi3.MediaType{},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			var result []*ToolConfig
+			Expect(func() {
+				result = OpenapiToMcpToolConfig(spec, nil, nil)
+			}).NotTo(Panic())
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].ParamSchema.Properties).NotTo(HaveKey("body_param"))
+		})
+
 		It("should handle request body with JSON content", func() {
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",
