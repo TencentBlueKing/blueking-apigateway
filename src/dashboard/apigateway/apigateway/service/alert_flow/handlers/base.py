@@ -57,6 +57,7 @@ class AlarmRecordCreator(AlertHandler):
         record = AlarmRecord.objects.create(
             app_code=event.event_dimensions.get("app_code", ""),
             resource_id=self._get_resource_id(event.event_dimensions),
+            stage=event.event_dimensions.get("stage", ""),
             alarm_type=event.alarm_type.value,
             alarm_id=event.id,
             alarm_attr_id=event.strategy_id,

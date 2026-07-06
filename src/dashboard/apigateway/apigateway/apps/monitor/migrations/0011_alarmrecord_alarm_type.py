@@ -5,14 +5,13 @@ import json
 from django.db import migrations, models
 
 
-def fill_alarm_record_resource_id(apps, schema_editor):
+def fill_alarm_record_fields(apps, schema_editor):
     AlarmRecord = apps.get_model("monitor", "AlarmRecord")
 
     records_to_update = []
     queryset = (
-        AlarmRecord.objects.filter(resource_id__isnull=True)
-        .exclude(match_dimension="")
-        .only("id", "match_dimension", "resource_id")
+        AlarmRecord.objects.exclude(match_dimension="")
+        .only("id", "match_dimension", "resource_id", "stage")
         .order_by("id")
     )
 
@@ -25,21 +24,31 @@ def fill_alarm_record_resource_id(apps, schema_editor):
         if not isinstance(match_dimension, dict):
             continue
 
+        updated = False
+
         resource_id = match_dimension.get("resource_id")
         if isinstance(resource_id, str) and resource_id.isdigit():
             resource_id = int(resource_id)
 
-        if not isinstance(resource_id, int):
+        if record.resource_id is None and isinstance(resource_id, int):
+            record.resource_id = resource_id
+            updated = True
+
+        stage = match_dimension.get("stage")
+        if not record.stage and isinstance(stage, str):
+            record.stage = stage
+            updated = True
+
+        if not updated:
             continue
 
-        record.resource_id = resource_id
         records_to_update.append(record)
         if len(records_to_update) >= 1000:
-            AlarmRecord.objects.bulk_update(records_to_update, ["resource_id"])
+            AlarmRecord.objects.bulk_update(records_to_update, ["resource_id", "stage"])
             records_to_update = []
 
     if records_to_update:
-        AlarmRecord.objects.bulk_update(records_to_update, ["resource_id"])
+        AlarmRecord.objects.bulk_update(records_to_update, ["resource_id", "stage"])
 
 
 class Migration(migrations.Migration):
@@ -72,7 +81,12 @@ class Migration(migrations.Migration):
             name="resource_id",
             field=models.IntegerField(blank=True, null=True, verbose_name="资源 ID"),
         ),
-        migrations.RunPython(fill_alarm_record_resource_id, migrations.RunPython.noop),
+        migrations.AddField(
+            model_name="alarmrecord",
+            name="stage",
+            field=models.CharField(blank=True, default="", max_length=64),
+        ),
+        migrations.RunPython(fill_alarm_record_fields, migrations.RunPython.noop),
         migrations.AddIndex(
             model_name="alarmrecord",
             index=models.Index(

@@ -144,6 +144,7 @@ class AlarmRecord(models.Model):
     resource_id = models.IntegerField(_("资源 ID"), null=True, blank=True)
     alarm_strategies = models.ManyToManyField(AlarmStrategy)
     app_code = models.CharField(max_length=32, blank=True, default="")
+    stage = models.CharField(max_length=64, blank=True, default="")
     alarm_type = models.CharField(max_length=64, choices=AlarmTypeEnum.get_choices(), blank=True, default="")
     alarm_attr_id = models.IntegerField(_("监控平台告警特性ID"))
     alarm_id = models.CharField(_("监控平台告警ID"), max_length=32, db_index=True)

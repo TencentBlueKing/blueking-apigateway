@@ -1326,6 +1326,7 @@ class TestAppAlarmRecordListApi:
             gateway=fake_gateway,
             app_code=app_code,
             resource_id=resource.id,
+            stage="prod",
             alarm_type=AlarmTypeEnum.APP_REQUEST.value,
             alarm_id="alarm-1",
             status=AlarmStatusEnum.SUCCESS.value,
@@ -1391,6 +1392,7 @@ class TestAppAlarmRecordListApi:
         assert record["request_id"] == "req-001"
         assert record["resource_name"] == "test-resource"
         assert record["gateway_name"] == fake_gateway.name
+        assert record["stage"] == "prod"
 
     def test_reject_missing_time_range(self, request_view):
         resp = request_view(

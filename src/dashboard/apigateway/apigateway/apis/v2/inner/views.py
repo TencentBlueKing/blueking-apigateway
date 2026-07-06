@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
 import operator
 import re
@@ -528,12 +527,8 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         return self.get_paginated_response(output_slz.data)
 
     def _build_output_data(self, records):
-        dimension_map = {}
         resource_ids = set()
         for record in records:
-            match_dimension = self._parse_match_dimension(record.match_dimension)
-            dimension_map[record.id] = match_dimension
-
             resource_id = record.resource_id
             if isinstance(resource_id, int):
                 resource_ids.add(resource_id)
@@ -542,7 +537,6 @@ class AppAlarmRecordListApi(generics.ListAPIView):
 
         output_data = []
         for record in records:
-            match_dimension = dimension_map.get(record.id, {})
             resource_id = record.resource_id
             if not isinstance(resource_id, int):
                 resource_id = None
@@ -555,7 +549,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
                     "status_display": AlarmStatusEnum.get_choice_label(record.status),
                     "created_time": record.created_time,
                     "gateway_name": record.gateway.name if record.gateway else "",
-                    "stage": match_dimension.get("stage", ""),
+                    "stage": record.stage,
                     "resource_id": resource_id,
                     "resource_name": resource_name_map.get(resource_id, ""),
                     "request_id": self._extract_request_id(record.message),
@@ -574,20 +568,6 @@ class AppAlarmRecordListApi(generics.ListAPIView):
             return queryset.none()
 
         return queryset.filter(resource_id=resource_id)
-
-    def _parse_match_dimension(self, match_dimension: str) -> Dict:
-        if not match_dimension:
-            return {}
-
-        try:
-            data = json.loads(match_dimension)
-        except (TypeError, ValueError):
-            logger.warning("invalid match_dimension in alarm record")
-            return {}
-
-        if isinstance(data, dict):
-            return data
-        return {}
 
     def _extract_request_id(self, message: str) -> str:
         if not message:
