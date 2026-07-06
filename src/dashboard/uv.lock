@@ -152,7 +152,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apigw-manager", specifier = "==5.0.0" },
+    { name = "apigw-manager", specifier = "==5.0.1" },
     { name = "arrow", specifier = "==1.4.0" },
     { name = "bk-crypto-python-sdk", specifier = "==3.0.0" },
     { name = "bk-notice-sdk", specifier = "==1.4.2" },
@@ -263,7 +263,7 @@ dev = [
 
 [[package]]
 name = "apigw-manager"
-version = "5.0.0"
+version = "5.0.1"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "bkapi-bk-apigateway" },
@@ -276,7 +276,7 @@ dependencies = [
     { name = "urllib3" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/cb/8aa32093d4c4581128af0b038e7670bba1254fbaab7d1409756136868ddc/apigw_manager-5.0.0-py3-none-any.whl", hash = "sha256:ed58814484c3255701be6a7eae2b82d1dd0f50a5144388434d06074b63c28bf0", size = 81392, upload-time = "2026-06-08T09:11:32.319Z" },
+    { url = "https://files.pythonhosted.org/packages/51/73/0ce25c06e236b25047f0aa80e54dab58d9fecb208319e7313f55c4cba12c/apigw_manager-5.0.1-py3-none-any.whl", hash = "sha256:d292d39687adf70bdf01408c30cf9cebc39df6e3d0fb888e8e5d12910808c88b", size = 81331, upload-time = "2026-07-06T12:27:46.394Z" },
 ]
 
 [[package]]

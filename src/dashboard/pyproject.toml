@@ -37,7 +37,7 @@ dependencies = [
     "blue-krill==3.1.1",
     "bk-crypto-python-sdk==3.0.0",
     "cryptography==49.0.0",
-    "apigw-manager==5.0.0",
+    "apigw-manager==5.0.1",
     "bkapi-client-generator==0.1.30",
     "curlify==2.2.1",
     "bkapi-component-open>=1.0.3,<2",
