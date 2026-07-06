@@ -64,6 +64,7 @@ from .serializers import (
     ResourceImportInputSLZ,
     ResourceSyncOutputSLZ,
     ResourceVersionCreateInputSLZ,
+    ResourceVersionCreateOutputSLZ,
     ResourceVersionListInputSLZ,
     ResourceVersionListOutputSLZ,
     SDKGenerateInputSLZ,
@@ -183,7 +184,7 @@ class GatewayStageSyncViewSet(generics.CreateAPIView):
             data_before=data_before,
             data_after=get_model_dict(stage),
         )
-        output_slz = StageSyncOutputSLZ(instance=instance)
+        output_slz = StageSyncOutputSLZ(instance=stage)
         return OKJsonResponse(data=output_slz.data)
 
 
@@ -441,7 +442,7 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="创建网关资源版本",
         request_body=ResourceVersionCreateInputSLZ(),
-        responses={status.HTTP_201_CREATED: ""},
+        responses={status.HTTP_200_OK: ResourceVersionCreateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -466,12 +467,13 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
         slz = self.get_serializer(data=request.data, context={"request": request})
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
-        ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
+        resource_version = ResourceVersionArtifactHandler.create_resource_version_with_artifacts(
             gateway=request.gateway,
             data=data,
             username=request.user.username,
         )
-        return OKJsonResponse(status=status.HTTP_201_CREATED)
+        output_slz = ResourceVersionCreateOutputSLZ(resource_version)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(

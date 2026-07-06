@@ -677,6 +677,14 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
         validators = [ResourceVersionValidator()]
 
 
+class ResourceVersionCreateOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True, help_text="资源版本ID")
+    version = serializers.CharField(read_only=True, help_text="版本号")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.ResourceVersionCreateOutputSLZ"
+
+
 class ResourceVersionListInputSLZ(serializers.Serializer):
     version = serializers.CharField(required=False)
 
