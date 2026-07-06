@@ -171,6 +171,28 @@ class TestSyncApi:
         assert resp.status_code == 400
         assert "backends" in str(resp.json()["error"])
 
+    def test_resource_version_create_returns_created_info(
+        self, mocker, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        resource_version = mocker.Mock(id=123, version="1.1.0")
+        create_resource_version_with_artifacts = mocker.patch(
+            "apigateway.apis.v2.sync.views.ResourceVersionArtifactHandler.create_resource_version_with_artifacts",
+            return_value=resource_version,
+        )
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"version": "1.1.0", "comment": "release comment"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 201
+        assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
+        create_resource_version_with_artifacts.assert_called_once()
+
     def test_resource_version_release_preserves_stage_id_order(
         self, faker, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
     ):
