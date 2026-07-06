@@ -1,3 +1,5 @@
+spec_version: 2
+
 release:
   comment: "蓝鲸 ESB 编码组件数据同步"
 
@@ -8,15 +10,17 @@ apigateway:
   maintainers:
     - "admin"
 
-stage:
-  name: "prod"
-  vars: {}
-  proxy_http:
-    timeout: 600
-    upstreams:
-      loadbalance: "roundrobin"
-      hosts:
-        - host: "{{ environ.BK_COMPONENT_API_INNER_URL }}"
+stages:
+  - name: "prod"
+    vars: {}
+    backends:
+      - name: "default"
+        config:
+          timeout: 600
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "{{ environ.BK_COMPONENT_API_INNER_URL }}"
+              weight: 100
 
 grant_permissions:
   - bk_app_code: bk_apigateway
