@@ -35,7 +35,7 @@ from apigateway.service.resource_version import make_resource_schema_version
 @pytest.fixture()
 def disable_app_permission(mocker):
     mocker.patch(
-        "apigateway.apis.v2.sync.views.OpenAPIV2GatewayRelatedAppPermission.has_permission",
+        "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
 
@@ -147,6 +147,8 @@ class TestSyncApi:
         )
 
         assert resp.status_code == 200
+        stage = Stage.objects.get(gateway=fake_gateway, name="prod")
+        assert resp.json()["data"] == {"id": stage.id, "name": stage.name}
         assert not BackendConfig.objects.filter(backend=omitted_backend, stage__name="prod").exists()
 
     def test_stage_sync_with_empty_backends_returns_error(self, request_view, fake_gateway, disable_app_permission):

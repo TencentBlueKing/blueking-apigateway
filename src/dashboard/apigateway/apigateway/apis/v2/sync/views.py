@@ -183,7 +183,7 @@ class GatewayStageSyncViewSet(generics.CreateAPIView):
             data_before=data_before,
             data_after=get_model_dict(stage),
         )
-        output_slz = StageSyncOutputSLZ(instance=instance)
+        output_slz = StageSyncOutputSLZ(instance=stage)
         return OKJsonResponse(data=output_slz.data)
 
 
