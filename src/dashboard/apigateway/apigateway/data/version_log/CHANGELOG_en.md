@@ -1,3 +1,63 @@
+<!-- 2026-07-06 -->
+# V1.23.0 Release Log
+
+### Features
+
+- Plugin: uri-blocker to block crawlers/security scanners
+- Plugin: bk-query-string-rewrite
+- Navigation: add BK-CLI / BlueKing micro-gateway / Developer Center
+- MCP Server: permission support export
+- Access data: support export
+
+### Enhancements
+
+- Version comparison: support ignoring only document update time differences
+- API Gateway Homepage: scroll loading / idle application tag display
+- Programmable Gateway: authorization repository detection
+- ITSM Permission Application Form: optimize title display
+- MCP Server related changes add audit
+- MCP Market: shorten permission application entry
+- Application Permission: add batch deletion
+- Application Permission List: display operator
+- Operation Audit: add clear audit description for gateway disable/enable
+- Operation Audit: display operation before and after data
+- Documentation List Page: loading slowly
+
+### Bug Fixes
+
+- Fix: resource list - search condition invalid / keyword case problem / tag + keyword search failure
+- Fix: gateway list - super long gateway name display problem
+- Fix: resource configuration display trigger system error not displayed
+- Fix: resource version list - display quantity template not rendered
+- Fix: alarm detail cannot be displayed
+- Fix: multi-tenant environment - notification center announcement interface error
+- Fix: multi-tenant environment - single tenant user cannot see full tenant mcp server
+- Fix: MCP-query string type is list conversion error
+- Fix: MCP-body large integer precision issue
+- Fix: MCP-large response body causes OOM
+- Fix: MCP single MCP exception causes full MCP synchronization failure
+- Fix: MCP list page - application state risk causes name not visible
+- Fix: MCP Market - search does not reset conditions
+
+### Other
+
+- Upgrade to support apisix 3.16
+- Upgrade Python to 3.14
+- Upgrade Django to 5.2
+
+---
+
+<!-- 2026-07-03 -->
+# V1.22.2 Release Log
+
+### Bug Fixes
+
+- Fix: programming gateway synchronization verification failure
+- Fix: mcp-proxy openapi schema problem causing synchronization failure
+- Fix: home page display personal center
+
+---
+
 <!-- 2026-06-25 -->
 # V1.22.1 Release Log
 
