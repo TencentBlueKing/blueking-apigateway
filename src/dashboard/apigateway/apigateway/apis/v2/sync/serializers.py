@@ -179,6 +179,14 @@ class GatewaySyncOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncOutputSLZ"
 
 
+class GatewayPublicKeyRetrieveOutputSLZ(serializers.Serializer):
+    issuer = serializers.CharField(read_only=True, help_text="颁发者")
+    public_key = serializers.CharField(read_only=True, help_text="公钥")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.sync.serializers.GatewayPublicKeyRetrieveOutputSLZ"
+
+
 class HostSLZ(serializers.Serializer):
     host = serializers.RegexField(
         DOMAIN_PATTERN,
