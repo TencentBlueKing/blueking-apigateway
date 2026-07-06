@@ -284,6 +284,48 @@ var _ = Describe("Converter", func() {
 			Expect(result[0].ParamSchema.Required).To(ContainElement("header_param"))
 		})
 
+		It("should skip invalid parameters without panicking", func() {
+			spec := &openapi3.T{
+				OpenAPI: "3.0.0",
+				Info:    &openapi3.Info{Title: "Test API", Version: "1.0.0"},
+				Servers: []*openapi3.Server{{URL: "https://api.example.com/v1"}},
+				Paths:   &openapi3.Paths{},
+			}
+
+			pathItem := &openapi3.PathItem{
+				Get: &openapi3.Operation{
+					OperationID: "getUsers",
+					Summary:     "Get users",
+					Parameters: openapi3.Parameters{
+						nil,
+						&openapi3.ParameterRef{},
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name: "limit",
+								In:   "query",
+							},
+						},
+						&openapi3.ParameterRef{
+							Value: &openapi3.Parameter{
+								Name:   "offset",
+								In:     "query",
+								Schema: &openapi3.SchemaRef{},
+							},
+						},
+					},
+					Responses: &openapi3.Responses{},
+				},
+			}
+			spec.Paths.Set("/users", pathItem)
+
+			var result []*ToolConfig
+			Expect(func() {
+				result = OpenapiToMcpToolConfig(spec, nil, nil)
+			}).NotTo(Panic())
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].ParamSchema.Properties).NotTo(HaveKey("query_param"))
+		})
+
 		It("should skip JSON request body without schema", func() {
 			spec := &openapi3.T{
 				OpenAPI: "3.0.0",

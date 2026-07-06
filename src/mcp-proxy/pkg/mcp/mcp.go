@@ -22,6 +22,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"mcp_proxy/pkg/infra/bkaidevtrace"
 	"mcp_proxy/pkg/infra/logging"
 	"mcp_proxy/pkg/infra/proxy"
+	"mcp_proxy/pkg/infra/sentry"
 	"mcp_proxy/pkg/util"
 )
 
@@ -191,6 +193,7 @@ func prefetchServerConfigs(
 		idx, s := i, svr
 		util.GoroutineWithRecovery(ctx, func() {
 			defer wg.Done()
+			defer recoverPrefetchPanic(results[idx])
 			sem <- struct{}{}        // acquire
 			defer func() { <-sem }() // release
 			prefetchSingleServer(ctx, mcpProxy, results[idx], s)
@@ -198,6 +201,50 @@ func prefetchServerConfigs(
 	}
 	wg.Wait()
 	return results
+}
+
+func recoverPrefetchPanic(result *serverLoadResult) {
+	if panicErr := recover(); panicErr != nil {
+		serverName := "<nil>"
+		if result != nil && result.server != nil {
+			serverName = result.server.Name
+		}
+		err := reportReloadPanic("prefetch", serverName, panicErr)
+		if result != nil {
+			result.err = err
+		}
+	}
+}
+
+func buildReloadPanicReport(
+	phase string,
+	serverName string,
+	panicErr any,
+) (string, map[string]string, map[string]any, error) {
+	stack := string(debug.Stack())
+	err := fmt.Errorf("%s panic: %v", phase, panicErr)
+	tags := map[string]string{
+		"mcp_server_name": serverName,
+		"phase":           phase,
+	}
+	extra := map[string]any{
+		"panic":      fmt.Sprint(panicErr),
+		"stacktrace": stack,
+	}
+	return stack, tags, extra, err
+}
+
+func reportReloadPanic(phase, serverName string, panicErr any) error {
+	stack, tags, extra, err := buildReloadPanicReport(phase, serverName, panicErr)
+	logging.GetLogger().Errorf(
+		"mcp server[%s] %s failed with panic: %v\nstacktrace:\n%s",
+		serverName,
+		phase,
+		panicErr,
+		stack,
+	)
+	sentry.ReportToSentry("mcp server reload panic", tags, extra)
+	return err
 }
 
 // prefetchSingleServer 预取单个 server 的 release 和 openapi spec
@@ -295,50 +342,84 @@ func applyServerChanges(
 	stats := &loadStats{}
 
 	for _, result := range results {
-		svr := result.server
-		activeMcpServer[svr.Name] = struct{}{}
-
-		if result.err != nil {
-			logging.GetLogger().Errorf("mcp server[%s] load failed: %v", svr.Name, result.err)
+		if result == nil || result.server == nil {
+			err := fmt.Errorf("missing server")
+			if result != nil && result.err != nil {
+				err = result.err
+			}
+			logging.GetLogger().Errorf("mcp server[<nil>] load failed: %v", err)
 			stats.errorCount++
 			continue
 		}
-
-		// 处理协议类型变化（需要在主线程中执行 delete）
-		if mcpProxy.IsMCPServerExist(svr.Name) {
-			existingServer := mcpProxy.GetMCPServer(svr.Name)
-			if existingServer.GetProtocolType() != svr.GetProtocolType() {
-				mcpProxy.DeleteMCPServer(svr.Name)
-			}
-		}
-
-		// 如果不需要重新加载 openapi spec（版本未变化）
-		if result.skipped {
-			prompts := loadMCPServerPrompts(ctx, svr.ID)
-			mcpProxy.UpdateMCPServerPrompts(svr.Name, prompts)
-			stats.skippedCount++
-			continue
-		}
-
-		// 如果mcp server不存在，添加mcp server
-		if !mcpProxy.IsMCPServerExist(svr.Name) && result.conf != nil {
-			if addMCPServer(ctx, mcpProxy, svr, result.conf) {
-				stats.addedCount++
-			} else {
-				stats.errorCount++
-			}
-			continue
-		}
-
-		// 如果mcp server已经存在，更新mcp server
-		if updateMCPServer(ctx, mcpProxy, svr, result.conf) {
-			stats.updatedCount++
-		} else {
-			stats.skippedCount++
-		}
+		svr := result.server
+		activeMcpServer[svr.Name] = struct{}{}
+		applyServerChange(ctx, mcpProxy, result, stats)
 	}
 
 	return stats, activeMcpServer
+}
+
+func applyServerChange(
+	ctx context.Context,
+	mcpProxy *proxy.MCPProxy,
+	result *serverLoadResult,
+	stats *loadStats,
+) {
+	svr := result.server
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			serverName := "<nil>"
+			if svr != nil {
+				serverName = svr.Name
+			}
+			_ = reportReloadPanic("apply", serverName, panicErr)
+			stats.errorCount++
+		}
+	}()
+
+	if result.err != nil {
+		logging.GetLogger().Errorf("mcp server[%s] load failed: %v", svr.Name, result.err)
+		stats.errorCount++
+		return
+	}
+
+	// 处理协议类型变化（需要在主线程中执行 delete）
+	if mcpProxy.IsMCPServerExist(svr.Name) {
+		existingServer := mcpProxy.GetMCPServer(svr.Name)
+		if existingServer.GetProtocolType() != svr.GetProtocolType() {
+			mcpProxy.DeleteMCPServer(svr.Name)
+		}
+	}
+
+	// 如果不需要重新加载 openapi spec（版本未变化）
+	if result.skipped {
+		prompts := loadMCPServerPrompts(ctx, svr.ID)
+		mcpProxy.UpdateMCPServerPrompts(svr.Name, prompts)
+		stats.skippedCount++
+		return
+	}
+
+	// 如果mcp server不存在，添加mcp server
+	if !mcpProxy.IsMCPServerExist(svr.Name) && result.conf != nil {
+		if addMCPServer(ctx, mcpProxy, svr, result.conf) {
+			stats.addedCount++
+		} else {
+			stats.errorCount++
+		}
+		return
+	}
+
+	// 如果mcp server已经存在，更新mcp server
+	updated, updateErr := updateMCPServer(ctx, mcpProxy, svr, result.conf)
+	if updateErr != nil {
+		stats.errorCount++
+		return
+	}
+	if updated {
+		stats.updatedCount++
+	} else {
+		stats.skippedCount++
+	}
 }
 
 // addMCPServer 添加新的 mcp server，返回是否成功
@@ -393,20 +474,11 @@ func updateMCPServer(
 	mcpProxy *proxy.MCPProxy,
 	svr *model.MCPServer,
 	conf *Config,
-) bool {
+) (bool, error) {
 	mcpServer := mcpProxy.GetMCPServer(svr.Name)
 	if mcpServer == nil {
 		logging.GetLogger().Warnf("mcp server[%s] does not exist, skip tool cleanup", svr.Name)
-		return false
-	}
-
-	toolNames := svr.GetToolNames()
-	var toolUpdated bool
-	for _, tool := range mcpServer.GetTools() {
-		if !arrutil.Contains(toolNames, tool) {
-			mcpServer.RemoveTool(tool)
-			toolUpdated = true
-		}
+		return false, fmt.Errorf("mcp server[%s] does not exist", svr.Name)
 	}
 
 	var resourceVersionUpdated bool
@@ -418,9 +490,18 @@ func updateMCPServer(
 		)
 		if err != nil {
 			logging.GetLogger().Errorf("update mcp server[%s] from openapi spec error: %v", svr.Name, err)
-			return false
+			return false, err
 		}
 		resourceVersionUpdated = true
+	}
+
+	toolNames := svr.GetToolNames()
+	var toolUpdated bool
+	for _, tool := range mcpServer.GetTools() {
+		if !arrutil.Contains(toolNames, tool) {
+			mcpServer.RemoveTool(tool)
+			toolUpdated = true
+		}
 	}
 
 	// 更新 Prompts（每次都检查更新）
@@ -431,9 +512,9 @@ func updateMCPServer(
 		logging.GetLogger().Infof(
 			"updated prompts:%d, tools_changed:%v, resource_version_changed:%v for mcp server[%s]",
 			len(prompts), toolUpdated, resourceVersionUpdated, svr.Name)
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 // cleanupStaleMCPServers 删除已经不存在的 mcp server，返回删除数量

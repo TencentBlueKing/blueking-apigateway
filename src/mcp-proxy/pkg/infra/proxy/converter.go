@@ -44,13 +44,18 @@ func openapiSchemaRefToJSONSchema(schemaRef *openapi3.SchemaRef) jsonschema.Sche
 }
 
 func marshalOpenAPISchemaRefJSON(schemaRef *openapi3.SchemaRef) ([]byte, error) {
-	if schemaRef == nil {
+	if !openapiSchemaRefHasSchema(schemaRef) {
 		return nil, nil
 	}
 	if schemaRef.Value != nil {
 		return schemaRef.Value.MarshalJSON()
 	}
 	return schemaRef.MarshalJSON()
+}
+
+func openapiSchemaRefHasSchema(schemaRef *openapi3.SchemaRef) bool {
+	// LoadFromData resolves valid refs and rejects dangling refs before reload conversion.
+	return schemaRef != nil && (schemaRef.Value != nil || schemaRef.Ref != "")
 }
 
 func fallbackOpenAPIJSONSchema(schemaJSON []byte) jsonschema.Schema {
@@ -212,57 +217,60 @@ func OpenapiToMcpToolConfig(
 					Type: j.WithSimpleTypes(jsonschema.Object),
 				}
 				for _, param := range operation.Parameters {
-					if param.Value.Schema != nil {
-						jsonSchema := openapiSchemaRefToJSONSchema(param.Value.Schema)
-						if param.Value.Description != "" {
-							jsonSchema.Description = &param.Value.Description
+					if param == nil || param.Value == nil ||
+						!openapiSchemaRefHasSchema(param.Value.Schema) {
+						continue
+					}
+					parameter := param.Value
+					jsonSchema := openapiSchemaRefToJSONSchema(parameter.Schema)
+					if parameter.Description != "" {
+						jsonSchema.Description = &parameter.Description
+					}
+					if parameter.Example != nil {
+						if jsonSchema.ExtraProperties == nil {
+							jsonSchema.ExtraProperties = map[string]any{}
 						}
-						if param.Value.Example != nil {
-							if jsonSchema.ExtraProperties == nil {
-								jsonSchema.ExtraProperties = map[string]any{}
-							}
-							jsonSchema.ExtraProperties["example"] = param.Value.Example
-						}
-						if param.Value.In == "header" {
-							headerParamSchema.WithPropertiesItem(
-								param.Value.Name,
-								jsonschema.SchemaOrBool{
-									TypeObject: &jsonSchema,
-								},
-							)
-							if param.Value.Required {
-								headerParamSchema.Required = append(
-									headerParamSchema.Required,
-									param.Value.Name,
-								)
-							}
-						}
-						if param.Value.In == "query" {
-							queryParamSchema.WithPropertiesItem(
-								param.Value.Name,
-								jsonschema.SchemaOrBool{
-									TypeObject: &jsonSchema,
-								},
-							)
-							if param.Value.Required {
-								queryParamSchema.Required = append(
-									queryParamSchema.Required,
-									param.Value.Name,
-								)
-							}
-						}
-						if param.Value.In == "path" {
-							pathParamSchema.Required = append(
-								pathParamSchema.Required,
-								param.Value.Name,
-							)
-							pathParamSchema.WithPropertiesItem(
-								param.Value.Name,
-								jsonschema.SchemaOrBool{
-									TypeObject: &jsonSchema,
-								},
+						jsonSchema.ExtraProperties["example"] = parameter.Example
+					}
+					if parameter.In == "header" {
+						headerParamSchema.WithPropertiesItem(
+							parameter.Name,
+							jsonschema.SchemaOrBool{
+								TypeObject: &jsonSchema,
+							},
+						)
+						if parameter.Required {
+							headerParamSchema.Required = append(
+								headerParamSchema.Required,
+								parameter.Name,
 							)
 						}
+					}
+					if parameter.In == "query" {
+						queryParamSchema.WithPropertiesItem(
+							parameter.Name,
+							jsonschema.SchemaOrBool{
+								TypeObject: &jsonSchema,
+							},
+						)
+						if parameter.Required {
+							queryParamSchema.Required = append(
+								queryParamSchema.Required,
+								parameter.Name,
+							)
+						}
+					}
+					if parameter.In == "path" {
+						pathParamSchema.Required = append(
+							pathParamSchema.Required,
+							parameter.Name,
+						)
+						pathParamSchema.WithPropertiesItem(
+							parameter.Name,
+							jsonschema.SchemaOrBool{
+								TypeObject: &jsonSchema,
+							},
+						)
 					}
 				}
 				if len(headerParamSchema.Properties) > 0 {
@@ -299,7 +307,7 @@ func OpenapiToMcpToolConfig(
 
 			if operation.RequestBody != nil && operation.RequestBody.Value != nil {
 				if content, ok := operation.RequestBody.Value.Content["application/json"]; ok &&
-					content != nil && content.Schema != nil {
+					content != nil && openapiSchemaRefHasSchema(content.Schema) {
 					jsonSchema := openapiSchemaRefToJSONSchema(content.Schema)
 					if jsonSchemaDescriptionIsEmpty(&jsonSchema) {
 						bodyParamDesc := bodyParamDefaultDescription
