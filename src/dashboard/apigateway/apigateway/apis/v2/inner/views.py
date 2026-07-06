@@ -534,7 +534,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
             match_dimension = self._parse_match_dimension(record.match_dimension)
             dimension_map[record.id] = match_dimension
 
-            resource_id = record.resource_id or match_dimension.get("resource_id")
+            resource_id = record.resource_id
             if isinstance(resource_id, int):
                 resource_ids.add(resource_id)
 
@@ -543,7 +543,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
         output_data = []
         for record in records:
             match_dimension = dimension_map.get(record.id, {})
-            resource_id = record.resource_id or match_dimension.get("resource_id")
+            resource_id = record.resource_id
             if not isinstance(resource_id, int):
                 resource_id = None
 

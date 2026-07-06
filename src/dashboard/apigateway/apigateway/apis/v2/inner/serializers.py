@@ -769,8 +769,8 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
         required=False,
         help_text="资源名称（精确匹配）",
     )
-    time_start = TimestampField(help_text="开始时间")
-    time_end = TimestampField(help_text="结束时间")
+    time_start = TimestampField(required=True, help_text="开始时间")
+    time_end = TimestampField(required=True, help_text="结束时间")
     offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
     limit = serializers.IntegerField(
         label="限制条数",
@@ -818,8 +818,8 @@ class AppRequestLogListInputSLZ(serializers.Serializer):
     resource_name = serializers.CharField(allow_blank=True, required=False, help_text="资源名称（精确匹配）")
     request_id = serializers.CharField(allow_blank=True, required=False, help_text="请求 ID")
     status = serializers.IntegerField(required=False, min_value=100, max_value=599, help_text="响应状态码")
-    time_start = TimestampField(label="起始时间", help_text="起始时间")
-    time_end = TimestampField(label="结束时间", help_text="结束时间")
+    time_start = TimestampField(label="起始时间", required=True, help_text="起始时间")
+    time_end = TimestampField(label="结束时间", required=True, help_text="结束时间")
     offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
     limit = serializers.IntegerField(
         label="限制条数",

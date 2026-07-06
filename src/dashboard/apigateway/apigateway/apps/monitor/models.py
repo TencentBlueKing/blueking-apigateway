@@ -165,8 +165,5 @@ class AlarmRecord(models.Model):
         verbose_name_plural = _("监控告警记录")
         db_table = "monitor_alarm_record"
         indexes = [
-            models.Index(fields=["app_code", "alarm_type", "id"], name="monitor_ar_app_type_id_idx"),
-            models.Index(
-                fields=["app_code", "alarm_type", "resource_id", "id"], name="monitor_ar_app_type_res_id_idx"
-            ),
+            models.Index(fields=["app_code", "alarm_type", "created_time"], name="monitor_ar_app_type_time_idx"),
         ]

@@ -76,15 +76,8 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="alarmrecord",
             index=models.Index(
-                fields=["app_code", "alarm_type", "id"],
-                name="monitor_ar_app_type_id_idx",
-            ),
-        ),
-        migrations.AddIndex(
-            model_name="alarmrecord",
-            index=models.Index(
-                fields=["app_code", "alarm_type", "resource_id", "id"],
-                name="monitor_ar_app_type_res_id_idx",
+                fields=["app_code", "alarm_type", "created_time"],
+                name="monitor_ar_app_type_time_idx",
             ),
         ),
     ]
