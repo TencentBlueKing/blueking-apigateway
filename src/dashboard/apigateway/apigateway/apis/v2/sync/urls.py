@@ -36,6 +36,12 @@ urlpatterns = [
             [
                 # POST /api/v2/sync/gateways/{gateway_name}/
                 path("", views.GatewaySyncApi.as_view(), name="openapi.v2.sync.gateway.sync"),
+                # GET /api/v2/sync/gateways/{gateway_name}/public_key/
+                path(
+                    "public_key/",
+                    views.GatewayPublicKeyRetrieveApi.as_view(),
+                    name="openapi.v2.sync.gateway.public_key.retrieve",
+                ),
                 path(
                     "stages/",
                     include(

@@ -29,6 +29,7 @@ from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
+from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.resource_version import make_resource_schema_version
 
 
@@ -41,6 +42,25 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    def test_gateway_public_key_retrieve_from_dashboard_backend(
+        self, settings, request_view, fake_gateway, disable_app_permission
+    ):
+        settings.JWT_ISSUER = "foo"
+        jwt = GatewayJWTHandler.create_jwt(fake_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.sync.gateway.public_key.retrieve",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == {
+            "issuer": "foo",
+            "public_key": jwt.public_key,
+        }
+
     def test_gateway_related_apps_add_records_related_app_codes_before_and_after(
         self, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission
     ):
