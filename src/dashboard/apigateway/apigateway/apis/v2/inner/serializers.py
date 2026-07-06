@@ -28,6 +28,7 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
 )
+from apigateway.apps.monitor.constants import AlarmStatusEnum
 from apigateway.apps.permission.constants import (
     RENEWABLE_EXPIRE_DAYS,
     ApplyStatusEnum,
@@ -749,3 +750,125 @@ class MonitorCallbackRequestBodySLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MonitorCallbackRequestBodySLZ"
+
+
+class AppAlarmRecordListInputSLZ(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=AlarmStatusEnum.get_choices(),
+        allow_blank=True,
+        required=False,
+        help_text="告警状态",
+    )
+    gateway_name = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="网关名称（精确匹配）",
+    )
+    resource_name = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="资源名称（精确匹配）",
+    )
+    time_start = TimestampField(required=True, help_text="开始时间")
+    time_end = TimestampField(required=True, help_text="结束时间")
+    offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
+    limit = serializers.IntegerField(
+        label="限制条数",
+        required=False,
+        min_value=1,
+        max_value=100,
+        default=10,
+        help_text="限制条数",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"
+
+    def validate(self, attrs):
+        time_start = attrs.get("time_start")
+        time_end = attrs.get("time_end")
+        if not (time_start and time_end):
+            raise serializers.ValidationError(_("参数 time_start 和 time_end 需要同时提供。"))
+
+        if attrs.get("resource_name") and not attrs.get("gateway_name"):
+            raise serializers.ValidationError({"gateway_name": _("传 resource_name 时，必须同时传 gateway_name。")})
+
+        return attrs
+
+
+class AppAlarmRecordListOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    alarm_id = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    status_display = serializers.CharField(read_only=True)
+    created_time = serializers.DateTimeField(read_only=True)
+    gateway_name = serializers.CharField(read_only=True, allow_blank=True, allow_null=True)
+    stage = serializers.CharField(read_only=True, allow_blank=True, allow_null=True)
+    resource_id = serializers.IntegerField(read_only=True, allow_null=True)
+    resource_name = serializers.CharField(read_only=True, allow_blank=True, allow_null=True)
+    request_id = serializers.CharField(read_only=True, allow_blank=True, allow_null=True)
+    message = serializers.CharField(read_only=True, allow_blank=True, allow_null=True)
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListOutputSLZ"
+
+
+class AppRequestLogListInputSLZ(serializers.Serializer):
+    gateway_name = serializers.CharField(allow_blank=True, required=False, help_text="网关名称（精确匹配）")
+    resource_name = serializers.CharField(allow_blank=True, required=False, help_text="资源名称（精确匹配）")
+    request_id = serializers.CharField(allow_blank=True, required=False, help_text="请求 ID")
+    status = serializers.IntegerField(required=False, min_value=100, max_value=599, help_text="响应状态码")
+    time_start = TimestampField(label="起始时间", required=True, help_text="起始时间")
+    time_end = TimestampField(label="结束时间", required=True, help_text="结束时间")
+    offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
+    limit = serializers.IntegerField(
+        label="限制条数",
+        required=False,
+        min_value=1,
+        max_value=100,
+        default=10,
+        help_text="限制条数",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListInputSLZ"
+
+    def validate(self, attrs):
+        max_time_range_days = 180
+        time_start = attrs["time_start"]
+        time_end = attrs["time_end"]
+        now = time.to_datetime_from_now()
+        min_time_start = time.to_datetime_from_now(days=-max_time_range_days)
+
+        if time_start < min_time_start:
+            raise serializers.ValidationError(
+                {"time_start": _("time_start must be within the last {days} days.").format(days=max_time_range_days)}
+            )
+
+        if time_end <= time_start:
+            raise serializers.ValidationError({"time_end": _("time_end must be greater than time_start.")})
+
+        if time_end >= now:
+            raise serializers.ValidationError({"time_end": _("time_end must be less than current time.")})
+
+        return attrs
+
+
+class AppRequestLogListOutputSLZ(serializers.Serializer):
+    request_id = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求 ID")
+    timestamp = serializers.IntegerField(required=False, allow_null=True, help_text="请求时间戳")
+    gateway_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="网关名称")
+    stage = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="环境")
+    resource_id = serializers.IntegerField(required=False, allow_null=True, help_text="资源 ID")
+    resource_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="资源名称")
+    method = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求方法")
+    http_host = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求域名")
+    http_path = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="请求路径")
+    status = serializers.IntegerField(required=False, allow_null=True, help_text="响应状态码")
+    request_duration = serializers.IntegerField(required=False, allow_null=True, help_text="请求耗时")
+    code_name = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="状态码名称")
+    error = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="错误")
+    response_desc = serializers.CharField(required=False, allow_null=True, allow_blank=True, help_text="响应描述")
+
+    class Meta:
+        ref_name = "apigateway.apis.v2.inner.serializers.AppRequestLogListOutputSLZ"

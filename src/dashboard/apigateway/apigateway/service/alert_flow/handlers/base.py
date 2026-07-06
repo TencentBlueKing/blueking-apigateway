@@ -55,6 +55,10 @@ class AlarmRecordCreator(AlertHandler):
             return None
 
         record = AlarmRecord.objects.create(
+            app_code=event.event_dimensions.get("app_code", ""),
+            resource_id=self._get_resource_id(event.event_dimensions),
+            stage=event.event_dimensions.get("stage", ""),
+            alarm_type=event.alarm_type.value,
             alarm_id=event.id,
             alarm_attr_id=event.strategy_id,
             source_time=event.event_begin_time,
@@ -65,6 +69,16 @@ class AlarmRecordCreator(AlertHandler):
         event.alarm_record_id = record.id
 
         return event
+
+    def _get_resource_id(self, event_dimensions: Dict[str, Any]) -> Optional[int]:
+        resource_id = event_dimensions.get("resource_id")
+        if isinstance(resource_id, int):
+            return resource_id
+
+        if isinstance(resource_id, str) and resource_id.isdigit():
+            return int(resource_id)
+
+        return None
 
 
 class GatewayExistFilter(AlertHandler):

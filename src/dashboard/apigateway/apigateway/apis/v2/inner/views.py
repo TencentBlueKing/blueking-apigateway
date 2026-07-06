@@ -18,6 +18,7 @@
 #
 import logging
 import operator
+import re
 from typing import Dict
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
@@ -38,9 +39,12 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
+from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.constants import GrantDimensionEnum, PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
+from apigateway.biz.access_log import LogSearchClient
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import (
@@ -51,14 +55,17 @@ from apigateway.biz.permission import (
 )
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
-from apigateway.core.models import Gateway, Release
+from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.utils import time as time_utils
+from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
 from . import serializers
@@ -467,6 +474,194 @@ class AppPermissionRecordRetrieveApi(generics.RetrieveAPIView):
             },
         )
         return OKJsonResponse(data=slz.data)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询应用维度告警记录列表",
+        query_serializer=serializers.AppAlarmRecordListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppAlarmRecordListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppAlarmRecordListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.AppAlarmRecordListInputSLZ
+
+    def list(self, request, *args, **kwargs):
+        app_code = kwargs["app_code"]
+        BKAppCodeValidator()(app_code)
+
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        queryset = AlarmRecord.objects.filter(
+            app_code=app_code,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+        ).select_related("gateway")
+
+        if data.get("status"):
+            queryset = queryset.filter(status=data["status"])
+
+        if data.get("gateway_name"):
+            queryset = queryset.filter(gateway__name=data["gateway_name"])
+
+        if data.get("resource_name"):
+            queryset = self._filter_by_resource_name(
+                queryset,
+                resource_name=data["resource_name"],
+                gateway_name=data.get("gateway_name"),
+            )
+
+        if data.get("time_start") and data.get("time_end"):
+            queryset = queryset.filter(created_time__range=(data["time_start"], data["time_end"]))
+
+        queryset = queryset.order_by("-id")
+
+        page = self.paginate_queryset(queryset)
+
+        output_data = self._build_output_data(page)
+        output_slz = serializers.AppAlarmRecordListOutputSLZ(output_data, many=True)
+        return self.get_paginated_response(output_slz.data)
+
+    def _build_output_data(self, records):
+        resource_ids = set()
+        for record in records:
+            resource_id = record.resource_id
+            if isinstance(resource_id, int):
+                resource_ids.add(resource_id)
+
+        resource_name_map = dict(Resource.objects.filter(id__in=resource_ids).values_list("id", "name"))
+
+        output_data = []
+        for record in records:
+            resource_id = record.resource_id
+            if not isinstance(resource_id, int):
+                resource_id = None
+
+            output_data.append(
+                {
+                    "id": record.id,
+                    "alarm_id": record.alarm_id,
+                    "status": record.status,
+                    "status_display": AlarmStatusEnum.get_choice_label(record.status),
+                    "created_time": record.created_time,
+                    "gateway_name": record.gateway.name if record.gateway else "",
+                    "stage": record.stage,
+                    "resource_id": resource_id,
+                    "resource_name": resource_name_map.get(resource_id, ""),
+                    "request_id": self._extract_request_id(record.message),
+                    "message": record.message,
+                }
+            )
+        return output_data
+
+    def _filter_by_resource_name(self, queryset, resource_name: str, gateway_name: str = ""):
+        resource_id = (
+            Resource.objects.filter(gateway__name=gateway_name, name=resource_name)
+            .values_list("id", flat=True)
+            .first()
+        )
+        if not resource_id:
+            return queryset.none()
+
+        return queryset.filter(resource_id=resource_id)
+
+    def _extract_request_id(self, message: str) -> str:
+        if not message:
+            return ""
+
+        request_id_pattern = re.compile(r"请求\s*ID[:：]\s*([^\s]+)")
+        matched = request_id_pattern.search(message)
+        if not matched:
+            return ""
+
+        return matched.group(1)
+
+
+@method_decorator(
+    name="get",
+    decorator=swagger_auto_schema(
+        operation_description="查询应用维度调用流水日志列表（开发者视角）",
+        query_serializer=serializers.AppRequestLogListInputSLZ,
+        responses={status.HTTP_200_OK: serializers.AppRequestLogListOutputSLZ(many=True)},
+        tags=["OpenAPI.V2.Inner"],
+    ),
+)
+class AppRequestLogListApi(generics.ListAPIView):
+    permission_classes = [OpenAPIV2Permission]
+    serializer_class = serializers.AppRequestLogListInputSLZ
+
+    _output_fields = [
+        "request_id",
+        "timestamp",
+        "gateway_name",
+        "stage",
+        "resource_id",
+        "resource_name",
+        "method",
+        "http_host",
+        "http_path",
+        "status",
+        "request_duration",
+        "code_name",
+        "error",
+        "response_desc",
+    ]
+
+    def list(self, request, *args, **kwargs):
+        app_code = kwargs["app_code"]
+        BKAppCodeValidator()(app_code)
+
+        slz = self.get_serializer(data=request.query_params)
+        slz.is_valid(raise_exception=True)
+        data = slz.validated_data
+
+        include_conditions = [("app_code", app_code)]
+        if data.get("gateway_name"):
+            include_conditions.append(("gateway_name", data["gateway_name"]))
+        if data.get("resource_name"):
+            include_conditions.append(("resource_name", data["resource_name"]))
+        if data.get("request_id"):
+            include_conditions.append(("request_id", data["request_id"]))
+        if data.get("status"):
+            include_conditions.append(("status", str(data["status"])))
+
+        client = LogSearchClient(
+            include_conditions=include_conditions,
+            time_start=time_utils.timestamp(data["time_start"]),
+            time_end=time_utils.timestamp(data["time_end"]),
+            output_fields=self._output_fields,
+        )
+        total_count, logs = client.search_logs(offset=data["offset"], limit=data["limit"])
+        output_data = self._build_output_data(logs)
+
+        output_slz = serializers.AppRequestLogListOutputSLZ(output_data, many=True)
+        paginator = LimitOffsetPaginator(total_count, data["offset"], data["limit"])
+        return OKJsonResponse(data=paginator.get_paginated_data(output_slz.data))
+
+    def _build_output_data(self, logs):
+        return [
+            {
+                "request_id": log.get("request_id", ""),
+                "timestamp": log.get("timestamp"),
+                "gateway_name": log.get("gateway_name", ""),
+                "stage": log.get("stage", ""),
+                "resource_id": log.get("resource_id"),
+                "resource_name": log.get("resource_name", ""),
+                "method": log.get("method", ""),
+                "http_host": log.get("http_host", ""),
+                "http_path": log.get("http_path", ""),
+                "status": log.get("status"),
+                "request_duration": log.get("request_duration"),
+                "code_name": log.get("code_name", ""),
+                "error": log.get("error", ""),
+                "response_desc": log.get("response_desc", ""),
+            }
+            for log in logs
+        ]
 
 
 @method_decorator(

@@ -32,7 +32,11 @@ class TestAlarmRecordCreator:
         record_creator = base_handlers.AlarmRecordCreator()
         result = record_creator._do(mock_event)
         assert result.alarm_record_id != 0
-        assert AlarmRecord.objects.filter(id=result.alarm_record_id).exists()
+        record = AlarmRecord.objects.get(id=result.alarm_record_id)
+        assert record.app_code == mock_event.event_dimensions["app_code"]
+        assert record.resource_id == mock_event.event_dimensions["resource_id"]
+        assert record.stage == mock_event.event_dimensions["stage"]
+        assert record.alarm_type == mock_event.alarm_type.value
 
 
 class TestAPIExistFilter:

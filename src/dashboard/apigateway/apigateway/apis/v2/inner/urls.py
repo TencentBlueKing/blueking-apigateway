@@ -33,6 +33,18 @@ urlpatterns = [
         monitor_views.AlarmCallbackApi.as_view(),
         name="openapi.v2.inner.monitor.alarm_callback",
     ),
+    # GET /api/v2/inner/apps/{app_code}/monitor/alarm-records/
+    path(
+        "apps/<slug:app_code>/monitor/alarm-records/",
+        views.AppAlarmRecordListApi.as_view(),
+        name="openapi.v2.inner.monitor.app_alarm_records",
+    ),
+    # GET /api/v2/inner/apps/{app_code}/monitor/request-logs/
+    path(
+        "apps/<slug:app_code>/monitor/request-logs/",
+        views.AppRequestLogListApi.as_view(),
+        name="openapi.v2.inner.monitor.app_request_logs",
+    ),
     # /api/v2/inner/ 用于 paasv3 内部调用; 鉴权：来自于网关（主动授权）
     # 所有的接口必须隐藏 + 不允许申请权限（需主动授权）
     # 作为 resource 注册到网关时

@@ -16,9 +16,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 import time
 from unittest import mock
 
+import pytest
 from django.utils import timezone
 from django_dynamic_fixture import G
 
@@ -34,9 +36,11 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
+from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
-from apigateway.core.models import Gateway, Release, Stage
+from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
@@ -1303,6 +1307,332 @@ class TestAppPermissionRecordListApi:
         # 验证分页参数存在
         assert result["data"]["count"] == 0
         assert result["data"]["results"] == []
+
+
+class TestAppAlarmRecordListApi:
+    def _get_time_range_params(self):
+        now = int(time.time())
+        return {
+            "time_start": now - 3600,
+            "time_end": now + 60,
+        }
+
+    def test_list(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        resource = G(Resource, gateway=fake_gateway, name="test-resource")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=resource.id,
+            stage="prod",
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-1",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+            message="请求 ID: req-001",
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code="other-app",
+            resource_id=resource.id,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-2",
+            status=AlarmStatusEnum.FAILURE.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": "other-app",
+                }
+            ),
+            message="请求 ID: req-002",
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=resource.id,
+            alarm_type=AlarmTypeEnum.RESOURCE_BACKEND.value,
+            alarm_id="alarm-resource-backend",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        record = result["data"]["results"][0]
+        assert record["alarm_id"] == "alarm-1"
+        assert record["request_id"] == "req-001"
+        assert record["resource_name"] == "test-resource"
+        assert record["gateway_name"] == fake_gateway.name
+        assert record["stage"] == "prod"
+
+    def test_reject_missing_time_range(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": "current-app"},
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+    def test_filter_by_resource_name(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        target_resource = G(Resource, gateway=fake_gateway, name="target-resource")
+        other_resource = G(Resource, gateway=fake_gateway, name="other-resource")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=target_resource.id,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-target",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": target_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=other_resource.id,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-other",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": other_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
+            data={
+                "gateway_name": fake_gateway.name,
+                "resource_name": "target-resource",
+                **self._get_time_range_params(),
+            },
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["alarm_id"] == "alarm-target"
+        assert result["data"]["results"][0]["resource_name"] == "target-resource"
+
+    def test_filter_by_resource_name_with_resource_id_prefix(self, request_view, fake_gateway):
+        app_code = "bk-test-app"
+        target_resource = G(Resource, id=120001, gateway=fake_gateway, name="target-resource-prefix")
+        other_resource = G(Resource, id=1200019, gateway=fake_gateway, name="other-resource-prefix")
+
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=target_resource.id,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-target-prefix",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": target_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+        _ = G(
+            AlarmRecord,
+            gateway=fake_gateway,
+            app_code=app_code,
+            resource_id=other_resource.id,
+            alarm_type=AlarmTypeEnum.APP_REQUEST.value,
+            alarm_id="alarm-other-prefix",
+            status=AlarmStatusEnum.SUCCESS.value,
+            match_dimension=json.dumps(
+                {
+                    "api_id": fake_gateway.id,
+                    "resource_id": other_resource.id,
+                    "stage": "prod",
+                    "app_code": app_code,
+                }
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
+            data={
+                "gateway_name": fake_gateway.name,
+                "resource_name": "target-resource-prefix",
+                **self._get_time_range_params(),
+            },
+            app=mock.MagicMock(app_code=app_code),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        assert result["data"]["results"][0]["alarm_id"] == "alarm-target-prefix"
+        assert result["data"]["results"][0]["resource_id"] == target_resource.id
+
+    def test_reject_resource_name_without_gateway_name(self, request_view):
+        app_code = "bk-test-app"
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_alarm_records",
+            path_params={"app_code": app_code},
+            data={
+                "resource_name": "target-resource",
+                **self._get_time_range_params(),
+            },
+            app=mock.MagicMock(app_code=app_code),
+        )
+
+        assert resp.status_code == 400
+
+
+class TestAppRequestLogListApi:
+    def _get_time_range_params(self):
+        now = int(time.time())
+        return {
+            "time_start": now - 3600,
+            "time_end": now - 60,
+        }
+
+    def test_list(self, request_view, mocker):
+        mock_search_logs = mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(
+                1,
+                [
+                    {
+                        "request_id": "req-001",
+                        "timestamp": 1751366500,
+                        "gateway_name": "bk-user-api",
+                        "stage": "prod",
+                        "resource_id": 12,
+                        "resource_name": "list_users",
+                        "method": "GET",
+                        "http_host": "bk-user-api.example.com",
+                        "http_path": "/prod/users",
+                        "status": 200,
+                        "request_duration": 32,
+                        "code_name": "",
+                        "error": "",
+                        "response_desc": "OK",
+                        "backend_host": "private-backend.example.com",
+                    }
+                ],
+            ),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "bk-test-app"},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code="bk-test-app"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 1
+        record = result["data"]["results"][0]
+        assert record["request_id"] == "req-001"
+        assert record["gateway_name"] == "bk-user-api"
+        assert "backend_host" not in record
+        mock_search_logs.assert_called_once()
+
+    def test_allow_path_app_code_different_from_request_app(self, request_view, mocker):
+        mock_search_logs = mocker.patch(
+            "apigateway.apis.v2.inner.views.LogSearchClient.search_logs",
+            return_value=(0, []),
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "another-app"},
+            data=self._get_time_range_params(),
+            app=mock.MagicMock(app_code="current-app"),
+        )
+
+        assert resp.status_code == 200
+        mock_search_logs.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "data",
+        [
+            {},
+            {"time_start": int(time.time()) - 181 * 24 * 3600, "time_end": int(time.time()) - 60},
+            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) - 3600},
+            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) + 60},
+        ],
+    )
+    def test_reject_invalid_time_range(self, request_view, data):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "current-app"},
+            data=data,
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
+
+    def test_reject_limit_greater_than_100(self, request_view):
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.monitor.app_request_logs",
+            path_params={"app_code": "current-app"},
+            data={**self._get_time_range_params(), "limit": 101},
+            app=mock.MagicMock(app_code="current-app"),
+        )
+        assert resp.status_code == 400
 
 
 class TestMCPServerListApi:
