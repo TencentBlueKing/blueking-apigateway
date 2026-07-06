@@ -442,7 +442,7 @@ class GatewayAppPermissionGrantApi(generics.CreateAPIView):
     decorator=swagger_auto_schema(
         operation_description="创建网关资源版本",
         request_body=ResourceVersionCreateInputSLZ(),
-        responses={status.HTTP_201_CREATED: ResourceVersionCreateOutputSLZ()},
+        responses={status.HTTP_200_OK: ResourceVersionCreateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -473,7 +473,7 @@ class ResourceVersionListCreateApi(generics.ListCreateAPIView):
             username=request.user.username,
         )
         output_slz = ResourceVersionCreateOutputSLZ(resource_version)
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data=output_slz.data)
+        return OKJsonResponse(data=output_slz.data)
 
 
 @method_decorator(

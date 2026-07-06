@@ -189,7 +189,7 @@ class TestSyncApi:
             user=fake_admin_user,
         )
 
-        assert resp.status_code == 201
+        assert resp.status_code == 200
         assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
         create_resource_version_with_artifacts.assert_called_once()
 
