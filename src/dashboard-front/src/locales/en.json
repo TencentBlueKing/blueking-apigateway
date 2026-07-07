@@ -1567,6 +1567,7 @@
   "校验应用权限": "Validate application permissions",
   "（允许申请权限）": "(Permission application allowed)",
   "（不允许申请权限）": "(Permission application not allowed)",
+  "（只能主动授权）": "(Only manual authorization allowed)",
   "私有": "Private",
   "公开": "Public",
   "无权限": "No permission",
@@ -2524,5 +2525,6 @@
   "开发者中心": "Developer Center",
   "个人设置": "Personal Settings",
   "显示仅存在文档更新的资源": "Show resources diff only in document update",
-  "不能包含 =, &, #, ?": "Cannot contain =, &, #, ?"
+  "不能包含 =, &, #, ?": "Cannot contain =, &, #, ?",
+  "需要在开发者中心申请该网关API权限": "Need to apply for permission in developer center"
 }
