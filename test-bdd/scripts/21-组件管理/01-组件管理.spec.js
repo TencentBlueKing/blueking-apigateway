@@ -112,4 +112,24 @@ test.describe('功能: 组件管理 - 组件管理综合功能', () => {
       await expect(searchInput).toBeVisible();
     }
   });
+
+  test('场景: 查看组件同步历史和版本', async ({ page }) => {
+    const baseUrl = BASE_URL.replace(/\/$/, '');
+
+    await page.goto(`${baseUrl}/components/history`, { waitUntil: 'domcontentloaded' });
+    await waitForPageReady(page);
+    if (page.url().includes('/login/')) {
+      await reAuth(page);
+      await page.goto(`${baseUrl}/components/history`, { waitUntil: 'domcontentloaded' });
+      await waitForPageReady(page);
+    }
+    await expect(page).toHaveURL(/\/components\/history/);
+    await expect(page.locator('body')).toContainText(/同步历史|同步时间|同步状态|暂无数据|搜索结果为空/);
+
+    await page.goto(`${baseUrl}/components/version`, { waitUntil: 'domcontentloaded' });
+    await waitForPageReady(page);
+    await expect(page).toHaveURL(/\/components\/version/);
+    await expect(page.locator('body')).toContainText(/同步版本|版本|资源|暂无数据|搜索结果为空/);
+  });
+
 });
