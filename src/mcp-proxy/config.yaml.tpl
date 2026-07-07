@@ -24,7 +24,6 @@ databases:
     maxOpenConns: 200
     maxIdleConns: 50
     connMaxLifetimeSecond: 600
-    timeout: 2
     # TLS配置（可选）
     tls:
       enabled: false
