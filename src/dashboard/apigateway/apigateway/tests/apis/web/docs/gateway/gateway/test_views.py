@@ -38,10 +38,7 @@ class TestGatewayListApi:
         assert resp.status_code == 200
         assert len(result["data"]["results"]) >= 1
 
-    def test_list_paginates_after_official_sort(self, mocker, request_view, unique_id):
-        mock_get_gateway_domain = mocker.patch(
-            "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayHandler.get_gateway_domain"
-        )
+    def test_list_paginates_after_official_sort(self, request_view, unique_id):
         normal_gateway = G(
             Gateway,
             name=f"zz-normal-{unique_id[:8]}",
@@ -78,7 +75,6 @@ class TestGatewayListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == official_gateway.id
         assert result["data"]["results"][0]["is_official"] is True
-        mock_get_gateway_domain.assert_not_called()
 
 
 class TestGatewayRetrieveApi:

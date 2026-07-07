@@ -28,6 +28,7 @@ class TestGatewayOutputSLZ:
             fake_gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+                "gateway_id_to_bk_api_url_tmpl": {fake_gateway.id: settings.BK_API_URL_TMPL},
                 "gateway_sdks": {},
             },
         )

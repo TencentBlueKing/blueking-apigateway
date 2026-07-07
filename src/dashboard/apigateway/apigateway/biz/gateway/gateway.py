@@ -393,10 +393,20 @@ class GatewayHandler:
             if binding.data_plane.bk_api_url_tmpl:
                 gateway_id_to_bk_api_url_tmpl[binding.gateway_id] = binding.data_plane.bk_api_url_tmpl
 
-        return {
-            gateway_id: gateway_id_to_bk_api_url_tmpl.get(gateway_id, settings.BK_API_URL_TMPL)
-            for gateway_id in gateway_ids
-        }
+        result = {}
+        for gateway_id in gateway_ids:
+            bk_api_url_tmpl = gateway_id_to_bk_api_url_tmpl.get(gateway_id)
+            if bk_api_url_tmpl:
+                result[gateway_id] = bk_api_url_tmpl
+                continue
+
+            logger.warning(
+                "Gateway %s has no data plane with bk_api_url_tmpl configured, falling back to settings.BK_API_URL_TMPL",
+                gateway_id,
+            )
+            result[gateway_id] = settings.BK_API_URL_TMPL
+
+        return result
 
     @staticmethod
     def get_gateway_domain(gateway: Gateway) -> str:

@@ -71,8 +71,6 @@ class GatewayListApi(generics.ListAPIView):
         gateway_ids = [gateway["id"] for gateway in gateway_candidates]
         gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
 
-        # NOTE: 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
-        # FIXME: 性能问题？
         sorted_candidates = sorted(
             gateway_candidates,
             key=lambda gateway: (
@@ -80,6 +78,8 @@ class GatewayListApi(generics.ListAPIView):
                 gateway["name"],
             ),
         )
+
+        # id__in 查询不能保证按 id 顺序返回结果，因此要做一层转换
         page = self.paginate_queryset(sorted_candidates)
         page_gateway_ids = [gateway["id"] for gateway in page]
         gateway_map = {gateway.id: gateway for gateway in queryset.filter(id__in=page_gateway_ids)}
@@ -114,6 +114,9 @@ class GatewayRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
             request.gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
+                "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(
+                    [request.gateway.id]
+                ),
                 "gateway_sdks": GatewaySDKHandler.get_sdks([request.gateway.id]),
             },
         )
