@@ -27,8 +27,9 @@
         <PassiveChecks
           ref="passive-checks"
           v-model:enabled="isPassiveEnabled"
-          :disabled="disabled"
+          :disabled="disabled || !isActiveEnabled"
           :checks="checks?.passive"
+          :disabled-tips="passiveDisabledTips"
         />
       </BkFormItem>
     </div>
@@ -60,6 +61,13 @@ const passiveChecksRef = useTemplateRef('passive-checks');
 const isActiveEnabled = ref(false);
 const isPassiveEnabled = ref(false);
 
+const passiveDisabledTips = computed(() => {
+  if (disabled) {
+    return undefined;
+  }
+  return isActiveEnabled.value ? undefined : t('请先开启主动健康检查');
+});
+
 watch(() => checks, () => {
   if (checks && isPlainObject(checks)) {
     isActiveEnabled.value = checks.active !== undefined;
@@ -69,6 +77,12 @@ watch(() => checks, () => {
   immediate: true,
   deep: true,
 });
+
+watch(isActiveEnabled, () => {
+  if (!isActiveEnabled.value) {
+    isPassiveEnabled.value = false;
+  }
+}, { deep: true });
 
 defineExpose({
   getValue: () => {

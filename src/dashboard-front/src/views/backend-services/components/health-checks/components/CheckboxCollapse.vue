@@ -2,7 +2,10 @@
   <div class="collapse">
     <div class="header">
       <div
-        v-bk-tooltips="{content: t('当前只有一个后端服务地址，存在多个后端服务地址才可以配置健康检查'), disabled: !disabled}"
+        v-bk-tooltips="{
+          content: disabledTips || t('当前只有一个后端服务地址，存在多个后端服务地址才可以配置健康检查'),
+          disabled: !disabled,
+        }"
         class="prefix"
       >
         <BkCheckbox
@@ -53,6 +56,7 @@ interface IProps {
   name?: string
   desc?: string
   disabled?: boolean
+  disabledTips?: string
 }
 
 const enabled = defineModel<boolean>({ default: false });
@@ -63,6 +67,7 @@ const {
   name = '',
   desc = '',
   disabled = false,
+  disabledTips = undefined,
 } = defineProps<IProps>();
 
 const { t } = useI18n();

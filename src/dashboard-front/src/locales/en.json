@@ -2526,5 +2526,6 @@
   "个人设置": "Personal Settings",
   "显示仅存在文档更新的资源": "Show resources diff only in document update",
   "不能包含 =, &, #, ?": "Cannot contain =, &, #, ?",
-  "需要在开发者中心申请该网关API权限": "Need to apply for permission in developer center"
+  "需要在开发者中心申请该网关API权限": "Need to apply for permission in developer center",
+  "请先开启主动健康检查": "Please enable active health check first"
 }
