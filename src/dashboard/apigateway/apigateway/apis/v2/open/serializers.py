@@ -403,7 +403,11 @@ class MCPServerAppPermissionApplyRecordListOutputSLZ(serializers.Serializer):
         return MCPServerAppPermissionApplyStatusEnum.get_choice_label(obj.status)
 
     def get_approval_url(self, obj) -> str:
-        return build_mcp_server_permission_approval_url(obj.mcp_server.gateway_id, obj.mcp_server_id)
+        return build_mcp_server_permission_approval_url(
+            obj.mcp_server.gateway_id,
+            obj.mcp_server_id,
+            obj.itsm_ticket_id or "",
+        )
 
     def get_applied_by(self, obj):
         return ResourcePermissionHandler.convert_applied_by_to_display_name(
