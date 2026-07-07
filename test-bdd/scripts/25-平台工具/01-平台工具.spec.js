@@ -77,4 +77,23 @@ test.describe('功能: 平台工具 - 平台工具集', () => {
       await expect(page.locator('body')).toContainText(text);
     }
   });
+
+  test('场景: 查看 BK-CLI 文档标签页', async ({ page }) => {
+    await gotoPlatformTool(page, '/platform-tools/bk-cli');
+
+    const tabs = [
+      [/功能概览/, /Agent 原生设计|覆盖面广|跨网关编排/],
+      [/快速开始/, /bk-cli context init|bk-cli auth login|bk-cli api/],
+      [/进阶用法/, /bk-cli context create|bk-cli apigateway|list_gateways/],
+    ];
+
+    for (const [tabName, expectedText] of tabs) {
+      const tab = page.locator('.bk-tab-header-item, .bk-tab-label-item, [role=tab], button').filter({ hasText: tabName }).first();
+      await expect(tab).toBeVisible({ timeout: 10000 });
+      await tab.click();
+      await page.waitForTimeout(500);
+      await expect(page.locator('body')).toContainText(expectedText);
+    }
+  });
+
 });

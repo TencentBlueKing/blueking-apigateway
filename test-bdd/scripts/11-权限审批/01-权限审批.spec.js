@@ -53,4 +53,18 @@ test.describe('功能: 权限审批 - 权限审批管理', () => {
       }
     }
   });
+
+  test('场景: 查看审批历史', async ({ page }) => {
+    const gatewayId = getGatewayId();
+
+    await navigateToGatewayPage(page, gatewayId, '审批历史', '/permission/record');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/permission/record`), { timeout: 10000 });
+
+    const contentArea = page.locator('.bk-table, table, [class*=history], [class*=record], .bk-exception, [class*=empty]').first();
+    await expect(contentArea).toBeVisible({ timeout: 10000 });
+
+    const body = page.locator('body');
+    await expect(body).toContainText(/审批历史|申请人|授权维度|审批状态|暂无数据|搜索结果为空/);
+  });
+
 });

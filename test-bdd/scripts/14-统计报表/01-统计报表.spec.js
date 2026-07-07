@@ -48,4 +48,18 @@ test.describe('功能: 统计报表 - 运行数据统计', () => {
       await dismissFloatingLayers(page);
     }
   });
+
+  test('场景: 查看运行数据仪表盘', async ({ page }) => {
+    const gatewayId = getGatewayId();
+
+    await navigateToGatewayPage(page, gatewayId, '仪表盘', '/dashboard');
+    await expect(page).toHaveURL(new RegExp(`/${gatewayId}/dashboard`), { timeout: 10000 });
+
+    const body = page.locator('body');
+    await expect(body).toContainText(/仪表盘|总请求数|健康率|请求数趋势|暂无数据/);
+
+    const dashboardArea = page.locator('[class*=dashboard], [class*=chart], canvas, .bk-exception, [class*=empty]').first();
+    await expect(dashboardArea).toBeVisible({ timeout: 10000 });
+  });
+
 });
