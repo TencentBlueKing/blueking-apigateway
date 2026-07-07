@@ -544,10 +544,12 @@ func GetMCPServerConfigWithRelease(
 		return nil, err
 	}
 	// 根据openapi文件初始化mcp server的proxy
-	openapiFileData, err := openapi3.NewLoader().LoadFromData([]byte(openapiFile.Schema))
+	openapiFileData, err := loadOpenAPISpec(openapiFile.Schema)
 	if err != nil {
 		return nil, err
 	}
+	logging.GetLogger().Infof("mcp server[%s] loaded openapi spec version=%s, resource_version_id=%d",
+		server.Name, getOpenAPISpecVersion(openapiFileData), release.ResourceVersionID)
 	// 渲染openapi文件的server信息
 	endpoint := strings.TrimSuffix(config.G.McpServer.BkApiUrlTmpl, "/") + "/{stage}"
 	gateway, err := cacheimpls.GetGatewayByID(ctx, server.GatewayID)
@@ -570,6 +572,17 @@ func GetMCPServerConfigWithRelease(
 		resourceVersion: release.ResourceVersionID,
 		openapiFileData: openapiFileData,
 	}, nil
+}
+
+func loadOpenAPISpec(schema string) (*openapi3.T, error) {
+	return openapi3.NewLoader().LoadFromData([]byte(schema))
+}
+
+func getOpenAPISpecVersion(openapiFileData *openapi3.T) string {
+	if openapiFileData == nil || openapiFileData.OpenAPI == "" {
+		return "unknown"
+	}
+	return openapiFileData.OpenAPI
 }
 
 // loadMCPServerPrompts 加载 MCP Server 的 Prompts 配置

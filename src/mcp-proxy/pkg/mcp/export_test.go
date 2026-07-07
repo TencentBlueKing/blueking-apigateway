@@ -113,6 +113,16 @@ func NewConfigWithOpenAPISpec(resourceVersion int, openapiFileData *openapi3.T) 
 	}
 }
 
+// LoadOpenAPISpecForTest exposes loadOpenAPISpec for testing.
+func LoadOpenAPISpecForTest(schema string) (*openapi3.T, error) {
+	return loadOpenAPISpec(schema)
+}
+
+// GetOpenAPISpecVersionForTest exposes getOpenAPISpecVersion for testing.
+func GetOpenAPISpecVersionForTest(openapiFileData *openapi3.T) string {
+	return getOpenAPISpecVersion(openapiFileData)
+}
+
 // GetLoadStatsValues returns stats values for testing.
 func GetLoadStatsValues(stats *loadStats) (added, updated, skipped, errorCount int) {
 	return stats.addedCount, stats.updatedCount, stats.skippedCount, stats.errorCount
