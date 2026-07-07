@@ -216,11 +216,16 @@ class TestBackendHealthCheckApi:
                     "loadbalance": "roundrobin",
                     "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 1}],
                     "checks": {
+                        "active": {
+                            "type": "http",
+                            "http_path": "/health",
+                            "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
+                        },
                         "passive": {
                             "type": "http",
                             "healthy": {"successes": 2, "http_statuses": [200]},
                             "unhealthy": {"http_failures": 3, "http_statuses": [500, 502]},
-                        }
+                        },
                     },
                 }
             ],

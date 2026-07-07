@@ -69,6 +69,40 @@ class TestStageWithResourceVersionV1SLZ:
         assert slz.data == expected
 
 
+class TestCheckSLZ:
+    def test_active_with_passive_valid(self):
+        data = {
+            "active": {
+                "type": "http",
+                "timeout": 5,
+                "http_path": "/health",
+                "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
+            },
+            "passive": {
+                "type": "http",
+                "healthy": {"successes": 2, "http_statuses": [200]},
+                "unhealthy": {"http_failures": 3, "tcp_failures": 2, "http_statuses": [500, 502]},
+            },
+        }
+        slz = serializers.CheckSLZ(data=data)
+        assert slz.is_valid()
+
+    def test_passive_only_invalid(self):
+        data = {"passive": {"type": "http", "unhealthy": {"http_failures": 3}}}
+        slz = serializers.CheckSLZ(data=data)
+        assert not slz.is_valid()
+        assert "active" in slz.errors
+
+    def test_null_active_with_passive_invalid(self):
+        data = {
+            "active": None,
+            "passive": {"type": "http", "unhealthy": {"http_failures": 3}},
+        }
+        slz = serializers.CheckSLZ(data=data)
+        assert not slz.is_valid()
+        assert "active" in slz.errors
+
+
 class TestStageSLZ:
     def test_validate_delegates_plugin_validation_to_stage_sync_handler(self, mocker, fake_gateway):
         mocked_validate = mocker.patch(

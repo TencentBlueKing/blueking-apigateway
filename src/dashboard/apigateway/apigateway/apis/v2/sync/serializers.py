@@ -304,23 +304,13 @@ class PassiveCheckSLZ(serializers.Serializer):
 
 
 class CheckSLZ(serializers.Serializer):
-    """Health check configuration (active and/or passive)"""
+    """Health check configuration (active required, passive optional)"""
 
-    active = ActiveCheckSLZ(required=False, allow_null=True, help_text="主动健康检查")
+    active = ActiveCheckSLZ(help_text="主动健康检查")
     passive = PassiveCheckSLZ(required=False, allow_null=True, help_text="被动健康检查")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.CheckSLZ"
-
-    def validate(self, attrs):
-        """Ensure at least one of active or passive is provided"""
-        active = attrs.get("active")
-        passive = attrs.get("passive")
-
-        if not active and not passive:
-            raise serializers.ValidationError("至少需要配置主动健康检查或被动健康检查中的一项")
-
-        return attrs
 
 
 class UpstreamsSLZ(serializers.Serializer):
