@@ -6,6 +6,7 @@
       :desc="t('通过实际请求的响应状态判断节点健康情况，无需额外探针请求，但可能会延迟问题发现，导致部分请求失败。')
         + t('由于不健康的节点无法收到请求，仅使用被动健康检查策略无法重新将节点标记为健康，因此通常需要结合主动健康检查策略。')"
       :disabled="disabled"
+      :disabled-tips="disabledTips"
     >
       <BkForm
         :model="passive"
@@ -134,6 +135,7 @@ import {
 interface IProps {
   checks?: IHealthCheck['passive']
   disabled?: boolean
+  disabledTips?: string
 }
 
 const enabled = defineModel<boolean>('enabled', { default: false });
@@ -141,6 +143,7 @@ const enabled = defineModel<boolean>('enabled', { default: false });
 const {
   checks = undefined,
   disabled = false,
+  disabledTips = undefined,
 } = defineProps<IProps>();
 
 const { t } = useI18n();
