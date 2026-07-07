@@ -69,6 +69,51 @@ var _ = Describe("MCP Load Functions", func() {
 		openapiSpec.Paths.Set("/users", pathItem)
 	})
 
+	Describe("openapi spec loading", func() {
+		It("should load OpenAPI 3.1 schema with numeric exclusive minimum", func() {
+			spec, err := mcppkg.LoadOpenAPISpecForTest(`{
+					"openapi": "3.1.0",
+					"info": {"title": "Test API", "version": "1.0.0"},
+					"servers": [{"url": "https://api.example.com"}],
+					"paths": {
+						"/qrcode/json": {
+							"post": {
+								"operationId": "qrcode_post_qrcode_json_post",
+								"requestBody": {
+									"required": true,
+									"content": {
+										"application/json": {
+											"schema": {
+												"type": "object",
+												"properties": {
+													"box_size": {
+														"type": "integer",
+														"exclusiveMinimum": 0
+													}
+												}
+											}
+										}
+									}
+								},
+								"responses": {
+									"200": {
+										"description": "OK"
+									}
+								}
+							}
+						}
+					}
+				}`)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(mcppkg.GetOpenAPISpecVersionForTest(spec)).To(Equal("3.1.0"))
+		})
+
+		It("should report unknown version for nil spec", func() {
+			Expect(mcppkg.GetOpenAPISpecVersionForTest(nil)).To(Equal("unknown"))
+		})
+	})
+
 	Describe("checkNeedLoad", func() {
 		It("should return true when server does not exist in proxy", func() {
 			server := &model.MCPServer{Name: "new-server"}
