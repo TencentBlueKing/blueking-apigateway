@@ -300,6 +300,106 @@ async function waitForPageReady(page) {
   await page.waitForTimeout(800);
 }
 
+const FATAL_PAGE_TEXT_PATTERN = /(?:^|\b)(?:500|502|503|504)(?:\b|$)|Server Error|Internal Server Error|OperationalError|Traceback|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|系统出现异常|努力恢复中|请稍后再试|页面找不到|404页|404 page|page not found/i;
+const FATAL_EXCEPTION_TEXT_PATTERN = /500|502|503|504|Server Error|Internal Server Error|OperationalError|Traceback|Bad Gateway|Service(?: Temporarily)? Unavailable|Gateway Timeout|系统出现异常|努力恢复中|请稍后再试|页面找不到|404页|404 page|page not found/i;
+const IGNORED_FAILURE_URL_PATTERN = /(?:sockjs-node|webpack|vite|hot-update|favicon\.ico|\.map(?:\?|$))/i;
+const NON_FATAL_PAGE_ERROR_PATTERN = /请求方法\+请求路径在网关下唯一|请至少调整其中一项/i;
+
+function isFatalNetworkResponse(response) {
+  const url = response.url();
+  if (IGNORED_FAILURE_URL_PATTERN.test(url)) return false;
+
+  const status = response.status();
+  if (status >= 500) return true;
+
+  // The production gate treats application 404 pages as broken routes. Ignore static 404s.
+  if (status === 404 && /\/backend\/|\/api\/|\/gateways\/|\/components\/|\/docs\/|\/mcp-|\/platform-tools|\/personal-workbench|\/monitor\//.test(url)) {
+    return true;
+  }
+
+  return false;
+}
+
+function attachHardFailureGuard(page, options = {}) {
+  if (page.__bddHardFailureGuardAttached) {
+    return page.__bddHardFailureState;
+  }
+
+  const state = {
+    failures: [],
+    options,
+  };
+  page.__bddHardFailureGuardAttached = true;
+  page.__bddHardFailureState = state;
+
+  page.on('pageerror', (error) => {
+    if (NON_FATAL_PAGE_ERROR_PATTERN.test(error.message || '')) return;
+    state.failures.push(`pageerror: ${error.message}`);
+  });
+
+  page.on('requestfailed', (request) => {
+    const url = request.url();
+    const resourceType = request.resourceType();
+    const failure = request.failure();
+    const errorText = failure ? failure.errorText : '';
+    if (IGNORED_FAILURE_URL_PATTERN.test(url)) return;
+    if (!['document', 'xhr', 'fetch'].includes(resourceType)) return;
+    if (/net::ERR_ABORTED/i.test(errorText)) return;
+    state.failures.push(`request failed: ${request.method()} ${url} ${errorText}`.trim());
+  });
+
+  page.on('response', (response) => {
+    if (!isFatalNetworkResponse(response)) return;
+    state.failures.push(`fatal response: ${response.status()} ${response.url()}`);
+  });
+
+  return state;
+}
+
+function clearHardFailureGuard(page) {
+  if (page.__bddHardFailureState) {
+    page.__bddHardFailureState.failures = [];
+  }
+}
+
+async function getFatalPageText(page) {
+  const bodyText = await page.locator('body').textContent({ timeout: 1000 }).catch(() => '');
+  if (FATAL_PAGE_TEXT_PATTERN.test(bodyText || '')) {
+    return (bodyText || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+  }
+
+  const exceptionTexts = await page.locator('.bk-exception, [class*="exception"], [class*="error-page"], [class*="fail-page"]').evaluateAll((nodes) => (
+    nodes.map(node => node.textContent || '').filter(Boolean)
+  )).catch(() => []);
+
+  const fatalException = exceptionTexts.find(text => FATAL_EXCEPTION_TEXT_PATTERN.test(text));
+  if (fatalException) {
+    return fatalException.replace(/\s+/g, ' ').trim().slice(0, 500);
+  }
+
+  return '';
+}
+
+async function assertNoHardFailure(page, context = '') {
+  attachHardFailureGuard(page);
+
+  const state = page.__bddHardFailureState || { failures: [] };
+  const fatalPageText = await getFatalPageText(page);
+  if (fatalPageText) {
+    state.failures.push(`fatal page content${context ? ` after ${context}` : ''}: ${fatalPageText}`);
+  }
+
+  if (state.failures.length > 0) {
+    const details = state.failures.slice(0, 10).join('\n');
+    throw new Error(`BDD hard failure guard detected ${state.failures.length} fatal issue(s)${context ? ` (${context})` : ''}:\n${details}`);
+  }
+}
+
+async function waitForPageReadyAndAssert(page, context = 'page ready') {
+  await waitForPageReady(page);
+  await assertNoHardFailure(page, context);
+}
+
 async function waitForGatewayHomeReady(page) {
   await page.goto(`${BASE_URL}/`);
   await page.waitForLoadState('domcontentloaded');
@@ -355,6 +455,7 @@ async function gotoWithTransientWait(page, url, options = {}) {
 
     if (!transientUnavailable) {
       await page.waitForTimeout(1000);
+      await assertNoHardFailure(page, `navigate to ${url}`);
       return;
     }
 
@@ -411,6 +512,7 @@ async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
   if (!sidebarVisible && fallbackPath) {
     // Last resort: try direct navigation
     await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
+    await assertNoHardFailure(page, `${gatewayId}${fallbackPath}`);
     return;
   }
 
@@ -418,6 +520,7 @@ async function navigateToGatewayPage(page, gatewayId, menuText, fallbackPath) {
   if (fallbackPath) {
     // Use direct URL navigation after SPA is initialized — more reliable than sidebar clicks
     await gotoWithTransientWait(page, `${baseUrl}/${gatewayId}${fallbackPath}`);
+    await assertNoHardFailure(page, `${gatewayId}${fallbackPath}`);
   } else {
     // No fallbackPath — use sidebar navigation
     const parentMenu = SUB_MENU_PARENTS[menuText];
@@ -1216,5 +1319,9 @@ module.exports = {
   sanitizeTestName,
   createTestName,
   createTestIdentifier,
+  attachHardFailureGuard,
+  clearHardFailureGuard,
+  assertNoHardFailure,
+  waitForPageReadyAndAssert,
   BASE_URL,
 };

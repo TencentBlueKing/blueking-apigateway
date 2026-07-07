@@ -152,12 +152,18 @@ const isLoading = ref(false);
 const pathUrl = ref('');
 const tableEmptyType = ref<'empty' | 'search-empty'>('empty');
 
-const historyId = computed(() => route.query.id);
+const historyId = computed(() => Number(route.query.id));
 
 const getComponents = async () => {
   isLoading.value = true;
   try {
-    const res = await getSyncVersion(Number(historyId.value));
+    if (!Number.isFinite(historyId.value)) {
+      [displayData.value, allData.value] = [Object.freeze([]) as any, Object.freeze([]) as any];
+      pagination.total = 0;
+      return;
+    }
+
+    const res = await getSyncVersion(historyId.value);
     [displayData.value, allData.value] = [Object.freeze(res) as any, Object.freeze(res) as any];
     pagination.total = displayData.value?.length;
   }
