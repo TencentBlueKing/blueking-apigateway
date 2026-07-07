@@ -377,6 +377,38 @@ class GatewayHandler:
         return settings.BK_API_URL_TMPL
 
     @staticmethod
+    def get_gateway_id_to_bk_api_url_tmpl(gateway_ids: List[int]) -> Dict[int, str]:
+        gateway_id_to_bk_api_url_tmpl: Dict[int, str] = {}
+        seen_gateway_ids = set()
+        bindings = (
+            GatewayDataPlaneBinding.objects.filter(gateway_id__in=gateway_ids)
+            .select_related("data_plane")
+            .order_by("gateway_id", "data_plane_id")
+        )
+        for binding in bindings:
+            if binding.gateway_id in seen_gateway_ids:
+                continue
+
+            seen_gateway_ids.add(binding.gateway_id)
+            if binding.data_plane.bk_api_url_tmpl:
+                gateway_id_to_bk_api_url_tmpl[binding.gateway_id] = binding.data_plane.bk_api_url_tmpl
+
+        result = {}
+        for gateway_id in gateway_ids:
+            bk_api_url_tmpl = gateway_id_to_bk_api_url_tmpl.get(gateway_id)
+            if bk_api_url_tmpl:
+                result[gateway_id] = bk_api_url_tmpl
+                continue
+
+            logger.warning(
+                "Gateway %s has no data plane with bk_api_url_tmpl configured, falling back to settings.BK_API_URL_TMPL",
+                gateway_id,
+            )
+            result[gateway_id] = settings.BK_API_URL_TMPL
+
+        return result
+
+    @staticmethod
     def get_gateway_domain(gateway: Gateway) -> str:
         return GatewayHandler.get_bk_api_url_tmpl(gateway.id).format(api_name=gateway.name)
 

@@ -20,7 +20,9 @@ from ddf import G
 from django.test import Client
 from django.urls import reverse
 
-from apigateway.core.models import Release
+from apigateway.core.constants import GatewayTypeEnum
+from apigateway.core.models import Gateway, Release
+from apigateway.service.contexts import GatewayAuthContext
 
 
 class TestGatewayListApi:
@@ -35,6 +37,44 @@ class TestGatewayListApi:
 
         assert resp.status_code == 200
         assert len(result["data"]["results"]) >= 1
+
+    def test_list_paginates_after_official_sort(self, request_view, unique_id):
+        normal_gateway = G(
+            Gateway,
+            name=f"zz-normal-{unique_id[:8]}",
+            status=1,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+        )
+        official_gateway = G(
+            Gateway,
+            name=f"aa-official-{unique_id[:8]}",
+            status=1,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+        )
+        G(Release, gateway=normal_gateway)
+        G(Release, gateway=official_gateway)
+        GatewayAuthContext().save(normal_gateway.id, {"api_type": GatewayTypeEnum.CLOUDS_API.value})
+        GatewayAuthContext().save(official_gateway.id, {"api_type": GatewayTypeEnum.OFFICIAL_API.value})
+
+        resp = request_view(
+            method="GET",
+            view_name="docs.gateway.list",
+            data={
+                "keyword": unique_id[:8],
+                "limit": 1,
+            },
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert result["data"]["count"] == 2
+        assert len(result["data"]["results"]) == 1
+        assert result["data"]["results"][0]["id"] == official_gateway.id
+        assert result["data"]["results"][0]["is_official"] is True
 
 
 class TestGatewayRetrieveApi:

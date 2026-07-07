@@ -18,7 +18,7 @@
 #
 from rest_framework import serializers
 
-from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.gateway import GatewayTypeHandler
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
 
@@ -56,7 +56,8 @@ class GatewayOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayOutputSLZ"
 
     def get_api_url(self, obj):
-        return GatewayHandler.get_gateway_domain(obj)
+        gateway_id_to_bk_api_url_tmpl = self.context.get("gateway_id_to_bk_api_url_tmpl")
+        return gateway_id_to_bk_api_url_tmpl[obj.id].format(api_name=obj.name)
 
     def get_is_official(self, obj):
         return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)

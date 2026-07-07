@@ -400,6 +400,40 @@ class TestGatewayHandler:
         result = GatewayHandler.get_docs_url(fake_gateway)
         assert result == ""
 
+    def test_get_gateway_id_to_bk_api_url_tmpl(self, mocker, settings):
+        settings.BK_API_URL_TMPL = "http://default.example.com/{api_name}"
+        mock_logger_warning = mocker.patch("apigateway.biz.gateway.gateway.logger.warning")
+        gateway_with_multiple_data_planes = G(Gateway, tenant_mode="single", tenant_id="default")
+        gateway_with_empty_data_plane_tmpl = G(Gateway, tenant_mode="single", tenant_id="default")
+        gateway_without_data_plane = G(Gateway, tenant_mode="single", tenant_id="default")
+        first_data_plane = G(DataPlane, name="dp-first", bk_api_url_tmpl="http://first.example.com/{api_name}")
+        second_data_plane = G(DataPlane, name="dp-second", bk_api_url_tmpl="http://second.example.com/{api_name}")
+        empty_tmpl_data_plane = G(DataPlane, name="dp-empty", bk_api_url_tmpl="")
+
+        G(GatewayDataPlaneBinding, gateway=gateway_with_multiple_data_planes, data_plane=first_data_plane)
+        G(GatewayDataPlaneBinding, gateway=gateway_with_multiple_data_planes, data_plane=second_data_plane)
+        G(GatewayDataPlaneBinding, gateway=gateway_with_empty_data_plane_tmpl, data_plane=empty_tmpl_data_plane)
+
+        result = GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(
+            [
+                gateway_with_multiple_data_planes.id,
+                gateway_with_empty_data_plane_tmpl.id,
+                gateway_without_data_plane.id,
+            ]
+        )
+
+        assert result == {
+            gateway_with_multiple_data_planes.id: first_data_plane.bk_api_url_tmpl,
+            gateway_with_empty_data_plane_tmpl.id: settings.BK_API_URL_TMPL,
+            gateway_without_data_plane.id: settings.BK_API_URL_TMPL,
+        }
+        assert mock_logger_warning.call_count == 2
+        warning_gateway_ids = {call.args[1] for call in mock_logger_warning.call_args_list}
+        assert warning_gateway_ids == {
+            gateway_with_empty_data_plane_tmpl.id,
+            gateway_without_data_plane.id,
+        }
+
     def test_get_resource_count(self):
         gateway_1 = G(Gateway)
         gateway_2 = G(Gateway)

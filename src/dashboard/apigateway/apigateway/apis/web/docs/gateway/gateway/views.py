@@ -23,7 +23,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
-from apigateway.biz.gateway import GatewayHandler
+from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
 from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
@@ -67,24 +67,36 @@ class GatewayListApi(generics.ListAPIView):
         if not show_plugin_gateway:
             queryset = queryset.exclude(name__startswith=PLUGIN_GATEWAY_PREFIX)
 
-        gateways = list(queryset)
+        gateway_candidates = list(queryset.values("id", "name"))
+        gateway_ids = [gateway["id"] for gateway in gateway_candidates]
+        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
 
-        gateway_ids = [gateway.id for gateway in gateways]
+        sorted_candidates = sorted(
+            gateway_candidates,
+            key=lambda gateway: (
+                -GatewayTypeHandler.is_official(gateway_auth_configs[gateway["id"]].gateway_type),
+                gateway["name"],
+            ),
+        )
+
+        # id__in 查询不能保证按 id 顺序返回结果，因此要做一层转换
+        page = self.paginate_queryset(sorted_candidates)
+        page_gateway_ids = [gateway["id"] for gateway in page]
+        gateway_map = {gateway.id: gateway for gateway in queryset.filter(id__in=page_gateway_ids)}
+        gateways = [gateway_map[gateway_id] for gateway_id in page_gateway_ids]
 
         # FIXME: gateway maintainers to display_name, only ee edition
         output_slz = GatewayOutputSLZ(
             gateways,
             many=True,
             context={
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
-                "gateway_sdks": GatewaySDKHandler.get_sdks(gateway_ids),
+                "gateway_auth_configs": gateway_auth_configs,
+                "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(page_gateway_ids),
+                "gateway_sdks": GatewaySDKHandler.get_sdks(page_gateway_ids),
             },
         )
 
-        # NOTE: 需将官方 SDK 放在前面，但官方标记 is_official 不在 Gateway 表中，因此需要获取数据后，再排序分页
-        # FIXME: 性能问题？
-        page = self.paginate_queryset(sorted(output_slz.data, key=lambda x: (-x["is_official"], x["name"])))
-        return self.get_paginated_response(page)
+        return self.get_paginated_response(output_slz.data)
 
 
 @method_decorator(
@@ -102,6 +114,9 @@ class GatewayRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
             request.gateway,
             context={
                 "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
+                "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(
+                    [request.gateway.id]
+                ),
                 "gateway_sdks": GatewaySDKHandler.get_sdks([request.gateway.id]),
             },
         )
