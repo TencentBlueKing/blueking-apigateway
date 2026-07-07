@@ -182,6 +182,15 @@ class TestCheckSLZ:
         assert not slz.is_valid()
         assert "active" in slz.errors
 
+    def test_null_active_with_passive_invalid(self):
+        data = {
+            "active": None,
+            "passive": {"type": "http", "unhealthy": {"http_failures": 3}},
+        }
+        slz = CheckSLZ(data=data)
+        assert not slz.is_valid()
+        assert "active" in slz.errors
+
     def test_neither_active_nor_passive(self):
         data = {}
         slz = CheckSLZ(data=data)
