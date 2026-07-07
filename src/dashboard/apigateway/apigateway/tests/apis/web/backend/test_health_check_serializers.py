@@ -176,18 +176,17 @@ class TestCheckSLZ:
         assert slz.validated_data["active"] is not None
         assert slz.validated_data.get("passive") is None
 
-    def test_passive_only(self):
+    def test_passive_only_invalid(self):
         data = {"passive": {"type": "http", "unhealthy": {"http_failures": 3}}}
         slz = CheckSLZ(data=data)
-        assert slz.is_valid()
-        assert slz.validated_data["passive"] is not None
-        assert slz.validated_data.get("active") is None
+        assert not slz.is_valid()
+        assert "active" in slz.errors
 
     def test_neither_active_nor_passive(self):
         data = {}
         slz = CheckSLZ(data=data)
         assert not slz.is_valid()
-        assert "至少需要配置" in str(slz.errors)
+        assert "active" in slz.errors
 
     def test_active_with_full_config(self):
         data = {
@@ -203,13 +202,19 @@ class TestCheckSLZ:
         slz = CheckSLZ(data=data)
         assert slz.is_valid()
 
-    def test_passive_with_full_config(self):
+    def test_active_with_passive_full_config(self):
         data = {
+            "active": {
+                "type": "http",
+                "timeout": 5,
+                "http_path": "/health",
+                "healthy": {"interval": 10, "successes": 2, "http_statuses": [200, 201]},
+            },
             "passive": {
                 "type": "http",
                 "healthy": {"successes": 2, "http_statuses": [200]},
                 "unhealthy": {"http_failures": 3, "tcp_failures": 2, "http_statuses": [500, 502]},
-            }
+            },
         }
         slz = CheckSLZ(data=data)
         assert slz.is_valid()
