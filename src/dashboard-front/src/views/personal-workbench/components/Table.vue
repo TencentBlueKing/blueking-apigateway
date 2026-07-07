@@ -45,6 +45,7 @@
       :api-method="getTableData"
       :columns="tableColumns"
       :row-class-name="getRowClass"
+      :cache-identifier="cacheIdentifier"
       @row-click="handleRowClick"
       @filter-change="handleFilterChange"
       @selection-change="handleSelectionChange"
@@ -560,6 +561,7 @@ const tableColumns = computed(() => {
 const getAppliedBy = computed(() =>
   Array.isArray(filterData.value.applied_by) ? filterData.value.applied_by.join() : filterData.value.applied_by,
 );
+const cacheIdentifier = computed(() => `personal-workbench-${applyStatus}-${activeTab}`);
 
 const getList = () => {
   const params = {
