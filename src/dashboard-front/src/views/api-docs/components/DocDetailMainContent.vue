@@ -77,9 +77,31 @@
             </span>
           </section>
           <section class="basic-cell">
-            <span>
+            <span v-if="curTab === 'gateway'">
               <span
-                v-bk-tooltips="resourcePermTooltips"
+                v-bk-tooltips="t('蓝鲸应用需申请资源访问权限')"
+                class="label"
+              >
+                {{ t('校验应用权限') }}
+              </span>：
+              <span v-if="api.verified_app_required && api.resource_perm_required">
+                <span>{{ t('是') }}</span>
+                <span
+                  v-if="api.allow_apply_permission"
+                  v-bk-tooltips="t('需要在开发者中心申请该网关API权限')"
+                  class="border-b-1px border-b-dashed border-b-#979ba5 cursor-pointer"
+                >{{ t('（允许申请权限）') }}</span>
+                <span
+                  v-else
+                  v-bk-tooltips="t('只能由网关管理员主动授权')"
+                  class="border-b-1px border-b-dashed border-b-#979ba5 cursor-pointer"
+                >{{ t('（只能主动授权）') }}</span>
+              </span>
+              <span v-else>{{ t('否') }}</span>
+            </span>
+            <span v-if="curTab === 'component'">
+              <span
+                v-bk-tooltips="t('应用访问该组件API前，是否需要在开发者中心申请该组件API权限')"
                 class="label"
               >
                 {{ t('权限申请') }}
@@ -185,12 +207,6 @@ const { y } = useScroll(detailWrapRef, {
 const appVerifiedTooltips = computed(() => {
   if (curTab?.value === 'gateway') return t('应用访问该网关API时，是否需提供应用认证信息');
   if (curTab?.value === 'component') return t('应用访问该组件API时，是否需提供应用认证信息');
-  return '--';
-});
-
-const resourcePermTooltips = computed(() => {
-  if (curTab?.value === 'gateway') return t('应用访问该网关API前，是否需要在开发者中心申请该网关API权限');
-  if (curTab?.value === 'component') return t('应用访问该组件API前，是否需要在开发者中心申请该组件API权限');
   return '--';
 });
 
@@ -327,7 +343,7 @@ $code-color: #63656e;
       .res-basics {
         display: grid;
         margin-bottom: 16px;
-        grid-template-columns: 280px 280px;
+        grid-template-columns: 1fr 1fr;
         grid-template-rows: 40px 40px;
 
         @container (width < 640px) {
