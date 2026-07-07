@@ -102,8 +102,6 @@ type Database struct {
 	MaxOpenConns          int
 	MaxIdleConns          int
 	ConnMaxLifetimeSecond int
-	// connect: s
-	Timeout int
 	// tls
 	TLS TLS
 }
