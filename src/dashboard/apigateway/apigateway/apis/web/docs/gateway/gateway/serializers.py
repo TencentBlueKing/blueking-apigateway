@@ -56,6 +56,10 @@ class GatewayOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.docs.gateway.gateway.serializers.GatewayOutputSLZ"
 
     def get_api_url(self, obj):
+        gateway_id_to_bk_api_url_tmpl = self.context.get("gateway_id_to_bk_api_url_tmpl")
+        if gateway_id_to_bk_api_url_tmpl is not None:
+            return gateway_id_to_bk_api_url_tmpl[obj.id].format(api_name=obj.name)
+
         return GatewayHandler.get_gateway_domain(obj)
 
     def get_is_official(self, obj):
