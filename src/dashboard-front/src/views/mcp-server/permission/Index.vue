@@ -129,6 +129,7 @@
           :filter-value="filterData"
           :api-method="getTableData"
           :columns="tableColumns"
+          :cache-identifier="cacheIdentifier"
           :no-search-fields="['state']"
           :table-empty-type="tableEmptyType"
           @filter-icon-click="handleFilterIconClick"
@@ -302,6 +303,7 @@ const curAction = ref<IPermissionApprovalAction>({
   status: '',
   comment: '',
 });
+const cacheIdentifier = ref('permission-apply-unprocessed');
 
 let filterTimer: number | null = null;
 const filterFields = ['bk_app_code', 'mcp_server_id', 'grant_type'] as string[];
@@ -671,6 +673,7 @@ const handleTabChange = (name: string) => {
   if (name === filterData.value.state) {
     return;
   }
+  cacheIdentifier.value = `permission-apply-${name}`;
   filterData.value.state = name;
   handleClearFilter();
   getApplicant();
