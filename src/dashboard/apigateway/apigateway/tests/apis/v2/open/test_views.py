@@ -213,6 +213,44 @@ class TestMCPServerAppPermissionRecordListApi:
             assert "approval_url" in item
             assert f"/{fake_gateway.id}/mcp/permission?serverId={mcp_server.id}" in item["approval_url"]
 
+    def test_list_returns_itsm_approval_url(self, request_view, fake_gateway, settings):
+        """测试获取 MCP Server 权限申请记录时优先返回 ITSM 审批链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/{gateway_id}/mcp/permission?serverId={mcp_server_id}"
+        )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test_app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            applied_by="test_user",
+            reason="test reason",
+            itsm_ticket_id="102025092210362600001802",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.app.permissions.apply-records.list",
+            app=mock.MagicMock(app_code="test"),
+            data={
+                "bk_app_code": "test_app",
+            },
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        assert result["data"][0]["approval_url"] == "http://itsm.example.com/ticket/102025092210362600001802"
+
 
 class TestGetDatetimeApi:
     def test_get_datetime_with_default_timezone(self, request_view, settings):
