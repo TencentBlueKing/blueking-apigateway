@@ -44,7 +44,7 @@
         <div class="flex flex-col gap-4px">
           <AgUserDisplayName
             :is-enable-display-name="isEnableDisplayName"
-            class="flex flex-col flex-shrink-0 gap-4px max-w-800px"
+            :class="`flex flex-col flex-shrink-0 gap-4px max-w-800px max-h-${popoverMaxHeight}px overflow-y-auto`"
           >
             <template #customDisplayName>
               <BkTag
@@ -75,12 +75,14 @@ interface IProps {
   data: string[]
   popoverProps?: Record<string, any>
   isMember?: boolean
+  popoverMaxHeight?: number
 }
 
 const {
   data,
   popoverProps = {},
   isMember = false,
+  popoverMaxHeight = 300,
 } = defineProps<IProps>();
 
 const featureFlagStore = useFeatureFlag();
