@@ -158,12 +158,20 @@ $ bk-cli context init \\
   --tenant_id=${userStore.info.tenant_id || 'system'}`;
   }
 
-  const secondCommand = `
+  let secondCommand = `
 
 # ${t('可选：设置默认请求超时（默认 60s，最大 300s）')}
 $ bk-cli context init \\
-  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}" \\
+  --bk_api_url_tmpl="${envStore.env.CLI.BK_API_URL_TMPL}" \\`;
+
+  if (featureFlagStore.isTenantMode) {
+    secondCommand += `
+  --tenant_id=${userStore.info.tenant_id || 'system'}`;
+  }
+
+  secondCommand += `
   --timeout 90s`;
+
   return `${firstCommand}${secondCommand}`;
 });
 
