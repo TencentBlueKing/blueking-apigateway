@@ -1477,7 +1477,7 @@
     description_en: Add, set, or remove request query string parameters.
     is_public: true
     scope: resource
-    priority: 17410
+    priority: 17435
     _tags: "转换,Transformation"
     schema:
     - bk-query-string-rewrite
