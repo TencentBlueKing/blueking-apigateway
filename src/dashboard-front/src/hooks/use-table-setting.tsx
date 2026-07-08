@@ -55,9 +55,6 @@ export function useTableSetting(
           console.error(e);
         }
       }
-      else {
-        console.warn(`table(cacheIdentifier: ${cacheIdentifier}) settings are not initialized yet`);
-      }
     }
   };
 
