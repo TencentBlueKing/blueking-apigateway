@@ -19,6 +19,7 @@
 import json
 import time
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
@@ -82,6 +83,34 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+
+
+class TestGatewayOutputSLZ:
+    @pytest.mark.parametrize(
+        "output_slz_cls",
+        [
+            inner_serializers.GatewayListOutputSLZ,
+            inner_serializers.GatewayRetrieveOutputSLZ,
+        ],
+    )
+    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.apis.v2.inner.serializers.query_display_names_for_readonly")
+    def test_converts_maintainers_for_cross_tenant_gateway(
+        self,
+        mock_query_display_names_for_readonly,
+        fake_gateway,
+        output_slz_cls,
+    ):
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+
+        slz = output_slz_cls(fake_gateway)
+
+        assert slz.data["maintainers"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
+        mock_query_display_names_for_readonly.reset_mock()
 
 
 class TestGatewayAppPermissionApplyCreateApi:

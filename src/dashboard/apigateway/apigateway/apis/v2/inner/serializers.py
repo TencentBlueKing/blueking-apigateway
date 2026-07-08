@@ -44,6 +44,8 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
+from apigateway.components.bkuser import query_display_names_for_readonly
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
@@ -65,6 +67,14 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
     return context.get("categories", {}).get(obj.id, [])
 
 
+def _get_gateway_maintainers_display_names(obj) -> List[str]:
+    if not settings.ENABLE_MULTI_TENANT_MODE:
+        return obj.maintainers
+
+    tenant_id = get_tenant_id_for_gateway_maintainers(obj.tenant_mode, obj.tenant_id)
+    return query_display_names_for_readonly(tenant_id, obj.maintainers)
+
+
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
@@ -81,7 +91,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
@@ -98,7 +108,7 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return obj.maintainers
+        return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
