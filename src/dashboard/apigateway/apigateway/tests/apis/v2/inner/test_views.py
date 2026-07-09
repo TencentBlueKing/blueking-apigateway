@@ -68,6 +68,66 @@ class TestGatewayListApi:
         assert resp.status_code == 200
         assert len(result["data"]) == 2
 
+    @patch("apigateway.apis.v2.inner.views.query_display_names_for_readonly")
+    def test_list_batches_maintainer_lookup_by_tenant(
+        self,
+        mock_query_display_names_for_readonly,
+        request_factory,
+        settings,
+        skip_view_permissions_check,
+    ):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        another_gateway = G(
+            Gateway,
+            name="gateway-b",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+            _maintainers="bob",
+        )
+        gateway = G(
+            Gateway,
+            name="gateway-a",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+            _maintainers="alice;bob",
+        )
+        G(Release, gateway=gateway)
+        G(Release, gateway=Gateway.objects.get(name="gateway-b"))
+
+        mock_query_display_names_for_readonly.side_effect = lambda tenant_id, bk_usernames: [
+            bk_username.title() for bk_username in bk_usernames
+        ]
+
+        request = request_factory.get("")
+        request.app = mock.MagicMock(app_code="test")
+        request.tenant_id = "default"
+        response = inner_views.GatewayListApi.as_view()(request)
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"] == [
+            {
+                "id": gateway.id,
+                "name": "gateway-a",
+                "description": gateway.description,
+                "maintainers": ["Alice", "Bob"],
+                "doc_maintainers": gateway.doc_maintainers,
+            },
+            {
+                "id": another_gateway.id,
+                "name": "gateway-b",
+                "description": another_gateway.description,
+                "maintainers": ["Bob"],
+                "doc_maintainers": another_gateway.doc_maintainers,
+            },
+        ]
+        mock_query_display_names_for_readonly.assert_called_once_with("default", ["alice", "bob"])
+
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
@@ -110,7 +170,32 @@ class TestGatewayOutputSLZ:
 
         assert slz.data["maintainers"] == ["张三", "李四"]
         mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
-        mock_query_display_names_for_readonly.reset_mock()
+
+    @pytest.mark.parametrize(
+        "output_slz_cls",
+        [
+            inner_serializers.GatewayListOutputSLZ,
+            inner_serializers.GatewayRetrieveOutputSLZ,
+        ],
+    )
+    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch(
+        "apigateway.apis.v2.inner.serializers.query_display_names_for_readonly",
+        side_effect=RuntimeError("bk-user unavailable"),
+    )
+    def test_falls_back_to_original_maintainers_when_display_name_lookup_fails(
+        self,
+        _mock_query_display_names_for_readonly,
+        fake_gateway,
+        output_slz_cls,
+    ):
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+
+        slz = output_slz_cls(fake_gateway)
+
+        assert slz.data["maintainers"] == ["7idwx3b7nzk6xigs", "bbb"]
 
 
 class TestGatewayAppPermissionApplyCreateApi:
@@ -1635,15 +1720,23 @@ class TestAppRequestLogListApi:
         mock_search_logs.assert_called_once()
 
     @pytest.mark.parametrize(
-        "data",
+        "case",
         [
-            {},
-            {"time_start": int(time.time()) - 181 * 24 * 3600, "time_end": int(time.time()) - 60},
-            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) - 3600},
-            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) + 60},
+            "missing_time_range",
+            "time_start_too_old",
+            "time_end_not_greater",
+            "time_end_in_future",
         ],
     )
-    def test_reject_invalid_time_range(self, request_view, data):
+    def test_reject_invalid_time_range(self, request_view, case):
+        now = int(time.time())
+        data = {
+            "missing_time_range": {},
+            "time_start_too_old": {"time_start": now - 181 * 24 * 3600, "time_end": now - 60},
+            "time_end_not_greater": {"time_start": now - 3600, "time_end": now - 3600},
+            "time_end_in_future": {"time_start": now - 3600, "time_end": now + 60},
+        }[case]
+
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_request_logs",
