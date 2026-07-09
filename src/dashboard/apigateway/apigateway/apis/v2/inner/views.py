@@ -19,7 +19,6 @@
 import logging
 import operator
 import re
-from collections import defaultdict
 from typing import Dict
 
 from blue_krill.async_utils.django_utils import apply_async_on_commit
@@ -60,15 +59,12 @@ from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.components.bkuser import query_display_names_for_readonly
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils import time as time_utils
-from apigateway.utils.list import chunk_list
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -87,41 +83,6 @@ def _validate_resource_ids_in_released_resources(resource_ids: list[int], releas
     released_resource_ids = {resource["id"] for resource in released_resources}
     if set(resource_ids) - released_resource_ids:
         raise ValidationError({"resource_ids": [_("指定的部分资源 ID 不属于当前网关已发布资源。")]})
-
-
-def _build_gateway_maintainers_display_names_map(gateways) -> Dict[int, list[str]]:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return {}
-
-    tenant_usernames: Dict[str, set[str]] = defaultdict(set)
-    gateway_tenant_ids: Dict[int, str] = {}
-    for gateway in gateways:
-        tenant_id = get_tenant_id_for_gateway_maintainers(gateway.tenant_mode, gateway.tenant_id)
-        gateway_tenant_ids[gateway.id] = tenant_id
-        tenant_usernames[tenant_id].update(gateway.maintainers)
-
-    tenant_display_name_maps: Dict[str, Dict[str, str]] = {}
-    for tenant_id, bk_usernames in tenant_usernames.items():
-        try:
-            ordered_bk_usernames = sorted(bk_usernames)
-            display_name_map: Dict[str, str] = {}
-            for bk_username_chunk in chunk_list(ordered_bk_usernames, 100):
-                display_names = query_display_names_for_readonly(tenant_id, bk_username_chunk)
-                display_name_map.update(zip(bk_username_chunk, display_names))
-        except Exception:  # pylint: disable=broad-except
-            logger.exception("failed to batch query gateway maintainer display names: tenant_id=%s", tenant_id)
-            tenant_display_name_maps[tenant_id] = {}
-            continue
-
-        tenant_display_name_maps[tenant_id] = display_name_map
-
-    return {
-        gateway.id: [
-            tenant_display_name_maps[gateway_tenant_ids[gateway.id]].get(bk_username, bk_username)
-            for bk_username in gateway.maintainers
-        ]
-        for gateway in gateways
-    }
 
 
 @method_decorator(
@@ -169,15 +130,7 @@ class GatewayListApi(generics.ListAPIView):
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
 
-        gateways = list(queryset)
-        output_slz = self.get_serializer(
-            gateways,
-            many=True,
-            context={
-                **self.get_serializer_context(),
-                "gateway_maintainers_display_names": _build_gateway_maintainers_display_names_map(gateways),
-            },
-        )
+        output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
 
         return OKJsonResponse(data=output_data)

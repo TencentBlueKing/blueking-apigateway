@@ -67,16 +67,12 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
     return context.get("categories", {}).get(obj.id, [])
 
 
-def _get_gateway_maintainers_display_names(obj, context=None) -> List[str]:
+def _get_gateway_maintainers_display_names(obj) -> List[str]:
     if not settings.ENABLE_MULTI_TENANT_MODE:
         return obj.maintainers
 
-    # List serializers must preload this map in context to avoid N+1 bk-user lookups.
-    # The direct query fallback is only for retrieve / single-object serialization.
-    display_names = (context or {}).get("gateway_maintainers_display_names", {}).get(obj.id)
-    if display_names is not None:
-        return display_names
-
+    # 已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
+    # 这次先保留现状，后续如需优化再改为视图层批量预取。
     tenant_id = get_tenant_id_for_gateway_maintainers(obj.tenant_mode, obj.tenant_id)
     try:
         return query_display_names_for_readonly(tenant_id, obj.maintainers)
@@ -101,7 +97,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj, self.context)
+        return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
@@ -118,7 +114,7 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj, self.context)
+        return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
