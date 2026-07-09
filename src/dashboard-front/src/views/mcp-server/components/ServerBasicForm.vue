@@ -51,12 +51,12 @@
       {
         required: true,
         message: t('服务名称不能为空'),
-        trigger: 'change',
+        trigger: formTrigger
       },
       {
         validator: (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/?.test(value),
         message: t('服务名称只能包含小写字母、数字和短横线'),
-        trigger: 'change',
+        trigger: formTrigger
       }
     ]"
     class="custom-form-item-required"
@@ -79,7 +79,7 @@
       {
         validator: (value: string) => value?.trim()?.length >= 3,
         message: t('服务展示名不能小于3个字符'),
-        trigger: 'change',
+        trigger: formTrigger
       },
     ]"
     class="custom-form-item-required"
@@ -99,7 +99,7 @@
       {
         validator: (value: string) => value?.trim()?.length >= 10,
         message: t('描述不能小于10个字符'),
-        trigger: 'change',
+        trigger: formTrigger
       },
     ]"
     class="custom-form-item-required"
@@ -261,6 +261,7 @@ interface IProps {
   stageList?: IStageListItem[]
   noValidStage?: boolean
   isEditMode?: boolean
+  isShowSlider?: boolean
 }
 
 interface IEmits { 'stage-change': [number] }
@@ -275,6 +276,7 @@ const {
   categoriesList = [],
   noValidStage = false,
   isEditMode = false,
+  isShowSlider = false,
 } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
@@ -309,6 +311,8 @@ const previewUrl = computed(() => {
 
   return `${prefix || ''}/${serverNamePrefix.value}${formData.value.name}/${protocolUrl}`;
 });
+// 重置表单数据会触发change, formTrigger 用于动态设置表单验证触发事件，isShowSlider 为 true 时使用 'change'，否则使用 'blur'
+const formTrigger = computed(() => (isShowSlider ? 'change' : 'blur'));
 
 const handleStageSelectChange = (value: number) => {
   formData.value.stage_id = value;

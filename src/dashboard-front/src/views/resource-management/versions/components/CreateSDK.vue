@@ -26,7 +26,7 @@
       quick-close
       width="600"
       class="dialog-scroll-y"
-      @closed="() => (dialogConfig.isShow = false)"
+      @closed="handleClosed"
       @confirm="handleCreate"
     >
       <BkAlert
@@ -204,7 +204,7 @@ const handleCreate = async () => {
       message: t('创建成功'),
       theme: 'success',
     });
-    dialogConfig.isShow = false;
+    handleClosed();
     setTimeout(() => {
       emit('done');
     }, 300);
@@ -212,6 +212,11 @@ const handleCreate = async () => {
   finally {
     dialogConfig.loading = false;
   }
+};
+
+const handleClosed = () => {
+  dialogConfig.isShow = false;
+  baseInfoRef.value?.clearValidate();
 };
 
 // 显示弹窗

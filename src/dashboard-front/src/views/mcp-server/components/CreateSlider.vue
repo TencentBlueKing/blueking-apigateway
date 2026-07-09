@@ -52,6 +52,7 @@
               <ServerBasicForm
                 ref="serverBasicFormRef"
                 v-model:form-data="formData"
+                :is-show-slider="isShow"
                 :stage-list="stageList"
                 :no-valid-stage="noValidStage"
                 :is-edit-mode="isEditMode"
