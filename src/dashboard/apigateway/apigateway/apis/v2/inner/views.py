@@ -68,6 +68,7 @@ from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils import time as time_utils
+from apigateway.utils.list import chunk_list
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import OKJsonResponse
 
@@ -103,13 +104,16 @@ def _build_gateway_maintainers_display_names_map(gateways) -> Dict[int, list[str
     for tenant_id, bk_usernames in tenant_usernames.items():
         try:
             ordered_bk_usernames = sorted(bk_usernames)
-            display_names = query_display_names_for_readonly(tenant_id, ordered_bk_usernames)
+            display_name_map: Dict[str, str] = {}
+            for bk_username_chunk in chunk_list(ordered_bk_usernames, 100):
+                display_names = query_display_names_for_readonly(tenant_id, bk_username_chunk)
+                display_name_map.update(zip(bk_username_chunk, display_names))
         except Exception:  # pylint: disable=broad-except
             logger.exception("failed to batch query gateway maintainer display names: tenant_id=%s", tenant_id)
             tenant_display_name_maps[tenant_id] = {}
             continue
 
-        tenant_display_name_maps[tenant_id] = dict(zip(ordered_bk_usernames, display_names))
+        tenant_display_name_maps[tenant_id] = display_name_map
 
     return {
         gateway.id: [

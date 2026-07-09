@@ -128,6 +128,80 @@ class TestGatewayListApi:
         ]
         mock_query_display_names_for_readonly.assert_called_once_with("default", ["alice", "bob"])
 
+    @patch("apigateway.apis.v2.inner.views.query_display_names_for_readonly")
+    def test_list_chunks_maintainer_lookup_when_tenant_usernames_exceed_limit(
+        self,
+        mock_query_display_names_for_readonly,
+        request_factory,
+        settings,
+        skip_view_permissions_check,
+    ):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        maintainers = [f"user{i:03d}" for i in range(101)]
+        gateway = G(
+            Gateway,
+            name="gateway-a",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+            _maintainers=";".join(maintainers),
+        )
+        G(Release, gateway=gateway)
+
+        def _mock_query(tenant_id, bk_usernames):
+            if len(bk_usernames) > 100:
+                raise ValueError("bk_usernames should not exceed 100")
+
+            return [bk_username.title() for bk_username in bk_usernames]
+
+        mock_query_display_names_for_readonly.side_effect = _mock_query
+
+        request = request_factory.get("")
+        request.app = mock.MagicMock(app_code="test")
+        request.tenant_id = "default"
+        response = inner_views.GatewayListApi.as_view()(request)
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"][0]["maintainers"] == [bk_username.title() for bk_username in maintainers]
+        assert mock_query_display_names_for_readonly.call_count == 2
+        assert [len(call.args[1]) for call in mock_query_display_names_for_readonly.call_args_list] == [100, 1]
+
+    @patch(
+        "apigateway.apis.v2.inner.views.query_display_names_for_readonly",
+        side_effect=RuntimeError("bk-user unavailable"),
+    )
+    def test_list_falls_back_to_original_maintainers_when_batch_lookup_fails(
+        self,
+        _mock_query_display_names_for_readonly,
+        request_factory,
+        settings,
+        skip_view_permissions_check,
+    ):
+        settings.ENABLE_MULTI_TENANT_MODE = True
+
+        gateway = G(
+            Gateway,
+            name="gateway-a",
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+            tenant_mode="single",
+            tenant_id="default",
+            _maintainers="alice;bob",
+        )
+        G(Release, gateway=gateway)
+
+        request = request_factory.get("")
+        request.app = mock.MagicMock(app_code="test")
+        request.tenant_id = "default"
+        response = inner_views.GatewayListApi.as_view()(request)
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"][0]["maintainers"] == ["alice", "bob"]
+
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):

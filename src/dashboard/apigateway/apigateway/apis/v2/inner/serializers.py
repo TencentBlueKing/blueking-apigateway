@@ -71,6 +71,8 @@ def _get_gateway_maintainers_display_names(obj, context=None) -> List[str]:
     if not settings.ENABLE_MULTI_TENANT_MODE:
         return obj.maintainers
 
+    # List serializers must preload this map in context to avoid N+1 bk-user lookups.
+    # The direct query fallback is only for retrieve / single-object serialization.
     display_names = (context or {}).get("gateway_maintainers_display_names", {}).get(obj.id)
     if display_names is not None:
         return display_names
