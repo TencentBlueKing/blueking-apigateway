@@ -49,6 +49,7 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
+from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
@@ -1304,6 +1305,22 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
 
+    def _convert_gateway_user_to_display_name(self, username: str) -> str:
+        if not username:
+            return ""
+        return ResourcePermissionHandler.convert_gateway_user_to_display_name(
+            username,
+            self.request.gateway.tenant_mode,
+            self.request.gateway.tenant_id,
+        )
+
+    def _get_export_grant_type_display(self, grant_type: str) -> str:
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:
+            return _("主动授权")
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.APPLY.value:
+            return _("申请审批")
+        return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(grant_type))
+
     def _get_csv_content(self, data):
         headers = [
             "mcp_server_name",
@@ -1326,10 +1343,12 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             {
                 "mcp_server_name": item["mcp_server"]["name"],
                 "bk_app_code": item["bk_app_code"],
-                "applied_by": item["applied_by"],
+                "applied_by": self._convert_gateway_user_to_display_name(item["applied_by"])
+                if item["grant_type"] == MCPServerAppPermissionGrantTypeEnum.GRANT.value
+                else item["applied_by"],
                 "effective_time": item["effective_time"],
-                "handled_by": item["handled_by"],
-                "grant_type_display": item["grant_type_display"],
+                "handled_by": self._convert_gateway_user_to_display_name(item["handled_by"]),
+                "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
             }
             for item in data
         ]

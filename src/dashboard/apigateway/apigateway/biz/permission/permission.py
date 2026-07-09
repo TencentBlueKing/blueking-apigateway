@@ -204,3 +204,23 @@ class ResourcePermissionHandler:
             return applied_by
 
         return applied_by
+
+    @staticmethod
+    def convert_gateway_user_to_display_name(username: str, gateway_tenant_mode: str, gateway_tenant_id: str) -> str:
+        """
+        将网关侧操作人转换为显示名称，用于导出审批人/授权人的展示
+        """
+        if not settings.ENABLE_MULTI_TENANT_MODE or not username:
+            return username
+
+        if gateway_tenant_mode != TenantModeEnum.GLOBAL.value:
+            return username
+
+        try:
+            display_names = query_display_names_cached(TENANT_ID_OPERATION, username)
+            if display_names:
+                return display_names[0].get("display_name", username)
+        except Exception:  # pylint: disable=broad-except
+            return username
+
+        return username
