@@ -20,9 +20,7 @@ from ddf import G
 from django.test import Client
 from django.urls import reverse
 
-from apigateway.core.constants import GatewayTypeEnum
 from apigateway.core.models import Gateway, Release
-from apigateway.service.contexts import GatewayAuthContext
 
 
 class TestGatewayListApi:
@@ -52,13 +50,12 @@ class TestGatewayListApi:
             name=f"aa-official-{unique_id[:8]}",
             status=1,
             is_public=True,
+            is_official=True,
             tenant_mode="single",
             tenant_id="default",
         )
         G(Release, gateway=normal_gateway)
         G(Release, gateway=official_gateway)
-        GatewayAuthContext().save(normal_gateway.id, {"api_type": GatewayTypeEnum.CLOUDS_API.value})
-        GatewayAuthContext().save(official_gateway.id, {"api_type": GatewayTypeEnum.OFFICIAL_API.value})
 
         resp = request_view(
             method="GET",

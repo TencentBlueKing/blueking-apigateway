@@ -19,7 +19,6 @@ from .app_binding import GatewayAppBindingHandler
 from .gateway import OPERATION_STATUS_DELTA_DAYS, GatewayData, GatewayHandler, GatewaySaver
 from .label import GatewayLabelHandler
 from .related_app import GatewayRelatedAppHandler
-from .type import GatewayTypeHandler
 
 __all__ = [
     # constant
@@ -32,7 +31,6 @@ __all__ = [
     "GatewayLabelHandler",
     "GatewayRelatedAppHandler",
     "GatewaySaver",
-    "GatewayTypeHandler",
     # functions
     # others
 ]

@@ -129,7 +129,6 @@ class GatewayListCreateApi(generics.ListCreateAPIView):
             context={
                 "resource_count": GatewayHandler.get_resource_count(gateway_ids),
                 "stages": GatewayHandler.get_stages_with_release_status(gateway_ids),
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids),
                 "operation_statuses": operation_statuses,
             },
         )

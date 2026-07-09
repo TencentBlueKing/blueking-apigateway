@@ -61,6 +61,8 @@ class Command(BaseCommand):
             return
 
         GatewayHandler.save_auth_config(esb_gateway.id, **esb_gateway_auth_config)
+        esb_gateway.is_official = True
+        esb_gateway.save(update_fields=["is_official", "updated_time"])
 
         print(f"gateway(name={settings.BK_ESB_GATEWAY_NAME}) auth config updated")
 

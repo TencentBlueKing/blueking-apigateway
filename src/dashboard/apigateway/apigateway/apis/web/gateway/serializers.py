@@ -22,7 +22,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from apigateway.biz.constants import APP_CODE_PATTERN
-from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.validators import GatewayAPIDocMaintainerValidator
 from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaintainerTypeEnum
 from apigateway.common.django.validators import NameValidator
@@ -78,7 +78,9 @@ class GatewayListOutputSLZ(serializers.Serializer):
         help_text="网关类型，0: 普通网关，1：可编程网关",
     )
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开，true：公开，false：不公开")
-    is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
+    is_official = serializers.BooleanField(
+        read_only=True, help_text="是否为官方网关，true：官方网关，false：非官方网关"
+    )
     resource_count = serializers.SerializerMethodField(help_text="网关下资源的数量")
     stages = serializers.SerializerMethodField(help_text="网关环境列表，其中的 released 表示环境是否已发布")
 
@@ -92,12 +94,6 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.gateway.serializers.GatewayListOutputSLZ"
-
-    def get_is_official(self, obj):
-        if obj.id not in self.context["gateway_auth_configs"]:
-            return False
-
-        return GatewayTypeHandler.is_official(self.context["gateway_auth_configs"][obj.id].gateway_type)
 
     def get_resource_count(self, obj):
         return self.context["resource_count"].get(obj.id, 0)
@@ -232,7 +228,9 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
     description = SerializerTranslatedField(
         default_field="description_i18n", allow_blank=True, allow_null=True, help_text="网关描述"
     )
-    is_official = serializers.SerializerMethodField(help_text="是否为官方网关，true：官方网关，false：非官方网关")
+    is_official = serializers.BooleanField(
+        read_only=True, help_text="是否为官方网关，true：官方网关，false：非官方网关"
+    )
     api_domain = serializers.SerializerMethodField(help_text="网关访问域名")
     docs_url = serializers.SerializerMethodField(help_text="文档地址")
     public_key_fingerprint = serializers.SerializerMethodField(help_text="公钥 (指纹)")
@@ -319,9 +317,6 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
 
     def get_allow_update_gateway_auth(self, obj):
         return self.context["auth_config"].allow_update_gateway_auth
-
-    def get_is_official(self, obj):
-        return GatewayTypeHandler.is_official(self.context["auth_config"].gateway_type)
 
     def get_bk_app_codes(self, obj):
         return self.context["bk_app_codes"]

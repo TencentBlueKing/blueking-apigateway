@@ -99,6 +99,7 @@ class TestGatewaySaver:
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
+        assert gateway.is_official is False
 
         # update
         saver = GatewaySaver(
@@ -108,6 +109,7 @@ class TestGatewaySaver:
 
         assert gateway.id == Gateway.objects.get(name=unique_gateway_name).id
         assert gateway.status == 0
+        assert gateway.is_official is False
 
     def test_create(self, settings, unique_gateway_name, default_data_plane):
         settings.DEFAULT_USER_AUTH_TYPE = "default"
@@ -141,6 +143,7 @@ class TestGatewaySaver:
         assert gateway.maintainers == ["admin"]
         assert gateway.status == 1
         assert gateway.is_public is True
+        assert gateway.is_official is True
         assert gateway.tenant_mode == "single"
         assert gateway.tenant_id == "default"
 
@@ -184,6 +187,7 @@ class TestGatewaySaver:
         assert gateway.maintainers == ["admin", "admin2"]
         assert gateway.status == 1
         assert gateway.is_public is True
+        assert gateway.is_official is True
 
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert auth_config["api_type"] == 1
@@ -193,6 +197,25 @@ class TestGatewaySaver:
         assert "allow_delete_sensitive_params" not in auth_config
 
         assert GatewayRelatedApp.objects.filter(gateway=gateway).count() == 0
+
+    def test_update_without_gateway_type_preserves_is_official(self, fake_gateway):
+        fake_gateway.is_official = True
+        fake_gateway.save()
+
+        saver = GatewaySaver(
+            fake_gateway.id,
+            GatewayData(
+                name=fake_gateway.name,
+                description="desc",
+                maintainers=["admin"],
+                status=0,
+                is_public=True,
+            ),
+        )
+        gateway = saver.save()
+
+        assert gateway.is_official is True
+        assert Gateway.objects.get(id=fake_gateway.id).is_official is True
 
     def test_get_gateway_unfiltered_sensitive_keys(self, settings):
         settings.SPECIAL_GATEWAY_AUTH_CONFIGS = {"foo": {"unfiltered_sensitive_keys": ["bar"]}}

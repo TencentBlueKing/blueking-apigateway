@@ -100,6 +100,7 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
     _extra_info = models.JSONField(db_column="extra_info", default=dict, blank=True, null=True)
 
     is_public = models.BooleanField(default=False)
+    is_official = models.BooleanField(default=False)
 
     # for lifecycle management, mark the gateway is deprecated before doing delete operation
     is_deprecated = models.BooleanField(default=False)

@@ -23,12 +23,11 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
 from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
-from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.core.constants import PLUGIN_GATEWAY_PREFIX
-from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.responses import OKJsonResponse
 
 from .serializers import GatewayOutputSLZ, GatewayQueryInputSLZ
@@ -67,14 +66,12 @@ class GatewayListApi(generics.ListAPIView):
         if not show_plugin_gateway:
             queryset = queryset.exclude(name__startswith=PLUGIN_GATEWAY_PREFIX)
 
-        gateway_candidates = list(queryset.values("id", "name"))
-        gateway_ids = [gateway["id"] for gateway in gateway_candidates]
-        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
+        gateway_candidates = list(queryset.values("id", "name", "is_official"))
 
         sorted_candidates = sorted(
             gateway_candidates,
             key=lambda gateway: (
-                -GatewayTypeHandler.is_official(gateway_auth_configs[gateway["id"]].gateway_type),
+                -gateway["is_official"],
                 gateway["name"],
             ),
         )
@@ -90,7 +87,6 @@ class GatewayListApi(generics.ListAPIView):
             gateways,
             many=True,
             context={
-                "gateway_auth_configs": gateway_auth_configs,
                 "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(page_gateway_ids),
                 "gateway_sdks": GatewaySDKHandler.get_sdks(page_gateway_ids),
             },
@@ -113,7 +109,6 @@ class GatewayRetrieveApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
         slz = GatewayOutputSLZ(
             request.gateway,
             context={
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([request.gateway.id]),
                 "gateway_id_to_bk_api_url_tmpl": GatewayHandler.get_gateway_id_to_bk_api_url_tmpl(
                     [request.gateway.id]
                 ),
