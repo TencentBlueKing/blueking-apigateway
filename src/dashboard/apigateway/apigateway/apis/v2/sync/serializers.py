@@ -32,7 +32,7 @@ from apigateway.apps.mcp_server.constants import (
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
-from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, DocLanguageEnum, ProgrammingLanguageEnum
 from apigateway.biz.audit import Auditor
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler, StageSyncHandler
@@ -583,20 +583,18 @@ class ResourceImportInputSLZ(serializers.Serializer):
 class SDKGenerateInputSLZ(serializers.Serializer):
     resource_version = serializers.CharField(max_length=128, help_text="资源版本")
     languages = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices()),
+        child=serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES),
         help_text="需要生成SDK的语言列表",
         default=[ProgrammingLanguageEnum.PYTHON.value],
+        allow_empty=False,
     )
-    version = serializers.RegexField(SEMVER_PATTERN, default="", allow_blank=True, max_length=128, help_text="版本号")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateInputSLZ"
 
 
 class SDKGenerateOutputSLZ(serializers.Serializer):
-    name = serializers.CharField(help_text="SDK名称")
-    version = serializers.CharField(help_text="版本号")
-    url = serializers.CharField(help_text="下载链接")
+    message = serializers.CharField(help_text="异步任务已受理")
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.SDKGenerateOutputSLZ"

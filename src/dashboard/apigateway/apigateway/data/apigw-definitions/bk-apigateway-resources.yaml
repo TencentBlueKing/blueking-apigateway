@@ -1566,19 +1566,15 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 需要生成SDK的语言列表，可选值：python，默认为 python SDK
+                    enum: [python, java, go, javascript, rust]
+                  description: 需要生成 SDK 的语言列表，默认为 python
                   example: ["python"]
-                version:
-                  type: string
-                  description: SDK 版本号，未设置时，将使用资源版本的版本号
-                  example: "1.0.1"
             example:
               resource_version: "1.0.1"
               languages: ["python"]
-              version: "1.0.1"
       responses:
         '200':
-          description: 成功生成 SDK
+          description: SDK 生成任务已受理
           content:
             application/json:
               schema:
@@ -1589,31 +1585,14 @@ paths:
                     example: 0
                   message:
                     type: string
-                    example: OK
+                    example: SDK generation started
                   data:
                     type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: SDK 名称
-                          example: bkapi-test
-                        version:
-                          type: string
-                          description: SDK 版本号
-                          example: "1.0.1"
-                        url:
-                          type: string
-                          description: SDK 下载地址
-                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+                    maxItems: 0
               example:
                 code: 0
-                message: OK
-                data:
-                  - name: bkapi-test
-                    version: "1.0.1"
-                    url: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+                message: SDK generation started
+                data: []
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -5144,41 +5123,29 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 需要生成SDK的语言列表，可选值：python
+                    enum: [python, java, go, javascript, rust]
+                  description: 需要生成 SDK 的语言列表，默认为 python
                   example: ["python"]
-                version:
-                  type: string
-                  description: SDK 版本号，未设置时，将使用资源版本的版本号
-                  example: "1.0.1"
             example:
               resource_version: "1.0.1"
               languages: ["python"]
-              version: "1.0.1"
       responses:
-        '200':
-          description: 成功生成 SDK
+        '202':
+          description: SDK 生成任务已受理
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: SDK 名称
-                          example: bkapi-test
-                        version:
-                          type: string
-                          description: SDK 版本号
-                          example: "1.0.1"
-                        url:
-                          type: string
-                          description: SDK 下载地址
-                          example: "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: SDK generation started
+              example:
+                data:
+                  message: SDK generation started
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
