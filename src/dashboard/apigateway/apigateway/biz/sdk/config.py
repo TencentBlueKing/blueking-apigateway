@@ -16,7 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.conf import settings
 from packaging.version import InvalidVersion, Version
@@ -54,6 +54,11 @@ class SDKLanguageConfig:
     additional_properties: dict[str, str]
     native_distributor: str | None
 
+    def __post_init__(self):
+        allowed_properties = set(GENERATOR_PROPERTIES.get(self.language, ()))
+        if set(self.additional_properties) != allowed_properties:
+            raise ValueError(f"unsupported generator properties for {self.language}")
+
     def build_fingerprint_payload(self) -> dict[str, object]:
         return {
             "language": self.language,
@@ -66,12 +71,22 @@ class SDKLanguageConfig:
 
 
 @dataclass(frozen=True)
+class BKRepoGenericConfig:
+    endpoint_url: str
+    username: str
+    password: str = field(repr=False)
+    project: str = ""
+    bucket: str = ""
+
+
+@dataclass(frozen=True)
 class SDKGenerationConfig:
     enabled_languages: tuple[str, ...]
     queue: str
     generator_jar: str
     generator_version: str
     server_url_template: str
+    generic_repository: BKRepoGenericConfig
     generic_retention_hours: int
     subprocess_timeout_seconds: int
     max_openapi_bytes: int
@@ -103,9 +118,32 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
     if any(config[name] <= 0 for name in numeric_settings):
         raise ValueError("SDK generation limits must be positive")
 
+    generic_repository = BKRepoGenericConfig(
+        endpoint_url=settings.BKREPO_ENDPOINT_URL,
+        username=settings.BKREPO_USERNAME,
+        password=settings.BKREPO_PASSWORD,
+        project=settings.BKREPO_PROJECT,
+        bucket=settings.BKREPO_GENERIC_BUCKET,
+    )
+    if not all(
+        (
+            generic_repository.endpoint_url,
+            generic_repository.username,
+            generic_repository.password,
+            generic_repository.project,
+            generic_repository.bucket,
+        )
+    ):
+        raise ValueError("BKRepo Generic configuration is required for SDK generation")
+
     return SDKGenerationConfig(
         enabled_languages=enabled_languages,
-        **{name: config[name] for name in SDKGenerationConfig.__dataclass_fields__ if name != "enabled_languages"},
+        generic_repository=generic_repository,
+        **{
+            name: config[name]
+            for name in SDKGenerationConfig.__dataclass_fields__
+            if name not in {"enabled_languages", "generic_repository"}
+        },
     )
 
 

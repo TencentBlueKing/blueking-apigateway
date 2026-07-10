@@ -19,9 +19,12 @@
 import socket
 from typing import Optional
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
+
+SDK_GENERATION_LANGUAGES = ("python", "java", "go", "javascript", "rust")
 
 
 def get_default_keepalive_options() -> Optional[dict]:
@@ -321,8 +324,16 @@ def get_bkrepo_config(env: Env) -> dict:
 
 
 def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
+    enabled_languages = env.str("BK_SDK_LANGUAGES", default=",".join(SDK_GENERATION_LANGUAGES)).split(",")
+    if not enabled_languages or any(not language for language in enabled_languages):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES cannot contain empty entries")
+    if invalid_languages := set(enabled_languages).difference(SDK_GENERATION_LANGUAGES):
+        raise ImproperlyConfigured(f"BK_SDK_LANGUAGES contains unsupported values: {sorted(invalid_languages)}")
+    if len(enabled_languages) != len(set(enabled_languages)):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES must not contain duplicate values")
+
     return {
-        "enabled_languages": env.list("BK_SDK_LANGUAGES", default=["python", "java", "go", "javascript", "rust"]),
+        "enabled_languages": enabled_languages,
         "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
         "generator_jar": env.str("SDK_OPENAPI_GENERATOR_JAR", "/opt/openapi-generator/openapi-generator-cli.jar"),
         "generator_version": env.str("SDK_OPENAPI_GENERATOR_VERSION", "7.23.0"),

@@ -21,7 +21,29 @@ from django.conf import settings
 from django.test import override_settings
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.biz.sdk.config import get_sdk_generation_config, normalize_gateway_name, normalize_package_version
+from apigateway.biz.sdk.config import (
+    SDKLanguageConfig,
+    get_sdk_generation_config,
+    normalize_gateway_name,
+    normalize_package_version,
+)
+
+EXPECTED_GENERATOR_PROPERTIES = {
+    "python": {"packageName", "packageVersion", "projectName", "buildSystem"},
+    "java": {"groupId", "artifactId", "artifactVersion", "invokerPackage", "apiPackage", "modelPackage", "library"},
+    "go": {"packageName", "packageVersion", "withGoMod"},
+    "javascript": {"projectName", "projectVersion", "moduleName", "usePromises"},
+    "rust": {"packageName", "packageVersion", "library", "supportAsync"},
+}
+
+
+@pytest.fixture(autouse=True)
+def configure_bkrepo_generic(settings):
+    settings.BKREPO_ENDPOINT_URL = "https://bkrepo.example.com"
+    settings.BKREPO_USERNAME = "sdk-user"
+    settings.BKREPO_PASSWORD = "sdk-password"
+    settings.BKREPO_PROJECT = "sdk-project"
+    settings.BKREPO_GENERIC_BUCKET = "sdk-generic"
 
 
 def test_programming_languages_are_the_new_supported_set():
@@ -40,6 +62,33 @@ def test_sdk_generation_config_uses_the_default_server_template():
 
     assert config.enabled_languages == ("python", "java", "go", "javascript", "rust")
     assert config.server_url_template == settings.SDK_GENERATION["server_url_template"]
+
+
+def test_sdk_generation_config_requires_bkrepo_generic_for_deployment():
+    config = get_sdk_generation_config()
+
+    assert config.generic_repository.endpoint_url == "https://bkrepo.example.com"
+    assert config.generic_repository.username == "sdk-user"
+    assert config.generic_repository.password == "sdk-password"
+    assert config.generic_repository.project == "sdk-project"
+    assert config.generic_repository.bucket == "sdk-generic"
+
+
+@pytest.mark.parametrize(
+    "setting_name",
+    [
+        "BKREPO_ENDPOINT_URL",
+        "BKREPO_USERNAME",
+        "BKREPO_PASSWORD",
+        "BKREPO_PROJECT",
+        "BKREPO_GENERIC_BUCKET",
+    ],
+)
+def test_sdk_generation_config_rejects_incomplete_bkrepo_generic(settings, setting_name):
+    setattr(settings, setting_name, "")
+
+    with pytest.raises(ValueError, match="BKRepo Generic"):
+        get_sdk_generation_config()
 
 
 @override_settings(
@@ -80,6 +129,44 @@ def test_sdk_generation_config_detects_optional_native_distributors():
     assert config.for_resource_version("my-gateway", "1.2.3", "python").native_distributor == "pypi"
     assert config.for_resource_version("my-gateway", "1.2.3", "java").native_distributor == "maven"
     assert config.for_resource_version("my-gateway", "1.2.3", "go").native_distributor is None
+
+
+def test_sdk_generation_config_keeps_native_distributors_optional():
+    config = get_sdk_generation_config()
+
+    assert config.for_resource_version("my-gateway", "1.2.3", "python").native_distributor is None
+    assert config.for_resource_version("my-gateway", "1.2.3", "java").native_distributor is None
+
+
+@pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
+def test_sdk_generation_config_uses_only_supported_generator_properties(language):
+    config = get_sdk_generation_config()
+
+    language_config = config.for_resource_version("my-gateway", "1.2.3", language)
+
+    assert set(language_config.additional_properties) == EXPECTED_GENERATOR_PROPERTIES[language]
+
+
+def test_sdk_language_config_rejects_unsupported_generator_properties():
+    with pytest.raises(ValueError, match="unsupported generator properties"):
+        SDKLanguageConfig(
+            language="python",
+            generator_name="python",
+            project_name="bkapi-my-gateway",
+            package_name="bkapi_my_gateway",
+            package_version="1.2.3",
+            additional_properties={"unsupportedProperty": "true"},
+            native_distributor=None,
+        )
+
+
+def test_sdk_language_fingerprint_excludes_bkrepo_credentials():
+    config = get_sdk_generation_config()
+
+    fingerprint = config.for_resource_version("my-gateway", "1.2.3", "python").build_fingerprint_payload()
+
+    assert "sdk-user" not in str(fingerprint)
+    assert "sdk-password" not in str(fingerprint)
 
 
 def test_normalize_gateway_name_replaces_hyphens_with_underscores():
