@@ -160,7 +160,7 @@ requires-dist = [
     { name = "bkapi-client-core", specifier = "==1.2.0" },
     { name = "bkapi-client-generator", specifier = "==0.1.30" },
     { name = "bkapi-component-open", specifier = ">=1.0.3,<2" },
-    { name = "bkpaas-auth", specifier = "==4.1.0" },
+    { name = "bkpaas-auth", specifier = "==4.1.1" },
     { name = "blue-krill", specifier = "==3.1.1" },
     { name = "cachetools", specifier = "==7.1.4" },
     { name = "celery", specifier = "==5.6.3" },
@@ -451,15 +451,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/2a/92/177b8d4694c14180b
 
 [[package]]
 name = "bkpaas-auth"
-version = "4.1.0"
+version = "4.1.1"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "django" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/c6/1fdcffdc11f56012d336c4f71b9964f3666a28517ea75c13e6ff8e3ccf4d/bkpaas_auth-4.1.0.tar.gz", hash = "sha256:d9f8658e7c1d8c55614400a74db7ffcd0abf175d061375ea6b21b86a2e011b4a", size = 21090, upload-time = "2026-06-30T07:39:23.641Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/cf/9c76f08999b69bb7425d3e8098a5ed033429cc5b7d62e161ccb15daabddb/bkpaas_auth-4.1.1.tar.gz", hash = "sha256:aab3891d1d5ec10e5236535ac17334ffc551bbe974f1a07bcacc6f0cc6a8a616", size = 21092, upload-time = "2026-07-10T08:14:16.668Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/ae/443adbb94eea8beec68d990966f40987faecf7ae9c6607c42eb6ad27b5c1/bkpaas_auth-4.1.0-py3-none-any.whl", hash = "sha256:c03f281ca94f0a4f4a49db5ab9aeae33bdc21411d55162f361e26d59be6f71da", size = 26447, upload-time = "2026-06-30T07:39:22.206Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/02/750a3c7bd47ec73998eb4a0a2ec11bd4cefd537f8f3cc8d48b8e0420e952/bkpaas_auth-4.1.1-py3-none-any.whl", hash = "sha256:23d8635b77821661eb11e7fb0c17e1ee9286df0e3b909d4fbebaf4b265e45428", size = 26458, upload-time = "2026-07-10T08:14:15.224Z" },
 ]
 
 [[package]]
