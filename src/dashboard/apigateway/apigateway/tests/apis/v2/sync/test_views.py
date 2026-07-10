@@ -191,6 +191,58 @@ class TestSyncApi:
         assert resp.status_code == 400
         assert "backends" in str(resp.json()["error"])
 
+    def test_stage_sync_records_stage_backend_audit(
+        self, request_view, fake_admin_user, fake_gateway, fake_stage, fake_backend, disable_app_permission
+    ):
+        fake_gateway.name = "test-stage-sync-stage-backend-audit"
+        fake_gateway.save()
+        fake_stage.name = "prod"
+        fake_stage.save()
+        fake_backend.name = "default"
+        fake_backend.save()
+        backend_config = BackendConfig.objects.get(gateway=fake_gateway, stage=fake_stage, backend=fake_backend)
+        data_before = backend_config.config
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={
+                "name": fake_stage.name,
+                "description": "desc",
+                "vars": {},
+                "backends": [
+                    {
+                        "name": fake_backend.name,
+                        "config": {
+                            "timeout": 60,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"host": "http://new.example.com"}],
+                        },
+                    }
+                ],
+            },
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            comment="OpenAPI 同步更新环境后端配置",
+        )
+        assert audit_log.username == "admin"
+        assert audit_log.op_type == OpTypeEnum.MODIFY.value
+        assert audit_log.op_object == "prod:default"
+        assert audit_log.op_object_id == str(backend_config.id)
+        assert json.loads(audit_log.data_before) == data_before
+        assert json.loads(audit_log.data_after) == {
+            "type": "node",
+            "timeout": 60,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "new.example.com", "weight": 100}],
+        }
+
     def test_resource_version_create_returns_created_info(
         self, mocker, request_view, fake_gateway, fake_admin_user, disable_app_permission
     ):

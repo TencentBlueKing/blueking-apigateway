@@ -16,7 +16,7 @@
             "name": "bk-apigateway",
             "description": "",
             "maintainers": [
-                "admin"
+                "张三"
             ],
           "doc_maintainers": {
             "type": "user",
@@ -46,7 +46,7 @@
 | id              | int      | 网关ID     |
 | name            | string   | 网关名称     |
 | description     | string   | 网关描述     |
-| maintainers     | array    | 网关管理员    |
+| maintainers     | array    | 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表 |
 | doc_maintainers | object   | 网关文档维护人员 |
 
 #### doc_maintainers

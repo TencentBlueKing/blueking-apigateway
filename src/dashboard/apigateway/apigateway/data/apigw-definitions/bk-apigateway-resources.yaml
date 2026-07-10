@@ -49,8 +49,8 @@ paths:
                           type: array
                           items:
                             type: string
-                          description: 网关管理员
-                          example: ["admin"]
+                          description: 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表
+                          example: ["张三"]
               example:
                 code: 0
                 message: OK
@@ -2280,8 +2280,8 @@ paths:
                         type: array
                         items:
                           type: string
-                        description: 网关管理员
-                        example: ["admin"]
+                        description: 网关管理员 display_name 列表；当 bk-user 查询失败时回退为 bk_username 列表
+                        example: ["张三"]
               example:
                 data:
                   id: 1

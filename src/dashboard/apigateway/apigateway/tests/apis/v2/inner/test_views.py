@@ -19,6 +19,7 @@
 import json
 import time
 from unittest import mock
+from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
@@ -82,6 +83,59 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+
+
+class TestGatewayOutputSLZ:
+    @pytest.mark.parametrize(
+        "output_slz_cls",
+        [
+            inner_serializers.GatewayListOutputSLZ,
+            inner_serializers.GatewayRetrieveOutputSLZ,
+        ],
+    )
+    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.apis.v2.inner.serializers.query_display_names_for_readonly")
+    def test_converts_maintainers_for_cross_tenant_gateway(
+        self,
+        mock_query_display_names_for_readonly,
+        fake_gateway,
+        output_slz_cls,
+    ):
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+        mock_query_display_names_for_readonly.return_value = ["张三", "李四"]
+
+        slz = output_slz_cls(fake_gateway)
+
+        assert slz.data["maintainers"] == ["张三", "李四"]
+        mock_query_display_names_for_readonly.assert_called_once_with("system", ["7idwx3b7nzk6xigs", "bbb"])
+
+    @pytest.mark.parametrize(
+        "output_slz_cls",
+        [
+            inner_serializers.GatewayListOutputSLZ,
+            inner_serializers.GatewayRetrieveOutputSLZ,
+        ],
+    )
+    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch(
+        "apigateway.apis.v2.inner.serializers.query_display_names_for_readonly",
+        side_effect=RuntimeError("bk-user unavailable"),
+    )
+    def test_falls_back_to_original_maintainers_when_display_name_lookup_fails(
+        self,
+        _mock_query_display_names_for_readonly,
+        fake_gateway,
+        output_slz_cls,
+    ):
+        fake_gateway.tenant_mode = "global"
+        fake_gateway.tenant_id = ""
+        fake_gateway._maintainers = "7idwx3b7nzk6xigs;bbb"
+
+        slz = output_slz_cls(fake_gateway)
+
+        assert slz.data["maintainers"] == ["7idwx3b7nzk6xigs", "bbb"]
 
 
 class TestGatewayAppPermissionApplyCreateApi:
@@ -1606,15 +1660,23 @@ class TestAppRequestLogListApi:
         mock_search_logs.assert_called_once()
 
     @pytest.mark.parametrize(
-        "data",
+        "case",
         [
-            {},
-            {"time_start": int(time.time()) - 181 * 24 * 3600, "time_end": int(time.time()) - 60},
-            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) - 3600},
-            {"time_start": int(time.time()) - 3600, "time_end": int(time.time()) + 60},
+            "missing_time_range",
+            "time_start_too_old",
+            "time_end_not_greater",
+            "time_end_in_future",
         ],
     )
-    def test_reject_invalid_time_range(self, request_view, data):
+    def test_reject_invalid_time_range(self, request_view, case):
+        now = int(time.time())
+        data = {
+            "missing_time_range": {},
+            "time_start_too_old": {"time_start": now - 181 * 24 * 3600, "time_end": now - 60},
+            "time_end_not_greater": {"time_start": now - 3600, "time_end": now - 3600},
+            "time_end_in_future": {"time_start": now - 3600, "time_end": now + 60},
+        }[case]
+
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.monitor.app_request_logs",
