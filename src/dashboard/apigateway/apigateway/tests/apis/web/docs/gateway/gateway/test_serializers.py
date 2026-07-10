@@ -17,7 +17,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from apigateway.apis.web.docs.gateway.gateway.serializers import GatewayOutputSLZ
-from apigateway.service.contexts import GatewayAuthContext
 
 
 class TestGatewayOutputSLZ:
@@ -27,7 +26,6 @@ class TestGatewayOutputSLZ:
         slz = GatewayOutputSLZ(
             fake_gateway,
             context={
-                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
                 "gateway_id_to_bk_api_url_tmpl": {fake_gateway.id: settings.BK_API_URL_TMPL},
                 "gateway_sdks": {},
             },

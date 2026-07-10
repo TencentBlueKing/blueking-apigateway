@@ -39,7 +39,15 @@ from apigateway.utils.crypto import calculate_fingerprint
 
 class TestGatewayListOutputSLZ:
     def test_to_representation(self):
-        gateway_1 = G(Gateway, created_by="admin", status=1, is_public=True, tenant_mode="single", tenant_id="default")
+        gateway_1 = G(
+            Gateway,
+            created_by="admin",
+            status=1,
+            is_public=True,
+            is_official=True,
+            tenant_mode="single",
+            tenant_id="default",
+        )
         gateway_2 = G(
             Gateway, created_by="admin", status=0, is_public=False, tenant_mode="single", tenant_id="default"
         )
@@ -115,10 +123,6 @@ class TestGatewayListOutputSLZ:
             context={
                 "resource_count": GatewayHandler.get_resource_count(gateway_ids),
                 "stages": GatewayHandler.get_stages_with_release_status(gateway_ids),
-                "gateway_auth_configs": {
-                    gateway_1.id: GatewayAuthConfig(GatewayTypeEnum.OFFICIAL_API.value),
-                    gateway_2.id: GatewayAuthConfig(GatewayTypeEnum.CLOUDS_API.value),
-                },
                 "operation_statuses": {
                     gateway_1.id: {
                         "status": "active",

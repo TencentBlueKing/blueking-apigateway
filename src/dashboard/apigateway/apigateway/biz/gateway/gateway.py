@@ -63,6 +63,13 @@ logger = logging.getLogger(__name__)
 OPERATION_STATUS_DELTA_DAYS = 180
 
 
+def _is_official_gateway_type(gateway_type: Optional[GatewayTypeEnum]) -> bool:
+    if gateway_type is None:
+        return False
+
+    return gateway_type.value in (GatewayTypeEnum.SUPER_OFFICIAL_API.value, GatewayTypeEnum.OFFICIAL_API.value)
+
+
 class GatewayData(BaseModel):
     name: str = Field(...)
     description: str = Field(default="")
@@ -547,6 +554,7 @@ class GatewaySaver:
             maintainers=self._gateway_data.maintainers,
             status=self._gateway_data.status,
             is_public=self._gateway_data.is_public,
+            is_official=_is_official_gateway_type(self._gateway_data.gateway_type),
             tenant_mode=self._gateway_data.tenant_mode,
             tenant_id=self._gateway_data.tenant_id,
             created_by=self.username,
@@ -612,6 +620,8 @@ class GatewaySaver:
         # 更新网关时，仅新增网关管理员，不删除，以防止删除已更新的管理员数据
         gateway.maintainers = sorted(set(self._gateway_data.maintainers + gateway.maintainers))
         gateway.is_public = self._gateway_data.is_public
+        if self._gateway_data.gateway_type is not None:
+            gateway.is_official = _is_official_gateway_type(self._gateway_data.gateway_type)
         gateway.updated_by = self.username
         gateway.save()
 

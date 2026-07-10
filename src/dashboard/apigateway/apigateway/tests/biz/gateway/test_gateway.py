@@ -312,6 +312,15 @@ class TestGatewayHandler:
         assert result.scope_id == fake_gateway.id
         assert result.config == expected
 
+    def test_save_auth_config_does_not_update_gateway_is_official(self, fake_gateway):
+        fake_gateway.is_official = True
+        fake_gateway.save()
+
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default", api_type=GatewayTypeEnum.CLOUDS_API)
+
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is True
+
     def test_save_related_data(self, mocker, fake_gateway):
         mocker.patch(
             "apigateway.biz.gateway.gateway.GatewayAuthConfig.config",

@@ -58,9 +58,8 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
-from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
-from apigateway.service.contexts import GatewayAuthContext
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
@@ -777,14 +776,12 @@ class MCPServerHandler:
             序列化所需的 context 字典
         """
         gateway_ids = list({ms.gateway.id for ms in mcp_servers})
-        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
         gateways = {
             gw.id: {
                 "id": gw.id,
                 "name": gw.name,
                 "maintainers": gw.maintainers,
-                "is_official": gateway_auth_configs[gw.id].gateway_type
-                in (GatewayTypeEnum.SUPER_OFFICIAL_API.value, GatewayTypeEnum.OFFICIAL_API.value),
+                "is_official": gw.is_official,
             }
             for gw in Gateway.objects.filter(id__in=gateway_ids)
         }
@@ -872,14 +869,12 @@ class MCPServerHandler:
         ]
 
         # 构建 gateway/stage 上下文
-        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config([instance.gateway.id])
         gateways = {
             instance.gateway.id: {
                 "id": instance.gateway.id,
                 "name": instance.gateway.name,
                 "maintainers": instance.gateway.maintainers,
-                "is_official": gateway_auth_configs[instance.gateway.id].gateway_type
-                in (GatewayTypeEnum.SUPER_OFFICIAL_API.value, GatewayTypeEnum.OFFICIAL_API.value),
+                "is_official": instance.gateway.is_official,
             }
         }
         stages = {

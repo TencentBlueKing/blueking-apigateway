@@ -44,7 +44,7 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.apps.permission.constants import PermissionApplyExpireDaysEnum
 from apigateway.apps.permission.tasks import send_mail_for_perm_apply
 from apigateway.biz.access_log import LogHandler
-from apigateway.biz.gateway import GatewayHandler, GatewayTypeHandler
+from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPermissionHandler
 from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
@@ -58,7 +58,7 @@ from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
-from apigateway.service.contexts import GatewayAuthContext, ResourceAuthContext
+from apigateway.service.contexts import ResourceAuthContext
 from apigateway.service.resource import get_resource_id_to_labels, get_resource_url_tmpl
 from apigateway.service.resource_version import get_resource_schema
 from apigateway.utils.paginator import LimitOffsetPaginator
@@ -493,13 +493,12 @@ class UserMCPServerListApi(generics.ListAPIView):
         page = self.paginate_queryset(queryset)
 
         gateway_ids = list({mcp_server.gateway.id for mcp_server in page})
-        gateway_auth_configs = GatewayAuthContext().get_gateway_id_to_auth_config(gateway_ids)
         gateways = {
             gateway.id: {
                 "id": gateway.id,
                 "name": gateway.name,
                 "maintainers": gateway.maintainers,
-                "is_official": GatewayTypeHandler.is_official(gateway_auth_configs[gateway.id].gateway_type),
+                "is_official": gateway.is_official,
             }
             for gateway in Gateway.objects.filter(id__in=gateway_ids)
         }

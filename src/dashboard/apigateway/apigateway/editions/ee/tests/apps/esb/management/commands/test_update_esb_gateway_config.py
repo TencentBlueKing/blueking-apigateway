@@ -58,6 +58,8 @@ class TestCommand:
         command.handle()
         mock_set_auth_config.assert_not_called()
         mock_get_auth_config.assert_called_once_with(fake_gateway.id)
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is False
 
         # should update
         mock_get_auth_config = mocker.patch(
@@ -73,6 +75,8 @@ class TestCommand:
             api_type=GatewayTypeEnum.SUPER_OFFICIAL_API,
             allow_update_api_auth=False,
         )
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.is_official is True
 
     @pytest.mark.parametrize(
         "current_config, new_config, expected",

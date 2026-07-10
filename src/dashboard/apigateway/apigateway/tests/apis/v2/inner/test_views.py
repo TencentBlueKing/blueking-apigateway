@@ -1700,10 +1700,11 @@ class TestAppRequestLogListApi:
 class TestMCPServerListApi:
     """测试 MCPServerListApi - 获取全量的 MCPServer 列表"""
 
-    def test_list_public_active_mcp_servers(self, request_view, fake_gateway, mocker):
+    def test_list_public_active_mcp_servers(self, request_view, fake_gateway):
         """测试获取活跃的 MCPServer 列表"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1721,12 +1722,6 @@ class TestMCPServerListApi:
             _resource_names="tool1",
         )
 
-        # Mock GatewayAuthContext - 使用 OFFICIAL_API gateway_type 使 is_official 为 True
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
-        )
-
         resp = request_view(
             method="GET",
             view_name="openapi.v2.inner.mcp_server.list",
@@ -1741,9 +1736,10 @@ class TestMCPServerListApi:
         assert result["data"]["results"][0]["name"] == "test-mcp-server"
         assert result["data"]["results"][0]["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
 
-    def test_list_includes_all_active_mcp_servers(self, request_view, fake_gateway, mocker):
+    def test_list_includes_all_active_mcp_servers(self, request_view, fake_gateway):
         """测试返回所有活跃的 MCPServer（包括公开和非公开）"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1770,12 +1766,6 @@ class TestMCPServerListApi:
             is_public=False,  # 非公开
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-        )
-
-        # Mock GatewayAuthContext - 使用 OFFICIAL_API gateway_type 使 is_official 为 True
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
         )
 
         resp = request_view(
@@ -1879,7 +1869,7 @@ class TestMCPServerListApi:
         result_ids = [item["id"] for item in result["data"]["results"]]
         assert inactive_stage_mcp_server.id not in result_ids
 
-    def test_list_with_keyword_filter(self, request_view, fake_gateway, mocker):
+    def test_list_with_keyword_filter(self, request_view, fake_gateway):
         """测试使用关键字筛选 MCPServer"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
@@ -1911,12 +1901,6 @@ class TestMCPServerListApi:
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
         )
 
-        # Mock GatewayAuthContext - 使用 OFFICIAL_API gateway_type 使 is_official 为 True
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
-        )
-
         # 使用关键字筛选
         resp = request_view(
             method="GET",
@@ -1930,10 +1914,11 @@ class TestMCPServerListApi:
         assert len(result["data"]["results"]) == 1
         assert result["data"]["results"][0]["id"] == mcp_server1.id
 
-    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway, mocker):
+    def test_list_with_mcp_server_ids_filter(self, request_view, fake_gateway):
         """测试使用 mcp_server_ids 筛选 MCPServer"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1966,11 +1951,6 @@ class TestMCPServerListApi:
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
         )
 
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
-        )
-
         # 只筛选 server1 和 server3
         resp = request_view(
             method="GET",
@@ -1986,7 +1966,7 @@ class TestMCPServerListApi:
         assert mcp_server3.id in result_ids
         assert mcp_server2.id not in result_ids
 
-    def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway, mocker):
+    def test_list_with_mcp_server_ids_empty(self, request_view, fake_gateway):
         """测试 mcp_server_ids 为空时返回所有"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
@@ -2002,11 +1982,6 @@ class TestMCPServerListApi:
             is_public=True,
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
-        )
-
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
         )
 
         # mcp_server_ids 为空字符串，应返回所有
@@ -2036,10 +2011,11 @@ class TestMCPServerListApi:
 
         assert resp.status_code == 400
 
-    def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway, mocker):
+    def test_list_returns_oauth2_public_client_enabled_true(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=True"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -2052,11 +2028,6 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=True,
-        )
-
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
         )
 
         resp = request_view(
@@ -2074,10 +2045,11 @@ class TestMCPServerListApi:
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is True
 
-    def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway, mocker):
+    def test_list_returns_oauth2_public_client_enabled_false(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 oauth2_public_client_enabled=False"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -2090,11 +2062,6 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             oauth2_public_client_enabled=False,
-        )
-
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
         )
 
         resp = request_view(
@@ -2112,10 +2079,11 @@ class TestMCPServerListApi:
         assert mcp_data is not None
         assert mcp_data["oauth2_public_client_enabled"] is False
 
-    def test_list_returns_tool_names(self, request_view, fake_gateway, mocker):
+    def test_list_returns_tool_names(self, request_view, fake_gateway):
         """测试 MCPServer 列表接口返回 tool_names（含重命名场景）"""
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.maintainers = ["admin"]
+        fake_gateway.is_official = True
         fake_gateway.save()
 
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -2128,11 +2096,6 @@ class TestMCPServerListApi:
             status=MCPServerStatusEnum.ACTIVE.value,
             protocol_type=MCPServerProtocolTypeEnum.SSE.value,
             _resource_names="res1;res2@custom_tool2",
-        )
-
-        mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.GatewayAuthContext.get_gateway_id_to_auth_config",
-            return_value={fake_gateway.id: mock.MagicMock(gateway_type=1)},
         )
 
         resp = request_view(
