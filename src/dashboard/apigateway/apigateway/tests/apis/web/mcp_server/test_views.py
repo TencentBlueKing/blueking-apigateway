@@ -3737,6 +3737,10 @@ class TestGatewayMCPServerAppPermissionExportApi:
             "apigateway.biz.permission.permission.query_display_names_cached",
             side_effect=lambda _tenant_id, username: [{"display_name": f"display-{username}"}],
         )
+        mocker.patch(
+            "apigateway.biz.permission.permission.query_display_names_for_readonly",
+            side_effect=lambda _tenant_id, usernames: [f"display-{username}" for username in usernames],
+        )
         G(
             MCPServerAppPermission,
             mcp_server=fake_mcp_server,

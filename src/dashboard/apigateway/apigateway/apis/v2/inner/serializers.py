@@ -44,8 +44,6 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
-from apigateway.components.bkuser import query_display_names_for_readonly
 from apigateway.core.constants import GatewayStatusEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
@@ -68,17 +66,13 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
 
 
 def _get_gateway_maintainers_display_names(obj) -> List[str]:
-    if not settings.ENABLE_MULTI_TENANT_MODE:
-        return obj.maintainers
-
     # 已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
     # 这次先保留现状，后续如需优化再改为视图层批量预取。
-    tenant_id = get_tenant_id_for_gateway_maintainers(obj.tenant_mode, obj.tenant_id)
-    try:
-        return query_display_names_for_readonly(tenant_id, obj.maintainers)
-    except Exception:  # pylint: disable=broad-except
-        logger.exception("failed to query gateway maintainer display names: gateway_id=%s", obj.id)
-        return obj.maintainers
+    return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+        obj.tenant_mode,
+        obj.tenant_id,
+        obj.maintainers,
+    )
 
 
 class GatewayListInputSLZ(serializers.Serializer):

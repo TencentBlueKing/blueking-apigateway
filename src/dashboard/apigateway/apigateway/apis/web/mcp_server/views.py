@@ -1308,11 +1308,12 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
     def _convert_gateway_user_to_display_name(self, username: str) -> str:
         if not username:
             return ""
-        return ResourcePermissionHandler.convert_gateway_user_to_display_name(
-            username,
+        display_names = ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
             self.request.gateway.tenant_mode,
             self.request.gateway.tenant_id,
+            [username],
         )
+        return display_names[0] if display_names else username
 
     def _get_export_grant_type_display(self, grant_type: str) -> str:
         if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:

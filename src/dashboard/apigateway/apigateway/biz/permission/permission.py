@@ -36,8 +36,9 @@ from apigateway.common.tenant.constants import (
     TenantModeEnum,
 )
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
+from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkauth import get_app_tenant_info_cached
-from apigateway.components.bkuser import query_display_names_cached
+from apigateway.components.bkuser import query_display_names_cached, query_display_names_for_readonly
 from apigateway.core.models import Gateway, Resource
 
 
@@ -206,21 +207,19 @@ class ResourcePermissionHandler:
         return applied_by
 
     @staticmethod
-    def convert_gateway_user_to_display_name(username: str, gateway_tenant_mode: str, gateway_tenant_id: str) -> str:
+    def convert_gateway_maintainers_to_display_names(
+        gateway_tenant_mode: str,
+        gateway_tenant_id: str,
+        maintainers: List[str],
+    ) -> List[str]:
         """
-        将网关侧操作人转换为显示名称，用于导出审批人/授权人的展示
+        将网关维护人转换为查看态展示名称
         """
-        if not settings.ENABLE_MULTI_TENANT_MODE or not username:
-            return username
+        if not settings.ENABLE_MULTI_TENANT_MODE:
+            return maintainers
 
-        if gateway_tenant_mode != TenantModeEnum.GLOBAL.value:
-            return username
-
+        tenant_id = get_tenant_id_for_gateway_maintainers(gateway_tenant_mode, gateway_tenant_id)
         try:
-            display_names = query_display_names_cached(TENANT_ID_OPERATION, username)
-            if display_names:
-                return display_names[0].get("display_name", username)
+            return query_display_names_for_readonly(tenant_id, maintainers)
         except Exception:  # pylint: disable=broad-except
-            return username
-
-        return username
+            return maintainers
