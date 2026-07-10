@@ -16,6 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
+from types import SimpleNamespace
+
 import pytest
 from django.conf import settings
 from django.test import override_settings
@@ -44,6 +47,10 @@ def configure_bkrepo_generic(settings):
     settings.BKREPO_PASSWORD = "sdk-password"
     settings.BKREPO_PROJECT = "sdk-project"
     settings.BKREPO_GENERIC_BUCKET = "sdk-generic"
+
+
+def make_resource_version(version="1.2.3"):
+    return SimpleNamespace(version=version)
 
 
 def test_programming_languages_are_the_new_supported_set():
@@ -104,11 +111,12 @@ def test_sdk_generation_config_rejects_incomplete_bkrepo_generic(settings, setti
 def test_sdk_generation_config_uses_configurable_language_names():
     config = get_sdk_generation_config()
 
-    python_config = config.for_resource_version("my-gateway", "1.2.3", "python")
-    java_config = config.for_resource_version("my-gateway", "1.2.3", "java")
-    go_config = config.for_resource_version("my-gateway", "1.2.3", "go")
-    javascript_config = config.for_resource_version("my-gateway", "1.2.3", "javascript")
-    rust_config = config.for_resource_version("my-gateway", "1.2.3", "rust")
+    resource_version = make_resource_version()
+    python_config = config.for_resource_version("my-gateway", resource_version, "python")
+    java_config = config.for_resource_version("my-gateway", resource_version, "java")
+    go_config = config.for_resource_version("my-gateway", resource_version, "go")
+    javascript_config = config.for_resource_version("my-gateway", resource_version, "javascript")
+    rust_config = config.for_resource_version("my-gateway", resource_version, "rust")
 
     assert python_config.project_name == "custom-my-gateway"
     assert python_config.package_name == "custom_my_gateway"
@@ -126,23 +134,27 @@ def test_sdk_generation_config_uses_configurable_language_names():
 def test_sdk_generation_config_detects_optional_native_distributors():
     config = get_sdk_generation_config()
 
-    assert config.for_resource_version("my-gateway", "1.2.3", "python").native_distributor == "pypi"
-    assert config.for_resource_version("my-gateway", "1.2.3", "java").native_distributor == "maven"
-    assert config.for_resource_version("my-gateway", "1.2.3", "go").native_distributor is None
+    resource_version = make_resource_version()
+
+    assert config.for_resource_version("my-gateway", resource_version, "python").native_distributor == "pypi"
+    assert config.for_resource_version("my-gateway", resource_version, "java").native_distributor == "maven"
+    assert config.for_resource_version("my-gateway", resource_version, "go").native_distributor is None
 
 
 def test_sdk_generation_config_keeps_native_distributors_optional():
     config = get_sdk_generation_config()
 
-    assert config.for_resource_version("my-gateway", "1.2.3", "python").native_distributor is None
-    assert config.for_resource_version("my-gateway", "1.2.3", "java").native_distributor is None
+    resource_version = make_resource_version()
+
+    assert config.for_resource_version("my-gateway", resource_version, "python").native_distributor is None
+    assert config.for_resource_version("my-gateway", resource_version, "java").native_distributor is None
 
 
 @pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
 def test_sdk_generation_config_uses_only_supported_generator_properties(language):
     config = get_sdk_generation_config()
 
-    language_config = config.for_resource_version("my-gateway", "1.2.3", language)
+    language_config = config.for_resource_version("my-gateway", make_resource_version(), language)
 
     assert set(language_config.additional_properties) == EXPECTED_GENERATOR_PROPERTIES[language]
 
@@ -160,10 +172,41 @@ def test_sdk_language_config_rejects_unsupported_generator_properties():
         )
 
 
+def test_sdk_language_config_copies_immutable_properties_and_serializes_fingerprint():
+    additional_properties = {
+        "packageName": "bkapi_my_gateway",
+        "packageVersion": "1.2.3",
+        "projectName": "bkapi-my-gateway",
+        "buildSystem": "poetry",
+    }
+    config = SDKLanguageConfig(
+        language="python",
+        generator_name="python",
+        project_name="bkapi-my-gateway",
+        package_name="bkapi_my_gateway",
+        package_version="1.2.3",
+        additional_properties=additional_properties,
+        native_distributor=None,
+    )
+
+    additional_properties["packageName"] = "changed"
+    with pytest.raises(TypeError):
+        config.additional_properties["packageName"] = "changed"
+
+    fingerprint = config.build_fingerprint_payload()
+    fingerprint["additional_properties"]["packageName"] = "changed"
+
+    assert config.additional_properties["packageName"] == "bkapi_my_gateway"
+    assert isinstance(fingerprint["additional_properties"], dict)
+    assert json.loads(json.dumps(fingerprint))["additional_properties"]["packageName"] == "changed"
+
+
 def test_sdk_language_fingerprint_excludes_bkrepo_credentials():
     config = get_sdk_generation_config()
 
-    fingerprint = config.for_resource_version("my-gateway", "1.2.3", "python").build_fingerprint_payload()
+    fingerprint = config.for_resource_version(
+        "my-gateway", make_resource_version(), "python"
+    ).build_fingerprint_payload()
 
     assert "sdk-user" not in str(fingerprint)
     assert "sdk-password" not in str(fingerprint)
@@ -177,6 +220,17 @@ def test_package_versions_are_derived_from_resource_version():
     assert normalize_package_version("python", "1.2.3-beta.1") == "1.2.3b1"
     assert normalize_package_version("go", "1.2.3") == "v1.2.3"
     assert normalize_package_version("java", "1.2.3") == "1.2.3"
+
+
+def test_sdk_generation_config_uses_only_the_resource_version_version():
+    config = get_sdk_generation_config()
+    resource_version = make_resource_version("1.2.3-beta.1")
+
+    language_config = config.for_resource_version("my-gateway", resource_version, "python")
+
+    assert language_config.package_version == "1.2.3b1"
+    with pytest.raises(TypeError):
+        config.for_resource_version("my-gateway", resource_version, "1.2.3", "python")
 
 
 def test_package_version_rejects_non_semver_versions():

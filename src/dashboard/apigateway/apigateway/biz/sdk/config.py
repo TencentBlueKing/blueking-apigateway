@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Mapping, Protocol
 
 from django.conf import settings
 from packaging.version import InvalidVersion, Version
@@ -44,6 +46,10 @@ SUPPORTED_GENERATION_LANGUAGES = tuple(
 )
 
 
+class ResourceVersionLike(Protocol):
+    version: str
+
+
 @dataclass(frozen=True)
 class SDKLanguageConfig:
     language: str
@@ -51,13 +57,14 @@ class SDKLanguageConfig:
     project_name: str
     package_name: str
     package_version: str
-    additional_properties: dict[str, str]
+    additional_properties: Mapping[str, str]
     native_distributor: str | None
 
     def __post_init__(self):
         allowed_properties = set(GENERATOR_PROPERTIES.get(self.language, ()))
         if set(self.additional_properties) != allowed_properties:
             raise ValueError(f"unsupported generator properties for {self.language}")
+        object.__setattr__(self, "additional_properties", MappingProxyType(dict(self.additional_properties)))
 
     def build_fingerprint_payload(self) -> dict[str, object]:
         return {
@@ -66,7 +73,7 @@ class SDKLanguageConfig:
             "project_name": self.project_name,
             "package_name": self.package_name,
             "package_version": self.package_version,
-            "additional_properties": self.additional_properties,
+            "additional_properties": dict(self.additional_properties),
         }
 
 
@@ -94,8 +101,10 @@ class SDKGenerationConfig:
     max_artifact_bytes: int
     max_log_bytes: int
 
-    def for_resource_version(self, gateway_name: str, version: str, language: str) -> SDKLanguageConfig:
-        return build_language_config(self, gateway_name, version, language)
+    def for_resource_version(
+        self, gateway_name: str, resource_version: ResourceVersionLike, language: str
+    ) -> SDKLanguageConfig:
+        return build_language_config(self, gateway_name, resource_version, language)
 
 
 def get_sdk_generation_config() -> SDKGenerationConfig:
@@ -168,13 +177,13 @@ def normalize_package_version(language: str, version: str) -> str:
 
 
 def build_language_config(
-    config: SDKGenerationConfig, gateway_name: str, version: str, language: str
+    config: SDKGenerationConfig, gateway_name: str, resource_version: ResourceVersionLike, language: str
 ) -> SDKLanguageConfig:
     if language not in config.enabled_languages:
         raise ValueError(f"SDK language is not enabled: {language}")
 
     gateway_name_normalized = normalize_gateway_name(gateway_name)
-    package_version = normalize_package_version(language, version)
+    package_version = normalize_package_version(language, resource_version.version)
     template_values = {
         "gateway_name": gateway_name,
         "gateway_name_normalized": gateway_name_normalized,

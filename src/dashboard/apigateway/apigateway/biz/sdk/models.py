@@ -240,7 +240,7 @@ class JavaSDK(SDK):
 class SDKFactory:
     _mappings: Dict[str, Type[SDK]] = {
         PythonSDK.language.value: PythonSDK,
-        GolangSDK.language.value: GolangSDK,
+        "golang": GolangSDK,
         JavaSDK.language.value: JavaSDK,
     }
 
