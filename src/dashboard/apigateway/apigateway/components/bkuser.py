@@ -83,8 +83,7 @@ def query_display_names(tenant_id: str, bk_usernames: List[str]):
         raise ValueError("bk_usernames should not exceed 100")
 
     # sort the usernames to hit the cache
-    bk_usernames.sort()
-    bk_usernames_str = ",".join(bk_usernames)
+    bk_usernames_str = ",".join(sorted(bk_usernames))
     return query_display_names_cached(tenant_id, bk_usernames_str)
 
 
