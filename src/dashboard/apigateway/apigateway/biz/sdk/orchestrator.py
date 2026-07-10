@@ -29,6 +29,7 @@ from apigateway.biz.sdk.config import SDKLanguageConfig, get_sdk_generation_conf
 from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
 from apigateway.biz.sdk.gateway_sdk import GatewaySDKHandler
 from apigateway.biz.sdk.generator import generate_client, get_openapi_generator_version
+from apigateway.biz.sdk.metrics import sdk_generation_metrics
 from apigateway.biz.sdk.openapi import build_sdk_openapi, calculate_input_fingerprint, dump_sdk_openapi
 from apigateway.biz.sdk.publishers import publish_native
 from apigateway.biz.sdk.storage import (
@@ -234,6 +235,12 @@ def _persist_native_artifacts(item: SDKGenerationItem, published) -> None:
         )
 
 
+def _record_generic_artifacts(item: SDKGenerationItem, count: int) -> None:
+    sdk_generation_metrics.record_artifacts(
+        item.language, SDKDistributorEnum.BKREPO_GENERIC.value, SDKGenerationStatusEnum.SUCCESS.value, count
+    )
+
+
 def _finish_item(claim: GenerationClaim, status: str, *, error: Exception | None = None) -> bool:
     updates: dict[str, Any] = {
         "status": status,
@@ -250,6 +257,28 @@ def _finish_item(claim: GenerationClaim, status: str, *, error: Exception | None
     return bool(SDKGenerationItem.objects.filter(id=claim.item_id, lease_token=claim.lease_token).update(**updates))
 
 
+def _prepare_generation(item: SDKGenerationItem, claim: GenerationClaim):
+    language_config = get_sdk_generation_config().for_resource_version(
+        item.task.gateway.name, item.task.resource_version, item.language
+    )
+    with sdk_generation_metrics.observe_phase(item.language, "openapi"):
+        tool_versions = {"openapi-generator": get_openapi_generator_version()}
+        document = build_sdk_openapi(item.task.resource_version)
+        fingerprint = calculate_input_fingerprint(document, language_config, tool_versions)
+    config_snapshot = {
+        **language_config.build_fingerprint_payload(),
+        "native_distributor": language_config.native_distributor,
+    }
+    if not SDKGenerationItem.objects.filter(id=item.id, lease_token=claim.lease_token).update(
+        input_fingerprint=fingerprint,
+        config_snapshot=config_snapshot,
+    ):
+        return None
+    item.input_fingerprint = fingerprint
+    item.config_snapshot = config_snapshot
+    return language_config, document, tool_versions, fingerprint
+
+
 def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
     claim = claim_generation_item(item_id, celery_task_id)
     if not claim:
@@ -257,26 +286,10 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
     item = SDKGenerationItem.objects.select_related("task__gateway", "task__resource_version").get(id=item_id)
     generic_committed = False
     try:
-        root_config = get_sdk_generation_config()
-        language_config = root_config.for_resource_version(
-            item.task.gateway.name, item.task.resource_version, item.language
-        )
-        tool_versions = {"openapi-generator": get_openapi_generator_version()}
-        document = build_sdk_openapi(item.task.resource_version)
-        fingerprint = calculate_input_fingerprint(document, language_config, tool_versions)
-        if not SDKGenerationItem.objects.filter(id=item.id, lease_token=claim.lease_token).update(
-            input_fingerprint=fingerprint,
-            config_snapshot={
-                **language_config.build_fingerprint_payload(),
-                "native_distributor": language_config.native_distributor,
-            },
-        ):
+        prepared = _prepare_generation(item, claim)
+        if not prepared:
             return None
-        item.input_fingerprint = fingerprint
-        item.config_snapshot = {
-            **language_config.build_fingerprint_payload(),
-            "native_distributor": language_config.native_distributor,
-        }
+        language_config, document, tool_versions, fingerprint = prepared
 
         bkrepo = BKRepoComponent.default()
         if not bkrepo:
@@ -290,14 +303,17 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
         with tempfile.TemporaryDirectory(prefix="sdk-generation-") as directory:
             workspace = Path(directory)
             if bkrepo.get_generic_file_metadata(manifest_key(prefix)) is not None:
-                manifest, artifacts = restore_generic_artifacts(item, bkrepo, workspace / "restored")
+                with sdk_generation_metrics.observe_phase(item.language, "restore"):
+                    manifest, artifacts = restore_generic_artifacts(item, bkrepo, workspace / "restored")
                 generic_committed = True
             else:
                 spec_path = workspace / "openapi.json"
                 spec_path.write_text(dump_sdk_openapi(document))
                 source_dir = workspace / "source"
-                generate_client(spec_path, source_dir, language_config)
-                artifacts = build_artifacts(item.language, source_dir, workspace / "dist", language_config)
+                with sdk_generation_metrics.observe_phase(item.language, "generate"):
+                    generate_client(spec_path, source_dir, language_config)
+                with sdk_generation_metrics.observe_phase(item.language, "build"):
+                    artifacts = build_artifacts(item.language, source_dir, workspace / "dist", language_config)
                 manifest = build_manifest(
                     item.task.gateway.name,
                     item.task.resource_version.version,
@@ -307,20 +323,27 @@ def execute_generation_item(item_id: int, celery_task_id: str) -> str | None:
                     tool_versions,
                     artifacts,
                 )
-                commit_generic_artifacts(item, bkrepo, manifest, artifacts)
+                with sdk_generation_metrics.observe_phase(item.language, "generic_publish"):
+                    committed = commit_generic_artifacts(item, bkrepo, manifest, artifacts)
+                _record_generic_artifacts(item, len(committed))
                 generic_committed = True
 
             if not _has_successful_artifact(item, SDKDistributorEnum.BKREPO_GENERIC.value, filename="manifest.json"):
                 raise ValueError("Generic manifest is not committed")
             GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
-            published = publish_native(item.language, artifacts, language_config)
+            with sdk_generation_metrics.observe_phase(item.language, "native_publish"):
+                published = publish_native(item.language, artifacts, language_config)
             _persist_native_artifacts(item, published)
+            for artifact in published:
+                sdk_generation_metrics.record_artifacts(item.language, artifact.distributor, "success")
             GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
 
-        _finish_item(claim, SDKGenerationStatusEnum.SUCCESS.value)
+        if _finish_item(claim, SDKGenerationStatusEnum.SUCCESS.value):
+            sdk_generation_metrics.record_result(item.language, SDKGenerationStatusEnum.SUCCESS.value)
     except Exception as error:
         status = SDKGenerationStatusEnum.PARTIAL.value if generic_committed else SDKGenerationStatusEnum.FAILED.value
-        _finish_item(claim, status, error=error)
+        if _finish_item(claim, status, error=error):
+            sdk_generation_metrics.record_result(item.language, status)
     refresh_task_status(item.task_id)
     item.refresh_from_db()
     return item.status
