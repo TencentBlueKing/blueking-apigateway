@@ -20,9 +20,8 @@ import json
 
 from django_dynamic_fixture import G
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import SDKContext
+from apigateway.apps.support.constants import SDKGenerationStatusEnum
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationTask
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.models import ResourceVersion
 from apigateway.tests.utils.testing import dummy_time
@@ -114,52 +113,166 @@ class TestGatewaySDKListCreateApi:
 
             assert result["data"] == test["expected"]
 
-    def test_create(self, request_view, fake_gateway, mocker):
+    def test_create_returns_reusable_async_task(
+        self,
+        request_view,
+        fake_gateway,
+        fake_admin_user,
+        settings,
+        mocker,
+        django_capture_on_commit_callbacks,
+    ):
         resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        settings.BKREPO_ENDPOINT_URL = "https://repo"
+        settings.BKREPO_USERNAME = "user"
+        settings.BKREPO_PASSWORD = "password"
+        settings.BKREPO_PROJECT = "project"
+        settings.BKREPO_GENERIC_BUCKET = "generic"
+        enqueue = mocker.patch("apigateway.apis.web.sdk.views.enqueue_generation_items")
 
-        mocker.patch(
-            "apigateway.biz.sdk.managers.python.SDKManager.handle",
-            return_value=SDKContext(
-                name=f"bkapigw-{fake_gateway.name}",
-                resource_version=resource_version,
-                language=ProgrammingLanguageEnum.PYTHON,
-                version="2",
-                config={"python": {"is_uploaded_to_pypi": True}},
-                is_latest=True,
-                is_distributed=True,
-                files=[f"bkapigw-{fake_gateway.name}-2.tar.gz"],
-            ),
+        with django_capture_on_commit_callbacks(execute=True):
+            responses = [
+                request_view(
+                    method="POST",
+                    view_name="gateway.sdk.list_create",
+                    gateway=fake_gateway,
+                    user=fake_admin_user,
+                    path_params={"gateway_id": fake_gateway.id},
+                    data={"resource_version_id": resource_version.id, "languages": ["python", "go"]},
+                )
+                for _ in range(2)
+            ]
+
+        assert [response.status_code for response in responses] == [202, 202]
+        assert responses[0].json()["data"] == responses[1].json()["data"]
+        task = SDKGenerationTask.objects.get(resource_version=resource_version)
+        assert responses[0].json()["data"] == {
+            "id": task.id,
+            "status": "pending",
+            "status_url": f"/backend/gateways/{fake_gateway.id}/sdks/tasks/{task.id}/",
+        }
+        assert set(task.items.values_list("language", flat=True)) == {"python", "go"}
+        assert enqueue.call_count == 2
+
+    def test_create_rejects_resource_version_from_another_gateway(self, request_view, fake_gateway, fake_admin_user):
+        other_gateway = G(type(fake_gateway), name="other-gateway")
+        resource_version = G(ResourceVersion, gateway=other_gateway, version="1.0.1")
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["python"]},
         )
 
-        data = [
-            {
-                "gateway": fake_gateway,
-                "params": {
-                    "resource_version_id": resource_version.id,
-                    "language": "python",
-                    "need_upload_to_pypi": True,
-                },
-                "expected": {
-                    "name": f"bkapigw-{fake_gateway.name}",
-                    "is_uploaded_to_pypi": True,
-                    "language": "python",
-                    "version_number": "2",
-                    "resource_version_id": resource_version.id,
-                    "resource_version": resource_version.version,
-                },
-            },
-        ]
-        for test in data:
-            resp = request_view(
+        assert response.status_code == 404
+
+    def test_create_rejects_disabled_language(self, request_view, fake_gateway, fake_admin_user, settings):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        settings.SDK_GENERATION = {**settings.SDK_GENERATION, "enabled_languages": ["python"]}
+        settings.BKREPO_ENDPOINT_URL = "https://repo"
+        settings.BKREPO_USERNAME = "user"
+        settings.BKREPO_PASSWORD = "password"
+        settings.BKREPO_PROJECT = "project"
+        settings.BKREPO_GENERIC_BUCKET = "generic"
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["java"]},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
+
+    def test_create_rejects_legacy_sdk_coordinate(self, request_view, fake_gateway, fake_admin_user, settings):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        G(
+            GatewaySDK,
+            gateway=fake_gateway,
+            resource_version=resource_version,
+            language="python",
+            version_number="1.0.1",
+            schema=None,
+        )
+        settings.BKREPO_ENDPOINT_URL = "https://repo"
+        settings.BKREPO_USERNAME = "user"
+        settings.BKREPO_PASSWORD = "password"
+        settings.BKREPO_PROJECT = "project"
+        settings.BKREPO_GENERIC_BUCKET = "generic"
+
+        response = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["python"]},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "FAILED_PRECONDITION"
+
+
+class TestSDKGenerationTaskApi:
+    def test_list_detail_and_retry(
+        self,
+        request_view,
+        fake_gateway,
+        fake_admin_user,
+        settings,
+        mocker,
+        django_capture_on_commit_callbacks,
+    ):
+        resource_version = G(ResourceVersion, gateway=fake_gateway, version="1.0.1")
+        settings.BKREPO_ENDPOINT_URL = "https://repo"
+        settings.BKREPO_USERNAME = "user"
+        settings.BKREPO_PASSWORD = "password"
+        settings.BKREPO_PROJECT = "project"
+        settings.BKREPO_GENERIC_BUCKET = "generic"
+        mocker.patch("apigateway.apis.web.sdk.views.enqueue_generation_items")
+        create = request_view(
+            method="POST",
+            view_name="gateway.sdk.list_create",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"resource_version_id": resource_version.id, "languages": ["python", "go"]},
+        )
+        task = SDKGenerationTask.objects.get(id=create.json()["data"]["id"])
+        task.items.filter(language="python").update(status=SDKGenerationStatusEnum.FAILED.value)
+        task.items.filter(language="go").update(status=SDKGenerationStatusEnum.SUCCESS.value)
+        enqueue = mocker.patch("apigateway.apis.web.sdk.views.enqueue_generation_items")
+
+        listing = request_view(
+            method="GET",
+            view_name="gateway.sdk.generation_task_list",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id},
+        )
+        detail = request_view(
+            method="GET",
+            view_name="gateway.sdk.generation_task_detail",
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            path_params={"gateway_id": fake_gateway.id, "task_id": task.id},
+        )
+        with django_capture_on_commit_callbacks(execute=True):
+            retry = request_view(
                 method="POST",
-                view_name="gateway.sdk.list_create",
+                view_name="gateway.sdk.generation_task_retry",
                 gateway=fake_gateway,
-                path_params={"gateway_id": fake_gateway.id},
-                data=test["params"],
+                user=fake_admin_user,
+                path_params={"gateway_id": fake_gateway.id, "task_id": task.id},
             )
 
-            result = resp.json()
-            assert result["data"]["name"] == test["expected"]["name"]
-            assert result["data"]["language"] == test["expected"]["language"]
-            assert result["data"]["resource_version"]["id"] == test["expected"]["resource_version_id"]
-            assert result["data"]["resource_version"]["version"] == test["expected"]["resource_version"]
+        assert listing.json()["data"][0]["id"] == task.id
+        assert detail.json()["data"]["resource_version"] == {"id": resource_version.id, "version": "1.0.1"}
+        assert retry.status_code == 202
+        enqueue.assert_called_once_with([task.items.get(language="python").id])

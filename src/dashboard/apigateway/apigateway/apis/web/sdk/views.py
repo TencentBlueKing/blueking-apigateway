@@ -16,19 +16,26 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Any, Dict, cast
+from typing import cast
 
-from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
+from rest_framework.views import APIView
 
 from apigateway.apis.web.sdk import serializers
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import SDKFactory, SDKHelper, exceptions
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationTask
+from apigateway.biz.sdk import SDKFactory
+from apigateway.biz.sdk.exceptions import LegacySDKVersionConflict
+from apigateway.biz.sdk.orchestrator import (
+    create_or_resume_generation,
+    retry_generation_task,
+    serialize_generation_task,
+)
+from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import ResourceVersion
 from apigateway.utils.responses import OKJsonResponse
@@ -46,7 +53,7 @@ from apigateway.utils.responses import OKJsonResponse
 @method_decorator(
     name="post",
     decorator=swagger_auto_schema(
-        responses={status.HTTP_200_OK: ""},
+        responses={status.HTTP_202_ACCEPTED: ""},
         request_body=serializers.GatewaySDKGenerateInputSLZ,
         tags=["WebAPI.SDK"],
         operation_description="sdk创建接口",
@@ -112,7 +119,6 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
 
         return queryset
 
-    @transaction.atomic
     def create(self, request, gateway_id):
         """
         生成 SDK
@@ -125,33 +131,53 @@ class GatewaySDKListCreateApi(generics.ListCreateAPIView):
         )
         slz.is_valid(raise_exception=True)
 
-        data = cast("Dict[str, Any]", slz.validated_data)
+        data = cast("dict", slz.validated_data)
         resource_version = get_object_or_404(ResourceVersion, gateway=request.gateway, id=data["resource_version_id"])
+        try:
+            task = create_or_resume_generation(
+                resource_version,
+                data["languages"],
+                getattr(request.user, "username", None),
+                enqueue_generation_items,
+            )
+        except LegacySDKVersionConflict as error:
+            raise error_codes.FAILED_PRECONDITION.format(str(error), replace=True)
+        except ValueError as error:
+            raise error_codes.INVALID_ARGUMENT.format(str(error), replace=True)
 
-        with SDKHelper(resource_version=resource_version) as helper:
-            try:
-                info = helper.create(
-                    data["language"],
-                    version=data["version"],
-                    operator=self.request.user.username,
-                )
-            except exceptions.ResourcesIsEmpty:
-                raise error_codes.INTERNAL.format(
-                    _("网关下无符合条件(请求方法为非ANY)的资源，无法生成 SDK。"), replace=True
-                )
-            except exceptions.SDKRepoConfigError:
-                raise error_codes.INTERNAL.format(_("网关 SDK 仓库配置异常。"), replace=True)
-            except exceptions.GenerateError:
-                raise error_codes.INTERNAL.format(_("网关 SDK 生成失败。"), replace=True)
-            except exceptions.PackError:
-                raise error_codes.INTERNAL.format(_("网关 SDK 打包失败。"), replace=True)
-            except exceptions.DistributeError:
-                raise error_codes.INTERNAL.format(_("网关 SDK 发布失败。"), replace=True)
-            except exceptions.TooManySDKVersion as err:
-                raise error_codes.INTERNAL.format(
-                    _("同一资源版本，最多只能生成 {count} 个 SDK。").format(count=err.max_count),
-                    replace=True,
-                )
+        status_url = reverse(
+            "gateway.sdk.generation_task_detail",
+            kwargs={"gateway_id": request.gateway.id, "task_id": task.id},
+        )
+        return OKJsonResponse(
+            status=status.HTTP_202_ACCEPTED,
+            data={"id": task.id, "status": task.status, "status_url": status_url},
+        )
 
-        slz = self.get_serializer(SDKFactory.create(info.sdk))
-        return OKJsonResponse(data=slz.data)
+
+class SDKGenerationTaskListApi(APIView):
+    def get(self, request, gateway_id):
+        tasks = (
+            SDKGenerationTask.objects.filter(gateway=request.gateway)
+            .select_related("resource_version")
+            .order_by("-id")
+        )
+        return OKJsonResponse(data=[serialize_generation_task(task) for task in tasks])
+
+
+class SDKGenerationTaskDetailApi(APIView):
+    def get(self, request, gateway_id, task_id):
+        task = get_object_or_404(
+            SDKGenerationTask.objects.select_related("resource_version"), id=task_id, gateway=request.gateway
+        )
+        return OKJsonResponse(data=serialize_generation_task(task))
+
+
+class SDKGenerationTaskRetryApi(APIView):
+    def post(self, request, gateway_id, task_id):
+        task = get_object_or_404(
+            SDKGenerationTask.objects.select_related("resource_version"), id=task_id, gateway=request.gateway
+        )
+        retry_generation_task(task, enqueue_generation_items)
+        task.refresh_from_db()
+        return OKJsonResponse(status=status.HTTP_202_ACCEPTED, data=serialize_generation_task(task))

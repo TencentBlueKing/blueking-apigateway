@@ -82,7 +82,8 @@ def _reject_legacy_version_conflict(resource_version: ResourceVersion, language:
     ).first()
     if not sdk:
         return
-    item_id = sdk.config.get("generation_item_id")
+    config = sdk.config if isinstance(sdk.config, dict) else {}
+    item_id = config.get("generation_item_id")
     if (
         item_id
         and SDKGenerationItem.objects.filter(

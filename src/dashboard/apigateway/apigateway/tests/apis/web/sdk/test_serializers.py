@@ -31,33 +31,32 @@ from apigateway.tests.utils.testing import dummy_time
 
 class TestGatewaySDKGenerateInputSLZ:
     @pytest.mark.parametrize(
-        "version, is_valid",
+        "languages, is_valid",
         [
-            ("", True),
-            ("1.2.3", True),
-            ("1.2.3-beta.1+build.1", True),
-            ("v1.2.3", False),
-            ("1.2", False),
-            ("1.0.0');__import__('os').system('touch /tmp/sdk-version-pwned')#", False),
+            (["python"], True),
+            (["python", "java", "go", "javascript", "rust"], True),
+            ([], False),
+            (["unknown"], False),
         ],
     )
-    def test_validate_version(self, mocker, fake_gateway, version, is_valid):
-        mocker.patch(
-            "apigateway.apis.web.sdk.serializers.GatewaySDK.objects.get_latest_sdk",
-            return_value=None,
-        )
+    def test_validate_languages(self, fake_gateway, languages, is_valid):
         slz = GatewaySDKGenerateInputSLZ(
             data={
                 "resource_version_id": 1,
-                "language": "python",
-                "version": version,
+                "languages": languages,
             },
             context={"gateway": fake_gateway},
         )
 
         assert slz.is_valid() is is_valid
         if not is_valid:
-            assert "version" in slz.errors
+            assert "languages" in slz.errors
+
+    def test_languages_are_required(self, fake_gateway):
+        slz = GatewaySDKGenerateInputSLZ(data={"resource_version_id": 1}, context={"gateway": fake_gateway})
+
+        assert not slz.is_valid()
+        assert "languages" in slz.errors
 
 
 class TestSDKListOutputSLZ:
