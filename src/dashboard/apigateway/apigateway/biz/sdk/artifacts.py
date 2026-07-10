@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
@@ -40,8 +41,19 @@ class ArtifactManifest:
     tool_versions: dict[str, str]
     files: tuple[ManifestFile, ...]
 
+    def __post_init__(self):
+        object.__setattr__(self, "tool_versions", MappingProxyType(dict(self.tool_versions)))
+
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "gateway_name": self.gateway_name,
+            "resource_version": self.resource_version,
+            "language": self.language,
+            "package_version": self.package_version,
+            "input_fingerprint": self.input_fingerprint,
+            "tool_versions": dict(self.tool_versions),
+            "files": [asdict(file) for file in self.files],
+        }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":"))

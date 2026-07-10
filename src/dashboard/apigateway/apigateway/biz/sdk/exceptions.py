@@ -32,6 +32,11 @@ class SDKGenerateError(GenerateError):
         super().__init__(message)
 
 
+class SDKArtifactConflict(SDKGenerateError):
+    def __init__(self, message: str):
+        super().__init__("artifact_conflict", message)
+
+
 class SDKRepoConfigError(SDKException):
     """SKD配置错误"""
 
