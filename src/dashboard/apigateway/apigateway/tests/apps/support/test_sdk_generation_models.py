@@ -23,7 +23,11 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 
-from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.constants import (
+    SDK_GENERATION_LANGUAGE_VALUES,
+    SDKDistributorEnum,
+    SDKGenerationStatusEnum,
+)
 from apigateway.apps.support.models import SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.core.models import Gateway
 
@@ -62,6 +66,23 @@ def test_generation_item_full_clean_rejects_unknown_language_before_database(fak
         item.full_clean()
 
     assert "language" in exc_info.value.message_dict
+
+
+@pytest.mark.django_db(transaction=True)
+def test_generation_item_language_choices_match_migration_state():
+    if not hasattr(settings.MIGRATION_MODULES, "get"):
+        pytest.skip("migration-state comparison requires migration modules")
+
+    migration_state = MigrationExecutor(connection).loader.project_state([("support", "0019_sdk_generation_tasks")])
+    migration_choices = tuple(
+        value
+        for value, _ in migration_state.apps.get_model("support", "SDKGenerationItem")
+        ._meta.get_field("language")
+        .choices
+    )
+    runtime_choices = tuple(value for value, _ in SDKGenerationItem._meta.get_field("language").choices)
+
+    assert migration_choices == runtime_choices == SDK_GENERATION_LANGUAGE_VALUES
 
 
 def test_generation_task_full_clean_accepts_matching_gateway_and_resource_version(fake_gateway, fake_resource_version):

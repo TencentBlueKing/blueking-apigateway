@@ -70,7 +70,6 @@ class Migration(migrations.Migration):
                     "language",
                     models.CharField(
                         choices=[
-                            ("unknown", "Unknown"),
                             ("python", "Python"),
                             ("java", "Java"),
                             ("go", "Go"),
