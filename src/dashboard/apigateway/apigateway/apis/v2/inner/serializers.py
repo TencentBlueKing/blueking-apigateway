@@ -65,16 +65,6 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
     return context.get("categories", {}).get(obj.id, [])
 
 
-def _get_gateway_maintainers_display_names(obj) -> List[str]:
-    # 已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
-    # 这次先保留现状，后续如需优化再改为视图层批量预取。
-    return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
-        obj.tenant_mode,
-        obj.tenant_id,
-        obj.maintainers,
-    )
-
-
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
@@ -91,7 +81,11 @@ class GatewayListOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj)
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.tenant_mode,
+            obj.tenant_id,
+            obj.maintainers,
+        )
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
@@ -108,7 +102,11 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     doc_maintainers = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
-        return _get_gateway_maintainers_display_names(obj)
+        return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            obj.tenant_mode,
+            obj.tenant_id,
+            obj.maintainers,
+        )
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers

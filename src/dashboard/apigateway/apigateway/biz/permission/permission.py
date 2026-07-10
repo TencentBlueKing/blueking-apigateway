@@ -214,6 +214,9 @@ class ResourcePermissionHandler:
     ) -> List[str]:
         """
         将网关维护人转换为查看态展示名称
+
+        已知问题：list 场景仍会在序列化阶段按网关同步查询 bk-user。
+        这次先保留现状，后续如需优化再改为视图层批量预取。
         """
         if not settings.ENABLE_MULTI_TENANT_MODE:
             return maintainers

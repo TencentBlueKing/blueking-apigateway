@@ -1016,6 +1016,19 @@ class GatewayMCPServerAppPermissionListOutputSLZ(serializers.Serializer):
         return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(obj.grant_type))
 
 
+class GatewayMCPServerAppPermissionExportOutputSLZ(GatewayMCPServerAppPermissionListOutputSLZ):
+    """网关下 MCPServer 应用权限导出输出序列化器"""
+
+    class Meta:
+        ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionExportOutputSLZ"
+
+    def get_applied_by(self, obj):
+        apply_record = self._get_apply_record(obj)
+        if apply_record:
+            return apply_record.applied_by
+        return obj.updated_by or obj.created_by or ""
+
+
 class GatewayMCPServerAppPermissionExportInputSLZ(GatewayMCPServerAppPermissionListInputSLZ):
     """网关下 MCPServer 应用权限导出输入序列化器"""
 

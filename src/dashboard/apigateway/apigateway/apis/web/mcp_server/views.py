@@ -62,6 +62,7 @@ from apigateway.utils.time import now_datetime
 
 from .serializers import (
     GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionExportOutputSLZ,
     GatewayMCPServerAppPermissionListInputSLZ,
     GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerAppPermissionAppCodeListInputSLZ,
@@ -1288,7 +1289,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             queryset = queryset.filter(id__in=data["selected_ids"])
 
         permissions = list(queryset.order_by("mcp_server__name", "bk_app_code"))
-        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+        slz = GatewayMCPServerAppPermissionExportOutputSLZ(
             permissions,
             many=True,
             context={
@@ -1344,9 +1345,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             {
                 "mcp_server_name": item["mcp_server"]["name"],
                 "bk_app_code": item["bk_app_code"],
-                "applied_by": self._convert_gateway_user_to_display_name(item["applied_by"])
-                if item["grant_type"] == MCPServerAppPermissionGrantTypeEnum.GRANT.value
-                else item["applied_by"],
+                "applied_by": self._convert_gateway_user_to_display_name(item["applied_by"]),
                 "effective_time": item["effective_time"],
                 "handled_by": self._convert_gateway_user_to_display_name(item["handled_by"]),
                 "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
