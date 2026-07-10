@@ -229,7 +229,7 @@ class PythonSDK(SDK):
 
 @dataclass
 class GolangSDK(SDK):
-    language = ProgrammingLanguageEnum.GOLANG
+    language = ProgrammingLanguageEnum.GO
 
 
 @dataclass

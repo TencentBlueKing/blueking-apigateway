@@ -5,6 +5,26 @@ DASHBOARD_CSRF_COOKIE_DOMAIN=".example.com"
 DASHBOARD_CSRF_COOKIE_NAME="bk_apigateway_csrftoken"
 BK_PAAS_LOGIN_URL="http://paas.example.com/login"
 
+BK_SDK_LANGUAGES=python,java,go,javascript,rust
+BK_APIGW_SDK_CELERY_QUEUE=sdk.generate
+SDK_OPENAPI_GENERATOR_JAR=/opt/openapi-generator/openapi-generator-cli.jar
+SDK_OPENAPI_GENERATOR_VERSION=7.23.0
+SDK_SERVER_URL_TEMPLATE=https://{gateway_name}.example.com/{stage_name}
+SDK_PYTHON_PROJECT_NAME_TEMPLATE=bkapi-{gateway_name}
+SDK_PYTHON_PACKAGE_NAME_TEMPLATE=bkapi_{gateway_name_normalized}
+SDK_JAVA_GROUP_ID=com.tencent.bkapi
+SDK_JAVA_ARTIFACT_ID_TEMPLATE=bkapi-{gateway_name}
+SDK_JAVA_PACKAGE_TEMPLATE=com.tencent.bkapi.{gateway_name_normalized}
+SDK_GO_MODULE_PREFIX=git.example.com/bkapi
+SDK_JAVASCRIPT_PACKAGE_SCOPE=@bkapi
+SDK_RUST_CRATE_NAME_TEMPLATE=bkapi_{gateway_name_normalized}
+SDK_GENERIC_RETENTION_HOURS=24
+SDK_SUBPROCESS_TIMEOUT_SECONDS=600
+SDK_MAX_OPENAPI_BYTES=10485760
+SDK_MAX_OUTPUT_BYTES=1073741824
+SDK_MAX_ARTIFACT_BYTES=524288000
+SDK_MAX_LOG_BYTES=1048576
+
 BK_APIGW_DATABASE_HOST="localhost"
 
 BK_APIGW_DATABASE_NAME="bk_apigateway"

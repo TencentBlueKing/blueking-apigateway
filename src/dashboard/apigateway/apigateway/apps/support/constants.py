@@ -27,8 +27,10 @@ class DocTypeEnum(StructuredEnum):
 class ProgrammingLanguageEnum(StructuredEnum):
     UNKNOWN = EnumField("unknown")
     PYTHON = EnumField("python")
-    GOLANG = EnumField("golang")
     JAVA = EnumField("java")
+    GO = EnumField("go")
+    JAVASCRIPT = EnumField("javascript")
+    RUST = EnumField("rust")
 
 
 class DocLanguageEnum(StructuredEnum):

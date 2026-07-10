@@ -320,6 +320,25 @@ def get_bkrepo_config(env: Env) -> dict:
     }
 
 
+def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
+    return {
+        "enabled_languages": env.list("BK_SDK_LANGUAGES", default=["python", "java", "go", "javascript", "rust"]),
+        "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
+        "generator_jar": env.str("SDK_OPENAPI_GENERATOR_JAR", "/opt/openapi-generator/openapi-generator-cli.jar"),
+        "generator_version": env.str("SDK_OPENAPI_GENERATOR_VERSION", "7.23.0"),
+        "server_url_template": env.str(
+            "SDK_SERVER_URL_TEMPLATE",
+            bk_api_url_tmpl.replace("{api_name}", "{gateway_name}") + "/{stage_name}",
+        ),
+        "generic_retention_hours": env.int("SDK_GENERIC_RETENTION_HOURS", 24),
+        "subprocess_timeout_seconds": env.int("SDK_SUBPROCESS_TIMEOUT_SECONDS", 600),
+        "max_openapi_bytes": env.int("SDK_MAX_OPENAPI_BYTES", 10485760),
+        "max_output_bytes": env.int("SDK_MAX_OUTPUT_BYTES", 1073741824),
+        "max_artifact_bytes": env.int("SDK_MAX_ARTIFACT_BYTES", 524288000),
+        "max_log_bytes": env.int("SDK_MAX_LOG_BYTES", 1048576),
+    }
+
+
 def get_doc_links(bk_apigw_version: str, bk_docs_url_prefix: str, lang: str = "ZH") -> dict:
     env = Env()
     version = ".".join(bk_apigw_version.split(".")[:2])

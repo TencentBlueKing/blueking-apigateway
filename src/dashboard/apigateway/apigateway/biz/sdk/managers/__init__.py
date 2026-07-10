@@ -30,7 +30,7 @@ except ImportError:
 SDKManagerFactory = TypeFactory()
 
 SDKManagerFactory.register(ProgrammingLanguageEnum.PYTHON.value, python.SDKManager)
-SDKManagerFactory.register(ProgrammingLanguageEnum.GOLANG.value, golang.SDKManager)
+SDKManagerFactory.register(ProgrammingLanguageEnum.GO.value, golang.SDKManager)
 SDKManagerFactory.register(ProgrammingLanguageEnum.JAVA.value, java.SDKManager)
 
 __all__ = [

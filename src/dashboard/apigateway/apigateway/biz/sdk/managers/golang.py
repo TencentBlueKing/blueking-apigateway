@@ -29,4 +29,4 @@ class SDKManager(SDKManagerMixin, BaseSDKManager):
     packager_cls = TgzPackager
     public_distributor_cls = GenericDistributor
     private_distributor_cls = GenericDistributor
-    language = ProgrammingLanguageEnum.GOLANG
+    language = ProgrammingLanguageEnum.GO
