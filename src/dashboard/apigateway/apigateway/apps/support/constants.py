@@ -33,6 +33,34 @@ class ProgrammingLanguageEnum(StructuredEnum):
     RUST = EnumField("rust")
 
 
+SDK_GENERATION_LANGUAGE_VALUES = (
+    ProgrammingLanguageEnum.PYTHON.value,
+    ProgrammingLanguageEnum.JAVA.value,
+    ProgrammingLanguageEnum.GO.value,
+    ProgrammingLanguageEnum.JAVASCRIPT.value,
+    ProgrammingLanguageEnum.RUST.value,
+)
+
+
+class SDKGenerationStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    PARTIAL = EnumField("partial")
+    FAILED = EnumField("failed")
+
+
+class SDKDistributorEnum(StructuredEnum):
+    BKREPO_GENERIC = EnumField("bkrepo_generic")
+    PYPI = EnumField("pypi")
+    MAVEN = EnumField("maven")
+
+
+class SDKArtifactTypeEnum(StructuredEnum):
+    ARCHIVE = EnumField("archive")
+    PACKAGE = EnumField("package")
+
+
 class DocLanguageEnum(StructuredEnum):
     EN = EnumField("en", label=_("英文"))
     ZH = EnumField("zh", label=_("中文"))
