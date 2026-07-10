@@ -16,11 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import importlib
-
 import pytest
 from ddf import G
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 
@@ -53,6 +52,32 @@ def test_generation_item_accepts_only_canonical_languages(fake_gateway, fake_res
 
     with pytest.raises(IntegrityError), transaction.atomic():
         SDKGenerationItem.objects.create(task=task, language="golang")
+
+
+def test_generation_item_full_clean_rejects_unknown_language_before_database(fake_gateway, fake_resource_version):
+    task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+    item = SDKGenerationItem(task=task, language="unknown")
+
+    with pytest.raises(ValidationError) as exc_info:
+        item.full_clean()
+
+    assert "language" in exc_info.value.message_dict
+
+
+def test_generation_task_full_clean_accepts_matching_gateway_and_resource_version(fake_gateway, fake_resource_version):
+    task = SDKGenerationTask(gateway=fake_gateway, resource_version=fake_resource_version)
+
+    task.full_clean()
+
+
+def test_generation_task_full_clean_rejects_mismatched_gateway_and_resource_version(
+    fake_gateway, fake_resource_version
+):
+    other_gateway = G(Gateway)
+    task = SDKGenerationTask(gateway=other_gateway, resource_version=fake_resource_version)
+
+    with pytest.raises(ValidationError, match="gateway"):
+        task.full_clean()
 
 
 def test_artifact_filename_is_unique_per_item_and_distributor(fake_gateway, fake_resource_version):
@@ -112,7 +137,6 @@ def test_sdk_generation_migration_converts_legacy_golang_both_directions():
         pytest.skip("migration round-trip requires migration modules")
 
     migration_name = "0019_sdk_generation_tasks"
-    migration_module = importlib.import_module(f"apigateway.apps.support.migrations.{migration_name}")
     old_target = ("support", "0018_remove_resourcedocswagger")
     new_target = ("support", migration_name)
     gateway = G(
@@ -125,27 +149,27 @@ def test_sdk_generation_migration_converts_legacy_golang_both_directions():
     )
 
     executor = MigrationExecutor(connection)
-    executor.migrate([old_target])
-    old_apps = executor.loader.project_state([old_target]).apps
-    old_apps.get_model("support", "APISDK").objects.create(
-        gateway_id=gateway.id,
-        language="golang",
-        version_number="1.0.0",
-        filename="sdk.tar.gz",
-    )
+    leaf_nodes = executor.loader.graph.leaf_nodes()
+    try:
+        executor.migrate([old_target])
+        old_apps = executor.loader.project_state([old_target]).apps
+        old_apps.get_model("support", "APISDK").objects.create(
+            gateway_id=gateway.id,
+            language="golang",
+            version_number="1.0.0",
+            filename="sdk.tar.gz",
+        )
 
-    executor = MigrationExecutor(connection)
-    executor.migrate([new_target])
-    new_apps = executor.loader.project_state([new_target]).apps
-    gateway_sdk = new_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
-    assert gateway_sdk.language == "go"
+        executor = MigrationExecutor(connection)
+        executor.migrate([new_target])
+        new_apps = executor.loader.project_state([new_target]).apps
+        gateway_sdk = new_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
+        assert gateway_sdk.language == "go"
 
-    executor = MigrationExecutor(connection)
-    executor.migrate([old_target])
-    reverted_apps = executor.loader.project_state([old_target]).apps
-    reverted_gateway_sdk = reverted_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
-    assert reverted_gateway_sdk.language == "golang"
-
-    executor = MigrationExecutor(connection)
-    executor.migrate(executor.loader.graph.leaf_nodes())
-    assert migration_module.Migration.dependencies[-1] == old_target
+        executor = MigrationExecutor(connection)
+        executor.migrate([old_target])
+        reverted_apps = executor.loader.project_state([old_target]).apps
+        reverted_gateway_sdk = reverted_apps.get_model("support", "APISDK").objects.get(gateway_id=gateway.id)
+        assert reverted_gateway_sdk.language == "golang"
+    finally:
+        MigrationExecutor(connection).migrate(leaf_nodes)

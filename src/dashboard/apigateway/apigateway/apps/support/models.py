@@ -19,6 +19,7 @@
 import json
 from typing import ClassVar
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
@@ -178,6 +179,17 @@ class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
         db_index=True,
     )
 
+    def clean(self):
+        super().clean()
+
+        if (
+            self.gateway_id
+            and self.resource_version_id
+            and self.gateway_id
+            != ResourceVersion.objects.filter(id=self.resource_version_id).values_list("gateway_id", flat=True).first()
+        ):
+            raise ValidationError({"resource_version": _("Resource version must belong to the gateway.")})
+
     class Meta:
         db_table = "support_sdk_generation_task"
         constraints = [
@@ -193,7 +205,12 @@ class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
 
 class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
     task = models.ForeignKey(SDKGenerationTask, on_delete=models.CASCADE, related_name="items")
-    language = models.CharField(max_length=32, choices=ProgrammingLanguageEnum.get_choices())
+    language = models.CharField(
+        max_length=32,
+        choices=[
+            choice for choice in ProgrammingLanguageEnum.get_choices() if choice[0] in SDK_GENERATION_LANGUAGE_VALUES
+        ],
+    )
     status = models.CharField(
         max_length=32,
         choices=SDKGenerationStatusEnum.get_choices(),
