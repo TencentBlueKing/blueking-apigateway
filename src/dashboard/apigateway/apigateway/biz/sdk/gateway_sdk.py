@@ -44,10 +44,13 @@ class GatewaySDKHandler:
         artifact_rows = list(
             item.artifacts.filter(status=SDKGenerationStatusEnum.SUCCESS.value).order_by("distributor", "filename")
         )
+        manifest_artifact_types = {artifact.filename: artifact.artifact_type for artifact in manifest.files}
         artifacts = [
             {
                 "distributor": artifact.distributor,
-                "type": artifact.artifact_type,
+                "type": manifest_artifact_types.get(artifact.filename, artifact.artifact_type)
+                if artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
+                else artifact.artifact_type,
                 "filename": artifact.filename,
                 "url": artifact.url,
                 "coordinate": artifact.coordinate,

@@ -32,11 +32,20 @@ from apigateway.biz.sdk.config import (
 )
 
 EXPECTED_GENERATOR_PROPERTIES = {
-    "python": {"packageName", "packageVersion", "projectName", "buildSystem"},
-    "java": {"groupId", "artifactId", "artifactVersion", "invokerPackage", "apiPackage", "modelPackage", "library"},
-    "go": {"packageName", "packageVersion", "withGoMod"},
-    "javascript": {"projectName", "projectVersion", "moduleName", "usePromises"},
-    "rust": {"packageName", "packageVersion", "library", "supportAsync"},
+    "python": {"packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"},
+    "java": {
+        "groupId",
+        "artifactId",
+        "artifactVersion",
+        "invokerPackage",
+        "apiPackage",
+        "modelPackage",
+        "library",
+        "hideGenerationTimestamp",
+    },
+    "go": {"packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"},
+    "javascript": {"projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"},
+    "rust": {"packageName", "packageVersion", "library", "supportAsync", "hideGenerationTimestamp"},
 }
 
 
@@ -157,6 +166,7 @@ def test_sdk_generation_config_uses_only_supported_generator_properties(language
     language_config = config.for_resource_version("my-gateway", make_resource_version(), language)
 
     assert set(language_config.additional_properties) == EXPECTED_GENERATOR_PROPERTIES[language]
+    assert language_config.additional_properties["hideGenerationTimestamp"] == "true"
 
 
 def test_sdk_language_config_rejects_unsupported_generator_properties():
@@ -178,6 +188,7 @@ def test_sdk_language_config_copies_immutable_properties_and_serializes_fingerpr
         "packageVersion": "1.2.3",
         "projectName": "bkapi-my-gateway",
         "buildSystem": "poetry",
+        "hideGenerationTimestamp": "true",
     }
     config = SDKLanguageConfig(
         language="python",
@@ -199,6 +210,26 @@ def test_sdk_language_config_copies_immutable_properties_and_serializes_fingerpr
     assert config.additional_properties["packageName"] == "bkapi_my_gateway"
     assert isinstance(fingerprint["additional_properties"], dict)
     assert json.loads(json.dumps(fingerprint))["additional_properties"]["packageName"] == "changed"
+
+
+def test_sdk_language_config_forces_generation_timestamps_off():
+    config = SDKLanguageConfig(
+        language="python",
+        generator_name="python",
+        project_name="bkapi-my-gateway",
+        package_name="bkapi_my_gateway",
+        package_version="1.2.3",
+        additional_properties={
+            "packageName": "bkapi_my_gateway",
+            "packageVersion": "1.2.3",
+            "projectName": "bkapi-my-gateway",
+            "buildSystem": "poetry",
+            "hideGenerationTimestamp": "false",
+        },
+        native_distributor=None,
+    )
+
+    assert config.additional_properties["hideGenerationTimestamp"] == "true"
 
 
 def test_sdk_language_fingerprint_excludes_bkrepo_credentials():

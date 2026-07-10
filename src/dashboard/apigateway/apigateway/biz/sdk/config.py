@@ -27,11 +27,20 @@ from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.constants import SEMVER_PATTERN
 
 GENERATOR_PROPERTIES = {
-    "python": ("packageName", "packageVersion", "projectName", "buildSystem"),
-    "java": ("groupId", "artifactId", "artifactVersion", "invokerPackage", "apiPackage", "modelPackage", "library"),
-    "go": ("packageName", "packageVersion", "withGoMod"),
-    "javascript": ("projectName", "projectVersion", "moduleName", "usePromises"),
-    "rust": ("packageName", "packageVersion", "library", "supportAsync"),
+    "python": ("packageName", "packageVersion", "projectName", "buildSystem", "hideGenerationTimestamp"),
+    "java": (
+        "groupId",
+        "artifactId",
+        "artifactVersion",
+        "invokerPackage",
+        "apiPackage",
+        "modelPackage",
+        "library",
+        "hideGenerationTimestamp",
+    ),
+    "go": ("packageName", "packageVersion", "withGoMod", "hideGenerationTimestamp"),
+    "javascript": ("projectName", "projectVersion", "moduleName", "usePromises", "hideGenerationTimestamp"),
+    "rust": ("packageName", "packageVersion", "library", "supportAsync", "hideGenerationTimestamp"),
 }
 
 SUPPORTED_GENERATION_LANGUAGES = tuple(
@@ -61,10 +70,12 @@ class SDKLanguageConfig:
     native_distributor: str | None
 
     def __post_init__(self):
+        additional_properties = dict(self.additional_properties)
+        additional_properties["hideGenerationTimestamp"] = "true"
         allowed_properties = set(GENERATOR_PROPERTIES.get(self.language, ()))
-        if set(self.additional_properties) != allowed_properties:
+        if set(additional_properties) != allowed_properties:
             raise ValueError(f"unsupported generator properties for {self.language}")
-        object.__setattr__(self, "additional_properties", MappingProxyType(dict(self.additional_properties)))
+        object.__setattr__(self, "additional_properties", MappingProxyType(additional_properties))
 
     def build_fingerprint_payload(self) -> dict[str, object]:
         return {
@@ -99,7 +110,6 @@ class SDKGenerationConfig:
     max_openapi_bytes: int
     max_output_bytes: int
     max_artifact_bytes: int
-    max_log_bytes: int
 
     def for_resource_version(
         self, gateway_name: str, resource_version: ResourceVersionLike, language: str
@@ -122,7 +132,6 @@ def get_sdk_generation_config() -> SDKGenerationConfig:
         "max_openapi_bytes",
         "max_output_bytes",
         "max_artifact_bytes",
-        "max_log_bytes",
     )
     if any(config[name] <= 0 for name in numeric_settings):
         raise ValueError("SDK generation limits must be positive")

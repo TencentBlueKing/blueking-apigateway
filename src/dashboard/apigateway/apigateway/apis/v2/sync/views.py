@@ -565,7 +565,7 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="生成网关sdk",
-        request_body=ReleaseInputSLZ(),
+        request_body=SDKGenerateInputSLZ(),
         responses={status.HTTP_202_ACCEPTED: SDKGenerateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),

@@ -16,6 +16,7 @@ GO_PROXY_ZIP_LIMIT = 500 * 1024 * 1024
 
 def build(source_dir: Path, output_dir: Path, config: SDKLanguageConfig) -> list[BuiltArtifact]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    run_build(["go", "mod", "edit", "-module", config.project_name], cwd=source_dir)
     run_build(["go", "test", "./..."], cwd=source_dir)
     go_mod = source_dir / "go.mod"
     if not go_mod.is_file():

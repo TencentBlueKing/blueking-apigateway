@@ -15,13 +15,53 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from types import SimpleNamespace
+
+import pytest
 from ddf import G
 
-from apigateway.apps.support.models import GatewaySDK
+from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
 from apigateway.biz.sdk import GatewaySDKHandler
+from apigateway.biz.sdk.artifacts import ArtifactManifest, ManifestFile
+
+pytestmark = pytest.mark.django_db
 
 
 class TestGatewaySDKHandler:
+    def test_generation_projection_uses_manifest_artifact_types(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(SDKGenerationItem, task=task, language="python", input_fingerprint="fingerprint")
+        G(
+            SDKArtifact,
+            item=item,
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            artifact_type="package",
+            filename="demo.whl",
+            url="https://repo/demo.whl",
+            status=SDKGenerationStatusEnum.SUCCESS.value,
+        )
+        manifest = ArtifactManifest(
+            gateway_name=fake_gateway.name,
+            resource_version="1.2.3",
+            language="python",
+            package_version="1.2.3",
+            input_fingerprint="fingerprint",
+            tool_versions={"openapi-generator": "7.23.0"},
+            files=(ManifestFile("wheel", "demo.whl", 5, "0" * 64),),
+        )
+        language_config = SimpleNamespace(
+            project_name="demo",
+            package_name="demo",
+            package_version="1.2.3",
+        )
+
+        sdk = GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+
+        assert sdk.config["artifacts"][0]["type"] == "wheel"
+
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert len(result) == 1

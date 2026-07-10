@@ -15,6 +15,21 @@ if TYPE_CHECKING:
     from apigateway.biz.sdk.config import SDKLanguageConfig
 
 
+def _validate_output(output_dir: Path) -> None:
+    if not output_dir.is_dir():
+        raise SDKGenerateError("generator_failed", "OpenAPI Generator did not create an output directory")
+    size = 0
+    for path in output_dir.rglob("*"):
+        if path.is_symlink():
+            raise SDKGenerateError("generator_failed", "OpenAPI Generator output contains a symlink")
+        if path.is_file():
+            size += path.stat().st_size
+            if size > settings.SDK_GENERATION["max_output_bytes"]:
+                raise SDKGenerateError(
+                    "generator_failed", "OpenAPI Generator output exceeds the configured size limit"
+                )
+
+
 def _run(command: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -55,6 +70,7 @@ def generate_client(spec_path: Path, output_dir: Path, config: SDKLanguageConfig
             "generator_failed",
             f"OpenAPI Generator exited with status {result.returncode}",
         )
+    _validate_output(output_dir)
 
 
 def get_openapi_generator_version() -> str:

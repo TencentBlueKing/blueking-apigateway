@@ -346,7 +346,6 @@ def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
         "max_openapi_bytes": env.int("SDK_MAX_OPENAPI_BYTES", 10485760),
         "max_output_bytes": env.int("SDK_MAX_OUTPUT_BYTES", 1073741824),
         "max_artifact_bytes": env.int("SDK_MAX_ARTIFACT_BYTES", 524288000),
-        "max_log_bytes": env.int("SDK_MAX_LOG_BYTES", 1048576),
     }
 
 

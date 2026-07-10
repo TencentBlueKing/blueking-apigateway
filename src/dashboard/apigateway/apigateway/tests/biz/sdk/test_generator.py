@@ -28,6 +28,7 @@ def python_language_config():
 def test_generate_python_uses_official_generator(mocker, python_language_config, tmp_path, settings):
     spec_path = tmp_path / "openapi.json"
     spec_path.write_text("{}")
+    (tmp_path / "out").mkdir()
     run = mocker.patch("apigateway.biz.sdk.generator.subprocess.run")
     run.return_value = subprocess.CompletedProcess([], 0, "generated", "")
 
@@ -47,6 +48,22 @@ def test_generate_python_uses_official_generator(mocker, python_language_config,
     assert run.call_args.kwargs["timeout"] == settings.SDK_GENERATION["subprocess_timeout_seconds"]
     assert run.call_args.kwargs["stdout"] is subprocess.DEVNULL
     assert run.call_args.kwargs["stderr"] is subprocess.DEVNULL
+
+
+def test_generate_client_rejects_oversized_output(mocker, python_language_config, tmp_path, settings):
+    spec_path = tmp_path / "openapi.json"
+    spec_path.write_text("{}")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    (output_dir / "client.py").write_bytes(b"oversized")
+    settings.SDK_GENERATION = {**settings.SDK_GENERATION, "max_output_bytes": 4}
+    mocker.patch(
+        "apigateway.biz.sdk.generator.subprocess.run",
+        return_value=subprocess.CompletedProcess([], 0, "", ""),
+    )
+
+    with pytest.raises(SDKGenerateError, match="output exceeds"):
+        generate_client(spec_path, output_dir, python_language_config)
 
 
 @pytest.mark.parametrize(

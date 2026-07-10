@@ -74,6 +74,8 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         target.mkdir()
         (target / "demo-1.2.3.jar").write_bytes(b"jar")
         (target / "demo-1.2.3-sources.jar").write_bytes(b"sources")
+        (target / "demo-1.2.3-tests.jar").write_bytes(b"tests")
+        (target / "demo-1.2.3-javadoc.jar").write_bytes(b"javadoc")
         (source_dir / "pom.xml").write_text("<project />")
     elif language == "go":
         (source_dir / "go.mod").write_text("module git.example.com/bkapi/demo\n")
@@ -85,7 +87,11 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         package_dir.mkdir(parents=True)
         (package_dir / "bkapi_demo-1.2.3.crate").write_bytes(b"crate")
 
-    stdout = json.dumps([{"filename": "bkapi-demo-1.2.3.tgz"}]) if language == "javascript" else ""
+    stdout = (
+        "Successfully compiled 3 files with Babel\n" + json.dumps([{"filename": "bkapi-demo-1.2.3.tgz"}])
+        if language == "javascript"
+        else ""
+    )
     run = mocker.patch(
         "apigateway.biz.sdk.builders.common.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, stdout, ""),
@@ -100,6 +106,37 @@ def test_builder_returns_ecosystem_artifacts(mocker, tmp_path, language, expecte
         command[0] == {"python": "python", "java": "mvn", "go": "go", "javascript": "npm", "rust": "cargo"}[language]
     )
     assert run.call_args.kwargs["shell"] is False
+    if language == "java":
+        assert "-DincludeScope=runtime" in command
+        distribution = next(artifact.path for artifact in artifacts if artifact.artifact_type == "distribution_zip")
+        with zipfile.ZipFile(distribution) as archive:
+            assert "demo-1.2.3-tests.jar" not in archive.namelist()
+    if language == "go":
+        assert run.call_args_list[0].args[0] == [
+            "go",
+            "mod",
+            "edit",
+            "-module",
+            "git.example.com/bkapi/demo",
+        ]
+    if language == "javascript":
+        assert run.call_args_list[0].args[0] == [
+            "npm",
+            "install",
+            "--ignore-scripts",
+            "--no-audit",
+            "--no-fund",
+        ]
+        assert run.call_args_list[1].args[0] == ["npm", "run", "build", "--if-present"]
+        assert run.call_args_list[2].args[0] == [
+            "npm",
+            "pack",
+            "--ignore-scripts",
+            "--json",
+            "--pack-destination",
+            str(output_dir),
+        ]
+        assert run.call_args_list[2].kwargs["stdout"] == subprocess.PIPE
 
 
 def test_go_module_zip_has_required_prefix(mocker, tmp_path):

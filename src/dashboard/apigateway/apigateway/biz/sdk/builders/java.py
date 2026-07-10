@@ -22,6 +22,7 @@ def build(source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
             "source:jar-no-fork",
             "dependency:copy-dependencies",
             f"-DoutputDirectory={library_dir}",
+            "-DincludeScope=runtime",
         ],
         cwd=source_dir,
     )
@@ -30,7 +31,8 @@ def build(source_dir: Path, output_dir: Path) -> list[BuiltArtifact]:
     jars = sorted(
         path
         for path in target.glob("*.jar")
-        if not path.name.endswith(("-sources.jar", "-javadoc.jar")) and not path.name.startswith("original-")
+        if not path.name.endswith(("-sources.jar", "-javadoc.jar", "-tests.jar"))
+        and not path.name.startswith("original-")
     )
     pom = source_dir / "pom.xml"
     if len(jars) != 1 or len(sources) != 1 or not pom.is_file():

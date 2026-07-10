@@ -15,13 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from importlib import import_module
+from typing import TYPE_CHECKING, Any
+
 from . import exceptions
-from .gateway_sdk import GatewaySDKHandler
-from .models import (
-    DummySDKDocContext,
-    SDKDocContext,
-    SDKFactory,
-)
+
+if TYPE_CHECKING:
+    from .gateway_sdk import GatewaySDKHandler
+    from .models import DummySDKDocContext, SDKDocContext, SDKFactory
 
 __all__ = [
     "DummySDKDocContext",
@@ -30,3 +31,11 @@ __all__ = [
     "SDKFactory",
     "exceptions",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    if name == "GatewaySDKHandler":
+        return getattr(import_module(".gateway_sdk", __name__), name)
+    if name in {"DummySDKDocContext", "SDKDocContext", "SDKFactory"}:
+        return getattr(import_module(".models", __name__), name)
+    raise AttributeError(name)
