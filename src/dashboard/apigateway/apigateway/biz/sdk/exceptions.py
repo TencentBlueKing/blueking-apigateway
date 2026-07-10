@@ -25,6 +25,13 @@ class GenerateError(SDKException):
     """生成错误"""
 
 
+class SDKGenerateError(GenerateError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
 class SDKRepoConfigError(SDKException):
     """SKD配置错误"""
 
