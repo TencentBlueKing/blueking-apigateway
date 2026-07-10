@@ -18,13 +18,11 @@
 #
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
+from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES
 
 
 class SDKListInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(
-        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
-    )
+    language = serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES, help_text="SDK 编程语言，如 python")
 
     class Meta:
         ref_name = "apigateway.apis.web.docs.gateway.gateway_sdk.serializers.SDKListInputSLZ"
@@ -63,9 +61,7 @@ class StageSDKOutputSLZ(serializers.Serializer):
 
 
 class SDKUsageExampleInputSLZ(serializers.Serializer):
-    language = serializers.ChoiceField(
-        choices=ProgrammingLanguageEnum.get_choices(), help_text="SDK 编程语言，如 python"
-    )
+    language = serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES, help_text="SDK 编程语言，如 python")
     stage_name = serializers.CharField(help_text="网关环境名称")
     resource_name = serializers.CharField(help_text="资源名称")
     # todo：暂时先不加

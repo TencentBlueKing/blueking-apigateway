@@ -15,15 +15,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from types import SimpleNamespace
-from unittest.mock import call
-
-import pytest
 from ddf import G
 
 from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import GatewaySDKHandler, exceptions, generate_sdks_for_resource_version
-from apigateway.common.error_codes import APIError
+from apigateway.biz.sdk import GatewaySDKHandler
 
 
 class TestGatewaySDKHandler:
@@ -66,54 +61,3 @@ class TestGatewaySDKHandler:
         assert GatewaySDK.objects.get(id=sdk1.id).is_recommended is False
         assert GatewaySDK.objects.get(id=sdk2.id).is_recommended is True
         assert GatewaySDK.objects.get(id=sdk3.id).is_recommended is True
-
-
-def test_generate_sdks_for_resource_version_returns_sdk_payload(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = [
-        SimpleNamespace(
-            sdk=SimpleNamespace(name="python-sdk", version_number=fake_resource_version.version, url="url1")
-        ),
-        SimpleNamespace(sdk=SimpleNamespace(name="go-sdk", version_number=fake_resource_version.version, url="url2")),
-    ]
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    result = generate_sdks_for_resource_version(
-        resource_version=fake_resource_version,
-        languages=["python", "go"],
-        version="",
-    )
-
-    assert result == [
-        {
-            "name": "python-sdk",
-            "version": fake_resource_version.version,
-            "url": "url1",
-        },
-        {
-            "name": "go-sdk",
-            "version": fake_resource_version.version,
-            "url": "url2",
-        },
-    ]
-    assert helper.create.call_args_list == [
-        call(language="python", version=fake_resource_version.version, operator=None),
-        call(language="go", version=fake_resource_version.version, operator=None),
-    ]
-
-
-def test_generate_sdks_for_resource_version_maps_sdk_errors(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = exceptions.ResourcesIsEmpty
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    with pytest.raises(APIError) as err:
-        generate_sdks_for_resource_version(
-            fake_resource_version,
-            ["python"],
-            "",
-        )
-
-    assert err.value.code.message == "网关下无资源，无法生成 SDK。"

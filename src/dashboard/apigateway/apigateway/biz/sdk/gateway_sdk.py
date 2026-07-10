@@ -65,6 +65,8 @@ class GatewaySDKHandler:
         config = {
             "generation_item_id": item.id,
             "input_fingerprint": item.input_fingerprint,
+            "project_name": language_config.project_name,
+            "package_name": language_config.package_name,
             "package_version": language_config.package_version,
             "manifest": manifest.to_dict(),
             "artifacts": artifacts,

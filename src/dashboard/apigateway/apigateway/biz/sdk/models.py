@@ -17,20 +17,17 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from django.conf import settings
 from django.utils.timezone import now as timezone_now
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.common.pypi.pip import PipHelper
-from apigateway.utils.pypi import RepositoryConfig
 
 if TYPE_CHECKING:
     from datetime import datetime
 
     from apigateway.apps.support.models import GatewaySDK
-    from apigateway.core.models import ResourceVersion
 
 
 @dataclass
@@ -45,6 +42,9 @@ class SDKDocContext:
     path_params: dict = field(default_factory=dict)
     query_params: dict = field(default_factory=dict)
     headers: dict = field(default_factory=dict)
+    install_command: str = ""
+    artifact_url: str = ""
+    package_name: str = ""
 
     def as_dict(self):
         return {
@@ -58,6 +58,10 @@ class SDKDocContext:
             "path_params": self.path_params,
             "query_params": self.query_params,
             "headers": self.headers,
+            "install_command": self.install_command,
+            "artifact_url": self.artifact_url,
+            "package_name": self.package_name,
+            "server_url": f"{self.bk_api_url_tmpl.replace('{api_name}', self.gateway_name).rstrip('/')}/{self.stage_name}",
         }
 
 
@@ -67,25 +71,6 @@ class DummySDKDocContext(SDKDocContext):
     stage_name: str = "prod"
     resource_name: str = "get_example_status"
     bk_api_url_tmpl: str = field(default_factory=lambda: settings.BK_API_URL_TMPL)
-
-
-@dataclass
-class SDKContext:
-    name: str
-    resource_version: ResourceVersion
-    language: ProgrammingLanguageEnum
-    version: str
-    package: str = ""
-    files: List[str] = field(default_factory=list)
-    is_public: bool = False
-    is_latest: bool = False
-    is_distributed: bool = False
-    url: str = ""
-    config: Dict[str, Any] = field(default_factory=dict)
-
-    def update_language_config(self, to_updates: Dict[str, Any]):
-        config = self.config.setdefault(self.language.value, {})
-        config.update(to_updates)
 
 
 @dataclass
@@ -104,11 +89,38 @@ class SDK:
 
     @property
     def config(self):
-        return self.instance.config.get(self.language.value, {})
+        config = self.instance.config
+        if not isinstance(config, dict):
+            return {}
+        if "artifacts" in config:
+            return config
+        legacy = config.get(self.language.value, {})
+        return legacy if isinstance(legacy, dict) else {}
+
+    @property
+    def artifacts(self) -> list[dict[str, Any]]:
+        artifacts = self.config.get("artifacts", [])
+        return artifacts if isinstance(artifacts, list) else []
+
+    @property
+    def package_name(self) -> str:
+        return self.config.get("package_name", self.name.replace("-", "_"))
+
+    def find_artifact(self, *, distributor: str = "", artifact_type: str = "") -> dict[str, Any] | None:
+        for artifact in self.artifacts:
+            if distributor and artifact.get("distributor") != distributor:
+                continue
+            if artifact_type and artifact.get("type") != artifact_type:
+                continue
+            if artifact.get("filename") == "manifest.json":
+                continue
+            return artifact
+        return None
 
     @property
     def install_command(self) -> str:
-        return ""
+        artifact = self.find_artifact(distributor="bkrepo_generic")
+        return f'curl -fLO "{artifact["url"]}"' if artifact and artifact.get("url") else ""
 
     @property
     def url(self):
@@ -122,89 +134,21 @@ class SDK:
     def from_model(cls, instance: GatewaySDK):
         return cls(instance=instance)
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "language": self.language.value,
             "version": self.version,
             "url": self.url,
             "name": self.name,
             "install_command": self.install_command,
+            "artifacts": self.artifacts,
+            "package_name": self.package_name,
         }
 
 
 @dataclass
-class Generator:
-    name: ClassVar[str] = ""
-
-    context: SDKContext
-
-    def generate(self, output_dir: str, resources: List[Dict[str, Any]]):
-        raise NotImplementedError
-
-
-@dataclass
-class Packager:
-    name: ClassVar[str] = ""
-    context: SDKContext
-
-    def pack(self, output_dir: str) -> List[str]:
-        raise NotImplementedError
-
-
-@dataclass
-class DistributeResult:
-    repository: str = ""
-    is_local: bool = False
-    filename: str = ""
-    url: str = ""
-
-
-@dataclass
-class Distributor:
-    """将生成的文件发布"""
-
-    name: ClassVar[str] = ""
-
-    context: SDKContext
-
-    def distribute(self, output_dir: str, files: List[str]) -> DistributeResult:
-        raise NotImplementedError
-
-    def enabled(self) -> bool:
-        """
-        判断是否配置对应仓库配置
-        """
-        raise NotImplementedError
-
-
-@dataclass
-class SDKManager:
-    name: str = ""
-    is_public: bool = False
-
-    def handle(self, output_dir: str, resource_version: ResourceVersion) -> SDKContext:
-        raise NotImplementedError()
-
-
-@dataclass
 class PythonSDK(SDK):
-    repository: str = ""
-    index_url: str = ""
-    repository_url: str = ""
     language = ProgrammingLanguageEnum.PYTHON
-
-    def __post_init__(self):
-        self.repository = self.config.get("repository", "")
-        self._update_repository(self.repository)
-
-    def _update_repository(self, repository: str):
-        if not repository:
-            return
-
-        config = RepositoryConfig.by_name(repository)
-
-        self.index_url = config.index_url
-        self.repository_url = config.repository_url
 
     @property
     def sdk_name(self) -> str:
@@ -216,19 +160,19 @@ class PythonSDK(SDK):
 
     @property
     def install_command(self) -> str:
-        if not self.index_url:
-            return ""
-
-        helper = PipHelper(self.index_url)
-        return helper.install_command(self.name, self.version)
+        pypi = self.find_artifact(distributor="pypi")
+        if pypi and pypi.get("coordinate"):
+            return f'pip install "{pypi["coordinate"]}"'
+        wheel = self.find_artifact(distributor="bkrepo_generic", artifact_type="wheel")
+        return f'pip install "{wheel["url"]}"' if wheel and wheel.get("url") else ""
 
     @property
     def is_uploaded_to_pypi(self) -> bool:
-        return self.config.get("is_uploaded_to_pypi", False)
+        return self.find_artifact(distributor="pypi") is not None
 
 
 @dataclass
-class GolangSDK(SDK):
+class GoSDK(SDK):
     language = ProgrammingLanguageEnum.GO
 
 
@@ -236,12 +180,36 @@ class GolangSDK(SDK):
 class JavaSDK(SDK):
     language = ProgrammingLanguageEnum.JAVA
 
+    @property
+    def install_command(self) -> str:
+        maven = self.find_artifact(distributor="maven")
+        if maven and maven.get("coordinate"):
+            return f'mvn dependency:get -Dartifact="{maven["coordinate"]}"'
+        return super().install_command
+
+
+@dataclass
+class JavaScriptSDK(SDK):
+    language = ProgrammingLanguageEnum.JAVASCRIPT
+
+    @property
+    def install_command(self) -> str:
+        artifact = self.find_artifact(distributor="bkrepo_generic", artifact_type="npm_tgz")
+        return f'npm install "{artifact["url"]}"' if artifact and artifact.get("url") else ""
+
+
+@dataclass
+class RustSDK(SDK):
+    language = ProgrammingLanguageEnum.RUST
+
 
 class SDKFactory:
-    _mappings: Dict[str, Type[SDK]] = {
+    _mappings: ClassVar[dict[str, type[SDK]]] = {
         PythonSDK.language.value: PythonSDK,
-        "golang": GolangSDK,
+        GoSDK.language.value: GoSDK,
         JavaSDK.language.value: JavaSDK,
+        JavaScriptSDK.language.value: JavaScriptSDK,
+        RustSDK.language.value: RustSDK,
     }
 
     @classmethod

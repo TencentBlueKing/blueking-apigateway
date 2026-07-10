@@ -1,19 +1,11 @@
-## Running Environment
+## Install
 
-- Supports Python 2.7, 3.6+ versions
-- Native adaptation of the Django framework for quick client generation.
+Use the successful package URL shown for the SDK version:
 
-## Installing the SDK
-
-The Python SDK can be installed using pip, with the following command.
-
-```
-pip install {gateway SDK package name}
+```shell
+{% if install_command %}{{ install_command }}{% else %}pip install "<BKRepo Generic wheel URL>"{% endif %}
 ```
 
-## Using the SDK
-
-Assuming the gateway API {{resource_name}} exists under gateway {{gateway_name}}
-
+## Configure
 
 {% include "api_sdk/en/python_sdk_usage_example.md" %}

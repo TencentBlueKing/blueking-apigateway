@@ -27,7 +27,7 @@ from apigateway.apis.web.docs.gateway.mixins import GatewayDocsPermissionMixin
 from apigateway.apps.support.models import GatewaySDK
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
-from apigateway.biz.sdk import GatewaySDKHandler, SDKDocContext
+from apigateway.biz.sdk import GatewaySDKHandler, SDKDocContext, SDKFactory
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.core.models import Release
 from apigateway.service.resource_version import get_resource_schema
@@ -81,6 +81,7 @@ class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
             is_recommended=True,
             language=programming_language,
         ).last()
+        display_sdk = SDKFactory.create(sdk) if sdk else None
 
         stage_name = slz.validated_data["stage_name"]
         resource_name = slz.validated_data["resource_name"]
@@ -108,6 +109,9 @@ class SDKUsageExampleApi(GatewayDocsPermissionMixin, generics.RetrieveAPIView):
                 query_params=example.get("query_params", {}),
                 headers=example.get("headers", {}),
                 bk_api_url_tmpl=GatewayHandler.get_bk_api_url_tmpl(request.gateway.id),
+                install_command=display_sdk.install_command if display_sdk else "",
+                artifact_url=display_sdk.url if display_sdk else "",
+                package_name=display_sdk.package_name if display_sdk else "",
             ).as_dict(),
         )
 
