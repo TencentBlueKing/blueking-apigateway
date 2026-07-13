@@ -27,6 +27,7 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
+from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.gateway import GatewayHandler
 from apigateway.core.backend_config import decrypt_ai_backend_config
@@ -43,6 +44,7 @@ from apigateway.core.models import (
 )
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.resource_version import make_resource_schema_version
+from apigateway.utils.yaml import yaml_loads
 
 
 @pytest.fixture()
@@ -565,6 +567,40 @@ class TestSyncApi:
         assert resp.status_code == 200
         assert resp.json()["data"] == {"id": 123, "version": "1.1.0"}
         create_resource_version_with_artifacts.assert_called_once()
+
+    def test_resource_version_create_with_ai_resource(
+        self, request_view, fake_gateway, fake_backend, fake_resource, fake_admin_user, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save()
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.method = "POST"
+        fake_resource.match_subpath = False
+        fake_resource.enable_websocket = False
+        fake_resource.save()
+        proxy = Proxy.objects.get(resource=fake_resource)
+        Proxy.objects.filter(id=proxy.id).update(_config="{}")
+
+        resp = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.resource_versions.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_name": fake_gateway.name},
+            data={"version": "1.2.0", "comment": "AI resource version"},
+            user=fake_admin_user,
+        )
+
+        assert resp.status_code == 200
+        resource_version = ResourceVersion.objects.get(gateway=fake_gateway, version="1.2.0")
+        resource = resource_version.data[0]
+        assert resource["kind"] == ResourceKindEnum.AI.value
+        assert resource["proxy"]["backend_id"] == fake_backend.id
+        assert json.loads(resource["proxy"]["config"]) == {}
+        artifact = OpenAPIFileResourceSchemaVersion.objects.get(resource_version=resource_version)
+        operation = yaml_loads(artifact.schema)["paths"][fake_resource.path]["post"]
+        assert operation["x-bk-apigateway-resource"]["kind"] == ResourceKindEnum.AI.value
 
     def test_resource_version_release_preserves_stage_id_order(
         self, faker, mocker, request_view, fake_admin_user, fake_gateway, disable_app_permission

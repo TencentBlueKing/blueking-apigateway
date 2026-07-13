@@ -25,6 +25,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.backend import BackendHandler
 from apigateway.biz.plugin import PluginBindingHandler
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Gateway, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
 
@@ -107,6 +108,7 @@ class TestResourceVersionRetrieveOutputSLZ:
     def test_to_representation_v1(
         self, fake_backend, fake_stage, fake_gateway, fake_resource_version_v1, echo_plugin_stage_binding
     ):
+        fake_resource_version_v1.data[0].pop("kind", None)
         slz = serializers.ResourceVersionRetrieveOutputSLZ(
             instance=fake_resource_version_v1,
             context={
@@ -131,6 +133,7 @@ class TestResourceVersionRetrieveOutputSLZ:
             "resources": [
                 {
                     "id": fake_resource_version_v1.data[0]["id"],
+                    "kind": ResourceKindEnum.STANDARD.value,
                     "name": fake_resource_version_v1.data[0]["name"],
                     "method": fake_resource_version_v1.data[0]["method"],
                     "path": fake_resource_version_v1.data[0]["path"],
@@ -199,6 +202,7 @@ class TestResourceVersionRetrieveOutputSLZ:
             "resources": [
                 {
                     "id": fake_resource_version_v2.data[0]["id"],
+                    "kind": ResourceKindEnum.STANDARD.value,
                     "name": fake_resource_version_v2.data[0]["name"],
                     "method": fake_resource_version_v2.data[0]["method"],
                     "path": fake_resource_version_v2.data[0]["path"],
@@ -242,6 +246,22 @@ class TestResourceVersionRetrieveOutputSLZ:
             "created_by": fake_resource_version_v2.created_by,
         }
         assert slz.data == expected_data
+
+    def test_old_snapshot_defaults_kind_to_standard(self, fake_resource_version_v2):
+        resource = fake_resource_version_v2.data[0]
+        resource.pop("kind", None)
+
+        slz = serializers.ResourceVersionResourceSLZ(
+            instance={
+                "id": resource["id"],
+                "name": resource["name"],
+                "method": resource["method"],
+                "path": resource["path"],
+                "diff": None,
+            }
+        )
+
+        assert slz.data["kind"] == ResourceKindEnum.STANDARD.value
 
     def test_to_representation_v2_with_resources(
         self,
