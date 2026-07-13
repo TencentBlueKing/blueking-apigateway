@@ -60,6 +60,7 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    GatewayKindEnum,
     GatewayStatusEnum,
     GatewayTypeEnum,
     HashOnTypeEnum,
@@ -119,6 +120,11 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    kind = serializers.ChoiceField(
+        choices=[("normal", "普通网关"), ("ai", "AI 网关")],
+        default="normal",
+        write_only=True,
+    )
     # Data plane names to bind to when creating a new gateway
     # If empty, will use 'default' data plane
     data_planes = serializers.ListField(
@@ -143,6 +149,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
+            "kind",
         ]
         extra_kwargs = {
             "description_en": {
@@ -154,6 +161,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"))
 
         data["gateway_type"] = data.pop("api_type", None)
+        data["kind"] = {
+            "normal": GatewayKindEnum.NORMAL.value,
+            "ai": GatewayKindEnum.AI.value,
+        }[data["kind"]]
 
         return data
 

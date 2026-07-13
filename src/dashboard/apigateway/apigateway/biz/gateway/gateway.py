@@ -36,6 +36,7 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
+    GatewayKindEnum,
     GatewayOperationSourceEnum,
     GatewayOperationStatusEnum,
     GatewayStatusEnum,
@@ -79,6 +80,7 @@ class GatewayData(BaseModel):
     is_public: bool = Field(default=False)
     gateway_type: Optional[GatewayTypeEnum] = Field(default=None)
     user_config: Optional[Dict] = Field(default=None)
+    kind: int = Field(default=GatewayKindEnum.NORMAL.value)
     # allow_auth_from_params/allow_delete_sensitive_params 默认值 None，即默认不修改此配置，
     # 上层如需修改，需明确指定配置值
     allow_auth_from_params: Optional[bool] = Field(default=None)
@@ -554,6 +556,7 @@ class GatewaySaver:
             maintainers=self._gateway_data.maintainers,
             status=self._gateway_data.status,
             is_public=self._gateway_data.is_public,
+            kind=self._gateway_data.kind,
             is_official=_is_official_gateway_type(self._gateway_data.gateway_type),
             tenant_mode=self._gateway_data.tenant_mode,
             tenant_id=self._gateway_data.tenant_id,

@@ -18,7 +18,16 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.apis.v2.sync.serializers import GatewaySyncInputSLZ, SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.core.constants import GatewayKindEnum
+
+
+def test_gateway_sync_input_maps_ai_kind():
+    slz = GatewaySyncInputSLZ(data={"name": "ai-gateway", "kind": "ai"})
+
+    slz.is_valid(raise_exception=True)
+
+    assert slz.validated_data["kind"] == GatewayKindEnum.AI.value
 
 
 class TestSDKGenerateInputSLZ:

@@ -28,7 +28,9 @@ from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerCategory
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
-from apigateway.core.models import Backend, BackendConfig, GatewayRelatedApp, Resource, ResourceVersion, Stage
+from apigateway.biz.gateway import GatewayHandler
+from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.models import Backend, BackendConfig, Gateway, GatewayRelatedApp, Resource, ResourceVersion, Stage
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.resource_version import make_resource_schema_version
 
@@ -42,6 +44,39 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    def test_gateway_sync_creates_ai_gateway(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert Gateway.objects.get(name=unique_gateway_name).kind == GatewayKindEnum.AI.value
+
+    def test_gateway_sync_ignores_kind_when_updating(
+        self, mocker, request_view, fake_gateway, disable_app_permission, default_data_plane
+    ):
+        fake_gateway.name = "update-ai-kind"
+        fake_gateway.save()
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"kind": "ai"},
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.kind == GatewayKindEnum.NORMAL.value
+
     def test_gateway_public_key_retrieve_from_dashboard_backend(
         self, settings, request_view, fake_gateway, disable_app_permission
     ):

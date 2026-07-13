@@ -77,6 +77,34 @@ class TestGatewayListCreateApi:
 
         assert GatewayDataPlaneBinding.objects.filter(gateway=gateway, data_plane=default_data_plane).exists()
 
+    def test_create_and_filter_ai_gateway(self, request_view, unique_gateway_name, default_data_plane):
+        response = request_view(
+            method="POST",
+            view_name="gateways.list_create",
+            data={
+                "name": unique_gateway_name,
+                "description": "AI gateway",
+                "maintainers": ["admin"],
+                "is_public": False,
+                "kind": GatewayKindEnum.AI.value,
+                "tenant_mode": "single",
+                "tenant_id": "default",
+            },
+        )
+
+        assert response.status_code == 201
+        gateway = Gateway.objects.get(name=unique_gateway_name)
+        assert gateway.kind == GatewayKindEnum.AI.value
+
+        response = request_view(
+            method="GET",
+            view_name="gateways.list_create",
+            data={"kind": GatewayKindEnum.AI.value},
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["data"]["results"]] == [gateway.id]
+
     def test_create_programmable_gateway_without_repo_authorization__non_te(
         self,
         request_view,
