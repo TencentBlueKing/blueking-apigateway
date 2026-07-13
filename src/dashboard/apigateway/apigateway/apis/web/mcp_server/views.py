@@ -49,7 +49,6 @@ from apigateway.apps.mcp_server.models import (
 )
 from apigateway.biz.audit import Auditor
 from apigateway.biz.mcp_server import MCPServerHandler, MCPServerPromptHandler
-from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
@@ -1306,16 +1305,6 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
 
-    def _convert_gateway_user_to_display_name(self, username: str) -> str:
-        if not username:
-            return ""
-        display_names = ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
-            self.request.gateway.tenant_mode,
-            self.request.gateway.tenant_id,
-            [username],
-        )
-        return display_names[0] if display_names else username
-
     def _get_export_grant_type_display(self, grant_type: str) -> str:
         if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:
             return _("主动授权")
@@ -1345,9 +1334,9 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             {
                 "mcp_server_name": item["mcp_server"]["name"],
                 "bk_app_code": item["bk_app_code"],
-                "applied_by": self._convert_gateway_user_to_display_name(item["applied_by"]),
+                "applied_by": item["applied_by"],
                 "effective_time": item["effective_time"],
-                "handled_by": self._convert_gateway_user_to_display_name(item["handled_by"]),
+                "handled_by": item["handled_by"],
                 "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
             }
             for item in data

@@ -1022,11 +1022,33 @@ class GatewayMCPServerAppPermissionExportOutputSLZ(GatewayMCPServerAppPermission
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server.serializers.GatewayMCPServerAppPermissionExportOutputSLZ"
 
+    def _convert_gateway_user_to_display_name(self, username: str) -> str:
+        if not username:
+            return ""
+
+        display_names = ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
+            self.context.get("gateway_tenant_mode"),
+            self.context.get("gateway_tenant_id"),
+            [username],
+        )
+        return display_names[0] if display_names else username
+
     def get_applied_by(self, obj):
         apply_record = self._get_apply_record(obj)
         if apply_record:
-            return apply_record.applied_by
-        return obj.updated_by or obj.created_by or ""
+            # 申请审批的申请人属于应用租户，需按 bk_app_code 查询展示名。
+            return ResourcePermissionHandler.convert_applied_by_to_display_name(
+                obj.bk_app_code,
+                apply_record.applied_by,
+                self.context.get("gateway_tenant_mode"),
+                self.context.get("gateway_tenant_id"),
+            )
+
+        # 主动授权没有申请单，这里展示的是网关侧操作人。
+        return self._convert_gateway_user_to_display_name(obj.updated_by or obj.created_by or "")
+
+    def get_handled_by(self, obj):
+        return self._convert_gateway_user_to_display_name(super().get_handled_by(obj))
 
 
 class GatewayMCPServerAppPermissionExportInputSLZ(GatewayMCPServerAppPermissionListInputSLZ):
