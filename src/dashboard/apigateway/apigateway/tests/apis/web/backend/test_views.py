@@ -16,7 +16,25 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.models import Backend
+from apigateway.core.backend_config import decrypt_ai_backend_config
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
+from apigateway.core.models import Backend, BackendConfig
+
+
+def _ai_config(stage_id):
+    return {
+        "stage_id": stage_id,
+        "timeout": 30000,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 1,
+                "auth": {"header": {"Authorization": "Bearer secret"}},
+                "options": {"model": "gpt-4o"},
+            }
+        ],
+    }
 
 
 def _create(request_view, fake_stage):
@@ -47,6 +65,140 @@ def _create(request_view, fake_stage):
 
 
 class TestBackendApi:
+    def test_create_retrieve_and_filter_ai_backend(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": "openai-primary",
+                "description": "OpenAI",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [_ai_config(fake_stage.id)],
+            },
+        )
+
+        assert response.status_code == 201, response.json()
+        backend = Backend.objects.get(gateway=fake_stage.gateway, name="openai-primary")
+        assert backend.kind == BackendKindEnum.AI.value
+        stored = BackendConfig.objects.get(backend=backend)
+        assert decrypt_ai_backend_config(stored.config)["instances"][0]["auth"]["header"]["Authorization"] == (
+            "Bearer secret"
+        )
+
+        response = request_view(
+            "GET",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+        )
+        assert response.json()["data"]["kind"] == BackendKindEnum.AI.value
+        assert response.json()["data"]["configs"][0]["instances"][0]["auth"]["header"]["Authorization"] == ("Be****et")
+
+        response = request_view(
+            "GET",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"kind": BackendKindEnum.AI.value},
+        )
+        assert [item["id"] for item in response.json()["data"]["results"]] == [backend.id]
+
+    def test_create_ai_backend_rejects_normal_gateway(self, request_view, fake_stage):
+        response = request_view(
+            "POST",
+            "backend.list-create",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": "openai-primary",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [_ai_config(fake_stage.id)],
+            },
+        )
+
+        assert response.status_code == 400
+
+    def test_update_ai_backend_preserves_masked_secret(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+        )
+        config = _ai_config(fake_stage.id)
+        config["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "description": "updated",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [config],
+            },
+        )
+
+        assert response.status_code == 200, response.json()
+        stored = BackendConfig.objects.get(backend=backend)
+        assert decrypt_ai_backend_config(stored.config)["instances"][0]["auth"]["header"]["Authorization"] == (
+            "Bearer secret"
+        )
+
+    def test_update_rejects_kind_change(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-primary",
+            kind=BackendKindEnum.AI.value,
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
+        )
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "kind": BackendKindEnum.STANDARD.value,
+                "type": "http",
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "type": "node",
+                        "timeout": 30,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}],
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 400
+
     def test_create(self, request_view, fake_stage):
         _create(request_view, fake_stage)
         backend = Backend.objects.filter(gateway=fake_stage.gateway).first()

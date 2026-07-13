@@ -22,11 +22,58 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.core.constants import StageStatusEnum
-from apigateway.core.models import BackendConfig, Stage
+from apigateway.core.backend_config import decrypt_ai_backend_config
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
+from apigateway.core.models import Backend, BackendConfig, Stage
+
+
+def _ai_config():
+    return {
+        "timeout": 30000,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 1,
+                "auth": {"header": {"Authorization": "Bearer secret"}},
+                "options": {"model": "gpt-4o"},
+            }
+        ],
+    }
 
 
 class TestStageApi:
+    def test_create_with_ai_backend(self, request_view, fake_gateway, fake_default_backend):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        ai_backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        response = request_view(
+            "POST",
+            "stage.list-create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "name": "ai-stage",
+                "description": "AI stage",
+                "backends": [
+                    {
+                        "id": fake_default_backend.id,
+                        "config": {
+                            "type": "node",
+                            "timeout": 30,
+                            "loadbalance": "roundrobin",
+                            "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}],
+                        },
+                    },
+                    {"id": ai_backend.id, "config": _ai_config()},
+                ],
+            },
+        )
+
+        assert response.status_code == 201, response.json()
+        stage = Stage.objects.get(gateway=fake_gateway, name="ai-stage")
+        assert BackendConfig.objects.filter(stage=stage, backend=ai_backend).exists()
+
     def test_list(self, request_view, fake_stage, fake_default_backend):
         fake_gateway = fake_stage.gateway
 
@@ -200,6 +247,78 @@ class TestStageVarsApi:
 
 
 class TestStageBackendApi:
+    def test_list_masks_ai_backend_config(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        ai_backend = G(
+            Backend,
+            gateway=fake_stage.gateway,
+            kind=BackendKindEnum.AI.value,
+            name="openai-primary",
+        )
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            stage=fake_stage,
+            backend=ai_backend,
+            config=_ai_config(),
+        )
+
+        response = request_view(
+            "GET",
+            "stage.backend-list",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
+        )
+
+        assert response.status_code == 200
+        item = next(item for item in response.json()["data"] if item["id"] == ai_backend.id)
+        assert item["kind"] == BackendKindEnum.AI.value
+        assert item["config"]["instances"][0]["auth"]["header"]["Authorization"] == "Be****et"
+
+    def test_update_ai_backend_preserves_masked_secret_and_masks_audit(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        ai_backend = G(
+            Backend,
+            gateway=fake_stage.gateway,
+            kind=BackendKindEnum.AI.value,
+            name="openai-primary",
+        )
+        backend_config = BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            stage=fake_stage,
+            backend=ai_backend,
+            config=_ai_config(),
+        )
+        data = _ai_config()
+        data["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+
+        response = request_view(
+            "PUT",
+            "stage.backend-retrieve-update",
+            path_params={
+                "gateway_id": fake_stage.gateway.id,
+                "id": fake_stage.id,
+                "backend_id": ai_backend.id,
+            },
+            gateway=fake_stage.gateway,
+            data=data,
+        )
+
+        assert response.status_code == 204, response.json()
+        backend_config.refresh_from_db()
+        assert decrypt_ai_backend_config(backend_config.config)["instances"][0]["auth"]["header"]["Authorization"] == (
+            "Bearer secret"
+        )
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            op_object_id=backend_config.id,
+        )
+        assert "Be****et" in audit_log.data_before
+        assert "Be****et" in audit_log.data_after
+        assert "Bearer secret" not in audit_log.data_before
+        assert "Bearer secret" not in audit_log.data_after
+
     def test_list(self, request_view, fake_stage, fake_backend):
         response = request_view(
             "GET",

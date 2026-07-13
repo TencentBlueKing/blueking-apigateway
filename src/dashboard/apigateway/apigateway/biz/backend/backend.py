@@ -21,7 +21,13 @@ from typing import Any, Dict, List, Tuple
 from django.db import transaction
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    BackendKindEnum,
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
 from apigateway.utils.time import now_datetime
 
@@ -35,6 +41,7 @@ class BackendHandler:
         """创建后端服务"""
         backend = Backend(
             gateway=data["gateway"],
+            kind=data.get("kind", BackendKindEnum.STANDARD.value),
             type=data["type"],
             name=data["name"],
             description=data["description"],
@@ -67,7 +74,7 @@ class BackendHandler:
         backend.type = data["type"]
         if backend.name != DEFAULT_BACKEND_NAME:
             backend.name = data["name"]
-        backend.description = data["description"]
+        backend.description = data.get("description", "")
         backend.updated_by = updated_by
         backend.save()
         backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
