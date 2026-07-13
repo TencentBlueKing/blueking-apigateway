@@ -1040,8 +1040,8 @@ class GatewayMCPServerAppPermissionExportOutputSLZ(GatewayMCPServerAppPermission
             return ResourcePermissionHandler.convert_applied_by_to_display_name(
                 obj.bk_app_code,
                 apply_record.applied_by,
-                self.context.get("gateway_tenant_mode"),
-                self.context.get("gateway_tenant_id"),
+                "",
+                "",
                 force_convert=True,
             )
 

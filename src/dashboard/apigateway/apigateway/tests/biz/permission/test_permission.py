@@ -154,8 +154,8 @@ class TestConvertAppliedByToDisplayName:
         result = ResourcePermissionHandler.convert_applied_by_to_display_name(
             bk_app_code="test-app",
             applied_by="admin",
-            gateway_tenant_mode="global",
-            gateway_tenant_id="tenant-1",
+            gateway_tenant_mode="",
+            gateway_tenant_id="",
             force_convert=True,
         )
         assert result == "Admin User"
