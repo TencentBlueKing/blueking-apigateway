@@ -146,6 +146,25 @@ class TestConvertAppliedByToDisplayName:
     @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
     @patch("apigateway.biz.permission.permission.get_app_tenant_info_cached")
     @patch("apigateway.biz.permission.permission.query_display_names_cached")
+    def test_force_convert_same_tenant(self, mock_query_display_names, mock_get_app_tenant_info):
+        """When force_convert is True, should convert display name even in same tenant"""
+        mock_get_app_tenant_info.return_value = ("global", "tenant-1")
+        mock_query_display_names.return_value = [{"display_name": "Admin User"}]
+
+        result = ResourcePermissionHandler.convert_applied_by_to_display_name(
+            bk_app_code="test-app",
+            applied_by="admin",
+            gateway_tenant_mode="global",
+            gateway_tenant_id="tenant-1",
+            force_convert=True,
+        )
+        assert result == "Admin User"
+        mock_get_app_tenant_info.assert_called_once_with("test-app")
+        mock_query_display_names.assert_called_once_with(TENANT_ID_OPERATION, "admin")
+
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.get_app_tenant_info_cached")
+    @patch("apigateway.biz.permission.permission.query_display_names_cached")
     def test_different_tenant_with_display_name_found(self, mock_query_display_names, mock_get_app_tenant_info):
         """When tenants are different and display name is found, should return the display name"""
         mock_get_app_tenant_info.return_value = ("private", "tenant-2")

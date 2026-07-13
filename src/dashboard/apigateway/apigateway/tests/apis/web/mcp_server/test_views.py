@@ -3785,7 +3785,9 @@ class TestGatewayMCPServerAppPermissionExportApi:
         assert rows_by_app["apply-app"]["审批人/授权人"] == "display-handled-user"
         assert rows_by_app["apply-app"]["授权类型"] == "申请审批"
 
-    def test_export_single_tenant_keeps_username(self, mocker, request_view, settings, fake_gateway, fake_mcp_server):
+    def test_export_single_tenant_converts_app_applied_by(
+        self, mocker, request_view, settings, fake_gateway, fake_mcp_server
+    ):
         settings.ENABLE_MULTI_TENANT_MODE = True
         fake_gateway.tenant_mode = "single"
         fake_gateway.tenant_id = "tenant-1"
@@ -3837,7 +3839,7 @@ class TestGatewayMCPServerAppPermissionExportApi:
         rows_by_app = {row["蓝鲸应用ID"]: row for row in rows}
         assert rows_by_app["grant-app"]["申请人"] == "grant-user"
         assert rows_by_app["grant-app"]["审批人/授权人"] == "grant-user"
-        assert rows_by_app["apply-app"]["申请人"] == "apply-user"
+        assert rows_by_app["apply-app"]["申请人"] == "display-apply-user"
         assert rows_by_app["apply-app"]["审批人/授权人"] == "handled-user"
 
     def test_export_selected_empty_ids(self, request_view, fake_gateway):

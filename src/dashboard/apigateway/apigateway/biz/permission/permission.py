@@ -182,7 +182,11 @@ class ResourcePermissionHandler:
 
     @staticmethod
     def convert_applied_by_to_display_name(
-        bk_app_code: str, applied_by: str, gateway_tenant_mode: str, gateway_tenant_id: str
+        bk_app_code: str,
+        applied_by: str,
+        gateway_tenant_mode: str,
+        gateway_tenant_id: str,
+        force_convert: bool = False,
     ) -> str:
         """
         将申请人转换为显示名称，用于非 global 租户申请 global 网关权限时前端用户的展示
@@ -192,7 +196,7 @@ class ResourcePermissionHandler:
 
         try:
             app_tenant_mode, app_tenant_id = get_app_tenant_info_cached(bk_app_code)
-            if app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
+            if not force_convert and app_tenant_mode == gateway_tenant_mode and app_tenant_id == gateway_tenant_id:
                 return applied_by
 
             if app_tenant_mode == TenantModeEnum.GLOBAL.value:
