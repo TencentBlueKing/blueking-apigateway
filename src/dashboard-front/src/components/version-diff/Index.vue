@@ -90,12 +90,12 @@
           {{ t('仅显示有差异的资源属性') }}
         </BkCheckbox>
         <BkCheckbox
-          v-model="searchParams.showOnlyDiffInDocUpdatedTime"
+          v-model="searchParams.hideOnlyDiffInDocUpdatedTime"
           true-value
           :false-value="false"
           @change="updateTableEmptyConfig"
         >
-          {{ t('显示仅存在文档更新的资源') }}
+          {{ t('隐藏仅文档更新的资源') }}
         </BkCheckbox>
       </div>
 
@@ -555,8 +555,8 @@ const searchParams = reactive({
   keyword: '',
   diffType: '',
   onlyUpdated: false,
-  // 是否显示仅存在文档更新的资源，默认显示
-  showOnlyDiffInDocUpdatedTime: true,
+  // 是否隐藏仅存在文档更新的资源，默认显示
+  hideOnlyDiffInDocUpdatedTime: false,
 });
 const diffTypeList = reactive([
   {
@@ -587,7 +587,7 @@ const hasResult = computed(() => {
 });
 
 const hasFilter = computed(() =>
-  searchKeyword.value || searchParams.diffType || !searchParams.showOnlyDiffInDocUpdatedTime,
+  searchKeyword.value || searchParams.diffType || searchParams.hideOnlyDiffInDocUpdatedTime,
 );
 
 const sourceVersion = computed(() => {
@@ -680,7 +680,7 @@ const checkMatch = (item: any, type: string) => {
     || name.indexOf(keyword) > -1;
 
   // 检查是否满足文档更新时间过滤
-  const shouldBlockDocTimeDiffOnly = type === 'update' && !searchParams.showOnlyDiffInDocUpdatedTime;
+  const shouldBlockDocTimeDiffOnly = type === 'update' && searchParams.hideOnlyDiffInDocUpdatedTime;
   const hasOnlyDocTimeDiff = Object.keys(item.diff || {}).length === 1 && item.diff.doc_updated_time;
   const shouldShow = shouldBlockDocTimeDiffOnly ? !hasOnlyDocTimeDiff : true;
 
@@ -727,7 +727,7 @@ const renderTitle = (item: any) => {
 };
 
 const updateTableEmptyConfig = () => {
-  const isSearch = !!searchParams.keyword || !!searchParams.diffType || !searchParams.showOnlyDiffInDocUpdatedTime;
+  const isSearch = !!searchParams.keyword || !!searchParams.diffType || searchParams.hideOnlyDiffInDocUpdatedTime;
   if (isSearch && !hasResult.value) {
     tableEmptyConf.value.emptyType = 'searchEmpty';
     return;
@@ -742,7 +742,7 @@ const updateTableEmptyConfig = () => {
 const handleClearFilterKey = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
-  searchParams.showOnlyDiffInDocUpdatedTime = true;
+  searchParams.hideOnlyDiffInDocUpdatedTime = false;
   searchKeyword.value = '';
   await getDiffData();
   updateTableEmptyConfig();
@@ -752,7 +752,7 @@ const handleVersionChange = async () => {
   searchParams.keyword = '';
   searchParams.diffType = '';
   searchParams.onlyUpdated = false;
-  searchParams.showOnlyDiffInDocUpdatedTime = true;
+  searchParams.hideOnlyDiffInDocUpdatedTime = false;
   searchKeyword.value = '';
   await getDiffData();
 };
