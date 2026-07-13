@@ -33,6 +33,7 @@ from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
     RESOURCE_METHOD_CHOICES,
+    BackendKindEnum,
     BackendTypeEnum,
     ContextScopeTypeEnum,
     ContextTypeEnum,
@@ -45,6 +46,7 @@ from apigateway.core.constants import (
     PublishEventStatusEnum,
     PublishSourceEnum,
     ReleaseHistoryStatusEnum,
+    ResourceKindEnum,
     ResourceVersionSchemaEnum,
     StageStatusEnum,
 )
@@ -187,6 +189,10 @@ class Gateway(TimestampedModelMixin, OperatorModelMixin):
         return self.kind == GatewayKindEnum.PROGRAMMABLE.value
 
     @property
+    def is_ai_gateway(self):
+        return self.kind == GatewayKindEnum.AI.value
+
+    @property
     def is_active(self):
         return self.status == GatewayStatusEnum.ACTIVE.value
 
@@ -260,6 +266,13 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     description_en = description_i18n.field("en")
 
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=20,
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        blank=False,
+        null=False,
+    )
     method = models.CharField(max_length=10, choices=RESOURCE_METHOD_CHOICES, blank=False, null=False)
     path = models.CharField(max_length=2048, blank=False, null=False)
     match_subpath = models.BooleanField(default=False)
@@ -270,6 +283,8 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
 
     is_public = models.BooleanField(default=True)
     allow_apply_permission = models.BooleanField(default=True)
+
+    objects: ClassVar[managers.ResourceManager] = managers.ResourceManager()
 
     def __str__(self):
         return f"<Resource: {self.pk}/{self.name}>"
@@ -289,6 +304,10 @@ class Resource(TimestampedModelMixin, OperatorModelMixin):
     @property
     def path_display(self):
         return get_path_display(self.path, self.match_subpath)
+
+    @property
+    def is_ai(self):
+        return self.kind == ResourceKindEnum.AI.value
 
 
 class Proxy(ConfigModelMixin):
@@ -385,6 +404,13 @@ class StageResourceDisabled(TimestampedModelMixin, OperatorModelMixin):
 
 class Backend(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
+    kind = models.CharField(
+        max_length=20,
+        choices=BackendKindEnum.get_choices(),
+        default=BackendKindEnum.STANDARD.value,
+        blank=False,
+        null=False,
+    )
     type = models.CharField(
         max_length=20,
         choices=BackendTypeEnum.get_choices(),
@@ -395,12 +421,18 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
     name = models.CharField(max_length=64)
     description = models.CharField(max_length=512, default="")
 
+    objects: ClassVar[managers.BackendManager] = managers.BackendManager()
+
     class Meta:
         unique_together = ("gateway", "name")
         db_table = "core_backend"
 
     def __str__(self):
         return f"<Backend: {self.id}/{self.name}>"
+
+    @property
+    def is_ai(self):
+        return self.kind == BackendKindEnum.AI.value
 
 
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):

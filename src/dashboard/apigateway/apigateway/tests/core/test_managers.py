@@ -112,6 +112,22 @@ class TestStageManager:
 
 
 class TestResourceVersionManager:
+    def test_get_resources_defaults_missing_kind_to_standard(self, fake_resource_version_v2):
+        data = fake_resource_version_v2.data
+        resource_id = data[0]["id"]
+        data[0].pop("kind", None)
+        fake_resource_version_v2.data = data
+        fake_resource_version_v2.save(update_fields=["_data"])
+        ResourceVersion.objects.get_resources.cache_clear()
+
+        resources = ResourceVersion.objects.get_resources(
+            fake_resource_version_v2.gateway_id,
+            fake_resource_version_v2.id,
+        )
+
+        assert resources[resource_id]["kind"] == constants.ResourceKindEnum.STANDARD.value
+        ResourceVersion.objects.get_resources.cache_clear()
+
     def test_get_id_to_fields_map(self):
         gateway = G(Gateway)
         rv1 = G(ResourceVersion, gateway=gateway, version="1.0.1")
