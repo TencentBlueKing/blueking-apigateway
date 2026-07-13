@@ -958,6 +958,22 @@ paths:
 
 
 class TestOpenAPIExporter:
+    def test_generate_ai_resource_extension(self, fake_resource_dict):
+        resource = dict(fake_resource_dict)
+        resource.update(
+            {
+                "kind": "ai",
+                "method": "POST",
+                "backend": {"name": "openai-primary", "config": {}},
+            }
+        )
+
+        operation = BaseExporter()._gen_swagger_paths([resource])[resource["path"]]["post"]
+        extension = operation["x-bk-apigateway-resource"]
+
+        assert extension["kind"] == "ai"
+        assert extension["backend"] == {"name": "openai-primary"}
+
     def test_get_swagger_by_paths(self):
         paths = {
             "/user": {

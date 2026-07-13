@@ -22,7 +22,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, STAGE_VAR_PATTERN, BackendKindEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.service.plugin import HeaderRewriteConvertor
 
@@ -83,7 +83,10 @@ class LegacyBackendCreator:
         self.gateway = gateway
         self.username = username
 
-        self._existing_backends = {backend.id: backend for backend in Backend.objects.filter(gateway=gateway)}
+        self._existing_backends = {
+            backend.id: backend
+            for backend in Backend.objects.filter(gateway=gateway, kind=BackendKindEnum.STANDARD.value)
+        }
         self._existing_backend_configs = self._get_existing_backend_configs()
         self._max_legacy_backend_number = self._get_max_legacy_backend_number()
 
@@ -117,7 +120,10 @@ class LegacyBackendCreator:
         # 对应关系：backend_id -> stage_id -> config
         backend_configs: Dict[int, Dict[int, Dict]] = defaultdict(dict)
 
-        for backend_config in BackendConfig.objects.filter(gateway=self.gateway):
+        for backend_config in BackendConfig.objects.filter(
+            gateway=self.gateway,
+            backend__kind=BackendKindEnum.STANDARD.value,
+        ):
             config = backend_config.config
             config["hosts"] = self._sort_hosts(config["hosts"])
 
@@ -159,9 +165,11 @@ class LegacyBackendCreator:
 
     def _get_max_legacy_backend_number(self) -> int:
         """获取网关创建的后端中，后端名称中已使用的最大序号"""
-        names = Backend.objects.filter(gateway=self.gateway, name__startswith=LEGACY_BACKEND_NAME_PREFIX).values_list(
-            "name", flat=True
-        )
+        names = Backend.objects.filter(
+            gateway=self.gateway,
+            kind=BackendKindEnum.STANDARD.value,
+            name__startswith=LEGACY_BACKEND_NAME_PREFIX,
+        ).values_list("name", flat=True)
 
         backend_numbers = [
             int(name[len(LEGACY_BACKEND_NAME_PREFIX) :])

@@ -609,8 +609,11 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
     )
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), default=ResourceKindEnum.STANDARD.value, help_text="资源类型"
+    )
     backend_name = serializers.CharField(help_text="后端服务名称")
-    backend_config = HttpBackendConfigSLZ(help_text="后端配置")
+    backend_config = HttpBackendConfigSLZ(required=False, allow_null=True, help_text="后端配置")
     labels = serializers.ListField(
         child=serializers.CharField(),
         allow_empty=True,
@@ -632,6 +635,7 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         model = Resource
         fields = [
             # 基本信息
+            "kind",
             "name",
             "description",
             "description_en",
@@ -691,6 +695,27 @@ class ResourceDataImportSLZ(serializers.ModelSerializer):
         # 因此，前端未传入有效 description_en 时，将其设置为 None
         return value or None
 
+    def validate(self, data):
+        if data["kind"] == ResourceKindEnum.AI.value:
+            if data["method"] != "POST" or data.get("match_subpath", False) or data.get("enable_websocket", False):
+                raise serializers.ValidationError({"kind": _("模型代理 API 配置不合法。")})
+            if data.get("backend_config"):
+                raise serializers.ValidationError({"backend_config": _("模型代理 API 不支持普通后端配置。")})
+        elif data.get("backend_config") is None:
+            raise serializers.ValidationError({"backend_config": _("普通 API 必须配置后端请求信息。")})
+
+        gateway = self.context.get("gateway")
+        if gateway:
+            if data["kind"] == ResourceKindEnum.AI.value and not gateway.is_ai_gateway:
+                raise serializers.ValidationError({"kind": _("普通网关不支持模型代理 API。")})
+            try:
+                backend = Backend.objects.get(gateway=gateway, name=data["backend_name"])
+            except Backend.DoesNotExist:
+                raise serializers.ValidationError({"backend_name": _("后端服务不存在。")}) from None
+            if backend.kind != data["kind"]:
+                raise serializers.ValidationError({"backend_name": _("资源类型与后端服务类型不匹配。")})
+        return data
+
 
 class ResourceImportInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
@@ -748,6 +773,7 @@ class ResourceImportCheckFailOutputSLZ(serializers.Serializer):
 class ResourceImportInfoSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField(help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), help_text="资源类型")
     description = serializers.CharField(read_only=True, help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(read_only=True, help_text="请求方法")
@@ -785,6 +811,9 @@ class ResourceImportInfoSLZ(serializers.Serializer):
         return self.context["docs"].get(resource_id, [])
 
     def get_backend(self, obj):
+        if obj.kind == ResourceKindEnum.AI.value:
+            return {"name": obj.backend.name, "config": {}}
+        assert obj.backend_config
         return {
             "name": obj.backend.name,
             "config": {

@@ -21,13 +21,12 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from django.utils.translation import gettext as _
 from openapi_spec_validator.versions import OPENAPIV30
 from pydantic import TypeAdapter
 
 from apigateway.biz.plugin import PluginConfigData
 from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, HTTP_METHOD_ANY, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
@@ -55,6 +54,7 @@ class BaseParser:
                 method = self._adapt_method(method_raw)
 
                 extension_resource = operation.get(OpenAPIExtensionEnum.RESOURCE.value, {})
+                kind = extension_resource.get("kind", ResourceKindEnum.STANDARD.value)
 
                 backend = extension_resource.get("backend") or {
                     "type": ProxyTypeEnum.HTTP.value,
@@ -63,6 +63,7 @@ class BaseParser:
                 }
 
                 resource = {
+                    "kind": kind,
                     "method": method,
                     "path": path,
                     "match_subpath": extension_resource.get("matchSubpath", False),
@@ -75,7 +76,7 @@ class BaseParser:
                     "allow_apply_permission": extension_resource.get("allowApplyPermission", True),
                     "auth_config": self._adapt_auth_config(extension_resource.get("authConfig", {})),
                     "backend_name": backend.get("name", DEFAULT_BACKEND_NAME),
-                    "backend_config": self._adapt_backend(backend),
+                    "backend_config": (None if kind == ResourceKindEnum.AI.value else self._adapt_backend(backend)),
                     # pluginConfigs 不存在或为 None，表示不处理此资源的插件配置的导入
                     "plugin_configs": extension_resource.get("pluginConfigs"),
                     # schema
@@ -403,12 +404,19 @@ class ResourceDataConvertor:
 
             backend_name = resource.get("backend_name", DEFAULT_BACKEND_NAME)
             backend = backends.get(backend_name)
+            metadata["backend_name"] = backend_name
             if not backend:
-                raise ValueError(_("后端服务 (name={name}) 不存在。").format(name=backend_name))
+                raise ValueError(f"backend does not exist: {backend_name}")
+
+            kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
+            backend_config = None
+            if kind == ResourceKindEnum.STANDARD.value:
+                backend_config = ResourceBackendConfig.model_validate(resource["backend_config"])
 
             resource_data_list.append(
                 ResourceData(
                     resource=resource_obj,
+                    kind=kind,
                     name=resource["name"],
                     description=resource.get("description", ""),
                     description_en=resource.get("description_en", None),
@@ -420,7 +428,7 @@ class ResourceDataConvertor:
                     allow_apply_permission=resource.get("allow_apply_permission", True),
                     auth_config=ResourceAuthConfig.model_validate(resource.get("auth_config", {})),
                     backend=backend,
-                    backend_config=ResourceBackendConfig.model_validate(resource["backend_config"]),
+                    backend_config=backend_config,
                     plugin_configs=TypeAdapter(Optional[List[PluginConfigData]]).validate_python(
                         resource.get("plugin_configs")
                     ),

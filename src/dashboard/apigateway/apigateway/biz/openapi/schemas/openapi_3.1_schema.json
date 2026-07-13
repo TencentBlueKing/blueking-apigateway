@@ -403,6 +403,10 @@
             "descriptionEn": {
               "type": ["string", "null"]
             },
+            "kind": {
+              "type": "string",
+              "enum": ["standard", "ai"]
+            },
             "isPublic": {
               "type": "boolean"
             },
@@ -488,6 +492,17 @@
                   "required": [
                     "type",
                     "statusCode"
+                  ]
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
                   ]
                 }
               ]
