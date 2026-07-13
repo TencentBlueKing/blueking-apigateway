@@ -22,7 +22,7 @@ from pydantic import TypeAdapter
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
 from apigateway.common.constants import CallSourceTypeEnum
-from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -49,6 +49,7 @@ class TestGatewayData:
                     "allow_delete_sensitive_params": None,
                     "tenant_id": None,
                     "tenant_mode": None,
+                    "kind": GatewayKindEnum.NORMAL.value,
                 },
             ),
             (
@@ -80,6 +81,7 @@ class TestGatewayData:
                     "allow_delete_sensitive_params": True,
                     "tenant_mode": "single",
                     "tenant_id": "default",
+                    "kind": GatewayKindEnum.NORMAL.value,
                 },
             ),
         ],

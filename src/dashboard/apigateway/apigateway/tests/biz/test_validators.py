@@ -363,22 +363,28 @@ class TestPublishValidator:
             backend=backend,
             stage=fake_stage,
             config={
+                "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
                 "hosts": [{"scheme": "http", "host": "ee.com", "weight": 100}],
             },
         )
 
-        G(
-            BackendConfig,
-            gateway=fake_gateway,
-            backend=backend,
-            stage=stage2,
-            config={
-                "timeout": 30,
-                "loadbalance": "roundrobin",
-                "hosts": [{"scheme": "", "host": "", "weight": 100}],
-            },
+        # 模拟存量非法配置，确认发布校验不会读取其他环境的数据。
+        BackendConfig._base_manager.bulk_create(
+            [
+                BackendConfig(
+                    gateway=fake_gateway,
+                    backend=backend,
+                    stage=stage2,
+                    config={
+                        "type": "node",
+                        "timeout": 30,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "", "host": "", "weight": 100}],
+                    },
+                )
+            ]
         )
 
         resource_version = G(
