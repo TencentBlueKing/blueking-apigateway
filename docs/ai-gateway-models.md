@@ -357,7 +357,7 @@ BackendConfig 仍然是 Backend 在每个 Stage 下的配置。
 网关同步输入新增字符串 `kind`：
 
 ```text
-kind = normal | ai_gateway
+kind = normal | ai
 ```
 
 兼容和约束：

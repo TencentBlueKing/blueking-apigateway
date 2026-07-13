@@ -1,6 +1,6 @@
 ### 描述
 
-网关生成新版本
+网关生成新版本。资源版本快照会保留每个 Resource 的 `kind`（`standard` 或 `ai`）及其关联 Backend；历史资源缺少 `kind` 时按 `standard` 读取。
 
 
 ### 输入参数

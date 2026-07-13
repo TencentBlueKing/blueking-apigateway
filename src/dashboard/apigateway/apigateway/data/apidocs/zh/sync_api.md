@@ -1,6 +1,6 @@
 ### 描述
 
-同步网关，如果网关不存在，创建网关，如果网关已存在，更新网关
+同步网关，如果网关不存在，创建网关，如果网关已存在，更新网关。`kind` 仅在创建时生效，更新已有网关时会被忽略，以兼容存量同步配置。
 
 
 ### 输入参数
@@ -18,6 +18,7 @@
 | description | string   | 否  | 网关描述               |
 | maintainers | array    | 否  | 网关管理员             |
 | is_public   | boolean  | 否  | 网关是否公开，默认公开 |
+| kind        | string   | 否  | 网关类型：`normal`（默认）或 `ai`；仅创建时生效 |
 
 ### 请求参数示例
 
@@ -25,7 +26,8 @@
 {
     "description": "just for test",
     "maintainers": ["admin"],
-    "is_public": true
+    "is_public": true,
+    "kind": "ai"
 }
 ```
 
@@ -39,7 +41,8 @@ result = client.api.sync_api(
     {
         "description": "just for test",
         "maintainers": ["admin"],
-        "is_public": True
+        "is_public": True,
+        "kind": "ai"
     },
     path_params={
         "api_name": "demo",
