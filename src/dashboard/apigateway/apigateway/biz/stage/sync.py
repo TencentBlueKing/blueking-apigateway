@@ -22,14 +22,77 @@ from django.utils.translation import gettext as _
 from pydantic import TypeAdapter
 from rest_framework import serializers
 
+from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
+from apigateway.biz.audit import Auditor
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.core.constants import LoadBalanceTypeEnum
+from apigateway.core.backend_config import mask_backend_config, prepare_backend_config
+from apigateway.core.backend_config_schema import BackendConfigValidationError
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, LoadBalanceTypeEnum
+from apigateway.core.models import Backend, BackendConfig
 from apigateway.service.plugin import PluginConfigYamlValidator
 
 
 class StageSyncHandler:
+    @staticmethod
+    def upsert_backend_configs(*, stage, backend_items, kind: str, username: str) -> None:
+        field_name = "modelBackends" if kind == BackendKindEnum.AI.value else "backends"
+        for item in backend_items:
+            backend, _created = Backend.objects.get_or_create(
+                gateway=stage.gateway,
+                name=item["name"],
+                defaults={
+                    "kind": kind,
+                    "type": BackendTypeEnum.HTTP.value,
+                    "created_by": username,
+                    "updated_by": username,
+                },
+            )
+            if backend.kind != kind:
+                raise serializers.ValidationError(
+                    {field_name: _("后端服务 {name} 已存在且 kind 不一致。").format(name=backend.name)}
+                )
+
+            config = (
+                item["config"] if kind == BackendKindEnum.AI.value else StageSyncHandler.build_backend_config(item)
+            )
+            backend_config = BackendConfig.objects.filter(
+                gateway=stage.gateway,
+                backend=backend,
+                stage=stage,
+            ).first()
+            existing_config = backend_config.config if backend_config else None
+            try:
+                prepare_backend_config(kind, config, existing_config)
+            except BackendConfigValidationError as err:
+                raise serializers.ValidationError({field_name: str(err)}) from err
+
+            data_before = mask_backend_config(kind, existing_config) if existing_config else None
+            if backend_config is None:
+                backend_config = BackendConfig(
+                    gateway=stage.gateway,
+                    backend=backend,
+                    stage=stage,
+                    created_by=username,
+                )
+            backend_config.config = config
+            backend_config.updated_by = username
+            backend_config.save()
+            data_after = mask_backend_config(kind, backend_config.config)
+
+            if data_before is not None and data_before != data_after:
+                Auditor.record_stage_backend_op_success(
+                    op_type=OpTypeEnum.MODIFY,
+                    username=username,
+                    gateway_id=stage.gateway_id,
+                    instance_id=backend_config.id,
+                    instance_name=f"{stage.name}:{backend.name}",
+                    data_before=data_before,
+                    data_after=data_after,
+                    comment="OpenAPI 同步更新环境后端配置",
+                )
+
     @staticmethod
     def build_legacy_backend_config(proxy_http_config: dict) -> dict:
         """Build backend config from open-v1 proxy_http input payload."""

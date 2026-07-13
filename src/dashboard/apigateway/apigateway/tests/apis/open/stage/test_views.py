@@ -23,12 +23,31 @@ from ddf import G
 
 from apigateway.apis.open.stage import views
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.backend_config import decrypt_ai_backend_config
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.tests.utils.testing import get_response_json
 from apigateway.utils.yaml import yaml_dumps
 
 pytestmark = pytest.mark.django_db
+
+
+def _model_backend():
+    return {
+        "name": "openai-primary",
+        "config": {
+            "timeout": 30000,
+            "instances": [
+                {
+                    "name": "primary",
+                    "provider": "openai",
+                    "weight": 1,
+                    "auth": {"header": {"Authorization": "Bearer secret"}},
+                    "options": {"model": "gpt-4o"},
+                }
+            ],
+        },
+    }
 
 
 class TestStageListViewSet:
@@ -89,6 +108,35 @@ class TestStageV1ViewSet:
 
 
 class TestStageSyncViewSet:
+    def test_sync_ai_gateway_with_model_backends(self, mocker, unique_gateway_name, request_factory):
+        mocker.patch(
+            "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
+            return_value=True,
+        )
+        gateway = G(Gateway, name=unique_gateway_name, is_public=False, kind=GatewayKindEnum.AI.value)
+        request = request_factory.post(
+            f"/api/v1/apis/{unique_gateway_name}/stages/sync/",
+            data={
+                "name": "prod",
+                "description": "desc",
+                "vars": {},
+                "modelBackends": [_model_backend()],
+            },
+        )
+        request.gateway = gateway
+
+        response = views.StageSyncViewSet.as_view({"post": "sync"})(request, gateway_name=unique_gateway_name)
+
+        result = get_response_json(response)
+        assert response.status_code == 200, result
+        backend = Backend.objects.get(gateway=gateway, name="openai-primary")
+        assert backend.kind == BackendKindEnum.AI.value
+        backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
+        assert (
+            decrypt_ai_backend_config(backend_config.config)["instances"][0]["auth"]["header"]["Authorization"]
+            == "Bearer secret"
+        )
+
     def test_sync(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(
             "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
