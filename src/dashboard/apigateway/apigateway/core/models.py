@@ -29,6 +29,7 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core import managers
+from apigateway.core.backend_config import prepare_backend_config
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
@@ -440,6 +441,24 @@ class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
     config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    objects: ClassVar[managers.BackendConfigManager] = managers.BackendConfigManager()
+
+    def prepare_config_for_save(self, existing_config=None):
+        if "backend" in self._state.fields_cache:
+            backend_kind = self.backend.kind
+        else:
+            backend_kind = Backend.objects.only("kind").get(id=self.backend_id).kind
+        self.config = prepare_backend_config(backend_kind, self.config, existing_config)
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get("update_fields")
+        if update_fields is None or "config" in update_fields:
+            existing_config = None
+            if self.pk:
+                existing_config = BackendConfig.objects.filter(pk=self.pk).values_list("config", flat=True).first()
+            self.prepare_config_for_save(existing_config)
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")

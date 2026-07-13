@@ -965,7 +965,12 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+            config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"host": "api.demo.com", "scheme": "http"}],
+            },
         )
 
         data = {
@@ -998,7 +1003,12 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={"type": "node", "hosts": [{"host": "api.demo.com", "scheme": "http"}]},
+            config={
+                "type": "node",
+                "timeout": 30,
+                "loadbalance": "roundrobin",
+                "hosts": [{"host": "api.demo.com", "scheme": "http"}],
+            },
         )
 
         view = BackendPathCheckApi()
@@ -1011,7 +1021,12 @@ class TestBackendPathCheckApi:
         result = view._get_backend_hosts(backend.id)
         assert result == {stage.id: ["http://api.demo.com"]}
 
-        backend_config.config = {"type": "node", "hosts": [{"host": "", "scheme": "http"}]}
+        backend_config.config = {
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"host": "", "scheme": "http"}],
+        }
         backend_config.save()
 
         with pytest.raises(BackendHostIsEmpty):
