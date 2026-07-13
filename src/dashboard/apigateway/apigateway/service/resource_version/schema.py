@@ -26,7 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import ProxyTypeEnum
+from apigateway.core.constants import ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import ResourceVersion
 from apigateway.service.resource import get_resource_use_stage_vars
 
@@ -121,6 +121,8 @@ def get_used_stage_vars(gateway_id: int, resource_version_id: int):
     used_in_path = set()
     used_in_host = set()
     for resource in resource_version.data:
+        if resource.get("kind", ResourceKindEnum.STANDARD.value) == ResourceKindEnum.AI.value:
+            continue
         if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
             continue
         stage_vars = resource["stage_vars"] if resource.get("stage_vars") else get_resource_use_stage_vars(resource)
