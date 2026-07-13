@@ -177,7 +177,7 @@ Model BackendConfig 顶层只开放 `timeout`：
 
 #### 2.4.1 auth 凭证
 
-`instances[].auth.header` 保持 APISIX 原生对象结构，Header value 使用项目现有加密组件逐值加密后保存在 BackendConfig.config JSONField 中，不增加独立凭证表或加密字段。
+`instances[].auth.header` 保持 APISIX 原生对象结构，Header value 复用 `DataPlane.etcd_configs` 的处理方式，直接通过项目现有 `get_crypto().encrypt()/decrypt()` 逐值加解密后保存在 BackendConfig.config JSONField 中，不增加自定义密文 envelope、独立凭证表或加密字段。
 
 provider 约束：
 
@@ -194,14 +194,14 @@ provider 约束：
 
 更新语义：
 
-- Header value 为固定掩码 `******`，表示保留已有凭证。
+- Header value 长度小于 4 时输出 `****`；否则输出“前两位 + `****` + 后两位”，该掩码值表示保留已有凭证。
 - 更新请求中未提供某个已有 Header，也表示保留，避免 PUT 或同步客户端读取不到明文后误删凭证。
 - 提供新的非掩码 value 表示替换并重新加密。
 - 显式提交空的 `auth.header` 表示清空全部 Header；仅 `openai-compatible` 允许保存空认证，`openai` 和 `deepseek` 应校验失败。
 
 读取和使用约束：
 
-- Web API、`/api/v2/sync` 响应、导入导出、审计事件和配置 diff 对所有 auth Header value 统一输出 `******`，不得输出明文或数据库密文。
+- Web API、`/api/v2/sync` 响应、导入导出、审计事件和配置 diff 对所有 auth Header value 统一按上述规则输出部分掩码，不得输出完整明文或数据库密文。
 - controller 发布时只在内存中解密，将明文 auth 注入生成的 `ai-proxy` 配置；解密失败必须终止发布。
 - controller、发布记录、异常消息和日志不得序列化解密后的 auth。
 - APISIX 运行配置最终需要包含可用凭证，因此 APISIX 与 etcd 属于凭证信任边界，必须依赖其访问控制和日志脱敏，不能把 dashboard 数据库加密误认为端到端加密。
