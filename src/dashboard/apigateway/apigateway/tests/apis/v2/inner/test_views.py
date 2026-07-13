@@ -93,8 +93,8 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
-    @patch("apigateway.apis.v2.inner.serializers.query_display_names_for_readonly")
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
     def test_converts_maintainers_for_cross_tenant_gateway(
         self,
         mock_query_display_names_for_readonly,
@@ -118,9 +118,9 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
     @patch(
-        "apigateway.apis.v2.inner.serializers.query_display_names_for_readonly",
+        "apigateway.biz.permission.permission.query_display_names_for_readonly",
         side_effect=RuntimeError("bk-user unavailable"),
     )
     def test_falls_back_to_original_maintainers_when_display_name_lookup_fails(
