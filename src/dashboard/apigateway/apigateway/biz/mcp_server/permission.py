@@ -81,7 +81,7 @@ class MCPServerPermissionHandler:
 
         if existing_permissions:
             existing_names = ", ".join([obj.mcp_server.name for obj in existing_permissions])
-            raise error_codes.INVALID_ARGUMENT.format(
+            raise error_codes.ALREADY_EXISTS.format(
                 _(f"mcp server name：{existing_names} 已经存在待审批或已审批的记录")
             )
 

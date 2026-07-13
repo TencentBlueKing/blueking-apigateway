@@ -43,6 +43,7 @@ STATUS_CODE_DEFAULT_ERROR = {
     status.HTTP_403_FORBIDDEN: error_codes.NO_PERMISSION,
     status.HTTP_404_NOT_FOUND: error_codes.NOT_FOUND,
     status.HTTP_405_METHOD_NOT_ALLOWED: error_codes.METHOD_NOT_ALLOWED,
+    status.HTTP_409_CONFLICT: error_codes.ALREADY_EXISTS,
     status.HTTP_500_INTERNAL_SERVER_ERROR: error_codes.INTERNAL,
 }
 
