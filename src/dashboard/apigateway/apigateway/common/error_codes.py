@@ -115,7 +115,7 @@ error_codes.add_codes(
         # - remove all the `code`;
         # - 细化 validate_error
         ErrorCode("INVALID_ARGUMENT", 40002, _("校验失败"), status_code=status.HTTP_400_BAD_REQUEST),
-        ErrorCode("ALREADY_EXISTS", 40009, _("资源已存在"), status_code=status.HTTP_409_CONFLICT),
+        ErrorCode("CONFLICT", 40409, _("资源冲突"), status_code=status.HTTP_409_CONFLICT),
         ErrorCode(
             "FAILED_PRECONDITION", 40403, _("请求无法在当前系统状态下执行"), status_code=status.HTTP_400_BAD_REQUEST
         ),
