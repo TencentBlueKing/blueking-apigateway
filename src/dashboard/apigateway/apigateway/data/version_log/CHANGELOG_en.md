@@ -1,3 +1,14 @@
+<!-- 2026-07-13 -->
+# V1.22.3 Release Log
+
+### Bug Fixes
+
+- Fix: MCP Server sidebar scrollbar issue
+- Fix: API documentation detail permission application prompt text
+- Fix: MCP permission application single returns ITSM approval link
+
+---
+
 <!-- 2026-07-03 -->
 # V1.22.2 Release Log
 
