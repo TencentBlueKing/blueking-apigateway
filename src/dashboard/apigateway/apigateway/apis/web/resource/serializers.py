@@ -39,7 +39,7 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES
+from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
@@ -58,6 +58,7 @@ class ResourceQueryInputSLZ(serializers.Serializer):
     label_ids = serializers.CharField(allow_blank=True, required=False, help_text="标签 ID，多个以逗号 , 分割")
     backend_id = serializers.IntegerField(allow_null=True, required=False, help_text="后端服务 ID")
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称，完整匹配")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), required=False, help_text="资源类型")
     keyword = serializers.CharField(
         allow_blank=True, required=False, help_text="资源筛选条件，支持模糊匹配资源名称，前端请求路径"
     )
@@ -97,6 +98,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
             "id",
             "name",
             "description",
+            "kind",
             "method",
             "path",
             "created_time",
@@ -196,7 +198,7 @@ class HttpBackendConfigSLZ(serializers.Serializer):
 
 class HttpBackendSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="后端服务 ID")
-    config = HttpBackendConfigSLZ(help_text="后端配置")
+    config = serializers.DictField(default=dict, required=False, help_text="后端配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.HttpBackendSLZ"
@@ -245,6 +247,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
     path = serializers.RegexField(PATH_PATTERN, max_length=2048, help_text="前端请求路径")
     auth_config = ResourceAuthConfigSLZ(help_text="认证配置")
     backend = HttpBackendSLZ(help_text="后端服务")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), required=False, help_text="资源类型")
     label_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
@@ -260,6 +263,7 @@ class ResourceInputSLZ(serializers.ModelSerializer):
         fields = [
             "gateway",
             # 基本信息
+            "kind",
             "name",
             "description",
             "description_en",
@@ -332,17 +336,49 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
     def validate(self, data):
         self._validate_method(data["gateway"], data["path"], data["method"])
-        self._validate_match_subpath(data)
         self._validate_openapi_schema(data)
 
-        data["resource"] = self.instance
+        kind = data.get(
+            "kind",
+            self.instance.kind if self.instance else ResourceKindEnum.STANDARD.value,
+        )
+        if self.instance and kind != self.instance.kind:
+            raise serializers.ValidationError({"kind": _("资源类型创建后不能修改。")})
 
-        # 为方便使用 ResourcesSaver 统一处理数据，对 backend 数据进行转换
-        data["backend_config"] = data["backend"]["config"]
+        data["resource"] = self.instance
+        data["kind"] = kind
+
+        backend_input = data["backend"]
+        backend = self._validate_backend_id(data["gateway"], backend_input["id"])
+        if backend.kind != kind:
+            raise serializers.ValidationError({"backend": _("资源类型与后端服务类型不匹配。")})
+
+        if kind == ResourceKindEnum.AI.value:
+            self._validate_ai_resource(data, backend_input["config"])
+            data["backend_config"] = None
+        else:
+            config_slz = HttpBackendConfigSLZ(data=backend_input["config"])
+            config_slz.is_valid(raise_exception=True)
+            backend_input["config"] = config_slz.validated_data
+            self._validate_match_subpath(data)
+            data["backend_config"] = config_slz.validated_data
+
         # NOTE: 使用 backend 对象覆盖了原有的 backend 输入数据
-        data["backend"] = self._validate_backend_id(data["gateway"], data["backend"]["id"])
+        data["backend"] = backend
 
         return data
+
+    def _validate_ai_resource(self, data, backend_config):
+        if not data["gateway"].is_ai_gateway:
+            raise serializers.ValidationError({"kind": _("普通网关不支持模型代理 API。")})
+        if data["method"] != "POST":
+            raise serializers.ValidationError({"method": _("模型代理 API 仅支持 POST 方法。")})
+        if data.get("match_subpath", False):
+            raise serializers.ValidationError({"match_subpath": _("模型代理 API 不支持匹配子路径。")})
+        if data.get("enable_websocket", False):
+            raise serializers.ValidationError({"enable_websocket": _("模型代理 API 不支持 WebSocket。")})
+        if backend_config:
+            raise serializers.ValidationError({"backend": _("模型代理 API 不支持普通后端配置。")})
 
     def _validate_method(self, gateway: Gateway, path: str, method: str):
         """
@@ -421,6 +457,7 @@ class ResourceOutputSLZ(serializers.ModelSerializer):
             "name",
             "description",
             "description_en",
+            "kind",
             "method",
             "path",
             "match_subpath",
