@@ -2,7 +2,7 @@
 
 同步网关环境，如果环境不存在，创建环境，如果已存在，则更新。
 
-AI 网关可同时配置 `backends` 和 `modelBackends`，形成“环境 × 服务”的配置矩阵。创建环境时两者至少提供一项；更新时未传的列表保持不变，显式空列表不合法。`modelBackends` 仅允许 AI 网关使用。
+AI 网关可同时配置 `backends` 和 `ai_backends`，形成“环境 × 服务”的配置矩阵。创建环境时两者至少提供一项；更新时未传的列表保持不变，显式空列表不合法。`ai_backends` 仅允许 AI 网关使用。
 
 
 ### 输入参数
@@ -22,7 +22,7 @@ AI 网关可同时配置 `backends` 和 `modelBackends`，形成“环境 × 服
 | `description_en`| string         | 否   | 英文描述（例如 `"Staging Env"`）                                     |
 | `vars`           | object         | 否   | 环境变量（键值对均为字符串类型，示例：`{ "api_sub_path": "/test" }`）|
 | `backends`       | array[object]  | 否   | 普通后端服务配置列表，参考下方 **backends 参数说明**                 |
-| `modelBackends`  | array[object]  | 否   | 模型服务配置列表，仅 AI 网关支持                                    |
+| `ai_backends`    | array[object]  | 否   | 模型服务配置列表，仅 AI 网关支持                                    |
 | `plugin_configs` | array[object]  | 否   | 插件配置列表，参考下方 **plugin_configs 参数说明**                   |
 
 
@@ -50,14 +50,14 @@ hosts 参数说明（属于 config）
 | `host`    | string    | 是   |以 http:// 或 https:// 开头的合法域名、service 地址或 ip:port |
 | `weight`  | integer   | 否   | 权重，取值范围 `1 ~ 100`（未提供时默认均衡分配）                   |
 
-modelBackends 参数说明
+ai_backends 参数说明
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
 | `name` | string | 是 | 模型服务名称，必须对应 `kind=ai` 的 Backend |
 | `config` | object | 是 | 模型服务在当前环境的配置 |
 
-modelBackends.config 参数说明
+ai_backends.config 参数说明
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
@@ -108,7 +108,7 @@ plugin_configs 参数说明
       }
     }
   ],
-  "modelBackends": [
+  "ai_backends": [
     {
       "name": "openai-primary",
       "config": {

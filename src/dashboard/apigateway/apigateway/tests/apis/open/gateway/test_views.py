@@ -78,6 +78,34 @@ class TestGatewayListApi:
 
         assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
 
+    def test_filter_list_queryset_by_programmable_kind(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+        fake_gateway.save()
+        G(Release, gateway=fake_gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset(kind="programmable")
+
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
+    def test_filter_list_queryset_without_kind_returns_all_kinds(self, fake_gateway):
+        G(Release, gateway=fake_gateway)
+        gateways = [fake_gateway]
+        for kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.AI.value]:
+            gateway = G(
+                Gateway,
+                kind=kind,
+                status=1,
+                is_public=True,
+                tenant_mode="single",
+                tenant_id="default",
+            )
+            G(Release, gateway=gateway)
+            gateways.append(gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset()
+
+        assert {gateway.id for gateway in gateways}.issubset(set(queryset.values_list("id", flat=True)))
+
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):

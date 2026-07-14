@@ -37,7 +37,7 @@ from apigateway.service.plugin import PluginConfigYamlValidator
 class StageSyncHandler:
     @staticmethod
     def upsert_backend_configs(*, stage, backend_items, kind: str, username: str) -> None:
-        field_name = "modelBackends" if kind == BackendKindEnum.AI.value else "backends"
+        field_name = "ai_backends" if kind == BackendKindEnum.AI.value else "backends"
         for item in backend_items:
             backend, _created = Backend.objects.get_or_create(
                 gateway=stage.gateway,

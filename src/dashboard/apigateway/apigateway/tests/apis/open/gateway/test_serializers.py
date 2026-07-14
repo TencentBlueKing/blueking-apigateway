@@ -71,12 +71,13 @@ class TestGatewayListV1InputSLZ:
         slz.is_valid(raise_exception=True)
         assert slz.validated_data == expected
 
-    def test_validate_kind(self):
-        slz = serializers.GatewayListV1InputSLZ(data={"kind": "ai"})
+    @pytest.mark.parametrize("kind", ["normal", "programmable", "ai"])
+    def test_validate_kind(self, kind):
+        slz = serializers.GatewayListV1InputSLZ(data={"kind": kind})
 
         slz.is_valid(raise_exception=True)
 
-        assert slz.validated_data["kind"] == "ai"
+        assert slz.validated_data["kind"] == kind
 
 
 class TestGatewayListV1OutputSLZ:
@@ -103,6 +104,18 @@ class TestGatewayListV1OutputSLZ:
         )
 
         assert slz.data["kind"] == "ai"
+
+    def test_programmable_kind_output(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
+
+        slz = serializers.GatewayListV1OutputSLZ(
+            fake_gateway,
+            context={
+                "gateway_auth_configs": GatewayAuthContext().get_gateway_id_to_auth_config([fake_gateway.id]),
+            },
+        )
+
+        assert slz.data["kind"] == "programmable"
 
 
 class TestGatewayRetrieveV1OutputSLZ:

@@ -40,10 +40,10 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
-    AI_BACKEND_PROVIDERS,
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    AIBackendProviderEnum,
     BackendKindEnum,
     HashOnTypeEnum,
     LoadBalanceTypeEnum,
@@ -302,7 +302,7 @@ class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
 
 class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AI_BACKEND_PROVIDERS)
+    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     weight = serializers.IntegerField(min_value=1, max_value=1)
     auth = AIBackendAuthSLZ(required=False)
     options = AIBackendOptionsSLZ()
@@ -340,8 +340,8 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     backends = serializers.ListSerializer(
         help_text="后端配置", child=BackendSLZ(), allow_null=True, allow_empty=False, required=False
     )
-    modelBackends = serializers.ListField(  # noqa: N815 - external API field name
-        help_text="模型服务配置", child=AIBackendSLZ(), allow_null=False, allow_empty=False, required=False
+    ai_backends = AIBackendSLZ(
+        help_text="模型服务配置", many=True, allow_null=False, allow_empty=False, required=False
     )
 
     plugin_configs = serializers.ListSerializer(
@@ -365,7 +365,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "status",
             "proxy_http",
             "backends",
-            "modelBackends",
+            "ai_backends",
             "plugin_configs",
         )
         extra_kwargs = {
@@ -374,7 +374,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["proxy_http", "backends", "modelBackends", "plugin_configs", "rate_limit"]
+        non_model_fields = ["proxy_http", "backends", "ai_backends", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -398,8 +398,8 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             self._validate_scheme_host(data.get("backends"))
 
         gateway = data["gateway"]
-        if data.get("modelBackends") is not None and not gateway.is_ai_gateway:
-            raise serializers.ValidationError({"modelBackends": _("普通网关不支持模型服务。")})
+        if data.get("ai_backends") is not None and not gateway.is_ai_gateway:
+            raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
         if not gateway.is_ai_gateway and data.get("proxy_http") is None and data.get("backends") is None:
             raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
         if (
@@ -407,9 +407,9 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             and self.instance is None
             and data.get("proxy_http") is None
             and data.get("backends") is None
-            and data.get("modelBackends") is None
+            and data.get("ai_backends") is None
         ):
-            raise serializers.ValidationError(_("proxy_http、backends 和 modelBackends 必须至少配置一项"))
+            raise serializers.ValidationError(_("proxy_http、backends 和 ai_backends 必须至少配置一项"))
         return data
 
     def create(self, validated_data):
@@ -454,7 +454,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
         StageSyncHandler.upsert_backend_configs(
             stage=instance,
-            backend_items=validated_data.get("modelBackends", []),
+            backend_items=validated_data.get("ai_backends", []),
             kind=BackendKindEnum.AI.value,
             username=username,
         )
@@ -519,7 +519,7 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
         StageSyncHandler.upsert_backend_configs(
             stage=instance,
-            backend_items=validated_data.get("modelBackends", []),
+            backend_items=validated_data.get("ai_backends", []),
             kind=BackendKindEnum.AI.value,
             username=username,
         )

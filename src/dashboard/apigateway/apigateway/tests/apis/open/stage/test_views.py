@@ -108,7 +108,7 @@ class TestStageV1ViewSet:
 
 
 class TestStageSyncViewSet:
-    def test_sync_ai_gateway_with_model_backends(self, mocker, unique_gateway_name, request_factory):
+    def test_sync_ai_gateway_with_ai_backends(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(
             "apigateway.apis.open.stage.views.OpenAPIGatewayRelatedAppPermission.has_permission",
             return_value=True,
@@ -120,7 +120,7 @@ class TestStageSyncViewSet:
                 "name": "prod",
                 "description": "desc",
                 "vars": {},
-                "modelBackends": [_model_backend()],
+                "ai_backends": [_model_backend()],
             },
         )
         request.gateway = gateway

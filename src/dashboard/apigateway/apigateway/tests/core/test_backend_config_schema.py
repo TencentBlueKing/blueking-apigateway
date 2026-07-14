@@ -7,7 +7,7 @@ from apigateway.core.backend_config_schema import (
     BackendConfigValidationError,
     validate_backend_config,
 )
-from apigateway.core.constants import AI_BACKEND_PROVIDERS, BackendKindEnum
+from apigateway.core.constants import AIBackendProviderEnum, BackendKindEnum
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def test_ai_schema_accepts_one_openai_instance(ai_backend_config):
 def test_ai_schema_provider_enum_matches_shared_contract():
     provider_schema = AI_BACKEND_CONFIG_SCHEMA["properties"]["instances"]["items"]["properties"]["provider"]
 
-    assert provider_schema["enum"] == list(AI_BACKEND_PROVIDERS)
+    assert provider_schema["enum"] == AIBackendProviderEnum.get_values()
 
 
 @pytest.mark.parametrize("patch", [{"instances": []}, {"unknown": True}, {"timeout": 0}])

@@ -372,19 +372,19 @@ kind = normal | ai
 
 ### 5.2 Stage 同步
 
-Stage 同步保留现有 `backends` 字段，并增加 `modelBackends`（Python 内部可表示为 `model_backends`）。
+Stage 同步保留现有 `backends` 字段，并增加 `ai_backends`。
 
 - `backends` 只同步 `Backend.kind=standard` 的 BackendConfig。
-- `modelBackends` 只同步 `Backend.kind=ai` 的 BackendConfig。
-- 只有 AI Gateway 允许传入 `modelBackends`。
+- `ai_backends` 只同步 `Backend.kind=ai` 的 BackendConfig。
+- 只有 AI Gateway 允许传入 `ai_backends`。
 - 模型 Backend 按 `(gateway, name)` 匹配或创建，并 upsert 当前 Stage 的 BackendConfig。
 - 如果同名 Backend 已存在但 kind 不一致，同步失败，不修改存量 Backend.kind。
-- 普通网关传入任何 `modelBackends` 配置时应报错，不能静默忽略。
+- 普通网关传入任何 `ai_backends` 配置时应报错，不能静默忽略。
 
 同步采用增量 upsert 语义，不把 Stage 请求解释为 BackendConfig 的完整集合：
 
-- 普通网关保持现有约束：`backends` 必填且至少包含一项，`modelBackends` 禁止传入。
-- 创建 AI Gateway 的 Stage 时，`backends` 和 `modelBackends` 至少一个包含配置；允许只配置模型 Backend，不要求创建无实际用途的普通 BackendConfig。
+- 普通网关保持现有约束：`backends` 必填且至少包含一项，`ai_backends` 禁止传入。
+- 创建 AI Gateway 的 Stage 时，`backends` 和 `ai_backends` 至少一个包含配置；允许只配置模型 Backend，不要求创建无实际用途的普通 BackendConfig。
 - 更新 AI Gateway 的 Stage 时，未提供某个字段表示不修改该类 BackendConfig；提供非空数组时，仅 upsert 数组中列出的当前 Stage 配置。
 - 更新时不允许用空数组表示删除；未列出的 Backend 和 BackendConfig 保持不变。删除不属于 Stage 同步协议的职责。
 - 两个字段的处理应处于同一数据库事务中，任一配置校验或写入失败时整次 Stage 同步回滚。
@@ -708,7 +708,7 @@ bk_backend_name = Backend.name
 - 不可变性：Gateway、Backend 和 Resource 创建后不能通过 Web API、导入或同步改变类别；Gateway 同步更新中的 kind 按约定忽略。
 - BackendConfig：两种 kind 的 serializer 输出与 JSON Schema 一致；模型 provider、单 instance、固定 model、`options` 合法 JSON 键值及无损透传、endpoint、timeout 和未知字段约束均有正反例。
 - 凭证：数据库只保存密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；读取和审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；匹配已有凭证的掩码或字段缺省保留旧值，替换、清空、解密失败和批量写入路径均有覆盖。
-- Stage 同步：普通网关拒绝 `modelBackends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
+- Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
 - controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、安全插件 Profile 和关联 service_id 的 Route。

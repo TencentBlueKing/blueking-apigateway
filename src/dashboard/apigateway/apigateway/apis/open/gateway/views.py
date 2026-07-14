@@ -44,7 +44,7 @@ from apigateway.common.constants import (
 )
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.constants import GatewayKindEnum
+from apigateway.core.constants import convert_gateway_kind_name_to_value
 from apigateway.core.models import JWT, Gateway
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -142,10 +142,8 @@ class GatewayListApi(generics.ListAPIView):
         if query and fuzzy:
             queryset = queryset.filter(Q(name__icontains=query) | Q(description__icontains=query))
 
-        if kind == "ai":
-            queryset = queryset.filter(kind=GatewayKindEnum.AI.value)
-        elif kind == "normal":
-            queryset = queryset.exclude(kind=GatewayKindEnum.AI.value)
+        if kind:
+            queryset = queryset.filter(kind=convert_gateway_kind_name_to_value(kind))
 
         # 过滤出用户类型为指定类型的网关
         gateway_ids = list(queryset.values_list("id", flat=True))

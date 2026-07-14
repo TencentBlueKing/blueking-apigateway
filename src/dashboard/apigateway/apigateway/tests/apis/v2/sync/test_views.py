@@ -111,7 +111,7 @@ class TestSyncApi:
         assert resource.kind == ResourceKindEnum.AI.value
         assert Proxy.objects.get(resource=resource).config == {}
 
-    def test_stage_sync_ai_gateway_with_model_backends_only(self, request_view, fake_gateway, disable_app_permission):
+    def test_stage_sync_ai_gateway_with_ai_backends_only(self, request_view, fake_gateway, disable_app_permission):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
 
@@ -120,7 +120,7 @@ class TestSyncApi:
             gateway=fake_gateway,
             view_name="openapi.v2.sync.gateway.stages.sync",
             path_params={"gateway_name": fake_gateway.name},
-            data={"name": "prod", "description": "desc", "vars": {}, "modelBackends": [_model_backend()]},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [_model_backend()]},
         )
 
         assert resp.status_code == 200, resp.json()
@@ -131,9 +131,7 @@ class TestSyncApi:
         assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
         assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
-    def test_stage_sync_normal_gateway_rejects_model_backends(
-        self, request_view, fake_gateway, disable_app_permission
-    ):
+    def test_stage_sync_normal_gateway_rejects_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         resp = request_view(
             method="POST",
             gateway=fake_gateway,
@@ -153,14 +151,14 @@ class TestSyncApi:
                         },
                     }
                 ],
-                "modelBackends": [_model_backend()],
+                "ai_backends": [_model_backend()],
             },
         )
 
         assert resp.status_code == 400
         assert not Stage.objects.filter(gateway=fake_gateway, name="prod").exists()
 
-    def test_stage_sync_ai_gateway_omitted_model_backends_remain_unchanged(
+    def test_stage_sync_ai_gateway_omitted_ai_backends_remain_unchanged(
         self, request_view, fake_gateway, disable_app_permission
     ):
         fake_gateway.kind = GatewayKindEnum.AI.value
@@ -169,7 +167,7 @@ class TestSyncApi:
             "name": "prod",
             "description": "desc",
             "vars": {},
-            "modelBackends": [_model_backend()],
+            "ai_backends": [_model_backend()],
         }
         first = request_view(
             method="POST",
@@ -222,7 +220,7 @@ class TestSyncApi:
                 "name": "prod",
                 "description": "desc",
                 "vars": {},
-                "modelBackends": [_model_backend()],
+                "ai_backends": [_model_backend()],
             },
             user=fake_admin_user,
         )
@@ -240,7 +238,7 @@ class TestSyncApi:
                 "name": "prod",
                 "description": "desc",
                 "vars": {},
-                "modelBackends": [model_backend],
+                "ai_backends": [model_backend],
             },
             user=fake_admin_user,
         )
@@ -260,9 +258,7 @@ class TestSyncApi:
         assert "Bearer secret" not in audit_log.data_before
         assert "Bearer secret" not in audit_log.data_after
 
-    def test_stage_sync_ai_gateway_rejects_empty_model_backends(
-        self, request_view, fake_gateway, disable_app_permission
-    ):
+    def test_stage_sync_ai_gateway_rejects_empty_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
 
@@ -271,7 +267,7 @@ class TestSyncApi:
             gateway=fake_gateway,
             view_name="openapi.v2.sync.gateway.stages.sync",
             path_params={"gateway_name": fake_gateway.name},
-            data={"name": "prod", "description": "desc", "vars": {}, "modelBackends": []},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": []},
         )
 
         assert resp.status_code == 400
@@ -303,7 +299,7 @@ class TestSyncApi:
                         },
                     }
                 ],
-                "modelBackends": [_model_backend(name)],
+                "ai_backends": [_model_backend(name)],
             },
         )
 

@@ -1813,7 +1813,7 @@ paths:
                   type: array
                   nullable: true
                   minItems: 1
-                  description: 普通后端服务配置；与 modelBackends 至少提供一种
+                  description: 普通后端服务配置；与 ai_backends 至少提供一种
                   items:
                     type: object
                     required:
@@ -1851,7 +1851,7 @@ paths:
                                 weight:
                                   type: integer
                                   minimum: 1
-                modelBackends:
+                ai_backends:
                   type: array
                   minItems: 1
                   description: 模型服务配置，仅 AI 网关支持；与 proxy_http、backends 至少提供一种
@@ -4820,7 +4820,7 @@ paths:
                 backends:
                   type: array
                   minItems: 1
-                  description: 普通后端服务配置；AI 网关可与 modelBackends 同时配置
+                  description: 普通后端服务配置；AI 网关可与 ai_backends 同时配置
                   items:
                     type: object
                     required:
@@ -4859,7 +4859,7 @@ paths:
                                 weight:
                                   type: integer
                                   description: 权重
-                modelBackends:
+                ai_backends:
                   type: array
                   minItems: 1
                   description: 模型服务配置，仅 AI 网关支持；创建环境时与 backends 至少提供一种

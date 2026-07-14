@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from jsonschema import Draft202012Validator
 
-from apigateway.core.constants import AI_BACKEND_PROVIDERS, BackendKindEnum
+from apigateway.core.constants import AIBackendProviderEnum, BackendKindEnum
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -61,7 +61,7 @@ AI_BACKEND_CONFIG_SCHEMA = {
                 "required": ["name", "provider", "weight", "options"],
                 "properties": {
                     "name": {"type": "string", "minLength": 1},
-                    "provider": {"enum": list(AI_BACKEND_PROVIDERS)},
+                    "provider": {"enum": AIBackendProviderEnum.get_values()},
                     "weight": {"const": 1},
                     "auth": {
                         "type": "object",

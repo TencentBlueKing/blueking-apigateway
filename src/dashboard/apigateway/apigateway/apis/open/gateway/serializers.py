@@ -27,9 +27,12 @@ from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaint
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
-    GatewayKindEnum,
+    GatewayKindNameEnum,
     GatewayStatusEnum,
+    GatewaySyncKindEnum,
     GatewayTypeEnum,
+    convert_gateway_kind_name_to_value,
+    convert_gateway_kind_to_name,
 )
 from apigateway.core.models import Gateway
 
@@ -39,7 +42,7 @@ class GatewayListV1InputSLZ(serializers.Serializer):
     query = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
-    kind = serializers.ChoiceField(choices=["normal", "ai"], required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
@@ -55,9 +58,7 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     kind = serializers.SerializerMethodField()
 
     def get_kind(self, obj):
-        if obj.kind == GatewayKindEnum.AI.value:
-            return "ai"
-        return "normal"
+        return convert_gateway_kind_to_name(obj.kind)
 
     def get_api_type(self, obj):
         return self.context["gateway_auth_configs"][obj.id].gateway_type
@@ -130,8 +131,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
     kind = serializers.ChoiceField(
-        choices=[("normal", "普通网关"), ("ai", "AI 网关")],
-        default="normal",
+        choices=GatewaySyncKindEnum.get_choices(),
+        default=GatewaySyncKindEnum.NORMAL.value,
         write_only=True,
     )
     # Data plane names to bind to when creating a new gateway
@@ -170,10 +171,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"))
 
         data["gateway_type"] = data.pop("api_type", None)
-        data["kind"] = {
-            "normal": GatewayKindEnum.NORMAL.value,
-            "ai": GatewayKindEnum.AI.value,
-        }[data["kind"]]
+        data["kind"] = convert_gateway_kind_name_to_value(data["kind"])
 
         return data
 

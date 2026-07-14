@@ -38,8 +38,8 @@ from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.backend_config import mask_backend_config, prepare_backend_config
 from apigateway.core.backend_config_schema import BackendConfigValidationError
 from apigateway.core.constants import (
-    AI_BACKEND_PROVIDERS,
     STAGE_NAME_PATTERN,
+    AIBackendProviderEnum,
     PublishEventStatusEnum,
     ReleaseStatusEnum,
     StageStatusEnum,
@@ -193,7 +193,7 @@ class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
 
 class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AI_BACKEND_PROVIDERS)
+    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     weight = serializers.IntegerField(min_value=1, max_value=1)
     auth = AIBackendAuthSLZ(required=False)
     options = AIBackendOptionsSLZ()

@@ -55,16 +55,17 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
-    AI_BACKEND_PROVIDERS,
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    AIBackendProviderEnum,
     BackendKindEnum,
-    GatewayKindEnum,
     GatewayStatusEnum,
+    GatewaySyncKindEnum,
     GatewayTypeEnum,
     HashOnTypeEnum,
     LoadBalanceTypeEnum,
+    convert_gateway_kind_name_to_value,
 )
 from apigateway.core.models import Backend, Gateway, ResourceVersion, Stage
 from apigateway.utils.time import NeverExpiresTime
@@ -121,8 +122,8 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
     kind = serializers.ChoiceField(
-        choices=[("normal", "普通网关"), ("ai", "AI 网关")],
-        default="normal",
+        choices=GatewaySyncKindEnum.get_choices(),
+        default=GatewaySyncKindEnum.NORMAL.value,
         write_only=True,
     )
     # Data plane names to bind to when creating a new gateway
@@ -161,10 +162,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"))
 
         data["gateway_type"] = data.pop("api_type", None)
-        data["kind"] = {
-            "normal": GatewayKindEnum.NORMAL.value,
-            "ai": GatewayKindEnum.AI.value,
-        }[data["kind"]]
+        data["kind"] = convert_gateway_kind_name_to_value(data["kind"])
 
         return data
 
@@ -407,7 +405,7 @@ class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
 
 class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AI_BACKEND_PROVIDERS)
+    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     weight = serializers.IntegerField(min_value=1, max_value=1)
     auth = AIBackendAuthSLZ(required=False)
     options = AIBackendOptionsSLZ()
@@ -448,8 +446,8 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         help_text="后端配置", child=BackendSLZ(), allow_null=False, allow_empty=False, required=False
     )
 
-    modelBackends = serializers.ListField(  # noqa: N815 - external API field name
-        help_text="模型服务配置", child=AIBackendSLZ(), allow_null=False, allow_empty=False, required=False
+    ai_backends = AIBackendSLZ(
+        help_text="模型服务配置", many=True, allow_null=False, allow_empty=False, required=False
     )
 
     plugin_configs = serializers.ListSerializer(
@@ -472,7 +470,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "vars",
             "status",
             "backends",
-            "modelBackends",
+            "ai_backends",
             "plugin_configs",
         )
         extra_kwargs = {
@@ -481,7 +479,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["backends", "modelBackends", "plugin_configs", "rate_limit"]
+        non_model_fields = ["backends", "ai_backends", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -502,17 +500,17 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         StageSyncHandler.validate_plugin_configs(data.get("plugin_configs"))
         self._validate_scheme_host(data.get("backends"))
         gateway = data["gateway"]
-        if data.get("modelBackends") is not None and not gateway.is_ai_gateway:
-            raise serializers.ValidationError({"modelBackends": _("普通网关不支持模型服务。")})
+        if data.get("ai_backends") is not None and not gateway.is_ai_gateway:
+            raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
         if not gateway.is_ai_gateway and data.get("backends") is None:
             raise serializers.ValidationError(_("backends 必须配置"))
         if (
             gateway.is_ai_gateway
             and self.instance is None
             and data.get("backends") is None
-            and data.get("modelBackends") is None
+            and data.get("ai_backends") is None
         ):
-            raise serializers.ValidationError(_("backends 和 modelBackends 必须至少配置一项"))
+            raise serializers.ValidationError(_("backends 和 ai_backends 必须至少配置一项"))
         return data
 
     def create(self, validated_data):
@@ -535,7 +533,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
         StageSyncHandler.upsert_backend_configs(
             stage=instance,
-            backend_items=validated_data.get("modelBackends", []),
+            backend_items=validated_data.get("ai_backends", []),
             kind=BackendKindEnum.AI.value,
             username=username,
         )
@@ -569,7 +567,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         )
         StageSyncHandler.upsert_backend_configs(
             stage=instance,
-            backend_items=validated_data.get("modelBackends", []),
+            backend_items=validated_data.get("ai_backends", []),
             kind=BackendKindEnum.AI.value,
             username=username,
         )

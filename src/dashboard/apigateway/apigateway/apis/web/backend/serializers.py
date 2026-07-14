@@ -29,7 +29,7 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.backend_config import mask_backend_config, prepare_backend_config
 from apigateway.core.backend_config_schema import BackendConfigValidationError
-from apigateway.core.constants import AI_BACKEND_PROVIDERS, DEFAULT_BACKEND_NAME, BackendKindEnum, BackendTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, AIBackendProviderEnum, BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import BACKEND_NAME_PATTERN
@@ -67,7 +67,7 @@ class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
 
 class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AI_BACKEND_PROVIDERS)
+    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
     weight = serializers.IntegerField(min_value=1, max_value=1)
     auth = AIBackendAuthSLZ(required=False)
     options = AIBackendOptionsSLZ()

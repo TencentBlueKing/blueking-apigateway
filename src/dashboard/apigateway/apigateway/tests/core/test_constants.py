@@ -23,6 +23,21 @@ from apigateway.core import constants
 
 class TestConstants:
     @pytest.mark.parametrize(
+        "kind, name",
+        [
+            (0, "normal"),
+            (1, "programmable"),
+            (2, "ai"),
+        ],
+    )
+    def test_gateway_kind_name_conversion(self, kind, name):
+        assert constants.convert_gateway_kind_to_name(kind) == name
+        assert constants.convert_gateway_kind_name_to_value(name) == kind
+
+    def test_ai_backend_provider_enum_values(self):
+        assert constants.AIBackendProviderEnum.get_values() == ["openai", "deepseek", "openai-compatible"]
+
+    @pytest.mark.parametrize(
         "value, matched",
         [
             ("2001:db8:3333:4444:5555:6666:7777:8888", False),
