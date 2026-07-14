@@ -145,6 +145,21 @@ def mask_backend_config(kind: str, config: dict[str, Any]) -> dict[str, Any]:
     return masked
 
 
+def get_backend_config_audit_data(
+    backend_kind: str,
+    data: list | dict | str | None,
+) -> list | dict | str | None:
+    if not isinstance(data, dict) or not data:
+        return data
+
+    if "config" not in data:
+        return mask_backend_config(backend_kind, data)
+
+    audit_data = data.copy()
+    audit_data["config"] = mask_backend_config(backend_kind, data["config"])
+    return audit_data
+
+
 def decrypt_ai_backend_config(config: dict[str, Any]) -> dict[str, Any]:
     decrypted = deepcopy(config)
     for key, value in _get_headers(decrypted).items():
