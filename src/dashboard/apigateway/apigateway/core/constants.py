@@ -26,6 +26,7 @@ from django.utils.translation import gettext_lazy as _
 class GatewayKindEnum(StructuredEnum):
     NORMAL = EnumField(0, "普通网关")
     PROGRAMMABLE = EnumField(1, "可编程网关")
+    AI = EnumField(2, "AI 网关")
 
 
 class ProgrammableGatewayLanguageEnum(StructuredEnum):
@@ -237,6 +238,16 @@ HTTP_METHOD_CHOICES = [
 RESOURCE_METHOD_CHOICES = HTTP_METHOD_CHOICES + [
     (HTTP_METHOD_ANY, HTTP_METHOD_ANY),
 ]
+
+
+class BackendKindEnum(StructuredEnum):
+    STANDARD = EnumField("standard", "普通后端服务")
+    AI = EnumField("ai", "模型服务")
+
+
+class ResourceKindEnum(StructuredEnum):
+    STANDARD = EnumField("standard", "普通 API")
+    AI = EnumField("ai", "模型代理 API")
 
 
 class BackendTypeEnum(StructuredEnum):

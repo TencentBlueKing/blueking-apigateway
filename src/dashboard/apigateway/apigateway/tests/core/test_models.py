@@ -20,7 +20,14 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.core import models
-from apigateway.core.constants import GatewayStatusEnum, PublishEventNameTypeEnum, PublishEventStatusEnum
+from apigateway.core.constants import (
+    BackendKindEnum,
+    GatewayKindEnum,
+    GatewayStatusEnum,
+    PublishEventNameTypeEnum,
+    PublishEventStatusEnum,
+    ResourceKindEnum,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -45,6 +52,13 @@ class TestGateway:
 
         gateway = G(models.Gateway)
         assert not gateway.is_programmable
+
+    def test_is_ai_gateway(self):
+        ai_gateway = G(models.Gateway, kind=GatewayKindEnum.AI.value)
+        standard_gateway = G(models.Gateway, kind=GatewayKindEnum.NORMAL.value)
+
+        assert ai_gateway.is_ai_gateway is True
+        assert standard_gateway.is_ai_gateway is False
 
     def test_extra_info_getter(self):
         # Test with empty extra_info
@@ -97,6 +111,40 @@ class TestGateway:
     #     # Setting any extra info should result in empty dict
     #     gateway.extra_info = {"key": "value"}
     #     assert gateway._extra_info == {}
+
+
+class TestBackend:
+    def test_kind_default_and_is_ai(self, fake_gateway):
+        standard_backend = G(models.Backend, gateway=fake_gateway)
+        ai_backend = G(models.Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+
+        assert standard_backend.kind == BackendKindEnum.STANDARD.value
+        assert standard_backend.is_ai is False
+        assert ai_backend.is_ai is True
+
+    def test_kind_manager_filters(self, fake_gateway):
+        standard_backend = G(models.Backend, gateway=fake_gateway)
+        ai_backend = G(models.Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+
+        assert set(models.Backend.objects.standard().values_list("id", flat=True)) == {standard_backend.id}
+        assert set(models.Backend.objects.ai().values_list("id", flat=True)) == {ai_backend.id}
+
+
+class TestResource:
+    def test_kind_default_and_is_ai(self, fake_gateway):
+        standard_resource = G(models.Resource, gateway=fake_gateway)
+        ai_resource = G(models.Resource, gateway=fake_gateway, kind=ResourceKindEnum.AI.value)
+
+        assert standard_resource.kind == ResourceKindEnum.STANDARD.value
+        assert standard_resource.is_ai is False
+        assert ai_resource.is_ai is True
+
+    def test_kind_manager_filters(self, fake_gateway):
+        standard_resource = G(models.Resource, gateway=fake_gateway)
+        ai_resource = G(models.Resource, gateway=fake_gateway, kind=ResourceKindEnum.AI.value)
+
+        assert set(models.Resource.objects.standard().values_list("id", flat=True)) == {standard_resource.id}
+        assert set(models.Resource.objects.ai().values_list("id", flat=True)) == {ai_resource.id}
 
 
 class TestPublishEvent:
