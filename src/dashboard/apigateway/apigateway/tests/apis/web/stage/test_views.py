@@ -36,7 +36,7 @@ def _ai_config():
                 "provider": "openai",
                 "weight": 1,
                 "auth": {"header": {"Authorization": "Bearer secret"}},
-                "options": {"model": "gpt-4o"},
+                "options": {"model": "gpt-4o", "temperature": 0.7},
             }
         ],
     }
@@ -72,7 +72,11 @@ class TestStageApi:
 
         assert response.status_code == 201, response.json()
         stage = Stage.objects.get(gateway=fake_gateway, name="ai-stage")
-        assert BackendConfig.objects.filter(stage=stage, backend=ai_backend).exists()
+        backend_config = BackendConfig.objects.get(stage=stage, backend=ai_backend)
+        assert decrypt_ai_backend_config(backend_config.config)["instances"][0]["options"] == {
+            "model": "gpt-4o",
+            "temperature": 0.7,
+        }
 
     def test_list(self, request_view, fake_stage, fake_default_backend):
         fake_gateway = fake_stage.gateway

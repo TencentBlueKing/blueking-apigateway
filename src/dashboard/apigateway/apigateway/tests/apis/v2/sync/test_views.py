@@ -66,7 +66,7 @@ def _model_backend(name="openai-primary"):
                     "provider": "openai",
                     "weight": 1,
                     "auth": {"header": {"Authorization": "Bearer secret"}},
-                    "options": {"model": "gpt-4o"},
+                    "options": {"model": "gpt-4o", "temperature": 0.7},
                 }
             ],
         },
@@ -127,10 +127,9 @@ class TestSyncApi:
         backend = Backend.objects.get(gateway=fake_gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
-        assert (
-            decrypt_ai_backend_config(backend_config.config)["instances"][0]["auth"]["header"]["Authorization"]
-            == "Bearer secret"
-        )
+        decrypted_config = decrypt_ai_backend_config(backend_config.config)
+        assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
     def test_stage_sync_normal_gateway_rejects_model_backends(
         self, request_view, fake_gateway, disable_app_permission

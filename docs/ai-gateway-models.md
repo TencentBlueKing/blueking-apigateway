@@ -127,7 +127,8 @@ unique(gateway, backend, stage)
         }
       },
       "options": {
-        "model": "gpt-4o"
+        "model": "gpt-4o",
+        "temperature": 0.7
       }
     }
   ]
@@ -142,12 +143,12 @@ unique(gateway, backend, stage)
 - `instances` 必须存在。
 - `len(instances) == 1`。
 - `instances[0].provider` 只允许 `openai`、`deepseek`、`openai-compatible`。
-- `instances[0].options.model` 必须是非空字符串。
+- `instances[0].options` 必须是 JSON 对象，其中 `model` 必须是非空字符串，并允许配置其他合法 JSON 键值对。
 - 不允许接受无法转换为单实例 `ai-proxy` 语义的多实例策略，不得静默丢弃用户配置。
 
 第一期 provider 允许列表由 dashboard 代码显式维护，不直接等同于 APISIX 当前支持的全部 provider。APISIX 后续新增 provider 或升级版本时不能自动进入产品 API，必须同步增加表单、JSON Schema、凭证处理和发布转换测试后才能开放。
 
-第一期 instance 使用显式最小字段集，JSON Schema 拒绝未声明字段：
+第一期 instance 除 `options` 外使用显式最小字段集，JSON Schema 拒绝未声明字段：
 
 | 字段 | 约束 |
 | --- | --- |
@@ -155,8 +156,10 @@ unique(gateway, backend, stage)
 | `provider` | 必填，只允许第一期 provider 允许列表 |
 | `weight` | 必填且固定为 `1` |
 | `auth.header` | 允许配置字符串 Header 映射；Header value 逐值加密和脱敏 |
-| `options.model` | 必填且非空；`options` 不接受其他字段 |
+| `options` | 必填 JSON 对象；`model` 必填且为非空字符串；允许配置其他合法 JSON 键值对 |
 | `override.endpoint` | 仅 `openai-compatible` 允许且必须提供 |
+
+`options` 的 key 必须是合法 JSON 字符串，value 可以是字符串、数字、布尔值、`null`、对象或数组。JSON Schema 对 `options` 保持 `additionalProperties: true`；dashboard 必须完整保存，controller 必须原样透传，不能丢弃除 `model` 外的配置。
 
 `openai` 和 `deepseek` 使用 APISIX 内置官方 endpoint，不允许配置 `override`。第一期不开放：
 
@@ -164,7 +167,6 @@ unique(gateway, backend, stage)
 - `checks`。
 - `provider_conf`。
 - `auth.query` 和 `auth.gcp`。
-- `options` 中除 `model` 外的其他字段。
 
 Model BackendConfig 顶层只开放 `timeout`：
 
@@ -177,7 +179,7 @@ Model BackendConfig 顶层只开放 `timeout`：
 
 #### 2.4.1 auth 凭证
 
-`instances[].auth.header` 保持 APISIX 原生对象结构，Header value 复用 `DataPlane.etcd_configs` 的处理方式，直接通过项目现有 `get_crypto().encrypt()/decrypt()` 逐值加解密后保存在 BackendConfig.config JSONField 中，不增加自定义密文 envelope、独立凭证表或加密字段。
+`instances[].auth.header` 保持 APISIX 原生对象结构，Header value 复用 `DataPlane.etcd_configs` 的处理方式，直接通过 `apigateway.utils.crypto.get_crypto().encrypt()/decrypt()` 逐值加解密后保存在 BackendConfig.config JSONField 中，共用同一运行时算法和密钥配置，不增加自定义密文 envelope、独立凭证表或加密字段。
 
 provider 约束：
 
@@ -188,21 +190,22 @@ provider 约束：
 写入流程：
 
 1. serializer 对用户输入的明文 auth 结构和 provider 规则进行校验。
-2. 更新时，将掩码值和未提供的 Header 与数据库中已有密文合并。
-3. 只加密新增或发生变化的 Header value，避免重复加密和无意义的配置 diff。
+2. 更新时，将与已有凭证掩码完全一致的值和未提供的 Header 与数据库中已有密文合并。
+3. 只对新增或发生变化的 Header value 调用 `get_crypto()` 加密，避免重复加密和无意义的配置 diff。
 4. 合并后的完整 config 再执行 Model BackendConfig JSON Schema 校验并入库。
 
 更新语义：
 
-- Header value 长度小于 4 时输出 `****`；否则输出“前两位 + `****` + 后两位”，该掩码值表示保留已有凭证。
+- 明文长度小于 4 时，掩码统一为 `****`；否则保留前 2 位和后 2 位，中间使用 `****`，例如 `sk****9z`。
+- Header value 与已有凭证按上述规则生成的掩码完全一致，表示保留已有密文。
 - 更新请求中未提供某个已有 Header，也表示保留，避免 PUT 或同步客户端读取不到明文后误删凭证。
 - 提供新的非掩码 value 表示替换并重新加密。
 - 显式提交空的 `auth.header` 表示清空全部 Header；仅 `openai-compatible` 允许保存空认证，`openai` 和 `deepseek` 应校验失败。
 
 读取和使用约束：
 
-- Web API、`/api/v2/sync` 响应、导入导出、审计事件和配置 diff 对所有 auth Header value 统一按上述规则输出部分掩码，不得输出完整明文或数据库密文。
-- controller 发布时只在内存中解密，将明文 auth 注入生成的 `ai-proxy` 配置；解密失败必须终止发布。
+- Web API、`/api/v2/sync` 响应、导入导出、审计事件和配置 diff 对所有 auth Header value 按上述规则输出掩码，不得输出明文或数据库密文。
+- controller 发布时通过 `get_crypto()` 只在内存中解密，将明文 auth 注入生成的 `ai-proxy` 配置；解密失败必须终止发布。
 - controller、发布记录、异常消息和日志不得序列化解密后的 auth。
 - APISIX 运行配置最终需要包含可用凭证，因此 APISIX 与 etcd 属于凭证信任边界，必须依赖其访问控制和日志脱敏，不能把 dashboard 数据库加密误认为端到端加密。
 - `save()`、`bulk_create()`、`bulk_update()` 等 BackendConfig 写入入口除 JSON Schema 校验外，还必须执行相同的凭证加密规则；继续禁止通过 `QuerySet.update(config=...)` 绕过。
@@ -703,8 +706,8 @@ bk_backend_name = Backend.name
 
 - 数据迁移：存量 Backend 和 Resource 的 kind 均为 `standard`，旧 ResourceVersion 缺少 kind 时仍按普通资源发布。
 - 不可变性：Gateway、Backend 和 Resource 创建后不能通过 Web API、导入或同步改变类别；Gateway 同步更新中的 kind 按约定忽略。
-- BackendConfig：两种 kind 的 serializer 输出与 JSON Schema 一致；模型 provider、单 instance、固定 model、endpoint、timeout 和未知字段约束均有正反例。
-- 凭证：数据库只保存密文，读取和审计只返回掩码；掩码或字段缺省保留旧值，替换、清空、解密失败和批量写入路径均有覆盖。
+- BackendConfig：两种 kind 的 serializer 输出与 JSON Schema 一致；模型 provider、单 instance、固定 model、`options` 合法 JSON 键值及无损透传、endpoint、timeout 和未知字段约束均有正反例。
+- 凭证：数据库只保存密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；读取和审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；匹配已有凭证的掩码或字段缺省保留旧值，替换、清空、解密失败和批量写入路径均有覆盖。
 - Stage 同步：普通网关拒绝 `modelBackends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。

@@ -56,6 +56,18 @@ def test_ai_schema_reports_json_path(ai_backend_config):
     assert exc_info.value.path == "$.instances[0].options.model"
 
 
+def test_ai_schema_accepts_additional_json_options(ai_backend_config):
+    ai_backend_config["instances"][0]["options"].update(
+        {
+            "temperature": 0.7,
+            "stream": True,
+            "metadata": {"tags": ["production", None]},
+        }
+    )
+
+    validate_backend_config(BackendKindEnum.AI.value, ai_backend_config)
+
+
 def test_validate_backend_config_rejects_unknown_kind(standard_backend_config):
     with pytest.raises(ValueError, match="unsupported backend kind"):
         validate_backend_config("unknown", standard_backend_config)

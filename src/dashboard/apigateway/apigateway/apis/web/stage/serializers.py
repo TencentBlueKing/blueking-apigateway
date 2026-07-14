@@ -174,8 +174,12 @@ class AIBackendAuthSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     header = serializers.DictField(child=serializers.CharField(), required=False)
 
 
-class AIBackendOptionsSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
+class AIBackendOptionsSLZ(serializers.Serializer):
     model = serializers.CharField(allow_blank=False)
+
+    def to_internal_value(self, data):
+        validated_data = super().to_internal_value(data)
+        return {**data, **validated_data}
 
 
 class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):

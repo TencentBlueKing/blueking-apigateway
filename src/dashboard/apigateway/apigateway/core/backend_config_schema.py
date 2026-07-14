@@ -75,7 +75,7 @@ AI_BACKEND_CONFIG_SCHEMA = {
                     },
                     "options": {
                         "type": "object",
-                        "additionalProperties": False,
+                        "additionalProperties": True,
                         "required": ["model"],
                         "properties": {"model": {"type": "string", "minLength": 1}},
                     },

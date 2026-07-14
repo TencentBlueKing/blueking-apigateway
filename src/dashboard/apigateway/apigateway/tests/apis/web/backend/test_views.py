@@ -31,7 +31,7 @@ def _ai_config(stage_id):
                 "provider": "openai",
                 "weight": 1,
                 "auth": {"header": {"Authorization": "Bearer secret"}},
-                "options": {"model": "gpt-4o"},
+                "options": {"model": "gpt-4o", "temperature": 0.7},
             }
         ],
     }
@@ -86,9 +86,9 @@ class TestBackendApi:
         backend = Backend.objects.get(gateway=fake_stage.gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         stored = BackendConfig.objects.get(backend=backend)
-        assert decrypt_ai_backend_config(stored.config)["instances"][0]["auth"]["header"]["Authorization"] == (
-            "Bearer secret"
-        )
+        decrypted_config = decrypt_ai_backend_config(stored.config)
+        assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
+        assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
         response = request_view(
             "GET",
