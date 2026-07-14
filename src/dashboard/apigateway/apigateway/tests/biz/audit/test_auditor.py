@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import copy
 import json
 
 from django.test import TestCase
@@ -24,26 +23,22 @@ from django.test import TestCase
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.biz.audit import Auditor
-from apigateway.core.backend_config import prepare_backend_config
 from apigateway.core.constants import BackendKindEnum
 
 
-def _stored_ai_config():
-    return prepare_backend_config(
-        BackendKindEnum.AI.value,
-        {
-            "timeout": 30000,
-            "instances": [
-                {
-                    "name": "primary",
-                    "provider": "openai",
-                    "weight": 1,
-                    "auth": {"header": {"Authorization": "Bearer secret"}},
-                    "options": {"model": "gpt-4o"},
-                }
-            ],
-        },
-    )
+def _plain_ai_config():
+    return {
+        "timeout": 30000,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 1,
+                "auth": {"header": {"Authorization": "Bearer secret"}},
+                "options": {"model": "gpt-4o"},
+            }
+        ],
+    }
 
 
 class TestRecordAuditLog(TestCase):
@@ -67,7 +62,7 @@ class TestRecordAuditLog(TestCase):
             self.assertEqual(logs.count(), 1)
 
     def test_record_stage_backend_op_masks_model_data(self):
-        stored_config = _stored_ai_config()
+        stored_config = _plain_ai_config()
 
         Auditor.record_stage_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -88,7 +83,7 @@ class TestRecordAuditLog(TestCase):
         assert json.loads(log.data_after)["config"]["instances"][0]["auth"]["header"]["Authorization"] == ("Be****et")
 
     def test_record_stage_backend_op_masks_config_only_data(self):
-        stored_config = _stored_ai_config()
+        stored_config = _plain_ai_config()
 
         Auditor.record_stage_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -109,7 +104,7 @@ class TestRecordAuditLog(TestCase):
         assert json.loads(log.data_after)["instances"][0]["auth"]["header"]["Authorization"] == "Be****et"
 
     def test_record_stage_backend_op_can_skip_unchanged_masked_data(self):
-        stored_config = _stored_ai_config()
+        stored_config = _plain_ai_config()
 
         Auditor.record_stage_backend_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -127,26 +122,3 @@ class TestRecordAuditLog(TestCase):
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             op_object_id="123",
         ).exists()
-
-    def test_record_stage_backend_op_redacts_unreadable_existing_secret(self):
-        stored_config = _stored_ai_config()
-        unreadable_config = copy.deepcopy(stored_config)
-        unreadable_config["instances"][0]["auth"]["header"]["Authorization"] = "invalid-ciphertext"
-
-        Auditor.record_stage_backend_op_success(
-            op_type=OpTypeEnum.MODIFY,
-            username="admin",
-            gateway_id=1,
-            instance_id=123,
-            instance_name="prod:openai-primary",
-            backend_kind=BackendKindEnum.AI.value,
-            data_before=unreadable_config,
-            data_after=stored_config,
-        )
-
-        log = AuditEventLog.objects.get(
-            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
-            op_object_id="123",
-        )
-        assert json.loads(log.data_before)["instances"][0]["auth"]["header"]["Authorization"] == "****"
-        assert json.loads(log.data_after)["instances"][0]["auth"]["header"]["Authorization"] == "Be****et"

@@ -1181,7 +1181,7 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
@@ -1219,7 +1219,7 @@ class TestBackendPathCheckApi:
             gateway=fake_gateway,
             stage=stage,
             backend=backend,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",

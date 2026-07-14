@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from copy import deepcopy
 from datetime import datetime
 from typing import ClassVar, Dict, List
 
@@ -29,7 +30,6 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core import managers
-from apigateway.core.backend_config import prepare_backend_config
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
@@ -53,6 +53,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
+from apigateway.utils.crypto import get_crypto
 
 logger = logging.getLogger(__name__)
 
@@ -440,25 +441,38 @@ class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
-    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+    _config = JSONField(db_column="config", default=dict, dump_kwargs={"indent": None}, blank=True)
 
-    objects: ClassVar[managers.BackendConfigManager] = managers.BackendConfigManager()
+    @property
+    def config(self) -> dict:
+        config = deepcopy(self._config)
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
 
-    def prepare_config_for_save(self, existing_config=None):
-        if "backend" in self._state.fields_cache:
-            backend_kind = self.backend.kind
-        else:
-            backend_kind = Backend.objects.only("kind").get(id=self.backend_id).kind
-        self.config = prepare_backend_config(backend_kind, self.config, existing_config)
+        instances = config.get("instances")
+        if not instances:
+            return config
 
-    def save(self, *args, **kwargs):
-        update_fields = kwargs.get("update_fields")
-        if update_fields is None or "config" in update_fields:
-            existing_config = None
-            if self.pk:
-                existing_config = BackendConfig.objects.filter(pk=self.pk).values_list("config", flat=True).first()
-            self.prepare_config_for_save(existing_config)
-        super().save(*args, **kwargs)
+        headers = instances[0].get("auth", {}).get("header", {})
+        for key, secret in headers.items():
+            try:
+                plaintext = get_crypto().decrypt(secret)
+            except Exception as err:
+                raise ValueError(f"$.instances[0].auth.header: failed to decrypt header: {key}") from err
+            headers[key] = plaintext.decode() if isinstance(plaintext, bytes) else plaintext
+        return config
+
+    @config.setter
+    def config(self, value: dict) -> None:
+        config = deepcopy(value)
+        if self.backend.kind == BackendKindEnum.AI.value:
+            instances = config.get("instances")
+            if instances:
+                headers = instances[0].get("auth", {}).get("header", {})
+                crypto = get_crypto()
+                for key, secret in headers.items():
+                    headers[key] = crypto.encrypt(secret)
+        self._config = config
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")

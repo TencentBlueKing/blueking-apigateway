@@ -25,7 +25,7 @@ from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.backend_config import mask_backend_config
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
 from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
 
 
@@ -92,7 +92,9 @@ class ResourceInfoSLZ(serializers.Serializer):
             if backend and "resource_backend_configs" in self.context:
                 backend_config = self.context["resource_backend_configs"].get(backend_id)
                 if backend_config:
-                    backend_info["config"] = mask_backend_config(backend.kind, backend_config.config)
+                    backend_info["config"] = (
+                        BACKEND_CONFIG_TYPES[backend.kind].model_validate(backend_config.config).mask().to_config()
+                    )
 
             proxy["backend"] = backend_info
 

@@ -23,7 +23,6 @@ from ddf import G
 
 from apigateway.apis.open.stage import views
 from apigateway.biz.plugin import PluginBindingHandler
-from apigateway.core.backend_config import decrypt_ai_backend_config
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Gateway, Stage
 from apigateway.tests.utils.testing import get_response_json
@@ -132,9 +131,8 @@ class TestStageSyncViewSet:
         backend = Backend.objects.get(gateway=gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
-        decrypted_config = decrypt_ai_backend_config(backend_config.config)
-        assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert backend_config.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
     def test_sync(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(

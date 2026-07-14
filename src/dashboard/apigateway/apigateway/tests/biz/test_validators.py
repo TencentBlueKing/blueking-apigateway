@@ -187,7 +187,7 @@ class TestResourceVersionValidator:
             gateway=fake_gateway,
             stage=fake_stage,
             backend=backend2,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",
@@ -362,7 +362,7 @@ class TestPublishValidator:
             gateway=fake_gateway,
             backend=backend,
             stage=fake_stage,
-            config={
+            _config={
                 "type": "node",
                 "timeout": 30,
                 "loadbalance": "roundrobin",

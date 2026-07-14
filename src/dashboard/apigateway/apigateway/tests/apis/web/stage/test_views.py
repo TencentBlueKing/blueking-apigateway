@@ -22,7 +22,6 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import MCPServerStatusEnum
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.core.backend_config import decrypt_ai_backend_config
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, StageStatusEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
@@ -73,7 +72,7 @@ class TestStageApi:
         assert response.status_code == 201, response.json()
         stage = Stage.objects.get(gateway=fake_gateway, name="ai-stage")
         backend_config = BackendConfig.objects.get(stage=stage, backend=ai_backend)
-        assert decrypt_ai_backend_config(backend_config.config)["instances"][0]["options"] == {
+        assert backend_config.config["instances"][0]["options"] == {
             "model": "gpt-4o",
             "temperature": 0.7,
         }
@@ -311,9 +310,7 @@ class TestStageBackendApi:
 
         assert response.status_code == 204, response.json()
         backend_config.refresh_from_db()
-        assert decrypt_ai_backend_config(backend_config.config)["instances"][0]["auth"]["header"]["Authorization"] == (
-            "Bearer secret"
-        )
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
         audit_log = AuditEventLog.objects.get(
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             op_object_id=backend_config.id,

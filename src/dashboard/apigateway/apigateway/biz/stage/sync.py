@@ -27,8 +27,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.core.backend_config import prepare_backend_config
-from apigateway.core.backend_config_schema import BackendConfigValidationError
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
 from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, LoadBalanceTypeEnum
 from apigateway.core.models import Backend, BackendConfig
 from apigateway.service.plugin import PluginConfigYamlValidator
@@ -64,8 +63,8 @@ class StageSyncHandler:
             ).first()
             existing_config = backend_config.config if backend_config else None
             try:
-                prepare_backend_config(kind, config, existing_config)
-            except BackendConfigValidationError as err:
+                stored_config = BACKEND_CONFIG_TYPES[kind].model_validate(config).merge(existing_config).to_config()
+            except ValueError as err:
                 raise serializers.ValidationError({field_name: str(err)}) from err
 
             data_before = existing_config
@@ -76,7 +75,7 @@ class StageSyncHandler:
                     stage=stage,
                     created_by=username,
                 )
-            backend_config.config = config
+            backend_config.config = stored_config
             backend_config.updated_by = username
             backend_config.save()
             data_after = backend_config.config

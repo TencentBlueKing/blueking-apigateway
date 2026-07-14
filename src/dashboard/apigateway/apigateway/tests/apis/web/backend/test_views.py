@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from apigateway.core.backend_config import decrypt_ai_backend_config
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
 from apigateway.core.models import Backend, BackendConfig
 
@@ -86,9 +85,8 @@ class TestBackendApi:
         backend = Backend.objects.get(gateway=fake_stage.gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         stored = BackendConfig.objects.get(backend=backend)
-        decrypted_config = decrypt_ai_backend_config(stored.config)
-        assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
-        assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
+        assert stored.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
         response = request_view(
             "GET",
@@ -157,9 +155,7 @@ class TestBackendApi:
 
         assert response.status_code == 200, response.json()
         stored = BackendConfig.objects.get(backend=backend)
-        assert decrypt_ai_backend_config(stored.config)["instances"][0]["auth"]["header"]["Authorization"] == (
-            "Bearer secret"
-        )
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
 
     def test_update_rejects_kind_change(self, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value

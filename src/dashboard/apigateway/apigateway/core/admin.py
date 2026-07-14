@@ -16,6 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
+from django import forms
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
 
@@ -173,7 +176,42 @@ class BackendAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.Mode
     list_filter = ["gateway"]
 
 
+class BackendConfigAdminForm(forms.ModelForm):
+    config_json = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 20, "cols": 100}),
+        required=True,
+        help_text="Backend configuration in JSON format.",
+    )
+
+    class Meta:
+        model = BackendConfig
+        fields = ["gateway", "backend", "stage", "created_by", "updated_by"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            try:
+                self.fields["config_json"].initial = json.dumps(self.instance.config, indent=2)
+            except ValueError:
+                self.fields["config_json"].initial = ""
+
+    def clean_config_json(self):
+        value = self.cleaned_data.get("config_json", "")
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError as err:
+            raise forms.ValidationError(f"Invalid JSON format: {err}") from err
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.config = self.cleaned_data["config_json"]
+        if commit:
+            instance.save()
+        return instance
+
+
 class BackendConfigAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.ModelAdmin):
+    form = BackendConfigAdminForm
     djangoql_completion_enabled_by_default = False
     list_display = ["id", "gateway", "backend", "stage", "config"]
     search_fields = ["gateway__id", "gateway__name", "backend_id"]

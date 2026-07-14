@@ -30,7 +30,6 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.biz.gateway import GatewayHandler
-from apigateway.core.backend_config import decrypt_ai_backend_config
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import (
     Backend,
@@ -127,9 +126,8 @@ class TestSyncApi:
         backend = Backend.objects.get(gateway=fake_gateway, name="openai-primary")
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
-        decrypted_config = decrypt_ai_backend_config(backend_config.config)
-        assert decrypted_config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert decrypted_config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert backend_config.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
 
     def test_stage_sync_normal_gateway_rejects_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         resp = request_view(
@@ -245,10 +243,7 @@ class TestSyncApi:
 
         assert updated.status_code == 200, updated.json()
         backend_config = BackendConfig.objects.get(backend__name="openai-primary", stage__name="prod")
-        assert (
-            decrypt_ai_backend_config(backend_config.config)["instances"][0]["auth"]["header"]["Authorization"]
-            == "Bearer secret"
-        )
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
         audit_log = AuditEventLog.objects.get(
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             comment="OpenAPI 同步更新环境后端配置",

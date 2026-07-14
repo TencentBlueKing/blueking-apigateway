@@ -25,6 +25,7 @@ from django.utils.translation.trans_null import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -58,7 +59,6 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
-    AIBackendProviderEnum,
     BackendKindEnum,
     GatewayStatusEnum,
     GatewaySyncKindEnum,
@@ -387,34 +387,9 @@ class RejectUnknownFieldsMixin:
         return super().to_internal_value(data)
 
 
-class AIBackendAuthSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    header = serializers.DictField(child=serializers.CharField(), required=False)
-
-
-class AIBackendOptionsSLZ(serializers.Serializer):
-    model = serializers.CharField(allow_blank=False)
-
+class AIBackendConfigSLZ(serializers.Serializer):
     def to_internal_value(self, data):
-        validated_data = super().to_internal_value(data)
-        return {**data, **validated_data}
-
-
-class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    endpoint = serializers.CharField(allow_blank=False)
-
-
-class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
-    weight = serializers.IntegerField(min_value=1, max_value=1)
-    auth = AIBackendAuthSLZ(required=False)
-    options = AIBackendOptionsSLZ()
-    override = AIBackendOverrideSLZ(required=False)
-
-
-class AIBackendConfigSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    timeout = serializers.IntegerField(min_value=1, default=30000)
-    instances = serializers.ListField(child=AIBackendInstanceSLZ(), min_length=1, max_length=1)
+        return validate_ai_backend_config(data)
 
 
 class AIBackendSLZ(RejectUnknownFieldsMixin, serializers.Serializer):

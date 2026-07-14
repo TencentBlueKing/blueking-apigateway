@@ -20,7 +20,6 @@ import itertools
 import json
 import operator
 from collections import defaultdict
-from contextvars import ContextVar
 from typing import Any, Dict, List, Optional
 
 from cachetools import TTLCache, cached
@@ -39,8 +38,6 @@ from apigateway.utils.time import now_datetime
 
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
 
-_backend_config_bulk_update_active = ContextVar("backend_config_bulk_update_active", default=False)
-
 
 class BackendManager(models.Manager):
     def standard(self):
@@ -48,32 +45,6 @@ class BackendManager(models.Manager):
 
     def ai(self):
         return self.filter(kind=BackendKindEnum.AI.value)
-
-
-class BackendConfigQuerySet(models.QuerySet):
-    def update(self, **kwargs):
-        if "config" in kwargs and not _backend_config_bulk_update_active.get():
-            raise ValueError("BackendConfig.config cannot be updated through QuerySet.update()")
-        return super().update(**kwargs)
-
-    def bulk_create(self, objs, **kwargs):
-        for obj in objs:
-            obj.prepare_config_for_save()
-        return super().bulk_create(objs, **kwargs)
-
-    def bulk_update(self, objs, fields, **kwargs):
-        if "config" in fields:
-            existing_configs = dict(self.filter(pk__in=[obj.pk for obj in objs]).values_list("pk", "config"))
-            for obj in objs:
-                obj.prepare_config_for_save(existing_configs.get(obj.pk))
-        token = _backend_config_bulk_update_active.set(True)
-        try:
-            return super().bulk_update(objs, fields, **kwargs)
-        finally:
-            _backend_config_bulk_update_active.reset(token)
-
-
-BackendConfigManager = models.Manager.from_queryset(BackendConfigQuerySet)
 
 
 class ResourceManager(models.Manager):

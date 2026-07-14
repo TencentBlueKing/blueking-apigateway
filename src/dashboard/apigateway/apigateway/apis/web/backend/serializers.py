@@ -22,14 +22,14 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import SchemeHostInputValidator
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.backend_config import mask_backend_config, prepare_backend_config
-from apigateway.core.backend_config_schema import BackendConfigValidationError
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, AIBackendProviderEnum, BackendKindEnum, BackendTypeEnum
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import BACKEND_NAME_PATTERN
@@ -39,45 +39,16 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
     stage_id = serializers.IntegerField()
 
 
-class RejectUnknownFieldsMixin:
+class AIBackendConfigSLZ(serializers.Serializer):
+    stage_id = serializers.IntegerField()
+
     def to_internal_value(self, data):
         if not isinstance(data, Mapping):
             return super().to_internal_value(data)
-        unknown = set(data) - set(self.fields)
-        if unknown:
-            raise serializers.ValidationError({key: _("不支持的字段。") for key in sorted(unknown)})
-        return super().to_internal_value(data)
 
-
-class AIBackendAuthSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    header = serializers.DictField(child=serializers.CharField(), required=False)
-
-
-class AIBackendOptionsSLZ(serializers.Serializer):
-    model = serializers.CharField(allow_blank=False)
-
-    def to_internal_value(self, data):
-        validated_data = super().to_internal_value(data)
-        return {**data, **validated_data}
-
-
-class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    endpoint = serializers.CharField(allow_blank=False)
-
-
-class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=AIBackendProviderEnum.get_choices())
-    weight = serializers.IntegerField(min_value=1, max_value=1)
-    auth = AIBackendAuthSLZ(required=False)
-    options = AIBackendOptionsSLZ()
-    override = AIBackendOverrideSLZ(required=False)
-
-
-class AIBackendConfigSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
-    stage_id = serializers.IntegerField()
-    timeout = serializers.IntegerField(min_value=1, default=30000)
-    instances = serializers.ListField(child=AIBackendInstanceSLZ(), min_length=1, max_length=1)
+        stage = super().to_internal_value(data)
+        raw_config = {key: value for key, value in data.items() if key != "stage_id"}
+        return {"stage_id": stage["stage_id"], **validate_ai_backend_config(raw_config)}
 
 
 class BackendInputSLZ(serializers.Serializer):
@@ -166,8 +137,9 @@ class BackendInputSLZ(serializers.Serializer):
         for backend_config in attrs["configs"]:
             raw_config = {key: value for key, value in backend_config.items() if key != "stage_id"}
             try:
-                prepare_backend_config(attrs["kind"], raw_config, existing_configs.get(backend_config["stage_id"]))
-            except BackendConfigValidationError as err:
+                config = BACKEND_CONFIG_TYPES[attrs["kind"]].model_validate(raw_config)
+                config.merge(existing_configs.get(backend_config["stage_id"]))
+            except ValueError as err:
                 raise serializers.ValidationError({"configs": str(err)}) from err
 
             if attrs["kind"] == BackendKindEnum.AI.value:
@@ -221,7 +193,7 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
 
         data = []
         for backend_config in backend_configs:
-            config = mask_backend_config(obj.kind, backend_config.config)
+            config = BACKEND_CONFIG_TYPES[obj.kind].model_validate(backend_config.config).mask().to_config()
             config["stage"] = {
                 "id": backend_config.stage.id,
                 "name": backend_config.stage.name,

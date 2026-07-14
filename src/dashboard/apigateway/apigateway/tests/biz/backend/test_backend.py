@@ -20,7 +20,7 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.backend_config import decrypt_ai_backend_config, mask_backend_config
+from apigateway.core.backend_config import AIBackendConfig
 from apigateway.core.constants import BackendKindEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Resource, Stage
 
@@ -151,9 +151,9 @@ class TestBackendHandler:
         backend_config = BackendConfig.objects.get(backend=backend, stage=fake_stage)
         previous_updated_time = backend_config.updated_time
         if credential_format == "masked":
-            config = mask_backend_config(backend.kind, backend_config.config)
+            config = AIBackendConfig.model_validate(backend_config.config).mask().to_config()
         else:
-            config = decrypt_ai_backend_config(backend_config.config)
+            config = backend_config.config
         config["stage_id"] = fake_stage.id
         trigger_gateway_publish = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
 
