@@ -1,19 +1,8 @@
-from copy import deepcopy
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from apigateway.core.constants import AI_BACKEND_BUILTIN_PROVIDERS, AIBackendProviderEnum, BackendKindEnum
-
-
-def _mask_secret(value: str) -> str:
-    if len(value) < 4:
-        return "****"
-    return f"{value[:2]}****{value[-2:]}"
-
-
-def _is_masked_secret(value: str) -> bool:
-    return value == "****" or (len(value) == 8 and value[2:6] == "****")
 
 
 def _validate_object_keys(data: dict[str, Any], *, allowed: set[str], required: set[str], path: str) -> None:
@@ -59,12 +48,6 @@ class StandardBackendConfig(BaseModel):
             if "weight" in host and (type(host["weight"]) is not int or host["weight"] < 1):
                 raise ValueError(f"{path}.weight: must be a positive integer")
         return hosts
-
-    def mask(self) -> Self:
-        return self.model_copy(deep=True)
-
-    def merge(self, existing: Self | dict[str, Any] | None = None) -> Self:
-        return self.model_copy(deep=True)
 
     def to_config(self) -> dict[str, Any]:
         return self.model_dump(exclude_unset=True)
@@ -141,55 +124,11 @@ class AIBackendConfig(BaseModel):
         if not isinstance(override["endpoint"], str) or not override["endpoint"]:
             raise ValueError(f"{path}.endpoint: must be a non-empty string")
 
-    @property
-    def _headers(self) -> dict[str, str]:
-        return self.instances[0].get("auth", {}).get("header", {})
-
-    def _headers_were_provided(self) -> bool:
-        return "header" in self.instances[0].get("auth", {})
-
-    def _with_headers(self, headers: dict[str, str]) -> Self:
-        if not headers and not self._headers_were_provided():
-            return self.model_copy(deep=True)
-        data = self.to_config()
-        data.setdefault("instances", [{}])[0].setdefault("auth", {})["header"] = headers
-        return self.model_validate(data)
-
-    @classmethod
-    def _from_stored(cls, existing: Self | dict[str, Any] | None) -> Self | None:
-        if existing is None or isinstance(existing, cls):
-            return existing
-        return cls.model_validate(existing)
-
-    def _merge_headers(self, existing: Self | None) -> Self:
-        existing_headers = existing._headers if existing else {}
-        if not self._headers_were_provided():
-            return self._with_headers(deepcopy(existing_headers)) if existing_headers else self.model_copy(deep=True)
-
-        existing_by_name = {key.casefold(): (key, value) for key, value in existing_headers.items()}
-        merged_headers: dict[str, str] = {}
-        for key, value in self._headers.items():
-            existing_header = existing_by_name.get(key.casefold())
-            if existing_header is None:
-                merged_headers[key] = value
-                continue
-
-            existing_key, existing_value = existing_header
-            if value == existing_value:
-                merged_headers[existing_key] = existing_value
-                continue
-
-            if value == existing_value or value == _mask_secret(existing_value):
-                merged_headers[existing_key] = existing_value
-                continue
-            if _is_masked_secret(value):
-                raise ValueError(f"$.instances[0].auth.header: masked header does not match existing secret: {key}")
-            merged_headers[key] = value
-        return self._with_headers(merged_headers)
-
-    def _validate_provider_contract(self) -> None:
+    @model_validator(mode="after")
+    def validate_provider_contract(self) -> Self:
         instance = self.instances[0]
-        authorization = next((value for key, value in self._headers.items() if key.casefold() == "authorization"), "")
+        headers = instance.get("auth", {}).get("header", {})
+        authorization = next((value for key, value in headers.items() if key.casefold() == "authorization"), "")
         if instance["provider"] in AI_BACKEND_BUILTIN_PROVIDERS:
             if not authorization:
                 raise ValueError("$.instances[0].auth.header: Authorization header is required")
@@ -197,15 +136,7 @@ class AIBackendConfig(BaseModel):
                 raise ValueError("$.instances[0].override: override is not allowed")
         elif "override" not in instance:
             raise ValueError("$.instances[0].override: override.endpoint is required")
-
-    def merge(self, existing: Self | dict[str, Any] | None = None) -> Self:
-        merged = self._merge_headers(self._from_stored(existing))
-        merged._validate_provider_contract()
-        return merged
-
-    def mask(self) -> Self:
-        masked_headers = {key: _mask_secret(value) for key, value in self._headers.items()}
-        return self._with_headers(masked_headers)
+        return self
 
     def to_config(self) -> dict[str, Any]:
         data = self.model_dump(exclude_unset=True)

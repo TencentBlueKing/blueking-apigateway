@@ -63,7 +63,7 @@ class StageSyncHandler:
             ).first()
             existing_config = backend_config.config if backend_config else None
             try:
-                stored_config = BACKEND_CONFIG_TYPES[kind].model_validate(config).merge(existing_config).to_config()
+                stored_config = BACKEND_CONFIG_TYPES[kind].model_validate(config).to_config()
             except ValueError as err:
                 raise serializers.ValidationError({field_name: str(err)}) from err
 

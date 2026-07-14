@@ -190,16 +190,16 @@ provider 约束：
 写入流程：
 
 1. serializer 使用对应的 Pydantic BackendConfig 类型校验并归一化用户输入。
-2. 更新时，将与已有凭证掩码完全一致的值和未提供的 Header 与 ORM 返回的已有明文合并。
-3. biz 或直接写入配置的 view 将 Pydantic 对象转换为 JSON 后赋值给 `BackendConfig.config`。
+2. Web 更新 API 收到掩码形态的 Header value 时，使用 ORM 返回的同名 Header 明文替换该值。
+3. biz 再次校验完整配置，将 Pydantic 对象转换为 JSON 后赋值给 `BackendConfig.config`。
 4. `BackendConfig.config` 仅在 AI 配置的数据库写入边界加密完整 JSON；普通配置保持原样。
 
 更新语义：
 
 - 明文长度小于 4 时，掩码统一为 `****`；否则保留前 2 位和后 2 位，中间使用 `****`，例如 `sk****9z`。
-- Header value 与已有凭证按上述规则生成的掩码完全一致，表示保留已有凭证值。
-- 更新请求中未提供某个已有 Header，也表示保留，避免 PUT 或同步客户端读取不到明文后误删凭证。
-- 提供新的非掩码 value 表示替换；保存时重新加密完整 AI 配置。
+- Web 更新 API 只判断 value 是否为掩码形态；如果数据库配置存在同名 Header，就恢复数据库中的 value，不再比较掩码是否由已有 value 生成。
+- 非掩码 value 保持请求原值；未提供的 Header 不从数据库补回，因为更新请求提交的是完整配置。
+- 同步和其他非 Web 更新入口不解析掩码，输入值按完整明文配置处理。
 - 显式提交空的 `auth.header` 表示清空全部 Header；仅 `openai-compatible` 允许保存空认证，`openai` 和 `deepseek` 应校验失败。
 
 读取和使用约束：
@@ -228,10 +228,10 @@ StandardBackendConfig
     -> 普通后端的字段校验与 JSON 转换
 
 AIBackendConfig
-    -> 模型后端的字段校验、JSON 转换与脱敏
+    -> 模型后端的字段校验与 JSON 转换
 ```
 
-serializer 调用对应的 Pydantic 类型完成输入校验和默认值归一化，并将 Pydantic 错误转换为 API 校验错误。更新时通过 `merge()` 将掩码或缺省 Header 与已有明文合并；biz 在持久化前再次构造对应类型。AI 配置赋值给 `BackendConfig.config` 时自动加密完整 JSON，读取该属性时自动解密；普通配置原样读写。Web output serializer 调用 `get_config_for_display()`，controller 和 Django Admin 直接使用可信明文；审计输出继续在日志边界调用 `mask()`。
+serializer 调用对应的 Pydantic 类型完成输入校验和默认值归一化，并将 Pydantic 错误转换为 API 校验错误。只有 Web 更新 serializer 会将掩码形态的 Header value 替换为数据库中的同名 value；Pydantic 类型和 biz 不合并新旧配置。biz 在持久化前再次构造对应类型。AI 配置赋值给 `BackendConfig.config` 时自动加密完整 JSON，读取该属性时自动解密；普通配置原样读写。Web output serializer 调用 `get_config_for_display()`，controller 和 Django Admin 直接使用可信明文；审计数据在写入日志的边界显式脱敏。
 
 `Backend.kind` 与 Pydantic 类型的对应关系为：
 
@@ -248,8 +248,9 @@ Backend.kind=ai
 类型定义与持久化转换分别位于：
 
 ```text
-apigateway/core/backend_config.py -> Pydantic 类型、掩码与更新合并
+apigateway/core/backend_config.py -> Pydantic 类型与 JSON 转换
 apigateway/core/models.py         -> BackendConfig.config 按 Backend.kind 持久化加解密；展示方法脱敏
+apigateway/apis/backend_config.py -> Web 更新 API 的掩码 Header value 恢复
 ```
 
 Pydantic 类型主要负责：
@@ -260,16 +261,17 @@ Pydantic 类型主要负责：
 - 通过 Backend.kind 对应关系拒绝结构不匹配的配置。
 - 第一期模型配置的 `instances` 数量必须等于 1。
 
-forbidden host、scheme 与 Backend.type 的关系等 API 上下文规则仍由 serializer 或业务 validator 负责；provider 与凭证规则由 Pydantic `merge()` 在合并已有凭证后校验。
+forbidden host、scheme 与 Backend.type 的关系等 API 上下文规则仍由 serializer 或业务 validator 负责；provider 与凭证规则由 Pydantic 类型直接校验。
 
 外部配置入库前必须在显式边界处理：
 
 - API serializer 使用对应 Pydantic 类型校验并归一化输入。
-- biz 写入路径再次构造对应类型，并通过 `merge(existing)` 解析掩码和缺省凭证。
-- 直接保存单个 BackendConfig 的 view 必须保存 `config.merge(existing).to_config()` 的结果。
+- Web 更新 serializer 只恢复已有同名 Header 的掩码 value；非掩码 value 和缺省 Header 不处理。
+- biz 写入路径再次构造对应类型，不读取已有配置进行合并。
+- 直接保存单个 BackendConfig 的 view 必须保存校验后的完整配置。
 - Django model、manager 和 queryset 不承载配置校验规则；`config` property 只按 `self.backend.kind` 完成加解密，`_config` 映射已有数据库 `config` 列。管理命令、数据修复等可信内部调用如果直接写 ORM，仍应按输入可信度决定是否调用 Pydantic 类型。
 
-需要通过契约测试覆盖 serializer 与 Pydantic 类型的组合路径，并直接测试两个 Pydantic 类型的结构校验、JSON 往返、掩码合并，以及 ORM 加解密边界。
+需要通过契约测试覆盖 serializer 与 Pydantic 类型的组合路径，并直接测试两个 Pydantic 类型的结构校验、JSON 往返、Web 更新掩码恢复，以及 ORM 加解密边界。
 
 ## 3. Resource 与 Proxy
 
@@ -695,7 +697,7 @@ bk_backend_name = Backend.name
 - 数据迁移：存量 Backend 和 Resource 的 kind 均为 `standard`，旧 ResourceVersion 缺少 kind 时仍按普通资源发布。
 - 不可变性：Gateway、Backend 和 Resource 创建后不能通过 Web API、导入或同步改变类别；Gateway 同步更新中的 kind 按约定忽略。
 - BackendConfig：两个 Pydantic 类型覆盖模型 provider、单 instance、固定 model、`options` 合法 JSON 键值及无损透传、endpoint、timeout 和未知字段约束的正反例。
-- 凭证：AI 配置经 view/biz 写入后数据库只保存完整配置 JSON 的嵌套密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；普通配置及其存量记录保持原始 JSON 明文。ORM 读取与 Django Admin 返回可信明文，Web API 与审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；匹配已有凭证的掩码或字段缺省保留旧值，替换、清空和解密失败路径均有覆盖。
+- 凭证：AI 配置经 view/biz 写入后数据库只保存完整配置 JSON 的嵌套密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；普通配置及其存量记录保持原始 JSON 明文。ORM 读取与 Django Admin 返回可信明文，Web API 与审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；Web 更新 API 对掩码 value 的恢复、非掩码替换、清空和解密失败路径均有覆盖。
 - Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。

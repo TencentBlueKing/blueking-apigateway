@@ -15,10 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from copy import deepcopy
 from typing import Optional, Union
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
+from apigateway.core.constants import BackendKindEnum
 from apigateway.service.audit import record_audit_log
 
 # TODO:
@@ -32,7 +33,12 @@ def _get_backend_config_audit_data(backend_kind: str, data: list | dict | str | 
         return data
 
     config_data = data.get("config", data)
-    masked_config = BACKEND_CONFIG_TYPES[backend_kind].model_validate(config_data).mask().to_config()
+    masked_config = deepcopy(config_data)
+    if backend_kind == BackendKindEnum.AI.value:
+        for instance in masked_config.get("instances", []):
+            headers = instance.get("auth", {}).get("header", {})
+            for key, secret in headers.items():
+                headers[key] = "****" if len(secret) < 4 else f"{secret[:2]}****{secret[-2:]}"
     if "config" not in data:
         return masked_config
 

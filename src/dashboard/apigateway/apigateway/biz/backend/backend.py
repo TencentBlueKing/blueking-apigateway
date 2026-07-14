@@ -59,7 +59,7 @@ class BackendHandler:
                 gateway=data["gateway"],
                 backend=backend,
                 stage_id=config["stage_id"],
-                config=config_type.model_validate(raw_config).merge().to_config(),
+                config=config_type.model_validate(raw_config).to_config(),
                 created_by=created_by,
                 updated_by=created_by,
             )
@@ -92,7 +92,7 @@ class BackendHandler:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
             existing_config = backend_config.config
-            config_model = config_type.model_validate(new_config).merge(existing_config)
+            config_model = config_type.model_validate(new_config)
             if config_model.to_config() == existing_config:
                 continue
             if resource_count:

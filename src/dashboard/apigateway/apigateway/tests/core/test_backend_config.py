@@ -1,4 +1,3 @@
-import copy
 import json
 
 import pytest
@@ -31,34 +30,9 @@ def ai_backend(fake_stage):
     return G(Backend, gateway=fake_stage.gateway, kind=BackendKindEnum.AI.value)
 
 
-def test_backend_config_model_masks_plaintext_secrets(ai_backend_config):
-    config = AIBackendConfig.model_validate(ai_backend_config)
-
-    assert "encrypt" not in AIBackendConfig.__dict__
-    assert "decrypt" not in AIBackendConfig.__dict__
-    assert isinstance(config.instances[0], dict)
-    assert config.mask().instances[0]["auth"]["header"] == {
-        "Authorization": "Be****et",
-        "X-Organization": "or****-1",
-    }
-
-
 def test_backend_config_model_uses_private_database_field():
     assert isinstance(BackendConfig.config, property)
     assert BackendConfig._meta.get_field("_config").column == "config"
-
-
-def test_standard_backend_config_secret_transforms_are_noops():
-    data = {
-        "type": "node",
-        "timeout": 30,
-        "loadbalance": "roundrobin",
-        "hosts": [{"scheme": "http", "host": "example.com"}],
-    }
-    config = StandardBackendConfig.model_validate(data)
-
-    assert config.merge() == config
-    assert config.mask() == config
 
 
 def test_backend_config_model_encrypts_entire_ai_config_at_storage_boundary(fake_stage, ai_backend, ai_backend_config):
@@ -163,71 +137,11 @@ def test_backend_config_model_reads_legacy_standard_config(fake_stage):
     assert BackendConfig.objects.get(pk=backend_config.pk).config == standard_config
 
 
-def test_masked_and_missing_header_keep_existing(ai_backend_config):
-    existing = AIBackendConfig.model_validate(ai_backend_config)
-    existing_masked = existing.mask()
-    masked = copy.deepcopy(ai_backend_config)
-    masked["instances"][0]["auth"]["header"] = {
-        "Authorization": existing_masked.instances[0]["auth"]["header"]["Authorization"]
-    }
-    missing = copy.deepcopy(ai_backend_config)
-    del missing["instances"][0]["auth"]["header"]
-
-    masked_result = AIBackendConfig.model_validate(masked).merge(existing)
-    missing_result = AIBackendConfig.model_validate(missing).merge(existing)
-
-    assert (
-        masked_result.instances[0]["auth"]["header"]["Authorization"]
-        == existing.instances[0]["auth"]["header"]["Authorization"]
-    )
-    assert missing_result.instances[0]["auth"]["header"] == existing.instances[0]["auth"]["header"]
-
-
-def test_short_secret_mask_keeps_existing(ai_backend_config):
-    ai_backend_config["instances"][0]["auth"]["header"] = {"Authorization": "abc"}
-    existing = AIBackendConfig.model_validate(ai_backend_config)
-    masked = existing.mask()
-
-    result = masked.merge(existing)
-
-    assert result == existing
-
-
-def test_merge_rejects_short_mask_for_existing_long_secret(ai_backend_config):
-    existing = AIBackendConfig.model_validate(ai_backend_config)
-    incoming = copy.deepcopy(ai_backend_config)
-    incoming["instances"][0]["auth"]["header"]["Authorization"] = "****"
-
-    with pytest.raises(ValueError, match="masked header does not match existing secret"):
-        AIBackendConfig.model_validate(incoming).merge(existing)
-
-
-def test_same_plaintext_does_not_change_ai_backend_config(ai_backend_config):
-    existing = AIBackendConfig.model_validate(ai_backend_config)
-
-    assert AIBackendConfig.model_validate(ai_backend_config).merge(existing) == existing
-
-
-def test_new_plaintext_replaces_existing_secret(ai_backend_config):
-    instance = ai_backend_config["instances"][0]
-    instance["provider"] = "openai-compatible"
-    instance["auth"]["header"] = {"X-Api-Key": "new-plaintext"}
-    instance["override"] = {"endpoint": "https://example.com/v1"}
-    existing = copy.deepcopy(ai_backend_config)
-    existing["instances"][0]["auth"]["header"]["X-Api-Key"] = "old-plaintext"
-
-    result = AIBackendConfig.model_validate(ai_backend_config).merge(existing)
-
-    assert result.instances[0]["auth"]["header"]["X-Api-Key"] == "new-plaintext"
-
-
-def test_merge_explicit_empty_header_clears_existing(ai_backend_config):
-    existing = AIBackendConfig.model_validate(ai_backend_config)
-    incoming = copy.deepcopy(ai_backend_config)
-    incoming["instances"][0]["auth"]["header"] = {}
+def test_ai_backend_config_rejects_empty_required_header(ai_backend_config):
+    ai_backend_config["instances"][0]["auth"]["header"] = {}
 
     with pytest.raises(ValueError, match="Authorization header is required"):
-        AIBackendConfig.model_validate(incoming).merge(existing)
+        AIBackendConfig.model_validate(ai_backend_config)
 
 
 def test_model_rejects_case_insensitive_duplicate_headers(ai_backend_config):
@@ -285,7 +199,7 @@ def test_ai_backend_config_preserves_empty_auth_shape(ai_backend_config, auth, e
     else:
         instance["auth"] = auth
 
-    stored = AIBackendConfig.model_validate(ai_backend_config).merge().to_config()
+    stored = AIBackendConfig.model_validate(ai_backend_config).to_config()
 
     assert stored["instances"][0].get("auth") == expected
 
@@ -297,7 +211,7 @@ def test_ai_backend_config_preserves_empty_auth_shape(ai_backend_config, auth, e
         ("openai-compatible", None, "override.endpoint is required"),
     ],
 )
-def test_merge_validates_provider_contract(ai_backend_config, provider, override, error):
+def test_ai_backend_config_validates_provider_contract(ai_backend_config, provider, override, error):
     instance = ai_backend_config["instances"][0]
     instance["provider"] = provider
     if override is None:
@@ -306,7 +220,7 @@ def test_merge_validates_provider_contract(ai_backend_config, provider, override
         instance["override"] = override
 
     with pytest.raises(ValueError, match=error):
-        AIBackendConfig.model_validate(ai_backend_config).merge()
+        AIBackendConfig.model_validate(ai_backend_config)
 
 
 def test_model_rejects_plaintext_in_private_storage(fake_stage, ai_backend, ai_backend_config):
@@ -326,20 +240,6 @@ def test_model_rejects_plaintext_in_private_storage(fake_stage, ai_backend, ai_b
         _ = BackendConfig.objects.get(pk=backend_config.pk).config
 
 
-@pytest.mark.parametrize(
-    ("secret", "expected"),
-    [("abc", "****"), ("abcd", "ab****cd"), ("abcdef", "ab****ef")],
-)
-def test_mask_preserves_two_characters_at_each_end(ai_backend_config, secret, expected):
-    instance = ai_backend_config["instances"][0]
-    instance["provider"] = "openai-compatible"
-    instance["auth"]["header"] = {"X-Api-Key": secret}
-    instance["override"] = {"endpoint": "https://example.com/v1"}
-    masked = AIBackendConfig.model_validate(ai_backend_config).mask()
-
-    assert masked.instances[0]["auth"]["header"]["X-Api-Key"] == expected
-
-
 def test_standard_config_is_validated_without_secret_processing():
     config = {
         "type": "node",
@@ -349,5 +249,4 @@ def test_standard_config_is_validated_without_secret_processing():
     }
 
     model = StandardBackendConfig.model_validate(config)
-    assert model.merge().to_config() == config
-    assert model.mask().to_config() == config
+    assert model.to_config() == config

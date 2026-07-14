@@ -23,7 +23,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.apis.backend_config import restore_masked_header_values, validate_ai_backend_config
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import (
@@ -234,10 +234,11 @@ class StageInputSLZ(serializers.Serializer):
             config_slz = config_slz_class(data=input_backend["config"])
             config_slz.is_valid(raise_exception=True)
             input_backend["config"] = config_slz.validated_data
+            if backend.is_ai:
+                restore_masked_header_values(input_backend["config"], existing_configs.get(backend.id))
 
             try:
-                config = BACKEND_CONFIG_TYPES[backend.kind].model_validate(input_backend["config"])
-                config.merge(existing_configs.get(backend.id))
+                BACKEND_CONFIG_TYPES[backend.kind].model_validate(input_backend["config"])
             except ValueError as err:
                 raise serializers.ValidationError({"backends": str(err)}) from err
 
@@ -318,8 +319,10 @@ class BackendConfigInputSLZ(serializers.Serializer):
         config_slz.is_valid(raise_exception=True)
 
         try:
-            config = BACKEND_CONFIG_TYPES[backend.kind].model_validate(config_slz.validated_data)
-            return config.merge(self.context.get("existing_config")).to_config()
+            config_data = config_slz.validated_data
+            if backend.is_ai:
+                restore_masked_header_values(config_data, self.context.get("existing_config"))
+            return BACKEND_CONFIG_TYPES[backend.kind].model_validate(config_data).to_config()
         except ValueError as err:
             raise serializers.ValidationError({"config": str(err)}) from err
 

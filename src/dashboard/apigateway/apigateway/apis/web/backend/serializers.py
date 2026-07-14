@@ -22,7 +22,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.apis.backend_config import restore_masked_header_values, validate_ai_backend_config
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import SchemeHostInputValidator
@@ -135,10 +135,14 @@ class BackendInputSLZ(serializers.Serializer):
             }
 
         for backend_config in attrs["configs"]:
+            if attrs["kind"] == BackendKindEnum.AI.value:
+                restore_masked_header_values(
+                    backend_config,
+                    existing_configs.get(backend_config["stage_id"]),
+                )
             raw_config = {key: value for key, value in backend_config.items() if key != "stage_id"}
             try:
-                config = BACKEND_CONFIG_TYPES[attrs["kind"]].model_validate(raw_config)
-                config.merge(existing_configs.get(backend_config["stage_id"]))
+                BACKEND_CONFIG_TYPES[attrs["kind"]].model_validate(raw_config)
             except ValueError as err:
                 raise serializers.ValidationError({"configs": str(err)}) from err
 

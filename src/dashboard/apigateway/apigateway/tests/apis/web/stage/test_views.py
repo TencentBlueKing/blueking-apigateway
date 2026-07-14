@@ -173,6 +173,41 @@ class TestStageApi:
             "hosts": [{"scheme": "http", "host": "www.test.com", "weight": 1}],
         }
 
+    def test_update_restores_masked_ai_backend_header(self, request_view, fake_stage, fake_backend):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        ai_backend = G(Backend, gateway=fake_stage.gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        ai_backend_config = BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            stage=fake_stage,
+            backend=ai_backend,
+            config=_ai_config(),
+        )
+        ai_config = _ai_config()
+        ai_config["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
+
+        response = request_view(
+            "PUT",
+            "stage.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": fake_stage.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": fake_stage.name,
+                "description": fake_stage.description,
+                "backends": [
+                    {
+                        "id": fake_backend.id,
+                        "config": BackendConfig.objects.get(stage=fake_stage, backend=fake_backend).config,
+                    },
+                    {"id": ai_backend.id, "config": ai_config},
+                ],
+            },
+        )
+
+        assert response.status_code == 204, response.json()
+        ai_backend_config.refresh_from_db()
+        assert ai_backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+
     def partial_update(self, request_view, fake_stage):
         data = {"description": "partial_update"}
 
@@ -294,7 +329,7 @@ class TestStageBackendApi:
             config=_ai_config(),
         )
         data = _ai_config()
-        data["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+        data["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
 
         response = request_view(
             "PUT",

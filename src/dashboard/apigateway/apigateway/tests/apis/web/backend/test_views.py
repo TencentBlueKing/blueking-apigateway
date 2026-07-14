@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import pytest
+
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
 from apigateway.core.models import Backend, BackendConfig
 
@@ -122,7 +124,11 @@ class TestBackendApi:
 
         assert response.status_code == 400
 
-    def test_update_ai_backend_preserves_masked_secret(self, request_view, fake_stage):
+    @pytest.mark.parametrize(
+        ("incoming_secret", "expected_secret"),
+        [("xx****yy", "Bearer secret"), ("Bearer new-secret", "Bearer new-secret")],
+    )
+    def test_update_ai_backend_header(self, request_view, fake_stage, incoming_secret, expected_secret):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         backend = Backend.objects.create(
@@ -137,7 +143,7 @@ class TestBackendApi:
             config={key: value for key, value in _ai_config(fake_stage.id).items() if key != "stage_id"},
         )
         config = _ai_config(fake_stage.id)
-        config["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+        config["instances"][0]["auth"]["header"]["Authorization"] = incoming_secret
 
         response = request_view(
             "PUT",
@@ -155,7 +161,50 @@ class TestBackendApi:
 
         assert response.status_code == 200, response.json()
         stored = BackendConfig.objects.get(backend=backend)
-        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == ("Bearer secret")
+        assert stored.config["instances"][0]["auth"]["header"]["Authorization"] == expected_secret
+
+    def test_update_ai_backend_does_not_restore_missing_header(self, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        backend = Backend.objects.create(
+            gateway=fake_stage.gateway,
+            name="openai-compatible",
+            kind=BackendKindEnum.AI.value,
+        )
+        stored_config = _ai_config(fake_stage.id)
+        stored_instance = stored_config["instances"][0]
+        stored_instance["provider"] = "openai-compatible"
+        stored_instance["auth"]["header"] = {"X-Api-Key": "secret"}
+        stored_instance["override"] = {"endpoint": "https://example.com/v1"}
+        BackendConfig.objects.create(
+            gateway=fake_stage.gateway,
+            backend=backend,
+            stage=fake_stage,
+            config={key: value for key, value in stored_config.items() if key != "stage_id"},
+        )
+        config = _ai_config(fake_stage.id)
+        instance = config["instances"][0]
+        instance["provider"] = "openai-compatible"
+        instance.pop("auth")
+        instance["override"] = {"endpoint": "https://example.com/v1"}
+
+        response = request_view(
+            "PUT",
+            "backend.retrieve-update-destroy",
+            path_params={"gateway_id": fake_stage.gateway.id, "id": backend.id},
+            gateway=fake_stage.gateway,
+            data={
+                "name": backend.name,
+                "description": "updated",
+                "kind": BackendKindEnum.AI.value,
+                "type": "http",
+                "configs": [config],
+            },
+        )
+
+        assert response.status_code == 200, response.json()
+        stored = BackendConfig.objects.get(backend=backend)
+        assert "auth" not in stored.config["instances"][0]
 
     def test_update_rejects_kind_change(self, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value

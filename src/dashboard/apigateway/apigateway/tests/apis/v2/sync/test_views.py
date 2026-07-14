@@ -204,7 +204,7 @@ class TestSyncApi:
         model_config.refresh_from_db()
         assert model_config.config == stored_config
 
-    def test_stage_sync_ai_backend_preserves_masked_secret_and_masks_audit(
+    def test_stage_sync_ai_backend_treats_masked_value_as_plaintext_and_masks_audit(
         self, request_view, fake_gateway, fake_admin_user, disable_app_permission
     ):
         fake_gateway.kind = GatewayKindEnum.AI.value
@@ -224,7 +224,7 @@ class TestSyncApi:
         )
         assert initial.status_code == 200, initial.json()
         model_backend = _model_backend()
-        model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
+        model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
         model_backend["config"]["instances"][0]["options"]["model"] = "gpt-4o-mini"
 
         updated = request_view(
@@ -243,13 +243,13 @@ class TestSyncApi:
 
         assert updated.status_code == 200, updated.json()
         backend_config = BackendConfig.objects.get(backend__name="openai-primary", stage__name="prod")
-        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
+        assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "xx****yy"
         audit_log = AuditEventLog.objects.get(
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             comment="OpenAPI 同步更新环境后端配置",
         )
         assert "Be****et" in audit_log.data_before
-        assert "Be****et" in audit_log.data_after
+        assert "xx****yy" in audit_log.data_after
         assert "Bearer secret" not in audit_log.data_before
         assert "Bearer secret" not in audit_log.data_after
 

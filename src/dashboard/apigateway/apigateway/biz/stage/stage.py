@@ -64,7 +64,7 @@ class StageHandler:
                 gateway=data["gateway"],
                 backend=backend,
                 stage=stage,
-                config=config.merge().to_config(),
+                config=config.to_config(),
                 created_by=created_by,
                 updated_by=created_by,
             )
@@ -92,7 +92,7 @@ class StageHandler:
         for backend_config in data["backends"]:
             backend = backends[backend_config["id"]]
             config = BACKEND_CONFIG_TYPES[backend.backend.kind].model_validate(backend_config["config"])
-            backend.config = config.merge(backend.config).to_config()
+            backend.config = config.to_config()
             backend.updated_by = updated_by
             backend.updated_time = now
 
