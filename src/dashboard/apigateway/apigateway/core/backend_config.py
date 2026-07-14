@@ -116,9 +116,13 @@ def mask_backend_config(kind: str, config: dict[str, Any]) -> dict[str, Any]:
     if kind != BackendKindEnum.AI.value:
         return deepcopy(config)
 
-    masked = decrypt_ai_backend_config(config)
-    for key, value in _get_headers(masked).items():
-        _get_headers(masked)[key] = _mask_secret(value)
+    masked = deepcopy(config)
+    headers = _get_headers(masked)
+    for key, value in headers.items():
+        try:
+            headers[key] = _mask_secret(_decrypt_secret(value, key))
+        except BackendConfigValidationError:
+            headers[key] = "****"
     return masked
 
 

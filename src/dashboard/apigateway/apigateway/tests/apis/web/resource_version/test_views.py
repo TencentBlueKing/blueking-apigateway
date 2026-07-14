@@ -25,7 +25,7 @@ from django_dynamic_fixture import G
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
-from apigateway.core.models import Proxy, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.core.models import BackendConfig, Proxy, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
 from apigateway.utils.yaml import yaml_loads
 
@@ -203,6 +203,48 @@ class TestResourceVersionRetrieveDestroyApi:
             "created_time": fake_resource_version_v2.created_time,
             "created_by": fake_resource_version_v2.created_by,
         }
+
+    def test_retrieve_with_stage_masks_ai_backend_config(
+        self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save()
+        BackendConfig.objects.filter(backend=fake_backend, stage=fake_stage).delete()
+        BackendConfig.objects.create(
+            gateway=fake_gateway,
+            backend=fake_backend,
+            stage=fake_stage,
+            config={
+                "timeout": 30000,
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ],
+            },
+        )
+        resources = fake_resource_version_v2.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        fake_resource_version_v2.data = resources
+        fake_resource_version_v2.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.retrieve_destroy",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
+            data={"stage_id": fake_stage.id},
+        )
+
+        assert resp.status_code == 200
+        header = resp.json()["data"]["resources"][0]["proxy"]["backend"]["config"]["instances"][0]["auth"]["header"]
+        assert header["Authorization"] == "Be****et"
 
     def test_destroy(self, request_view, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
