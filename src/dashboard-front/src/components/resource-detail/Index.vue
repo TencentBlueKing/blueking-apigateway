@@ -553,10 +553,19 @@ const initLocalData = async () => {
 
 const initDiff = () => {
   diffMap.value = {};
-  if (!diffData) {
+  const currentDiff = curResource?.diff;
+
+  if (!diffData && !currentDiff) {
     return false;
   }
-  findAllDiff(diffData);
+
+  if (diffData) {
+    findAllDiff(diffData);
+  }
+
+  if (currentDiff) {
+    findAllDiff(currentDiff);
+  }
 
   // 处理后端配置使用默认配置情况
   if (diffMap.value['localData.proxy.config.timeout']) {
