@@ -464,17 +464,15 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         StageSyncHandler.validate_plugin_configs(data.get("plugin_configs"))
         self._validate_scheme_host(data.get("backends"))
         gateway = data["gateway"]
-        if data.get("ai_backends") is not None and not gateway.is_ai_gateway:
-            raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
-        if not gateway.is_ai_gateway and data.get("backends") is None:
-            raise serializers.ValidationError(_("backends 必须配置"))
-        if (
-            gateway.is_ai_gateway
-            and self.instance is None
-            and data.get("backends") is None
-            and data.get("ai_backends") is None
-        ):
+
+        if not gateway.is_ai_gateway:
+            if data.get("backends") is None:
+                raise serializers.ValidationError(_("backends 必须配置"))
+            if data.get("ai_backends") is not None:
+                raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
+        elif self.instance is None and data.get("backends") is None and data.get("ai_backends") is None:
             raise serializers.ValidationError(_("backends 和 ai_backends 必须至少配置一项"))
+
         return data
 
     def create(self, validated_data):

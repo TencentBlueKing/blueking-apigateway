@@ -2,9 +2,6 @@
 
 同步资源
 
-资源类型通过 OpenAPI operation 的 `x-bk-apigateway-resource.kind` 指定。缺省或 `standard` 表示普通 API，`ai` 表示模型代理 API。AI Resource 仅允许同步到 AI 网关，且其 `backend` 只关联模型 Backend 名称；Resource 创建后不能修改类型。
-
-
 ### 输入参数
 
 #### 路径参数
@@ -21,22 +18,6 @@
 | delete   | boolean | 否   | 是否删除未指定的资源，如果为 true，则删除网关中未在 content 中指定的资源，以确保网关中资源和 content 中描述的资源一致 |
 | doc_language   | string  | 否   | 生成接口文档的语言：en: 英文，zh: 中文，不传不生成                                          |
 
-AI Resource 的 `content` 示例：
-
-```yaml
-openapi: 3.0.1
-info:
-  title: AI resources
-  version: 1.0.0
-paths:
-  /chat/completions:
-    post:
-      operationId: chat_completions
-      x-bk-apigateway-resource:
-        kind: ai
-        backend:
-          name: openai-primary
-```
 
 ### 请求参数示例
 

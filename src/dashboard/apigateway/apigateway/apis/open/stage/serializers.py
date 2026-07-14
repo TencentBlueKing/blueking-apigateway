@@ -361,13 +361,13 @@ class StageSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             self._validate_scheme_host(data.get("backends"))
 
         gateway = data["gateway"]
-        if data.get("ai_backends") is not None and not gateway.is_ai_gateway:
-            raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
-        if not gateway.is_ai_gateway and data.get("proxy_http") is None and data.get("backends") is None:
-            raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
-        if (
-            gateway.is_ai_gateway
-            and self.instance is None
+        if not gateway.is_ai_gateway:
+            if data.get("proxy_http") is None and data.get("backends") is None:
+                raise serializers.ValidationError(_("proxy_http or backends 必须要选择一种方式配置后端服务"))
+            if data.get("ai_backends") is not None:
+                raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
+        elif (
+            self.instance is None
             and data.get("proxy_http") is None
             and data.get("backends") is None
             and data.get("ai_backends") is None
