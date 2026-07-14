@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Any
 
 from apigateway.core.backend_config_schema import BackendConfigValidationError, validate_backend_config
-from apigateway.core.constants import BackendKindEnum
+from apigateway.core.constants import AI_BACKEND_BUILTIN_PROVIDERS, BackendKindEnum
 from apigateway.utils.crypto import get_crypto
 
 
@@ -23,7 +23,7 @@ def _validate_provider(instance: dict[str, Any]) -> None:
     provider = instance["provider"]
     headers = instance.get("auth", {}).get("header", {})
     authorization = next((value for key, value in headers.items() if key.casefold() == "authorization"), "")
-    if provider in {"openai", "deepseek"}:
+    if provider in AI_BACKEND_BUILTIN_PROVIDERS:
         if not authorization:
             raise BackendConfigValidationError("Authorization header is required", "$.instances[0].auth.header")
         if "override" in instance:
@@ -46,6 +46,10 @@ def _mask_secret(value: str) -> str:
     return f"{value[:2]}****{value[-2:]}"
 
 
+def _is_masked_secret(value: str) -> bool:
+    return value == "****" or (len(value) == 8 and value[2:6] == "****")
+
+
 def _merge_headers(config: dict[str, Any], existing_config: dict[str, Any] | None) -> None:
     instance = config["instances"][0]
     incoming_auth = instance.get("auth")
@@ -63,7 +67,10 @@ def _merge_headers(config: dict[str, Any], existing_config: dict[str, Any] | Non
     merged_headers = {}
     for key, value in incoming_headers.items():
         existing = existing_by_normalized_key.get(key.casefold())
-        if existing is not None and value in {existing[1], _mask_secret(_decrypt_secret(existing[1], existing[0]))}:
+        if existing is not None and (
+            value == existing[1]
+            or (_is_masked_secret(value) and value == _mask_secret(_decrypt_secret(existing[1], existing[0])))
+        ):
             merged_headers[existing[0]] = existing[1]
         else:
             merged_headers[key] = value
@@ -94,6 +101,15 @@ def prepare_backend_config(
     _validate_provider(prepared["instances"][0])
     _encrypt_headers(prepared, existing_config)
     return prepared
+
+
+def has_backend_config_changed(kind: str, config: dict[str, Any], existing_config: dict[str, Any]) -> bool:
+    if kind == BackendKindEnum.STANDARD.value:
+        return config != existing_config
+
+    comparison_config = deepcopy(config)
+    _merge_headers(comparison_config, existing_config)
+    return comparison_config != existing_config
 
 
 def mask_backend_config(kind: str, config: dict[str, Any]) -> dict[str, Any]:

@@ -18,8 +18,20 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import GatewaySyncInputSLZ, SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.apis.v2.sync.serializers import (
+    AIBackendConfigSLZ,
+    GatewaySyncInputSLZ,
+    SDKGenerateInputSLZ,
+    StageSyncInputSLZ,
+)
 from apigateway.core.constants import GatewayKindEnum
+
+
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
 
 
 def test_gateway_sync_input_maps_ai_kind():

@@ -245,6 +245,10 @@ class BackendKindEnum(StructuredEnum):
     AI = EnumField("ai", "模型服务")
 
 
+AI_BACKEND_PROVIDERS = ("openai", "deepseek", "openai-compatible")
+AI_BACKEND_BUILTIN_PROVIDERS = frozenset(("openai", "deepseek"))
+
+
 class ResourceKindEnum(StructuredEnum):
     STANDARD = EnumField("standard", "普通 API")
     AI = EnumField("ai", "模型代理 API")

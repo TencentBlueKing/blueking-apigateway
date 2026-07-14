@@ -16,6 +16,8 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from collections.abc import Mapping
+
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -38,6 +40,7 @@ from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
 from apigateway.core.constants import (
+    AI_BACKEND_PROVIDERS,
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
@@ -273,6 +276,8 @@ class BackendSLZ(serializers.Serializer):
 
 class RejectUnknownFieldsMixin:
     def to_internal_value(self, data):
+        if not isinstance(data, Mapping):
+            return super().to_internal_value(data)
         unknown = set(data) - set(self.fields)
         if unknown:
             raise serializers.ValidationError({key: _("不支持的字段。") for key in sorted(unknown)})
@@ -297,7 +302,7 @@ class AIBackendOverrideSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
 
 class AIBackendInstanceSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
     name = serializers.CharField(allow_blank=False)
-    provider = serializers.ChoiceField(choices=["openai", "deepseek", "openai-compatible"])
+    provider = serializers.ChoiceField(choices=AI_BACKEND_PROVIDERS)
     weight = serializers.IntegerField(min_value=1, max_value=1)
     auth = AIBackendAuthSLZ(required=False)
     options = AIBackendOptionsSLZ()

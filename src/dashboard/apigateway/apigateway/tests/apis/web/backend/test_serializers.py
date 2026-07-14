@@ -22,6 +22,13 @@ from rest_framework.exceptions import ValidationError
 from apigateway.apis.web.backend import serializers
 
 
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = serializers.AIBackendConfigSLZ(data={"stage_id": 1, "instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
 class TestBackendInputSLZ:
     def test_to_internal_value(self, fake_stage):
         data = [

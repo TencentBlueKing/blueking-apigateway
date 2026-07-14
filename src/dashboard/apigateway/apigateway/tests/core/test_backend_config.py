@@ -65,6 +65,19 @@ def test_prepare_masked_and_missing_header_keep_existing(ai_backend_config):
     assert missing_result["instances"][0]["auth"]["header"] == existing["instances"][0]["auth"]["header"]
 
 
+def test_prepare_new_plaintext_replaces_invalid_existing_ciphertext(ai_backend_config):
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["auth"]["header"] = {"X-Api-Key": "new-plaintext"}
+    instance["override"] = {"endpoint": "https://example.com/v1"}
+    existing = copy.deepcopy(ai_backend_config)
+    existing["instances"][0]["auth"]["header"]["X-Api-Key"] = "invalid-ciphertext"
+
+    result = prepare_backend_config(BackendKindEnum.AI.value, ai_backend_config, existing)
+
+    assert decrypt_ai_backend_config(result)["instances"][0]["auth"]["header"]["X-Api-Key"] == "new-plaintext"
+
+
 def test_prepare_explicit_empty_header_clears_existing(ai_backend_config):
     existing = prepare_backend_config(BackendKindEnum.AI.value, ai_backend_config)
     incoming = copy.deepcopy(ai_backend_config)

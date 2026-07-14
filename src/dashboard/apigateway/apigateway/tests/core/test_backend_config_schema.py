@@ -2,8 +2,12 @@ import copy
 
 import pytest
 
-from apigateway.core.backend_config_schema import BackendConfigValidationError, validate_backend_config
-from apigateway.core.constants import BackendKindEnum
+from apigateway.core.backend_config_schema import (
+    AI_BACKEND_CONFIG_SCHEMA,
+    BackendConfigValidationError,
+    validate_backend_config,
+)
+from apigateway.core.constants import AI_BACKEND_PROVIDERS, BackendKindEnum
 
 
 @pytest.fixture
@@ -38,6 +42,12 @@ def test_standard_schema_accepts_existing_config(standard_backend_config):
 
 def test_ai_schema_accepts_one_openai_instance(ai_backend_config):
     validate_backend_config(BackendKindEnum.AI.value, ai_backend_config)
+
+
+def test_ai_schema_provider_enum_matches_shared_contract():
+    provider_schema = AI_BACKEND_CONFIG_SCHEMA["properties"]["instances"]["items"]["properties"]["provider"]
+
+    assert provider_schema["enum"] == list(AI_BACKEND_PROVIDERS)
 
 
 @pytest.mark.parametrize("patch", [{"instances": []}, {"unknown": True}, {"timeout": 0}])

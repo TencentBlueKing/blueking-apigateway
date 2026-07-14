@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Tuple
 from django.db import transaction
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
+from apigateway.core.backend_config import has_backend_config_changed
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     BackendKindEnum,
@@ -74,7 +75,7 @@ class BackendHandler:
         backend.type = data["type"]
         if backend.name != DEFAULT_BACKEND_NAME:
             backend.name = data["name"]
-        backend.description = data.get("description", "")
+        backend.description = data["description"]
         backend.updated_by = updated_by
         backend.save()
         backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
@@ -87,7 +88,7 @@ class BackendHandler:
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
-            if new_config == backend_config.config:
+            if not has_backend_config_changed(backend.kind, new_config, backend_config.config):
                 continue
             if resource_count:
                 updated_stage_ids.append(config["stage_id"])

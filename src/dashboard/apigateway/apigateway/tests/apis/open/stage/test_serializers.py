@@ -20,6 +20,13 @@ import pytest
 from apigateway.apis.open.stage import serializers
 
 
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = serializers.AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
 class TestStageWithResourceVersionV1SLZ:
     @pytest.mark.parametrize(
         "stage_name, stage_release, expected",
