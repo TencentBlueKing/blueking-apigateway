@@ -67,13 +67,32 @@ def _merge_headers(config: dict[str, Any], existing_config: dict[str, Any] | Non
     merged_headers = {}
     for key, value in incoming_headers.items():
         existing = existing_by_normalized_key.get(key.casefold())
-        if existing is not None and (
-            value == existing[1]
-            or (_is_masked_secret(value) and value == _mask_secret(_decrypt_secret(existing[1], existing[0])))
-        ):
-            merged_headers[existing[0]] = existing[1]
-        else:
+        if existing is None:
             merged_headers[key] = value
+            continue
+
+        existing_key, existing_value = existing
+        if value == existing_value:
+            merged_headers[existing_key] = existing_value
+            continue
+
+        try:
+            existing_plaintext = _decrypt_secret(existing_value, existing_key)
+        except BackendConfigValidationError:
+            if _is_masked_secret(value):
+                raise
+            merged_headers[key] = value
+            continue
+
+        if value == existing_plaintext or value == _mask_secret(existing_plaintext):
+            merged_headers[existing_key] = existing_value
+            continue
+        if _is_masked_secret(value):
+            raise BackendConfigValidationError(
+                f"masked header does not match existing secret: {key}", "$.instances[0].auth.header"
+            )
+
+        merged_headers[key] = value
     incoming_auth["header"] = merged_headers
 
 

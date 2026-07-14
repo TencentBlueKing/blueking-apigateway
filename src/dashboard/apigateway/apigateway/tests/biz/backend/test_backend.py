@@ -16,10 +16,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
 from django_dynamic_fixture import G
 
 from apigateway.biz.backend import BackendHandler
-from apigateway.core.backend_config import mask_backend_config
+from apigateway.core.backend_config import decrypt_ai_backend_config, mask_backend_config
 from apigateway.core.constants import BackendKindEnum
 from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Resource, Stage
 
@@ -118,7 +119,8 @@ class TestBackendHandler:
             "hosts": [{"scheme": "https", "host": "www.example.com", "weight": 1}],
         }
 
-    def test_update_ai_backend_ignores_unchanged_masked_config(self, mocker, fake_stage):
+    @pytest.mark.parametrize("credential_format", ["masked", "plaintext"])
+    def test_update_ai_backend_ignores_unchanged_config(self, mocker, fake_stage, credential_format):
         backend = BackendHandler.create(
             {
                 "gateway": fake_stage.gateway,
@@ -148,7 +150,10 @@ class TestBackendHandler:
         G(Proxy, resource=resource, backend=backend)
         backend_config = BackendConfig.objects.get(backend=backend, stage=fake_stage)
         previous_updated_time = backend_config.updated_time
-        config = mask_backend_config(backend.kind, backend_config.config)
+        if credential_format == "masked":
+            config = mask_backend_config(backend.kind, backend_config.config)
+        else:
+            config = decrypt_ai_backend_config(backend_config.config)
         config["stage_id"] = fake_stage.id
         trigger_gateway_publish = mocker.patch("apigateway.biz.backend.backend.trigger_gateway_publish")
 

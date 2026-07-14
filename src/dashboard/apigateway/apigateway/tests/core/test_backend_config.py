@@ -5,6 +5,7 @@ from django_dynamic_fixture import G
 
 from apigateway.core.backend_config import (
     decrypt_ai_backend_config,
+    has_backend_config_changed,
     mask_backend_config,
     prepare_backend_config,
 )
@@ -63,6 +64,31 @@ def test_prepare_masked_and_missing_header_keep_existing(ai_backend_config):
         == existing["instances"][0]["auth"]["header"]["Authorization"]
     )
     assert missing_result["instances"][0]["auth"]["header"] == existing["instances"][0]["auth"]["header"]
+
+
+def test_prepare_short_secret_mask_keeps_existing(ai_backend_config):
+    ai_backend_config["instances"][0]["auth"]["header"] = {"Authorization": "abc"}
+    existing = prepare_backend_config(BackendKindEnum.AI.value, ai_backend_config)
+    masked = mask_backend_config(BackendKindEnum.AI.value, existing)
+
+    result = prepare_backend_config(BackendKindEnum.AI.value, masked, existing)
+
+    assert result == existing
+
+
+def test_prepare_rejects_short_mask_for_existing_long_secret(ai_backend_config):
+    existing = prepare_backend_config(BackendKindEnum.AI.value, ai_backend_config)
+    incoming = copy.deepcopy(ai_backend_config)
+    incoming["instances"][0]["auth"]["header"]["Authorization"] = "****"
+
+    with pytest.raises(BackendConfigValidationError, match="masked header does not match existing secret"):
+        prepare_backend_config(BackendKindEnum.AI.value, incoming, existing)
+
+
+def test_same_plaintext_does_not_change_ai_backend_config(ai_backend_config):
+    existing = prepare_backend_config(BackendKindEnum.AI.value, ai_backend_config)
+
+    assert not has_backend_config_changed(BackendKindEnum.AI.value, ai_backend_config, existing)
 
 
 def test_prepare_new_plaintext_replaces_invalid_existing_ciphertext(ai_backend_config):
