@@ -61,7 +61,7 @@ def test_standard_backend_config_secret_transforms_are_noops():
     assert config.mask() == config
 
 
-def test_backend_config_model_encrypts_ai_secrets_at_storage_boundary(fake_stage, ai_backend, ai_backend_config):
+def test_backend_config_model_encrypts_entire_ai_config_at_storage_boundary(fake_stage, ai_backend, ai_backend_config):
     backend_config = BackendConfig.objects.create(
         gateway=fake_stage.gateway,
         backend=ai_backend,
@@ -73,8 +73,30 @@ def test_backend_config_model_encrypts_ai_secrets_at_storage_boundary(fake_stage
         cursor.execute("SELECT config FROM core_backend_config WHERE id = %s", [backend_config.pk])
         stored_config = json.loads(cursor.fetchone()[0])
 
-    assert stored_config["instances"][0]["auth"]["header"]["Authorization"] != "Bearer secret"
+    assert set(stored_config) == {"encrypted"}
+    assert isinstance(stored_config["encrypted"], str)
+    assert "primary" not in json.dumps(stored_config)
+    assert "Bearer secret" not in json.dumps(stored_config)
     assert BackendConfig.objects.get(pk=backend_config.pk).config == ai_backend_config
+
+
+def test_backend_config_model_masks_ai_config_for_display(fake_stage, ai_backend, ai_backend_config):
+    ai_backend_config["instances"][0]["auth"]["header"]["X-Organization"] = "abc"
+    backend_config = BackendConfig.objects.create(
+        gateway=fake_stage.gateway,
+        backend=ai_backend,
+        stage=fake_stage,
+        config=ai_backend_config,
+    )
+
+    display_config = BackendConfig.objects.get(pk=backend_config.pk).get_config_for_display()
+
+    assert display_config["instances"][0]["auth"]["header"] == {
+        "Authorization": "Be****et",
+        "X-Organization": "****",
+    }
+    assert display_config["instances"][0]["name"] == "primary"
+    assert backend_config.config == ai_backend_config
 
 
 def test_backend_config_model_keeps_standard_config_plaintext(fake_stage):
@@ -98,6 +120,7 @@ def test_backend_config_model_keeps_standard_config_plaintext(fake_stage):
 
     assert stored_config == standard_config
     assert BackendConfig.objects.get(pk=backend_config.pk).config == standard_config
+    assert BackendConfig.objects.get(pk=backend_config.pk).get_config_for_display() == standard_config
 
 
 def test_backend_config_model_uses_backend_kind_for_secret_processing(fake_stage, ai_backend_config):
@@ -170,7 +193,7 @@ def test_short_secret_mask_keeps_existing(ai_backend_config):
     assert result == existing
 
 
-def test_encrypt_rejects_short_mask_for_existing_long_secret(ai_backend_config):
+def test_merge_rejects_short_mask_for_existing_long_secret(ai_backend_config):
     existing = AIBackendConfig.model_validate(ai_backend_config)
     incoming = copy.deepcopy(ai_backend_config)
     incoming["instances"][0]["auth"]["header"]["Authorization"] = "****"
@@ -198,7 +221,7 @@ def test_new_plaintext_replaces_existing_secret(ai_backend_config):
     assert result.instances[0]["auth"]["header"]["X-Api-Key"] == "new-plaintext"
 
 
-def test_encrypt_explicit_empty_header_clears_existing(ai_backend_config):
+def test_merge_explicit_empty_header_clears_existing(ai_backend_config):
     existing = AIBackendConfig.model_validate(ai_backend_config)
     incoming = copy.deepcopy(ai_backend_config)
     incoming["instances"][0]["auth"]["header"] = {}
@@ -274,7 +297,7 @@ def test_ai_backend_config_preserves_empty_auth_shape(ai_backend_config, auth, e
         ("openai-compatible", None, "override.endpoint is required"),
     ],
 )
-def test_encrypt_validates_provider_contract(ai_backend_config, provider, override, error):
+def test_merge_validates_provider_contract(ai_backend_config, provider, override, error):
     instance = ai_backend_config["instances"][0]
     instance["provider"] = provider
     if override is None:

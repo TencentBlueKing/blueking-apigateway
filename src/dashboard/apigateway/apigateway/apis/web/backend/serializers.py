@@ -193,7 +193,7 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
 
         data = []
         for backend_config in backend_configs:
-            config = BACKEND_CONFIG_TYPES[obj.kind].model_validate(backend_config.config).mask().to_config()
+            config = backend_config.get_config_for_display()
             config["stage"] = {
                 "id": backend_config.stage.id,
                 "name": backend_config.stage.name,

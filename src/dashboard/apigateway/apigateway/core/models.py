@@ -438,6 +438,8 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
 
 
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    _AI_CONFIG_ENCRYPTED_KEY: ClassVar[str] = "encrypted"
+
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
@@ -449,30 +451,33 @@ class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
         if self.backend.kind != BackendKindEnum.AI.value:
             return config
 
-        instances = config.get("instances")
-        if not instances:
-            return config
+        if not config:
+            return {}
 
-        headers = instances[0].get("auth", {}).get("header", {})
-        for key, secret in headers.items():
-            try:
-                plaintext = get_crypto().decrypt(secret)
-            except Exception as err:
-                raise ValueError(f"$.instances[0].auth.header: failed to decrypt header: {key}") from err
-            headers[key] = plaintext.decode() if isinstance(plaintext, bytes) else plaintext
-        return config
+        try:
+            return json.loads(get_crypto().decrypt(config[self._AI_CONFIG_ENCRYPTED_KEY]))
+        except Exception as err:
+            raise ValueError("failed to decrypt AI backend config") from err
 
     @config.setter
     def config(self, value: dict) -> None:
-        config = deepcopy(value)
         if self.backend.kind == BackendKindEnum.AI.value:
-            instances = config.get("instances")
-            if instances:
-                headers = instances[0].get("auth", {}).get("header", {})
-                crypto = get_crypto()
-                for key, secret in headers.items():
-                    headers[key] = crypto.encrypt(secret)
-        self._config = config
+            plaintext = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            self._config = {self._AI_CONFIG_ENCRYPTED_KEY: get_crypto().encrypt(plaintext)}
+            return
+
+        self._config = deepcopy(value)
+
+    def get_config_for_display(self) -> dict:
+        config = self.config
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
+
+        for instance in config.get("instances", []):
+            headers = instance.get("auth", {}).get("header", {})
+            for key, secret in headers.items():
+                headers[key] = "****" if len(secret) < 4 else f"{secret[:2]}****{secret[-2:]}"
+        return config
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")

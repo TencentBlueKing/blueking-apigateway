@@ -294,7 +294,7 @@ class StageBackendOutputSLZ(serializers.Serializer):
         return obj.backend.kind
 
     def get_config(self, obj):
-        return BACKEND_CONFIG_TYPES[obj.backend.kind].model_validate(obj.config).mask().to_config()
+        return obj.get_config_for_display()
 
 
 class StandardBackendConfigInputSLZ(BaseBackendConfigSLZ):
