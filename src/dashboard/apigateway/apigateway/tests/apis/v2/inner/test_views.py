@@ -284,6 +284,46 @@ class TestMCPServerPermissionListApi:
             f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
         )
 
+    def test_list_with_itsm_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试 MCP Server 权限列表在存在 itsm_ticket_id 时返回 ITSM 审批链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-itsm",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            handled_by="admin",
+            itsm_ticket_id="itsm-001",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["approval_url"] == "http://itsm.example.com/ticket/itsm-001"
+
     def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 基本功能"""
         mcp_server = G(
