@@ -131,7 +131,8 @@ class BackendInputSLZ(serializers.Serializer):
         existing_configs = {}
         if self.instance:
             existing_configs = {
-                item.stage_id: item.config for item in BackendConfig.objects.filter(backend=self.instance)
+                item.stage_id: item.config
+                for item in BackendConfig.objects.filter(backend=self.instance).select_related("backend")
             }
 
         for backend_config in attrs["configs"]:
@@ -193,7 +194,7 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.backend.serializers.BackendRetrieveOutputSLZ"
 
     def get_configs(self, obj):
-        backend_configs = BackendConfig.objects.filter(backend=obj).prefetch_related("stage")
+        backend_configs = BackendConfig.objects.filter(backend=obj).select_related("backend", "stage")
 
         data = []
         for backend_config in backend_configs:

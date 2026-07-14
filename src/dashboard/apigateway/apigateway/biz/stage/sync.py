@@ -62,12 +62,12 @@ class StageSyncHandler:
                 stage=stage,
             ).first()
             existing_config = backend_config.config if backend_config else None
+            data_before = backend_config.get_config_for_display() if backend_config else None
             try:
                 stored_config = BACKEND_CONFIG_TYPES[kind].model_validate(config).to_config()
             except ValueError as err:
                 raise serializers.ValidationError({field_name: str(err)}) from err
 
-            data_before = existing_config
             if backend_config is None:
                 backend_config = BackendConfig(
                     gateway=stage.gateway,
@@ -78,20 +78,17 @@ class StageSyncHandler:
             backend_config.config = stored_config
             backend_config.updated_by = username
             backend_config.save()
-            data_after = backend_config.config
 
-            if data_before is not None:
+            if existing_config is not None and existing_config != stored_config:
                 Auditor.record_stage_backend_op_success(
                     op_type=OpTypeEnum.MODIFY,
                     username=username,
                     gateway_id=stage.gateway_id,
                     instance_id=backend_config.id,
                     instance_name=f"{stage.name}:{backend.name}",
-                    backend_kind=kind,
                     data_before=data_before,
-                    data_after=data_after,
+                    data_after=backend_config.get_config_for_display(),
                     comment="OpenAPI 同步更新环境后端配置",
-                    skip_if_unchanged=True,
                 )
 
     @staticmethod

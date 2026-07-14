@@ -15,36 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from copy import deepcopy
 from typing import Optional, Union
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
-from apigateway.core.constants import BackendKindEnum
 from apigateway.service.audit import record_audit_log
 
 # TODO:
 # 1. FIXME: 导入 带来的变更目前没有记录审计 (很多事批量操作)
 # 2. FIXME: openapi 单独带来的需要逐一确认有审计
 # 3. FIXME: 批量的审计床上一条还是多条？目前有两个地方记录了，一条多个实例，可能无法检索
-
-
-def _get_backend_config_audit_data(backend_kind: str, data: list | dict | str | None):
-    if not isinstance(data, dict) or not data:
-        return data
-
-    config_data = data.get("config", data)
-    masked_config = deepcopy(config_data)
-    if backend_kind == BackendKindEnum.AI.value:
-        for instance in masked_config.get("instances", []):
-            headers = instance.get("auth", {}).get("header", {})
-            for key, secret in headers.items():
-                headers[key] = "****" if len(secret) < 4 else f"{secret[:2]}****{secret[-2:]}"
-    if "config" not in data:
-        return masked_config
-
-    audit_data = data.copy()
-    audit_data["config"] = masked_config
-    return audit_data
 
 
 class Auditor:
@@ -333,11 +312,9 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
-        backend_kind: str,
         data_before: Union[list, dict, str, None] = None,
         data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
-        skip_if_unchanged: bool = False,
     ):
         if comment is None:
             comment = {
@@ -345,11 +322,6 @@ class Auditor:
                 OpTypeEnum.MODIFY: "更新环境后端配置",
                 OpTypeEnum.DELETE: "删除环境后端配置",
             }.get(op_type, "-")
-
-        audit_data_before = _get_backend_config_audit_data(backend_kind, data_before)
-        audit_data_after = _get_backend_config_audit_data(backend_kind, data_after)
-        if skip_if_unchanged and audit_data_before == audit_data_after:
-            return
 
         record_audit_log(
             username=username,
@@ -359,8 +331,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             op_object_id=instance_id,
             op_object=instance_name,
-            data_before=audit_data_before,
-            data_after=audit_data_after,
+            data_before=data_before,
+            data_after=data_after,
             comment=comment,
         )
 

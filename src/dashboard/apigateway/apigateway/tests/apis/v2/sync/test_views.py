@@ -253,6 +253,42 @@ class TestSyncApi:
         assert "Bearer secret" not in audit_log.data_before
         assert "Bearer secret" not in audit_log.data_after
 
+    def test_stage_sync_ai_backend_records_secret_change_with_same_mask(
+        self, request_view, fake_gateway, fake_admin_user, disable_app_permission
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        initial = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [_model_backend()]},
+            user=fake_admin_user,
+        )
+        assert initial.status_code == 200, initial.json()
+        model_backend = _model_backend()
+        model_backend["config"]["instances"][0]["auth"]["header"]["Authorization"] = "Bearer closet"
+
+        updated = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data={"name": "prod", "description": "desc", "vars": {}, "ai_backends": [model_backend]},
+            user=fake_admin_user,
+        )
+
+        assert updated.status_code == 200, updated.json()
+        audit_log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            comment="OpenAPI 同步更新环境后端配置",
+        )
+        assert "Be****et" in audit_log.data_before
+        assert "Be****et" in audit_log.data_after
+        assert "Bearer secret" not in audit_log.data_before
+        assert "Bearer closet" not in audit_log.data_after
+
     def test_stage_sync_ai_gateway_rejects_empty_ai_backends(self, request_view, fake_gateway, disable_app_permission):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()

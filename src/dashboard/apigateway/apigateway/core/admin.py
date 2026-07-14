@@ -16,8 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
-import json
-
 from django import forms
 from django.contrib import admin
 from djangoql.admin import DjangoQLSearchMixin
@@ -177,7 +175,7 @@ class BackendAdmin(AuditFieldsDisplayAdminMixin, DjangoQLSearchMixin, admin.Mode
 
 
 class BackendConfigAdminForm(forms.ModelForm):
-    config_json = forms.CharField(
+    config = forms.JSONField(
         widget=forms.Textarea(attrs={"rows": 20, "cols": 100}),
         required=True,
         help_text="Backend configuration in JSON format.",
@@ -185,26 +183,16 @@ class BackendConfigAdminForm(forms.ModelForm):
 
     class Meta:
         model = BackendConfig
-        fields = ["gateway", "backend", "stage", "created_by", "updated_by"]
+        fields = ["gateway", "backend", "stage", "config", "created_by", "updated_by"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            try:
-                self.fields["config_json"].initial = json.dumps(self.instance.config, indent=2)
-            except ValueError:
-                self.fields["config_json"].initial = ""
-
-    def clean_config_json(self):
-        value = self.cleaned_data.get("config_json", "")
-        try:
-            return json.loads(value)
-        except json.JSONDecodeError as err:
-            raise forms.ValidationError(f"Invalid JSON format: {err}") from err
+            self.initial["config"] = self.instance.config
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.config = self.cleaned_data["config_json"]
+        instance.config = self.cleaned_data["config"]
         if commit:
             instance.save()
         return instance

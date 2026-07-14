@@ -20,6 +20,7 @@ import pytest
 
 from apigateway.apis.v2.sync.serializers import (
     AIBackendConfigSLZ,
+    AIBackendSLZ,
     GatewaySyncInputSLZ,
     SDKGenerateInputSLZ,
     StageSyncInputSLZ,
@@ -32,6 +33,30 @@ def test_ai_backend_config_rejects_non_mapping_instance():
 
     assert not slz.is_valid()
     assert "instances" in slz.errors
+
+
+def test_ai_backend_ignores_unknown_outer_field():
+    slz = AIBackendSLZ(
+        data={
+            "name": "openai-primary",
+            "config": {
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ]
+            },
+            "unknown": True,
+        }
+    )
+
+    slz.is_valid(raise_exception=True)
+
+    assert "unknown" not in slz.validated_data
 
 
 def test_gateway_sync_input_maps_ai_kind():

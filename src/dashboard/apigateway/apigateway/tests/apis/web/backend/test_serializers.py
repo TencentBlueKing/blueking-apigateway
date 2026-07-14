@@ -17,9 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.backend import serializers
+from apigateway.core.models import BackendConfig, Stage
 
 
 def test_ai_backend_config_rejects_non_mapping_instance():
@@ -268,3 +270,56 @@ class TestBackendInputSLZ:
             if will_error:
                 with pytest.raises(ValidationError):
                     slz.is_valid(raise_exception=True)
+
+    def test_update_selects_backend_for_existing_configs(self, django_assert_num_queries, fake_backend, fake_stage):
+        another_stage = G(Stage, gateway=fake_stage.gateway)
+        config = {
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        }
+        G(
+            BackendConfig,
+            gateway=fake_stage.gateway,
+            stage=another_stage,
+            backend=fake_backend,
+            _config=config,
+        )
+        slz = serializers.BackendInputSLZ(
+            instance=fake_backend,
+            data={
+                "name": fake_backend.name,
+                "description": fake_backend.description,
+                "type": fake_backend.type,
+                "configs": [
+                    {"stage_id": fake_stage.id, **config},
+                    {"stage_id": another_stage.id, **config},
+                ],
+            },
+            context={"gateway": fake_stage.gateway},
+        )
+
+        with django_assert_num_queries(2):
+            slz.is_valid(raise_exception=True)
+
+
+def test_backend_retrieve_selects_stage_and_backend(django_assert_num_queries, fake_backend, fake_stage):
+    another_stage = G(Stage, gateway=fake_stage.gateway)
+    G(
+        BackendConfig,
+        gateway=fake_stage.gateway,
+        stage=another_stage,
+        backend=fake_backend,
+        _config={
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "www.example.com", "weight": 100}],
+        },
+    )
+
+    with django_assert_num_queries(1):
+        data = serializers.BackendRetrieveOutputSLZ(fake_backend).data
+
+    assert {item["stage"]["id"] for item in data["configs"]} == {fake_stage.id, another_stage.id}

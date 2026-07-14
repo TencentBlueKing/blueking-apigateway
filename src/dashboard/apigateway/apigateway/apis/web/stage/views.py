@@ -54,7 +54,7 @@ from .serializers import (
 def _get_backend_config_dict(instance: BackendConfig) -> dict:
     data = get_model_dict(instance)
     data.pop("_config")
-    data["config"] = instance.config
+    data["config"] = instance.get_config_for_display()
     return data
 
 
@@ -392,7 +392,6 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=f"{instance.stage.name}:{instance.backend.name}",
-            backend_kind=instance.backend.kind,
             data_before=data_before,
             data_after=_get_backend_config_dict(instance),
         )

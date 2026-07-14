@@ -80,7 +80,7 @@ class BackendHandler:
         backend.description = data["description"]
         backend.updated_by = updated_by
         backend.save()
-        backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
+        backend_configs = BackendConfig.objects.filter(backend_id=backend.id).select_related("backend")
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []

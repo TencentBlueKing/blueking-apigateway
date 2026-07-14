@@ -16,8 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from collections.abc import Mapping
-
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -274,22 +272,12 @@ class BackendSLZ(serializers.Serializer):
         ref_name = "apis.open.stage.BackendSLZ"
 
 
-class RejectUnknownFieldsMixin:
-    def to_internal_value(self, data):
-        if not isinstance(data, Mapping):
-            return super().to_internal_value(data)
-        unknown = set(data) - set(self.fields)
-        if unknown:
-            raise serializers.ValidationError({key: _("不支持的字段。") for key in sorted(unknown)})
-        return super().to_internal_value(data)
-
-
 class AIBackendConfigSLZ(serializers.Serializer):
     def to_internal_value(self, data):
         return validate_ai_backend_config(data)
 
 
-class AIBackendSLZ(RejectUnknownFieldsMixin, serializers.Serializer):
+class AIBackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="模型服务名称")
     config = AIBackendConfigSLZ()
 
