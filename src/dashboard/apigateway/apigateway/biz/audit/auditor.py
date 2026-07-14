@@ -18,7 +18,24 @@
 from typing import Optional, Union
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpStatusEnum, OpTypeEnum
+from apigateway.core.backend_config import mask_backend_config
 from apigateway.service.audit import record_audit_log
+
+
+def _get_backend_config_audit_data(
+    backend_kind: str,
+    data: Union[list, dict, str, None],
+) -> Union[list, dict, str, None]:
+    if not isinstance(data, dict) or not data:
+        return data
+
+    if "config" not in data:
+        return mask_backend_config(backend_kind, data)
+
+    audit_data = data.copy()
+    audit_data["config"] = mask_backend_config(backend_kind, data["config"])
+    return audit_data
+
 
 # TODO:
 # 1. FIXME: 导入 带来的变更目前没有记录审计 (很多事批量操作)
@@ -312,9 +329,11 @@ class Auditor:
         gateway_id: int,
         instance_id: int,
         instance_name: str,
+        backend_kind: str,
         data_before: Union[list, dict, str, None] = None,
         data_after: Union[list, dict, str, None] = None,
         comment: Optional[str] = None,
+        skip_if_unchanged: bool = False,
     ):
         if comment is None:
             comment = {
@@ -322,6 +341,11 @@ class Auditor:
                 OpTypeEnum.MODIFY: "更新环境后端配置",
                 OpTypeEnum.DELETE: "删除环境后端配置",
             }.get(op_type, "-")
+
+        audit_data_before = _get_backend_config_audit_data(backend_kind, data_before)
+        audit_data_after = _get_backend_config_audit_data(backend_kind, data_after)
+        if skip_if_unchanged and audit_data_before == audit_data_after:
+            return
 
         record_audit_log(
             username=username,
@@ -331,8 +355,8 @@ class Auditor:
             op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
             op_object_id=instance_id,
             op_object=instance_name,
-            data_before=data_before,
-            data_after=data_after,
+            data_before=audit_data_before,
+            data_after=audit_data_after,
             comment=comment,
         )
 

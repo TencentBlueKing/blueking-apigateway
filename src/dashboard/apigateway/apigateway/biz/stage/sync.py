@@ -27,7 +27,7 @@ from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.audit import Auditor
 from apigateway.biz.plugin import PluginConfigData, PluginSynchronizer
-from apigateway.core.backend_config import mask_backend_config, prepare_backend_config
+from apigateway.core.backend_config import prepare_backend_config
 from apigateway.core.backend_config_schema import BackendConfigValidationError
 from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, LoadBalanceTypeEnum
 from apigateway.core.models import Backend, BackendConfig
@@ -68,7 +68,7 @@ class StageSyncHandler:
             except BackendConfigValidationError as err:
                 raise serializers.ValidationError({field_name: str(err)}) from err
 
-            data_before = mask_backend_config(kind, existing_config) if existing_config else None
+            data_before = existing_config
             if backend_config is None:
                 backend_config = BackendConfig(
                     gateway=stage.gateway,
@@ -79,18 +79,20 @@ class StageSyncHandler:
             backend_config.config = config
             backend_config.updated_by = username
             backend_config.save()
-            data_after = mask_backend_config(kind, backend_config.config)
+            data_after = backend_config.config
 
-            if data_before is not None and data_before != data_after:
+            if data_before is not None:
                 Auditor.record_stage_backend_op_success(
                     op_type=OpTypeEnum.MODIFY,
                     username=username,
                     gateway_id=stage.gateway_id,
                     instance_id=backend_config.id,
                     instance_name=f"{stage.name}:{backend.name}",
+                    backend_kind=kind,
                     data_before=data_before,
                     data_after=data_after,
                     comment="OpenAPI 同步更新环境后端配置",
+                    skip_if_unchanged=True,
                 )
 
     @staticmethod

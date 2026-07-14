@@ -34,7 +34,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.components.bkpaas import get_paas_repo_branch_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.backend_config import mask_backend_config
 from apigateway.core.constants import PublishSourceEnum, StageStatusEnum
 from apigateway.core.models import BackendConfig, Stage
 from apigateway.utils.django import get_model_dict
@@ -322,12 +321,6 @@ class BackendConfigQuerySetMixin:
         return queryset.filter(gateway=self.request.gateway, stage_id=self.kwargs["id"])
 
 
-def _get_backend_config_audit_data(instance):
-    data = get_model_dict(instance)
-    data["config"] = mask_backend_config(instance.backend.kind, instance.config)
-    return data
-
-
 @method_decorator(
     name="get",
     decorator=swagger_auto_schema(
@@ -374,7 +367,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
-        data_before = _get_backend_config_audit_data(instance)
+        data_before = get_model_dict(instance)
 
         slz = self.get_serializer(
             data=request.data,
@@ -392,8 +385,9 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
             gateway_id=request.gateway.id,
             instance_id=instance.id,
             instance_name=f"{instance.stage.name}:{instance.backend.name}",
+            backend_kind=instance.backend.kind,
             data_before=data_before,
-            data_after=_get_backend_config_audit_data(instance),
+            data_after=get_model_dict(instance),
         )
 
         username = request.user.username
