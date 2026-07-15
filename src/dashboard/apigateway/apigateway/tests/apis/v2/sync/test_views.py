@@ -42,15 +42,15 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.service.gateway_jwt import GatewayJWTHandler
-from apigateway.service.resource_version import get_resource_names_set, make_resource_schema_version
+from apigateway.service.resource_version import get_standard_resource_names_set, make_resource_schema_version
 from apigateway.utils.yaml import yaml_loads
 
 
 @pytest.fixture(autouse=True)
 def clear_resource_names_cache():
-    get_resource_names_set.cache_clear()
+    get_standard_resource_names_set.cache_clear()
     yield
-    get_resource_names_set.cache_clear()
+    get_standard_resource_names_set.cache_clear()
 
 
 @pytest.fixture()

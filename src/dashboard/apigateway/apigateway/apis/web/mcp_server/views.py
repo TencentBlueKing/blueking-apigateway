@@ -53,9 +53,8 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
-from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Stage
-from apigateway.service.resource_version import get_resource_names_set
+from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -687,11 +686,7 @@ class MCPServerStageReleaseCheckApi(generics.RetrieveAPIView):
             return OKJsonResponse(data=data)
 
         changed_mcp_servers = []
-        valid_resource_names = get_resource_names_set(
-            resource_version_id,
-            raise_exception=True,
-            resource_kind=ResourceKindEnum.STANDARD.value,
-        )
+        valid_resource_names = get_standard_resource_names_set(resource_version_id, raise_exception=True)
         for mcp_server in mcp_servers:
             mcp_server_resource_names = set(mcp_server.resource_names)
             changed_resource_names = mcp_server_resource_names - valid_resource_names

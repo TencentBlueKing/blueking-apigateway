@@ -58,14 +58,14 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
-from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
 from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
-    get_resource_names_set,
     get_resource_schema,
+    get_standard_resource_names_set,
 )
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.time import NeverExpiresTime
@@ -103,11 +103,10 @@ class MCPServerHandler:
         """
         tool_resource_names = set(resource_names)
 
-        stage_released_resources = ReleasedResourceHandler.get_public_released_resource_data_list(
+        stage_released_resources = ReleasedResourceHandler.get_public_standard_released_resource_data_list(
             gateway_id,
             stage_name,
             False,
-            resource_kind=ResourceKindEnum.STANDARD.value,
         )
 
         # only need the resources in the resource_names
@@ -131,10 +130,7 @@ class MCPServerHandler:
             raise error_codes.FAILED_PRECONDITION.format(
                 _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
             )
-        return get_resource_names_set(
-            release.resource_version.id,
-            resource_kind=ResourceKindEnum.STANDARD.value,
-        )
+        return get_standard_resource_names_set(release.resource_version.id)
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
@@ -382,10 +378,7 @@ class MCPServerHandler:
             return
         release = Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id).first()
         if release:
-            valid_resource_names = get_resource_names_set(
-                release.resource_version.id,
-                resource_kind=ResourceKindEnum.STANDARD.value,
-            )
+            valid_resource_names = get_standard_resource_names_set(release.resource_version.id)
             resource_names = [name for name in resource_names if name in valid_resource_names]
         resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
             "id", flat=True

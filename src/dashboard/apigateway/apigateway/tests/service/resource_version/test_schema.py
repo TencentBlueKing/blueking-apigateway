@@ -27,6 +27,7 @@ from apigateway.service.resource_version import (
     get_resource_id_to_schema_by_resource_version,
     get_resource_names_set,
     get_resource_schema,
+    get_standard_resource_names_set,
     get_used_stage_vars,
     make_resource_schema_version,
 )
@@ -35,9 +36,11 @@ from apigateway.service.resource_version import (
 @pytest.fixture(autouse=True)
 def clear_resource_version_schema_caches():
     get_resource_names_set.cache_clear()
+    get_standard_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
     yield
     get_resource_names_set.cache_clear()
+    get_standard_resource_names_set.cache_clear()
     get_used_stage_vars.cache_clear()
 
 
@@ -102,7 +105,7 @@ def test_get_resource_names_set_returns_names(fake_resource_version):
     }
 
 
-def test_get_resource_names_set_filters_by_kind_and_treats_missing_kind_as_standard(fake_resource_version):
+def test_get_standard_resource_names_set_filters_ai_and_treats_missing_kind_as_standard(fake_resource_version):
     fake_resource_version.data = [
         {"name": "legacy-resource"},
         {"name": "standard-resource", "kind": ResourceKindEnum.STANDARD.value},
@@ -110,10 +113,7 @@ def test_get_resource_names_set_filters_by_kind_and_treats_missing_kind_as_stand
     ]
     fake_resource_version.save()
 
-    assert get_resource_names_set(
-        fake_resource_version.id,
-        resource_kind=ResourceKindEnum.STANDARD.value,
-    ) == {"legacy-resource", "standard-resource"}
+    assert get_standard_resource_names_set(fake_resource_version.id) == {"legacy-resource", "standard-resource"}
 
 
 @pytest.mark.parametrize(

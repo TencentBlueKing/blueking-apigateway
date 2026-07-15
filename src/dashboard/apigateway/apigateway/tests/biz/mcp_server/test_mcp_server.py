@@ -42,7 +42,7 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
-from apigateway.service.resource_version import get_resource_names_set
+from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -50,10 +50,10 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 class TestMCPServerHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        get_resource_names_set.cache_clear()
+        get_standard_resource_names_set.cache_clear()
         self.gateway = create_gateway()
         yield
-        get_resource_names_set.cache_clear()
+        get_standard_resource_names_set.cache_clear()
 
     def test_virtual_app_code_prefix(self):
         assert MCPServerHandler._virtual_app_code_prefix(1) == "v_mcp_1_"
@@ -364,7 +364,7 @@ class TestMCPServerHandler:
 
     def test_get_tools_resources_and_labels_requests_only_standard_resources(self, mocker):
         get_released_resources = mocker.patch(
-            "apigateway.biz.mcp_server.mcp_server.ReleasedResourceHandler.get_public_released_resource_data_list",
+            "apigateway.biz.mcp_server.mcp_server.ReleasedResourceHandler.get_public_standard_released_resource_data_list",
             return_value=[],
         )
 
@@ -374,7 +374,6 @@ class TestMCPServerHandler:
             1,
             "prod",
             False,
-            resource_kind=ResourceKindEnum.STANDARD.value,
         )
 
     def test_get_valid_resource_names_no_release(
