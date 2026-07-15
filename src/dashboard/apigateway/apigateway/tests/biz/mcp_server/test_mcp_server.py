@@ -261,6 +261,53 @@ class TestMCPServerHandler:
         permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
         assert set(permissions.values_list("resource_id", flat=True)) == {standard_resource.id}
 
+    def test_sync_permissions_excludes_ai_resource_without_release(self, fake_gateway, fake_stage):
+        ai_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="ai-resource",
+            kind=ResourceKindEnum.AI.value,
+        )
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=ai_resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert not AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_").exists()
+
+    def test_sync_permissions_excludes_live_ai_resource_with_standard_snapshot(self, fake_gateway, fake_stage):
+        resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="changed-resource",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {"id": resource.id, "name": resource.name, "kind": ResourceKindEnum.STANDARD.value},
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        resource.kind = ResourceKindEnum.AI.value
+        resource.save(update_fields=["kind"])
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names=resource.name,
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        assert not AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_").exists()
+
     def test_sync_permissions_delete_permissions(self, fake_gateway, fake_stage):
         """Test sync_permissions when existing permissions need to be deleted"""
         # Create resources
