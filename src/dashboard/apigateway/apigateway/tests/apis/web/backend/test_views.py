@@ -126,7 +126,7 @@ class TestBackendApi:
 
     @pytest.mark.parametrize(
         ("incoming_secret", "expected_secret"),
-        [("xx****yy", "Bearer secret"), ("Bearer new-secret", "Bearer new-secret")],
+        [("Be****et", "Bearer secret"), ("Bearer new-secret", "Bearer new-secret")],
     )
     def test_update_ai_backend_header(self, request_view, fake_stage, incoming_secret, expected_secret):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value

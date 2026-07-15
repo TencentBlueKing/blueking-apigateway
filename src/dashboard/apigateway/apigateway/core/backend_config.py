@@ -5,6 +5,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from apigateway.core.constants import AI_BACKEND_BUILTIN_PROVIDERS, AIBackendProviderEnum, BackendKindEnum
 
 
+def mask_header_value(value: str) -> str:
+    return "****" if len(value) < 4 else f"{value[:2]}****{value[-2:]}"
+
+
 def _validate_object_keys(data: dict[str, Any], *, allowed: set[str], required: set[str], path: str) -> None:
     if missing := required - data.keys():
         raise ValueError(f"{path}: missing required field: {min(missing)}")

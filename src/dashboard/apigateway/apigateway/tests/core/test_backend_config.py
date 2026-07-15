@@ -73,6 +73,32 @@ def test_backend_config_model_masks_ai_config_for_display(fake_stage, ai_backend
     assert backend_config.config == ai_backend_config
 
 
+@pytest.mark.parametrize(
+    ("secret", "expected"),
+    [
+        ("abc", "****"),
+        ("abcd", "ab****cd"),
+        ("abcde", "ab****de"),
+        ("abcdefgh", "ab****gh"),
+        ("a" * 100, f"aa****{'a' * 2}"),
+    ],
+)
+def test_backend_config_model_masks_header_value_by_length(
+    fake_stage, ai_backend, ai_backend_config, secret, expected
+):
+    ai_backend_config["instances"][0]["auth"]["header"] = {"Authorization": secret}
+    backend_config = BackendConfig.objects.create(
+        gateway=fake_stage.gateway,
+        backend=ai_backend,
+        stage=fake_stage,
+        config=ai_backend_config,
+    )
+
+    display_config = backend_config.get_config_for_display()
+
+    assert display_config["instances"][0]["auth"]["header"]["Authorization"] == expected
+
+
 def test_backend_config_model_keeps_standard_config_plaintext(fake_stage):
     standard_config = {
         "type": "node",

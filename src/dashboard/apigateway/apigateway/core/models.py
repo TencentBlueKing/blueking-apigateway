@@ -30,6 +30,7 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core import managers
+from apigateway.core.backend_config import mask_header_value
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
@@ -476,7 +477,7 @@ class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
         for instance in config.get("instances", []):
             headers = instance.get("auth", {}).get("header", {})
             for key, secret in headers.items():
-                headers[key] = "****" if len(secret) < 4 else f"{secret[:2]}****{secret[-2:]}"
+                headers[key] = mask_header_value(secret)
         return config
 
     class Meta:

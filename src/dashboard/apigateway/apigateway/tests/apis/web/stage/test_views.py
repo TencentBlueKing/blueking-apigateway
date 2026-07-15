@@ -184,7 +184,7 @@ class TestStageApi:
             config=_ai_config(),
         )
         ai_config = _ai_config()
-        ai_config["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
+        ai_config["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
 
         response = request_view(
             "PUT",
@@ -329,7 +329,7 @@ class TestStageBackendApi:
             config=_ai_config(),
         )
         data = _ai_config()
-        data["instances"][0]["auth"]["header"]["Authorization"] = "xx****yy"
+        data["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
 
         response = request_view(
             "PUT",
