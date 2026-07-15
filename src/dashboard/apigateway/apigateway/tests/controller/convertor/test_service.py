@@ -300,6 +300,55 @@ class TestServiceConvertor:
 
         assert service.plugins["ai-proxy"].auth == {}
 
+    def test_ai_service_uses_ai_proxy_multi_for_multiple_instances(self, mock_release_data):
+        instances = [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 80,
+                "auth": {"header": {"Authorization": "Bearer primary"}},
+                "options": {"model": "gpt-4.1-mini"},
+            },
+            {
+                "name": "fallback",
+                "provider": "openai-compatible",
+                "weight": 20,
+                "auth": {"header": {"Authorization": "Bearer fallback"}},
+                "options": {"model": "fallback-model"},
+                "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
+            },
+        ]
+        mock_release_data.stage_backend_configs = {
+            10: StageBackendConfig(
+                backend_id=10,
+                backend_name="model-service",
+                backend_kind=BackendKindEnum.AI.value,
+                backend_type=BackendTypeEnum.HTTP.value,
+                config={
+                    "timeout": 60000,
+                    "instances": instances,
+                    "balancer": {"algorithm": "roundrobin"},
+                    "fallback_strategy": ["http_429", "http_5xx"],
+                },
+            )
+        }
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        assert "ai-proxy" not in service.plugins
+        assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
+            "instances": instances,
+            "balancer": {"algorithm": "roundrobin"},
+            "fallback_strategy": ["http_429", "http_5xx"],
+            "timeout": 60000,
+            "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
+        }
+
     def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
             1: _standard_backend_config(
@@ -419,6 +468,34 @@ class TestServiceConvertor:
         ):
             assert forbidden not in serialized
         assert "must-not-log" not in serialized
+
+    def test_ai_service_log_format_includes_ai_metrics(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {10: _ai_backend_config()}
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        log_format = service.plugins["file-logger"].log_format
+        assert {
+            "request_type": log_format["request_type"],
+            "model": log_format["model"],
+            "request_model": log_format["request_model"],
+            "first_token_duration": log_format["first_token_duration"],
+            "response_time": log_format["response_time"],
+            "prompt_tokens": log_format["prompt_tokens"],
+            "completion_tokens": log_format["completion_tokens"],
+        } == {
+            "request_type": "$request_type",
+            "model": "$llm_model",
+            "request_model": "$request_llm_model",
+            "first_token_duration": "$llm_time_to_first_token",
+            "response_time": "$apisix_upstream_response_time",
+            "prompt_tokens": "$llm_prompt_tokens",
+            "completion_tokens": "$llm_completion_tokens",
+        }
 
     def test_convert_with_multiple_backends(self, mock_release_data):
         """Test convert with multiple backend configs"""

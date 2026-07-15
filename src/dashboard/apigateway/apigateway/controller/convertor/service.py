@@ -82,22 +82,41 @@ def _build_ai_log_format() -> Dict[str, str]:
         "proxy_error": "$proxy_error",
         "timestamp": "$bk_log_request_timestamp",
         "traceparent": "$http_traceparent",
+        "request_type": "$request_type",
+        "model": "$llm_model",
+        "request_model": "$request_llm_model",
+        "first_token_duration": "$llm_time_to_first_token",
+        "response_time": "$apisix_upstream_response_time",
+        "prompt_tokens": "$llm_prompt_tokens",
+        "completion_tokens": "$llm_completion_tokens",
     }
 
 
-def _build_ai_proxy_plugin(config: Dict[str, Any]) -> Plugin:
-    instance = config["instances"][0]
-    plugin_config: Dict[str, Any] = {
-        "provider": instance["provider"],
-        "auth": instance.get("auth", {}),
-        "options": instance["options"],
+def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:
+    common_config = {
         "timeout": config.get("timeout", 30000),
         "ssl_verify": True,
         "logging": {"summaries": True, "payloads": False},
     }
+
+    instances = config["instances"]
+    if len(instances) > 1:
+        plugin_config: Dict[str, Any] = {"instances": instances, **common_config}
+        for key in ("balancer", "fallback_strategy"):
+            if key in config:
+                plugin_config[key] = config[key]
+        return {"ai-proxy-multi": Plugin(**plugin_config)}
+
+    instance = instances[0]
+    plugin_config = {
+        "provider": instance["provider"],
+        "auth": instance.get("auth", {}),
+        "options": instance["options"],
+        **common_config,
+    }
     if "override" in instance:
         plugin_config["override"] = instance["override"]
-    return Plugin(**plugin_config)
+    return {"ai-proxy": Plugin(**plugin_config)}
 
 
 class ServiceConvertor(GatewayResourceConvertor):
@@ -252,7 +271,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             bk_backend_id=backend_id,
             bk_backend_name=backend_name,
         )
-        plugins["ai-proxy"] = _build_ai_proxy_plugin(backend_config)
+        plugins.update(_build_ai_proxy_plugins(backend_config))
         labels = self.get_labels()
         labels.add_label(LABEL_KEY_BACKEND_ID, str(backend_id))
 
