@@ -152,6 +152,7 @@ class TestReleasedResourceHandler:
     ):
         resources = fake_release.resource_version.data
         resources[0]["kind"] = ResourceKindEnum.AI.value
+        resources[1]["kind"] = None
         fake_release.resource_version.data = resources
         fake_release.resource_version.save()
 
@@ -161,6 +162,9 @@ class TestReleasedResourceHandler:
         )
 
         assert {resource.name for resource in result} == {resource["name"] for resource in resources[1:]}
+        assert next(resource for resource in result if resource.name == resources[1]["name"]).kind == (
+            ResourceKindEnum.STANDARD.value
+        )
 
     def test_get_released_resource(self, fake_gateway, fake_stage, fake_released_resource):
         result = ReleasedResourceHandler.get_released_resource(

@@ -105,15 +105,20 @@ def test_get_resource_names_set_returns_names(fake_resource_version):
     }
 
 
-def test_get_standard_resource_names_set_filters_ai_and_treats_missing_kind_as_standard(fake_resource_version):
+def test_get_standard_resource_names_set_filters_ai_and_treats_empty_kind_as_standard(fake_resource_version):
     fake_resource_version.data = [
         {"name": "legacy-resource"},
+        {"name": "empty-kind-resource", "kind": None},
         {"name": "standard-resource", "kind": ResourceKindEnum.STANDARD.value},
         {"name": "ai-resource", "kind": ResourceKindEnum.AI.value},
     ]
     fake_resource_version.save()
 
-    assert get_standard_resource_names_set(fake_resource_version.id) == {"legacy-resource", "standard-resource"}
+    assert get_standard_resource_names_set(fake_resource_version.id) == {
+        "legacy-resource",
+        "empty-kind-resource",
+        "standard-resource",
+    }
 
 
 @pytest.mark.parametrize(

@@ -63,7 +63,7 @@ class ReleasedResourceData:
             match_subpath=released_resource_data.get("match_subpath", False),
             enable_websocket=released_resource_data.get("enable_websocket", False),
             is_public=released_resource_data["is_public"],
-            kind=released_resource_data.get("kind", ResourceKindEnum.STANDARD.value),
+            kind=released_resource_data.get("kind") or ResourceKindEnum.STANDARD.value,
             allow_apply_permission=released_resource_data.get("allow_apply_permission", True),
             disabled_stages=released_resource_data.get("disabled_stages") or [],
             contexts=released_resource_data["contexts"],

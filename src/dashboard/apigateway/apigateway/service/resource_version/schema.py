@@ -110,7 +110,7 @@ def get_standard_resource_names_set(resource_version_id: int, raise_exception: b
         raise_exception (bool): 资源版本不存在时是否抛出 NOT_FOUND；为 False 时返回空集合。
 
     Returns:
-        Set[str]: 普通资源名称集合；旧快照缺少 kind 时按 standard 处理。
+        Set[str]: 普通资源名称集合；旧快照缺少或未设置 kind 时按 standard 处理。
     """
     resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
     if not resource_version:
@@ -121,7 +121,7 @@ def get_standard_resource_names_set(resource_version_id: int, raise_exception: b
     return {
         resource["name"]
         for resource in resource_version.data
-        if resource.get("kind", ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
+        if (resource.get("kind") or ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
     }
 
 
