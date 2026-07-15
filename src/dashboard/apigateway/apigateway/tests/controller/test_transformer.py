@@ -32,6 +32,7 @@ from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, ProxyTyp
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
+APISIX_VERSION_3_17 = "3.17"
 
 
 class TestBaseTransformer:
@@ -160,10 +161,11 @@ class TestGatewayApisixResourceConvertor:
 
         GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
 
-    def test_ai_gateway_accepts_only_3_16(self, mock_release):
+    def test_ai_gateway_accepts_3_16_or_later(self, mock_release):
         mock_release.gateway.is_ai_gateway = True
 
         GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16)
+        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_17)
 
         with pytest.raises(ValueError, match="APISIX 3.16"):
             GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)

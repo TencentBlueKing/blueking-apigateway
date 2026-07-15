@@ -615,8 +615,8 @@ controller 同时将 BackendConfig.timeout 原样转换为 `ai-proxy.timeout`，
 
 #### APISIX version boundary
 
-- An AI Gateway may publish only when its `DataPlane.apisix_version` is `3.16`.
-- The dashboard transformer fails before generating resources when an AI Gateway targets any other version.
+- An AI Gateway may bind and publish only when its `DataPlane.apisix_version` is `3.16` or later.
+- Gateway creation and synchronization fail before persisting an incompatible binding; the dashboard transformer keeps the same defensive check before generating resources.
 - APISIX 3.13 remains supported for standard gateways and receives no AI-specific changes.
 
 ### 8.6 bk-backend-context、日志与 metrics
@@ -686,7 +686,7 @@ bk_backend_name = Backend.name
 - 插件兼容性：Web Stage/Resource 绑定和 `/apis/open`、`/apis/v2/sync` Resource 插件同步拒绝不兼容关系；controller 发布信任持久化关系，不再校验或过滤。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
 - controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route；Route 转换信任持久化的 Resource/Backend 关系，不重复校验 kind。
-- controller：AI Gateway 仅允许发布到 APISIX 3.16，非 3.16 在生成资源前失败；普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。
+- data plane：AI Gateway 仅允许绑定 APISIX 3.16 及以上版本的数据面，创建和同步在持久化绑定前失败；controller 在生成资源前保留同一规则的防御性检查。普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。
 - 请求链路：普通响应和 SSE 流式响应均可用；BlueKing 网关插件错误由 `bk-error-wrapper` 统一包装，`ai-proxy` 和模型服务错误保持原始响应；第一期不增加 AI 专用出站 Header 过滤。
 - 回归：普通网关、可编程网关以及 AI Gateway 中的普通 Backend/Resource 沿用现有行为。
 

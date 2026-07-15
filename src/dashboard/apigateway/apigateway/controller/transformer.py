@@ -19,7 +19,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
-from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor import (
     BkReleaseConvertor,
     RouteConvertor,
@@ -28,6 +27,10 @@ from apigateway.controller.convertor import (
 from apigateway.controller.convertor.constants import LABEL_KEY_BACKEND_ID
 from apigateway.controller.convertor.plugin_metadata import PluginMetadataConvertor
 from apigateway.controller.release_data import ReleaseData
+from apigateway.service.data_plane import (
+    AI_GATEWAY_MIN_APISIX_VERSION,
+    is_apisix_version_supported_for_ai_gateway,
+)
 
 if TYPE_CHECKING:
     from apigateway.controller.models import ApisixModel, GatewayApisixModel
@@ -83,9 +86,9 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         if (
             not revoke_flag
             and release.gateway.is_ai_gateway
-            and apisix_version != DataPlaneApisixVersionEnum.V3_16.value
+            and not is_apisix_version_supported_for_ai_gateway(apisix_version)
         ):
-            raise ValueError("AI Gateway only supports APISIX 3.16")
+            raise ValueError(f"AI Gateway requires APISIX {AI_GATEWAY_MIN_APISIX_VERSION} or later")
 
         if release.resource_version.is_schema_v2 or revoke_flag:
             # note: revoke_flag is True, allow to use schema v1 to revoke resources
