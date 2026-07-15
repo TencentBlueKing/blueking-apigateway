@@ -431,10 +431,10 @@
         :key="plugin.id"
       >
         <div
-          class="container-diff"
+          class="plugin-diff"
           :class="getPluginDiffClass(plugin)"
         >
-          <p class="title mt-15px">
+          <p class="plugin-title mt-15px">
             {{ t('插件:{name}', { name: plugin.name }) }}
           </p>
           <ConfigDisplayTable
@@ -553,19 +553,12 @@ const initLocalData = async () => {
 
 const initDiff = () => {
   diffMap.value = {};
-  const currentDiff = curResource?.diff;
 
-  if (!diffData && !currentDiff) {
+  if (!diffData) {
     return false;
   }
 
-  if (diffData) {
-    findAllDiff(diffData);
-  }
-
-  if (currentDiff) {
-    findAllDiff(currentDiff);
-  }
+  findAllDiff(diffData);
 
   // 处理后端配置使用默认配置情况
   if (diffMap.value['localData.proxy.config.timeout']) {
@@ -584,6 +577,14 @@ const initDiff = () => {
   const keys = Object.keys(diffMap.value);
   if (keys.some(item => item.startsWith('localData.disabled_stages'))) {
     diffMap.value['localData.disabled_stages'] = true;
+  }
+
+  // 处理文档更新时间
+  if (curResource?.diff.doc_updated_time?.zh && !diffMap.value['localData.doc_updated_time.cn']) {
+    diffMap.value['localData.doc_updated_time.cn'] = '';
+  }
+  if (curResource?.diff.doc_updated_time?.en && !diffMap.value['localData.doc_updated_time.en']) {
+    diffMap.value['localData.doc_updated_time.en'] = '';
   }
 };
 
@@ -647,8 +648,8 @@ const getPluginDiffClass = (plugin: any) => {
     return 'item-added';
   }
 
-  // 插件没有变更，返回空 class，不改变样式
-  return '';
+  // 插件没有变更，设置一个标记用的 class，不改变样式
+  return 'no-diff';
 };
 
 // 网关标签
@@ -814,9 +815,18 @@ initLocalData();
   }
 }
 
-.container-diff {
+.plugin-diff {
   padding: 2px 8px;
   margin: 18px 0;
+
+  .plugin-title {
+    padding-bottom: 10px;
+    margin-bottom: 17px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #63656e;
+    border-bottom: 1px solid #dcdee5;
+  }
 
   &.item-added {
     background-color: rgb(45 203 86 / 10%);
@@ -887,6 +897,10 @@ initLocalData();
       .bk-grid-row {
         display: block;
       }
+    }
+
+    .plugin-diff.no-diff {
+      display: none;
     }
   }
 }
