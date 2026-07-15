@@ -80,7 +80,11 @@ class GatewayApisixResourceTransformer(BaseTransformer):
         publish_id: Optional[int] = None,
         revoke_flag: Optional[bool] = False,
     ):
-        if release.gateway.is_ai_gateway and apisix_version != DataPlaneApisixVersionEnum.V3_16.value:
+        if (
+            not revoke_flag
+            and release.gateway.is_ai_gateway
+            and apisix_version != DataPlaneApisixVersionEnum.V3_16.value
+        ):
             raise ValueError("AI Gateway only supports APISIX 3.16")
 
         if release.resource_version.is_schema_v2 or revoke_flag:

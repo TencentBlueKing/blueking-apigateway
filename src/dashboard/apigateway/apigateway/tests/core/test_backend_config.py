@@ -276,3 +276,31 @@ def test_standard_config_is_validated_without_secret_processing():
 
     model = StandardBackendConfig.model_validate(config)
     assert model.to_config() == config
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "error"),
+    [
+        ("ftp://example.com/v1", "scheme must be http or https"),
+        ("https://", "hostname is required"),
+        ("https://user:pass@example.com/v1", "userinfo is not allowed"),
+        ("https://127.0.0.1/v1", "host is forbidden"),
+    ],
+)
+def test_ai_backend_config_validates_override_endpoint(ai_backend_config, endpoint, error):
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": endpoint}
+
+    with pytest.raises(ValueError, match=error):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
+def test_ai_backend_config_rejects_forbidden_override_endpoint_port(ai_backend_config, settings):
+    settings.FORBIDDEN_PORTS = [22]
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": "https://example.com:22/v1"}
+
+    with pytest.raises(ValueError, match="port is forbidden"):
+        AIBackendConfig.model_validate(ai_backend_config)
