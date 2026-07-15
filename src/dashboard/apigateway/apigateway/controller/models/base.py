@@ -253,7 +253,7 @@ class Service(GatewayApisixModel):
     name: str = Field(min_length=1, max_length=100, description="name")
 
     plugins: Dict[str, Plugin] = Field(default_factory=dict, description="plugins")
-    upstream: BaseUpstream = Field(description="upstream")
+    upstream: Optional[BaseUpstream] = Field(default=None, description="upstream")
 
 
 class Route(GatewayApisixModel):

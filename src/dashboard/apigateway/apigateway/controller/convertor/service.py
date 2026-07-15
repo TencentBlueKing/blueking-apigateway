@@ -47,7 +47,6 @@ from apigateway.controller.models.constants import (
 )
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.constants import LoadBalanceTypeEnum
-from apigateway.core.models import Backend
 
 from .base import GatewayResourceConvertor
 from .constants import LABEL_KEY_BACKEND_ID
@@ -74,7 +73,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             return []
 
         # FIXME: should not generate service if the backend is not related to any resource
-        backend_configs = self._release_data.get_stage_backend_configs()
+        backend_configs = self._release_data.stage_backend_configs
         if not backend_configs:
             return []
 
@@ -95,7 +94,8 @@ class ServiceConvertor(GatewayResourceConvertor):
 
         services: List[GatewayApisixModel] = []
 
-        for backend_id, backend_config in backend_configs.items():
+        for backend_id, stage_backend_config in backend_configs.items():
+            backend_config = stage_backend_config.config
             timeout = backend_config.get("timeout", 60)
             loadbalance_type = backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
             # while the apisix has no wrr, we convert it to roundrobin, the weight would be set below
@@ -147,8 +147,7 @@ class ServiceConvertor(GatewayResourceConvertor):
                 upstream.checks = self._convert_checks(checks_data)
 
             # FIXME: 如何处理 http/https 协议
-            backend = Backend.objects.get(id=backend_id)
-            backend_name = backend.name
+            backend_name = stage_backend_config.backend_name
             # backend_desc = backend.description
 
             # currently, only add one plugin for service of per backend

@@ -15,9 +15,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
+import dataclasses
 
-from apigateway.controller.release_data import PluginData, ReleaseData
+import pytest
+from django_dynamic_fixture import G
+
+from apigateway.controller.release_data import PluginData, ReleaseData, StageBackendConfig
+from apigateway.core.constants import BackendKindEnum
+from apigateway.core.models import Backend, BackendConfig
 
 
 class TestPluginData:
@@ -200,19 +205,79 @@ class TestReleaseData:
 
         assert plugins == []
 
-    def test_get_stage_backend_configs_empty(self, mock_release, mocker):
-        """Test get_stage_backend_configs with no configs"""
-        mock_qs = mocker.Mock()
-        mock_qs.filter.return_value = mock_qs
-        mock_qs.prefetch_related.return_value = mock_qs
-        mock_qs.all.return_value = []
+    def test_stage_backend_configs_are_typed_cached_snapshots(
+        self,
+        mocker,
+        fake_gateway,
+        fake_stage,
+        django_assert_num_queries,
+    ):
+        standard_config = {
+            "type": "node",
+            "timeout": 30,
+            "loadbalance": "roundrobin",
+            "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}],
+        }
+        standard_backend = G(
+            Backend,
+            gateway=fake_gateway,
+            name="standard-service",
+            kind=BackendKindEnum.STANDARD.value,
+        )
+        ai_backend = G(
+            Backend,
+            gateway=fake_gateway,
+            name="model-service",
+            kind=BackendKindEnum.AI.value,
+        )
+        standard_backend_config = BackendConfig.objects.create(
+            gateway=fake_gateway,
+            stage=fake_stage,
+            backend=standard_backend,
+            config=standard_config,
+        )
+        ai_backend_config = {
+            "timeout": 30000,
+            "instances": [
+                {
+                    "name": "primary",
+                    "provider": "openai",
+                    "weight": 1,
+                    "auth": {"header": {"Authorization": "Bearer secret"}},
+                    "options": {"model": "gpt-4o"},
+                }
+            ],
+        }
+        ai_backend_config_model = BackendConfig.objects.create(
+            gateway=fake_gateway,
+            stage=fake_stage,
+            backend=ai_backend,
+            config=ai_backend_config,
+        )
+        release = mocker.Mock(gateway=fake_gateway, stage=fake_stage)
+        release_data = ReleaseData(release)
 
-        mocker.patch("apigateway.controller.release_data.BackendConfig.objects", mock_qs)
+        with django_assert_num_queries(1):
+            configs = release_data.stage_backend_configs
+            assert release_data.stage_backend_configs is configs
 
-        release_data = ReleaseData(mock_release)
-        configs = release_data.get_stage_backend_configs()
+        assert configs[standard_backend.id] == StageBackendConfig(
+            backend_id=standard_backend.id,
+            backend_name=standard_backend.name,
+            backend_kind=BackendKindEnum.STANDARD.value,
+            backend_type=standard_backend.type,
+            config=standard_backend_config.config,
+        )
+        assert configs[ai_backend.id] == StageBackendConfig(
+            backend_id=ai_backend.id,
+            backend_name=ai_backend.name,
+            backend_kind=BackendKindEnum.AI.value,
+            backend_type=ai_backend.type,
+            config=ai_backend_config_model.config,
+        )
 
-        assert configs == {}
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            configs[ai_backend.id].backend_name = "changed"
 
     def test_get_resource_plugins_empty(self, mock_release):
         """Test get_resource_plugins with no plugins"""

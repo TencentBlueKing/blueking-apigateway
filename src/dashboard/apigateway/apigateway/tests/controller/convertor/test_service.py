@@ -25,9 +25,21 @@ from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION
+from apigateway.controller.release_data import StageBackendConfig
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
+
+
+def _standard_backend_config(backend_id, backend_name, config):
+    return StageBackendConfig(
+        backend_id=backend_id,
+        backend_name=backend_name,
+        backend_kind=BackendKindEnum.STANDARD.value,
+        backend_type=BackendTypeEnum.HTTP.value,
+        config=config,
+    )
 
 
 class TestServiceConvertor:
@@ -80,17 +92,17 @@ class TestServiceConvertor:
 
     def test_convert_with_no_backend_configs(self, mock_release_data):
         """Test convert with no backend configs"""
-        mock_release_data.get_stage_backend_configs.return_value = {}
+        mock_release_data.stage_backend_configs = {}
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor.convert()
 
         assert result == []
 
-    def test_convert_with_backend_config_no_hosts(self, mock_release_data, mocker):
+    def test_convert_with_backend_config_no_hosts(self, mock_release_data):
         """Test convert with backend config but no hosts"""
-        mock_release_data.get_stage_backend_configs.return_value = {
-            1: {"timeout": 60, "hosts": []},
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(1, "backend-service", {"timeout": 60, "hosts": []}),
         }
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
@@ -98,26 +110,19 @@ class TestServiceConvertor:
         with pytest.raises(ValueError, match="backend 1 has no hosts"):
             convertor.convert()
 
-    def test_convert_with_valid_backend_config(self, mock_release_data, mocker):
+    def test_convert_with_valid_backend_config(self, mock_release_data):
         """Test convert with valid backend config"""
-        # Mock Backend model
-        mock_backend = mocker.Mock()
-        mock_backend.id = 1
-        mock_backend.name = "backend-service"
-        mock_backend.description = "Test backend"
-
-        mocker.patch(
-            "apigateway.controller.convertor.service.Backend.objects.get",
-            return_value=mock_backend,
-        )
-
-        mock_release_data.get_stage_backend_configs.return_value = {
-            1: {
-                "timeout": 60,
-                "hosts": [
-                    {"scheme": "http", "host": "example.com", "weight": 100},
-                ],
-            },
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "backend-service",
+                {
+                    "timeout": 60,
+                    "hosts": [
+                        {"scheme": "http", "host": "example.com", "weight": 100},
+                    ],
+                },
+            ),
         }
         mock_release_data.get_stage_plugins.return_value = []
         mock_release_data.jwt_private_key = "test-key"
@@ -140,29 +145,19 @@ class TestServiceConvertor:
         result = convertor.convert()
         assert result == []
 
-    def test_convert_with_multiple_backends(self, mock_release_data, mocker):
+    def test_convert_with_multiple_backends(self, mock_release_data):
         """Test convert with multiple backend configs"""
-        mock_backend1 = mocker.Mock()
-        mock_backend1.id = 1
-        mock_backend1.name = "backend-1"
-        mock_backend1.description = "First backend"
-
-        mock_backend2 = mocker.Mock()
-        mock_backend2.id = 2
-        mock_backend2.name = "backend-2"
-        mock_backend2.description = "Second backend"
-
-        def get_backend(id):
-            return mock_backend1 if id == 1 else mock_backend2
-
-        mocker.patch(
-            "apigateway.controller.convertor.service.Backend.objects.get",
-            side_effect=get_backend,
-        )
-
-        mock_release_data.get_stage_backend_configs.return_value = {
-            1: {"timeout": 60, "hosts": [{"scheme": "http", "host": "example1.com", "weight": 100}]},
-            2: {"timeout": 30, "hosts": [{"scheme": "http", "host": "example2.com", "weight": 50}]},
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "backend-1",
+                {"timeout": 60, "hosts": [{"scheme": "http", "host": "example1.com", "weight": 100}]},
+            ),
+            2: _standard_backend_config(
+                2,
+                "backend-2",
+                {"timeout": 30, "hosts": [{"scheme": "http", "host": "example2.com", "weight": 50}]},
+            ),
         }
         mock_release_data.get_stage_plugins.return_value = []
         mock_release_data.jwt_private_key = "test-key"
@@ -175,25 +170,19 @@ class TestServiceConvertor:
         assert result[0].id == "test-gateway.prod.456-1"
         assert result[1].id == "test-gateway.prod.456-2"
 
-    def test_convert_with_https_scheme(self, mock_release_data, mocker):
+    def test_convert_with_https_scheme(self, mock_release_data):
         """Test convert with HTTPS scheme"""
-        mock_backend = mocker.Mock()
-        mock_backend.id = 1
-        mock_backend.name = "backend-service"
-        mock_backend.description = ""
-
-        mocker.patch(
-            "apigateway.controller.convertor.service.Backend.objects.get",
-            return_value=mock_backend,
-        )
-
-        mock_release_data.get_stage_backend_configs.return_value = {
-            1: {
-                "timeout": 60,
-                "hosts": [
-                    {"scheme": "https", "host": "secure.example.com", "weight": 100},
-                ],
-            },
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "backend-service",
+                {
+                    "timeout": 60,
+                    "hosts": [
+                        {"scheme": "https", "host": "secure.example.com", "weight": 100},
+                    ],
+                },
+            ),
         }
         mock_release_data.get_stage_plugins.return_value = []
         mock_release_data.jwt_private_key = "test-key"
@@ -208,25 +197,19 @@ class TestServiceConvertor:
         # port should be 443
         assert result[0].upstream.nodes[0].port == 443
 
-    def test_convert_with_custom_port(self, mock_release_data, mocker):
+    def test_convert_with_custom_port(self, mock_release_data):
         """Test convert with custom port"""
-        mock_backend = mocker.Mock()
-        mock_backend.id = 1
-        mock_backend.name = "backend-service"
-        mock_backend.description = ""
-
-        mocker.patch(
-            "apigateway.controller.convertor.service.Backend.objects.get",
-            return_value=mock_backend,
-        )
-
-        mock_release_data.get_stage_backend_configs.return_value = {
-            1: {
-                "timeout": 60,
-                "hosts": [
-                    {"scheme": "http", "host": "example.com:8080", "weight": 100},
-                ],
-            },
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "backend-service",
+                {
+                    "timeout": 60,
+                    "hosts": [
+                        {"scheme": "http", "host": "example.com:8080", "weight": 100},
+                    ],
+                },
+            ),
         }
         mock_release_data.get_stage_plugins.return_value = []
         mock_release_data.jwt_private_key = "test-key"
