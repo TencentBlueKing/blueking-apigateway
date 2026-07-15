@@ -15,16 +15,20 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import json
 from unittest.mock import Mock
 
 import pytest
 
 from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
+from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION, LABEL_KEY_BACKEND_ID
+from apigateway.controller.release_data import StageBackendConfig
 from apigateway.controller.transformer import (
     BaseTransformer,
     GatewayApisixResourceTransformer,
     GlobalApisixResourceTransformer,
 )
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, ProxyTypeEnum, ResourceKindEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
@@ -132,6 +136,7 @@ class TestGatewayApisixResourceConvertor:
         gateway = mocker.Mock()
         gateway.pk = 456
         gateway.name = "test-gateway"
+        gateway.is_ai_gateway = False
         release.gateway = gateway
 
         # Mock stage
@@ -149,6 +154,93 @@ class TestGatewayApisixResourceConvertor:
         release.resource_version = resource_version
 
         return release
+
+    def test_standard_gateway_still_accepts_3_13(self, mock_release):
+        mock_release.gateway.is_ai_gateway = False
+
+        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
+
+    def test_ai_gateway_accepts_only_3_16(self, mock_release):
+        mock_release.gateway.is_ai_gateway = True
+
+        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16)
+
+        with pytest.raises(ValueError, match="APISIX 3.16"):
+            GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
+
+    def test_transform_ai_gateway_resources(self, mock_release, mocker):
+        mock_release.gateway.is_ai_gateway = True
+
+        release_data = mocker.Mock()
+        release_data.gateway = mock_release.gateway
+        release_data.stage = mock_release.stage
+        release_data.stage.vars = {}
+        release_data.resource_version = mock_release.resource_version
+        release_data.stage_backend_configs = {
+            10: StageBackendConfig(
+                backend_id=10,
+                backend_name="model-service",
+                backend_kind=BackendKindEnum.AI.value,
+                backend_type=BackendTypeEnum.HTTP.value,
+                config={
+                    "timeout": 45000,
+                    "instances": [
+                        {
+                            "name": "primary",
+                            "provider": "openai-compatible",
+                            "weight": 1,
+                            "auth": {"header": {"Authorization": "Bearer test"}},
+                            "options": {"model": "gpt-4.1-mini", "temperature": 0.2},
+                            "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
+                        }
+                    ],
+                },
+            )
+        }
+        release_data.resource_configs = [
+            {
+                "id": 11,
+                "name": "chat-completions",
+                "kind": ResourceKindEnum.AI.value,
+                "method": "ANY",
+                "path": "/v1/chat/completions",
+                "enable_websocket": True,
+                "disabled_stages": [],
+                "proxy": {
+                    "type": ProxyTypeEnum.HTTP.value,
+                    "backend_id": 10,
+                    "config": json.dumps({"path": "/ignored", "method": "GET", "match_subpath": True, "timeout": 99}),
+                },
+                "contexts": {"resource_auth": {"config": json.dumps({})}},
+                "plugins": [],
+            }
+        ]
+        release_data.get_stage_plugins.return_value = []
+        release_data.get_resource_plugins.return_value = []
+        release_data.jwt_private_key = "test-key"
+        release_data.gateway_auth_config = {}
+        mocker.patch("apigateway.controller.transformer.ReleaseData", return_value=release_data)
+
+        transformer = GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16, publish_id=123)
+        transformer.transform()
+        resources = list(transformer.get_transformed_resources())
+        service = next(resource for resource in resources if resource.kind == "service")
+        route = next(resource for resource in resources if resource.kind == "route" and resource.service_id)
+        service_payload = service.model_dump(mode="json", exclude_none=True)
+        route_payload = route.model_dump(mode="json", exclude_none=True)
+
+        assert "upstream" not in service_payload
+        assert "bk-error-wrapper" in service_payload["plugins"]
+        assert service_payload["plugins"]["ai-proxy"]["options"]["temperature"] == 0.2
+        assert service_payload["plugins"]["ai-proxy"]["logging"] == {
+            "summaries": True,
+            "payloads": False,
+        }
+        assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "10"
+        assert service.labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
+        assert route_payload["service_id"] == service_payload["id"]
+        assert route_payload["methods"] == ["POST"]
+        assert "bk-proxy-rewrite" not in route_payload["plugins"]
 
     def test_initialization_requires_apisix_version(self, mock_release):
         """Gateway transformer should get apisix_version from data_plane callers."""
@@ -317,6 +409,7 @@ class TestGatewayApisixResourceConvertor:
 
         # Test invalid release structure
         mock_release_invalid = mocker.Mock()
+        mock_release_invalid.gateway.is_ai_gateway = False
         del mock_release_invalid.resource_version
         with pytest.raises(AttributeError):
             GatewayApisixResourceTransformer(mock_release_invalid, APISIX_VERSION_3_13)
