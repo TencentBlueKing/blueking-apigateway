@@ -100,11 +100,29 @@ class RouteConvertor(GatewayResourceConvertor):
 
         match_subpath = resource_proxy.get("match_subpath", False)
 
-        plugins = {
-            "bk-resource-context": self._build_resource_context_plugin(resource),
+        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+
+        plugins: Dict[str, Plugin] = {
+            "bk-resource-context": Plugin(
+                bk_resource_id=resource["id"],
+                bk_resource_name=resource["name"],
+                bk_resource_auth={
+                    "verified_app_required": resource_auth_config.get("app_verified_required", True),
+                    "verified_user_required": resource_auth_config.get("auth_verified_required", True),
+                    "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
+                    "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
+                },
+            ),
+            # TODO: check the bk-proxy-rewrite plugin gen in operator
             "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
         }
-        plugins.update(self._convert_resource_bound_plugins(resource))
+
+        plugins.update(
+            {
+                plugin_data.name: Plugin(**plugin_data.config)
+                for plugin_data in self._release_data.get_resource_plugins(resource["id"])
+            }
+        )
         uris, priority = self._convert_uris(
             path=resource["path"],
             match_subpath=match_subpath,
@@ -140,8 +158,25 @@ class RouteConvertor(GatewayResourceConvertor):
 
     def _convert_ai_route(self, resource: Dict[str, Any], service_id: str) -> Route:
         uris, _ = self._convert_uris(path=resource["path"], match_subpath=False)
-        plugins = {"bk-resource-context": self._build_resource_context_plugin(resource)}
-        plugins.update(self._convert_resource_bound_plugins(resource))
+        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        plugins: Dict[str, Plugin] = {
+            "bk-resource-context": Plugin(
+                bk_resource_id=resource["id"],
+                bk_resource_name=resource["name"],
+                bk_resource_auth={
+                    "verified_app_required": resource_auth_config.get("app_verified_required", True),
+                    "verified_user_required": resource_auth_config.get("auth_verified_required", True),
+                    "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
+                    "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
+                },
+            ),
+        }
+        plugins.update(
+            {
+                plugin_data.name: Plugin(**plugin_data.config)
+                for plugin_data in self._release_data.get_resource_plugins(resource["id"])
+            }
+        )
 
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
@@ -185,23 +220,6 @@ class RouteConvertor(GatewayResourceConvertor):
             send=timeout,
             read=timeout,
         )
-
-    def _build_resource_context_plugin(self, resource: Dict[str, Any]) -> Plugin:
-        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
-        return Plugin(
-            bk_resource_id=resource["id"],
-            bk_resource_name=resource["name"],
-            bk_resource_auth={
-                "verified_app_required": resource_auth_config.get("app_verified_required", True),
-                "verified_user_required": resource_auth_config.get("auth_verified_required", True),
-                "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
-                "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
-            },
-        )
-
-    def _convert_resource_bound_plugins(self, resource: Dict[str, Any]) -> Dict[str, Plugin]:
-        plugin_data = self._release_data.get_resource_plugins(resource["id"])
-        return {plugin.name: Plugin(**plugin.config) for plugin in plugin_data}
 
     def _build_bk_proxy_rewrite_config(self, resource_proxy: Dict[str, Any]) -> Dict[str, Any]:
         # dashboard only make method+path here

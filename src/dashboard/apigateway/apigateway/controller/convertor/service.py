@@ -111,34 +111,131 @@ class ServiceConvertor(GatewayResourceConvertor):
         super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
 
-    def convert(self) -> List[GatewayApisixModel]:
+    def convert(self) -> List[GatewayApisixModel]:  # noqa: C901, PLR0912
         # if revoke, we should not generate service, will delete the service from etcd
         if self._revoke_flag:
             return []
 
         # FIXME: should not generate service if the backend is not related to any resource
-        return [
-            self._build_service(backend_config) for backend_config in self._release_data.stage_backend_configs.values()
-        ]
+        backend_configs = self._release_data.stage_backend_configs
+        if not backend_configs:
+            return []
 
-    def _build_service(self, backend_config: StageBackendConfig) -> Service:
-        if backend_config.backend_kind == BackendKindEnum.AI.value:
-            return self._build_ai_service(backend_config)
-        if backend_config.backend_kind == BackendKindEnum.STANDARD.value:
-            return self._build_standard_service(backend_config)
-        raise ValueError(f"unsupported backend kind: {backend_config.backend_kind}")
+        # {
+        #   "type": "node",
+        #   "timeout": 60,
+        #   "loadbalance": "roundrobin", # or "chash"
+        #   "hash_on": "header",
+        #   "key": "content-type",
+        #   "hosts": [
+        #     {
+        #       "scheme": "http",
+        #       "host": "exmple.com",
+        #       "weight": 100
+        #     }
+        #   ]
+        # }
 
-    def _build_standard_service(self, backend_config: StageBackendConfig) -> Service:
-        plugins = self._build_service_plugins(backend_config.backend_kind)
-        plugins["bk-backend-context"] = Plugin(
-            bk_backend_id=backend_config.backend_id,
-            bk_backend_name=backend_config.backend_name,
-        )
-        return self._build_service_model(
-            backend_config,
-            plugins=plugins,
-            upstream=self._build_standard_upstream(backend_config),
-        )
+        services: List[GatewayApisixModel] = []
+
+        for backend_id, stage_backend_config in backend_configs.items():
+            if stage_backend_config.backend_kind == BackendKindEnum.AI.value:
+                services.append(self._build_ai_service(stage_backend_config))
+                continue
+            if stage_backend_config.backend_kind != BackendKindEnum.STANDARD.value:
+                raise ValueError(f"unsupported backend kind: {stage_backend_config.backend_kind}")
+
+            backend_config = stage_backend_config.config
+            timeout = backend_config.get("timeout", 60)
+            loadbalance_type = backend_config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
+            # while the apisix has no wrr, we convert it to roundrobin, the weight would be set below
+            if loadbalance_type == LoadBalanceTypeEnum.WRR.value:
+                loadbalance_type = UpstreamTypeEnum.ROUNDROBIN.value
+
+            upstream = BaseUpstream(
+                type=UpstreamTypeEnum(loadbalance_type),
+                timeout=Timeout(
+                    connect=timeout,
+                    send=timeout,
+                    read=timeout,
+                ),
+            )
+            if loadbalance_type == UpstreamTypeEnum.CHASH.value:
+                upstream.hash_on = UpstreamHashOnEnum(backend_config.get("hash_on", UpstreamHashOnEnum.VARS.value))
+                upstream.key = backend_config.get("key", "")
+
+            hosts = backend_config.get("hosts", [])
+            if not hosts:
+                raise ValueError(f"backend {backend_id} has no hosts")
+
+            # FIXME: check from backend_config and add tls.client_cert_id here, and build the name of ssl
+
+            for node in hosts:
+                host = node["host"]
+                # 如果 default 没有设置 host，则默认使用 your-backend-host 来替代，避免 apisix 加载报错
+                if host == "":
+                    host = DEFAULT_BACKEND_HOST_FOR_MISSING
+                # render the host with stage variables
+                host = URIRender().render(host, self.stage.vars)
+
+                if "scheme" in node:
+                    host = node["scheme"] + "://" + host
+                url_info = UrlInfo(host)
+
+                try:
+                    upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
+                except ValueError:
+                    raise ValueError(
+                        f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
+                    )
+
+                upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
+
+            # Convert checks if present
+            checks_data = backend_config.get("checks")
+            if checks_data:
+                upstream.checks = self._convert_checks(checks_data)
+
+            # FIXME: 如何处理 http/https 协议
+            backend_name = stage_backend_config.backend_name
+
+            # currently, only add one plugin for service of per backend
+            # other plugins are shared by stage, they will be merged on operator
+            plugins: Dict[str, Plugin] = {
+                "bk-backend-context": Plugin(bk_backend_id=backend_id, bk_backend_name=backend_name),
+            }
+            service_plugins = self._build_service_plugins(stage_backend_config.backend_kind)
+            plugins.update(service_plugins)
+
+            # stage_name max length is 20, stage_id 6, backend_id is 4, other 10
+            # total max length is 64, so the buffer is 24 ( stage_id length + backend_id length)
+            labels = self.get_labels()
+
+            # for build the mapping of backend_id to service_id
+            labels.add_label(LABEL_KEY_BACKEND_ID, str(backend_id))
+
+            services.append(
+                Service(
+                    # the previous id is: {gateway_name}.{stage_name}.{stage_id}-{backend_id}
+                    # the stage_id + backend_id is unique, so we can make the prefix smaller enough to keep the id length < 64
+                    # example: bk-apigateway.prod.6-7
+                    # 30 + 1 + 20 + 1 + x + 1 + y = 53 + x + y, so x + y <= 11 (almost no buffer)
+                    # so we truncate the stage_name to 10
+                    # 30 + 1 + 10 + 1 + x + 1 + y = 43 + x + y, so x + y <= 21 (enough buffer)
+                    id=f"{self.gateway_name}.{self.stage_name[:10]}.{self.stage_id}-{backend_id}",
+                    # length is: 30 + 1 + 20 + 1 + 20 = 72
+                    name=truncate_string(
+                        f"{self.gateway_name}.{self.stage_name}.{backend_name}",
+                        100,
+                    ),
+                    # NOTE: no desc for service, save memory
+                    labels=labels,
+                    plugins=plugins,
+                    upstream=upstream,
+                )
+            )
+
+        return services
 
     def _build_ai_service(self, backend_config: StageBackendConfig) -> Service:
         plugins = self._build_service_plugins(backend_config.backend_kind)
@@ -147,15 +244,6 @@ class ServiceConvertor(GatewayResourceConvertor):
             bk_backend_name=backend_config.backend_name,
         )
         plugins["ai-proxy"] = _build_ai_proxy_plugin(backend_config.config)
-        return self._build_service_model(backend_config, plugins=plugins)
-
-    def _build_service_model(
-        self,
-        backend_config: StageBackendConfig,
-        *,
-        plugins: Dict[str, Plugin],
-        upstream: Optional[BaseUpstream] = None,
-    ) -> Service:
         labels = self.get_labels()
         labels.add_label(LABEL_KEY_BACKEND_ID, str(backend_config.backend_id))
 
@@ -167,47 +255,9 @@ class ServiceConvertor(GatewayResourceConvertor):
             ),
             labels=labels,
             plugins=plugins,
-            upstream=upstream,
+            # AI Services are upstream-less; ai-proxy resolves the provider upstream.
+            upstream=None,
         )
-
-    def _build_standard_upstream(self, backend_config: StageBackendConfig) -> BaseUpstream:
-        config = backend_config.config
-        timeout = config.get("timeout", 60)
-        loadbalance_type = config.get("loadbalance", UpstreamTypeEnum.ROUNDROBIN.value)
-        if loadbalance_type == LoadBalanceTypeEnum.WRR.value:
-            loadbalance_type = UpstreamTypeEnum.ROUNDROBIN.value
-
-        upstream = BaseUpstream(
-            type=UpstreamTypeEnum(loadbalance_type),
-            timeout=Timeout(connect=timeout, send=timeout, read=timeout),
-        )
-        if loadbalance_type == UpstreamTypeEnum.CHASH.value:
-            upstream.hash_on = UpstreamHashOnEnum(config.get("hash_on", UpstreamHashOnEnum.VARS.value))
-            upstream.key = config.get("key", "")
-
-        hosts = config.get("hosts", [])
-        if not hosts:
-            raise ValueError(f"backend {backend_config.backend_id} has no hosts")
-
-        for node in hosts:
-            host = node["host"] or DEFAULT_BACKEND_HOST_FOR_MISSING
-            host = URIRender().render(host, self.stage.vars)
-            if "scheme" in node:
-                host = node["scheme"] + "://" + host
-            url_info = UrlInfo(host)
-
-            try:
-                upstream.scheme = UpstreamSchemeEnum(url_info.scheme)
-            except ValueError:
-                raise ValueError(
-                    f"scheme {url_info.scheme!r} of host {node['host']!r} is not a valid UpstreamSchemeEnum"
-                )
-
-            upstream.nodes.append(Node(host=url_info.domain, port=url_info.port, weight=node.get("weight", 1)))
-
-        if checks_data := config.get("checks"):
-            upstream.checks = self._convert_checks(checks_data)
-        return upstream
 
     def _build_service_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         plugins = self._get_common_default_plugins()
@@ -217,6 +267,7 @@ class ServiceConvertor(GatewayResourceConvertor):
         return plugins
 
     def _get_common_default_plugins(self) -> Dict[str, Plugin]:
+        """Get the default plugins shared by all Services in the stage."""
         default_plugins: Dict[str, Plugin] = {
             # 2024-08-19 disable the bk-opentelemetry plugin, we should let each gateway set their own opentelemetry
             # Plugin(name="bk-opentelemetry"),
