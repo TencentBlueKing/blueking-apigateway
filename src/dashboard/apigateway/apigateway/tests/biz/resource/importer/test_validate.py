@@ -29,11 +29,7 @@ from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, Resource
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
 
-AI_ONLY_PLUGIN_CODES = (
-    "ai-rate-limiting",
-    "ai-prompt-guard",
-    "ai-prompt-decorator",
-)
+AI_ONLY_PLUGIN_CODES = ("ai-rate-limiting",)
 
 
 def _plugin_yaml(plugin_type_code):

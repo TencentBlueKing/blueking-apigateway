@@ -34,8 +34,8 @@ from .checker import (
     check_vars,
 )
 from .compatibility import (
+    AI_COMMON_PLUGIN_CODES,
     AI_ONLY_PLUGIN_CODES,
-    AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES,
     is_plugin_compatible_with_resource_kind,
 )
 from .convertor import (
@@ -61,8 +61,8 @@ from .validator import PluginConfigYamlValidator
 
 __all__ = [
     # constant
+    "AI_COMMON_PLUGIN_CODES",
     "AI_ONLY_PLUGIN_CODES",
-    "AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES",
     # Enum
     # class
     "AIProxyConvertor",

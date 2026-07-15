@@ -19,35 +19,35 @@
 
 from __future__ import annotations
 
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.core.constants import ResourceKindEnum
 
-AI_ONLY_PLUGIN_CODES = frozenset(
+AI_COMMON_PLUGIN_CODES = frozenset(
     {
-        "ai-prompt-decorator",
-        "ai-prompt-guard",
-        "ai-rate-limiting",
+        PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value,
+        PluginTypeCodeEnum.BK_CORS.value,
+        PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+        PluginTypeCodeEnum.BK_OAUTH2_AUDIENCE_VALIDATE.value,
+        PluginTypeCodeEnum.BK_OAUTH2_PROTECTED_RESOURCE.value,
+        PluginTypeCodeEnum.BK_OAUTH2_VERIFY.value,
+        PluginTypeCodeEnum.BK_RATE_LIMIT.value,
+        PluginTypeCodeEnum.BK_REQUEST_BODY_LIMIT.value,
+        PluginTypeCodeEnum.BK_USERNAME_REQUIRED.value,
+        PluginTypeCodeEnum.BK_USER_RESTRICTION.value,
+        PluginTypeCodeEnum.REQUEST_VALIDATION.value,
+        PluginTypeCodeEnum.URI_BLOCKER.value,
     }
 )
 
-AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES = frozenset(
+AI_ONLY_PLUGIN_CODES = frozenset(
     {
-        "api-breaker",
-        "bk-header-rewrite",
-        "bk-legacy-invalid-params",
-        "bk-query-string-rewrite",
-        "bk-status-rewrite",
-        "bk-traffic-label",
-        "proxy-cache",
-        "response-rewrite",
+        PluginTypeCodeEnum.AI_RATE_LIMITING.value,
     }
 )
 
 
 def is_plugin_compatible_with_resource_kind(plugin_code: str, resource_kind: str | None) -> bool:
-    if plugin_code in AI_ONLY_PLUGIN_CODES:
-        return resource_kind == ResourceKindEnum.AI.value
-
     if resource_kind == ResourceKindEnum.AI.value:
-        return plugin_code not in AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES
+        return plugin_code in AI_COMMON_PLUGIN_CODES or plugin_code in AI_ONLY_PLUGIN_CODES
 
-    return True
+    return plugin_code not in AI_ONLY_PLUGIN_CODES

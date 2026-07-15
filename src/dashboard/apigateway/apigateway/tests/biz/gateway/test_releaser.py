@@ -21,13 +21,14 @@ import json
 import pytest
 from ddf import G
 
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.release.gateway_releaser import (
     GatewayReleaser,
     ReleaseError,
     ReleaseValidationError,
 )
-from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
+from apigateway.core.constants import GatewayKindEnum, PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -158,3 +159,28 @@ class TestGatewayReleaser:
         assert ReleaseHistory.objects.filter(
             id=fake_release_history.id,
         ).exists()
+
+    @pytest.mark.parametrize(
+        ("gateway_kind", "apisix_version", "will_error"),
+        [
+            (GatewayKindEnum.AI.value, DataPlaneApisixVersionEnum.V3_13.value, True),
+            (GatewayKindEnum.AI.value, DataPlaneApisixVersionEnum.V3_16.value, False),
+            (GatewayKindEnum.PROGRAMMABLE.value, DataPlaneApisixVersionEnum.V3_13.value, False),
+        ],
+    )
+    def test_validate_target_data_plane_versions(
+        self,
+        mocker,
+        gateway_kind,
+        apisix_version,
+        will_error,
+    ):
+        self.gateway.kind = gateway_kind
+        data_plane = G(DataPlane, name="target-plane", apisix_version=apisix_version)
+        mocker.patch("apigateway.biz.release.gateway_releaser.PublishValidator")
+
+        if will_error:
+            with pytest.raises(ReleaseValidationError, match="APISIX 3.16.*target-plane"):
+                self.releaser._validate([data_plane])
+        else:
+            self.releaser._validate([data_plane])

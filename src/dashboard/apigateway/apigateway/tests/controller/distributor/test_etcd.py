@@ -176,6 +176,26 @@ class TestGatewayResourceDistributor:
         assert "distribute gateway resources to etcd failed" in message
         assert "Test error" in message
 
+    def test_distribute_handles_transformer_initialization_failure(self, mocker):
+        mock_release = mocker.Mock()
+        mock_release.gateway = mocker.Mock(name="test-gateway")
+        mock_release.stage = mocker.Mock(name="prod")
+        mocker.patch(
+            "apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer",
+            side_effect=ValueError("Unsupported APISIX version"),
+        )
+        mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
+        mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
+        mock_data_plane = mocker.Mock(apisix_version=APISIX_VERSION_3_13)
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+
+        success, message = distributor.distribute(release_task_id="test-task-id", publish_id=123)
+
+        assert success is False
+        assert "distribute gateway resources to etcd failed" in message
+        assert "Unsupported APISIX version" in message
+
     def test_revoke_with_delete_publish_id(self, mocker):
         """Test revoke method with DELETE_PUBLISH_ID"""
         mock_release = mocker.Mock()
@@ -255,6 +275,27 @@ class TestGatewayResourceDistributor:
         assert success is False
         assert "revoke gateway resources from etcd failed" in message
         assert "Delete error" in message
+
+    def test_revoke_handles_transformer_initialization_failure(self, mocker):
+        mock_release = mocker.Mock()
+        mock_release.gateway = mocker.Mock(name="test-gateway")
+        mock_release.stage = mocker.Mock(name="prod")
+        mocker.patch(
+            "apigateway.controller.distributor.etcd.GatewayApisixResourceTransformer",
+            side_effect=ValueError("Invalid release data"),
+        )
+        mock_registry = mocker.patch("apigateway.controller.distributor.etcd.EtcdRegistry")
+        mocker.patch("apigateway.controller.distributor.etcd.ReleaseProcedureLogger")
+        mock_data_plane = mocker.Mock(apisix_version=APISIX_VERSION_3_13)
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client")
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+
+        success, message = distributor.revoke(release_task_id="test-task-id", publish_id=123)
+
+        assert success is False
+        assert "revoke gateway resources from etcd failed" in message
+        assert "Invalid release data" in message
+        mock_registry.return_value.delete_resources_by_key_prefix.assert_not_called()
 
     def test_distribute_passes_data_plane_apisix_version(self, mocker):
         """distribute should pass the data plane apisix_version into the transformer"""

@@ -22,22 +22,16 @@ from apigateway.service.plugin import AI_ONLY_PLUGIN_CODES, is_plugin_compatible
 
 
 def test_ai_only_plugin_codes():
-    assert {
-        "ai-rate-limiting",
-        "ai-prompt-guard",
-        "ai-prompt-decorator",
-    } == AI_ONLY_PLUGIN_CODES
+    assert {"ai-rate-limiting"} == AI_ONLY_PLUGIN_CODES
 
 
 @pytest.mark.parametrize(
     ("resource_kind", "plugin_type_code", "expected"),
     [
         (ResourceKindEnum.AI.value, "ai-rate-limiting", True),
-        (ResourceKindEnum.AI.value, "ai-prompt-guard", True),
-        (ResourceKindEnum.AI.value, "ai-prompt-decorator", True),
+        (ResourceKindEnum.AI.value, "ai-prompt-guard", False),
+        (ResourceKindEnum.AI.value, "ai-prompt-decorator", False),
         (ResourceKindEnum.STANDARD.value, "ai-rate-limiting", False),
-        (ResourceKindEnum.STANDARD.value, "ai-prompt-guard", False),
-        (ResourceKindEnum.STANDARD.value, "ai-prompt-decorator", False),
         (None, "ai-rate-limiting", False),
         (ResourceKindEnum.AI.value, "bk-cors", True),
         (ResourceKindEnum.AI.value, "bk-header-rewrite", False),
@@ -48,8 +42,13 @@ def test_ai_only_plugin_codes():
         (ResourceKindEnum.AI.value, "response-rewrite", False),
         (ResourceKindEnum.AI.value, "proxy-cache", False),
         (ResourceKindEnum.AI.value, "bk-legacy-invalid-params", False),
+        (ResourceKindEnum.AI.value, "bk-mock", False),
+        (ResourceKindEnum.AI.value, "redirect", False),
+        (ResourceKindEnum.AI.value, "fault-injection", False),
+        (ResourceKindEnum.AI.value, "unlisted-plugin", False),
         (ResourceKindEnum.STANDARD.value, "bk-cors", True),
         (ResourceKindEnum.STANDARD.value, "bk-header-rewrite", True),
+        (ResourceKindEnum.STANDARD.value, "unlisted-plugin", True),
         (None, "bk-cors", True),
         (None, "bk-header-rewrite", True),
     ],

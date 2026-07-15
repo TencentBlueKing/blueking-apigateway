@@ -168,6 +168,11 @@ class TestGatewayApisixResourceConvertor:
         with pytest.raises(ValueError, match="APISIX 3.16"):
             GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
 
+    def test_ai_gateway_revoke_accepts_3_13(self, mock_release):
+        mock_release.gateway.is_ai_gateway = True
+
+        GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13, revoke_flag=True)
+
     def test_transform_ai_gateway_resources(self, mock_release, mocker):
         mock_release.gateway.is_ai_gateway = True
 

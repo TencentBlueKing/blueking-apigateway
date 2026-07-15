@@ -249,6 +249,47 @@ def test_ai_backend_config_validates_provider_contract(ai_backend_config, provid
         AIBackendConfig.model_validate(ai_backend_config)
 
 
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "https://example.com/v1",
+        "http://example.com:8080/v1",
+    ],
+)
+def test_ai_backend_config_accepts_valid_override_endpoint(ai_backend_config, endpoint):
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": endpoint}
+
+    config = AIBackendConfig.model_validate(ai_backend_config)
+
+    assert config.instances[0]["override"]["endpoint"] == endpoint
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "error"),
+    [
+        ("localhost", "scheme must be http or https"),
+        ("ftp://example.com/v1", "scheme must be http or https"),
+        ("https:///v1", "hostname is required"),
+        ("https://user:password@example.com/v1", "userinfo is not allowed"),
+        ("https://example.com:not-a-port/v1", "port is invalid"),
+        ("https://localhost/v1", "host is forbidden"),
+        ("https://127.0.0.1:8080/v1", "host is forbidden"),
+        ("https://example.com:22/v1", "port is forbidden"),
+    ],
+)
+def test_ai_backend_config_rejects_invalid_override_endpoint(ai_backend_config, settings, endpoint, error):
+    settings.FORBIDDEN_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+    settings.FORBIDDEN_PORTS = [22]
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": endpoint}
+
+    with pytest.raises(ValueError, match=error):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
 def test_model_rejects_plaintext_in_private_storage(fake_stage, ai_backend, ai_backend_config):
     backend_config = BackendConfig.objects.create(
         gateway=fake_stage.gateway,

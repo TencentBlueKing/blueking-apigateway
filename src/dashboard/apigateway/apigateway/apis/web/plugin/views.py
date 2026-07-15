@@ -42,10 +42,10 @@ from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
-from apigateway.core.models import Resource, Stage
+from apigateway.core.models import BackendConfig, Resource, Stage
 from apigateway.service.plugin import (
+    AI_COMMON_PLUGIN_CODES,
     AI_ONLY_PLUGIN_CODES,
-    AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES,
     is_plugin_compatible_with_resource_kind,
 )
 from apigateway.utils.django import get_model_dict
@@ -65,6 +65,17 @@ from .serializers import (
 
 class PluginPagination(StandardLimitOffsetPagination):
     default_limit = 100
+
+
+def _get_binding_resource_kinds(gateway, scope_type: str, scope_id: int) -> set[str]:
+    if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+        resource_kind = Resource.objects.filter(gateway=gateway, id=scope_id).values_list("kind", flat=True).first()
+        return {resource_kind or ResourceKindEnum.STANDARD.value}
+
+    resource_kinds = set(
+        BackendConfig.objects.filter(gateway=gateway, stage_id=scope_id).values_list("backend__kind", flat=True)
+    )
+    return resource_kinds or {ResourceKindEnum.STANDARD.value}
 
 
 @method_decorator(
@@ -129,15 +140,12 @@ class PluginTypeListApi(generics.ListAPIView):
         queryset = PluginType.objects.filter(is_public=True).filter(
             Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
         )
-        resource_kind = None
-        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            resource_kind = (
-                Resource.objects.filter(gateway=self.request.gateway, id=data["scope_id"])
-                .values_list("kind", flat=True)
-                .first()
-            )
-        if resource_kind == ResourceKindEnum.AI.value:
-            queryset = queryset.exclude(code__in=AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES)
+        resource_kinds = _get_binding_resource_kinds(self.request.gateway, scope_type, data["scope_id"])
+        if ResourceKindEnum.AI.value in resource_kinds:
+            compatible_plugin_codes = AI_COMMON_PLUGIN_CODES
+            if resource_kinds == {ResourceKindEnum.AI.value}:
+                compatible_plugin_codes |= AI_ONLY_PLUGIN_CODES
+            queryset = queryset.filter(code__in=compatible_plugin_codes)
         else:
             queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES)
 
@@ -205,11 +213,11 @@ class PluginTypeCodeValidationMixin:
         scope_id = self.kwargs["scope_id"]
         plugin_type_code = self.kwargs["code"]
 
-        resource_kind = None
-        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
-
-        if not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind):
+        resource_kinds = _get_binding_resource_kinds(self.request.gateway, scope_type, scope_id)
+        if any(
+            not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind)
+            for resource_kind in resource_kinds
+        ):
             raise error_codes.INVALID_ARGUMENT.format(
                 _("插件 {plugin_type_code} 与当前资源类型不兼容。").format(plugin_type_code=plugin_type_code)
             )

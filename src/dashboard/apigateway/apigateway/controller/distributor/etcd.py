@@ -133,11 +133,6 @@ class GatewayResourceDistributor(BaseDistributor):
         publish_id: int,
     ) -> Tuple[bool, str]:
         """将 release 发布到 micro-gateway 对应的 registry 中"""
-        transformer = GatewayApisixResourceTransformer(
-            self.release,
-            self.data_plane.apisix_version,
-            publish_id=publish_id,
-        )
         registry = self._get_registry(self.gateway, self.stage)
 
         procedure_logger = ReleaseProcedureLogger(
@@ -152,6 +147,11 @@ class GatewayResourceDistributor(BaseDistributor):
         try:
             # step 1: 将网关资源转换为 apisix 资源
             with procedure_logger.step("convert to gateway apisix resources"):
+                transformer = GatewayApisixResourceTransformer(
+                    self.release,
+                    self.data_plane.apisix_version,
+                    publish_id=publish_id,
+                )
                 transformer.transform()
 
             resources = list(transformer.get_transformed_resources())
@@ -215,14 +215,13 @@ class GatewayResourceDistributor(BaseDistributor):
         #         return False, fail_msg
         #     return True, "ok"
 
-        transformer = GatewayApisixResourceTransformer(
-            self.release,
-            self.data_plane.apisix_version,
-            publish_id=publish_id,
-            revoke_flag=True,
-        )
-
         try:
+            transformer = GatewayApisixResourceTransformer(
+                self.release,
+                self.data_plane.apisix_version,
+                publish_id=publish_id,
+                revoke_flag=True,
+            )
             with procedure_logger.step(f"delete gateway resources from etcd by key_prefix({registry.key_prefix})"):
                 registry.delete_resources_by_key_prefix()
 

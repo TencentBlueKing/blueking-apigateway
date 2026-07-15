@@ -25,11 +25,7 @@ from apigateway.core.constants import BackendKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.yaml import yaml_dumps
 
-AI_ONLY_PLUGIN_CODES = (
-    "ai-rate-limiting",
-    "ai-prompt-guard",
-    "ai-prompt-decorator",
-)
+AI_ONLY_PLUGIN_CODES = ("ai-rate-limiting",)
 
 AI_INCOMPATIBLE_PLUGIN_CODES = (
     "bk-header-rewrite",
@@ -40,15 +36,18 @@ AI_INCOMPATIBLE_PLUGIN_CODES = (
     "response-rewrite",
     "proxy-cache",
     "bk-legacy-invalid-params",
+    "bk-mock",
+    "redirect",
+    "fault-injection",
 )
 
 
-def _create_ai_only_plugin_type(plugin_type_code):
+def _create_ai_only_plugin_type(plugin_type_code, scope=PluginTypeScopeEnum.RESOURCE.value):
     return G(
         PluginType,
         code=plugin_type_code,
         is_public=True,
-        scope=PluginTypeScopeEnum.RESOURCE.value,
+        scope=scope,
     )
 
 
@@ -159,6 +158,69 @@ class TestPluginTypeListApi:
         codes = {item["code"] for item in response.json()["data"]["results"]}
         assert plugin_type_code not in codes
 
+    @pytest.mark.parametrize(
+        ("backend_kinds", "is_listed"),
+        [
+            ([BackendKindEnum.AI.value], True),
+            ([BackendKindEnum.STANDARD.value], False),
+            ([BackendKindEnum.STANDARD.value, BackendKindEnum.AI.value], False),
+        ],
+    )
+    def test_list_ai_only_plugin_by_stage_backend_kinds(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        backend_kinds,
+        is_listed,
+    ):
+        plugin_type = _create_ai_only_plugin_type(
+            PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+            scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+        )
+        for backend_kind in backend_kinds:
+            backend = G(Backend, gateway=fake_gateway, kind=backend_kind)
+            G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
+
+        response = request_view(
+            "GET",
+            "plugins.types",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"scope_type": "stage", "scope_id": fake_stage.id},
+        )
+
+        assert response.status_code == 200
+        codes = {item["code"] for item in response.json()["data"]["results"]}
+        assert (plugin_type.code in codes) is is_listed
+
+    def test_list_excludes_unlisted_plugin_for_ai_resource(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+    ):
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.save(update_fields=["kind"])
+        plugin_type = G(
+            PluginType,
+            code="unlisted-plugin",
+            is_public=True,
+            scope=PluginTypeScopeEnum.RESOURCE.value,
+        )
+
+        response = request_view(
+            "GET",
+            "plugins.types",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"scope_type": "resource", "scope_id": fake_resource.id},
+        )
+
+        assert response.status_code == 200
+        codes = {item["code"] for item in response.json()["data"]["results"]}
+        assert plugin_type.code not in codes
+
 
 class TestScopePluginConfigListApi:
     def test_list(
@@ -261,17 +323,30 @@ class TestPluginConfigCreateApi:
             scope_id=fake_resource.id,
         ).exists()
 
-    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
-    def test_create_rejects_ai_only_plugin_for_stage(
+    @pytest.mark.parametrize(
+        ("backend_kinds", "status_code"),
+        [
+            ([BackendKindEnum.AI.value], 201),
+            ([BackendKindEnum.STANDARD.value], 400),
+            ([BackendKindEnum.STANDARD.value, BackendKindEnum.AI.value], 400),
+        ],
+    )
+    def test_create_ai_only_plugin_by_stage_backend_kinds(
         self,
         request_view,
         fake_gateway,
         fake_stage,
-        plugin_type_code,
+        backend_kinds,
+        status_code,
     ):
-        plugin_type = _create_ai_only_plugin_type(plugin_type_code)
-        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
-        G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
+        plugin_type_code = PluginTypeCodeEnum.AI_RATE_LIMITING.value
+        plugin_type = _create_ai_only_plugin_type(
+            plugin_type_code,
+            scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+        )
+        for backend_kind in backend_kinds:
+            backend = G(Backend, gateway=fake_gateway, kind=backend_kind)
+            G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
 
         response = request_view(
             "POST",
@@ -291,12 +366,58 @@ class TestPluginConfigCreateApi:
             },
         )
 
-        assert response.status_code == 400
-        assert not PluginBinding.objects.filter(
+        assert response.status_code == status_code
+        assert PluginBinding.objects.filter(
             gateway=fake_gateway,
             scope_type="stage",
             scope_id=fake_stage.id,
-        ).exists()
+        ).exists() is (status_code == 201)
+
+    @pytest.mark.parametrize(
+        ("backend_kinds", "status_code"),
+        [
+            ([BackendKindEnum.STANDARD.value], 201),
+            ([BackendKindEnum.AI.value], 400),
+            ([BackendKindEnum.STANDARD.value, BackendKindEnum.AI.value], 400),
+        ],
+    )
+    def test_create_standard_only_plugin_by_stage_backend_kinds(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_plugin_type_bk_header_rewrite,
+        backend_kinds,
+        status_code,
+    ):
+        for backend_kind in backend_kinds:
+            backend = G(Backend, gateway=fake_gateway, kind=backend_kind)
+            G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
+
+        response = request_view(
+            "POST",
+            "plugins.config.create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "stage",
+                "scope_id": fake_stage.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == status_code
+        assert PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="stage",
+            scope_id=fake_stage.id,
+        ).exists() is (status_code == 201)
 
     @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize(

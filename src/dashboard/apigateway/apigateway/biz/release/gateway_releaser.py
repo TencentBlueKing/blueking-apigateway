@@ -22,9 +22,11 @@ from typing import List
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 from django.conf import settings
+from django.utils.translation import gettext as _
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
@@ -109,7 +111,7 @@ class GatewayReleaser:
         if not data_planes:
             raise ReleaseError("Gateway must be bound to at least one active data plane")
 
-        self._pre_release()
+        self._pre_release(data_planes)
 
         # 如果是编程网关，查询一下 deploy 部署历史
         deploy_history = None
@@ -162,16 +164,15 @@ class GatewayReleaser:
             raise ReleaseError("Failed to create release history for any data plane")
         return first_history
 
-    def _pre_release(self):
+    def _pre_release(self, data_planes: List[DataPlane]):
         # 环境、部署信息校验
         # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
         # 因此，将普通参数校验，环境参数校验分开处理
         try:
-            self._validate()
+            self._validate(data_planes)
         except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
             # Get the first active data_plane for error recording
-            data_planes = self._get_active_data_planes()
             if data_planes:
                 history = self._save_release_history(data_plane=data_planes[0])
                 PublishEventReporter.report_config_validate_failure(history, message)
@@ -184,10 +185,25 @@ class GatewayReleaser:
                 )
             raise ReleaseError(message) from err
 
-    def _validate(self):
+    def _validate(self, data_planes: List[DataPlane]):
         """校验待发布数据"""
         publish_validator = PublishValidator(self.gateway, self.stage, self.resource_version)
         publish_validator()
+
+        if not self.gateway.is_ai_gateway:
+            return
+
+        incompatible_data_planes = sorted(
+            data_plane.name
+            for data_plane in data_planes
+            if data_plane.apisix_version != DataPlaneApisixVersionEnum.V3_16.value
+        )
+        if incompatible_data_planes:
+            raise ReleaseValidationError(
+                _("模型网关仅支持发布到 APISIX 3.16 数据面，不兼容的数据面：{data_planes}").format(
+                    data_planes=", ".join(incompatible_data_planes)
+                )
+            )
 
     def _do_release(
         self,
