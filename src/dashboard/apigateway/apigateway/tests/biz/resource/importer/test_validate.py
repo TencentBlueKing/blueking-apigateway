@@ -82,7 +82,7 @@ class TestResourceImportValidator:
 
         assert not errors
 
-    def test_validate_ai_resource_accepts_regular_plugin(
+    def test_validate_ai_resource_rejects_incompatible_plugin(
         self,
         fake_gateway,
         fake_plugin_type_bk_header_rewrite,
@@ -108,7 +108,7 @@ class TestResourceImportValidator:
 
         errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
 
-        assert not any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+        assert any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
 
     @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize(

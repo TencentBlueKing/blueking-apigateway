@@ -29,9 +29,25 @@ AI_ONLY_PLUGIN_CODES = frozenset(
     }
 )
 
+AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES = frozenset(
+    {
+        "api-breaker",
+        "bk-header-rewrite",
+        "bk-legacy-invalid-params",
+        "bk-query-string-rewrite",
+        "bk-status-rewrite",
+        "bk-traffic-label",
+        "proxy-cache",
+        "response-rewrite",
+    }
+)
+
 
 def is_plugin_compatible_with_resource_kind(plugin_code: str, resource_kind: str | None) -> bool:
     if plugin_code in AI_ONLY_PLUGIN_CODES:
         return resource_kind == ResourceKindEnum.AI.value
+
+    if resource_kind == ResourceKindEnum.AI.value:
+        return plugin_code not in AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES
 
     return True

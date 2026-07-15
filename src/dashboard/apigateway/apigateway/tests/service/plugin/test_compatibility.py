@@ -40,8 +40,18 @@ def test_ai_only_plugin_codes():
         (ResourceKindEnum.STANDARD.value, "ai-prompt-decorator", False),
         (None, "ai-rate-limiting", False),
         (ResourceKindEnum.AI.value, "bk-cors", True),
+        (ResourceKindEnum.AI.value, "bk-header-rewrite", False),
+        (ResourceKindEnum.AI.value, "bk-query-string-rewrite", False),
+        (ResourceKindEnum.AI.value, "bk-status-rewrite", False),
+        (ResourceKindEnum.AI.value, "bk-traffic-label", False),
+        (ResourceKindEnum.AI.value, "api-breaker", False),
+        (ResourceKindEnum.AI.value, "response-rewrite", False),
+        (ResourceKindEnum.AI.value, "proxy-cache", False),
+        (ResourceKindEnum.AI.value, "bk-legacy-invalid-params", False),
         (ResourceKindEnum.STANDARD.value, "bk-cors", True),
+        (ResourceKindEnum.STANDARD.value, "bk-header-rewrite", True),
         (None, "bk-cors", True),
+        (None, "bk-header-rewrite", True),
     ],
 )
 def test_is_plugin_compatible_with_resource_kind(resource_kind, plugin_type_code, expected):

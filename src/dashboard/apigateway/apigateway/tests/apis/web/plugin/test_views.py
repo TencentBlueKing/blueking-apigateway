@@ -31,6 +31,17 @@ AI_ONLY_PLUGIN_CODES = (
     "ai-prompt-decorator",
 )
 
+AI_INCOMPATIBLE_PLUGIN_CODES = (
+    "bk-header-rewrite",
+    "bk-query-string-rewrite",
+    "bk-status-rewrite",
+    "bk-traffic-label",
+    "api-breaker",
+    "response-rewrite",
+    "proxy-cache",
+    "bk-legacy-invalid-params",
+)
+
 
 def _create_ai_only_plugin_type(plugin_type_code):
     return G(
@@ -118,6 +129,36 @@ class TestPluginTypeListApi:
         codes = {item["code"] for item in response.json()["data"]["results"]}
         assert (plugin_type_code in codes) is (resource_kind == ResourceKindEnum.AI.value)
 
+    @pytest.mark.parametrize("plugin_type_code", AI_INCOMPATIBLE_PLUGIN_CODES)
+    def test_list_excludes_incompatible_plugin_for_ai_resource(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        plugin_type_code,
+    ):
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.save(update_fields=["kind"])
+        PluginType.objects.update_or_create(
+            code=plugin_type_code,
+            defaults={"is_public": True, "scope": PluginTypeScopeEnum.RESOURCE.value},
+        )
+
+        response = request_view(
+            "GET",
+            "plugins.types",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+            },
+        )
+
+        assert response.status_code == 200
+        codes = {item["code"] for item in response.json()["data"]["results"]}
+        assert plugin_type_code not in codes
+
 
 class TestScopePluginConfigListApi:
     def test_list(
@@ -185,7 +226,7 @@ class TestPluginConfigCreateApi:
         )
         assert response.status_code == status_code
 
-    def test_create_allows_regular_plugin_for_ai_resource(
+    def test_create_rejects_incompatible_plugin_for_ai_resource(
         self,
         request_view,
         fake_gateway,
@@ -213,8 +254,8 @@ class TestPluginConfigCreateApi:
             },
         )
 
-        assert response.status_code == 201
-        assert PluginBinding.objects.filter(
+        assert response.status_code == 400
+        assert not PluginBinding.objects.filter(
             gateway=fake_gateway,
             scope_type="resource",
             scope_id=fake_resource.id,
@@ -375,6 +416,39 @@ class TestPluginConfigRetrieveUpdateDestroyApi:
             plugin = result["data"]
             assert plugin["id"] == fake_plugin_bk_header_rewrite.pk
             assert binding.source == "user_update"
+
+    def test_update_rejects_incompatible_plugin_for_ai_resource(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        fake_plugin_bk_header_rewrite,
+        fake_plugin_type_bk_header_rewrite,
+        fake_plugin_resource_bk_header_rewrite_binding,
+    ):
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.save(update_fields=["kind"])
+
+        response = request_view(
+            "PUT",
+            "plugins.config.details",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+                "id": fake_plugin_bk_header_rewrite.id,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == 400
 
     def test_delete(
         self, request_view, fake_gateway, fake_stage, echo_plugin, echo_plugin_type, echo_plugin_stage_binding
