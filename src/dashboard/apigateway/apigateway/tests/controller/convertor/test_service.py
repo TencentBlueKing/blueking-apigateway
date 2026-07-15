@@ -481,20 +481,20 @@ class TestServiceConvertor:
         log_format = service.plugins["file-logger"].log_format
         assert {
             "request_type": log_format["request_type"],
-            "model": log_format["model"],
-            "request_model": log_format["request_model"],
-            "first_token_duration": log_format["first_token_duration"],
+            "llm_model": log_format["llm_model"],
+            "request_llm_model": log_format["request_llm_model"],
+            "llm_time_to_first_token": log_format["llm_time_to_first_token"],
             "response_time": log_format["response_time"],
-            "prompt_tokens": log_format["prompt_tokens"],
-            "completion_tokens": log_format["completion_tokens"],
+            "llm_prompt_tokens": log_format["llm_prompt_tokens"],
+            "llm_completion_tokens": log_format["llm_completion_tokens"],
         } == {
             "request_type": "$request_type",
-            "model": "$llm_model",
-            "request_model": "$request_llm_model",
-            "first_token_duration": "$llm_time_to_first_token",
+            "llm_model": "$llm_model",
+            "request_llm_model": "$request_llm_model",
+            "llm_time_to_first_token": "$llm_time_to_first_token",
             "response_time": "$apisix_upstream_response_time",
-            "prompt_tokens": "$llm_prompt_tokens",
-            "completion_tokens": "$llm_completion_tokens",
+            "llm_prompt_tokens": "$llm_prompt_tokens",
+            "llm_completion_tokens": "$llm_completion_tokens",
         }
 
     def test_convert_with_multiple_backends(self, mock_release_data):
