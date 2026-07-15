@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -22,6 +23,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
+from apigateway.apis.backend_config import restore_masked_header_values, validate_ai_backend_config
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import (
@@ -33,13 +35,14 @@ from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
 from apigateway.core.constants import (
     STAGE_NAME_PATTERN,
     PublishEventStatusEnum,
     ReleaseStatusEnum,
     StageStatusEnum,
 )
-from apigateway.core.models import Backend, Stage
+from apigateway.core.models import Backend, BackendConfig, Stage
 from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.version import is_version1_greater_than_version2
 
@@ -160,9 +163,14 @@ class StageOutputSLZ(serializers.ModelSerializer):
         return ""
 
 
+class AIBackendConfigSLZ(serializers.Serializer):
+    def to_internal_value(self, data):
+        return validate_ai_backend_config(data)
+
+
 class BackendSLZ(serializers.Serializer):
     id = serializers.IntegerField()
-    config = BaseBackendConfigSLZ(help_text="配置")
+    config = serializers.DictField(help_text="配置")
 
     class Meta:
         ref_name = "apigateway.apis.web.stage.serializers.BackendSLZ"
@@ -213,8 +221,29 @@ class StageInputSLZ(serializers.Serializer):
                     _("请求参数中，缺少后端服务【{backend_id}】的配置。").format(backend_name=backend.name)
                 )
 
+        existing_configs = {}
+        if self.instance:
+            existing_configs = {
+                backend_config.backend_id: backend_config.config
+                for backend_config in BackendConfig.objects.filter(stage=self.instance).select_related("backend")
+            }
+
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
+            config_slz_class = AIBackendConfigSLZ if backend.is_ai else BaseBackendConfigSLZ
+            config_slz = config_slz_class(data=input_backend["config"])
+            config_slz.is_valid(raise_exception=True)
+            input_backend["config"] = config_slz.validated_data
+            if backend.is_ai:
+                restore_masked_header_values(input_backend["config"], existing_configs.get(backend.id))
+
+            try:
+                BACKEND_CONFIG_TYPES[backend.kind].model_validate(input_backend["config"])
+            except ValueError as err:
+                raise serializers.ValidationError({"backends": str(err)}) from err
+
+            if backend.is_ai:
+                continue
             # 校验backend下的host下的类型的唯一性
             validator = SchemeHostInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
             validator.validate_scheme(CallSourceTypeEnum.Web.value)
@@ -250,6 +279,7 @@ class StageVarsSLZ(serializers.Serializer):
 class StageBackendOutputSLZ(serializers.Serializer):
     id = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField(help_text="名称")
+    kind = serializers.SerializerMethodField(help_text="类型")
     config = serializers.SerializerMethodField(help_text="配置")
 
     class Meta:
@@ -261,14 +291,14 @@ class StageBackendOutputSLZ(serializers.Serializer):
     def get_name(self, obj):
         return obj.backend.name
 
+    def get_kind(self, obj):
+        return obj.backend.kind
+
     def get_config(self, obj):
-        return obj.config
+        return obj.get_config_for_display()
 
 
-class BackendConfigInputSLZ(BaseBackendConfigSLZ):
-    class Meta:
-        ref_name = "apigateway.apis.web.stage.serializers.BackendConfigInputSLZ"
-
+class StandardBackendConfigInputSLZ(BaseBackendConfigSLZ):
     def validate(self, attrs):
         backend = self.context["backend"]
 
@@ -276,6 +306,25 @@ class BackendConfigInputSLZ(BaseBackendConfigSLZ):
             check_backend_host_scheme(backend, host)
 
         return attrs
+
+
+class BackendConfigInputSLZ(serializers.Serializer):
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.BackendConfigInputSLZ"
+
+    def to_internal_value(self, data):
+        backend = self.context["backend"]
+        config_slz_class = AIBackendConfigSLZ if backend.is_ai else StandardBackendConfigInputSLZ
+        config_slz = config_slz_class(data=data, context=self.context)
+        config_slz.is_valid(raise_exception=True)
+
+        try:
+            config_data = config_slz.validated_data
+            if backend.is_ai:
+                restore_masked_header_values(config_data, self.context.get("existing_config"))
+            return BACKEND_CONFIG_TYPES[backend.kind].model_validate(config_data).to_config()
+        except ValueError as err:
+            raise serializers.ValidationError({"config": str(err)}) from err
 
 
 class StagePartialInputSLZ(serializers.Serializer):

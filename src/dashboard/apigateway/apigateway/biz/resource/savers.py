@@ -25,7 +25,7 @@ from pydantic import TypeAdapter
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.common.factories import SchemaFactory
-from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import ContextScopeTypeEnum, ContextTypeEnum, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Context, Gateway, Proxy, Resource
 from apigateway.utils.time import now_datetime
 
@@ -77,6 +77,8 @@ class ResourcesSaver:
         for resource_data in self.resource_data_list:
             if resource_data.resource:
                 resource = resource_data.resource
+                if resource.kind != resource_data.kind:
+                    raise ValueError(_("Resource.kind 创建后不能修改。"))
                 resource.updated_by = self.username
                 resource.updated_time = now
                 for key, value in resource_data.basic_data.items():
@@ -146,13 +148,18 @@ class ResourcesSaver:
         now = now_datetime()
         for resource_data in self.resource_data_list:
             assert resource_data.resource
+            if resource_data.kind == ResourceKindEnum.AI.value:
+                proxy_config = "{}"
+            else:
+                assert resource_data.backend_config
+                proxy_config = resource_data.backend_config.model_dump_json()
 
             proxy = proxies.get(resource_data.resource.id)
             if proxy:
                 proxy.type = ProxyTypeEnum.HTTP.value
                 proxy.backend = resource_data.backend
                 proxy.schema = schema
-                proxy._config = resource_data.backend_config.json()
+                proxy._config = proxy_config
                 proxy.updated_time = now
 
                 update_proxies.append(proxy)
@@ -163,7 +170,7 @@ class ResourcesSaver:
                     backend=resource_data.backend,
                     # TODO: 1.13 后续 issue 统一去除 schema
                     schema=schema,
-                    _config=resource_data.backend_config.json(),
+                    _config=proxy_config,
                 )
                 add_proxies.append(proxy)
 

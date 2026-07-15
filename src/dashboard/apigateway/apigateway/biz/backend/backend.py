@@ -21,7 +21,14 @@ from typing import Any, Dict, List, Tuple
 from django.db import transaction
 
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, GatewayStatusEnum, PublishSourceEnum, StageStatusEnum
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
+from apigateway.core.constants import (
+    DEFAULT_BACKEND_NAME,
+    BackendKindEnum,
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    StageStatusEnum,
+)
 from apigateway.core.models import Backend, BackendConfig, Proxy, Release, Stage
 from apigateway.utils.time import now_datetime
 
@@ -35,6 +42,7 @@ class BackendHandler:
         """创建后端服务"""
         backend = Backend(
             gateway=data["gateway"],
+            kind=data.get("kind", BackendKindEnum.STANDARD.value),
             type=data["type"],
             name=data["name"],
             description=data["description"],
@@ -44,12 +52,14 @@ class BackendHandler:
         backend.save()
 
         backend_configs = []
+        config_type = BACKEND_CONFIG_TYPES[backend.kind]
         for config in data["configs"]:
+            raw_config = {key: value for key, value in config.items() if key != "stage_id"}
             backend_config = BackendConfig(
                 gateway=data["gateway"],
-                backend_id=backend.id,
+                backend=backend,
                 stage_id=config["stage_id"],
-                config={key: value for key, value in config.items() if key != "stage_id"},
+                config=config_type.model_validate(raw_config).to_config(),
                 created_by=created_by,
                 updated_by=created_by,
             )
@@ -70,26 +80,29 @@ class BackendHandler:
         backend.description = data["description"]
         backend.updated_by = updated_by
         backend.save()
-        backend_configs = BackendConfig.objects.filter(backend_id=backend.id)
+        backend_configs = BackendConfig.objects.filter(backend_id=backend.id).select_related("backend")
         stage_configs = {config.stage_id: config for config in backend_configs}
 
         backend_configs = []
         now = now_datetime()
         resource_count = Proxy.objects.filter(backend_id=backend.id).count()
+        config_type = BACKEND_CONFIG_TYPES[backend.kind]
 
         for config in data["configs"]:
             backend_config = stage_configs[config["stage_id"]]
             new_config = {key: value for key, value in config.items() if key != "stage_id"}
-            if new_config == backend_config.config:
+            existing_config = backend_config.config
+            config_model = config_type.model_validate(new_config)
+            if config_model.to_config() == existing_config:
                 continue
             if resource_count:
                 updated_stage_ids.append(config["stage_id"])
-            backend_config.config = new_config
+            backend_config.config = config_model.to_config()
             backend_config.updated_by = updated_by
             backend_config.updated_time = now
             backend_configs.append(backend_config)
 
-        BackendConfig.objects.bulk_update(backend_configs, fields=["config", "updated_by", "updated_time"])
+        BackendConfig.objects.bulk_update(backend_configs, fields=["_config", "updated_by", "updated_time"])
 
         # 触发变更的stage的发布流程（网关启用+环境发布时才可触发）
         active_stage_ids = Stage.objects.filter(

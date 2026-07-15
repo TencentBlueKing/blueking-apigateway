@@ -16,11 +16,28 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
 from django.test import TestCase
 
-from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.biz.audit import Auditor
+
+
+def _display_ai_config():
+    return {
+        "timeout": 30000,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai",
+                "weight": 1,
+                "auth": {"header": {"Authorization": "Be****et"}},
+                "options": {"model": "gpt-4o"},
+            }
+        ],
+    }
 
 
 class TestRecordAuditLog(TestCase):
@@ -42,3 +59,23 @@ class TestRecordAuditLog(TestCase):
             logs = AuditEventLog.objects.filter(op_object_id="123")
             self.assertTrue(logs.exists())
             self.assertEqual(logs.count(), 1)
+
+    def test_record_stage_backend_op_records_display_data(self):
+        display_config = _display_ai_config()
+
+        Auditor.record_stage_backend_op_success(
+            op_type=OpTypeEnum.MODIFY,
+            username="admin",
+            gateway_id=1,
+            instance_id=123,
+            instance_name="prod:openai-primary",
+            data_before={"id": 123, "config": display_config},
+            data_after={"id": 123, "config": display_config},
+        )
+
+        log = AuditEventLog.objects.get(
+            op_object_type=OpObjectTypeEnum.STAGE_BACKEND.value,
+            op_object_id="123",
+        )
+        assert json.loads(log.data_before)["config"]["instances"][0]["auth"]["header"]["Authorization"] == ("Be****et")
+        assert json.loads(log.data_after)["config"]["instances"][0]["auth"]["header"]["Authorization"] == ("Be****et")

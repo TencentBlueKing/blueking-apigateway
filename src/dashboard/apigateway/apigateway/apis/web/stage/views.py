@@ -51,6 +51,13 @@ from .serializers import (
 )
 
 
+def _get_backend_config_dict(instance: BackendConfig) -> dict:
+    data = get_model_dict(instance)
+    data.pop("_config")
+    data["config"] = instance.get_config_for_display()
+    return data
+
+
 class StageQuerySetMixin:
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -367,9 +374,12 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
 
     def update(self, request, *args, **kwargs):
         instance = get_object_or_404(self.get_queryset(), backend_id=self.kwargs["backend_id"])
-        data_before = get_model_dict(instance)
+        data_before = _get_backend_config_dict(instance)
 
-        slz = self.get_serializer(data=request.data, context={"backend": instance.backend})
+        slz = self.get_serializer(
+            data=request.data,
+            context={"backend": instance.backend, "existing_config": instance.config},
+        )
         slz.is_valid(raise_exception=True)
 
         data = slz.validated_data
@@ -383,7 +393,7 @@ class StageBackendRetrieveUpdateApi(BackendConfigQuerySetMixin, generics.Retriev
             instance_id=instance.id,
             instance_name=f"{instance.stage.name}:{instance.backend.name}",
             data_before=data_before,
-            data_after=get_model_dict(instance),
+            data_after=_get_backend_config_dict(instance),
         )
 
         username = request.user.username

@@ -18,7 +18,53 @@
 #
 import pytest
 
-from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncInputSLZ
+from apigateway.apis.v2.sync.serializers import (
+    AIBackendConfigSLZ,
+    AIBackendSLZ,
+    GatewaySyncInputSLZ,
+    SDKGenerateInputSLZ,
+    StageSyncInputSLZ,
+)
+from apigateway.core.constants import GatewayKindEnum
+
+
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
+def test_ai_backend_ignores_unknown_outer_field():
+    slz = AIBackendSLZ(
+        data={
+            "name": "openai-primary",
+            "config": {
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ]
+            },
+            "unknown": True,
+        }
+    )
+
+    slz.is_valid(raise_exception=True)
+
+    assert "unknown" not in slz.validated_data
+
+
+def test_gateway_sync_input_maps_ai_kind():
+    slz = GatewaySyncInputSLZ(data={"name": "ai-gateway", "kind": "ai"})
+
+    slz.is_valid(raise_exception=True)
+
+    assert slz.validated_data["kind"] == GatewayKindEnum.AI.value
 
 
 class TestSDKGenerateInputSLZ:

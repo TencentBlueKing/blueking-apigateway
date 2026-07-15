@@ -2,7 +2,6 @@
 
 同步资源
 
-
 ### 输入参数
 
 #### 路径参数
@@ -18,6 +17,7 @@
 | content  | string  | 是   | 网关资源 swagger 描述，可为 yaml 格式文本，具体参考网关资源导出的资源配置                           |
 | delete   | boolean | 否   | 是否删除未指定的资源，如果为 true，则删除网关中未在 content 中指定的资源，以确保网关中资源和 content 中描述的资源一致 |
 | doc_language   | string  | 否   | 生成接口文档的语言：en: 英文，zh: 中文，不传不生成                                          |
+
 
 ### 请求参数示例
 

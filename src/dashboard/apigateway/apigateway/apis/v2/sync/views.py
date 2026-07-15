@@ -180,6 +180,7 @@ class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
 class GatewayStageSyncViewSet(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}

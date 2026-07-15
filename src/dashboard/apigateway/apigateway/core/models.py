@@ -18,6 +18,7 @@
 #
 import json
 import logging
+from copy import deepcopy
 from datetime import datetime
 from typing import ClassVar, Dict, List
 
@@ -29,6 +30,7 @@ from apigateway.common.i18n.field import I18nProperty
 from apigateway.common.mixins.models import ConfigModelMixin, OperatorModelMixin, TimestampedModelMixin
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core import managers
+from apigateway.core.backend_config import mask_header_value
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
     EVENT_FAIL_INTERVAL_TIME,
@@ -52,6 +54,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.utils import get_path_display
 from apigateway.schema.models import Schema
+from apigateway.utils.crypto import get_crypto
 
 logger = logging.getLogger(__name__)
 
@@ -436,10 +439,46 @@ class Backend(TimestampedModelMixin, OperatorModelMixin):
 
 
 class BackendConfig(TimestampedModelMixin, OperatorModelMixin):
+    _AI_CONFIG_ENCRYPTED_KEY: ClassVar[str] = "encrypted"
+
     gateway = models.ForeignKey(Gateway, on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, on_delete=models.PROTECT)
     stage = models.ForeignKey(Stage, on_delete=models.PROTECT)
-    config = JSONField(default=dict, dump_kwargs={"indent": None}, blank=True)
+    _config = JSONField(db_column="config", default=dict, dump_kwargs={"indent": None}, blank=True)
+
+    @property
+    def config(self) -> dict:
+        config = deepcopy(self._config)
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
+
+        if not config:
+            return {}
+
+        try:
+            return json.loads(get_crypto().decrypt(config[self._AI_CONFIG_ENCRYPTED_KEY]))
+        except Exception as err:
+            raise ValueError("failed to decrypt AI backend config") from err
+
+    @config.setter
+    def config(self, value: dict) -> None:
+        if self.backend.kind == BackendKindEnum.AI.value:
+            plaintext = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+            self._config = {self._AI_CONFIG_ENCRYPTED_KEY: get_crypto().encrypt(plaintext)}
+            return
+
+        self._config = deepcopy(value)
+
+    def get_config_for_display(self) -> dict:
+        config = self.config
+        if self.backend.kind != BackendKindEnum.AI.value:
+            return config
+
+        for instance in config.get("instances", []):
+            headers = instance.get("auth", {}).get("header", {})
+            for key, secret in headers.items():
+                headers[key] = mask_header_value(secret)
+        return config
 
     class Meta:
         unique_together = ("gateway", "backend", "stage")

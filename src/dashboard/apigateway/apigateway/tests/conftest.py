@@ -163,7 +163,7 @@ def fake_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -183,7 +183,7 @@ def fake_grpc_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -207,7 +207,7 @@ def fake_default_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",
@@ -231,7 +231,7 @@ def fake_default_empty_backend(fake_gateway, fake_stage, faker):
         gateway=fake_gateway,
         stage=fake_stage,
         backend=backend,
-        config={
+        _config={
             "type": "node",
             "timeout": 30,
             "loadbalance": "roundrobin",

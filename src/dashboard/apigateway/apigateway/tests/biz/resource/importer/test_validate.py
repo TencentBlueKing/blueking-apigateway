@@ -22,11 +22,52 @@ from ddf import G
 from apigateway.apps.label.models import APILabel
 from apigateway.biz.openapi import ResourceImportValidator
 from apigateway.biz.plugin import PluginConfigData
-from apigateway.core.models import Resource
+from apigateway.biz.resource import ResourceAuthConfig, ResourceData
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
 
 
 class TestResourceImportValidator:
+    def test_validate_ai_resource_kind_contract(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.STANDARD.value)
+        existing = G(Resource, gateway=fake_gateway, kind=ResourceKindEnum.STANDARD.value)
+        resource_data = ResourceData(
+            resource=existing,
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        messages = [error.message for error in errors]
+        assert "普通网关不支持模型代理资源" in messages
+        assert "资源 kind 创建后不能修改" in messages
+        assert "资源 kind 与后端服务 kind 不一致" in messages
+
+    def test_validate_ai_resource_accepts_ai_gateway_and_backend(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert not errors
+
     def test_validate(self, fake_gateway, fake_resource_data):
         resource_data_list = [
             fake_resource_data.copy(deep=True),

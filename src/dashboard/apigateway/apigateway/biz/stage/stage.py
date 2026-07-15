@@ -25,6 +25,7 @@ from rest_framework import serializers
 
 from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING, CallSourceTypeEnum
 from apigateway.controller.publisher.publish import trigger_gateway_publish
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES, StandardBackendConfig
 from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_STAGE_NAME,
@@ -53,12 +54,17 @@ class StageHandler:
 
         # 创建后端配置
         backend_configs = []
-        for backend in data["backends"]:
+        backends = {
+            backend.id: backend for backend in Backend.objects.filter(id__in=[item["id"] for item in data["backends"]])
+        }
+        for backend_data in data["backends"]:
+            backend = backends[backend_data["id"]]
+            config = BACKEND_CONFIG_TYPES[backend.kind].model_validate(backend_data["config"])
             backend_config = BackendConfig(
                 gateway=data["gateway"],
-                backend_id=backend["id"],
+                backend=backend,
                 stage=stage,
-                config=backend["config"],
+                config=config.to_config(),
                 created_by=created_by,
                 updated_by=created_by,
             )
@@ -77,17 +83,20 @@ class StageHandler:
 
         backends = {
             backend_config.backend_id: backend_config
-            for backend_config in BackendConfig.objects.filter(gateway=stage.gateway, stage=stage)
+            for backend_config in BackendConfig.objects.filter(gateway=stage.gateway, stage=stage).select_related(
+                "backend"
+            )
         }
 
         now = now_datetime()
         for backend_config in data["backends"]:
             backend = backends[backend_config["id"]]
-            backend.config = backend_config["config"]
+            config = BACKEND_CONFIG_TYPES[backend.backend.kind].model_validate(backend_config["config"])
+            backend.config = config.to_config()
             backend.updated_by = updated_by
             backend.updated_time = now
 
-        BackendConfig.objects.bulk_update(backends.values(), fields=["config", "updated_by", "updated_time"])
+        BackendConfig.objects.bulk_update(backends.values(), fields=["_config", "updated_by", "updated_time"])
 
         # 触发环境发布
         trigger_gateway_publish(PublishSourceEnum.STAGE_UPDATE, updated_by, stage.gateway.id, stage.id)
@@ -162,13 +171,15 @@ class StageHandler:
             gateway=gateway,
             backend=backend,
             stage=stage,
-            config={
-                "type": "node",
-                "timeout": 30,
-                "loadbalance": "roundrobin",
-                # 需要兜底host，避免资源没有绑定default backend从而导致发布时 service host 为空
-                "hosts": [{"scheme": "http", "host": default_host, "weight": 100}],
-            },
+            config=StandardBackendConfig.model_validate(
+                {
+                    "type": "node",
+                    "timeout": 30,
+                    "loadbalance": "roundrobin",
+                    # 需要兜底host，避免资源没有绑定default backend从而导致发布时 service host 为空
+                    "hosts": [{"scheme": "http", "host": default_host, "weight": 100}],
+                }
+            ).to_config(),
         )
         backend_config.save()
 
@@ -188,12 +199,14 @@ class StageHandler:
                 gateway=gateway,
                 backend=backend,
                 stage=pre_stage,
-                config={
-                    "type": "node",
-                    "timeout": 30,
-                    "loadbalance": "roundrobin",
-                    "hosts": [{"scheme": "http", "host": "", "weight": 100}],
-                },
+                config=StandardBackendConfig.model_validate(
+                    {
+                        "type": "node",
+                        "timeout": 30,
+                        "loadbalance": "roundrobin",
+                        "hosts": [{"scheme": "http", "host": "", "weight": 100}],
+                    }
+                ).to_config(),
             )
             pre_backend_config.save()
 

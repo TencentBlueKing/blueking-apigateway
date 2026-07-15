@@ -21,10 +21,34 @@ import pytest
 from ddf import G
 
 from apigateway.biz.openapi import BaseParser, ResourceDataConvertor
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Resource
 
 
 class TestResourceDataConvertor:
+    def test_convert_ai_resource(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, name="openai-primary", kind=BackendKindEnum.AI.value)
+
+        result = ResourceDataConvertor(
+            fake_gateway,
+            [
+                {
+                    "kind": ResourceKindEnum.AI.value,
+                    "name": "chat",
+                    "method": "POST",
+                    "path": "/chat",
+                    "backend_name": backend.name,
+                    "backend_config": None,
+                }
+            ],
+        ).convert()
+
+        assert result[0].kind == ResourceKindEnum.AI.value
+        assert result[0].backend == backend
+        assert result[0].backend_config is None
+
     def test_convert(self, fake_gateway, faker):
         resource_1 = G(Resource, gateway=fake_gateway, name="test1", method="GET", path="/test1")
         resource_2 = G(Resource, gateway=fake_gateway, name="test2", method="POST", path="/test2")
@@ -107,6 +131,30 @@ class TestResourceDataConvertor:
 
 
 class TestBaseParser:
+    def test_get_ai_resource(self):
+        parser = BaseParser(
+            _openapi_data={
+                "basePath": "/",
+                "paths": {
+                    "/chat": {
+                        "post": {
+                            "operationId": "chat",
+                            "x-bk-apigateway-resource": {
+                                "kind": "ai",
+                                "backend": {"name": "openai-primary"},
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        resource = parser.get_resources()[0]
+
+        assert resource["kind"] == ResourceKindEnum.AI.value
+        assert resource["backend_name"] == "openai-primary"
+        assert resource["backend_config"] is None
+
     @pytest.mark.parametrize(
         "swagger_data, expected",
         [

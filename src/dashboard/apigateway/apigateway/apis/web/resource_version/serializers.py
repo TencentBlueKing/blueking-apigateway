@@ -25,7 +25,7 @@ from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.constants import ResourceVersionSchemaEnum, ResourceVersionTypeEnum
+from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -40,6 +40,11 @@ class ResourceVersionCreateInputSLZ(serializers.Serializer):
 
 class ResourceInfoSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="资源id")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型：standard/ai",
+    )
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="前端请求方法")
     path = serializers.CharField(help_text="前端请求路径")
@@ -86,7 +91,7 @@ class ResourceInfoSLZ(serializers.Serializer):
             if backend and "resource_backend_configs" in self.context:
                 backend_config = self.context["resource_backend_configs"].get(backend_id)
                 if backend_config:
-                    backend_info["config"] = backend_config.config
+                    backend_info["config"] = backend_config.get_config_for_display()
 
             proxy["backend"] = backend_info
 
@@ -213,6 +218,11 @@ class ResourceVersionDiffQueryInputSLZ(serializers.Serializer):
 
 class ResourceVersionResourceSLZ(serializers.Serializer):
     id = serializers.IntegerField(help_text="id")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型：standard/ai",
+    )
     name = serializers.CharField(help_text="资源名称")
     method = serializers.CharField(help_text="请求方法")
     path = serializers.CharField(help_text="请求路径")
