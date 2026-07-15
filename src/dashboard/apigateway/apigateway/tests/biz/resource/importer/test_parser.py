@@ -155,6 +155,26 @@ class TestBaseParser:
         assert resource["backend_name"] == "openai-primary"
         assert resource["backend_config"] is None
 
+    def test_get_standard_resource_rejects_name_only_backend(self):
+        parser = BaseParser(
+            _openapi_data={
+                "basePath": "/",
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "get_users",
+                            "x-bk-apigateway-resource": {
+                                "backend": {"name": "default"},
+                            },
+                        }
+                    }
+                },
+            }
+        )
+
+        with pytest.raises(ValueError, match="standard resource HTTP backend requires method, path"):
+            parser.get_resources()
+
     @pytest.mark.parametrize(
         "swagger_data, expected",
         [

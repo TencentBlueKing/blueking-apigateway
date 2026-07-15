@@ -283,6 +283,10 @@ class BaseParser:
         if backend_type != ProxyTypeEnum.HTTP.value:
             raise ValueError(f"unsupported backend type: {backend['type']}")
 
+        missing_fields = [field for field in ("method", "path") if field not in backend]
+        if missing_fields:
+            raise ValueError(f"standard resource HTTP backend requires {', '.join(missing_fields)}")
+
         return {
             "method": backend["method"].upper(),
             "path": backend["path"],
