@@ -541,9 +541,9 @@ common service plugins
 
 | 策略 | 插件 | 说明 |
 | --- | --- | --- |
-| 允许用于普通和模型链路 | `bk-cors`、`bk-rate-limit`、`bk-ip-restriction`、`request-validation`、`bk-request-body-limit`、`bk-user-restriction`、`bk-access-token-source`、`bk-username-required`、OAuth2 认证插件、`uri-blocker` | 处理入口认证、访问控制或请求校验 |
+| 允许用于普通和模型链路 | `bk-cors`、`bk-rate-limit`、`bk-ip-restriction`、`request-validation`、`bk-request-body-limit`、`bk-user-restriction`、`bk-access-token-source`、`bk-username-required`、OAuth2 认证插件、`uri-blocker`、`bk-header-rewrite`、`bk-query-string-rewrite`、`bk-traffic-label` | 处理入口认证、访问控制、请求校验或按已有通用规则改写请求 |
 | 只允许用于模型链路 | `ai-rate-limiting` | 依赖 `ai-proxy` 选中的 instance 和模型 Token usage |
-| 模型链路禁止 | `bk-header-rewrite`、`bk-query-string-rewrite`、`bk-status-rewrite`、`bk-traffic-label`、`api-breaker`、`response-rewrite`、`proxy-cache`、`bk-legacy-invalid-params` | 请求改写可能覆盖模型认证；普通 query/upstream 状态对 AI driver 无效；响应改写和缓存可能破坏 SSE |
+| 模型链路禁止 | `bk-status-rewrite`、`api-breaker`、`response-rewrite`、`proxy-cache`、`bk-legacy-invalid-params` | 普通 upstream 状态对 AI driver 无效；响应改写和缓存可能破坏 SSE |
 | 第一期不开放给模型链路 | `bk-mock`、`redirect`、`fault-injection` | 技术上可以短路请求，但会绕过模型调用或破坏模型响应契约；有明确产品场景后再开放 |
 
 Stage 绑定会应用到该 Stage 生成的全部 Service，因此绑定时必须与该 Stage 当前所有 Backend.kind 兼容：

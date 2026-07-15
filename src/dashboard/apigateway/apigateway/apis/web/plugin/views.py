@@ -44,8 +44,9 @@ from apigateway.controller.publisher.publish import trigger_gateway_publish
 from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
 from apigateway.core.models import Resource, Stage
 from apigateway.service.plugin import (
+    AI_COMPATIBLE_PLUGIN_CODES,
     AI_ONLY_PLUGIN_CODES,
-    AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES,
+    CONTROLLER_MANAGED_PLUGIN_CODES,
     is_plugin_compatible_with_resource_kind,
 )
 from apigateway.utils.django import get_model_dict
@@ -137,9 +138,9 @@ class PluginTypeListApi(generics.ListAPIView):
                 .first()
             )
         if resource_kind == ResourceKindEnum.AI.value:
-            queryset = queryset.exclude(code__in=AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES)
+            queryset = queryset.filter(code__in=AI_COMPATIBLE_PLUGIN_CODES)
         else:
-            queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES)
+            queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES | CONTROLLER_MANAGED_PLUGIN_CODES)
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
