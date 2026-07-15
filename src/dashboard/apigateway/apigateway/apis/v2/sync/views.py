@@ -51,7 +51,6 @@ from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.core.constants import ReleaseHistoryStatusEnum, ReleaseStatusEnum
 from apigateway.core.models import JWT, Gateway, Release, Resource, ResourceVersion, Stage
-from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.utils.django import get_model_dict, get_object_or_None
 from apigateway.utils.responses import FailJsonResponse, OKJsonResponse
 
@@ -638,13 +637,9 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             raise error_codes.NOT_FOUND.format(
                 _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
             )
-        resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
+        resource_name_to_schema = ResourceVersionHandler().get_standard_resource_name_to_schema_by_resource_version(
             validate_resource_version_id
         )
-        valid_resource_names = get_standard_resource_names_set(validate_resource_version_id)
-        resource_name_to_schema = {
-            name: schema for name, schema in resource_name_to_schema.items() if name in valid_resource_names
-        }
 
         context = {
             "gateway": request.gateway,
