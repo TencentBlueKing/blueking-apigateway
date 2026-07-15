@@ -33,16 +33,16 @@ AI_ONLY_PLUGIN_CODES = frozenset(
 AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES = frozenset(
     {
         PluginTypeCodeEnum.API_BREAKER.value,
-        PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
         PluginTypeCodeEnum.BK_LEGACY_INVALID_PARAMS.value,
-        PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value,
         PluginTypeCodeEnum.BK_STATUS_REWRITE.value,
-        PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value,
         PluginTypeCodeEnum.PROXY_CACHE.value,
         PluginTypeCodeEnum.RESPONSE_REWRITE.value,
         PluginTypeCodeEnum.BK_MOCK.value,
         PluginTypeCodeEnum.REDIRECT.value,
         PluginTypeCodeEnum.FAULT_INJECTION.value,
+        # PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        # PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value,
+        # PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value,
     }
 )
 
