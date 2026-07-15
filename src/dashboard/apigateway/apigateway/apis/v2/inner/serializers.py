@@ -25,6 +25,7 @@ from django.utils.translation import gettext as _
 from rest_framework import serializers
 
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
 )
@@ -400,6 +401,7 @@ class MCPServerBaseSLZ(serializers.Serializer):
     )
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
+    is_official = serializers.SerializerMethodField(help_text="是否为官方")
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name
@@ -412,6 +414,11 @@ class MCPServerBaseSLZ(serializers.Serializer):
 
     def get_categories(self, obj) -> List[Dict[str, str]]:
         return _get_categories_from_context(self.context, obj)
+
+    def get_is_official(self, obj) -> bool:
+        return any(
+            cat["name"] == OFFICIAL_MCP_CATEGORY_NAME for cat in _get_categories_from_context(self.context, obj)
+        )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.MCPServerBaseSLZ"

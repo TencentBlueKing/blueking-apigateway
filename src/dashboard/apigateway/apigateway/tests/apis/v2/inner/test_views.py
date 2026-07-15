@@ -30,13 +30,19 @@ import apigateway.apis.v2.inner.views as inner_views
 from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+)
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
@@ -214,6 +220,34 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["name"] == "test-mcp-server"
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
+
+    def test_list_with_is_official(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表包含是否官方字段"""
+        official_category, _ = MCPServerCategory.objects.update_or_create(
+            name=OFFICIAL_MCP_CATEGORY_NAME,
+            defaults={"display_name": "官方", "is_active": True},
+        )
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-official-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        mcp_server.categories.add(official_category)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+        assert result["data"][0]["mcp_server"]["is_official"] is True
 
     def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含 tool_names 字段（重命名后的工具名称）"""
