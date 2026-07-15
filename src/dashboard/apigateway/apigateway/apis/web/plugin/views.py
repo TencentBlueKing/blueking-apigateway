@@ -21,6 +21,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -40,8 +41,13 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
 from apigateway.core.models import Resource, Stage
+from apigateway.service.plugin import (
+    AI_ONLY_PLUGIN_CODES,
+    AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES,
+    is_plugin_compatible_with_resource_kind,
+)
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.yaml import yaml_loads
@@ -123,6 +129,17 @@ class PluginTypeListApi(generics.ListAPIView):
         queryset = PluginType.objects.filter(is_public=True).filter(
             Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
         )
+        resource_kind = None
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            resource_kind = (
+                Resource.objects.filter(gateway=self.request.gateway, id=data["scope_id"])
+                .values_list("kind", flat=True)
+                .first()
+            )
+        if resource_kind == ResourceKindEnum.AI.value:
+            queryset = queryset.exclude(code__in=AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES)
+        else:
+            queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES)
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
@@ -181,6 +198,20 @@ class PluginTypeCodeValidationMixin:
         if type_id and plugin_type != type_id:
             raise error_codes.INVALID_ARGUMENT.format(
                 f"code {code} in query_string is not matched the type_id={type_id.id}(code={type_id.code}) in body"
+            )
+
+    def validate_plugin_binding(self):
+        scope_type = self.kwargs["scope_type"]
+        scope_id = self.kwargs["scope_id"]
+        plugin_type_code = self.kwargs["code"]
+
+        resource_kind = None
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
+
+        if not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind):
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("插件 {plugin_type_code} 与当前资源类型不兼容。").format(plugin_type_code=plugin_type_code)
             )
 
 
@@ -242,6 +273,7 @@ class PluginConfigCreateApi(
     def perform_create(self, serializer):
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
+        self.validate_plugin_binding()
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
 
@@ -334,6 +366,7 @@ class PluginConfigRetrieveUpdateDestroyApi(
     def perform_update(self, serializer):
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
+        self.validate_plugin_binding()
 
         if self._check_if_changed(dict(serializer.validated_data), serializer.instance):
             data_before = get_model_dict(serializer.instance)

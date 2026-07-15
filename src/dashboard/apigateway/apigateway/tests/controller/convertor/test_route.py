@@ -29,10 +29,40 @@ from apigateway.controller.convertor.constants import (
 )
 from apigateway.controller.models import Route, Timeout
 from apigateway.controller.models.constants import HttpMethodEnum
-from apigateway.core.constants import ProxyTypeEnum
+from apigateway.controller.release_data import PluginData, StageBackendConfig
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, ProxyTypeEnum, ResourceKindEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
+
+
+def _backend_snapshot(backend_id, kind):
+    return StageBackendConfig(
+        backend_id=backend_id,
+        backend_name=f"backend-{backend_id}",
+        backend_kind=kind,
+        backend_type=BackendTypeEnum.HTTP.value,
+        config={},
+    )
+
+
+def _ai_resource(*, path="/v1/chat/completions"):
+    return {
+        "id": 11,
+        "name": "chat-completions",
+        "kind": ResourceKindEnum.AI.value,
+        "method": "ANY",
+        "path": path,
+        "enable_websocket": True,
+        "disabled_stages": [],
+        "proxy": {
+            "type": ProxyTypeEnum.HTTP.value,
+            "backend_id": 10,
+            "config": json.dumps({"path": "/ignored", "method": "GET", "match_subpath": True, "timeout": 99}),
+        },
+        "contexts": {"resource_auth": {"config": json.dumps({})}},
+        "plugins": [],
+    }
 
 
 class TestRouteConvertor:
@@ -46,6 +76,10 @@ class TestRouteConvertor:
         mock_data.stage.name = "test-stage"
         mock_data.stage.vars = {"env": "test"}
         mock_data.resource_configs = []
+        mock_data.stage_backend_configs = {
+            1: _backend_snapshot(1, BackendKindEnum.STANDARD.value),
+            2: _backend_snapshot(2, BackendKindEnum.STANDARD.value),
+        }
         mock_data.get_resource_plugins.return_value = []
         return mock_data
 
@@ -192,6 +226,108 @@ class TestRouteConvertor:
         assert len(route.plugins) > 0
         assert "bk-resource-context" in route.plugins
         assert "bk-proxy-rewrite" in route.plugins
+        assert route.plugins["bk-resource-context"].bk_resource_id == 1
+        assert route.plugins["bk-resource-context"].bk_resource_name == "test-resource"
+        assert route.plugins["bk-resource-context"].bk_resource_auth == {
+            "verified_app_required": True,
+            "verified_user_required": True,
+            "resource_perm_required": True,
+            "skip_user_verification": False,
+        }
+
+    def test_convert_ai_route_omits_standard_proxy_settings(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping={10: "test-gateway.test-stage.456-10"},
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(_ai_resource())
+
+        assert route.methods == [HttpMethodEnum.POST]
+        assert route.uris == [
+            "/api/test-gateway/test-stage/v1/chat/completions",
+            "/api/test-gateway/test-stage/v1/chat/completions/",
+        ]
+        assert route.service_id == "test-gateway.test-stage.456-10"
+        assert "bk-resource-context" in route.plugins
+        assert "bk-proxy-rewrite" not in route.plugins
+        assert route.timeout is None
+        assert route.enable_websocket is None
+        assert route.priority is None
+
+    def test_convert_ai_route_with_path_parameter(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping={10: "model-service-id"},
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(_ai_resource(path="/v1/chat/{conversation_id}"))
+
+        assert route.uris == ["/api/test-gateway/test-stage/v1/chat/:conversation_id/?"]
+        assert route.priority is None
+
+    def test_convert_ai_route_with_compatible_resource_plugin(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
+        resource = _ai_resource()
+        mock_release_data.get_resource_plugins.return_value = [PluginData("bk-cors", {}, "resource")]
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping={10: "model-service-id"},
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(resource)
+
+        assert "bk-cors" in route.plugins
+
+    def test_convert_ai_route_trusts_resource_plugin_binding(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
+        resource = _ai_resource()
+        mock_release_data.get_resource_plugins.return_value = [PluginData("bk-header-rewrite", {}, "resource")]
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping={10: "model-service-id"},
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(resource)
+
+        assert "bk-resource-header-rewrite" in route.plugins
+
+    @pytest.mark.parametrize(
+        ("resource_kind", "backend_kind"),
+        [
+            (ResourceKindEnum.AI.value, BackendKindEnum.STANDARD.value),
+            (ResourceKindEnum.STANDARD.value, BackendKindEnum.AI.value),
+        ],
+    )
+    def test_convert_route_trusts_resource_backend_kind_relationship(
+        self,
+        mock_release_data,
+        resource_kind,
+        backend_kind,
+    ):
+        resource = _ai_resource()
+        resource["kind"] = resource_kind
+        mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, backend_kind)}
+        convertor = RouteConvertor(
+            release_data=mock_release_data,
+            backend_service_mapping={10: "model-service-id"},
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        )
+
+        route = convertor._convert_http_route(resource)
+
+        assert route.service_id == "model-service-id"
 
     def test_convert_http_route_with_any_method(self, convertor, mock_release_data):
         """Test _convert_http_route with ANY method"""
@@ -349,8 +485,7 @@ class TestRouteConvertor:
         timeout = convertor._convert_route_timeout(resource_proxy)
         assert timeout is None
 
-    def test_convert_http_resource_plugins(self, convertor, mock_release_data):
-        """Test _convert_http_resource_plugins method"""
+    def test_build_resource_context_plugin(self, convertor):
         resource = {
             "id": 1,
             "name": "test-resource",
@@ -360,25 +495,25 @@ class TestRouteConvertor:
                         {
                             "app_verified_required": True,
                             "auth_verified_required": False,
-                            "resource_perm_required": True,
-                            "skip_auth_verification": False,
+                            "resource_perm_required": False,
+                            "skip_auth_verification": True,
                         }
                     )
                 }
             },
         }
-        resource_proxy = {"method": "GET", "path": "/backend/path"}
 
-        plugins = convertor._convert_http_resource_plugins(resource, resource_proxy)
-        assert "bk-resource-context" in plugins
-        assert "bk-proxy-rewrite" in plugins
-        assert plugins["bk-resource-context"].bk_resource_id == 1
-        assert plugins["bk-resource-context"].bk_resource_name == "test-resource"
-        assert plugins["bk-resource-context"].bk_resource_auth == {
-            "verified_app_required": True,
-            "verified_user_required": False,
-            "resource_perm_required": True,
-            "skip_user_verification": False,
+        plugin = convertor._build_resource_context_plugin(resource)
+
+        assert plugin.model_dump(exclude_none=True) == {
+            "bk_resource_id": 1,
+            "bk_resource_name": "test-resource",
+            "bk_resource_auth": {
+                "verified_app_required": True,
+                "verified_user_required": False,
+                "resource_perm_required": False,
+                "skip_user_verification": True,
+            },
         }
 
     def test_build_bk_proxy_rewrite_config_simple(self, convertor, mock_release_data):

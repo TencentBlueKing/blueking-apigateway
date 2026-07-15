@@ -181,6 +181,7 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mocker.Mock()
         mock_release.gateway.name = "test-gateway"
+        mock_release.gateway.is_ai_gateway = False
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
         mock_release.resource_version = mocker.Mock()
@@ -236,6 +237,7 @@ class TestGatewayResourceDistributor:
         mock_release = mocker.Mock()
         mock_release.gateway = mocker.Mock()
         mock_release.gateway.name = "test-gateway"
+        mock_release.gateway.is_ai_gateway = False
         mock_release.stage = mocker.Mock()
         mock_release.stage.name = "prod"
 

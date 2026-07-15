@@ -20,12 +20,26 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.openapi import ResourceImportValidator
 from apigateway.biz.plugin import PluginConfigData
-from apigateway.biz.resource import ResourceAuthConfig, ResourceData
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
+
+AI_ONLY_PLUGIN_CODES = (
+    "ai-rate-limiting",
+    "ai-prompt-guard",
+    "ai-prompt-decorator",
+)
+
+
+def _plugin_yaml(plugin_type_code):
+    if plugin_type_code == PluginTypeCodeEnum.AI_RATE_LIMITING.value:
+        return yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429})
+    return yaml_dumps({"enabled": True})
 
 
 class TestResourceImportValidator:
@@ -67,6 +81,83 @@ class TestResourceImportValidator:
         errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
 
         assert not errors
+
+    def test_validate_ai_resource_rejects_incompatible_plugin(
+        self,
+        fake_gateway,
+        fake_plugin_type_bk_header_rewrite,
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+            plugin_configs=[
+                PluginConfigData(
+                    type=fake_plugin_type_bk_header_rewrite.code,
+                    yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
+    @pytest.mark.parametrize(
+        ("resource_kind", "has_compatibility_error"),
+        [(ResourceKindEnum.STANDARD.value, True), (ResourceKindEnum.AI.value, False)],
+    )
+    def test_validate_ai_only_plugin_by_resource_kind(
+        self,
+        fake_gateway,
+        plugin_type_code,
+        resource_kind,
+        has_compatibility_error,
+    ):
+        if resource_kind == ResourceKindEnum.AI.value:
+            fake_gateway.kind = GatewayKindEnum.AI.value
+            fake_gateway.save(update_fields=["kind"])
+
+        backend = G(Backend, gateway=fake_gateway, kind=resource_kind)
+        G(
+            PluginType,
+            code=plugin_type_code,
+            is_public=True,
+            scope=PluginTypeScopeEnum.RESOURCE.value,
+        )
+        resource_data = ResourceData(
+            kind=resource_kind,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=(
+                ResourceBackendConfig(method="POST", path="/chat")
+                if resource_kind == ResourceKindEnum.STANDARD.value
+                else None
+            ),
+            plugin_configs=[
+                PluginConfigData(
+                    type=plugin_type_code,
+                    yaml=_plugin_yaml(plugin_type_code),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any(plugin_type_code in error.message and "不兼容" in error.message for error in errors) is (
+            has_compatibility_error
+        )
 
     def test_validate(self, fake_gateway, fake_resource_data):
         resource_data_list = [
