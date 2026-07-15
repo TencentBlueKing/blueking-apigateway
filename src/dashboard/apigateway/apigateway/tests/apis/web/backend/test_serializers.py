@@ -16,11 +16,14 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
 import pytest
 from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.backend import serializers
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
 from apigateway.core.models import BackendConfig, Stage
 
 
@@ -302,6 +305,45 @@ class TestBackendInputSLZ:
 
         with django_assert_num_queries(2):
             slz.is_valid(raise_exception=True)
+
+    def test_update_reports_corrupted_existing_ai_config(self, caplog, fake_backend, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save(update_fields=["kind"])
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save(update_fields=["kind"])
+        ciphertext = "backend-ciphertext-sentinel"
+        BackendConfig.objects.filter(backend=fake_backend, stage=fake_stage).update(_config={"encrypted": ciphertext})
+        slz = serializers.BackendInputSLZ(
+            instance=fake_backend,
+            data={
+                "name": fake_backend.name,
+                "description": fake_backend.description,
+                "type": fake_backend.type,
+                "configs": [
+                    {
+                        "stage_id": fake_stage.id,
+                        "timeout": 30000,
+                        "instances": [
+                            {
+                                "name": "primary",
+                                "provider": "openai",
+                                "weight": 1,
+                                "auth": {"header": {"Authorization": "Bearer secret"}},
+                                "options": {"model": "gpt-4o"},
+                            }
+                        ],
+                    }
+                ],
+            },
+            context={"gateway": fake_stage.gateway},
+        )
+
+        with caplog.at_level(logging.ERROR), pytest.raises(ValidationError) as exc_info:
+            slz.is_valid(raise_exception=True)
+
+        assert "configs" in exc_info.value.detail
+        assert "已有后端配置无法读取" in str(exc_info.value.detail["configs"])
+        assert ciphertext not in caplog.text
 
 
 def test_backend_retrieve_selects_stage_and_backend(django_assert_num_queries, fake_backend, fake_stage):
