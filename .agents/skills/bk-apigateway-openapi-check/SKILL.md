@@ -1,7 +1,9 @@
 ---
 name: bk-apigateway-openapi-check
-description: "检查 API 代码实现、YAML 网关资源定义、API 文档三者是否一致。当用户请求检查 API 一致性、校验代码和文档匹配、check api consistency、check yaml matches code、openapi 一致性检查、网关资源定义检查、API 文档对齐、检查 operationId 一致性、检查 backend 路径、grant_permissions 检查、MCP Server 配置检查、鉴权配置检查时使用。Actions: validate, check, analyze, fix. Triggers: api-consistency-check, 检查 API 一致性, 检查代码和文档匹配, check api consistency, check yaml matches code, openapi 检查, 网关资源检查, 文档对齐检查, operationId 检查, backend 路径检查, 三层一致性, YAML 代码文档一致性."
+description: "仅限用户显式调用的 API 一致性检查技能。只有当用户明确要求调用或使用 `bk-apigateway-openapi-check` 时才使用；仅提及、编辑或评审该技能，以及任务涉及 API、OpenAPI、YAML、API 文档或一致性检查，均不得触发本技能。"
 ---
+
+TRIGGER RULE: 本技能禁止主动调用。只有用户在当前请求中明确要求调用或使用 `bk-apigateway-openapi-check` 时，才进入下方工作流。仅提及、编辑或评审本技能不算授权；OpenAPI、API、YAML、文档相关任务以及常规 lint、test、preflight 也不算授权。
 
 IRON LAW: 检查操作均为只读，禁止直接修改 YAML 资源定义或代码路由。`--fix` 仅允许生成文档模板。每条检查结果必须包含具体的 operationId 和问题描述，禁止输出模糊结论。
 
