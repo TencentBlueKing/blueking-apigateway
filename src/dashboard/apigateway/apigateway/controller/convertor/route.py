@@ -100,19 +100,8 @@ class RouteConvertor(GatewayResourceConvertor):
 
         match_subpath = resource_proxy.get("match_subpath", False)
 
-        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
-
         plugins: Dict[str, Plugin] = {
-            "bk-resource-context": Plugin(
-                bk_resource_id=resource["id"],
-                bk_resource_name=resource["name"],
-                bk_resource_auth={
-                    "verified_app_required": resource_auth_config.get("app_verified_required", True),
-                    "verified_user_required": resource_auth_config.get("auth_verified_required", True),
-                    "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
-                    "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
-                },
-            ),
+            "bk-resource-context": self._build_resource_context_plugin(resource),
             # TODO: check the bk-proxy-rewrite plugin gen in operator
             "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
         }
@@ -158,18 +147,8 @@ class RouteConvertor(GatewayResourceConvertor):
 
     def _convert_ai_route(self, resource: Dict[str, Any], service_id: str) -> Route:
         uris, _ = self._convert_uris(path=resource["path"], match_subpath=False)
-        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
         plugins: Dict[str, Plugin] = {
-            "bk-resource-context": Plugin(
-                bk_resource_id=resource["id"],
-                bk_resource_name=resource["name"],
-                bk_resource_auth={
-                    "verified_app_required": resource_auth_config.get("app_verified_required", True),
-                    "verified_user_required": resource_auth_config.get("auth_verified_required", True),
-                    "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
-                    "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
-                },
-            ),
+            "bk-resource-context": self._build_resource_context_plugin(resource),
         }
         plugins.update(
             {
@@ -219,6 +198,19 @@ class RouteConvertor(GatewayResourceConvertor):
             connect=timeout,
             send=timeout,
             read=timeout,
+        )
+
+    def _build_resource_context_plugin(self, resource: Dict[str, Any]) -> Plugin:
+        resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
+        return Plugin(
+            bk_resource_id=resource["id"],
+            bk_resource_name=resource["name"],
+            bk_resource_auth={
+                "verified_app_required": resource_auth_config.get("app_verified_required", True),
+                "verified_user_required": resource_auth_config.get("auth_verified_required", True),
+                "resource_perm_required": resource_auth_config.get("resource_perm_required", True),
+                "skip_user_verification": resource_auth_config.get("skip_auth_verification", False),
+            },
         )
 
     def _build_bk_proxy_rewrite_config(self, resource_proxy: Dict[str, Any]) -> Dict[str, Any]:

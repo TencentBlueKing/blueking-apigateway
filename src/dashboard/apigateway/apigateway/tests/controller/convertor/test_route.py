@@ -485,6 +485,37 @@ class TestRouteConvertor:
         timeout = convertor._convert_route_timeout(resource_proxy)
         assert timeout is None
 
+    def test_build_resource_context_plugin(self, convertor):
+        resource = {
+            "id": 1,
+            "name": "test-resource",
+            "contexts": {
+                "resource_auth": {
+                    "config": json.dumps(
+                        {
+                            "app_verified_required": True,
+                            "auth_verified_required": False,
+                            "resource_perm_required": False,
+                            "skip_auth_verification": True,
+                        }
+                    )
+                }
+            },
+        }
+
+        plugin = convertor._build_resource_context_plugin(resource)
+
+        assert plugin.model_dump(exclude_none=True) == {
+            "bk_resource_id": 1,
+            "bk_resource_name": "test-resource",
+            "bk_resource_auth": {
+                "verified_app_required": True,
+                "verified_user_required": False,
+                "resource_perm_required": False,
+                "skip_user_verification": True,
+            },
+        }
+
     def test_build_bk_proxy_rewrite_config_simple(self, convertor, mock_release_data):
         """Test _build_bk_proxy_rewrite_config with simple config"""
         resource_proxy = {"path": "/backend/path", "method": "POST"}
