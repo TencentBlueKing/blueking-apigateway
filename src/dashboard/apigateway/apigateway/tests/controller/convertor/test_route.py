@@ -301,7 +301,7 @@ class TestRouteConvertor:
             (ResourceKindEnum.STANDARD.value, BackendKindEnum.AI.value),
         ],
     )
-    def test_convert_route_rejects_resource_backend_kind_mismatch(
+    def test_convert_route_trusts_resource_backend_kind_relationship(
         self,
         mock_release_data,
         resource_kind,
@@ -317,8 +317,9 @@ class TestRouteConvertor:
             apisix_version=APISIX_VERSION_3_16,
         )
 
-        with pytest.raises(ValueError, match="kind mismatch"):
-            convertor._convert_http_route(resource)
+        route = convertor._convert_http_route(resource)
+
+        assert route.service_id == "model-service-id"
 
     def test_convert_http_route_with_any_method(self, convertor, mock_release_data):
         """Test _convert_http_route with ANY method"""

@@ -293,6 +293,35 @@ class TestResourceRetrieveUpdateDestroyApi:
 
         assert response.status_code == 400
 
+    def test_update_rejects_backend_kind_mismatch(self, fake_resource, request_view):
+        fake_gateway = fake_resource.gateway
+        original_backend_id = Proxy.objects.get(resource=fake_resource).backend_id
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource.id},
+            gateway=fake_gateway,
+            data={
+                "name": fake_resource.name,
+                "kind": ResourceKindEnum.STANDARD.value,
+                "method": fake_resource.method,
+                "path": fake_resource.path,
+                "match_subpath": False,
+                "enable_websocket": False,
+                "label_ids": [],
+                "backend": {
+                    "id": backend.id,
+                    "config": {"method": "POST", "path": "/", "match_subpath": False, "timeout": 30},
+                },
+                "auth_config": {},
+            },
+        )
+
+        assert response.status_code == 400
+        assert Proxy.objects.get(resource=fake_resource).backend_id == original_backend_id
+
     def test_retrieve(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
 

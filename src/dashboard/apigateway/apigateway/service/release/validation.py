@@ -32,7 +32,6 @@ from apigateway.core.constants import (
     HOST_WITHOUT_SCHEME_PATTERN,
     BackendKindEnum,
     GatewayStatusEnum,
-    ResourceKindEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, ResourceVersion, Stage
 from apigateway.service.resource_version import get_used_stage_vars
@@ -178,18 +177,6 @@ class PublishValidator:
                     backends=", ".join(missing_backends),
                 )
             )
-
-        backend_id_to_config = {backend_config.backend_id: backend_config for backend_config in backend_configs}
-        for resource in resource_configs:
-            resource_kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
-            backend_config = backend_id_to_config[resource["proxy"]["backend_id"]]
-            if resource_kind != backend_config.backend.kind:
-                raise ReleaseValidationError(
-                    _("资源【{resource_name}】的类型与后端服务【{backend_name}】的类型不匹配，不允许发布。").format(
-                        resource_name=resource["name"],
-                        backend_name=backend_config.backend.name,
-                    )
-                )
 
         for backend_config in backend_configs:
             if backend_config.backend.kind == BackendKindEnum.AI.value:

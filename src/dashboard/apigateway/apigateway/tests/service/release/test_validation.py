@@ -202,7 +202,7 @@ class TestPublishBackendKindValidation:
         assert "ciphertext-must-not-leak" not in message
         assert "original-must-not-leak" not in message
 
-    def test_resource_and_backend_kind_must_match(self, fake_gateway, fake_stage):
+    def test_resource_backend_kind_relationship_is_trusted(self, fake_gateway, fake_stage):
         backend, _ = _create_backend_config(
             fake_gateway,
             fake_stage,
@@ -212,5 +212,4 @@ class TestPublishBackendKindValidation:
         )
         resource_version = _create_resource_version(fake_gateway, backend, kind=ResourceKindEnum.AI.value)
 
-        with pytest.raises(ReleaseValidationError, match="chat-completions"):
-            PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends()
+        assert PublishValidator(fake_gateway, fake_stage, resource_version)._validate_stage_backends() is None

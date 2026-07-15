@@ -307,6 +307,7 @@ Resource.kind == Proxy.backend.kind
 - `Resource.kind=ai` 必须关联 `Backend.kind=ai`。
 - Resource 和 Backend 必须归属于同一 Gateway。
 - `Resource.kind` 创建后不允许修改。
+- Web Resource 创建/更新，以及 `/apis/open`、`/apis/v2/sync` Resource 同步在写入 `Proxy.backend` 关系前校验两侧 kind 一致。
 - 更新、导入或同步已有资源时，如果输入 kind 与存量记录不一致，应报错，不能静默修改资源类别。
 
 ### 3.3 Proxy.type 与 Proxy.config
@@ -453,7 +454,7 @@ ResourceVersion 快照需要保存 `Resource.kind`，并继续使用单一 Backe
 
 - 存量 Resource 和存量资源版本在迁移或读取时缺少 kind，均视为 `standard`。
 - 快照不增加 `model_backend_id`，两类资源统一使用 `proxy.backend_id`。
-- 发布时以快照 Resource.kind 决定 Route 转换逻辑，并校验当前 Backend.kind 与快照一致。
+- 发布时以快照 Resource.kind 决定 Route 转换逻辑，并信任写入阶段已经校验的 `Proxy.backend` 关系，不再重复校验 Resource/Backend kind。
 
 ## 8. Controller 发布转换
 
@@ -681,10 +682,10 @@ bk_backend_name = Backend.name
 - BackendConfig：两个 Pydantic 类型覆盖模型 provider、单 instance、固定 model、`options` 合法 JSON 键值及无损透传、endpoint、timeout 和未知字段约束的正反例。
 - 凭证：AI 配置经 view/biz 写入后数据库只保存完整配置 JSON 的嵌套密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；普通配置及其存量记录保持原始 JSON 明文。ORM 读取与 Django Admin 返回可信明文，Web API 与审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；Web 更新 API 对掩码 value 的恢复、非掩码替换、清空和解密失败路径均有覆盖。
 - Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
-- Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
+- Resource：Web 创建/更新和 `/apis/open`、`/apis/v2/sync` 同步均拒绝 kind 与 Backend.kind 不一致的关系；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - 插件兼容性：Web Stage/Resource 绑定和 `/apis/open`、`/apis/v2/sync` Resource 插件同步拒绝不兼容关系；controller 发布信任持久化关系，不再校验或过滤。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
-- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route。
+- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route；Route 转换信任持久化的 Resource/Backend 关系，不重复校验 kind。
 - controller：AI Gateway 仅允许发布到 APISIX 3.16，非 3.16 在生成资源前失败；普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。
 - 请求链路：普通响应和 SSE 流式响应均可用；BlueKing 网关插件错误由 `bk-error-wrapper` 统一包装，`ai-proxy` 和模型服务错误保持原始响应；第一期不增加 AI 专用出站 Header 过滤。
 - 回归：普通网关、可编程网关以及 AI Gateway 中的普通 Backend/Resource 沿用现有行为。

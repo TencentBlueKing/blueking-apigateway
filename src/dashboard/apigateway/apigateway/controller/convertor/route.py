@@ -86,14 +86,6 @@ class RouteConvertor(GatewayResourceConvertor):
             raise ValueError(f"backend_id is 0 or not set, which is not allowed. resource: {resource}")
 
         service_id = self._get_service_id(backend_id)
-        backend_config = self._release_data.stage_backend_configs.get(backend_id)
-        if backend_config is None:
-            raise ValueError(f"stage backend config not found. backend_id: {backend_id}")
-        if backend_config.backend_kind != resource_kind:
-            raise ValueError(
-                f"resource/backend kind mismatch: resource {resource['id']}/{resource['name']} is {resource_kind}, "
-                f"backend {backend_id} is {backend_config.backend_kind}"
-            )
 
         if resource_kind == ResourceKindEnum.AI.value:
             return self._convert_ai_route(resource, service_id)
