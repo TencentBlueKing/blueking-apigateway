@@ -226,6 +226,14 @@ class TestRouteConvertor:
         assert len(route.plugins) > 0
         assert "bk-resource-context" in route.plugins
         assert "bk-proxy-rewrite" in route.plugins
+        assert route.plugins["bk-resource-context"].bk_resource_id == 1
+        assert route.plugins["bk-resource-context"].bk_resource_name == "test-resource"
+        assert route.plugins["bk-resource-context"].bk_resource_auth == {
+            "verified_app_required": True,
+            "verified_user_required": True,
+            "resource_perm_required": True,
+            "skip_user_verification": False,
+        }
 
     def test_convert_ai_route_omits_standard_proxy_settings(self, mock_release_data):
         mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
@@ -476,38 +484,6 @@ class TestRouteConvertor:
         resource_proxy = {}
         timeout = convertor._convert_route_timeout(resource_proxy)
         assert timeout is None
-
-    def test_convert_http_resource_plugins(self, convertor, mock_release_data):
-        """Test _convert_http_resource_plugins method"""
-        resource = {
-            "id": 1,
-            "name": "test-resource",
-            "contexts": {
-                "resource_auth": {
-                    "config": json.dumps(
-                        {
-                            "app_verified_required": True,
-                            "auth_verified_required": False,
-                            "resource_perm_required": True,
-                            "skip_auth_verification": False,
-                        }
-                    )
-                }
-            },
-        }
-        resource_proxy = {"method": "GET", "path": "/backend/path"}
-
-        plugins = convertor._convert_http_resource_plugins(resource, resource_proxy)
-        assert "bk-resource-context" in plugins
-        assert "bk-proxy-rewrite" in plugins
-        assert plugins["bk-resource-context"].bk_resource_id == 1
-        assert plugins["bk-resource-context"].bk_resource_name == "test-resource"
-        assert plugins["bk-resource-context"].bk_resource_auth == {
-            "verified_app_required": True,
-            "verified_user_required": False,
-            "resource_perm_required": True,
-            "skip_user_verification": False,
-        }
 
     def test_build_bk_proxy_rewrite_config_simple(self, convertor, mock_release_data):
         """Test _build_bk_proxy_rewrite_config with simple config"""

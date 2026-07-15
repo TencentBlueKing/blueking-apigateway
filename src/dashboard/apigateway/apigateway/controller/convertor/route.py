@@ -100,7 +100,11 @@ class RouteConvertor(GatewayResourceConvertor):
 
         match_subpath = resource_proxy.get("match_subpath", False)
 
-        plugins = self._convert_http_resource_plugins(resource, resource_proxy)
+        plugins = {
+            "bk-resource-context": self._build_resource_context_plugin(resource),
+            "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
+        }
+        plugins.update(self._convert_resource_bound_plugins(resource))
         uris, priority = self._convert_uris(
             path=resource["path"],
             match_subpath=match_subpath,
@@ -181,16 +185,6 @@ class RouteConvertor(GatewayResourceConvertor):
             send=timeout,
             read=timeout,
         )
-
-    def _convert_http_resource_plugins(
-        self, resource: Dict[str, Any], resource_proxy: Dict[str, Any]
-    ) -> Dict[str, Plugin]:
-        plugins = {
-            "bk-resource-context": self._build_resource_context_plugin(resource),
-            "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
-        }
-        plugins.update(self._convert_resource_bound_plugins(resource))
-        return plugins
 
     def _build_resource_context_plugin(self, resource: Dict[str, Any]) -> Plugin:
         resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
