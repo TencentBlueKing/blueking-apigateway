@@ -31,6 +31,7 @@ from apigateway.apis.web.resource.serializers import (
     ResourceInputSLZ,
     ResourceListOutputSLZ,
 )
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import (
     Backend,
     Proxy,
@@ -255,6 +256,8 @@ class TestResourceDataImportSLZ:
 
 class TestResourceExportOutputSLZ:
     def test_to_representation(self, fake_resource, echo_plugin_resource_binding):
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.save()
         proxies = {proxy.resource_id: proxy for proxy in Proxy.objects.filter(resource__in=[fake_resource])}
         backends = {backend.id: backend for backend in Backend.objects.filter(gateway=fake_resource.gateway)}
 
@@ -271,6 +274,7 @@ class TestResourceExportOutputSLZ:
             },
         )
         assert len(slz.data) == 1
+        assert slz.data[0]["kind"] == ResourceKindEnum.AI.value
 
 
 class TestBackendPathCheckInputSLZ:

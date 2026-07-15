@@ -1193,7 +1193,7 @@ class TestMCPServerStageReleaseCheckApi:
 
     def test_check_with_mcp_servers(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.get_resource_names_set",
+            "apigateway.apis.web.mcp_server.views.get_standard_resource_names_set",
             return_value={"resource1"},
         )
 
@@ -1871,7 +1871,7 @@ class TestMCPServerStageReleaseCheckApiNoChanges:
 
     def test_check_no_changes(self, mocker, request_view, fake_gateway, fake_mcp_server):
         mocker.patch(
-            "apigateway.apis.web.mcp_server.views.get_resource_names_set",
+            "apigateway.apis.web.mcp_server.views.get_standard_resource_names_set",
             return_value={"resource1", "resource2"},  # 包含所有 mcp_server 的资源
         )
 

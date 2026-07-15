@@ -637,7 +637,7 @@ class GatewayMcpServerSyncViewSet(generics.CreateAPIView):
             raise error_codes.NOT_FOUND.format(
                 _("该环境：{stage_name} 未发布资源版本").format(stage_name=stage_name), replace=True
             )
-        resource_name_to_schema = ResourceVersionHandler().get_resource_name_to_schema_by_resource_version(
+        resource_name_to_schema = ResourceVersionHandler().get_standard_resource_name_to_schema_by_resource_version(
             validate_resource_version_id
         )
 
