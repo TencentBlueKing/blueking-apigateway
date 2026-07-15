@@ -125,3 +125,10 @@ def test_service_private_helpers_are_prefixed_with_underscore():
         "Module-private service helpers must be prefixed with '_' when they are not exported and have no callers "
         f"outside their defining module: {violations}"
     )
+
+
+def test_plugin_compatibility_functions_are_public():
+    exported_names = _package_dunder_all(SERVICE_DIR / "plugin")
+
+    assert "get_incompatible_plugin_type_codes" in exported_names
+    assert "is_plugin_allowed_for_kind" in exported_names
