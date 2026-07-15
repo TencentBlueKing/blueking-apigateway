@@ -16,6 +16,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
+import json
 
 import pytest
 from django.conf import settings
@@ -25,7 +26,7 @@ from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
 from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION
-from apigateway.controller.release_data import StageBackendConfig
+from apigateway.controller.release_data import PluginData, StageBackendConfig
 from apigateway.core.constants import BackendKindEnum, BackendTypeEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
@@ -39,6 +40,33 @@ def _standard_backend_config(backend_id, backend_name, config):
         backend_kind=BackendKindEnum.STANDARD.value,
         backend_type=BackendTypeEnum.HTTP.value,
         config=config,
+    )
+
+
+def _ai_backend_config(
+    backend_id=10,
+    *,
+    provider="openai-compatible",
+    auth=None,
+    options=None,
+    override=None,
+):
+    instance = {
+        "name": "primary",
+        "provider": provider,
+        "weight": 1,
+        "options": options or {"model": "gpt-4.1-mini", "temperature": 0.2},
+    }
+    if auth is not None:
+        instance["auth"] = auth
+    if override is not None:
+        instance["override"] = override
+    return StageBackendConfig(
+        backend_id=backend_id,
+        backend_name="model-service",
+        backend_kind=BackendKindEnum.AI.value,
+        backend_type=BackendTypeEnum.HTTP.value,
+        config={"timeout": 45000, "instances": [instance]},
     )
 
 
@@ -56,6 +84,10 @@ class TestServiceConvertor:
         release_data.stage.pk = 456
         release_data.stage.name = "prod"
         release_data.stage.description = "Production environment"
+        release_data.stage_backend_configs = {}
+        release_data.get_stage_plugins.return_value = []
+        release_data.jwt_private_key = "test-key"
+        release_data.gateway_auth_config = {}
         return release_data
 
     def test_service_convertor_initialization(self, mock_release_data):
@@ -145,6 +177,190 @@ class TestServiceConvertor:
         result = convertor.convert()
         assert result == []
 
+    def test_convert_with_ai_backend_config(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            10: _ai_backend_config(
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+                override={"endpoint": "https://models.example.com/v1/chat/completions"},
+            )
+        }
+        mock_release_data.get_stage_plugins.return_value = []
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        assert service.upstream is None
+        assert service.plugins["ai-proxy"].model_dump(exclude_none=True) == {
+            "provider": "openai-compatible",
+            "auth": {"header": {"Authorization": "Bearer must-not-log"}},
+            "options": {"model": "gpt-4.1-mini", "temperature": 0.2},
+            "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
+            "timeout": 45000,
+            "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
+        }
+        assert service.plugins["bk-backend-context"].bk_backend_id == 10
+
+    def test_ai_proxy_omits_override_for_builtin_provider(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            10: _ai_backend_config(
+                provider="openai",
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+            )
+        }
+        mock_release_data.get_stage_plugins.return_value = []
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        assert "override" not in service.plugins["ai-proxy"].model_dump(exclude_none=True)
+
+    def test_ai_proxy_emits_empty_auth_when_omitted(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            10: _ai_backend_config(override={"endpoint": "https://models.example.com/v1/chat/completions"})
+        }
+        mock_release_data.get_stage_plugins.return_value = []
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        assert service.plugins["ai-proxy"].auth == {}
+
+    def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "standard-service",
+                {"timeout": 60, "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}]},
+            ),
+            10: _ai_backend_config(
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+                override={"endpoint": "https://models.example.com/v1/chat/completions"},
+            ),
+        }
+        mock_release_data.get_stage_plugins.return_value = []
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        standard_service, ai_service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()
+
+        for plugin_name in ("bk-jwt", "bk-break-recursive-call", "bk-log-context", "bk-error-wrapper"):
+            assert plugin_name in standard_service.plugins
+            assert plugin_name in ai_service.plugins
+
+        assert standard_service.upstream is not None
+        assert "ai-proxy" not in standard_service.plugins
+        assert ai_service.upstream is None
+        assert "ai-proxy" in ai_service.plugins
+
+    def test_stage_plugins_are_filtered_for_each_service_kind(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "standard-service",
+                {"timeout": 60, "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}]},
+            ),
+            10: _ai_backend_config(
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+                override={"endpoint": "https://models.example.com/v1/chat/completions"},
+            ),
+        }
+        mock_release_data.get_stage_plugins.return_value = [
+            PluginData("bk-cors", {}, "stage"),
+            PluginData("bk-header-rewrite", {}, "stage"),
+            PluginData("ai-rate-limiting", {}, "stage"),
+        ]
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        standard_service, ai_service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()
+
+        assert "bk-cors" in standard_service.plugins
+        assert "bk-cors" in ai_service.plugins
+        assert "bk-stage-header-rewrite" in standard_service.plugins
+        assert "bk-stage-header-rewrite" not in ai_service.plugins
+        assert "ai-rate-limiting" not in standard_service.plugins
+        assert "ai-rate-limiting" in ai_service.plugins
+
+    def test_controller_generated_ai_proxy_takes_precedence(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            10: _ai_backend_config(
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+                override={"endpoint": "https://models.example.com/v1/chat/completions"},
+            )
+        }
+        mock_release_data.get_stage_plugins.return_value = [
+            PluginData("ai-proxy", {"provider": "must-not-win"}, "stage")
+        ]
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()[0]
+
+        assert service.plugins["ai-proxy"].provider == "openai-compatible"
+
+    def test_ai_service_uses_safe_log_format(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            1: _standard_backend_config(
+                1,
+                "standard-service",
+                {"timeout": 60, "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}]},
+            ),
+            10: _ai_backend_config(
+                auth={"header": {"Authorization": "Bearer must-not-log"}},
+                override={"endpoint": "https://models.example.com/v1/chat/completions"},
+            ),
+        }
+        mock_release_data.get_stage_plugins.return_value = []
+        mock_release_data.jwt_private_key = "test-key"
+        mock_release_data.gateway_auth_config = {}
+
+        standard_service, ai_service = ServiceConvertor(
+            mock_release_data,
+            publish_id=123,
+            apisix_version=APISIX_VERSION_3_16,
+        ).convert()
+
+        assert standard_service.plugins["file-logger"].model_dump(exclude_none=True) == {"path": "logs/access.log"}
+        serialized = json.dumps(ai_service.plugins["file-logger"].log_format)
+        for forbidden in (
+            "$bk_log_request_body",
+            "$bk_log_response_body",
+            "$args",
+            "$upstream_",
+            "$bk_backend_host",
+            "$bk_log_backend_path",
+        ):
+            assert forbidden not in serialized
+        assert "must-not-log" not in serialized
+
     def test_convert_with_multiple_backends(self, mock_release_data):
         """Test convert with multiple backend configs"""
         mock_release_data.stage_backend_configs = {
@@ -223,25 +439,30 @@ class TestServiceConvertor:
 
     def test_build_service_plugins(self, mock_release_data, mocker):
         """Test _build_service_plugins method"""
-        # Mock the three plugin methods
-        mock_default_plugins = {"plugin1": mocker.Mock(), "plugin2": mocker.Mock()}
+        mock_common_plugins = {"plugin1": mocker.Mock()}
+        mock_kind_plugins = {"plugin2": mocker.Mock()}
         mock_binding_plugins = {"plugin3": mocker.Mock()}
         mock_extra_plugins = {"plugin4": mocker.Mock()}
 
-        mocker.patch.object(ServiceConvertor, "_get_stage_default_plugins", return_value=mock_default_plugins)
+        mocker.patch.object(ServiceConvertor, "_get_common_default_plugins", return_value=mock_common_plugins)
+        mocker.patch.object(ServiceConvertor, "_get_kind_default_plugins", return_value=mock_kind_plugins)
         mocker.patch.object(ServiceConvertor, "_get_stage_binding_plugins", return_value=mock_binding_plugins)
         mocker.patch.object(ServiceConvertor, "_get_stage_extra_plugins", return_value=mock_extra_plugins)
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._build_service_plugins()
+        result = convertor._build_service_plugins(BackendKindEnum.STANDARD.value)
 
-        # Should contain all plugins from the three methods
         assert len(result) == 4
-        expected_plugins = {**mock_default_plugins, **mock_binding_plugins, **mock_extra_plugins}
+        expected_plugins = {
+            **mock_common_plugins,
+            **mock_kind_plugins,
+            **mock_binding_plugins,
+            **mock_extra_plugins,
+        }
         assert result == expected_plugins
 
-    def test_get_stage_default_plugins_basic(self, mock_release_data, mocker):
-        """Test _get_stage_default_plugins with basic configuration"""
+    def test_get_common_default_plugins_basic(self, mock_release_data, mocker):
+        """Test common and standard default plugins with basic configuration"""
         # Mock settings
         mocker.patch.object(settings, "GATEWAY_CONCURRENCY_LIMIT_ENABLED", False)
         mocker.patch.object(settings, "ENABLE_MULTI_TENANT_MODE", False)
@@ -251,7 +472,8 @@ class TestServiceConvertor:
         mock_release_data.gateway_auth_config = {"auth": "config"}
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_default_plugins()
+        result = convertor._get_common_default_plugins()
+        result.update(convertor._get_kind_default_plugins(BackendKindEnum.STANDARD.value))
 
         # Check that basic plugins are present
         expected_plugins = [
@@ -295,8 +517,8 @@ class TestServiceConvertor:
         expected_jwt_key = force_str(base64.b64encode(force_bytes("test-jwt-key")))
         assert stage_context_plugin.jwt_private_key == expected_jwt_key
 
-    def test_get_stage_default_plugins_with_concurrency_limit(self, mock_release_data, mocker):
-        """Test _get_stage_default_plugins with concurrency limit enabled"""
+    def test_get_common_default_plugins_with_concurrency_limit(self, mock_release_data, mocker):
+        """Test common default plugins with concurrency limit enabled"""
         mocker.patch.object(settings, "GATEWAY_CONCURRENCY_LIMIT_ENABLED", True)
         mocker.patch.object(settings, "ENABLE_MULTI_TENANT_MODE", False)
 
@@ -304,13 +526,13 @@ class TestServiceConvertor:
         mock_release_data.gateway_auth_config = {}
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_default_plugins()
+        result = convertor._get_common_default_plugins()
 
         # Check that concurrency limit plugin is present
         assert "bk-concurrency-limit" in result
 
-    def test_get_stage_default_plugins_multi_tenant_mode(self, mock_release_data, mocker):
-        """Test _get_stage_default_plugins with multi-tenant mode enabled"""
+    def test_get_common_default_plugins_multi_tenant_mode(self, mock_release_data, mocker):
+        """Test common default plugins with multi-tenant mode enabled"""
         mocker.patch.object(settings, "GATEWAY_CONCURRENCY_LIMIT_ENABLED", False)
         mocker.patch.object(settings, "ENABLE_MULTI_TENANT_MODE", True)
 
@@ -321,7 +543,7 @@ class TestServiceConvertor:
         mock_release_data.gateway_auth_config = {}
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_default_plugins()
+        result = convertor._get_common_default_plugins()
 
         # Check that multi-tenant plugins are present
         assert "bk-tenant-verify" in result
@@ -338,7 +560,7 @@ class TestServiceConvertor:
         mock_release_data.get_stage_plugins.return_value = []
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins()
+        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
 
         assert result == {}
 
@@ -347,16 +569,18 @@ class TestServiceConvertor:
         # Mock plugin data
         mock_plugin1 = mocker.Mock()
         mock_plugin1.name = "test-plugin-1"
+        mock_plugin1.type_code = "test-plugin-1"
         mock_plugin1.config = {"key1": "value1", "key2": "value2"}
 
         mock_plugin2 = mocker.Mock()
         mock_plugin2.name = "test-plugin-2"
+        mock_plugin2.type_code = "test-plugin-2"
         mock_plugin2.config = {"key3": "value3"}
 
         mock_release_data.get_stage_plugins.return_value = [mock_plugin1, mock_plugin2]
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins()
+        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
 
         # Check that plugins are created with correct names and configs
         assert "test-plugin-1" in result
@@ -374,7 +598,7 @@ class TestServiceConvertor:
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", ["legacy-gateway"])
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_extra_plugins()
+        result = convertor._get_stage_extra_plugins(BackendKindEnum.STANDARD.value)
 
         assert result == {}
 
@@ -383,7 +607,7 @@ class TestServiceConvertor:
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", ["test-gateway", "other-legacy"])
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_extra_plugins()
+        result = convertor._get_stage_extra_plugins(BackendKindEnum.STANDARD.value)
 
         assert "bk-legacy-invalid-params" in result
         assert len(result) == 1
@@ -393,6 +617,13 @@ class TestServiceConvertor:
         mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", [])
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_extra_plugins()
+        result = convertor._get_stage_extra_plugins(BackendKindEnum.STANDARD.value)
 
         assert result == {}
+
+    def test_get_stage_extra_plugins_omits_legacy_plugin_for_ai(self, mock_release_data, mocker):
+        mocker.patch.object(settings, "LEGACY_INVALID_PARAMS_GATEWAY_NAMES", ["test-gateway"])
+
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_16)
+
+        assert convertor._get_stage_extra_plugins(BackendKindEnum.AI.value) == {}
