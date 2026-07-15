@@ -2,8 +2,8 @@
 
 > 状态：需求讨论稿。本文记录当前已确认的建模结论，后续讨论可继续补充。
 >
-> 主要实现范围：`src/dashboard`。模型请求出站 Header 隔离需要
-> `blueking-apigateway-apisix` 配套实现。
+> 主要实现范围：`src/dashboard`。第一期不增加模型请求的 AI 专用出站
+> Header 限制。
 
 ## 1. 设计结论
 
@@ -16,7 +16,7 @@ AI Gateway 继续复用现有网关、环境、后端服务、资源和发布模
 - `Proxy` 仍然只保留一个 `backend` 外键，不增加 `model_backend` 外键。
 - `Backend.type` 和 `Proxy.type` 保持现有的协议语义，不用于区分普通服务和模型服务。
 - Service 和 Route 插件根据 Backend.kind / Resource.kind 使用显式兼容策略，模型链路采用允许列表，未知插件默认不下发。
-- 模型请求的出站 Header 采用默认拒绝策略；模型访问日志默认只记录统计摘要，不记录 Prompt 和模型回复正文。
+- 第一期不增加模型请求的 AI 专用出站 Header 限制；模型访问日志默认只记录统计摘要，不记录 Prompt 和模型回复正文。
 - 模型代理 API 不能配置为 MCP Server 的工具资源，MCP Server 只允许关联 `Resource.kind=standard` 的 API。
 - 模型代理 API 保留用户配置的外部 Resource.path，HTTP Method 固定为 POST；第一期只支持 Chat Completions。
 - Chat Completions 默认同时支持普通响应和流式响应，不增加网关产品层的流式开关或额外限制。
@@ -519,17 +519,17 @@ common service plugins
 
 | 分类 | 插件 | 模型链路处理 |
 | --- | --- | --- |
-| 通用网关能力 | `bk-real-ip`、`bk-auth-validate`、`bk-auth-verify`、`bk-permission`、`bk-delete-sensitive`、`bk-delete-cookie`、`bk-stage-context`、`bk-resource-context`、`bk-backend-context`、`bk-debug`、租户校验、并发限制 | 保留；其中租户等插件写入请求 Header 的行为不等于允许向模型服务透传 |
-| 通用可观测性 | `prometheus`、`bk-request-id`、`bk-response-check`、`file-logger` | 保留，但使用模型日志 Profile 和 LLM metrics 配置 |
-| 普通 Service 专用 | `bk-jwt`、`bk-break-recursive-call`、`bk-log-context`、`bk-error-wrapper` | 模型 Service 不下发 |
-| 模型 Service 专用 | `ai-proxy` / `ai-proxy-multi`、模型出站 Header 过滤能力 | 仅模型 Service 下发，且由 controller 自动生成 |
+| 通用网关能力 | `bk-real-ip`、`bk-auth-validate`、`bk-auth-verify`、`bk-permission`、`bk-delete-sensitive`、`bk-delete-cookie`、`bk-stage-context`、`bk-resource-context`、`bk-backend-context`、`bk-debug`、租户校验、并发限制，以及 `bk-jwt`、`bk-break-recursive-call`、`bk-log-context`、`bk-error-wrapper` | 模型 Service 保留 |
+| 通用可观测性 | `prometheus`、`bk-request-id`、`bk-response-check`、`file-logger` | 保留；模型 Service 使用安全日志 Profile |
+| 模型 Service 专用 | controller 自动生成的 `ai-proxy` | 仅模型 Service 下发；第一期只生成 `ai-proxy` |
 
 具体约束：
 
-- `bk-jwt` 生成的 `X-Bkapi-Jwt`、`X-Bkapi-App` 是普通 Backend 身份透传协议，不能发送给模型厂商。
-- `bk-break-recursive-call` 会生成 `X-Bkapi-Instance-Id`。第一期模型 Service 不下发该插件；如果后续允许模型 endpoint 指向另一个网关，需要重新设计不泄露内部实例标识的递归检测协议。
-- `bk-error-wrapper` 依赖普通 NGINX upstream 的状态、连接耗时和收发字节数，不能用于 `ai-proxy` 的 Lua HTTP 请求。
-- `bk-log-context` 的 upstream 字段在模型链路中不准确，并可能记录 Prompt 或流式响应首段，模型 Service 不下发。
+- `bk-jwt`、`bk-break-recursive-call`、`bk-log-context` 和 `bk-error-wrapper` 在通用网关请求处理链中仍然有用，模型 Service 保留这些能力。
+- `bk-error-wrapper` 在认证、权限、请求校验或限流插件提前终止请求后的 APISIX response filter 阶段执行，只包装 BlueKing 网关插件写入 `ctx.var.bk_apigw_error` 的错误。
+- `ai-proxy` 和模型厂商错误不写入 `ctx.var.bk_apigw_error`，因此 `bk-error-wrapper` 保持其原始状态码、Header 和响应体不变。
+- 第一期有意允许经过现有通用网关插件处理链后保留的所有内部 Header 和客户端请求 Header 进入 `ai-proxy` 的模型出站请求，本次实现不增加 AI 专用 Header 过滤。
+- 模型 Service 的 `file-logger` 配置不得引用请求体、响应体、查询字符串、上游地址或模型厂商凭证。
 - `bk-response-check` 继续提供现有网关、应用、Backend 和 Resource 维度的通用请求指标；LLM 模型、Token 和首 Token 延迟等指标由 APISIX Prometheus LLM metrics 提供。
 
 `ai-proxy` / `ai-proxy-multi` 只能由 controller 根据 BackendConfig 生成。即使 `PluginType` 中存在 `ai-proxy`，也不允许通过页面、导入或同步将其绑定到 Stage 或 Resource，避免 Route 插件覆盖 Service 上由 BackendConfig 派生的模型配置。
@@ -540,7 +540,7 @@ common service plugins
 
 | 策略 | 插件 | 说明 |
 | --- | --- | --- |
-| 允许用于普通和模型链路 | `bk-cors`、`bk-rate-limit`、`bk-ip-restriction`、`request-validation`、`bk-request-body-limit`、`bk-user-restriction`、`bk-access-token-source`、`bk-username-required`、OAuth2 认证插件、`uri-blocker` | 只处理入口认证、访问控制或请求校验；会生成内部 Header 的插件仍受模型出站 Header 过滤约束 |
+| 允许用于普通和模型链路 | `bk-cors`、`bk-rate-limit`、`bk-ip-restriction`、`request-validation`、`bk-request-body-limit`、`bk-user-restriction`、`bk-access-token-source`、`bk-username-required`、OAuth2 认证插件、`uri-blocker` | 处理入口认证、访问控制或请求校验 |
 | 只允许用于模型链路 | `ai-rate-limiting` | 依赖 `ai-proxy` 选中的 instance 和模型 Token usage |
 | 模型链路禁止 | `bk-header-rewrite`、`bk-query-string-rewrite`、`bk-status-rewrite`、`bk-traffic-label`、`api-breaker`、`response-rewrite`、`proxy-cache`、`bk-legacy-invalid-params` | 请求改写可能覆盖模型认证；普通 query/upstream 状态对 AI driver 无效；响应改写和缓存可能破坏 SSE |
 | 第一期不开放给模型链路 | `bk-mock`、`redirect`、`fault-injection` | 技术上可以短路请求，但会绕过模型调用或破坏模型响应契约；有明确产品场景后再开放 |
@@ -554,35 +554,16 @@ Stage 绑定插件按目标 Backend.kind 下发：
 
 Resource 绑定插件按 Resource.kind 校验。模型 Resource 绑定不在允许列表中的插件时直接报错，不能在发布时静默丢弃。
 
-插件兼容策略由代码中的显式策略表维护，并由 Web API 返回给前端用于过滤可选插件。以下入口必须执行相同校验：
-
-- 插件绑定创建和更新。
-- Resource 导入、导出和 `/api/v2/sync` 同步。
-- controller 发布前的防御性校验。
+插件兼容策略由代码中的显式策略表维护。第一期用于 controller 发布前的防御性校验和转换；插件绑定 API、Resource 导入同步和前端可选插件过滤在后续复用该策略。
 
 #### 8.3.3 模型请求出站 Header
 
-当前 APISIX `ai-proxy` driver 会复制客户端当前请求的全部 Header，仅排除 `Host` 和 `Content-Length`。这会把网关插件生成的内部 Header 一并发送给模型厂商，仅在 dashboard 中筛选插件不足以建立安全边界。
+第一期暂不增加模型请求的 AI 专用出站 Header 限制，不增加允许列表、拒绝列表或 AI driver 内部 Header 清理逻辑。
 
-模型请求必须在 APISIX 实际构造出站请求时执行 Header 允许列表过滤，不能通过提前删除入口请求 Header 实现，否则会破坏认证上下文、租户信息和访问日志。
-
-第一期允许从客户端请求透传：
-
-```text
-Accept
-X-Request-ID
-traceparent
-tracestate
-```
-
-约束：
-
-- `Content-Type` 由 AI driver 设置为 `application/json`。
-- `Authorization`、`X-API-Key`、Cookie 和所有 `X-Bkapi-*` / `X-Bk-*` Header 不从客户端请求透传。
-- 模型厂商所需的 Authorization、API Key、组织或版本 Header 只能由 BackendConfig 中的 instance `auth.header` 生成，并在客户端 Header 过滤后注入。
-- Header 名称按 HTTP 语义进行大小写不敏感匹配。
-
-该能力需要在 `blueking-apigateway-apisix` 的 AI driver 公共出站 Header 构造逻辑中实现，覆盖所有 provider。
+- 保持现有通用网关插件处理链；经过该链路后保留的客户端请求 Header 和内部 Header 均允许进入 `ai-proxy` 的模型出站请求。
+- 保持 `ai-proxy` 当前 Header 转发行为；`Host` 和 `Content-Length` 仅沿用 driver 现有的传输层处理，不作为新增的安全过滤规则。
+- BackendConfig 中 `instances[0].auth.header` 继续由 `ai-proxy` 按现有逻辑注入模型厂商凭证；controller 不新增普通请求 Header 的改写或过滤。
+- 出站 Header 收敛不作为第一期发布前置条件，后续如需限制必须单独设计兼容策略并补充 APISIX driver 测试。
 
 #### 8.3.4 模型日志
 
@@ -631,6 +612,12 @@ controller 同时将 BackendConfig.timeout 原样转换为 `ai-proxy.timeout`，
 - Service ID 继续基于现有 Backend ID 生成。
 - controller 继续只保留一套 `backend_id -> service_id` 映射。
 
+#### APISIX version boundary
+
+- An AI Gateway may publish only when its `DataPlane.apisix_version` is `3.16`.
+- The dashboard transformer fails before generating resources when an AI Gateway targets any other version.
+- APISIX 3.13 remains supported for standard gateways and receives no AI-specific changes.
+
 ### 8.6 bk-backend-context、日志与 metrics
 
 普通 Service 和模型 Service 继续复用 `bk-backend-context`：
@@ -651,16 +638,11 @@ bk_backend_name = Backend.name
 
 ### 8.8 响应与错误契约
 
-模型调用成功响应和模型调用错误均保持 `ai-proxy` 输出的 OpenAI 兼容格式及 HTTP 状态码，不再经过普通 Service 的 `bk-error-wrapper`，也不转换为网关统一错误结构。
+我们的插件报错统一由 `bk-error-wrapper` wrap；`ai-proxy` 以及模型服务返回的错误不 wrap，保持原始响应。
 
-请求进入模型调用前由网关产生的错误继续使用现有网关契约，例如：
-
-- 认证失败。
-- 权限不足。
-- 网关或 Resource 限流。
-- 请求参数校验失败。
-
-该边界保证 OpenAI SDK 能按模型协议处理上游响应，同时保留现有网关治理错误的一致性。
+- 认证、权限、请求校验和网关限流等 BlueKing 网关插件错误写入 `ctx.var.bk_apigw_error`，由 `bk-error-wrapper` 转换为现有网关统一错误结构。
+- `ai-proxy` 请求校验错误和模型服务返回的错误不写入 `ctx.var.bk_apigw_error`，保持其原始 HTTP 状态码、Header 和响应体。
+- `bk-error-wrapper` 在 response filter 阶段执行，因此即使认证插件在 rewrite/access 阶段提前终止请求，仍能包装已经记录的网关插件错误。
 
 ## 9. 数据兼容与迁移
 
@@ -701,8 +683,9 @@ bk_backend_name = Backend.name
 - Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
-- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、安全插件 Profile 和关联 service_id 的 Route。
-- 请求链路：普通响应和 SSE 流式响应均可用；模型错误保持 OpenAI 兼容契约，网关调用前错误保持现有网关契约；客户端敏感 Header 不会发送到模型服务。
+- controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route。
+- controller：AI Gateway 仅允许发布到 APISIX 3.16，非 3.16 在生成资源前失败；普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。
+- 请求链路：普通响应和 SSE 流式响应均可用；BlueKing 网关插件错误由 `bk-error-wrapper` 统一包装，`ai-proxy` 和模型服务错误保持原始响应；第一期不增加 AI 专用出站 Header 过滤。
 - 回归：普通网关、可编程网关以及 AI Gateway 中的普通 Backend/Resource 沿用现有行为。
 
 ## 12. 非第一期范围
