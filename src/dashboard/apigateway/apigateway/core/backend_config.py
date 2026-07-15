@@ -1,8 +1,14 @@
 from typing import Any, Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from apigateway.core.constants import AI_BACKEND_BUILTIN_PROVIDERS, AIBackendProviderEnum, BackendKindEnum
+from apigateway.common.security import is_forbidden_host
+from apigateway.core.constants import (
+    AI_BACKEND_BUILTIN_PROVIDERS,
+    AIBackendProviderEnum,
+    BackendKindEnum,
+)
 
 
 def mask_header_value(value: str) -> str:
@@ -128,11 +134,32 @@ class AIBackendConfig(BaseModel):
         if not isinstance(override["endpoint"], str) or not override["endpoint"]:
             raise ValueError(f"{path}.endpoint: must be a non-empty string")
 
+        endpoint = override["endpoint"]
+        try:
+            parsed_endpoint = urlsplit(endpoint)
+            port = parsed_endpoint.port
+        except ValueError:
+            raise ValueError(f"{path}.endpoint: port is invalid") from None
+
+        if parsed_endpoint.scheme not in {"http", "https"}:
+            raise ValueError(f"{path}.endpoint: scheme must be http or https")
+        if not parsed_endpoint.hostname:
+            raise ValueError(f"{path}.endpoint: hostname is required")
+        if parsed_endpoint.username is not None or parsed_endpoint.password is not None:
+            raise ValueError(f"{path}.endpoint: userinfo is not allowed")
+        if is_forbidden_host(parsed_endpoint.hostname):
+            raise ValueError(f"{path}.endpoint: host is forbidden")
+        if port is not None and is_forbidden_host(f"{parsed_endpoint.hostname}:{port}"):
+            raise ValueError(f"{path}.endpoint: port is forbidden")
+
     @model_validator(mode="after")
     def validate_provider_contract(self) -> Self:
         instance = self.instances[0]
         headers = instance.get("auth", {}).get("header", {})
-        authorization = next((value for key, value in headers.items() if key.casefold() == "authorization"), "")
+        authorization = next(
+            (value for key, value in headers.items() if key.casefold() == "authorization"),
+            "",
+        )
         if instance["provider"] in AI_BACKEND_BUILTIN_PROVIDERS:
             if not authorization:
                 raise ValueError("$.instances[0].auth.header: Authorization header is required")

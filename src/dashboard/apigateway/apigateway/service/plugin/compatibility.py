@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.core.constants import ResourceKindEnum
 
 AI_ONLY_PLUGIN_CODES = frozenset(
@@ -31,14 +32,17 @@ AI_ONLY_PLUGIN_CODES = frozenset(
 
 AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES = frozenset(
     {
-        "api-breaker",
-        "bk-header-rewrite",
-        "bk-legacy-invalid-params",
-        "bk-query-string-rewrite",
-        "bk-status-rewrite",
-        "bk-traffic-label",
-        "proxy-cache",
-        "response-rewrite",
+        PluginTypeCodeEnum.API_BREAKER.value,
+        PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+        PluginTypeCodeEnum.BK_LEGACY_INVALID_PARAMS.value,
+        PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value,
+        PluginTypeCodeEnum.BK_STATUS_REWRITE.value,
+        PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value,
+        PluginTypeCodeEnum.PROXY_CACHE.value,
+        PluginTypeCodeEnum.RESPONSE_REWRITE.value,
+        PluginTypeCodeEnum.BK_MOCK.value,
+        PluginTypeCodeEnum.REDIRECT.value,
+        PluginTypeCodeEnum.FAULT_INJECTION.value,
     }
 )
 
