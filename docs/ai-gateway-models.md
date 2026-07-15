@@ -15,7 +15,7 @@ AI Gateway 继续复用现有网关、环境、后端服务、资源和发布模
 - `Resource.kind` 区分普通 API 和模型代理 API。
 - `Proxy` 仍然只保留一个 `backend` 外键，不增加 `model_backend` 外键。
 - `Backend.type` 和 `Proxy.type` 保持现有的协议语义，不用于区分普通服务和模型服务。
-- Service 和 Route 插件根据 Backend.kind / Resource.kind 使用显式兼容策略，模型链路采用允许列表，未知插件默认不下发。
+- Service 和 Route 的用户绑定插件在绑定或资源同步写入时按 Backend.kind / Resource.kind 校验；controller 信任已保存的绑定关系，不在发布时重复校验或过滤。
 - 第一期不增加模型请求的 AI 专用出站 Header 限制；模型访问日志默认只记录统计摘要，不记录 Prompt 和模型回复正文。
 - 模型代理 API 不能配置为 MCP Server 的工具资源，MCP Server 只允许关联 `Resource.kind=standard` 的 API。
 - 模型代理 API 保留用户配置的外部 Resource.path，HTTP Method 固定为 POST；第一期只支持 Chat Completions。
@@ -545,16 +545,16 @@ common service plugins
 | 模型链路禁止 | `bk-header-rewrite`、`bk-query-string-rewrite`、`bk-status-rewrite`、`bk-traffic-label`、`api-breaker`、`response-rewrite`、`proxy-cache`、`bk-legacy-invalid-params` | 请求改写可能覆盖模型认证；普通 query/upstream 状态对 AI driver 无效；响应改写和缓存可能破坏 SSE |
 | 第一期不开放给模型链路 | `bk-mock`、`redirect`、`fault-injection` | 技术上可以短路请求，但会绕过模型调用或破坏模型响应契约；有明确产品场景后再开放 |
 
-Stage 绑定插件按目标 Backend.kind 下发：
+Stage 绑定会应用到该 Stage 生成的全部 Service，因此绑定时必须与该 Stage 当前所有 Backend.kind 兼容：
 
-- 通用插件同时下发到普通和模型 Service。
-- standard-only 插件只下发到普通 Service。
-- ai-only 插件只下发到模型 Service。
-- 未登记兼容性的插件视为 standard-only，不得下发到模型 Service。
+- 只有普通 Backend 的 Stage 可以绑定 standard-only 插件。
+- 只有模型 Backend 的 Stage 可以绑定 ai-only 插件。
+- 同时包含普通和模型 Backend 的 Stage 只能绑定两类 Service 都兼容的通用插件。
+- Web API 创建 Stage 插件绑定时执行校验；未登记兼容性的插件视为 standard-only。
 
-Resource 绑定插件按 Resource.kind 校验。模型 Resource 绑定不在允许列表中的插件时直接报错，不能在发布时静默丢弃。
+Resource 绑定插件按 Resource.kind 校验。Web API 创建 Resource 插件绑定，以及 `/apis/open` 和 `/apis/v2/sync` 同步带插件的 Resource 时，模型 Resource 绑定不在允许列表中的插件会直接报错。
 
-插件兼容策略由代码中的显式策略表维护。第一期用于 controller 发布前的防御性校验和转换；插件绑定 API、Resource 导入同步和前端可选插件过滤在后续复用该策略。
+插件兼容策略由代码中的显式策略表维护。绑定和同步入口负责保证持久化关系合法；controller 发布逻辑信任该关系，原样合并 Stage/Resource 绑定插件，不再执行兼容性校验或过滤。前端可选插件过滤可在后续复用同一策略，但不能替代服务端写入校验。
 
 #### 8.3.3 模型请求出站 Header
 
@@ -634,7 +634,7 @@ bk_backend_name = Backend.name
 模型代理 Resource 与普通 Resource 都生成 APISIX Route，并通过 `service_id` 关联 Service。
 
 - `Resource.kind=standard`：保持现有普通 Route 转换逻辑和 `bk-proxy-rewrite`。
-- `Resource.kind=ai`：使用用户配置的 Resource.path 和固定的 POST Method，关联模型 Service，不生成普通后端路径改写配置，并只合并模型允许列表中的 Resource 插件。
+- `Resource.kind=ai`：使用用户配置的 Resource.path 和固定的 POST Method，关联模型 Service，不生成普通后端路径改写配置，并合并写入阶段已经校验的 Resource 插件绑定。
 
 ### 8.8 响应与错误契约
 
@@ -682,6 +682,7 @@ bk_backend_name = Backend.name
 - 凭证：AI 配置经 view/biz 写入后数据库只保存完整配置 JSON 的嵌套密文，且与 `DataPlane.etcd_configs` 使用相同的 `get_crypto()` 入口和运行时算法、密钥配置；普通配置及其存量记录保持原始 JSON 明文。ORM 读取与 Django Admin 返回可信明文，Web API 与审计在明文长度小于 4 时返回 `****`，否则保留前后各 2 位；Web 更新 API 对掩码 value 的恢复、非掩码替换、清空和解密失败路径均有覆盖。
 - Stage 同步：普通网关拒绝 `ai_backends`；AI Gateway 支持纯模型 Stage、双字段事务 upsert、缺省不修改、空数组不删除和同名不同 kind 冲突。
 - Resource：kind 与 Backend.kind 必须一致；模型资源固定 POST、Proxy.config 为空；导入导出遵循 `x-bk-apigateway-resource.kind` 的兼容规则。
+- 插件兼容性：Web Stage/Resource 绑定和 `/apis/open`、`/apis/v2/sync` Resource 插件同步拒绝不兼容关系；controller 发布信任持久化关系，不再校验或过滤。
 - MCP Server：候选列表、创建更新、自动化同步、异步发布、运行时工具加载和权限同步均排除模型 Resource，且按 ResourceVersion 快照判断。
 - controller：普通 Backend 的 Service/Route 输出保持不变；模型 Backend 生成无 upstream 的 Service、`ai-proxy`、包含 `bk-error-wrapper` 的安全插件 Profile 和关联 service_id 的 Route。
 - controller：AI Gateway 仅允许发布到 APISIX 3.16，非 3.16 在生成资源前失败；普通网关继续支持 APISIX 3.13，且不包含 AI 专用变更。

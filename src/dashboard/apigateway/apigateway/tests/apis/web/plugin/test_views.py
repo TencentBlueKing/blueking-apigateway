@@ -16,9 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django_dynamic_fixture import G
 
 from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
 from apigateway.apps.plugin.models import PluginBinding
+from apigateway.core.constants import BackendKindEnum, ResourceKindEnum
+from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.yaml import yaml_dumps
 
 
@@ -130,6 +133,76 @@ class TestPluginConfigCreateApi:
             },
         )
         assert response.status_code == status_code
+
+    def test_create_rejects_plugin_incompatible_with_resource_kind(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        fake_plugin_type_bk_header_rewrite,
+    ):
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.save(update_fields=["kind"])
+
+        response = request_view(
+            "POST",
+            "plugins.config.create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == 400
+        assert not PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="resource",
+            scope_id=fake_resource.id,
+        ).exists()
+
+    def test_create_rejects_plugin_incompatible_with_service_kind(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_plugin_type_bk_header_rewrite,
+    ):
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
+
+        response = request_view(
+            "POST",
+            "plugins.config.create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "stage",
+                "scope_id": fake_stage.id,
+                "code": fake_plugin_type_bk_header_rewrite.code,
+            },
+            data={
+                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+            },
+        )
+
+        assert response.status_code == 400
+        assert not PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="stage",
+            scope_id=fake_stage.id,
+        ).exists()
 
 
 class TestPluginConfigRetrieveUpdateDestroyApi:

@@ -21,6 +21,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status
 
@@ -40,8 +41,9 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum
-from apigateway.core.models import Resource, Stage
+from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
+from apigateway.core.models import BackendConfig, Resource, Stage
+from apigateway.service.plugin import is_plugin_allowed_for_kind
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.yaml import yaml_loads
@@ -238,10 +240,36 @@ class PluginConfigCreateApi(
     def get_queryset(self):
         return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
 
+    def validate_plugin_compatibility(self):
+        scope_type = self.kwargs["scope_type"]
+        scope_id = self.kwargs["scope_id"]
+        plugin_type_code = self.kwargs["code"]
+
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            kinds = {Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind}
+        else:
+            kinds = set(
+                BackendConfig.objects.filter(gateway=self.request.gateway, stage_id=scope_id).values_list(
+                    "backend__kind", flat=True
+                )
+            )
+            # A stage without an explicit backend still follows the historical standard-service contract.
+            kinds = kinds or {ResourceKindEnum.STANDARD.value}
+
+        incompatible_kinds = sorted(kind for kind in kinds if not is_plugin_allowed_for_kind(plugin_type_code, kind))
+        if incompatible_kinds:
+            raise error_codes.INVALID_ARGUMENT.format(
+                _("插件 {plugin_type_code} 与绑定目标类型 {kinds} 不兼容。").format(
+                    plugin_type_code=plugin_type_code,
+                    kinds=", ".join(incompatible_kinds),
+                )
+            )
+
     @transaction.atomic
     def perform_create(self, serializer):
         self.validate_scope()
         self.validate_code(type_id=serializer.validated_data["type_id"])
+        self.validate_plugin_compatibility()
         scope_type = self.kwargs["scope_type"]
         scope_id = self.kwargs["scope_id"]
 

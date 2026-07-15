@@ -68,6 +68,34 @@ class TestResourceImportValidator:
 
         assert not errors
 
+    def test_validate_ai_resource_rejects_incompatible_plugin(
+        self,
+        fake_gateway,
+        fake_plugin_type_bk_header_rewrite,
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+            plugin_configs=[
+                PluginConfigData(
+                    type=fake_plugin_type_bk_header_rewrite.code,
+                    yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+
     def test_validate(self, fake_gateway, fake_resource_data):
         resource_data_list = [
             fake_resource_data.copy(deep=True),

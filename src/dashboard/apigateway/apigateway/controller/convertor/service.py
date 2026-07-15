@@ -47,7 +47,6 @@ from apigateway.controller.models.constants import (
 )
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.constants import BackendKindEnum, LoadBalanceTypeEnum
-from apigateway.service.plugin import is_plugin_allowed_for_kind
 
 from .base import GatewayResourceConvertor
 from .constants import LABEL_KEY_BACKEND_ID
@@ -213,7 +212,7 @@ class ServiceConvertor(GatewayResourceConvertor):
     def _build_service_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         plugins = self._get_common_default_plugins()
         plugins.update(self._get_kind_default_plugins(backend_kind))
-        plugins.update(self._get_stage_binding_plugins(backend_kind))
+        plugins.update(self._get_stage_binding_plugins())
         plugins.update(self._get_stage_extra_plugins(backend_kind))
         return plugins
 
@@ -269,16 +268,15 @@ class ServiceConvertor(GatewayResourceConvertor):
             return {"file-logger": Plugin(path="logs/access.log")}
         raise ValueError(f"unsupported backend kind: {backend_kind}")
 
-    def _get_stage_binding_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
+    def _get_stage_binding_plugins(self) -> Dict[str, Plugin]:
         return {
-            plugin_data.name: Plugin(**plugin_data.config)
-            for plugin_data in self._release_data.get_stage_plugins()
-            if is_plugin_allowed_for_kind(plugin_data.type_code, backend_kind)
+            plugin_data.name: Plugin(**plugin_data.config) for plugin_data in self._release_data.get_stage_plugins()
         }
 
     def _get_stage_extra_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
-        if self.gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES and is_plugin_allowed_for_kind(
-            "bk-legacy-invalid-params", backend_kind
+        if (
+            backend_kind == BackendKindEnum.STANDARD.value
+            and self.gateway_name in settings.LEGACY_INVALID_PARAMS_GATEWAY_NAMES
         ):
             return {"bk-legacy-invalid-params": Plugin()}
         return {}

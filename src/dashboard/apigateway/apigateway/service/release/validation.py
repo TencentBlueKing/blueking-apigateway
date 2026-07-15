@@ -35,7 +35,6 @@ from apigateway.core.constants import (
     ResourceKindEnum,
 )
 from apigateway.core.models import Backend, BackendConfig, Gateway, Proxy, ResourceVersion, Stage
-from apigateway.service.plugin import get_incompatible_plugin_type_codes, is_plugin_allowed_for_kind
 from apigateway.service.resource_version import get_used_stage_vars
 
 
@@ -244,48 +243,6 @@ class PublishValidator:
                 )
             stage_plugin_type_set.add(stage_plugin.config.type.code)
 
-    def _validate_plugin_compatibility(self):
-        resource_version = self.resource_version or ResourceVersion.objects.get_latest_version(self.gateway.id)
-        resource_configs = resource_version.data if resource_version and resource_version.data else []
-
-        for resource in resource_configs:
-            resource_kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
-            incompatible_plugin_type_codes = get_incompatible_plugin_type_codes(
-                [plugin["type"] for plugin in resource.get("plugins", [])],
-                resource_kind,
-            )
-            if incompatible_plugin_type_codes:
-                raise ReleaseValidationError(
-                    _("资源【{resource_name}】绑定了与资源类型不兼容的插件【{plugin_codes}】，不允许发布。").format(
-                        resource_name=resource["name"],
-                        plugin_codes=", ".join(incompatible_plugin_type_codes),
-                    )
-                )
-
-        backend_kinds = set(
-            BackendConfig.objects.filter(stage=self.stage).values_list("backend__kind", flat=True).distinct()
-        )
-        if not backend_kinds and not resource_configs:
-            return
-
-        stage_plugins = PluginBinding.objects.filter(
-            scope_id=self.stage.id,
-            scope_type=PluginBindingScopeEnum.STAGE.value,
-        ).select_related("config__type")
-        for stage_plugin in stage_plugins:
-            plugin_type_code = stage_plugin.config.type.code
-            if any(is_plugin_allowed_for_kind(plugin_type_code, kind) for kind in backend_kinds):
-                continue
-
-            raise ReleaseValidationError(
-                _(
-                    "网关环境【{stage_name}】绑定了与所有后端服务类型均不兼容的插件【{plugin_code}】，不允许发布。"
-                ).format(
-                    stage_name=self.stage.name,
-                    plugin_code=plugin_type_code,
-                )
-            )
-
     def _validate_stage_vars(self, stage: Stage, resource_version_id: int):
         validator = StageVarsValuesValidator()
         validator(
@@ -330,7 +287,6 @@ class PublishValidator:
         # stage相关配置
         self._validate_stage_backends()
         self._validate_stage_plugins()
-        self._validate_plugin_compatibility()
 
         if self.resource_version:
             self._validate_resource_version_schema()

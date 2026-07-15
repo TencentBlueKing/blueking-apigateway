@@ -25,7 +25,6 @@ from apigateway.controller.models import GatewayApisixModel, Plugin, Route, Time
 from apigateway.controller.models.constants import HttpMethodEnum
 from apigateway.controller.uri_render import UpstreamURIRender, URIRender
 from apigateway.core.constants import ProxyTypeEnum, ResourceKindEnum
-from apigateway.service.plugin import get_incompatible_plugin_type_codes
 from apigateway.utils.time import now_str
 
 from .base import GatewayResourceConvertor
@@ -146,7 +145,7 @@ class RouteConvertor(GatewayResourceConvertor):
     def _convert_ai_route(self, resource: Dict[str, Any], service_id: str) -> Route:
         uris, _ = self._convert_uris(path=resource["path"], match_subpath=False)
         plugins = {"bk-resource-context": self._build_resource_context_plugin(resource)}
-        plugins.update(self._convert_resource_bound_plugins(resource, ResourceKindEnum.AI.value))
+        plugins.update(self._convert_resource_bound_plugins(resource))
 
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
@@ -198,7 +197,7 @@ class RouteConvertor(GatewayResourceConvertor):
             "bk-resource-context": self._build_resource_context_plugin(resource),
             "bk-proxy-rewrite": Plugin(**self._build_bk_proxy_rewrite_config(resource_proxy)),
         }
-        plugins.update(self._convert_resource_bound_plugins(resource, ResourceKindEnum.STANDARD.value))
+        plugins.update(self._convert_resource_bound_plugins(resource))
         return plugins
 
     def _build_resource_context_plugin(self, resource: Dict[str, Any]) -> Plugin:
@@ -214,18 +213,8 @@ class RouteConvertor(GatewayResourceConvertor):
             },
         )
 
-    def _convert_resource_bound_plugins(self, resource: Dict[str, Any], resource_kind: str) -> Dict[str, Plugin]:
+    def _convert_resource_bound_plugins(self, resource: Dict[str, Any]) -> Dict[str, Plugin]:
         plugin_data = self._release_data.get_resource_plugins(resource["id"])
-        incompatible_plugin_type_codes = get_incompatible_plugin_type_codes(
-            [plugin.type_code for plugin in plugin_data],
-            resource_kind,
-        )
-        if incompatible_plugin_type_codes:
-            raise ValueError(
-                f"resource {resource['id']}/{resource['name']} has incompatible plugins: "
-                f"{', '.join(incompatible_plugin_type_codes)}"
-            )
-
         return {plugin.name: Plugin(**plugin.config) for plugin in plugin_data}
 
     def _build_bk_proxy_rewrite_config(self, resource_proxy: Dict[str, Any]) -> Dict[str, Any]:

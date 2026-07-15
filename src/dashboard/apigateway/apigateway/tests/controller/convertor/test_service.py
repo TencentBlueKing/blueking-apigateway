@@ -272,7 +272,7 @@ class TestServiceConvertor:
         assert ai_service.upstream is None
         assert "ai-proxy" in ai_service.plugins
 
-    def test_stage_plugins_are_filtered_for_each_service_kind(self, mock_release_data):
+    def test_stage_plugin_bindings_are_trusted_for_each_service(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
             1: _standard_backend_config(
                 1,
@@ -301,8 +301,8 @@ class TestServiceConvertor:
         assert "bk-cors" in standard_service.plugins
         assert "bk-cors" in ai_service.plugins
         assert "bk-stage-header-rewrite" in standard_service.plugins
-        assert "bk-stage-header-rewrite" not in ai_service.plugins
-        assert "ai-rate-limiting" not in standard_service.plugins
+        assert "bk-stage-header-rewrite" in ai_service.plugins
+        assert "ai-rate-limiting" in standard_service.plugins
         assert "ai-rate-limiting" in ai_service.plugins
 
     def test_controller_generated_ai_proxy_takes_precedence(self, mock_release_data):
@@ -560,7 +560,7 @@ class TestServiceConvertor:
         mock_release_data.get_stage_plugins.return_value = []
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
+        result = convertor._get_stage_binding_plugins()
 
         assert result == {}
 
@@ -580,7 +580,7 @@ class TestServiceConvertor:
         mock_release_data.get_stage_plugins.return_value = [mock_plugin1, mock_plugin2]
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
+        result = convertor._get_stage_binding_plugins()
 
         # Check that plugins are created with correct names and configs
         assert "test-plugin-1" in result

@@ -279,7 +279,7 @@ class TestRouteConvertor:
 
         assert "bk-cors" in route.plugins
 
-    def test_convert_ai_route_rejects_incompatible_resource_plugin(self, mock_release_data):
+    def test_convert_ai_route_trusts_resource_plugin_binding(self, mock_release_data):
         mock_release_data.stage_backend_configs = {10: _backend_snapshot(10, BackendKindEnum.AI.value)}
         resource = _ai_resource()
         mock_release_data.get_resource_plugins.return_value = [PluginData("bk-header-rewrite", {}, "resource")]
@@ -290,8 +290,9 @@ class TestRouteConvertor:
             apisix_version=APISIX_VERSION_3_16,
         )
 
-        with pytest.raises(ValueError, match="chat-completions.*bk-header-rewrite"):
-            convertor._convert_http_route(resource)
+        route = convertor._convert_http_route(resource)
+
+        assert "bk-resource-header-rewrite" in route.plugins
 
     @pytest.mark.parametrize(
         ("resource_kind", "backend_kind"),
