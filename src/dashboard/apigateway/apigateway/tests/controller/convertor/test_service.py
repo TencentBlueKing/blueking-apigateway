@@ -23,11 +23,12 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
+from apigateway.common.constants import DEFAULT_BACKEND_HOST_FOR_MISSING
 from apigateway.controller.convertor import ServiceConvertor
 from apigateway.controller.convertor.base import GatewayResourceConvertor
-from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION
+from apigateway.controller.convertor.constants import LABEL_KEY_APISIX_VERSION, LABEL_KEY_BACKEND_ID
 from apigateway.controller.release_data import PluginData, StageBackendConfig
-from apigateway.core.constants import BackendKindEnum, BackendTypeEnum
+from apigateway.core.constants import BackendKindEnum, BackendTypeEnum, LoadBalanceTypeEnum
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
 APISIX_VERSION_3_16 = DataPlaneApisixVersionEnum.V3_16.value
@@ -84,6 +85,7 @@ class TestServiceConvertor:
         release_data.stage.pk = 456
         release_data.stage.name = "prod"
         release_data.stage.description = "Production environment"
+        release_data.stage.vars = {}
         release_data.stage_backend_configs = {}
         release_data.get_stage_plugins.return_value = []
         release_data.jwt_private_key = "test-key"
@@ -131,51 +133,108 @@ class TestServiceConvertor:
 
         assert result == []
 
-    def test_convert_with_backend_config_no_hosts(self, mock_release_data):
-        """Test convert with backend config but no hosts"""
-        mock_release_data.stage_backend_configs = {
-            1: _standard_backend_config(1, "backend-service", {"timeout": 60, "hosts": []}),
-        }
-
+    def test_build_standard_service_requires_hosts(self, mock_release_data):
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
+        backend_config = _standard_backend_config(1, "backend-service", {"timeout": 60, "hosts": []})
 
         with pytest.raises(ValueError, match="backend 1 has no hosts"):
-            convertor.convert()
+            convertor._build_standard_service(backend_config)
 
-    def test_convert_with_valid_backend_config(self, mock_release_data):
-        """Test convert with valid backend config"""
-        mock_release_data.stage_backend_configs = {
-            1: _standard_backend_config(
-                1,
-                "backend-service",
-                {
-                    "timeout": 60,
-                    "hosts": [
-                        {"scheme": "http", "host": "example.com", "weight": 100},
-                    ],
-                },
-            ),
-        }
-        mock_release_data.get_stage_plugins.return_value = []
-        mock_release_data.jwt_private_key = "test-key"
-        mock_release_data.gateway_auth_config = {"auth": "config"}
+    def test_build_standard_service(self, mock_release_data):
+        mock_release_data.stage.vars = {"domain": "example.com"}
+        backend_config = _standard_backend_config(
+            1,
+            "backend-service",
+            {
+                "timeout": 30,
+                "hosts": [{"scheme": "https", "host": "{env.domain}:8443", "weight": 100}],
+            },
+        )
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor.convert()
+        service = convertor._build_standard_service(backend_config)
 
-        assert len(result) == 1
-        assert result[0].id == "test-gateway.prod.456-1"
-        assert "backend-service" in result[0].name
+        assert service.id == "test-gateway.prod.456-1"
+        assert service.name == "test-gateway.prod.backend-service"
+        assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "1"
+        assert service.plugins["bk-backend-context"].bk_backend_id == 1
+        assert service.plugins["bk-backend-context"].bk_backend_name == "backend-service"
+        assert service.upstream.type.value == "roundrobin"
+        assert service.upstream.scheme.value == "https"
+        assert service.upstream.timeout.model_dump() == {"connect": 30, "send": 30, "read": 30}
+        assert service.upstream.nodes[0].model_dump() == {"host": "example.com", "port": 8443, "weight": 100}
 
-        # revoke_flag
+    def test_convert_with_revoke_flag(self, mock_release_data):
         convertor = ServiceConvertor(
             mock_release_data,
             publish_id=123,
             apisix_version=APISIX_VERSION_3_13,
             revoke_flag=True,
         )
-        result = convertor.convert()
-        assert result == []
+        assert convertor.convert() == []
+
+    @pytest.mark.parametrize(
+        ("loadbalance", "expected_type"),
+        [
+            ("roundrobin", "roundrobin"),
+            (LoadBalanceTypeEnum.WRR.value, "roundrobin"),
+        ],
+    )
+    def test_build_standard_service_normalizes_loadbalance(self, mock_release_data, loadbalance, expected_type):
+        backend_config = _standard_backend_config(
+            1,
+            "backend-service",
+            {"loadbalance": loadbalance, "hosts": [{"scheme": "http", "host": "example.com"}]},
+        )
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
+
+        service = convertor._build_standard_service(backend_config)
+
+        assert service.upstream.type.value == expected_type
+        assert service.upstream.timeout.model_dump() == {"connect": 60, "send": 60, "read": 60}
+        assert service.upstream.nodes[0].model_dump() == {"host": "example.com", "port": 80, "weight": 1}
+
+    def test_build_standard_service_with_chash(self, mock_release_data):
+        backend_config = _standard_backend_config(
+            1,
+            "backend-service",
+            {
+                "loadbalance": "chash",
+                "hash_on": "header",
+                "key": "content-type",
+                "hosts": [{"scheme": "http", "host": "example.com"}],
+            },
+        )
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
+
+        service = convertor._build_standard_service(backend_config)
+
+        assert service.upstream.type.value == "chash"
+        assert service.upstream.hash_on.value == "header"
+        assert service.upstream.key == "content-type"
+
+    def test_build_standard_service_uses_default_host_for_empty_host(self, mock_release_data):
+        backend_config = _standard_backend_config(
+            1,
+            "backend-service",
+            {"hosts": [{"scheme": "http", "host": ""}]},
+        )
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
+
+        service = convertor._build_standard_service(backend_config)
+
+        assert service.upstream.nodes[0].host == DEFAULT_BACKEND_HOST_FOR_MISSING
+
+    def test_build_standard_service_rejects_unsupported_scheme(self, mock_release_data):
+        backend_config = _standard_backend_config(
+            1,
+            "backend-service",
+            {"hosts": [{"scheme": "ftp", "host": "example.com"}]},
+        )
+        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
+
+        with pytest.raises(ValueError, match="scheme 'ftp' of host 'example.com'"):
+            convertor._build_standard_service(backend_config)
 
     def test_convert_with_ai_backend_config(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
@@ -385,57 +444,6 @@ class TestServiceConvertor:
         assert len(result) == 2
         assert result[0].id == "test-gateway.prod.456-1"
         assert result[1].id == "test-gateway.prod.456-2"
-
-    def test_convert_with_https_scheme(self, mock_release_data):
-        """Test convert with HTTPS scheme"""
-        mock_release_data.stage_backend_configs = {
-            1: _standard_backend_config(
-                1,
-                "backend-service",
-                {
-                    "timeout": 60,
-                    "hosts": [
-                        {"scheme": "https", "host": "secure.example.com", "weight": 100},
-                    ],
-                },
-            ),
-        }
-        mock_release_data.get_stage_plugins.return_value = []
-        mock_release_data.jwt_private_key = "test-key"
-        mock_release_data.gateway_auth_config = {}
-
-        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor.convert()
-
-        assert len(result) == 1
-        # Verify HTTPS scheme is used
-        assert result[0].upstream.scheme.value == "https"
-        # port should be 443
-        assert result[0].upstream.nodes[0].port == 443
-
-    def test_convert_with_custom_port(self, mock_release_data):
-        """Test convert with custom port"""
-        mock_release_data.stage_backend_configs = {
-            1: _standard_backend_config(
-                1,
-                "backend-service",
-                {
-                    "timeout": 60,
-                    "hosts": [
-                        {"scheme": "http", "host": "example.com:8080", "weight": 100},
-                    ],
-                },
-            ),
-        }
-        mock_release_data.get_stage_plugins.return_value = []
-        mock_release_data.jwt_private_key = "test-key"
-        mock_release_data.gateway_auth_config = {}
-
-        convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor.convert()
-
-        assert len(result) == 1
-        assert result[0].upstream.nodes[0].port == 8080
 
     def test_build_service_plugins(self, mock_release_data, mocker):
         """Test _build_service_plugins method"""
