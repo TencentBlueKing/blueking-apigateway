@@ -24,12 +24,11 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
-from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.service.plugin import PluginConfigYamlValidator, is_ai_rate_limiting_allowed
+from apigateway.service.plugin import PluginConfigYamlValidator, is_plugin_compatible_with_resource_kind
 from apigateway.utils.list import get_duplicate_items
 
 from .schema import SchemaValidateErr
@@ -68,7 +67,7 @@ class ResourceImportValidator:
         self._validate_label_count()
         self._validate_label_name()
         self._validate_plugin_type()
-        self._validate_plugin_compatibility()
+        self._validate_ai_only_plugins()
         self._validate_plugin_config()
         self._validate_backend()
         return self.schema_validate_result
@@ -450,22 +449,24 @@ class ResourceImportValidator:
                     )
                     self.schema_validate_result.append(validate_err)
 
-    def _validate_plugin_compatibility(self):
+    def _validate_ai_only_plugins(self):
         for resource_data in self.resource_data_list:
             if resource_data.plugin_configs is None:
                 continue
 
-            has_ai_rate_limiting = any(
-                config.type == PluginTypeCodeEnum.AI_RATE_LIMITING.value for config in resource_data.plugin_configs
-            )
-            if not has_ai_rate_limiting or is_ai_rate_limiting_allowed(resource_data.kind):
+            incompatible_plugin_codes = [
+                config.type
+                for config in resource_data.plugin_configs
+                if not is_plugin_compatible_with_resource_kind(config.type, resource_data.kind)
+            ]
+            if not incompatible_plugin_codes:
                 continue
 
             self.schema_validate_result.append(
                 SchemaValidateErr(
                     _("资源绑定了与资源类型不兼容的插件，资源名称：{resource_name}，插件类型：{plugin_types}").format(
                         resource_name=resource_data.name,
-                        plugin_types=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+                        plugin_types=", ".join(incompatible_plugin_codes),
                     ),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                     absolute_path=[],

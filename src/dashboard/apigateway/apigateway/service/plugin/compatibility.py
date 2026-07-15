@@ -15,12 +15,23 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""Define whether AI rate limiting can be configured for a resource kind."""
+"""Define which plugins can be configured for a resource kind."""
 
 from __future__ import annotations
 
 from apigateway.core.constants import ResourceKindEnum
 
+AI_ONLY_PLUGIN_CODES = frozenset(
+    {
+        "ai-prompt-decorator",
+        "ai-prompt-guard",
+        "ai-rate-limiting",
+    }
+)
 
-def is_ai_rate_limiting_allowed(resource_kind: str | None) -> bool:
-    return resource_kind == ResourceKindEnum.AI.value
+
+def is_plugin_compatible_with_resource_kind(plugin_code: str, resource_kind: str | None) -> bool:
+    if plugin_code in AI_ONLY_PLUGIN_CODES:
+        return resource_kind == ResourceKindEnum.AI.value
+
+    return True

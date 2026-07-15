@@ -29,6 +29,18 @@ from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, Resource
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
 
+AI_ONLY_PLUGIN_CODES = (
+    "ai-rate-limiting",
+    "ai-prompt-guard",
+    "ai-prompt-decorator",
+)
+
+
+def _plugin_yaml(plugin_type_code):
+    if plugin_type_code == PluginTypeCodeEnum.AI_RATE_LIMITING.value:
+        return yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429})
+    return yaml_dumps({"enabled": True})
+
 
 class TestResourceImportValidator:
     def test_validate_ai_resource_kind_contract(self, fake_gateway):
@@ -98,16 +110,15 @@ class TestResourceImportValidator:
 
         assert not any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
 
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize(
         ("resource_kind", "has_compatibility_error"),
-        [
-            (ResourceKindEnum.STANDARD.value, True),
-            (ResourceKindEnum.AI.value, False),
-        ],
+        [(ResourceKindEnum.STANDARD.value, True), (ResourceKindEnum.AI.value, False)],
     )
-    def test_validate_ai_rate_limiting_by_resource_kind(
+    def test_validate_ai_only_plugin_by_resource_kind(
         self,
         fake_gateway,
+        plugin_type_code,
         resource_kind,
         has_compatibility_error,
     ):
@@ -118,7 +129,7 @@ class TestResourceImportValidator:
         backend = G(Backend, gateway=fake_gateway, kind=resource_kind)
         G(
             PluginType,
-            code=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+            code=plugin_type_code,
             is_public=True,
             scope=PluginTypeScopeEnum.RESOURCE.value,
         )
@@ -136,15 +147,15 @@ class TestResourceImportValidator:
             ),
             plugin_configs=[
                 PluginConfigData(
-                    type=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
-                    yaml=yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
+                    type=plugin_type_code,
+                    yaml=_plugin_yaml(plugin_type_code),
                 )
             ],
         )
 
         errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
 
-        assert any("ai-rate-limiting" in error.message and "不兼容" in error.message for error in errors) is (
+        assert any(plugin_type_code in error.message and "不兼容" in error.message for error in errors) is (
             has_compatibility_error
         )
 

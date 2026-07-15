@@ -18,16 +18,31 @@
 import pytest
 
 from apigateway.core.constants import ResourceKindEnum
-from apigateway.service.plugin import is_ai_rate_limiting_allowed
+from apigateway.service.plugin import AI_ONLY_PLUGIN_CODES, is_plugin_compatible_with_resource_kind
+
+
+def test_ai_only_plugin_codes():
+    assert {
+        "ai-rate-limiting",
+        "ai-prompt-guard",
+        "ai-prompt-decorator",
+    } == AI_ONLY_PLUGIN_CODES
 
 
 @pytest.mark.parametrize(
-    ("kind", "expected"),
+    ("resource_kind", "plugin_type_code", "expected"),
     [
-        (ResourceKindEnum.AI.value, True),
-        (ResourceKindEnum.STANDARD.value, False),
-        (None, False),
+        (ResourceKindEnum.AI.value, "ai-rate-limiting", True),
+        (ResourceKindEnum.AI.value, "ai-prompt-guard", True),
+        (ResourceKindEnum.AI.value, "ai-prompt-decorator", True),
+        (ResourceKindEnum.STANDARD.value, "ai-rate-limiting", False),
+        (ResourceKindEnum.STANDARD.value, "ai-prompt-guard", False),
+        (ResourceKindEnum.STANDARD.value, "ai-prompt-decorator", False),
+        (None, "ai-rate-limiting", False),
+        (ResourceKindEnum.AI.value, "bk-cors", True),
+        (ResourceKindEnum.STANDARD.value, "bk-cors", True),
+        (None, "bk-cors", True),
     ],
 )
-def test_is_ai_rate_limiting_allowed(kind, expected):
-    assert is_ai_rate_limiting_allowed(kind) is expected
+def test_is_plugin_compatible_with_resource_kind(resource_kind, plugin_type_code, expected):
+    assert is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind) is expected

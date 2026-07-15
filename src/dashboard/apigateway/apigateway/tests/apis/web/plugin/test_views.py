@@ -25,14 +25,26 @@ from apigateway.core.constants import BackendKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.yaml import yaml_dumps
 
+AI_ONLY_PLUGIN_CODES = (
+    "ai-rate-limiting",
+    "ai-prompt-guard",
+    "ai-prompt-decorator",
+)
 
-def _create_ai_rate_limiting_plugin_type():
+
+def _create_ai_only_plugin_type(plugin_type_code):
     return G(
         PluginType,
-        code=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+        code=plugin_type_code,
         is_public=True,
         scope=PluginTypeScopeEnum.RESOURCE.value,
     )
+
+
+def _plugin_yaml(plugin_type_code):
+    if plugin_type_code == PluginTypeCodeEnum.AI_RATE_LIMITING.value:
+        return yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429})
+    return yaml_dumps({"enabled": True})
 
 
 class TestPluginTypeListApi:
@@ -77,24 +89,19 @@ class TestPluginTypeListApi:
         result = response.json()
         assert not result["data"]["results"]
 
-    @pytest.mark.parametrize(
-        ("resource_kind", "expected"),
-        [
-            (ResourceKindEnum.STANDARD.value, False),
-            (ResourceKindEnum.AI.value, True),
-        ],
-    )
-    def test_list_ai_rate_limiting_by_resource_kind(
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
+    @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
+    def test_list_ai_only_plugin_by_resource_kind(
         self,
         request_view,
         fake_gateway,
         fake_resource,
+        plugin_type_code,
         resource_kind,
-        expected,
     ):
         fake_resource.kind = resource_kind
         fake_resource.save(update_fields=["kind"])
-        _create_ai_rate_limiting_plugin_type()
+        _create_ai_only_plugin_type(plugin_type_code)
 
         response = request_view(
             "GET",
@@ -109,7 +116,7 @@ class TestPluginTypeListApi:
 
         assert response.status_code == 200
         codes = {item["code"] for item in response.json()["data"]["results"]}
-        assert (PluginTypeCodeEnum.AI_RATE_LIMITING.value in codes) is expected
+        assert (plugin_type_code in codes) is (resource_kind == ResourceKindEnum.AI.value)
 
 
 class TestScopePluginConfigListApi:
@@ -213,13 +220,15 @@ class TestPluginConfigCreateApi:
             scope_id=fake_resource.id,
         ).exists()
 
-    def test_create_rejects_ai_rate_limiting_for_stage(
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
+    def test_create_rejects_ai_only_plugin_for_stage(
         self,
         request_view,
         fake_gateway,
         fake_stage,
+        plugin_type_code,
     ):
-        plugin_type = _create_ai_rate_limiting_plugin_type()
+        plugin_type = _create_ai_only_plugin_type(plugin_type_code)
         backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
         G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
 
@@ -237,7 +246,7 @@ class TestPluginConfigCreateApi:
                 "type_id": plugin_type.pk,
                 "description": "description",
                 "name": "name",
-                "yaml": yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
+                "yaml": _plugin_yaml(plugin_type_code),
             },
         )
 
@@ -248,24 +257,23 @@ class TestPluginConfigCreateApi:
             scope_id=fake_stage.id,
         ).exists()
 
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize(
         ("resource_kind", "status_code"),
-        [
-            (ResourceKindEnum.STANDARD.value, 400),
-            (ResourceKindEnum.AI.value, 201),
-        ],
+        [(ResourceKindEnum.STANDARD.value, 400), (ResourceKindEnum.AI.value, 201)],
     )
-    def test_create_ai_rate_limiting_by_resource_kind(
+    def test_create_ai_only_plugin_by_resource_kind(
         self,
         request_view,
         fake_gateway,
         fake_resource,
+        plugin_type_code,
         resource_kind,
         status_code,
     ):
         fake_resource.kind = resource_kind
         fake_resource.save(update_fields=["kind"])
-        plugin_type = _create_ai_rate_limiting_plugin_type()
+        plugin_type = _create_ai_only_plugin_type(plugin_type_code)
 
         response = request_view(
             "POST",
@@ -281,7 +289,7 @@ class TestPluginConfigCreateApi:
                 "type_id": plugin_type.pk,
                 "description": "description",
                 "name": "name",
-                "yaml": yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
+                "yaml": _plugin_yaml(plugin_type_code),
             },
         )
 
