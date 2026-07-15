@@ -389,7 +389,14 @@ When changing an open API, keep these three surfaces aligned:
 - Gateway YAML definitions: `apigateway/apigateway/data/apigw-definitions/`.
 - Markdown docs: `apigateway/apigateway/data/apidocs/zh/`.
 
-Run the consistency checker:
+The consistency checker is opt-in for agents. Do not run `make check-openapi`,
+`make check-openapi-help`, or any variant unless the user explicitly asks in
+the current request to run that command or invoke
+`bk-apigateway-openapi-check`. Open API, YAML, serializer, or API documentation
+changes, normal verification, preflight, and CI parity do not authorize it. If
+the user did not opt in, do not treat the checker as required verification.
+
+When explicitly requested, the available commands are:
 
 ```bash
 cd src/dashboard
@@ -406,8 +413,9 @@ make check-openapi FIX=1
 For changed or new endpoints, update the matching markdown doc with method,
 path, parameters or request body, response fields, status codes, and error
 examples. The frontend team uses these docs for integration. CI runs
-`make check-openapi` for dashboard changes, so API, YAML, serializer, and docs
-drift should be fixed before push.
+`make check-openapi` for dashboard changes, but this does not make it a default
+agent-side check. Keep API, YAML, serializer, and docs aligned without invoking
+the checker unless the user opts in.
 
 ## Response And Validation Patterns
 
@@ -461,9 +469,12 @@ For code changes:
 3. Run the narrow relevant pytest target first.
 4. Run `make edition-ee && make lint-check` for the CI-style lint gate, or
    `make edition-ee && make lint` first if you want auto-format/fix behavior.
-5. Run `make check-openapi` if any open API, YAML definition, serializer, or API
-   markdown doc changed; CI runs it for all dashboard changes.
+5. Do not run `make check-openapi` or any variant unless the user explicitly
+   requests it in the current task. Open API, YAML definition, serializer, or
+   API markdown changes and CI parity do not opt in to this check.
 6. Run `make edition-ee && make test` for broad code changes or when shared
    behavior is touched.
 
-If a verification command is skipped, say exactly why.
+If a required verification command is skipped, say exactly why.
+`check-openapi` is not a default verification command, so do not report it as a
+skipped required check when the user did not explicitly request it.
