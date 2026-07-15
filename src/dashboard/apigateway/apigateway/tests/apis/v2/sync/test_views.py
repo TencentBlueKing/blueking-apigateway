@@ -42,8 +42,15 @@ from apigateway.core.models import (
     Stage,
 )
 from apigateway.service.gateway_jwt import GatewayJWTHandler
-from apigateway.service.resource_version import make_resource_schema_version
+from apigateway.service.resource_version import get_resource_names_set, make_resource_schema_version
 from apigateway.utils.yaml import yaml_loads
+
+
+@pytest.fixture(autouse=True)
+def clear_resource_names_cache():
+    get_resource_names_set.cache_clear()
+    yield
+    get_resource_names_set.cache_clear()
 
 
 @pytest.fixture()
@@ -774,6 +781,42 @@ class TestSyncApi:
         assert permission_audit_logs.count() == 2
         assert set(permission_audit_logs.values_list("op_object", flat=True)) == {"app1", "app2"}
         assert set(permission_audit_logs.values_list("op_type", flat=True)) == {OpTypeEnum.CREATE.value}
+
+    def test_mcp_server_sync_rejects_ai_resource_from_release_snapshot(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        resources = fake_release_v2.resource_version.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        fake_release_v2.resource_version.data = resources
+        fake_release_v2.resource_version.save()
+        make_resource_schema_version(fake_release_v2.resource_version)
+
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data={
+                "mcp_servers": [
+                    {
+                        "name": "ai-resource-server",
+                        "resource_names": [fake_resource.name],
+                        "is_public": True,
+                        "description": "AI resource must not become an MCP tool",
+                    }
+                ]
+            },
+        )
+
+        assert resp.status_code == 400
+        assert not MCPServer.objects.filter(gateway=fake_gateway, stage=fake_stage).exists()
 
     def test_mcp_server_sync_with_update(
         self,

@@ -18,7 +18,7 @@
 
 """Resource-version schema lookup and schema-version creation helpers."""
 
-from typing import Set
+from typing import Optional, Set
 
 from cachetools import TTLCache, cached
 from django.utils.translation import gettext_lazy as _
@@ -78,7 +78,11 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
 
 
 @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
+def get_resource_names_set(
+    resource_version_id: int,
+    raise_exception: bool = False,
+    resource_kind: Optional[str] = None,
+) -> Set[str]:
     """获取资源版本中的资源名称集合，用于权限、MCP Server 等名称存在性判断。
 
     频繁读取同一资源版本名称集合的路径使用；结果会缓存 5 分钟。
@@ -86,6 +90,7 @@ def get_resource_names_set(resource_version_id: int, raise_exception: bool = Fal
     Args:
         resource_version_id (int): 资源版本 ID。
         raise_exception (bool): 资源版本不存在时是否抛出 NOT_FOUND；为 False 时返回空集合。
+        resource_kind (str | None): 仅返回指定 kind 的资源；旧快照缺少 kind 时按 standard 处理。
 
     Returns:
         Set[str]: 资源名称集合；资源版本不存在且不抛异常时返回空集合。
@@ -96,7 +101,11 @@ def get_resource_names_set(resource_version_id: int, raise_exception: bool = Fal
             raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
         return set()
 
-    return {resource["name"] for resource in resource_version.data}
+    return {
+        resource["name"]
+        for resource in resource_version.data
+        if resource_kind is None or resource.get("kind", ResourceKindEnum.STANDARD.value) == resource_kind
+    }
 
 
 # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存

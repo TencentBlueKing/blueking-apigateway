@@ -39,8 +39,10 @@ from apigateway.apps.mcp_server.models import (
 from apigateway.apps.permission.constants import GrantTypeEnum
 from apigateway.apps.permission.models import AppResourcePermission
 from apigateway.biz.mcp_server import MCPServerHandler
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.common.error_codes import APIError
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
+from apigateway.service.resource_version import get_resource_names_set
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -48,7 +50,10 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 class TestMCPServerHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
+        get_resource_names_set.cache_clear()
         self.gateway = create_gateway()
+        yield
+        get_resource_names_set.cache_clear()
 
     def test_virtual_app_code_prefix(self):
         assert MCPServerHandler._virtual_app_code_prefix(1) == "v_mcp_1_"
@@ -223,6 +228,39 @@ class TestMCPServerHandler:
             assert permission.expires == NeverExpiresTime.time
             assert permission.grant_type == GrantTypeEnum.SYNC.value
 
+    def test_sync_permissions_excludes_ai_resources_from_release_snapshot(self, fake_gateway, fake_stage):
+        standard_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="standard-resource",
+            kind=ResourceKindEnum.STANDARD.value,
+        )
+        ai_resource = G(
+            Resource,
+            gateway=fake_gateway,
+            name="ai-resource",
+            kind=ResourceKindEnum.AI.value,
+        )
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [
+            {"id": standard_resource.id, "name": standard_resource.name, "kind": ResourceKindEnum.STANDARD.value},
+            {"id": ai_resource.id, "name": ai_resource.name, "kind": ResourceKindEnum.AI.value},
+        ]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            _resource_names="standard-resource;ai-resource",
+        )
+        G(MCPServerAppPermission, mcp_server=mcp_server, bk_app_code="app1")
+
+        MCPServerHandler.sync_permissions(mcp_server.id)
+
+        permissions = AppResourcePermission.objects.filter(bk_app_code__startswith=f"v_mcp_{mcp_server.id}_")
+        assert set(permissions.values_list("resource_id", flat=True)) == {standard_resource.id}
+
     def test_sync_permissions_delete_permissions(self, fake_gateway, fake_stage):
         """Test sync_permissions when existing permissions need to be deleted"""
         # Create resources
@@ -313,12 +351,31 @@ class TestMCPServerHandler:
         assert permissions.filter(bk_app_code=f"v_mcp_{mcp_server.id}_app2").count() == 2
 
     def test_get_valid_resource_names(self, fake_gateway, fake_stage, fake_resource_version):
+        fake_resource_version.data = [
+            {"name": "legacy-resource"},
+            {"name": "standard-resource", "kind": ResourceKindEnum.STANDARD.value},
+            {"name": "ai-resource", "kind": ResourceKindEnum.AI.value},
+        ]
+        fake_resource_version.save()
         G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
 
-        expected_resource_names = {resource["name"] for resource in fake_resource_version.data}
-
         resource_names = MCPServerHandler().get_valid_resource_names(fake_gateway.id, fake_stage.id)
-        assert resource_names == expected_resource_names
+        assert resource_names == {"legacy-resource", "standard-resource"}
+
+    def test_get_tools_resources_and_labels_requests_only_standard_resources(self, mocker):
+        get_released_resources = mocker.patch(
+            "apigateway.biz.mcp_server.mcp_server.ReleasedResourceHandler.get_public_released_resource_data_list",
+            return_value=[],
+        )
+
+        MCPServerHandler.get_tools_resources_and_labels(1, "prod", ["resource1"])
+
+        get_released_resources.assert_called_once_with(
+            1,
+            "prod",
+            False,
+            resource_kind=ResourceKindEnum.STANDARD.value,
+        )
 
     def test_get_valid_resource_names_no_release(
         self,
@@ -1615,7 +1672,10 @@ class TestMCPServerHandler:
 
     def test_save_mcp_servers_create(self, fake_gateway, fake_stage):
         """创建新的 MCP Server"""
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1655,7 +1715,10 @@ class TestMCPServerHandler:
             status=MCPServerStatusEnum.INACTIVE.value,
         )
 
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1683,7 +1746,10 @@ class TestMCPServerHandler:
 
     def test_save_mcp_servers_with_permissions(self, fake_gateway, fake_stage):
         """创建时同步权限"""
-        with patch.object(MCPServerHandler, "sync_permissions") as mock_sync:
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions") as mock_sync,
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1710,7 +1776,10 @@ class TestMCPServerHandler:
         """创建时同步分类"""
         MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
 
-        with patch.object(MCPServerHandler, "sync_permissions"):
+        with (
+            patch.object(MCPServerHandler, "get_valid_resource_names", return_value={"res1"}),
+            patch.object(MCPServerHandler, "sync_permissions"),
+        ):
             results = MCPServerHandler.save_mcp_servers(
                 gateway_id=fake_gateway.id,
                 gateway_name=fake_gateway.name,
@@ -1731,6 +1800,33 @@ class TestMCPServerHandler:
 
         instance = MCPServer.objects.get(id=results[0]["id"])
         assert list(instance.categories.values_list("name", flat=True)) == ["Official"]
+
+    def test_save_mcp_servers_rejects_ai_resource(self, fake_gateway, fake_stage):
+        resource_version = G(ResourceVersion, gateway=fake_gateway)
+        resource_version.data = [{"name": "ai-resource", "kind": ResourceKindEnum.AI.value}]
+        resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=resource_version)
+
+        with pytest.raises(APIError) as exc_info:
+            MCPServerHandler.save_mcp_servers(
+                gateway_id=fake_gateway.id,
+                gateway_name=fake_gateway.name,
+                stage_id=fake_stage.id,
+                stage_name=fake_stage.name,
+                mcp_servers_data=[
+                    {
+                        "name": "server1",
+                        "description": "test",
+                        "resource_names": ["ai-resource"],
+                        "tool_names": ["ai-resource"],
+                        "is_public": True,
+                        "status": MCPServerStatusEnum.ACTIVE.value,
+                    }
+                ],
+            )
+
+        assert "ai-resource" in exc_info.value.code.message
+        assert not MCPServer.objects.filter(gateway=fake_gateway, stage=fake_stage).exists()
 
     # ========== _sync_mcp_server_permissions 测试 ==========
 

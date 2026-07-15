@@ -58,7 +58,7 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
@@ -107,6 +107,7 @@ class MCPServerHandler:
             gateway_id,
             stage_name,
             False,
+            resource_kind=ResourceKindEnum.STANDARD.value,
         )
 
         # only need the resources in the resource_names
@@ -130,7 +131,10 @@ class MCPServerHandler:
             raise error_codes.FAILED_PRECONDITION.format(
                 _("环境已下架或者未发布，请先发布资源到该环境，再更新 MCPServer。"), replace=True
             )
-        return get_resource_names_set(release.resource_version.id)
+        return get_resource_names_set(
+            release.resource_version.id,
+            resource_kind=ResourceKindEnum.STANDARD.value,
+        )
 
     @staticmethod
     def get_tool_doc(gateway_id: int, stage_name: str, tool_name: str) -> Dict:
@@ -202,6 +206,17 @@ class MCPServerHandler:
         Returns:
             操作结果列表，每项包含 name, action, id
         """
+        valid_resource_names = MCPServerHandler.get_valid_resource_names(gateway_id, stage_id)
+        for mcp_data in mcp_servers_data:
+            invalid_resource_names = set(mcp_data.get("resource_names", [])) - valid_resource_names
+            if invalid_resource_names:
+                invalid_resource_name = sorted(invalid_resource_names)[0]
+                raise error_codes.INVALID_ARGUMENT.format(
+                    _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                    + f"resource_name={invalid_resource_name}",
+                    replace=True,
+                )
+
         mcp_servers_data_for_audit = copy.deepcopy(mcp_servers_data)
         permission_data_before_map: Dict[str, Dict[str, Dict[str, Any]]] = {}
         data_before_map = get_mcp_server_sync_data_before_map(
@@ -365,6 +380,13 @@ class MCPServerHandler:
         if not resource_names:
             logger.debug("no resource_names, skip sync the permissions of the mcp_server %d", mcp_server_id)
             return
+        release = Release.objects.filter(gateway_id=mcp_server.gateway_id, stage_id=mcp_server.stage_id).first()
+        if release:
+            valid_resource_names = get_resource_names_set(
+                release.resource_version.id,
+                resource_kind=ResourceKindEnum.STANDARD.value,
+            )
+            resource_names = [name for name in resource_names if name in valid_resource_names]
         resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
             "id", flat=True
         )

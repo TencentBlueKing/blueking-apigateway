@@ -857,6 +857,7 @@ class ResourceExportInputSLZ(serializers.Serializer):
 
 class ResourceExportOutputSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="资源名称")
+    kind = serializers.CharField(help_text="资源类型")
     description = serializers.CharField(help_text="资源描述")
     description_en = serializers.CharField(help_text="资源英文描述")
     method = serializers.CharField(help_text="请求方法")

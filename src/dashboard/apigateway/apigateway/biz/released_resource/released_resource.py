@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from apigateway.core.constants import StageStatusEnum
+from apigateway.core.constants import ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, Stage
 from apigateway.core.utils import get_path_display
 from apigateway.service.utils import get_resource_doc_link
@@ -163,7 +163,10 @@ class ReleasedResourceHandler:
 
     @staticmethod
     def get_public_released_resource_data_list(
-        gateway_id: int, stage_name: str, is_only_public: Optional[bool] = True
+        gateway_id: int,
+        stage_name: str,
+        is_only_public: Optional[bool] = True,
+        resource_kind: Optional[str] = None,
     ) -> List[ReleasedResourceData]:
         """获取网关环境下，已发布的资源数据"""
         release = (
@@ -174,7 +177,11 @@ class ReleasedResourceHandler:
         if not release:
             return []
 
-        resources = [ReleasedResourceData.from_data(resource) for resource in release.resource_version.data]
+        resources = [
+            ReleasedResourceData.from_data(resource)
+            for resource in release.resource_version.data
+            if resource_kind is None or resource.get("kind", ResourceKindEnum.STANDARD.value) == resource_kind
+        ]
         if is_only_public:
             return list(filter(lambda resource: resource.is_public, resources))
         return resources

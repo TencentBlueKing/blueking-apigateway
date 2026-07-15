@@ -22,8 +22,9 @@ from django.conf import settings
 
 from apigateway.apps.mcp_server.constants import MCPServerProtocolTypeEnum
 from apigateway.apps.mcp_server.models import MCPServer
-from apigateway.core.models import ResourceVersion
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
+from apigateway.service.resource_version import get_resource_names_set
 
 
 def update_stage_mcp_server_related_resource_names(
@@ -42,12 +43,10 @@ def update_stage_mcp_server_related_resource_names(
     if not mcp_servers:
         return
 
-    # get the resource names of the resource version
-    resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
-    if not resource_version:
-        resource_version_resource_names = set()
-    else:
-        resource_version_resource_names = {resource["name"] for resource in resource_version.data}
+    resource_version_resource_names = get_resource_names_set(
+        resource_version_id,
+        resource_kind=ResourceKindEnum.STANDARD.value,
+    )
 
     to_update: List[MCPServer] = []
     for mcp_server in mcp_servers:
