@@ -19,10 +19,20 @@ import pytest
 from django_dynamic_fixture import G
 
 from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
-from apigateway.apps.plugin.models import PluginBinding
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.models import PluginBinding, PluginType
 from apigateway.core.constants import BackendKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, BackendConfig
 from apigateway.utils.yaml import yaml_dumps
+
+
+def _create_ai_rate_limiting_plugin_type():
+    return G(
+        PluginType,
+        code=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+        is_public=True,
+        scope=PluginTypeScopeEnum.RESOURCE.value,
+    )
 
 
 class TestPluginTypeListApi:
@@ -66,6 +76,40 @@ class TestPluginTypeListApi:
 
         result = response.json()
         assert not result["data"]["results"]
+
+    @pytest.mark.parametrize(
+        ("resource_kind", "expected"),
+        [
+            (ResourceKindEnum.STANDARD.value, False),
+            (ResourceKindEnum.AI.value, True),
+        ],
+    )
+    def test_list_ai_rate_limiting_by_resource_kind(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        resource_kind,
+        expected,
+    ):
+        fake_resource.kind = resource_kind
+        fake_resource.save(update_fields=["kind"])
+        _create_ai_rate_limiting_plugin_type()
+
+        response = request_view(
+            "GET",
+            "plugins.types",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+            },
+        )
+
+        assert response.status_code == 200
+        codes = {item["code"] for item in response.json()["data"]["results"]}
+        assert (PluginTypeCodeEnum.AI_RATE_LIMITING.value in codes) is expected
 
 
 class TestScopePluginConfigListApi:
@@ -134,7 +178,7 @@ class TestPluginConfigCreateApi:
         )
         assert response.status_code == status_code
 
-    def test_create_rejects_plugin_incompatible_with_resource_kind(
+    def test_create_allows_regular_plugin_for_ai_resource(
         self,
         request_view,
         fake_gateway,
@@ -162,20 +206,20 @@ class TestPluginConfigCreateApi:
             },
         )
 
-        assert response.status_code == 400
-        assert not PluginBinding.objects.filter(
+        assert response.status_code == 201
+        assert PluginBinding.objects.filter(
             gateway=fake_gateway,
             scope_type="resource",
             scope_id=fake_resource.id,
         ).exists()
 
-    def test_create_rejects_plugin_incompatible_with_service_kind(
+    def test_create_rejects_ai_rate_limiting_for_stage(
         self,
         request_view,
         fake_gateway,
         fake_stage,
-        fake_plugin_type_bk_header_rewrite,
     ):
+        plugin_type = _create_ai_rate_limiting_plugin_type()
         backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
         G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
 
@@ -187,13 +231,13 @@ class TestPluginConfigCreateApi:
                 "gateway_id": fake_gateway.id,
                 "scope_type": "stage",
                 "scope_id": fake_stage.id,
-                "code": fake_plugin_type_bk_header_rewrite.code,
+                "code": plugin_type.code,
             },
             data={
-                "type_id": fake_plugin_type_bk_header_rewrite.pk,
+                "type_id": plugin_type.pk,
                 "description": "description",
                 "name": "name",
-                "yaml": yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                "yaml": yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
             },
         )
 
@@ -203,6 +247,50 @@ class TestPluginConfigCreateApi:
             scope_type="stage",
             scope_id=fake_stage.id,
         ).exists()
+
+    @pytest.mark.parametrize(
+        ("resource_kind", "status_code"),
+        [
+            (ResourceKindEnum.STANDARD.value, 400),
+            (ResourceKindEnum.AI.value, 201),
+        ],
+    )
+    def test_create_ai_rate_limiting_by_resource_kind(
+        self,
+        request_view,
+        fake_gateway,
+        fake_resource,
+        resource_kind,
+        status_code,
+    ):
+        fake_resource.kind = resource_kind
+        fake_resource.save(update_fields=["kind"])
+        plugin_type = _create_ai_rate_limiting_plugin_type()
+
+        response = request_view(
+            "POST",
+            "plugins.config.create",
+            gateway=fake_gateway,
+            path_params={
+                "gateway_id": fake_gateway.id,
+                "scope_type": "resource",
+                "scope_id": fake_resource.id,
+                "code": plugin_type.code,
+            },
+            data={
+                "type_id": plugin_type.pk,
+                "description": "description",
+                "name": "name",
+                "yaml": yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
+            },
+        )
+
+        assert response.status_code == status_code
+        assert PluginBinding.objects.filter(
+            gateway=fake_gateway,
+            scope_type="resource",
+            scope_id=fake_resource.id,
+        ).exists() is (status_code == 201)
 
 
 class TestPluginConfigRetrieveUpdateDestroyApi:

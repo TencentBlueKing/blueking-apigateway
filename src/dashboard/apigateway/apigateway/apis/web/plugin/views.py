@@ -31,6 +31,7 @@ from apigateway.apps.plugin.constants import (
     PLUGIN_TYPE_TAGS_EN,
     PluginBindingScopeEnum,
     PluginBindingSourceEnum,
+    PluginTypeCodeEnum,
     PluginTypeScopeEnum,
 )
 from apigateway.apps.plugin.models import PluginBinding, PluginConfig, PluginType
@@ -41,9 +42,9 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.pagination import StandardLimitOffsetPagination
 from apigateway.common.renderers import BkStandardApiJSONRenderer
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
-from apigateway.core.models import BackendConfig, Resource, Stage
-from apigateway.service.plugin import is_plugin_allowed_for_kind
+from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.models import Resource, Stage
+from apigateway.service.plugin import is_ai_rate_limiting_allowed
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 from apigateway.utils.yaml import yaml_loads
@@ -125,6 +126,15 @@ class PluginTypeListApi(generics.ListAPIView):
         queryset = PluginType.objects.filter(is_public=True).filter(
             Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
         )
+        resource_kind = None
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            resource_kind = (
+                Resource.objects.filter(gateway=self.request.gateway, id=data["scope_id"])
+                .values_list("kind", flat=True)
+                .first()
+            )
+        if not is_ai_rate_limiting_allowed(resource_kind):
+            queryset = queryset.exclude(code=PluginTypeCodeEnum.AI_RATE_LIMITING.value)
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
@@ -245,24 +255,16 @@ class PluginConfigCreateApi(
         scope_id = self.kwargs["scope_id"]
         plugin_type_code = self.kwargs["code"]
 
-        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            kinds = {Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind}
-        else:
-            kinds = set(
-                BackendConfig.objects.filter(gateway=self.request.gateway, stage_id=scope_id).values_list(
-                    "backend__kind", flat=True
-                )
-            )
-            # A stage without an explicit backend still follows the historical standard-service contract.
-            kinds = kinds or {ResourceKindEnum.STANDARD.value}
+        if plugin_type_code != PluginTypeCodeEnum.AI_RATE_LIMITING.value:
+            return
 
-        incompatible_kinds = sorted(kind for kind in kinds if not is_plugin_allowed_for_kind(plugin_type_code, kind))
-        if incompatible_kinds:
+        resource_kind = None
+        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
+            resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
+
+        if not is_ai_rate_limiting_allowed(resource_kind):
             raise error_codes.INVALID_ARGUMENT.format(
-                _("插件 {plugin_type_code} 与绑定目标类型 {kinds} 不兼容。").format(
-                    plugin_type_code=plugin_type_code,
-                    kinds=", ".join(incompatible_kinds),
-                )
+                _("插件 {plugin_type_code} 只能绑定到 AI 资源。").format(plugin_type_code=plugin_type_code)
             )
 
     @transaction.atomic

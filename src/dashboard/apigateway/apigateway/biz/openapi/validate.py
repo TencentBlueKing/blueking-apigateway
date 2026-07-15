@@ -24,11 +24,12 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.common.gateway_limits import get_max_resource_count
 from apigateway.core.constants import HTTP_METHOD_ANY, ResourceKindEnum
 from apigateway.core.models import Backend, Gateway, Resource
-from apigateway.service.plugin import PluginConfigYamlValidator, get_incompatible_plugin_type_codes
+from apigateway.service.plugin import PluginConfigYamlValidator, is_ai_rate_limiting_allowed
 from apigateway.utils.list import get_duplicate_items
 
 from .schema import SchemaValidateErr
@@ -454,18 +455,17 @@ class ResourceImportValidator:
             if resource_data.plugin_configs is None:
                 continue
 
-            incompatible_plugin_types = get_incompatible_plugin_type_codes(
-                [config.type for config in resource_data.plugin_configs],
-                resource_data.kind,
+            has_ai_rate_limiting = any(
+                config.type == PluginTypeCodeEnum.AI_RATE_LIMITING.value for config in resource_data.plugin_configs
             )
-            if not incompatible_plugin_types:
+            if not has_ai_rate_limiting or is_ai_rate_limiting_allowed(resource_data.kind):
                 continue
 
             self.schema_validate_result.append(
                 SchemaValidateErr(
                     _("资源绑定了与资源类型不兼容的插件，资源名称：{resource_name}，插件类型：{plugin_types}").format(
                         resource_name=resource_data.name,
-                        plugin_types=", ".join(incompatible_plugin_types),
+                        plugin_types=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
                     ),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.x-bk-apigateway-resource",
                     absolute_path=[],

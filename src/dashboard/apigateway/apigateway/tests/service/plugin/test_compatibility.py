@@ -18,39 +18,16 @@
 import pytest
 
 from apigateway.core.constants import ResourceKindEnum
-from apigateway.service.plugin import (
-    get_incompatible_plugin_type_codes,
-    is_plugin_allowed_for_kind,
-)
+from apigateway.service.plugin import is_ai_rate_limiting_allowed
 
 
 @pytest.mark.parametrize(
-    ("plugin_type_code", "kind", "expected"),
+    ("kind", "expected"),
     [
-        ("bk-cors", ResourceKindEnum.STANDARD.value, True),
-        ("bk-cors", ResourceKindEnum.AI.value, True),
-        ("ai-rate-limiting", ResourceKindEnum.AI.value, True),
-        ("ai-rate-limiting", ResourceKindEnum.STANDARD.value, False),
-        ("bk-header-rewrite", ResourceKindEnum.STANDARD.value, True),
-        ("bk-header-rewrite", ResourceKindEnum.AI.value, False),
-        ("ai-proxy", ResourceKindEnum.STANDARD.value, False),
-        ("ai-proxy", ResourceKindEnum.AI.value, False),
-        ("ai-proxy-multi", ResourceKindEnum.AI.value, False),
-        ("unknown-plugin", ResourceKindEnum.STANDARD.value, True),
-        ("unknown-plugin", ResourceKindEnum.AI.value, False),
+        (ResourceKindEnum.AI.value, True),
+        (ResourceKindEnum.STANDARD.value, False),
+        (None, False),
     ],
 )
-def test_is_plugin_allowed_for_kind(plugin_type_code, kind, expected):
-    assert is_plugin_allowed_for_kind(plugin_type_code, kind) is expected
-
-
-def test_get_incompatible_plugin_type_codes_preserves_input_order():
-    assert get_incompatible_plugin_type_codes(
-        ["bk-cors", "bk-header-rewrite", "ai-proxy", "unknown-plugin"],
-        ResourceKindEnum.AI.value,
-    ) == ["bk-header-rewrite", "ai-proxy", "unknown-plugin"]
-
-
-def test_is_plugin_allowed_for_kind_rejects_unknown_kind():
-    with pytest.raises(ValueError, match="unsupported kind"):
-        is_plugin_allowed_for_kind("bk-cors", "unknown")
+def test_is_ai_rate_limiting_allowed(kind, expected):
+    assert is_ai_rate_limiting_allowed(kind) is expected

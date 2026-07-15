@@ -127,8 +127,7 @@ def test_service_private_helpers_are_prefixed_with_underscore():
     )
 
 
-def test_plugin_compatibility_functions_are_public():
+def test_plugin_compatibility_function_is_public():
     exported_names = _package_dunder_all(SERVICE_DIR / "plugin")
 
-    assert "get_incompatible_plugin_type_codes" in exported_names
-    assert "is_plugin_allowed_for_kind" in exported_names
+    assert "is_ai_rate_limiting_allowed" in exported_names

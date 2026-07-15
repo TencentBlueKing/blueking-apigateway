@@ -20,9 +20,11 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.openapi import ResourceImportValidator
 from apigateway.biz.plugin import PluginConfigData
-from apigateway.biz.resource import ResourceAuthConfig, ResourceData
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
 from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
@@ -68,7 +70,7 @@ class TestResourceImportValidator:
 
         assert not errors
 
-    def test_validate_ai_resource_rejects_incompatible_plugin(
+    def test_validate_ai_resource_accepts_regular_plugin(
         self,
         fake_gateway,
         fake_plugin_type_bk_header_rewrite,
@@ -94,7 +96,57 @@ class TestResourceImportValidator:
 
         errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
 
-        assert any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+        assert not any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+
+    @pytest.mark.parametrize(
+        ("resource_kind", "has_compatibility_error"),
+        [
+            (ResourceKindEnum.STANDARD.value, True),
+            (ResourceKindEnum.AI.value, False),
+        ],
+    )
+    def test_validate_ai_rate_limiting_by_resource_kind(
+        self,
+        fake_gateway,
+        resource_kind,
+        has_compatibility_error,
+    ):
+        if resource_kind == ResourceKindEnum.AI.value:
+            fake_gateway.kind = GatewayKindEnum.AI.value
+            fake_gateway.save(update_fields=["kind"])
+
+        backend = G(Backend, gateway=fake_gateway, kind=resource_kind)
+        G(
+            PluginType,
+            code=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+            is_public=True,
+            scope=PluginTypeScopeEnum.RESOURCE.value,
+        )
+        resource_data = ResourceData(
+            kind=resource_kind,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=(
+                ResourceBackendConfig(method="POST", path="/chat")
+                if resource_kind == ResourceKindEnum.STANDARD.value
+                else None
+            ),
+            plugin_configs=[
+                PluginConfigData(
+                    type=PluginTypeCodeEnum.AI_RATE_LIMITING.value,
+                    yaml=yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429}),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any("ai-rate-limiting" in error.message and "不兼容" in error.message for error in errors) is (
+            has_compatibility_error
+        )
 
     def test_validate(self, fake_gateway, fake_resource_data):
         resource_data_list = [

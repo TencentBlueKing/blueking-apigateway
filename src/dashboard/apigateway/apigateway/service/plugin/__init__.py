@@ -33,7 +33,7 @@ from .checker import (
     UriBlockerChecker,
     check_vars,
 )
-from .compatibility import get_incompatible_plugin_type_codes, is_plugin_allowed_for_kind
+from .compatibility import is_ai_rate_limiting_allowed
 from .convertor import (
     AIProxyConvertor,
     BkAccessTokenSourceConvertor,
@@ -95,7 +95,6 @@ __all__ = [
     "check_vars",
     "format_fault_injection_config",
     "format_response_rewrite_config",
-    "get_incompatible_plugin_type_codes",
-    "is_plugin_allowed_for_kind",
+    "is_ai_rate_limiting_allowed",
     # others
 ]
