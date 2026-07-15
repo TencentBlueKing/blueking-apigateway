@@ -82,13 +82,13 @@ def _build_ai_log_format() -> Dict[str, str]:
         "proxy_error": "$proxy_error",
         "timestamp": "$bk_log_request_timestamp",
         "traceparent": "$http_traceparent",
-        "request_type": "$request_type",
-        "model": "$llm_model",
-        "request_model": "$request_llm_model",
-        "first_token_duration": "$llm_time_to_first_token",
         "response_time": "$apisix_upstream_response_time",
-        "prompt_tokens": "$llm_prompt_tokens",
-        "completion_tokens": "$llm_completion_tokens",
+        "request_type": "$request_type",
+        "llm_model": "$llm_model",
+        "request_llm_model": "$request_llm_model",
+        "llm_prompt_tokens": "$llm_prompt_tokens",
+        "llm_completion_tokens": "$llm_completion_tokens",
+        "llm_time_to_first_token": "$llm_time_to_first_token",
     }
 
 
