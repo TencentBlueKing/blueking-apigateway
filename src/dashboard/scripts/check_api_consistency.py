@@ -11,11 +11,9 @@ API 一致性检查工具
 import argparse
 import ast
 import json
-import os
 import re
 import sys
 from pathlib import Path
-from typing import Any
 
 try:
     import yaml
@@ -44,12 +42,13 @@ def c(text: str, color: str) -> str:
 
 # ── Django URL 解析器（基于 AST） ────────────────────────────────────
 
+
 def normalize_path(path_str: str) -> str:
     """将 Django URL 参数格式 <type:name> 转换为 YAML 格式 {name}"""
-    result = re.sub(r'<(?:\w+:)?(\w+)>', r'{\1}', path_str)
+    result = re.sub(r"<(?:\w+:)?(\w+)>", r"{\1}", path_str)
     # 确保以 / 结尾
-    if result and not result.endswith('/'):
-        result += '/'
+    if result and not result.endswith("/"):
+        result += "/"
     return result
 
 
@@ -120,13 +119,15 @@ def parse_django_urls(filepath: Path, prefix: str = "") -> list[dict]:
                     view_class = _get_view_class(second_arg)
                     name = _get_name_kwarg(call_node)
                     if view_class:
-                        routes.append({
-                            "full_path": full_prefix,
-                            "view_class": view_class,
-                            "name": name or "",
-                            "line": call_node.lineno,
-                            "filepath": str(filepath),
-                        })
+                        routes.append(
+                            {
+                                "full_path": full_prefix,
+                                "view_class": view_class,
+                                "name": name or "",
+                                "line": call_node.lineno,
+                                "filepath": str(filepath),
+                            }
+                        )
 
     def _process_list(list_node: ast.List, current_prefix: str):
         """处理 urlpatterns 列表中的所有 path() 调用"""
@@ -158,26 +159,36 @@ def parse_django_urls(filepath: Path, prefix: str = "") -> list[dict]:
 
 # ── View 方法解析 ────────────────────────────────────────────────────
 
+
 def parse_view_methods(filepath: Path) -> dict[str, list[str]]:
     """从 views.py 提取每个 View 类支持的 HTTP 方法"""
     content = filepath.read_text(encoding="utf-8")
     result = {}
     current_class = None
-    methods = []
+    methods: list[str] = []
 
     for line in content.splitlines():
-        class_match = re.match(r'^class\s+(\w+)', line)
+        class_match = re.match(r"^class\s+(\w+)", line)
         if class_match:
             if current_class and methods:
                 result[current_class] = methods
             current_class = class_match.group(1)
             methods = []
             continue
-        method_match = re.match(r'^\s+def\s+(get|post|put|delete|patch|list|create|retrieve|update|destroy|partial_update)\b', line)
+        method_match = re.match(
+            r"^\s+def\s+(get|post|put|delete|patch|list|create|retrieve|update|destroy|partial_update)\b", line
+        )
         if method_match and current_class:
             m = method_match.group(1).upper()
             # DRF 的 list/create/retrieve/update/destroy/partial_update 映射到 HTTP 方法
-            drf_map = {"LIST": "GET", "CREATE": "POST", "RETRIEVE": "GET", "UPDATE": "PUT", "DESTROY": "DELETE", "PARTIAL_UPDATE": "PATCH"}
+            drf_map = {
+                "LIST": "GET",
+                "CREATE": "POST",
+                "RETRIEVE": "GET",
+                "UPDATE": "PUT",
+                "DESTROY": "DELETE",
+                "PARTIAL_UPDATE": "PATCH",
+            }
             methods.append(drf_map.get(m, m))
 
     if current_class and methods:
@@ -187,6 +198,7 @@ def parse_view_methods(filepath: Path) -> dict[str, list[str]]:
 
 
 # ── View → Serializer 映射解析 ────────────────────────────────────
+
 
 def parse_view_serializers(filepath: Path) -> dict[str, dict[str, str]]:
     """
@@ -200,7 +212,7 @@ def parse_view_serializers(filepath: Path) -> dict[str, dict[str, str]]:
     current_method = None
 
     for line in content.splitlines():
-        class_match = re.match(r'^class\s+(\w+)', line)
+        class_match = re.match(r"^class\s+(\w+)", line)
         if class_match:
             if current_class:
                 result[current_class] = current_info
@@ -210,19 +222,21 @@ def parse_view_serializers(filepath: Path) -> dict[str, dict[str, str]]:
             continue
 
         # serializer_class = serializers.XxxSLZ 或 serializer_class = XxxSLZ
-        slz_match = re.match(r'^\s+serializer_class\s*=\s*(?:serializers\.)?(\w+)', line)
+        slz_match = re.match(r"^\s+serializer_class\s*=\s*(?:serializers\.)?(\w+)", line)
         if slz_match and current_class:
             current_info["serializer_class"] = slz_match.group(1)
 
         # 方法开头
-        method_match = re.match(r'^\s+def\s+(get|post|put|delete|patch|list|create|retrieve|update|destroy|partial_update)\b', line)
+        method_match = re.match(
+            r"^\s+def\s+(get|post|put|delete|patch|list|create|retrieve|update|destroy|partial_update)\b", line
+        )
         if method_match:
             current_method = method_match.group(1)
 
         # 方法体内的 slz = XxxInputSLZ(data=request.xxx) 或 serializers.XxxInputSLZ(data=request.xxx)
         if current_method and current_class:
             # 匹配 slz = serializers.XxxInputSLZ(data=...)
-            input_match = re.search(r'(?:serializers\.)?(\w+(?:Input|Query)\w*SLZ)\s*\(data=', line)
+            input_match = re.search(r"(?:serializers\.)?(\w+(?:Input|Query)\w*SLZ)\s*\(data=", line)
             if input_match:
                 current_info["input_slz"] = input_match.group(1)
 
@@ -233,6 +247,7 @@ def parse_view_serializers(filepath: Path) -> dict[str, dict[str, str]]:
 
 
 # ── Serializer 字段解析 ────────────────────────────────────────────
+
 
 def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
     """
@@ -255,16 +270,16 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
 
     for line in content.splitlines():
         # 类定义：提取类名和基类
-        class_match = re.match(r'^class\s+(\w+)\s*\(([^)]*)\)', line)
+        class_match = re.match(r"^class\s+(\w+)\s*\(([^)]*)\)", line)
         if class_match:
             # 保存上一个类：将 Meta.fields 中未显式声明的字段也加入
             if current_class:
                 explicit_names = {f["name"] for f in current_fields}
                 for mf in meta_fields:
                     if mf not in explicit_names:
-                        current_fields.append({
-                            "name": mf, "type": "ModelField", "required": False, "output_only": False
-                        })
+                        current_fields.append(
+                            {"name": mf, "type": "ModelField", "required": False, "output_only": False}
+                        )
                 if current_fields:
                     result[current_class] = current_fields
             current_class = class_match.group(1)
@@ -283,7 +298,7 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
             continue
 
         # Meta class
-        if re.match(r'^\s+class\s+Meta\s*:', line):
+        if re.match(r"^\s+class\s+Meta\s*:", line):
             in_meta = True
             continue
         if in_meta:
@@ -293,7 +308,7 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
                 if "]" in line or ")" in line:
                     meta_fields = re.findall(r'["\'](\w+)["\']', meta_fields_buffer)
                     in_meta_fields = False
-            elif re.search(r'fields\s*=\s*[\[\(]', line):
+            elif re.search(r"fields\s*=\s*[\[\(]", line):
                 meta_fields_buffer = line
                 if "]" in line.split("=", 1)[-1] or ")" in line.split("=", 1)[-1]:
                     # 单行完整定义
@@ -302,11 +317,11 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
                     # 多行定义，继续读取
                     in_meta_fields = True
             # 缩进回退则退出 Meta
-            if line.strip() and not line.startswith(' ' * 8) and not line.startswith('\t\t'):
+            if line.strip() and not line.startswith(" " * 8) and not line.startswith("\t\t"):
                 in_meta = False
 
         # 字段定义: name = serializers.CharField(...)
-        field_match = re.match(r'^\s{4}(\w+)\s*=\s*(?:serializers\.)?(\w+(?:Field|Serializer|SLZ)?)\s*\(', line)
+        field_match = re.match(r"^\s{4}(\w+)\s*=\s*(?:serializers\.)?(\w+(?:Field|Serializer|SLZ)?)\s*\(", line)
         if field_match and current_class:
             fname = field_match.group(1)
             ftype = field_match.group(2)
@@ -320,9 +335,7 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
 
             output_only_types = {"SerializerMethodField"}
             if ftype in output_only_types:
-                current_fields.append({
-                    "name": fname, "type": ftype, "required": False, "output_only": True
-                })
+                current_fields.append({"name": fname, "type": ftype, "required": False, "output_only": True})
                 continue
 
             # 判断 required
@@ -331,22 +344,16 @@ def parse_serializer_fields(filepath: Path) -> dict[str, list[dict]]:
                 required = False
             if "read_only=True" in line:
                 # read_only 字段是输出字段
-                current_fields.append({
-                    "name": fname, "type": ftype, "required": False, "output_only": True
-                })
+                current_fields.append({"name": fname, "type": ftype, "required": False, "output_only": True})
                 continue
 
-            current_fields.append({
-                "name": fname, "type": ftype, "required": required, "output_only": False
-            })
+            current_fields.append({"name": fname, "type": ftype, "required": required, "output_only": False})
 
     if current_class:
         explicit_names = {f["name"] for f in current_fields}
         for mf in meta_fields:
             if mf not in explicit_names:
-                current_fields.append({
-                    "name": mf, "type": "ModelField", "required": False, "output_only": False
-                })
+                current_fields.append({"name": mf, "type": "ModelField", "required": False, "output_only": False})
         if current_fields:
             result[current_class] = current_fields
 
@@ -390,6 +397,7 @@ DRF_TO_OPENAPI_TYPE = {
 
 
 # ── 检查器 ────────────────────────────────────────────────────────────
+
 
 class APIConsistencyChecker:
     SCOPE_MAP = {
@@ -494,11 +502,14 @@ class APIConsistencyChecker:
                     continue
                 # scope 过滤
                 if scope and scope != "all":
-                    if scope == "v2_open" and not path_str.startswith("/api/v2/open/"):
-                        continue
-                    elif scope == "v2_inner" and not path_str.startswith("/api/v2/inner/"):
-                        continue
-                    elif scope == "v2_sync" and not path_str.startswith("/api/v2/sync/"):
+                    if (
+                        scope == "v2_open"
+                        and not path_str.startswith("/api/v2/open/")
+                        or scope == "v2_inner"
+                        and not path_str.startswith("/api/v2/inner/")
+                        or scope == "v2_sync"
+                        and not path_str.startswith("/api/v2/sync/")
+                    ):
                         continue
 
                 x_res = detail.get("x-bk-apigateway-resource", {})
@@ -599,7 +610,7 @@ class APIConsistencyChecker:
         """从文档的参数表格中提取参数名（兼容旧接口）"""
         params = []
         for line in content.splitlines():
-            m = re.match(r'^\|\s*`?(\w+)`?\s*\|', line)
+            m = re.match(r"^\|\s*`?(\w+)`?\s*\|", line)
             if m and m.group(1) not in ("参数名称", "参数名", "Field", "字段", "Name", "Parameter"):
                 params.append(m.group(1))
         return params
@@ -644,7 +655,7 @@ class APIConsistencyChecker:
                 continue
 
             # 检测表格行
-            m = re.match(r'^\|\s*`?(\w+)`?\s*\|', line)
+            m = re.match(r"^\|\s*`?(\w+)`?\s*\|", line)
             if m:
                 name = m.group(1)
                 if name in table_header_words:
@@ -661,10 +672,9 @@ class APIConsistencyChecker:
                     else:
                         # 未归类的参数，放到 body_params（大部分是请求参数）
                         body_params.append(name)
-            else:
-                # 非表格行，重置表格状态
-                if line.strip() and not line.strip().startswith("|"):
-                    in_table = False
+            # 非表格行，重置表格状态
+            elif line.strip() and not line.strip().startswith("|"):
+                in_table = False
 
         return {
             "all_params": all_params,
@@ -685,8 +695,8 @@ class APIConsistencyChecker:
             yaml_norm = yapi["norm_path"]
             # 将 YAML 路径中的参数名转为 正则
             # e.g., /api/v2/open/gateways/{gateway_name}/ → /api/v2/open/gateways/\{[^}]+\}/
-            pattern = re.sub(r'\{[^}]+\}', r'{[^}]+}', re.escape(yaml_norm))
-            pattern = pattern.replace(r'\{', '{').replace(r'\}', '}')
+            pattern = re.sub(r"\{[^}]+\}", r"{[^}]+}", re.escape(yaml_norm))
+            pattern = pattern.replace(r"\{", "{").replace(r"\}", "}")
 
             best_match = None
             for code_path in self.code_routes:
@@ -773,15 +783,23 @@ class APIConsistencyChecker:
 
             # CHECK-1: 存在性 — YAML 有定义但代码无对应
             if not has_code and not is_skip_backend:
-                self._log("error", "CHECK-1", op_id,
-                          f"YAML 有定义但代码无对应路由: {yapi['path']}",
-                          "添加路由或从 resources.yaml 移除该资源")
+                self._log(
+                    "error",
+                    "CHECK-1",
+                    op_id,
+                    f"YAML 有定义但代码无对应路由: {yapi['path']}",
+                    "添加路由或从 resources.yaml 移除该资源",
+                )
 
             # CHECK-1: 存在性 — 缺文档
             if not has_doc and ".well-known" not in yapi.get("path", ""):
-                self._log("warning", "CHECK-1", op_id,
-                          f"YAML 有定义但无文档: {yapi['path']}",
-                          f"创建 {self.docs_dir.name}/{op_id}.md")
+                self._log(
+                    "warning",
+                    "CHECK-1",
+                    op_id,
+                    f"YAML 有定义但无文档: {yapi['path']}",
+                    f"创建 {self.docs_dir.name}/{op_id}.md",
+                )
 
             # CHECK-2: 路径一致性（backend_path vs 实际路径）
             if has_code and not is_skip_backend:
@@ -789,13 +807,17 @@ class APIConsistencyChecker:
                 code_route = self.code_routes[code_path]
                 if backend_path:
                     # backend.path 通常有 /backend/ 前缀，去掉后应与代码路由一致
-                    bp_clean = re.sub(r'^/backend/', '/', backend_path)
+                    bp_clean = re.sub(r"^/backend/", "/", backend_path)
                     bp_norm = normalize_path(bp_clean).rstrip("/") + "/"
                     code_norm = normalize_path(code_route["full_path"]).rstrip("/") + "/"
                     if not self._paths_equivalent(bp_norm, code_norm):
-                        self._log("warning", "CHECK-2", op_id,
-                                  f"backend.path '{backend_path}' (去掉 /backend/ 后) 与代码路由 '{code_route['full_path']}' 不一致",
-                                  "确认 backend 转发路径是否正确")
+                        self._log(
+                            "warning",
+                            "CHECK-2",
+                            op_id,
+                            f"backend.path '{backend_path}' (去掉 /backend/ 后) 与代码路由 '{code_route['full_path']}' 不一致",
+                            "确认 backend 转发路径是否正确",
+                        )
 
             # CHECK-3: HTTP 方法一致性
             if has_code and not is_skip_backend:
@@ -807,21 +829,27 @@ class APIConsistencyChecker:
                 yaml_method = yapi.get("method", "")
 
                 if code_methods and yaml_method and yaml_method not in code_methods:
-                    self._log("error", "CHECK-3", op_id,
-                              f"YAML method={yaml_method} 但 View {view_class} 仅支持 {code_methods}",
-                              "检查 View 类是否实现了该方法")
+                    self._log(
+                        "error",
+                        "CHECK-3",
+                        op_id,
+                        f"YAML method={yaml_method} 但 View {view_class} 仅支持 {code_methods}",
+                        "检查 View 类是否实现了该方法",
+                    )
 
                 backend_method = yapi.get("backend_method", "")
                 if backend_method and yaml_method and backend_method != yaml_method:
-                    self._log("warning", "CHECK-3", op_id,
-                              f"backend.method={backend_method} 与前端 method={yaml_method} 不一致",
-                              "通常应一致，确认是否有意转换")
+                    self._log(
+                        "warning",
+                        "CHECK-3",
+                        op_id,
+                        f"backend.method={backend_method} 与前端 method={yaml_method} 不一致",
+                        "通常应一致，确认是否有意转换",
+                    )
 
             # CHECK-6: 鉴权配置
             if "inner" in tags and is_public:
-                self._log("error", "CHECK-6", op_id,
-                          "inner API 不应为 isPublic: true",
-                          "将 isPublic 设为 false")
+                self._log("error", "CHECK-6", op_id, "inner API 不应为 isPublic: true", "将 isPublic 设为 false")
 
             # ── CHECK-4: YAML 参数 ↔ 文档参数 ────────────────────────────
             if has_doc:
@@ -835,29 +863,45 @@ class APIConsistencyChecker:
                 missing_path_in_doc = yaml_path_set - doc_path_params
                 extra_path_in_doc = doc_path_params - yaml_path_set
                 if missing_path_in_doc:
-                    self._log("warning", "CHECK-4", op_id,
-                              f"YAML 定义了路径参数但文档「路径参数」中缺少: {sorted(missing_path_in_doc)}",
-                              f"在 {op_id}.md 的「路径参数」表格中补充")
+                    self._log(
+                        "warning",
+                        "CHECK-4",
+                        op_id,
+                        f"YAML 定义了路径参数但文档「路径参数」中缺少: {sorted(missing_path_in_doc)}",
+                        f"在 {op_id}.md 的「路径参数」表格中补充",
+                    )
                 if extra_path_in_doc:
-                    self._log("warning", "CHECK-4", op_id,
-                              f"文档「路径参数」中有但 YAML 未定义: {sorted(extra_path_in_doc)}",
-                              "确认是否需要在 resources.yaml 补充路径参数定义，或从文档中移除")
+                    self._log(
+                        "warning",
+                        "CHECK-4",
+                        op_id,
+                        f"文档「路径参数」中有但 YAML 未定义: {sorted(extra_path_in_doc)}",
+                        "确认是否需要在 resources.yaml 补充路径参数定义，或从文档中移除",
+                    )
 
                 # 4a: YAML 有但文档缺少的参数（query + body）
                 yaml_all = set(yaml_params["query"]) | set(yaml_params["body"])
                 missing_in_doc = yaml_all - doc_all
                 if missing_in_doc:
-                    self._log("warning", "CHECK-4", op_id,
-                              f"YAML 定义了参数但文档中缺少: {sorted(missing_in_doc)}",
-                              f"在 {op_id}.md 补充缺失的参数说明")
+                    self._log(
+                        "warning",
+                        "CHECK-4",
+                        op_id,
+                        f"YAML 定义了参数但文档中缺少: {sorted(missing_in_doc)}",
+                        f"在 {op_id}.md 补充缺失的参数说明",
+                    )
 
                 # 4b: 文档有但 YAML 没有的参数（排除路径参数）
                 yaml_path_params = set(yaml_params["path"])
                 extra_in_doc = doc_all - yaml_all - yaml_path_params
                 if extra_in_doc:
-                    self._log("warning", "CHECK-4", op_id,
-                              f"文档描述了参数但 YAML 中未定义: {sorted(extra_in_doc)}",
-                              "确认是否需要在 resources.yaml 补充参数定义，或从文档中移除多余参数")
+                    self._log(
+                        "warning",
+                        "CHECK-4",
+                        op_id,
+                        f"文档描述了参数但 YAML 中未定义: {sorted(extra_in_doc)}",
+                        "确认是否需要在 resources.yaml 补充参数定义，或从文档中移除多余参数",
+                    )
 
             # ── CHECK-5: YAML/文档参数 ↔ Serializer 字段 ─────────────────
             if has_code and not is_skip_backend:
@@ -880,9 +924,7 @@ class APIConsistencyChecker:
                 if input_slz_name and scoped_slz in self.serializer_fields:
                     slz_fields = self.serializer_fields[scoped_slz]
                     # 只看输入字段（排除 output_only）
-                    slz_input_names = set(
-                        f["name"] for f in slz_fields if not f.get("output_only", False)
-                    )
+                    slz_input_names = set(f["name"] for f in slz_fields if not f.get("output_only", False))
 
                     yaml_params = self._get_yaml_param_names(yapi)
                     yaml_non_path = set(yaml_params["query"]) | set(yaml_params["body"])
@@ -894,32 +936,48 @@ class APIConsistencyChecker:
                     # 5a: Serializer 有但 YAML 没有的字段
                     missing_in_yaml = slz_input_names - yaml_non_path - pagination_params
                     if missing_in_yaml:
-                        self._log("warning", "CHECK-5", op_id,
-                                  f"Serializer '{input_slz_name}' 定义了字段但 YAML 中缺少: {sorted(missing_in_yaml)}",
-                                  "在 resources.yaml 的 parameters/requestBody 中补充这些字段")
+                        self._log(
+                            "warning",
+                            "CHECK-5",
+                            op_id,
+                            f"Serializer '{input_slz_name}' 定义了字段但 YAML 中缺少: {sorted(missing_in_yaml)}",
+                            "在 resources.yaml 的 parameters/requestBody 中补充这些字段",
+                        )
 
                     # 5b: YAML 有但 Serializer 没有的字段
                     extra_in_yaml = yaml_non_path - slz_input_names - pagination_params
                     if extra_in_yaml:
-                        self._log("warning", "CHECK-5", op_id,
-                                  f"YAML 定义了参数但 Serializer '{input_slz_name}' 中没有: {sorted(extra_in_yaml)}",
-                                  "确认 YAML 参数是否过时，或 Serializer 是否缺少字段定义")
+                        self._log(
+                            "warning",
+                            "CHECK-5",
+                            op_id,
+                            f"YAML 定义了参数但 Serializer '{input_slz_name}' 中没有: {sorted(extra_in_yaml)}",
+                            "确认 YAML 参数是否过时，或 Serializer 是否缺少字段定义",
+                        )
 
         # 反向检查：代码中有但 YAML 没有
         for code_path, code_route in self.code_routes.items():
             if code_path not in matched_code_paths:
-                self._log("warning", "CHECK-1-REV", code_route.get("view_class", "unknown"),
-                          f"代码有路由但 YAML 无匹配定义: {code_route['full_path']}",
-                          "在 bk-apigateway-resources.yaml 补充资源定义，或确认路径是否变更")
+                self._log(
+                    "warning",
+                    "CHECK-1-REV",
+                    code_route.get("view_class", "unknown"),
+                    f"代码有路由但 YAML 无匹配定义: {code_route['full_path']}",
+                    "在 bk-apigateway-resources.yaml 补充资源定义，或确认路径是否变更",
+                )
 
         # 反向检查：文档存在但 YAML 没有
         # 使用完整的 operationId 集合（包含 v1 等被 scope 过滤掉的 API），避免误报
         all_op_ids = self._collect_all_operation_ids()
         for op_id, doc in self.docs.items():
             if op_id not in self.yaml_apis and op_id not in all_op_ids:
-                self._log("warning", "CHECK-1-REV", op_id,
-                          f"文档存在但 YAML 无定义: {doc['filepath']}",
-                          "确认是否为废弃文档，或补充资源定义")
+                self._log(
+                    "warning",
+                    "CHECK-1-REV",
+                    op_id,
+                    f"文档存在但 YAML 无定义: {doc['filepath']}",
+                    "确认是否为废弃文档，或补充资源定义",
+                )
 
     def _collect_all_operation_ids(self) -> set[str]:
         """从完整的 resources YAML 中收集所有 operationId（不受 scope 过滤）"""
@@ -944,7 +1002,7 @@ class APIConsistencyChecker:
         raw = self.definition_yaml.read_text(encoding="utf-8")
         # 替换 Jinja2 / Django 模板变量 {{ ... }} 为占位字符串
         raw = re.sub(r'"(\{\{.*?\}\})"', '"__TEMPLATE_VAR__"', raw)
-        raw = re.sub(r'\{\{.*?\}\}', '__TEMPLATE_VAR__', raw)
+        raw = re.sub(r"\{\{.*?\}\}", "__TEMPLATE_VAR__", raw)
         definition = yaml.safe_load(raw)
 
         # 使用完整的 operationId 集合（不受 scope 过滤），避免跨 scope 引用导致误报
@@ -954,9 +1012,13 @@ class APIConsistencyChecker:
         for item in definition.get("grant_permissions", []):
             for res_name in item.get("resource_names", []):
                 if res_name not in all_op_ids:
-                    self._log("error", "CHECK-7", res_name,
-                              f"grant_permissions 授权了不存在的资源: {res_name}",
-                              "移除授权或添加资源定义")
+                    self._log(
+                        "error",
+                        "CHECK-7",
+                        res_name,
+                        f"grant_permissions 授权了不存在的资源: {res_name}",
+                        "移除授权或添加资源定义",
+                    )
 
         # CHECK-8: mcp_servers
         for stage in definition.get("stages", []):
@@ -969,13 +1031,21 @@ class APIConsistencyChecker:
                 tool_names = srv_conf.get("tool_names", [])
                 for rn in res_names:
                     if rn not in all_op_ids:
-                        self._log("error", "CHECK-8", rn,
-                                  f"mcp_servers '{srv_name}' 引用不存在的资源: {rn}",
-                                  "补充资源定义或修正 mcp_servers 配置")
+                        self._log(
+                            "error",
+                            "CHECK-8",
+                            rn,
+                            f"mcp_servers '{srv_name}' 引用不存在的资源: {rn}",
+                            "补充资源定义或修正 mcp_servers 配置",
+                        )
                 if len(res_names) != len(tool_names):
-                    self._log("warning", "CHECK-8", srv_name,
-                              f"resource_names({len(res_names)}) 与 tool_names({len(tool_names)}) 数量不匹配",
-                              "检查配置是否一一对应")
+                    self._log(
+                        "warning",
+                        "CHECK-8",
+                        srv_name,
+                        f"resource_names({len(res_names)}) 与 tool_names({len(tool_names)}) 数量不匹配",
+                        "检查配置是否一一对应",
+                    )
 
     # ── JSON 输出 ─────────────────────────────────────────────────────
 
@@ -1105,7 +1175,7 @@ class APIConsistencyChecker:
 
 ## 接口说明
 
-{desc or 'TODO: 补充接口描述'}
+{desc or "TODO: 补充接口描述"}
 
 ## 请求信息
 
@@ -1187,18 +1257,15 @@ def main():
   %(prog)s --json                       # JSON 格式输出
   %(prog)s --fix                        # 生成缺失的文档模板
   %(prog)s --scope v2_open --fix        # 检查 v2 open 并修复缺失文档
-""")
-    parser.add_argument("--scope", default="all",
-                        choices=["all", "v2_open", "v2_inner", "v2_sync"],
-                        help="检查范围 (默认: all)")
-    parser.add_argument("--api", default=None,
-                        help="指定 operationId 检查单个 API（与 --scope 互斥）")
-    parser.add_argument("--fix", action="store_true",
-                        help="自动生成缺失的 API 文档模板")
-    parser.add_argument("--json", action="store_true",
-                        help="JSON 格式输出（机器可读）")
-    parser.add_argument("--project-dir", default=None,
-                        help="项目根目录 (默认自动探测)")
+""",
+    )
+    parser.add_argument(
+        "--scope", default="all", choices=["all", "v2_open", "v2_inner", "v2_sync"], help="检查范围 (默认: all)"
+    )
+    parser.add_argument("--api", default=None, help="指定 operationId 检查单个 API（与 --scope 互斥）")
+    parser.add_argument("--fix", action="store_true", help="自动生成缺失的 API 文档模板")
+    parser.add_argument("--json", action="store_true", help="JSON 格式输出（机器可读）")
+    parser.add_argument("--project-dir", default=None, help="项目根目录 (默认自动探测)")
     args = parser.parse_args()
 
     # 参数互斥检测

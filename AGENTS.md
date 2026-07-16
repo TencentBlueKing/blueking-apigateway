@@ -57,9 +57,6 @@ Agent skills are located in `.agents/skills/`. Before executing any agent task d
 
 These skills are designed to work with **any AI coding agent** (Claude Code, Codex, Cursor, Windsurf, Aider, etc.) that has access to Playwright MCP browser tools, file system operations, and shell commands.
 
-`bk-apigateway-openapi-check` is opt-in. Do not invoke it unless the user explicitly asks to use that skill. Merely mentioning, editing, or reviewing the skill, or working on OpenAPI-related files, does not authorize its use.
-
 | Skill | File | Description |
 |-------|------|-------------|
 | bdd-test-gen | `.agents/skills/bdd-test-gen/SKILL.md` | Generate executable Playwright test scripts from BDD case files by exploring a live environment |
-| bk-apigateway-openapi-check | `.agents/skills/bk-apigateway-openapi-check/SKILL.md` | Explicit invocation only. Checks consistency between API code, YAML gateway definitions, and API docs (8 checks incl. parameter consistency). |

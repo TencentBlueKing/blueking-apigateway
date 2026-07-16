@@ -15,12 +15,14 @@ lint:
 	ruff check --config=pyproject.toml --force-exclude --fix .
 	mypy --config-file=pyproject.toml .
 	cd apigateway && lint-imports --config=../pyproject.toml && cd ..
+	python3 $(OPENAPI_LINT_SCRIPT)
 
 .PHONY: lint-check
 lint-check:
 	ruff check --config=pyproject.toml --force-exclude . || (echo "ruff check fail"; exit 1)
 	mypy --config-file=pyproject.toml . || (echo "mypy check fail"; exit 1)
 	cd apigateway && lint-imports --config=../pyproject.toml || (echo "importlinter check fail"; exit 1) && cd ..
+	python3 $(OPENAPI_LINT_SCRIPT)
 
 
 
@@ -180,28 +182,29 @@ dump_fixtures: apigateway/fixtures/plugins.yaml
 load_fixtures:
 	cd apigateway && python manage.py loaddata -i apigateway/fixtures/*.yaml
 
-# ====== OpenAPI Consistency Check ======
+# ====== OpenAPI Consistency Lint ======
 #
 # Usage:
-#   make check-openapi                    # Check all APIs
-#   make check-openapi SCOPE=v2_sync      # Check only v2 sync APIs
-#   make check-openapi API=v2_sync_stages # Check a single API
-#   make check-openapi JSON=1             # JSON output
-#   make check-openapi FIX=1              # Generate missing doc templates
-#   make check-openapi-help               # Show detailed help
+#   make lint-openapi                     # Check all APIs
+#   make lint-openapi SCOPE=v2_sync       # Check only v2 sync APIs
+#   make lint-openapi API=v2_sync_stages  # Check a single API
+#   make lint-openapi JSON=1              # JSON output
+#   make lint-openapi FIX=1               # Generate missing doc templates
+#   make lint-openapi-help                # Show detailed help
+#   make check-openapi                    # Backward-compatible alias
 
-OPENAPI_CHECK_SCRIPT := ../../.agents/skills/bk-apigateway-openapi-check/scripts/check_api_consistency.py
+OPENAPI_LINT_SCRIPT := scripts/check_api_consistency.py
 SCOPE ?= all
 
-.PHONY: check-openapi check-openapi-help
-check-openapi: ## Check API code/YAML/docs consistency (SCOPE=all|v2_open|v2_inner|v2_sync, API=<operationId>, JSON=1, FIX=1)
-	@python3 $(OPENAPI_CHECK_SCRIPT) \
+.PHONY: lint-openapi lint-openapi-help check-openapi check-openapi-help
+lint-openapi check-openapi: ## Lint API code/YAML/docs consistency (SCOPE=all|v2_open|v2_inner|v2_sync, API=<operationId>, JSON=1, FIX=1)
+	@python3 $(OPENAPI_LINT_SCRIPT) \
 		$(if $(API),--api $(API),--scope $(SCOPE)) \
 		$(if $(JSON),--json) \
 		$(if $(FIX),--fix)
 
-check-openapi-help: ## Show detailed help for OpenAPI consistency check
-	@python3 $(OPENAPI_CHECK_SCRIPT) --help
+lint-openapi-help check-openapi-help: ## Show detailed help for OpenAPI consistency lint
+	@python3 $(OPENAPI_LINT_SCRIPT) --help
 
 # ====== others ======
 
