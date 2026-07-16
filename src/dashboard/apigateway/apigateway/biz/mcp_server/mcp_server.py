@@ -58,7 +58,7 @@ from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.error_codes import error_codes
 from apigateway.components import bkaidev
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.service.mcp import build_mcp_server_application_url, build_mcp_server_url, validate_mcp_prompts_payload
 from apigateway.service.resource import get_resource_id_to_labels_by_label_ids
@@ -380,9 +380,11 @@ class MCPServerHandler:
         if release:
             valid_resource_names = get_standard_resource_names_set(release.resource_version.id)
             resource_names = [name for name in resource_names if name in valid_resource_names]
-        resource_ids = Resource.objects.filter(gateway_id=mcp_server.gateway_id, name__in=resource_names).values_list(
-            "id", flat=True
-        )
+        resource_ids = Resource.objects.filter(
+            gateway_id=mcp_server.gateway_id,
+            name__in=resource_names,
+            kind=ResourceKindEnum.STANDARD.value,
+        ).values_list("id", flat=True)
 
         # 3. sync the permission
         newest_virtual_app_code_resource_id_set = {

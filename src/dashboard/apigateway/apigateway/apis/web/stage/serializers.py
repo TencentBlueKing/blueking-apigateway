@@ -16,6 +16,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import logging
+
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
@@ -45,6 +47,8 @@ from apigateway.core.constants import (
 from apigateway.core.models import Backend, BackendConfig, Stage
 from apigateway.service.release import PublishValidator, ReleaseValidationError
 from apigateway.utils.version import is_version1_greater_than_version2
+
+logger = logging.getLogger(__name__)
 
 
 class StageOutputSLZ(serializers.ModelSerializer):
@@ -221,12 +225,7 @@ class StageInputSLZ(serializers.Serializer):
                     _("请求参数中，缺少后端服务【{backend_id}】的配置。").format(backend_name=backend.name)
                 )
 
-        existing_configs = {}
-        if self.instance:
-            existing_configs = {
-                backend_config.backend_id: backend_config.config
-                for backend_config in BackendConfig.objects.filter(stage=self.instance).select_related("backend")
-            }
+        existing_configs = self._get_existing_configs()
 
         for input_backend in attrs["backends"]:
             backend = backend_dict[input_backend["id"]]
@@ -252,6 +251,24 @@ class StageInputSLZ(serializers.Serializer):
                 check_backend_host_scheme(backend, host)
 
         return attrs
+
+    def _get_existing_configs(self):
+        if not self.instance:
+            return {}
+
+        existing_configs = {}
+        for backend_config in BackendConfig.objects.filter(stage=self.instance).select_related("backend"):
+            try:
+                existing_configs[backend_config.backend_id] = backend_config.config
+            except ValueError:
+                logger.exception(
+                    "failed to read backend config id=%s for backend_id=%s stage_id=%s",
+                    backend_config.id,
+                    backend_config.backend_id,
+                    backend_config.stage_id,
+                )
+                raise serializers.ValidationError({"backends": _("已有后端配置无法读取，请联系管理员。")}) from None
+        return existing_configs
 
 
 def check_backend_host_scheme(backend, host):

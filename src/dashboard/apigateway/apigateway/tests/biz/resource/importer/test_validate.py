@@ -87,6 +87,8 @@ class TestResourceImportValidator:
         fake_gateway,
         fake_plugin_type_bk_header_rewrite,
     ):
+        fake_plugin_type_bk_header_rewrite.code = PluginTypeCodeEnum.BK_STATUS_REWRITE.value
+        fake_plugin_type_bk_header_rewrite.save(update_fields=["code"])
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save(update_fields=["kind"])
         backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
@@ -108,7 +110,7 @@ class TestResourceImportValidator:
 
         errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
 
-        assert any("bk-header-rewrite" in error.message and "不兼容" in error.message for error in errors)
+        assert any("bk-status-rewrite" in error.message and "不兼容" in error.message for error in errors)
 
     @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize(

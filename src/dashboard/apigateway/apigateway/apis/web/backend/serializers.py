@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from collections.abc import Mapping
 
 from django.utils.translation import gettext as _
@@ -33,6 +34,8 @@ from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendKindEnum, Bac
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import BACKEND_NAME_PATTERN
+
+logger = logging.getLogger(__name__)
 
 
 class BackendConfigSLZ(BaseBackendConfigSLZ):
@@ -130,10 +133,17 @@ class BackendInputSLZ(serializers.Serializer):
     def _validate_config_values(self, attrs, stage_id_name):
         existing_configs = {}
         if self.instance:
-            existing_configs = {
-                item.stage_id: item.config
-                for item in BackendConfig.objects.filter(backend=self.instance).select_related("backend")
-            }
+            for item in BackendConfig.objects.filter(backend=self.instance).select_related("backend"):
+                try:
+                    existing_configs[item.stage_id] = item.config
+                except ValueError:
+                    logger.exception(
+                        "failed to read backend config id=%s for backend_id=%s stage_id=%s",
+                        item.id,
+                        item.backend_id,
+                        item.stage_id,
+                    )
+                    raise serializers.ValidationError({"configs": _("已有后端配置无法读取，请联系管理员。")}) from None
 
         for backend_config in attrs["configs"]:
             if attrs["kind"] == BackendKindEnum.AI.value:

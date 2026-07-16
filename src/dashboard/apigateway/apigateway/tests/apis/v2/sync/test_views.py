@@ -352,6 +352,23 @@ class TestSyncApi:
         assert response.status_code == 200, response.json()
         assert Gateway.objects.get(name=unique_gateway_name).kind == GatewayKindEnum.AI.value
 
+    def test_gateway_sync_ai_gateway_rejects_older_default_data_plane(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane
+    ):
+        DataPlane.objects.filter(id=default_data_plane.id).update(apisix_version="3.13")
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data={"kind": "ai"},
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 400
+        assert "APISIX 3.16 or later" in response.json()["error"]["message"]
+        assert not Gateway.objects.filter(name=unique_gateway_name).exists()
+
     def test_gateway_sync_ignores_kind_when_updating(
         self, mocker, request_view, fake_gateway, disable_app_permission, default_data_plane
     ):

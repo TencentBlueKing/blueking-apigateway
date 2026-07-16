@@ -16,10 +16,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
 import pytest
+from django_dynamic_fixture import G
 from rest_framework.exceptions import ValidationError
 
 from apigateway.apis.web.stage import serializers
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
+from apigateway.core.models import Backend, BackendConfig
 
 
 def test_ai_backend_config_rejects_non_mapping_instance():
@@ -101,6 +106,51 @@ class TestStageInputSLZ:
 
             with pytest.raises(ValidationError):
                 slz.is_valid(raise_exception=True)
+
+    def test_update_reports_corrupted_existing_ai_config(self, caplog, fake_gateway, fake_stage):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        ciphertext = "stage-ciphertext-sentinel"
+        G(
+            BackendConfig,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            backend=backend,
+            _config={"encrypted": ciphertext},
+        )
+        slz = serializers.StageInputSLZ(
+            instance=fake_stage,
+            data={
+                "gateway": fake_gateway,
+                "name": fake_stage.name,
+                "description": fake_stage.description,
+                "backends": [
+                    {
+                        "id": backend.id,
+                        "config": {
+                            "timeout": 30000,
+                            "instances": [
+                                {
+                                    "name": "primary",
+                                    "provider": "openai",
+                                    "weight": 1,
+                                    "options": {},
+                                }
+                            ],
+                        },
+                    }
+                ],
+            },
+            context={"gateway": fake_gateway},
+        )
+
+        with caplog.at_level(logging.ERROR), pytest.raises(ValidationError) as exc_info:
+            slz.is_valid(raise_exception=True)
+
+        assert "backends" in exc_info.value.detail
+        assert "已有后端配置无法读取" in str(exc_info.value.detail["backends"])
+        assert ciphertext not in caplog.text
 
     def test_http_scheme(self, fake_gateway, fake_backend, fake_grpc_backend):
         data = [

@@ -18,7 +18,12 @@
 import pytest
 
 from apigateway.core.constants import ResourceKindEnum
-from apigateway.service.plugin import AI_ONLY_PLUGIN_CODES, is_plugin_compatible_with_resource_kind
+from apigateway.service.plugin import (
+    AI_COMPATIBLE_PLUGIN_CODES,
+    AI_ONLY_PLUGIN_CODES,
+    CONTROLLER_MANAGED_PLUGIN_CODES,
+    is_plugin_compatible_with_resource_kind,
+)
 
 
 def test_ai_only_plugin_codes():
@@ -27,6 +32,19 @@ def test_ai_only_plugin_codes():
         "ai-prompt-guard",
         "ai-prompt-decorator",
     } == AI_ONLY_PLUGIN_CODES
+
+
+def test_ai_plugin_policy_sets():
+    assert {
+        "ai-proxy",
+        "ai-proxy-multi",
+    } == CONTROLLER_MANAGED_PLUGIN_CODES
+    assert {
+        "bk-header-rewrite",
+        "bk-query-string-rewrite",
+        "bk-traffic-label",
+        "ai-rate-limiting",
+    } <= AI_COMPATIBLE_PLUGIN_CODES
 
 
 @pytest.mark.parametrize(
@@ -40,10 +58,10 @@ def test_ai_only_plugin_codes():
         (ResourceKindEnum.STANDARD.value, "ai-prompt-decorator", False),
         (None, "ai-rate-limiting", False),
         (ResourceKindEnum.AI.value, "bk-cors", True),
-        (ResourceKindEnum.AI.value, "bk-header-rewrite", False),
-        (ResourceKindEnum.AI.value, "bk-query-string-rewrite", False),
+        (ResourceKindEnum.AI.value, "bk-header-rewrite", True),
+        (ResourceKindEnum.AI.value, "bk-query-string-rewrite", True),
         (ResourceKindEnum.AI.value, "bk-status-rewrite", False),
-        (ResourceKindEnum.AI.value, "bk-traffic-label", False),
+        (ResourceKindEnum.AI.value, "bk-traffic-label", True),
         (ResourceKindEnum.AI.value, "api-breaker", False),
         (ResourceKindEnum.AI.value, "response-rewrite", False),
         (ResourceKindEnum.AI.value, "proxy-cache", False),
@@ -51,11 +69,17 @@ def test_ai_only_plugin_codes():
         (ResourceKindEnum.AI.value, "bk-mock", False),
         (ResourceKindEnum.AI.value, "redirect", False),
         (ResourceKindEnum.AI.value, "fault-injection", False),
+        (ResourceKindEnum.AI.value, "unknown-plugin", False),
+        (ResourceKindEnum.AI.value, "ai-proxy", False),
+        (ResourceKindEnum.AI.value, "ai-proxy-multi", False),
         (ResourceKindEnum.STANDARD.value, "bk-mock", True),
         (ResourceKindEnum.STANDARD.value, "redirect", True),
         (ResourceKindEnum.STANDARD.value, "fault-injection", True),
         (ResourceKindEnum.STANDARD.value, "bk-cors", True),
         (ResourceKindEnum.STANDARD.value, "bk-header-rewrite", True),
+        (ResourceKindEnum.STANDARD.value, "unknown-plugin", True),
+        (ResourceKindEnum.STANDARD.value, "ai-proxy", False),
+        (None, "ai-proxy-multi", False),
         (None, "bk-cors", True),
         (None, "bk-header-rewrite", True),
     ],

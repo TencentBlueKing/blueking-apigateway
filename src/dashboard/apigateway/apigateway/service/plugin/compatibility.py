@@ -30,28 +30,45 @@ AI_ONLY_PLUGIN_CODES = frozenset(
     }
 )
 
-AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES = frozenset(
+CONTROLLER_MANAGED_PLUGIN_CODES = frozenset(
     {
-        PluginTypeCodeEnum.API_BREAKER.value,
-        PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
-        PluginTypeCodeEnum.BK_LEGACY_INVALID_PARAMS.value,
-        PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value,
-        PluginTypeCodeEnum.BK_STATUS_REWRITE.value,
-        PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value,
-        PluginTypeCodeEnum.PROXY_CACHE.value,
-        PluginTypeCodeEnum.RESPONSE_REWRITE.value,
-        PluginTypeCodeEnum.BK_MOCK.value,
-        PluginTypeCodeEnum.REDIRECT.value,
-        PluginTypeCodeEnum.FAULT_INJECTION.value,
+        "ai-proxy",
+        "ai-proxy-multi",
     }
+)
+
+AI_COMPATIBLE_PLUGIN_CODES = (
+    frozenset(
+        {
+            PluginTypeCodeEnum.BK_CORS.value,
+            PluginTypeCodeEnum.BK_RATE_LIMIT.value,
+            PluginTypeCodeEnum.BK_IP_RESTRICTION.value,
+            PluginTypeCodeEnum.REQUEST_VALIDATION.value,
+            PluginTypeCodeEnum.BK_REQUEST_BODY_LIMIT.value,
+            PluginTypeCodeEnum.BK_USER_RESTRICTION.value,
+            PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE.value,
+            PluginTypeCodeEnum.BK_USERNAME_REQUIRED.value,
+            PluginTypeCodeEnum.BK_OAUTH2_PROTECTED_RESOURCE.value,
+            PluginTypeCodeEnum.BK_OAUTH2_VERIFY.value,
+            PluginTypeCodeEnum.BK_OAUTH2_AUDIENCE_VALIDATE.value,
+            PluginTypeCodeEnum.URI_BLOCKER.value,
+            PluginTypeCodeEnum.BK_HEADER_REWRITE.value,
+            PluginTypeCodeEnum.BK_QUERY_STRING_REWRITE.value,
+            PluginTypeCodeEnum.BK_TRAFFIC_LABEL.value,
+        }
+    )
+    | AI_ONLY_PLUGIN_CODES
 )
 
 
 def is_plugin_compatible_with_resource_kind(plugin_code: str, resource_kind: str | None) -> bool:
+    if plugin_code in CONTROLLER_MANAGED_PLUGIN_CODES:
+        return False
+
     if plugin_code in AI_ONLY_PLUGIN_CODES:
         return resource_kind == ResourceKindEnum.AI.value
 
     if resource_kind == ResourceKindEnum.AI.value:
-        return plugin_code not in AI_RESOURCE_INCOMPATIBLE_PLUGIN_CODES
+        return plugin_code in AI_COMPATIBLE_PLUGIN_CODES
 
     return True

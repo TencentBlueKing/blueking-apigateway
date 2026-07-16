@@ -17,6 +17,7 @@
 #
 
 from blue_krill.data_types.enum import EnumField, StructuredEnum
+from packaging.version import InvalidVersion, Version
 
 
 class DataPlaneStatusEnum(StructuredEnum):
@@ -34,6 +35,14 @@ class DataPlaneApisixVersionEnum(StructuredEnum):
 
 
 CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+AI_GATEWAY_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+
+
+def is_apisix_version_supported_for_ai_gateway(apisix_version: str) -> bool:
+    try:
+        return Version(apisix_version) >= Version(AI_GATEWAY_MIN_APISIX_VERSION)
+    except InvalidVersion, TypeError:
+        return False
 
 
 class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):
