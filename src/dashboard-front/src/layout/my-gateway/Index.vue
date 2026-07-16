@@ -265,6 +265,12 @@ const menuList = computed<IMenu[]>(() => [
     icon: 'fuwuguanli',
   },
   {
+    name: 'ModelService',
+    enabled: true,
+    title: t('模型服务'),
+    icon: 'cube-1',
+  },
+  {
     name: 'ResourceManagement',
     enabled: true,
     title: t('资源管理'),
@@ -390,6 +396,7 @@ const menuList = computed<IMenu[]>(() => [
 const needBkuiTablePage = computed(() => {
   return [
     'BackendService',
+    'ModelService',
     'PermissionApply',
     'PermissionRecord',
     'PermissionApp',

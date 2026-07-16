@@ -27,6 +27,8 @@ import getBasicInfoRoutes from '@/views/basic-info/routes';
 import getComponentManagementRoutes from '@/views/component-management/route';
 // 后端服务
 import getBackendServicesRoutes from '@/views/backend-services/routes';
+// 模型服务
+import getModelServicesRoutes from '@/views/model-services/routes';
 // 权限管理
 import getPermissionManagementRoutes from '@/views/permission/routes';
 // 平台工具
@@ -69,6 +71,7 @@ const routes: RouteRecordRaw[] = [
       ...getResourceManagementRoutes(),
       ...getBasicInfoRoutes(),
       ...getBackendServicesRoutes(),
+      ...getModelServicesRoutes(),
       ...getPermissionManagementRoutes(),
       ...getOperateDataRoutes(),
       ...getOnlineDebuggingRoutes(),
