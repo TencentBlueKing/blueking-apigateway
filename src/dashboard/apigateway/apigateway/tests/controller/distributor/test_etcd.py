@@ -61,6 +61,37 @@ class TestGatewayResourceDistributor:
         distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
         assert isinstance(distributor, BaseDistributor)
 
+    def test_test_connection_success(self, mocker):
+        mock_release = mocker.Mock()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.name = "default"
+        mock_etcd_client = mocker.Mock()
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client", return_value=mock_etcd_client)
+
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+        success, message = distributor.test_connection()
+
+        assert success is True
+        assert message == "ok"
+        mock_etcd_client.status.assert_called_once()
+
+    def test_test_connection_failure(self, mocker):
+        mock_release = mocker.Mock()
+        mock_data_plane = mocker.Mock()
+        mock_data_plane.id = 1
+        mock_data_plane.name = "default"
+        mock_etcd_client = mocker.Mock()
+        mock_etcd_client.status.side_effect = RuntimeError("connect failed")
+        mocker.patch("apigateway.controller.distributor.etcd.new_etcd_client", return_value=mock_etcd_client)
+
+        distributor = GatewayResourceDistributor(mock_release, mock_data_plane)
+        success, message = distributor.test_connection()
+
+        assert success is False
+        assert "test etcd connection failed" in message
+        assert "connect failed" in message
+
     def test_gateway_property(self, mocker):
         """Test gateway property"""
         mock_release = mocker.Mock()

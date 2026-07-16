@@ -21,6 +21,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from apigateway.apps.data_plane.models import DataPlane
+from apigateway.common.error_codes import APIError
 from apigateway.common.tenant.user_credentials import UserCredentials
 from apigateway.controller.publisher.publish import (
     _trigger_revoke_deleting,
@@ -36,6 +37,13 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVer
 
 class TestTriggerRollingUpdate:
     """Test _trigger_rolling_update function"""
+
+    @pytest.fixture(autouse=True)
+    def mock_connection_check(self, mocker):
+        return mocker.patch(
+            "apigateway.controller.publisher.publish.test_gateway_distributor_connections",
+            return_value=(True, ""),
+        )
 
     @pytest.fixture
     def mock_gateway(self):
@@ -104,6 +112,33 @@ class TestTriggerRollingUpdate:
         mock_check.assert_called_once()
         mock_reporter.report_config_validate_success.assert_called_once()
         mock_reporter.report_create_publish_task_doing.assert_called_once()
+
+    @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
+    @patch("apigateway.controller.publisher.publish.delay_on_commit")
+    @patch("apigateway.controller.publisher.publish._pre_publish_save_release_history")
+    def test_trigger_rolling_update_connection_failure(
+        self,
+        mock_save_history,
+        mock_delay_on_commit,
+        mock_get_data_planes,
+        mock_connection_check,
+        mock_release,
+    ):
+        mock_connection_check.return_value = (False, "etcd failed")
+        mock_data_plane = Mock(spec=DataPlane)
+        mock_data_plane.id = 1
+        mock_get_data_planes.return_value = [mock_data_plane]
+
+        with pytest.raises(APIError):
+            _trigger_rolling_update(
+                PublishSourceEnum.GATEWAY_ENABLE,
+                "test_user",
+                [mock_release],
+                is_sync=False,
+            )
+
+        mock_save_history.assert_not_called()
+        mock_delay_on_commit.assert_not_called()
 
     @patch("apigateway.controller.publisher.publish.GatewayDataPlaneBinding.objects.get_gateway_active_data_planes")
     @patch("apigateway.controller.publisher.publish.rolling_update_release")
@@ -244,6 +279,13 @@ class TestTriggerRollingUpdate:
 
 class TestTriggerRevokeDisable:
     """Test _trigger_revoke_disable function"""
+
+    @pytest.fixture(autouse=True)
+    def mock_connection_check(self, mocker):
+        return mocker.patch(
+            "apigateway.controller.publisher.publish.test_gateway_distributor_connections",
+            return_value=(True, ""),
+        )
 
     @pytest.fixture
     def mock_gateway(self):
@@ -442,6 +484,13 @@ class TestTriggerRevokeDisable:
 
 class TestTriggerRevokeDeleting:
     """Test _trigger_revoke_deleting function"""
+
+    @pytest.fixture(autouse=True)
+    def mock_connection_check(self, mocker):
+        return mocker.patch(
+            "apigateway.controller.publisher.publish.test_gateway_distributor_connections",
+            return_value=(True, ""),
+        )
 
     @pytest.fixture
     def mock_gateway(self):

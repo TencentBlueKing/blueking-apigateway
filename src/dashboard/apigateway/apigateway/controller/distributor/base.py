@@ -21,6 +21,11 @@ from typing import Tuple
 
 class BaseDistributor(ABC):
     @abstractmethod
+    def test_connection(self) -> Tuple[bool, str]:
+        """测试发布目标连接状态"""
+        raise NotImplementedError()
+
+    @abstractmethod
     def distribute(
         self,
         release_task_id: str,

@@ -86,6 +86,10 @@ class TestGatewayReleaserBase:
         G(GatewayDataPlaneBinding, gateway=fake_gateway, data_plane=data_plane)
 
         release_data = get_release_data(fake_gateway)
+        mocker.patch(
+            "apigateway.biz.release.gateway_releaser.test_gateway_distributor_connections",
+            return_value=(True, ""),
+        )
         releaser = GatewayReleaser.from_data(
             fake_gateway,
             release_data["stage_id"],
