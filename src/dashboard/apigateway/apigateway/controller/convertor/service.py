@@ -17,6 +17,7 @@
 #
 
 import base64
+import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from django.conf import settings
@@ -47,6 +48,7 @@ from apigateway.controller.models.constants import (
 )
 from apigateway.controller.uri_render import URIRender
 from apigateway.core.constants import BackendKindEnum, LoadBalanceTypeEnum
+from apigateway.service.plugin import AI_COMPATIBLE_PLUGIN_CODES
 
 from .base import GatewayResourceConvertor
 from .constants import LABEL_KEY_BACKEND_ID
@@ -54,6 +56,8 @@ from .utils import UrlInfo, truncate_string
 
 if TYPE_CHECKING:
     from apigateway.controller.release_data import ReleaseData, StageBackendConfig
+
+logger = logging.getLogger(__name__)
 
 
 def _build_ai_log_format() -> Dict[str, str]:
@@ -275,7 +279,7 @@ class ServiceConvertor(GatewayResourceConvertor):
     def _build_service_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         plugins = self._get_common_default_plugins()
         plugins.update(self._get_kind_default_plugins(backend_kind))
-        plugins.update(self._get_stage_binding_plugins())
+        plugins.update(self._get_stage_binding_plugins(backend_kind))
         plugins.update(self._get_stage_extra_plugins(backend_kind))
         return plugins
 
@@ -332,10 +336,24 @@ class ServiceConvertor(GatewayResourceConvertor):
             return {"file-logger": Plugin(path="logs/access.log")}
         raise ValueError(f"unsupported backend kind: {backend_kind}")
 
-    def _get_stage_binding_plugins(self) -> Dict[str, Plugin]:
-        return {
-            plugin_data.name: Plugin(**plugin_data.config) for plugin_data in self._release_data.get_stage_plugins()
-        }
+    def _get_stage_binding_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
+        stage_plugins = self._release_data.get_stage_plugins()
+        if backend_kind == BackendKindEnum.AI.value:
+            skipped_plugin_codes = sorted(
+                {plugin_data.type_code for plugin_data in stage_plugins} - AI_COMPATIBLE_PLUGIN_CODES
+            )
+            if skipped_plugin_codes:
+                logger.warning(
+                    "skip incompatible stage plugins for AI service: gateway_id=%s, stage_id=%s, plugin_codes=%s",
+                    self.gateway_id,
+                    self.stage_id,
+                    ",".join(skipped_plugin_codes),
+                )
+            stage_plugins = [
+                plugin_data for plugin_data in stage_plugins if plugin_data.type_code in AI_COMPATIBLE_PLUGIN_CODES
+            ]
+
+        return {plugin_data.name: Plugin(**plugin_data.config) for plugin_data in stage_plugins}
 
     def _get_stage_extra_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         if (

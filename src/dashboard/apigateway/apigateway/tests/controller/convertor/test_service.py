@@ -380,7 +380,7 @@ class TestServiceConvertor:
         assert ai_service.upstream is None
         assert "ai-proxy" in ai_service.plugins
 
-    def test_stage_plugin_bindings_are_trusted_for_each_service(self, mock_release_data):
+    def test_ai_service_filters_incompatible_stage_plugins(self, mock_release_data, caplog):
         mock_release_data.stage_backend_configs = {
             1: _standard_backend_config(
                 1,
@@ -396,6 +396,7 @@ class TestServiceConvertor:
             PluginData("bk-cors", {}, "stage"),
             PluginData("bk-header-rewrite", {}, "stage"),
             PluginData("ai-rate-limiting", {}, "stage"),
+            PluginData("response-rewrite", {"body": "must-not-log"}, "stage"),
         ]
         mock_release_data.jwt_private_key = "test-key"
         mock_release_data.gateway_auth_config = {}
@@ -412,6 +413,12 @@ class TestServiceConvertor:
         assert "bk-stage-header-rewrite" in ai_service.plugins
         assert "ai-rate-limiting" in standard_service.plugins
         assert "ai-rate-limiting" in ai_service.plugins
+        assert "response-rewrite" in standard_service.plugins
+        assert "response-rewrite" not in ai_service.plugins
+        assert "gateway_id=123" in caplog.text
+        assert "stage_id=456" in caplog.text
+        assert "response-rewrite" in caplog.text
+        assert "must-not-log" not in caplog.text
 
     def test_controller_generated_ai_proxy_takes_precedence(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
@@ -645,7 +652,7 @@ class TestServiceConvertor:
         mock_release_data.get_stage_plugins.return_value = []
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins()
+        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
 
         assert result == {}
 
@@ -665,7 +672,7 @@ class TestServiceConvertor:
         mock_release_data.get_stage_plugins.return_value = [mock_plugin1, mock_plugin2]
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
-        result = convertor._get_stage_binding_plugins()
+        result = convertor._get_stage_binding_plugins(BackendKindEnum.STANDARD.value)
 
         # Check that plugins are created with correct names and configs
         assert "test-plugin-1" in result
