@@ -21,7 +21,7 @@
     <BkSideslider
       v-model:is-show="isShow"
       class="release-sideslider"
-      :width="960"
+      :width="1100"
       :title="t('发布资源至环境【{stage}】', { stage: chooseAssets?.name || '--' })"
       quick-close
       @animation-end="handleAnimationEnd"

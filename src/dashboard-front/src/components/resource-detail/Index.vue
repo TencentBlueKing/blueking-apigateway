@@ -580,8 +580,8 @@ const initDiff = () => {
   }
 
   // 处理文档更新时间
-  if (curResource?.diff.doc_updated_time?.zh && !diffMap.value['localData.doc_updated_time.cn']) {
-    diffMap.value['localData.doc_updated_time.cn'] = '';
+  if (curResource?.diff.doc_updated_time?.zh && !diffMap.value['localData.doc_updated_time.zh']) {
+    diffMap.value['localData.doc_updated_time.zh'] = '';
   }
   if (curResource?.diff.doc_updated_time?.en && !diffMap.value['localData.doc_updated_time.en']) {
     diffMap.value['localData.doc_updated_time.en'] = '';
