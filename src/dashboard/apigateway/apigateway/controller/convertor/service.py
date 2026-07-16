@@ -130,7 +130,7 @@ class ServiceConvertor(GatewayResourceConvertor):
         super().__init__(release_data=release_data, publish_id=publish_id, apisix_version=apisix_version)
         self._revoke_flag = revoke_flag
 
-    def convert(self) -> List[GatewayApisixModel]:  # noqa: C901, PLR0912
+    def convert(self) -> List[GatewayApisixModel]:
         # if revoke, we should not generate service, will delete the service from etcd
         if self._revoke_flag:
             return []
@@ -139,21 +139,6 @@ class ServiceConvertor(GatewayResourceConvertor):
         backend_configs = self._release_data.stage_backend_configs
         if not backend_configs:
             return []
-
-        # {
-        #   "type": "node",
-        #   "timeout": 60,
-        #   "loadbalance": "roundrobin", # or "chash"
-        #   "hash_on": "header",
-        #   "key": "content-type",
-        #   "hosts": [
-        #     {
-        #       "scheme": "http",
-        #       "host": "exmple.com",
-        #       "weight": 100
-        #     }
-        #   ]
-        # }
 
         services: List[GatewayApisixModel] = []
 

@@ -167,8 +167,10 @@ class TestGatewayApisixResourceConvertor:
         GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_16)
         GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_17)
 
-        with pytest.raises(ValueError, match="APISIX 3.16"):
+        with pytest.raises(ValueError) as exc_info:
             GatewayApisixResourceTransformer(mock_release, APISIX_VERSION_3_13)
+
+        assert str(exc_info.value) == "AI Gateway requires APISIX 3.16 or later"
 
     def test_ai_gateway_revoke_skips_apisix_version_check(self, mock_release):
         mock_release.gateway.is_ai_gateway = True

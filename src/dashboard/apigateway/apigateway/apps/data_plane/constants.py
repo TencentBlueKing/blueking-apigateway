@@ -16,8 +16,13 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from typing import TYPE_CHECKING
+
 from blue_krill.data_types.enum import EnumField, StructuredEnum
 from packaging.version import InvalidVersion, Version
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class DataPlaneStatusEnum(StructuredEnum):
@@ -36,6 +41,7 @@ class DataPlaneApisixVersionEnum(StructuredEnum):
 
 CURRENT_DATA_PLANE_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
 AI_GATEWAY_MIN_APISIX_VERSION = DataPlaneApisixVersionEnum.V3_16.value
+AI_GATEWAY_APISIX_VERSION_ERROR = f"AI Gateway requires APISIX {AI_GATEWAY_MIN_APISIX_VERSION} or later"
 
 
 def is_apisix_version_supported_for_ai_gateway(apisix_version: str) -> bool:
@@ -43,6 +49,23 @@ def is_apisix_version_supported_for_ai_gateway(apisix_version: str) -> bool:
         return Version(apisix_version) >= Version(AI_GATEWAY_MIN_APISIX_VERSION)
     except InvalidVersion, TypeError:
         return False
+
+
+def get_ai_gateway_apisix_version_error(apisix_version: str) -> str | None:
+    if is_apisix_version_supported_for_ai_gateway(apisix_version):
+        return None
+    return AI_GATEWAY_APISIX_VERSION_ERROR
+
+
+def get_ai_gateway_data_planes_compatibility_error(data_planes: Iterable[tuple[str, str]]) -> str | None:
+    incompatible_data_planes = [
+        f"{name} ({apisix_version})"
+        for name, apisix_version in data_planes
+        if not is_apisix_version_supported_for_ai_gateway(apisix_version)
+    ]
+    if not incompatible_data_planes:
+        return None
+    return f"{AI_GATEWAY_APISIX_VERSION_ERROR}; incompatible data planes: {', '.join(incompatible_data_planes)}"
 
 
 class BkPluginsDataPlaneGrayStageEnum(StructuredEnum):

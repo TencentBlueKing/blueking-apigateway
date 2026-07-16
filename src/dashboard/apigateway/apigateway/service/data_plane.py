@@ -20,10 +20,7 @@ from typing import TYPE_CHECKING
 
 from rest_framework.exceptions import ValidationError
 
-from apigateway.apps.data_plane.constants import (
-    AI_GATEWAY_MIN_APISIX_VERSION,
-    is_apisix_version_supported_for_ai_gateway,
-)
+from apigateway.apps.data_plane.constants import get_ai_gateway_data_planes_compatibility_error
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -36,17 +33,8 @@ def validate_gateway_data_plane_compatibility(gateway: Gateway, data_planes: Ite
     if not gateway.is_ai_gateway:
         return
 
-    incompatible_data_planes = [
-        f"{data_plane.name} ({data_plane.apisix_version})"
-        for data_plane in data_planes
-        if not is_apisix_version_supported_for_ai_gateway(data_plane.apisix_version)
-    ]
-    if incompatible_data_planes:
-        raise ValidationError(
-            {
-                "data_planes": (
-                    f"AI Gateway requires APISIX {AI_GATEWAY_MIN_APISIX_VERSION} or later; "
-                    f"incompatible data planes: {', '.join(incompatible_data_planes)}"
-                )
-            }
-        )
+    compatibility_error = get_ai_gateway_data_planes_compatibility_error(
+        (data_plane.name, data_plane.apisix_version) for data_plane in data_planes
+    )
+    if compatibility_error:
+        raise ValidationError({"data_planes": compatibility_error})
