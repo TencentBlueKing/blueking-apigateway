@@ -402,6 +402,9 @@ class MCPServerBaseSLZ(serializers.Serializer):
     url = serializers.SerializerMethodField(help_text="MCPServer 访问 URL")
     categories = serializers.SerializerMethodField(help_text="MCPServer 分类列表")
     is_official = serializers.SerializerMethodField(help_text="是否为官方")
+    oauth2_public_client_enabled = serializers.BooleanField(
+        read_only=True, help_text="是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权"
+    )
 
     def get_title(self, obj) -> str:
         return obj.title if obj.title else obj.name

@@ -32,7 +32,8 @@ mcp_server 申请记录详情
         {"name": "official", "display_name": "官方"},
         {"name": "ai", "display_name": "AI"}
       ],
-      "is_official": true
+      "is_official": true,
+      "oauth2_public_client_enabled": false
     },
     "record": {
       "id": 1,
@@ -79,6 +80,7 @@ mcp_server 申请记录详情
 | protocol_type | string | MCPServer 协议类型 |
 | categories | array | mcp_server 分类列表，每项包含 name（英文标识）和 display_name（显示名称） |
 | is_official | bool | 是否为官方 MCPServer |
+| oauth2_public_client_enabled | bool | 是否开启 OAuth2 公开客户端模式，开启后将会对 bk_app_code=public 的应用进行授权 |
 
 #### data.record
 
