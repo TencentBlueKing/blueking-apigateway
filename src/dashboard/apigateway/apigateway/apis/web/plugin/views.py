@@ -130,17 +130,16 @@ class PluginTypeListApi(generics.ListAPIView):
         queryset = PluginType.objects.filter(is_public=True).filter(
             Q(scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value) | Q(scope=scope)
         )
-        resource_kind = None
         if scope_type == PluginBindingScopeEnum.RESOURCE.value:
             resource_kind = (
                 Resource.objects.filter(gateway=self.request.gateway, id=data["scope_id"])
                 .values_list("kind", flat=True)
                 .first()
             )
-        if resource_kind == ResourceKindEnum.AI.value:
-            queryset = queryset.filter(code__in=AI_COMPATIBLE_PLUGIN_CODES)
-        else:
-            queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES | CONTROLLER_MANAGED_PLUGIN_CODES)
+            if resource_kind == ResourceKindEnum.AI.value:
+                queryset = queryset.filter(code__in=AI_COMPATIBLE_PLUGIN_CODES)
+            else:
+                queryset = queryset.exclude(code__in=AI_ONLY_PLUGIN_CODES | CONTROLLER_MANAGED_PLUGIN_CODES)
 
         # 支持 keyword=abc 搜索
         keyword = data.get("keyword")
@@ -203,12 +202,12 @@ class PluginTypeCodeValidationMixin:
 
     def validate_plugin_binding(self):
         scope_type = self.kwargs["scope_type"]
+        if scope_type != PluginBindingScopeEnum.RESOURCE.value:
+            return
+
         scope_id = self.kwargs["scope_id"]
         plugin_type_code = self.kwargs["code"]
-
-        resource_kind = None
-        if scope_type == PluginBindingScopeEnum.RESOURCE.value:
-            resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
+        resource_kind = Resource.objects.get(gateway=self.request.gateway, id=scope_id).kind
 
         if not is_plugin_compatible_with_resource_kind(plugin_type_code, resource_kind):
             raise error_codes.INVALID_ARGUMENT.format(

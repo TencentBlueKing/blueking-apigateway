@@ -21,8 +21,7 @@ from django_dynamic_fixture import G
 from apigateway.apis.web.plugin.views import PluginConfigRetrieveUpdateDestroyApi
 from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginBinding, PluginType
-from apigateway.core.constants import BackendKindEnum, ResourceKindEnum
-from apigateway.core.models import Backend, BackendConfig
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.utils.yaml import yaml_dumps
 
 AI_ONLY_PLUGIN_CODES = (
@@ -96,6 +95,33 @@ class TestPluginTypeListApi:
 
         result = response.json()
         assert not result["data"]["results"]
+
+    @pytest.mark.parametrize("plugin_type_code", [*AI_ONLY_PLUGIN_CODES, "ai-proxy", "ai-proxy-multi"])
+    def test_list_includes_all_public_plugins_for_stage(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        plugin_type_code,
+    ):
+        G(
+            PluginType,
+            code=plugin_type_code,
+            is_public=True,
+            scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+        )
+
+        response = request_view(
+            "GET",
+            "plugins.types",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"scope_type": "stage", "scope_id": fake_stage.id},
+        )
+
+        assert response.status_code == 200
+        codes = {item["code"] for item in response.json()["data"]["results"]}
+        assert plugin_type_code in codes
 
     @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
     @pytest.mark.parametrize("resource_kind", [ResourceKindEnum.STANDARD.value, ResourceKindEnum.AI.value])
@@ -292,17 +318,20 @@ class TestPluginConfigCreateApi:
             scope_id=fake_resource.id,
         ).exists()
 
-    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
-    def test_create_rejects_ai_only_plugin_for_stage(
+    @pytest.mark.parametrize("plugin_type_code", [*AI_ONLY_PLUGIN_CODES, "ai-proxy", "ai-proxy-multi"])
+    def test_create_allows_plugin_for_stage(
         self,
         request_view,
         fake_gateway,
         fake_stage,
         plugin_type_code,
     ):
-        plugin_type = _create_ai_only_plugin_type(plugin_type_code)
-        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
-        G(BackendConfig, gateway=fake_gateway, stage=fake_stage, backend=backend)
+        plugin_type = G(
+            PluginType,
+            code=plugin_type_code,
+            is_public=True,
+            scope=PluginTypeScopeEnum.STAGE_AND_RESOURCE.value,
+        )
 
         response = request_view(
             "POST",
@@ -322,8 +351,8 @@ class TestPluginConfigCreateApi:
             },
         )
 
-        assert response.status_code == 400
-        assert not PluginBinding.objects.filter(
+        assert response.status_code == 201
+        assert PluginBinding.objects.filter(
             gateway=fake_gateway,
             scope_type="stage",
             scope_id=fake_stage.id,
