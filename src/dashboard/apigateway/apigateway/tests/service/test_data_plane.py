@@ -20,13 +20,11 @@ import pytest
 from ddf import G
 from rest_framework.exceptions import ValidationError
 
+from apigateway.apps.data_plane.constants import is_apisix_version_supported_for_ai_gateway
 from apigateway.apps.data_plane.models import DataPlane
 from apigateway.core.constants import GatewayKindEnum
 from apigateway.core.models import Gateway
-from apigateway.service.data_plane import (
-    is_apisix_version_supported_for_ai_gateway,
-    validate_gateway_data_plane_compatibility,
-)
+from apigateway.service.data_plane import validate_gateway_data_plane_compatibility
 
 
 @pytest.mark.parametrize(
@@ -47,8 +45,12 @@ def test_validate_gateway_data_plane_compatibility_rejects_older_version():
     gateway = G(Gateway, kind=GatewayKindEnum.AI.value)
     data_plane = G(DataPlane, name="apisix-3-13", apisix_version="3.13")
 
-    with pytest.raises(ValidationError, match="APISIX 3.16 or later"):
+    with pytest.raises(ValidationError) as exc_info:
         validate_gateway_data_plane_compatibility(gateway, [data_plane])
+
+    assert str(exc_info.value.detail["data_planes"]) == (
+        "AI Gateway requires APISIX 3.16 or later; incompatible data planes: apisix-3-13 (3.13)"
+    )
 
 
 @pytest.mark.django_db

@@ -121,11 +121,13 @@ class TestGatewayDataPlaneBindingManager:
         self.gateway1.kind = GatewayKindEnum.AI.value
         self.data_plane_active1.apisix_version = "3.13"
 
-        with pytest.raises(ValueError, match="APISIX 3.16 or later"):
+        with pytest.raises(ValueError) as exc_info:
             GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
                 gateway=self.gateway1,
                 data_plane=self.data_plane_active1,
             )
+
+        assert str(exc_info.value) == "AI Gateway requires APISIX 3.16 or later"
 
         assert not GatewayDataPlaneBinding.objects.filter(
             gateway=self.gateway1,
