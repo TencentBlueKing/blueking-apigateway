@@ -40,6 +40,9 @@ const (
 // ReleaseVersionResourceID 发布版本资源 ID
 const ReleaseVersionResourceID = -1
 
+// DefaultGatewaySyncConcurrency is the default number of gateways that can sync concurrently.
+const DefaultGatewaySyncConcurrency = 5
+
 // InstanceName ...
 var (
 	InstanceName string
@@ -93,6 +96,7 @@ type Operator struct {
 	AgentForceUpdateTimeWindow   time.Duration
 	AgentCommitTimeWindow        time.Duration
 	AgentConcurrencyLimit        int
+	GatewaySyncConcurrency       int
 
 	// etcd put interval
 	EtcdPutInterval time.Duration
@@ -240,6 +244,7 @@ func newDefaultConfig() *Config {
 			AgentForceUpdateTimeWindow:   10 * time.Second,
 			AgentCommitTimeWindow:        5 * time.Second,
 			AgentConcurrencyLimit:        4,
+			GatewaySyncConcurrency:       DefaultGatewaySyncConcurrency,
 			EtcdPutInterval:              50 * time.Millisecond,
 			EtcdDelInterval:              16 * time.Second,
 			EtcdSyncTimeout:              60 * time.Second,
@@ -285,6 +290,10 @@ func Load(v *viper.Viper) (*Config, error) {
 }
 
 func (c *Config) init() {
+	if c.Operator.GatewaySyncConcurrency <= 0 {
+		c.Operator.GatewaySyncConcurrency = DefaultGatewaySyncConcurrency
+	}
+
 	hostName, _ := os.Hostname()
 	InstanceName = envx.Get(envPodName, hostName+"_"+utils.GetGeneratedUUID())
 	InstanceIP = envx.Get(envPodIP, "127.0.0.1")
