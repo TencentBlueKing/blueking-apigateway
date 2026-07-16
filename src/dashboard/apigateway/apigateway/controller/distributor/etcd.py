@@ -34,22 +34,6 @@ from .key_prefix import GatewayKeyPrefixHandler, GlobalKeyPrefixHandler
 logger = logging.getLogger(__name__)
 
 
-def _test_etcd_connection(etcd_client: "etcd3.Etcd3Client", data_plane: "DataPlane") -> Tuple[bool, str]:
-    try:
-        etcd_client.status()
-    except Exception as err:  # pylint: disable=broad-except
-        message = f"test etcd connection failed: {type(err).__name__}: {err}"
-        logger.warning(
-            "%s, data_plane_id=%s, data_plane_name=%s",
-            message,
-            data_plane.id,
-            data_plane.name,
-        )
-        return False, message
-
-    return True, "ok"
-
-
 class SyncFail(Exception):
     """同步失败"""
 
@@ -72,9 +56,6 @@ class GlobalResourceDistributor(BaseDistributor):
 
         key_prefix = GlobalKeyPrefixHandler(prefix=self.data_plane.etcd_namespace_prefix).get_release_key_prefix()
         return EtcdRegistry(key_prefix=key_prefix, etcd_client=self._etcd_client)
-
-    def test_connection(self) -> Tuple[bool, str]:
-        return _test_etcd_connection(self._etcd_client, self.data_plane)
 
     def distribute(
         self,
@@ -145,9 +126,6 @@ class GatewayResourceDistributor(BaseDistributor):
             gateway.name, stage.name
         )
         return EtcdRegistry(key_prefix=key_prefix, etcd_client=self._etcd_client)
-
-    def test_connection(self) -> Tuple[bool, str]:
-        return _test_etcd_connection(self._etcd_client, self.data_plane)
 
     def distribute(
         self,

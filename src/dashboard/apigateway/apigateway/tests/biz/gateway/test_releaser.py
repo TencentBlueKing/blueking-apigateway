@@ -27,6 +27,8 @@ from apigateway.biz.release.gateway_releaser import (
     ReleaseError,
     ReleaseValidationError,
 )
+from apigateway.controller.distributor.base import DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
+from apigateway.controller.distributor.connection import DistributorConnectionError
 from apigateway.core.constants import PublishEventEnum, PublishEventStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 
@@ -87,8 +89,8 @@ class TestGatewayReleaserBase:
 
         release_data = get_release_data(fake_gateway)
         mocker.patch(
-            "apigateway.biz.release.gateway_releaser.test_gateway_distributor_connections",
-            return_value=(True, ""),
+            "apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection",
+            return_value=None,
         )
         releaser = GatewayReleaser.from_data(
             fake_gateway,
@@ -117,6 +119,39 @@ class TestGatewayReleaserBase:
 
         mock_release.assert_called()
         # mock_post_release.assert_called()
+
+    def test_release_records_failure_event_when_distributor_connection_failed(self, mocker, fake_gateway):
+        data_plane = G(DataPlane, name="default")
+        G(GatewayDataPlaneBinding, gateway=fake_gateway, data_plane=data_plane)
+        error_message = f"数据面 default 连接失败：{DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE}"
+
+        release_data = get_release_data(fake_gateway)
+        releaser = GatewayReleaser.from_data(
+            fake_gateway,
+            release_data["stage_id"],
+            release_data["resource_version_id"],
+            release_data.get("comment", ""),
+        )
+        mocker.patch.object(releaser, "_validate", return_value=None)
+        mocker.patch(
+            "apigateway.biz.release.gateway_releaser.check_gateway_distributor_connection",
+            side_effect=DistributorConnectionError(error_message),
+        )
+
+        with pytest.raises(ReleaseError, match="ETCD 连接检查失败"):
+            releaser.release()
+
+        history = ReleaseHistory.objects.filter(gateway=fake_gateway, data_plane=data_plane).order_by("-id").first()
+        assert history is not None
+
+        event = PublishEvent.objects.filter(
+            publish=history,
+            name=PublishEventEnum.VALIDATE_CONFIGURATION.value,
+            status=PublishEventStatusEnum.FAILURE.value,
+        ).first()
+        assert event is not None
+        assert event.detail == {"err_msg": error_message}
+        assert "etcd failed" not in event.detail["err_msg"]
 
 
 class TestGatewayReleaser:

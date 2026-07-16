@@ -28,7 +28,10 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
-from apigateway.controller.distributor.connection import test_gateway_distributor_connections
+from apigateway.controller.distributor.connection import (
+    DistributorConnectionError,
+    check_gateway_distributor_connection,
+)
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -190,12 +193,15 @@ class GatewayReleaser:
                 )
             raise ReleaseError(message) from err
 
-        self._validate_distributor_connections(data_planes)
-
-    def _validate_distributor_connections(self, data_planes: List[DataPlane]):
-        ok, msg = test_gateway_distributor_connections(self._get_release_for_connection_check(), data_planes)
-        if not ok:
-            raise ReleaseError(msg)
+        release = self._get_release_for_connection_check()
+        for data_plane in data_planes:
+            try:
+                check_gateway_distributor_connection(release, data_plane)
+            except DistributorConnectionError as err:
+                message = str(err)
+                history = self._save_release_history(data_plane=data_plane)
+                PublishEventReporter.report_config_validate_failure(history, message)
+                raise ReleaseError(message) from err
 
     def _validate(self):
         """校验待发布数据"""

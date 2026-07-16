@@ -20,7 +20,7 @@ import pytest
 
 from apigateway.apps.data_plane.constants import DataPlaneApisixVersionEnum
 from apigateway.controller.constants import DELETE_PUBLISH_ID
-from apigateway.controller.distributor.base import BaseDistributor
+from apigateway.controller.distributor.base import DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE, BaseDistributor
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor, GlobalResourceDistributor, SyncFail
 
 APISIX_VERSION_3_13 = DataPlaneApisixVersionEnum.V3_13.value
@@ -89,8 +89,8 @@ class TestGatewayResourceDistributor:
         success, message = distributor.test_connection()
 
         assert success is False
-        assert "test etcd connection failed" in message
-        assert "connect failed" in message
+        assert message == DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
+        assert "connect failed" not in message
 
     def test_gateway_property(self, mocker):
         """Test gateway property"""

@@ -16,14 +16,12 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from blue_krill.async_utils.django_utils import delay_on_commit
 
-from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
-from apigateway.common.error_codes import error_codes
+from apigateway.apps.data_plane.models import GatewayDataPlaneBinding
 from apigateway.controller.constants import DELETE_PUBLISH_ID, NO_NEED_REPORT_EVENT_PUBLISH_ID
-from apigateway.controller.distributor.connection import test_gateway_distributor_connections
 from apigateway.controller.tasks import revoke_release, rolling_update_release
 from apigateway.core.constants import (
     PublishSourceEnum,
@@ -43,13 +41,6 @@ if TYPE_CHECKING:
     from apigateway.common.tenant.user_credentials import UserCredentials
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_distributor_connections(release: Release, data_planes: Iterable[DataPlane]):
-    ok, msg = test_gateway_distributor_connections(release, data_planes)
-    if not ok:
-        logger.warning("Gateway (id=%s) data plane connection check failed: %s", release.gateway_id, msg)
-        raise error_codes.FAILED_PRECONDITION.format(msg, replace=True)
 
 
 def _trigger_rolling_update(
@@ -74,8 +65,6 @@ def _trigger_rolling_update(
             )
             has_failure = True
             continue
-
-        _validate_distributor_connections(release, data_planes)
 
         for data_plane in data_planes:
             if source is PublishSourceEnum.CLI_SYNC:
@@ -143,8 +132,6 @@ def _trigger_revoke_disable(
             has_failure = True
             continue
 
-        _validate_distributor_connections(release, data_planes)
-
         is_programmable_offline_called = False
         for data_plane in data_planes:
             # 创建发布历史
@@ -202,8 +189,6 @@ def _trigger_revoke_deleting(
             )
             has_failure = True
             continue
-
-        _validate_distributor_connections(release, data_planes)
 
         for data_plane in data_planes:
             # FIXME: no release_history to report event?

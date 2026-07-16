@@ -15,15 +15,38 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import TYPE_CHECKING, Any, Tuple
+
+from django.utils.translation import gettext as _
+
+if TYPE_CHECKING:
+    from apigateway.apps.data_plane.models import DataPlane
+
+logger = logging.getLogger(__name__)
+
+DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE = _("数据面 ETCD 连接检查失败，请联系管理员。")
 
 
 class BaseDistributor(ABC):
-    @abstractmethod
+    data_plane: "DataPlane"
+    _etcd_client: Any
+
     def test_connection(self) -> Tuple[bool, str]:
         """测试发布目标连接状态"""
-        raise NotImplementedError()
+        try:
+            self._etcd_client.status()
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "test etcd connection failed, data_plane_id=%s, data_plane_name=%s",
+                self.data_plane.id,
+                self.data_plane.name,
+                exc_info=True,
+            )
+            return False, DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
+
+        return True, "ok"
 
     @abstractmethod
     def distribute(
