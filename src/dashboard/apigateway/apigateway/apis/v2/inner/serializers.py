@@ -45,8 +45,6 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
-from apigateway.components.bkuser import query_display_names_for_readonly
 from apigateway.core.constants import GatewayKindNameEnum, GatewayStatusEnum, convert_gateway_kind_to_name
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
