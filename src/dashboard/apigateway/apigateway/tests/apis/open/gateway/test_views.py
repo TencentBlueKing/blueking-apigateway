@@ -78,6 +78,15 @@ class TestGatewayListApi:
 
         assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
 
+    def test_filter_list_queryset_by_normal_kind_includes_legacy_null(self, fake_gateway):
+        fake_gateway.kind = None
+        fake_gateway.save(update_fields=["kind"])
+        G(Release, gateway=fake_gateway)
+
+        queryset = views.GatewayListApi()._filter_list_queryset(kind="normal")
+
+        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
+
     def test_filter_list_queryset_by_programmable_kind(self, fake_gateway):
         fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
         fake_gateway.save()

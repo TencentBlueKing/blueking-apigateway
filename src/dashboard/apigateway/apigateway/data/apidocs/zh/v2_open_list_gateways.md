@@ -15,6 +15,7 @@
 | name | string | 否 | 网关名称，用于过滤网关 |
 | fuzzy | boolean | 否 | 是否模糊匹配，true：模糊匹配（name 包含），false：精确匹配 |
 | keyword | string | 否 | 搜索关键字，模糊匹配 name 或 description |
+| kind | string | 否 | 网关类型：`normal`、`programmable` 或 `ai`；不传返回所有类型 |
 
 ### 响应示例
 

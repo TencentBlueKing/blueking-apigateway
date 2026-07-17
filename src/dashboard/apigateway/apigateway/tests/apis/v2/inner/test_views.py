@@ -72,6 +72,38 @@ class TestGatewayListApi:
         assert len(result["data"]) == 2
         assert next(item for item in result["data"] if item["name"] == fake_gateway.name)["kind"] == "ai"
 
+    def test_list_filters_by_kind(self, request_view, fake_gateway):
+        fake_gateway.kind = None
+        fake_gateway.save(update_fields=["kind"])
+        G(Release, gateway=fake_gateway)
+        ai_gateway = G(
+            Gateway,
+            kind=GatewayKindEnum.AI.value,
+            status=GatewayStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        G(Release, gateway=ai_gateway)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "ai"},
+        )
+
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()["data"]] == [ai_gateway.name]
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"kind": "normal"},
+        )
+
+        assert resp.status_code == 200
+        assert [(item["name"], item["kind"]) for item in resp.json()["data"]] == [(fake_gateway.name, "normal")]
+
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):

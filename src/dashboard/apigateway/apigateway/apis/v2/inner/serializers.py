@@ -46,7 +46,7 @@ from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkuser import query_display_names_for_readonly
-from apigateway.core.constants import GatewayStatusEnum, convert_gateway_kind_to_name
+from apigateway.core.constants import GatewayKindNameEnum, GatewayStatusEnum, convert_gateway_kind_to_name
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
     build_mcp_server_detail_url,
@@ -84,6 +84,7 @@ def _get_gateway_maintainers_display_names(obj) -> List[str]:
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
