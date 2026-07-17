@@ -354,6 +354,8 @@ class ResourceInputSLZ(serializers.ModelSerializer):
             raise serializers.ValidationError({"backend": _("资源类型与后端服务类型不匹配。")})
 
         if kind == ResourceKindEnum.AI.value:
+            data.setdefault("match_subpath", False)
+            data.setdefault("enable_websocket", False)
             self._validate_ai_resource(data, backend_input["config"])
             data["backend_config"] = None
         else:
