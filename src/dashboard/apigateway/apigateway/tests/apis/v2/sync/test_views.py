@@ -350,6 +350,7 @@ class TestSyncApi:
         )
 
         assert response.status_code == 200, response.json()
+        assert response.json()["data"]["kind"] == "ai"
         assert Gateway.objects.get(name=unique_gateway_name).kind == GatewayKindEnum.AI.value
 
     def test_gateway_sync_ai_gateway_rejects_older_default_data_plane(

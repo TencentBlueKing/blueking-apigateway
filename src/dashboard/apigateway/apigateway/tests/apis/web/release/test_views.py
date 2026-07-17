@@ -146,6 +146,7 @@ class TestReleaseAvailableResourceListApi:
                     "description": "test...",
                     "method": "get",
                     "path": "/test/",
+                    "kind": "standard",
                     "verified_user_required": False,
                     "verified_app_required": True,
                     "resource_perm_required": True,

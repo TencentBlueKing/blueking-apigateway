@@ -38,7 +38,8 @@
 {
     "data": {
         "id": 1,
-        "name": "demo"
+        "name": "demo",
+        "kind": "ai"
     }
 }
 ```
@@ -55,3 +56,4 @@ data
 | -------- | -------- | -------- |
 | id       | int      | 网关ID   |
 | name     | string   | 网关名称 |
+| kind     | string   | 网关类型：`normal`、`programmable` 或 `ai` |

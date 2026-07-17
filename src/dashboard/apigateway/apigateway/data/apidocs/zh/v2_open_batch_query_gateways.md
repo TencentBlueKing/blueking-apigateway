@@ -12,14 +12,14 @@
 | -------- | -------- | ---- | -------------------------------------------------------------------- |
 | ids      | array    | 否   | 网关 ID 列表（ids 和 names 至少提供一个）                             |
 | names    | array    | 否   | 网关名称列表（ids 和 names 至少提供一个）                             |
-| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,description`；不传默认返回 `id` 和 `name` |
+| fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,description,kind`；不传默认返回 `id` 和 `name` |
 
 ### 请求示例
 
 ```json
 {
     "names": ["bk-apigateway", "bk-esb"],
-    "fields": "id,name,description"
+    "fields": "id,name,description,kind"
 }
 ```
 
@@ -42,7 +42,7 @@
 }
 ```
 
-#### 指定字段（fields=id,name,description）
+#### 指定字段（fields=id,name,description,kind）
 
 ```json
 {
@@ -50,11 +50,13 @@
         {
             "id": 1,
             "name": "bk-apigateway",
+            "kind": "normal",
             "description": "蓝鲸 API 网关"
         },
         {
             "id": 2,
             "name": "bk-esb",
+            "kind": "normal",
             "description": "蓝鲸 ESB"
         }
     ]
@@ -74,3 +76,4 @@
 | id          | int      | 网关 ID  |
 | name        | string   | 网关名称 |
 | description | string   | 网关描述 |
+| kind        | string   | 网关类型：`normal`、`programmable` 或 `ai` |

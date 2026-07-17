@@ -19,6 +19,7 @@
 from rest_framework import serializers
 
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import ResourceKindEnum
 
 
 class ResourceListInputSLZ(serializers.Serializer):
@@ -28,6 +29,12 @@ class ResourceListInputSLZ(serializers.Serializer):
 class ResourceOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(),
+        read_only=True,
+        default=ResourceKindEnum.STANDARD.value,
+        help_text="资源类型",
+    )
     description = SerializerTranslatedField(
         translated_fields={"en": "description_en"}, allow_blank=True, read_only=True, help_text="资源描述"
     )

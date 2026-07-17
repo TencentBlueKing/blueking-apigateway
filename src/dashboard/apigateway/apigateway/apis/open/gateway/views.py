@@ -44,7 +44,7 @@ from apigateway.common.constants import (
 )
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.constants import convert_gateway_kind_name_to_value
+from apigateway.core.constants import convert_gateway_kind_name_to_value, convert_gateway_kind_to_name
 from apigateway.core.models import JWT, Gateway
 from apigateway.service.contexts import GatewayAuthContext
 from apigateway.utils.django import get_model_dict
@@ -253,6 +253,7 @@ class GatewaySyncApi(generics.CreateAPIView):
             data={
                 "id": gateway.id,
                 "name": gateway.name,
+                "kind": convert_gateway_kind_to_name(gateway.kind),
             },
         )
 

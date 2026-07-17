@@ -65,6 +65,7 @@ from apigateway.core.constants import (
     HashOnTypeEnum,
     LoadBalanceTypeEnum,
     convert_gateway_kind_name_to_value,
+    convert_gateway_kind_to_name,
 )
 from apigateway.core.models import Backend, Gateway, ResourceVersion, Stage
 from apigateway.utils.time import NeverExpiresTime
@@ -185,6 +186,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 class GatewaySyncOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
+    kind = serializers.SerializerMethodField(help_text="网关类型")
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncOutputSLZ"

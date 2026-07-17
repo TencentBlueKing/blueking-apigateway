@@ -43,7 +43,7 @@ class TestReleasedResourceRetrieveApi:
                 },
                 {},
                 False,
-                {"id": 1, "name": "test", "method": "GET", "path": "/test/", "schema": {}},
+                {"id": 1, "name": "test", "method": "GET", "path": "/test/", "kind": "standard", "schema": {}},
             ),
             (
                 1,
@@ -73,6 +73,7 @@ class TestReleasedResourceRetrieveApi:
                     "name": "test",
                     "method": "GET",
                     "path": "/test/",
+                    "kind": "standard",
                     "schema": {
                         "parameters": [
                             {
@@ -230,6 +231,7 @@ class TestReleasedResourceListByGatewayNameApi:
                         {
                             "id": 1,
                             "name": "test",
+                            "kind": "standard",
                             "description": "test",
                             "method": "GET",
                             "url": "http://bkapi.example.com/test/",
@@ -242,6 +244,7 @@ class TestReleasedResourceListByGatewayNameApi:
                         {
                             "id": 2,
                             "name": "test",
+                            "kind": "standard",
                             "description": "test",
                             "method": "POST",
                             "url": "http://bkapi.example.com/test/",

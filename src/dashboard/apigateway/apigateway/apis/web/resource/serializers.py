@@ -947,6 +947,7 @@ class BackendPathCheckOutputSLZ(serializers.Serializer):
 class ResourceWithVerifiedUserRequiredOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), read_only=True, help_text="资源类型")
 
     class Meta:
         ref_name = "apigateway.apis.web.resource.serializers.ResourceWithVerifiedUserRequiredOutputSLZ"
