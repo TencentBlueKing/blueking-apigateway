@@ -91,9 +91,6 @@ class GatewayReleaser:
         """Get all active data planes bound to this gateway"""
         return GatewayDataPlaneBinding.objects.get_gateway_active_data_planes(self.gateway.id)
 
-    def _get_release_for_connection_check(self) -> Release:
-        return Release(gateway=self.gateway, stage=self.stage, resource_version=self.resource_version)
-
     def _save_release_history(self, data_plane: DataPlane) -> ReleaseHistory:
         """Create a release history record for a specific data plane"""
         return ReleaseHistory.objects.create(
@@ -193,7 +190,7 @@ class GatewayReleaser:
                 )
             raise ReleaseError(message) from err
 
-        release = self._get_release_for_connection_check()
+        release = Release(gateway=self.gateway, stage=self.stage, resource_version=self.resource_version)
         for data_plane in data_planes:
             try:
                 check_gateway_distributor_connection(release, data_plane)

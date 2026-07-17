@@ -123,7 +123,7 @@ class TestGatewayReleaserBase:
     def test_release_records_failure_event_when_distributor_connection_failed(self, mocker, fake_gateway):
         data_plane = G(DataPlane, name="default")
         G(GatewayDataPlaneBinding, gateway=fake_gateway, data_plane=data_plane)
-        error_message = f"数据面 default 连接失败：{DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE}"
+        error_message = DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE.format(id=data_plane.id, name=data_plane.name)
 
         release_data = get_release_data(fake_gateway)
         releaser = GatewayReleaser.from_data(

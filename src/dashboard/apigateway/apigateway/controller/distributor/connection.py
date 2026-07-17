@@ -16,15 +16,17 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
 from typing import TYPE_CHECKING
 
-from django.utils.translation import gettext as _
-
+from apigateway.controller.distributor.base import DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
 from apigateway.controller.distributor.etcd import GatewayResourceDistributor
 
 if TYPE_CHECKING:
     from apigateway.apps.data_plane.models import DataPlane
     from apigateway.core.models import Release
+
+logger = logging.getLogger(__name__)
 
 
 class DistributorConnectionError(Exception):
@@ -33,11 +35,21 @@ class DistributorConnectionError(Exception):
 
 def check_gateway_distributor_connection(release: "Release", data_plane: "DataPlane") -> None:
     """检查网关发布对应数据面的 distributor 连接状态。"""
-    distributor = GatewayResourceDistributor(release, data_plane=data_plane)
+    try:
+        distributor = GatewayResourceDistributor(release, data_plane=data_plane)
+    except Exception as err:
+        logger.warning(
+            "init gateway distributor failed, data_plane_id=%s, data_plane_name=%s",
+            data_plane.id,
+            data_plane.name,
+            exc_info=True,
+        )
+        raise DistributorConnectionError(
+            DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE.format(id=data_plane.id, name=data_plane.name)
+        ) from err
+
     ok, message = distributor.test_connection()
     if ok:
         return
 
-    raise DistributorConnectionError(
-        _("数据面 {name} 连接失败：{message}").format(name=data_plane.name, message=message)
-    )
+    raise DistributorConnectionError(message)

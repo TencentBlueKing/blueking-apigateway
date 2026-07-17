@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE = _("数据面 ETCD 连接检查失败，请联系管理员。")
+DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE = _("数据面 {name}(ID: {id}) ETCD 连接检查失败，请联系管理员。")
 
 
 class BaseDistributor(ABC):
@@ -44,7 +44,10 @@ class BaseDistributor(ABC):
                 self.data_plane.name,
                 exc_info=True,
             )
-            return False, DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE
+            return False, DATA_PLANE_CONNECTION_CHECK_FAILED_MESSAGE.format(
+                id=self.data_plane.id,
+                name=self.data_plane.name,
+            )
 
         return True, "ok"
 
