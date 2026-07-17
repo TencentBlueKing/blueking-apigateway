@@ -28,6 +28,10 @@ from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
+from apigateway.controller.distributor.connection import (
+    DistributorConnectionError,
+    check_gateway_distributor_connection,
+)
 from apigateway.controller.tasks.release import (
     release_gateway_by_registry,
     update_release_data_after_success,
@@ -166,12 +170,14 @@ class GatewayReleaser:
         # 环境、部署信息校验
         # 普通参数校验失败，不需要记录发布日志，环境参数校验失败，需记录发布日志
         # 因此，将普通参数校验，环境参数校验分开处理
+
+        # Get active data planes for error recording and connection validation
+        data_planes = self._get_active_data_planes()
+
         try:
             self._validate()
         except (ValidationError, ReleaseValidationError) as err:
             message = err.detail[0] if isinstance(err, ValidationError) else str(err)
-            # Get the first active data_plane for error recording
-            data_planes = self._get_active_data_planes()
             if data_planes:
                 history = self._save_release_history(data_plane=data_planes[0])
                 PublishEventReporter.report_config_validate_failure(history, message)
@@ -183,6 +189,16 @@ class GatewayReleaser:
                     message,
                 )
             raise ReleaseError(message) from err
+
+        release = Release(gateway=self.gateway, stage=self.stage, resource_version=self.resource_version)
+        for data_plane in data_planes:
+            try:
+                check_gateway_distributor_connection(release, data_plane)
+            except DistributorConnectionError as err:
+                message = str(err)
+                history = self._save_release_history(data_plane=data_plane)
+                PublishEventReporter.report_config_validate_failure(history, message)
+                raise ReleaseError(message) from err
 
     def _validate(self):
         """校验待发布数据"""
