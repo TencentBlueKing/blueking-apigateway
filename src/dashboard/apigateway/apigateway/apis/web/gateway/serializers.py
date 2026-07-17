@@ -75,7 +75,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     kind = serializers.ChoiceField(
         choices=GatewayKindEnum.get_choices(),
         read_only=True,
-        help_text="网关类型，0: 普通网关，1：可编程网关",
+        help_text="网关类型，0: 普通网关，1：可编程网关，2：AI 网关",
     )
     is_public = serializers.BooleanField(read_only=True, help_text="是否公开，true：公开，false：不公开")
     is_official = serializers.BooleanField(
@@ -290,7 +290,7 @@ class GatewayRetrieveOutputSLZ(serializers.ModelSerializer):
                 "help_text": "网关状态，0：已停用，1：启用中",
             },
             "kind": {
-                "help_text": "网关类型，0: 普通网关，1：可编程网关",
+                "help_text": "网关类型，0: 普通网关，1：可编程网关，2：AI 网关",
             },
             "is_public": {
                 "help_text": "是否公开，true: 公开，false: 不公开",

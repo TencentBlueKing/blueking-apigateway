@@ -339,6 +339,17 @@ class TestService:
         assert "test-plugin" in service.plugins
         assert service.plugins["test-plugin"] == plugin
 
+    def test_service_without_upstream_excludes_the_field(self):
+        service = Service(
+            id="gateway.prod.1-2",
+            name="gateway.prod.model",
+            labels=Labels(gateway_id="1", stage_id="2"),
+            plugins={"ai-proxy": Plugin(provider="openai")},
+        )
+
+        assert service.upstream is None
+        assert "upstream" not in service.model_dump(exclude_none=True)
+
 
 class TestRoute:
     """Test Route model"""

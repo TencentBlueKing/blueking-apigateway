@@ -18,11 +18,12 @@
 import pytest
 from ddf import G
 from pydantic import TypeAdapter
+from rest_framework.exceptions import ValidationError
 
 from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.biz.gateway import GatewayData, GatewayHandler, GatewaySaver
 from apigateway.common.constants import CallSourceTypeEnum
-from apigateway.core.constants import GatewayStatusEnum, GatewayTypeEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, GatewayTypeEnum
 from apigateway.core.models import Gateway, GatewayRelatedApp
 from apigateway.service.contexts import GatewayAuthContext
 
@@ -49,6 +50,7 @@ class TestGatewayData:
                     "allow_delete_sensitive_params": None,
                     "tenant_id": None,
                     "tenant_mode": None,
+                    "kind": GatewayKindEnum.NORMAL.value,
                 },
             ),
             (
@@ -80,6 +82,7 @@ class TestGatewayData:
                     "allow_delete_sensitive_params": True,
                     "tenant_mode": "single",
                     "tenant_id": "default",
+                    "kind": GatewayKindEnum.NORMAL.value,
                 },
             ),
         ],
@@ -270,6 +273,25 @@ class TestGatewaySaver:
         bound_plane_ids = {b.data_plane_id for b in bindings}
         assert data_plane1.id in bound_plane_ids
         assert data_plane2.id in bound_plane_ids
+
+    def test_save_ai_gateway_rejects_older_data_plane_before_persisting(self, unique_gateway_name):
+        data_plane = G(DataPlane, name="apisix-3-13", apisix_version="3.13")
+        saver = GatewaySaver(
+            None,
+            GatewayData(
+                name=unique_gateway_name,
+                status=0,
+                tenant_mode="single",
+                tenant_id="default",
+                kind=GatewayKindEnum.AI.value,
+            ),
+            data_plane_ids=[data_plane.id],
+        )
+
+        with pytest.raises(ValidationError, match="APISIX 3.16 or later"):
+            saver.save()
+
+        assert not Gateway.objects.filter(name=unique_gateway_name).exists()
 
     def test_save_without_data_plane_ids_binds_to_default(self, unique_gateway_name, default_data_plane):
         """Test save without data_plane_ids binds to default data plane on new gateway"""

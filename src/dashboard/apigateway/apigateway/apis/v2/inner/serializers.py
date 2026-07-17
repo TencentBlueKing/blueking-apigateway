@@ -45,7 +45,7 @@ from apigateway.biz.permission import ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayKindNameEnum, GatewayStatusEnum, convert_gateway_kind_to_name
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
     build_mcp_server_detail_url,
@@ -69,6 +69,7 @@ def _get_categories_from_context(context, obj) -> List[Dict[str, str]]:
 class GatewayListInputSLZ(serializers.Serializer):
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListInputSLZ"
@@ -80,6 +81,7 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
@@ -90,6 +92,9 @@ class GatewayListOutputSLZ(serializers.Serializer):
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
@@ -101,6 +106,7 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return ResourcePermissionHandler.convert_gateway_maintainers_to_display_names(
@@ -111,6 +117,9 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayRetrieveOutputSLZ"

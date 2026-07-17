@@ -28,6 +28,8 @@ from django.db import models
 from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
     DEFAULT_STAGE_NAME,
+    BackendKindEnum,
+    ResourceKindEnum,
     StageStatusEnum,
 )
 from apigateway.utils.time import now_datetime
@@ -35,6 +37,22 @@ from apigateway.utils.time import now_datetime
 # - managers.py 下面不能存在跨 models 的操作，每个 manager 只关心自己的逻辑 (避免循环引用)
 
 RELEASED_RESOURCE_CREATE_BATCH_SIZE = 50
+
+
+class BackendManager(models.Manager):
+    def standard(self):
+        return self.filter(kind=BackendKindEnum.STANDARD.value)
+
+    def ai(self):
+        return self.filter(kind=BackendKindEnum.AI.value)
+
+
+class ResourceManager(models.Manager):
+    def standard(self):
+        return self.filter(kind=ResourceKindEnum.STANDARD.value)
+
+    def ai(self):
+        return self.filter(kind=ResourceKindEnum.AI.value)
 
 
 class StageManager(models.Manager):
@@ -83,6 +101,7 @@ class ResourceVersionManager(models.Manager):
             resource_auth_config = json.loads(resource["contexts"]["resource_auth"]["config"])
             resources[resource["id"]] = {
                 "id": resource["id"],
+                "kind": resource.get("kind", ResourceKindEnum.STANDARD.value),
                 "name": resource["name"],
                 "description": resource.get("description") or "",
                 "description_en": resource.get("description_en", ""),

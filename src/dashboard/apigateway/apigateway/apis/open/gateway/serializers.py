@@ -27,8 +27,12 @@ from apigateway.common.constants import GATEWAY_NAME_PATTERN, GatewayAPIDocMaint
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.core.constants import (
+    GatewayKindNameEnum,
     GatewayStatusEnum,
+    GatewaySyncKindEnum,
     GatewayTypeEnum,
+    convert_gateway_kind_name_to_value,
+    convert_gateway_kind_to_name,
 )
 from apigateway.core.models import Gateway
 
@@ -38,6 +42,7 @@ class GatewayListV1InputSLZ(serializers.Serializer):
     query = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     fuzzy = serializers.BooleanField(required=False)
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
 
 class GatewayListV1OutputSLZ(serializers.Serializer):
@@ -50,6 +55,10 @@ class GatewayListV1OutputSLZ(serializers.Serializer):
     user_auth_type = serializers.SerializerMethodField()
     tenant_mode = serializers.CharField(read_only=True)
     tenant_id = serializers.CharField(read_only=True)
+    kind = serializers.SerializerMethodField()
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     def get_api_type(self, obj):
         return self.context["gateway_auth_configs"][obj.id].gateway_type
@@ -121,6 +130,11 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    kind = serializers.ChoiceField(
+        choices=GatewaySyncKindEnum.get_choices(),
+        default=GatewaySyncKindEnum.NORMAL.value,
+        write_only=True,
+    )
     # Data plane names to bind to when creating a new gateway
     # If empty, will use 'default' data plane
     data_planes = serializers.ListField(
@@ -144,6 +158,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
+            "kind",
         ]
         extra_kwargs = {
             "description_en": {
@@ -156,6 +171,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"))
 
         data["gateway_type"] = data.pop("api_type", None)
+        data["kind"] = convert_gateway_kind_name_to_value(data["kind"])
 
         return data
 

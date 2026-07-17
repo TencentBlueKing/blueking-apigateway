@@ -48,3 +48,4 @@ class TestResourceListApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) > 0
+        assert result["data"][0]["kind"] == "standard"

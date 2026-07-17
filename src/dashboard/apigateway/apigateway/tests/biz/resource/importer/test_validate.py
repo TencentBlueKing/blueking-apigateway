@@ -20,13 +20,147 @@ import pytest
 from ddf import G
 
 from apigateway.apps.label.models import APILabel
+from apigateway.apps.plugin.constants import PluginTypeCodeEnum, PluginTypeScopeEnum
+from apigateway.apps.plugin.models import PluginType
 from apigateway.biz.openapi import ResourceImportValidator
 from apigateway.biz.plugin import PluginConfigData
-from apigateway.core.models import Resource
+from apigateway.biz.resource import ResourceAuthConfig, ResourceBackendConfig, ResourceData
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.models import Backend, Resource
 from apigateway.utils.yaml import yaml_dumps
+
+AI_ONLY_PLUGIN_CODES = (
+    "ai-rate-limiting",
+    "ai-prompt-guard",
+    "ai-prompt-decorator",
+)
+
+
+def _plugin_yaml(plugin_type_code):
+    if plugin_type_code == PluginTypeCodeEnum.AI_RATE_LIMITING.value:
+        return yaml_dumps({"limit_strategy": "total_tokens", "rejected_code": 429})
+    return yaml_dumps({"enabled": True})
 
 
 class TestResourceImportValidator:
+    def test_validate_ai_resource_kind_contract(self, fake_gateway):
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.STANDARD.value)
+        existing = G(Resource, gateway=fake_gateway, kind=ResourceKindEnum.STANDARD.value)
+        resource_data = ResourceData(
+            resource=existing,
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        messages = [error.message for error in errors]
+        assert "普通网关不支持模型代理资源" in messages
+        assert "资源 kind 创建后不能修改" in messages
+        assert "资源 kind 与后端服务 kind 不一致" in messages
+
+    def test_validate_ai_resource_accepts_ai_gateway_and_backend(self, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert not errors
+
+    def test_validate_ai_resource_rejects_incompatible_plugin(
+        self,
+        fake_gateway,
+        fake_plugin_type_bk_header_rewrite,
+    ):
+        fake_plugin_type_bk_header_rewrite.code = PluginTypeCodeEnum.BK_STATUS_REWRITE.value
+        fake_plugin_type_bk_header_rewrite.save(update_fields=["code"])
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value)
+        resource_data = ResourceData(
+            kind=ResourceKindEnum.AI.value,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=None,
+            plugin_configs=[
+                PluginConfigData(
+                    type=fake_plugin_type_bk_header_rewrite.code,
+                    yaml=yaml_dumps({"set": [{"key": "foo", "value": "bar"}], "remove": []}),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any("bk-status-rewrite" in error.message and "不兼容" in error.message for error in errors)
+
+    @pytest.mark.parametrize("plugin_type_code", AI_ONLY_PLUGIN_CODES)
+    @pytest.mark.parametrize(
+        ("resource_kind", "has_compatibility_error"),
+        [(ResourceKindEnum.STANDARD.value, True), (ResourceKindEnum.AI.value, False)],
+    )
+    def test_validate_ai_only_plugin_by_resource_kind(
+        self,
+        fake_gateway,
+        plugin_type_code,
+        resource_kind,
+        has_compatibility_error,
+    ):
+        if resource_kind == ResourceKindEnum.AI.value:
+            fake_gateway.kind = GatewayKindEnum.AI.value
+            fake_gateway.save(update_fields=["kind"])
+
+        backend = G(Backend, gateway=fake_gateway, kind=resource_kind)
+        G(
+            PluginType,
+            code=plugin_type_code,
+            is_public=True,
+            scope=PluginTypeScopeEnum.RESOURCE.value,
+        )
+        resource_data = ResourceData(
+            kind=resource_kind,
+            name="chat",
+            method="POST",
+            path="/chat",
+            auth_config=ResourceAuthConfig(),
+            backend=backend,
+            backend_config=(
+                ResourceBackendConfig(method="POST", path="/chat")
+                if resource_kind == ResourceKindEnum.STANDARD.value
+                else None
+            ),
+            plugin_configs=[
+                PluginConfigData(
+                    type=plugin_type_code,
+                    yaml=_plugin_yaml(plugin_type_code),
+                )
+            ],
+        )
+
+        errors = ResourceImportValidator(fake_gateway, [resource_data]).validate()
+
+        assert any(plugin_type_code in error.message and "不兼容" in error.message for error in errors) is (
+            has_compatibility_error
+        )
+
     def test_validate(self, fake_gateway, fake_resource_data):
         resource_data_list = [
             fake_resource_data.copy(deep=True),

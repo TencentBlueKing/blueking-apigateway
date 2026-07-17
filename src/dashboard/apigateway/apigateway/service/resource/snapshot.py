@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from django.conf import settings
 
 from apigateway.apps.label.models import ResourceLabel
-from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum
+from apigateway.core.constants import STAGE_VAR_PATTERN, ContextScopeTypeEnum, ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import Context, Proxy, Resource, Stage, StageResourceDisabled
 from apigateway.schema.models import Schema
 from apigateway.utils import time
@@ -139,6 +139,7 @@ def snapshot_resource(
     """
     data = {
         "id": resource.pk,
+        "kind": resource.kind,
         "name": resource.name,
         "description": resource.description,
         "description_en": resource.description_en,
@@ -158,7 +159,7 @@ def snapshot_resource(
         data["proxy"] = proxy_map[resource.id]
 
     # 资源使用的 stage vars
-    if data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
+    if resource.kind == ResourceKindEnum.STANDARD.value and data["proxy"]["type"] == ProxyTypeEnum.HTTP.value:
         data["stage_vars"] = get_resource_use_stage_vars(data)
 
     if context_map is None:

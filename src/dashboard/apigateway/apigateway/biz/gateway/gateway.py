@@ -36,6 +36,7 @@ from apigateway.biz.stage import StageHandler
 from apigateway.common.tenant.query import gateway_filter_by_maintainer_tenant_id
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
+    GatewayKindEnum,
     GatewayOperationSourceEnum,
     GatewayOperationStatusEnum,
     GatewayStatusEnum,
@@ -45,6 +46,7 @@ from apigateway.core.gateway_auth import GatewayAuthConfig
 from apigateway.core.models import Backend, BackendConfig, Context, Gateway, Release, Resource, Stage
 from apigateway.service.alarm_strategy import create_default_alarm_strategy
 from apigateway.service.contexts import GatewayAuthContext
+from apigateway.service.data_plane import validate_gateway_data_plane_compatibility
 from apigateway.service.gateway_jwt import GatewayJWTHandler
 from apigateway.service.resource import delete_gateway_resource_versions, delete_gateway_resources
 from apigateway.utils.dict import deep_update
@@ -79,6 +81,7 @@ class GatewayData(BaseModel):
     is_public: bool = Field(default=False)
     gateway_type: Optional[GatewayTypeEnum] = Field(default=None)
     user_config: Optional[Dict] = Field(default=None)
+    kind: int = Field(default=GatewayKindEnum.NORMAL.value)
     # allow_auth_from_params/allow_delete_sensitive_params 默认值 None，即默认不修改此配置，
     # 上层如需修改，需明确指定配置值
     allow_auth_from_params: Optional[bool] = Field(default=None)
@@ -286,6 +289,7 @@ class GatewayHandler:
         """Bind a gateway to the given data planes."""
         data_planes = DataPlane.objects.filter(id__in=data_plane_ids)
         data_plane_map = {dp.id: dp for dp in data_planes}
+        validate_gateway_data_plane_compatibility(gateway, data_plane_map.values())
 
         for dp_id in data_plane_ids:
             data_plane = data_plane_map.get(dp_id)
@@ -546,7 +550,7 @@ class GatewaySaver:
         return self._gateway
 
     def _create_gateway(self):
-        # 1. save gateway
+        # 1. resolve and validate data planes before saving the gateway
         self._gateway = gateway = Gateway(
             name=self._gateway_data.name,
             description=self._gateway_data.description,
@@ -554,15 +558,19 @@ class GatewaySaver:
             maintainers=self._gateway_data.maintainers,
             status=self._gateway_data.status,
             is_public=self._gateway_data.is_public,
+            kind=self._gateway_data.kind,
             is_official=_is_official_gateway_type(self._gateway_data.gateway_type),
             tenant_mode=self._gateway_data.tenant_mode,
             tenant_id=self._gateway_data.tenant_id,
             created_by=self.username,
             updated_by=self.username,
         )
+        data_planes_to_bind = self._resolve_data_planes_to_bind(gateway)
+
+        # 2. save gateway
         gateway.save()
 
-        # 2. save related data
+        # 3. save related data
         GatewayHandler.save_related_data(
             gateway=gateway,
             user_auth_type=settings.DEFAULT_USER_AUTH_TYPE,
@@ -576,11 +584,10 @@ class GatewaySaver:
             source=self._source,
         )
 
-        # 3. bind to data plane(s)
-        self._bind_to_data_planes(gateway)
+        # 4. bind to data plane(s)
+        self._bind_to_data_planes(gateway, data_planes_to_bind)
 
-    def _bind_to_data_planes(self, gateway: Gateway):
-        """Bind newly created gateway to data plane(s)"""
+    def _resolve_data_planes_to_bind(self, gateway: Gateway) -> List[DataPlane]:
         data_planes_to_bind: List[DataPlane] = []
 
         # If data_plane_ids provided, bind to those data planes
@@ -598,8 +605,12 @@ class GatewaySaver:
             default_data_plane = DataPlane.objects.get_default()
             data_planes_to_bind.append(default_data_plane)
 
-        # Bind to all resolved data planes
-        for data_plane in data_planes_to_bind:
+        validate_gateway_data_plane_compatibility(gateway, data_planes_to_bind)
+        return data_planes_to_bind
+
+    def _bind_to_data_planes(self, gateway: Gateway, data_planes: List[DataPlane]):
+        """Bind a newly created gateway to data planes that have already been validated."""
+        for data_plane in data_planes:
             GatewayDataPlaneBinding.objects.bind_gateway_to_data_plane(
                 gateway=gateway,
                 data_plane=data_plane,

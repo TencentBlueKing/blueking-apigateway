@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 from openapi_spec_validator.versions import OPENAPIV31
 
 from apigateway.apps.support.constants import OpenAPIFormatEnum
-from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum
+from apigateway.core.constants import HTTP_METHOD_ANY, ProxyTypeEnum, ResourceKindEnum
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.resource import get_gateway_resource_id_to_labels
 from apigateway.utils.yaml import yaml_dumps, yaml_export_dumps
@@ -190,16 +190,21 @@ class BaseExporter:
 
     def _generate_bk_apigateway_resource(self, operation: Dict[str, Any], resource: Dict[str, Any]):
         backend = resource.get("backend", {})
+        kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
 
         operation[OPENAPI_RESOURCE_EXTENSION] = {
             "isPublic": resource["is_public"],
             "allowApplyPermission": resource["allow_apply_permission"],
             "matchSubpath": resource.get("match_subpath", False),
             "enableWebsocket": resource.get("enable_websocket", False),
-            "backend": self._adapt_backend(
-                backend,
-                resource.get("proxy_type", ""),
-                resource.get("proxy_configs", {}),
+            "backend": (
+                {"name": backend["name"]}
+                if kind == ResourceKindEnum.AI.value
+                else self._adapt_backend(
+                    backend,
+                    resource.get("proxy_type", ""),
+                    resource.get("proxy_configs", {}),
+                )
             ),
             # 资源配置导出时 plugin_config 是 PluginConfig 对象，资源版本导出时是 dict
             "pluginConfigs": [
@@ -212,6 +217,8 @@ class BaseExporter:
             "authConfig": self._adapt_auth_config(resource["auth_config"]),
             "descriptionEn": resource.get("description_en"),
         }
+        if kind == ResourceKindEnum.AI.value:
+            operation[OPENAPI_RESOURCE_EXTENSION]["kind"] = ResourceKindEnum.AI.value
         if resource.get("none_schema"):
             operation[OPENAPI_RESOURCE_EXTENSION]["noneSchema"] = resource.get("none_schema")
 

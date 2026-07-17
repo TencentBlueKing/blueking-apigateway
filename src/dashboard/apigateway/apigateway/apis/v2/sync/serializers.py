@@ -16,7 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import copy
 from typing import Optional
 
 from django.conf import settings
@@ -25,7 +24,7 @@ from django.utils.translation.trans_null import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apps.audit.constants import OpTypeEnum
+from apigateway.apis.backend_config import validate_ai_backend_config
 from apigateway.apps.mcp_server.constants import (
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
@@ -33,7 +32,6 @@ from apigateway.apps.mcp_server.constants import (
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerCategory
 from apigateway.apps.permission.constants import FormattedGrantDimensionEnum, GrantDimensionEnum
 from apigateway.apps.support.constants import DocLanguageEnum, ProgrammingLanguageEnum
-from apigateway.biz.audit import Auditor
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND, SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler, StageSyncHandler
 from apigateway.biz.validators import (
@@ -60,12 +58,16 @@ from apigateway.core.constants import (
     DEFAULT_BACKEND_NAME,
     DEFAULT_LB_HOST_WEIGHT,
     STAGE_NAME_PATTERN,
+    BackendKindEnum,
     GatewayStatusEnum,
+    GatewaySyncKindEnum,
     GatewayTypeEnum,
     HashOnTypeEnum,
     LoadBalanceTypeEnum,
+    convert_gateway_kind_name_to_value,
+    convert_gateway_kind_to_name,
 )
-from apigateway.core.models import Backend, BackendConfig, Gateway, ResourceVersion, Stage
+from apigateway.core.models import Backend, Gateway, ResourceVersion, Stage
 from apigateway.utils.time import NeverExpiresTime
 
 
@@ -119,6 +121,11 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     )
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    kind = serializers.ChoiceField(
+        choices=GatewaySyncKindEnum.get_choices(),
+        default=GatewaySyncKindEnum.NORMAL.value,
+        write_only=True,
+    )
     # Data plane names to bind to when creating a new gateway
     # If empty, will use 'default' data plane
     data_planes = serializers.ListField(
@@ -143,6 +150,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "user_config",
             "allow_delete_sensitive_params",
             "data_planes",
+            "kind",
         ]
         extra_kwargs = {
             "description_en": {
@@ -154,6 +162,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
         self._validate_name(data["name"], data.get("api_type"))
 
         data["gateway_type"] = data.pop("api_type", None)
+        data["kind"] = convert_gateway_kind_name_to_value(data["kind"])
 
         return data
 
@@ -177,6 +186,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
 class GatewaySyncOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="网关ID")
     name = serializers.CharField(read_only=True, help_text="网关名称")
+    kind = serializers.SerializerMethodField(help_text="网关类型")
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.GatewaySyncOutputSLZ"
@@ -368,6 +381,16 @@ class BackendSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.v2.sync.serializers.BackendSLZ"
 
 
+class AIBackendConfigSLZ(serializers.Serializer):
+    def to_internal_value(self, data):
+        return validate_ai_backend_config(data)
+
+
+class AIBackendSLZ(serializers.Serializer):
+    name = serializers.CharField(help_text="模型服务名称")
+    config = AIBackendConfigSLZ()
+
+
 class PluginConfigSLZ(serializers.Serializer):
     type = serializers.CharField(help_text="插件类型名称")
     yaml = serializers.CharField(help_text="插件yaml配置")
@@ -389,7 +412,11 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     )
 
     backends = serializers.ListSerializer(
-        help_text="后端配置", child=BackendSLZ(), allow_null=False, allow_empty=False, required=True
+        help_text="后端配置", child=BackendSLZ(), allow_null=False, allow_empty=False, required=False
+    )
+
+    ai_backends = AIBackendSLZ(
+        help_text="模型服务配置", many=True, allow_null=False, allow_empty=False, required=False
     )
 
     plugin_configs = serializers.ListSerializer(
@@ -412,6 +439,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             "vars",
             "status",
             "backends",
+            "ai_backends",
             "plugin_configs",
         )
         extra_kwargs = {
@@ -420,7 +448,7 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             }
         }
         read_only_fields = ("id", "status")
-        non_model_fields = ["backends", "plugin_configs", "rate_limit"]
+        non_model_fields = ["backends", "ai_backends", "plugin_configs", "rate_limit"]
         lookup_field = "id"
 
         validators = [
@@ -440,9 +468,16 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
     def validate(self, data):
         StageSyncHandler.validate_plugin_configs(data.get("plugin_configs"))
         self._validate_scheme_host(data.get("backends"))
-        # validate stage backend
-        if data.get("backends") is None:
-            raise serializers.ValidationError(_("backends 必须配置"))
+        gateway = data["gateway"]
+
+        if not gateway.is_ai_gateway:
+            if data.get("backends") is None:
+                raise serializers.ValidationError(_("backends 必须配置"))
+            if data.get("ai_backends") is not None:
+                raise serializers.ValidationError({"ai_backends": _("普通网关不支持模型服务。")})
+        elif self.instance is None and data.get("backends") is None and data.get("ai_backends") is None:
+            raise serializers.ValidationError(_("backends 和 ai_backends 必须至少配置一项"))
+
         return data
 
     def create(self, validated_data):
@@ -455,24 +490,20 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
             name=DEFAULT_BACKEND_NAME,
         )
 
-        # 3.create config backend
-        backend_configs = []
-        for backend_info in validated_data.get("backends", []):
-            backend, _ = Backend.objects.get_or_create(
-                gateway=instance.gateway,
-                name=backend_info["name"],
-            )
-            config = StageSyncHandler.build_backend_config(backend_info)
-            backend_config = BackendConfig(
-                gateway=instance.gateway,
-                backend=backend,
-                stage=instance,
-                config=config,
-            )
-            backend_configs.append(backend_config)
-
-        if backend_configs:
-            BackendConfig.objects.bulk_create(backend_configs)
+        # 3. create backend configs
+        username = self.context["request"].user.username or settings.GATEWAY_DEFAULT_CREATOR
+        StageSyncHandler.upsert_backend_configs(
+            stage=instance,
+            backend_items=validated_data.get("backends", []),
+            kind=BackendKindEnum.STANDARD.value,
+            username=username,
+        )
+        StageSyncHandler.upsert_backend_configs(
+            stage=instance,
+            backend_items=validated_data.get("ai_backends", []),
+            kind=BackendKindEnum.AI.value,
+            username=username,
+        )
 
         # 4. sync stage plugin
         StageSyncHandler.sync_plugin_configs(
@@ -493,42 +524,20 @@ class StageSyncInputSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         # 1. 更新数据
         instance = super().update(instance, validated_data)
 
-        # 2. create default backend
-        # 3. update backend
-        for backend_info in validated_data.get("backends", []):
-            backend, _ = Backend.objects.get_or_create(
-                gateway=instance.gateway,
-                name=backend_info["name"],
-            )
-            backend_config = BackendConfig.objects.filter(
-                gateway=instance.gateway,
-                backend=backend,
-                stage=instance,
-            ).first()
-
-            if not backend_config:
-                backend_config = BackendConfig(
-                    gateway=instance.gateway,
-                    backend=backend,
-                    stage=instance,
-                )
-            is_update = bool(backend_config.id)
-            data_before = copy.deepcopy(backend_config.config) if is_update else None
-            data_after = StageSyncHandler.build_backend_config(backend_info)
-            backend_config.config = data_after
-            backend_config.save()
-
-            if is_update and data_before != data_after:
-                Auditor.record_stage_backend_op_success(
-                    op_type=OpTypeEnum.MODIFY,
-                    username=request.user.username or settings.GATEWAY_DEFAULT_CREATOR,
-                    gateway_id=instance.gateway_id,
-                    instance_id=backend_config.id,
-                    instance_name=f"{instance.name}:{backend.name}",
-                    data_before=data_before,
-                    data_after=data_after,
-                    comment="OpenAPI 同步更新环境后端配置",
-                )
+        # 2. update backend configs
+        username = request.user.username or settings.GATEWAY_DEFAULT_CREATOR
+        StageSyncHandler.upsert_backend_configs(
+            stage=instance,
+            backend_items=validated_data.get("backends", []),
+            kind=BackendKindEnum.STANDARD.value,
+            username=username,
+        )
+        StageSyncHandler.upsert_backend_configs(
+            stage=instance,
+            backend_items=validated_data.get("ai_backends", []),
+            kind=BackendKindEnum.AI.value,
+            username=username,
+        )
 
         # 4. sync stage plugin
         StageSyncHandler.sync_plugin_configs(

@@ -1,6 +1,6 @@
 ### 描述
 
-同步网关环境，如果环境不存在，创建环境，如果已存在，则更新
+同步网关环境，如果环境不存在，创建环境，如果已存在，则更新。
 
 
 ### 输入参数
@@ -19,7 +19,8 @@
 | `description`    | string         | 否   | 中文描述（例如 `"预发布环境"`）                                      |
 | `description_en`| string         | 否   | 英文描述（例如 `"Staging Env"`）                                     |
 | `vars`           | object         | 否   | 环境变量（键值对均为字符串类型，示例：`{ "api_sub_path": "/test" }`）|
-| `backends`       | array[object]  | 是   | 后端服务配置列表，参考下方 **backends 参数说明**                     |
+| `backends`       | array[object]  | 否   | 普通后端服务配置列表，参考下方 **backends 参数说明**                 |
+| `ai_backends`    | array[object]  | 否   | 模型服务配置列表，仅 AI 网关支持                                    |
 | `plugin_configs` | array[object]  | 否   | 插件配置列表，参考下方 **plugin_configs 参数说明**                   |
 
 
@@ -46,6 +47,31 @@ hosts 参数说明（属于 config）
 | --------- | --------- | ---- | ------------------------------------------------------------------ |
 | `host`    | string    | 是   |以 http:// 或 https:// 开头的合法域名、service 地址或 ip:port |
 | `weight`  | integer   | 否   | 权重，取值范围 `1 ~ 100`（未提供时默认均衡分配）                   |
+
+ai_backends 参数说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| `name` | string | 是 | 模型服务名称，必须对应 `kind=ai` 的 Backend |
+| `config` | object | 是 | 模型服务在当前环境的配置 |
+
+ai_backends.config 参数说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| `timeout` | integer | 否 | 超时时间，单位毫秒，默认 `30000` |
+| `instances` | array[object] | 是 | 模型实例列表；第一期必须且只能配置 1 个实例 |
+
+instances 参数说明
+
+| 参数名称 | 参数类型 | 必选 | 描述 |
+| -------- | -------- | ---- | ---- |
+| `name` | string | 是 | 实例名称 |
+| `provider` | string | 是 | `openai`、`deepseek` 或 `openai-compatible` |
+| `weight` | integer | 是 | 第一期固定为 `1` |
+| `auth.header` | object | 否 | 发往模型服务的认证 Header；凭证入库时加密 |
+| `options.model` | string | 是 | 模型名称 |
+| `override.endpoint` | string | 否 | 自定义模型服务地址 |
 
 plugin_configs 参数说明
 每个插件配置对象包含：
@@ -75,6 +101,32 @@ plugin_configs 参数说明
         "hosts": [
           {
             "host": "http://xxx.com"
+          }
+        ]
+      }
+    }
+  ],
+  "ai_backends": [
+    {
+      "name": "openai-primary",
+      "config": {
+        "timeout": 30000,
+        "instances": [
+          {
+            "name": "primary",
+            "provider": "openai-compatible",
+            "weight": 1,
+            "auth": {
+              "header": {
+                "Authorization": "Bearer <token>"
+              }
+            },
+            "options": {
+              "model": "gpt-4o"
+            },
+            "override": {
+              "endpoint": "https://llm.example.com/v1/chat/completions"
+            }
           }
         ]
       }

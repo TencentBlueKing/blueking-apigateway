@@ -17,6 +17,7 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from django.conf import settings
+from django.db import transaction
 from django.http import Http404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -84,6 +85,7 @@ class StageSyncViewSet(viewsets.ViewSet):
     permission_classes = [OpenAPIGatewayRelatedAppPermission]
 
     @swagger_auto_schema(request_body=StageSLZ, tags=["OpenAPI.V1"])
+    @transaction.atomic
     def sync(self, request, gateway_name: str, *args, **kwargs):
         instance = get_object_or_None(Stage, gateway=request.gateway, name=request.data.get("name", ""))
         data_before = get_model_dict(instance) if instance else {}

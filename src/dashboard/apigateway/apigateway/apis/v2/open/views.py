@@ -55,7 +55,12 @@ from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import (
+    GatewayKindNameEnum,
+    GatewayStatusEnum,
+    StageStatusEnum,
+    convert_gateway_kind_name_to_value,
+)
 from apigateway.core.models import Gateway, Release, ReleasedResource, Resource, Stage
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import ResourceAuthContext
@@ -124,7 +129,7 @@ class GatewayListApi(generics.ListAPIView):
         - 1. 已启用
         - 2. 公开
         - 3. 已发布
-        - 4. 满足 name / keyword 过滤条件
+        - 4. 满足 name / keyword / kind 过滤条件
         """
         slz = serializers.GatewayListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -132,6 +137,7 @@ class GatewayListApi(generics.ListAPIView):
         name = slz.validated_data.get("name")
         fuzzy = slz.validated_data.get("fuzzy")
         keyword = slz.validated_data.get("keyword")
+        kind = slz.validated_data.get("kind")
 
         queryset = GatewayHandler.list_public_released_gateways()
 
@@ -150,6 +156,12 @@ class GatewayListApi(generics.ListAPIView):
 
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+
+        if kind:
+            kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
+            if kind == GatewayKindNameEnum.NORMAL.value:
+                kind_query |= Q(kind__isnull=True)
+            queryset = queryset.filter(kind_query)
 
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))
@@ -659,6 +671,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
         result = {
             "id": resource_data.id,
             "name": resource_data.name,
+            "kind": resource_data.kind,
             "description": resource_data.description,
             "description_en": resource_data.description_en,
             "method": resource_data.method,

@@ -26,6 +26,34 @@ from django.utils.translation import gettext_lazy as _
 class GatewayKindEnum(StructuredEnum):
     NORMAL = EnumField(0, "普通网关")
     PROGRAMMABLE = EnumField(1, "可编程网关")
+    AI = EnumField(2, "AI 网关")
+
+
+class GatewayKindNameEnum(StructuredEnum):
+    NORMAL = EnumField("normal", "普通网关")
+    PROGRAMMABLE = EnumField("programmable", "可编程网关")
+    AI = EnumField("ai", "AI 网关")
+
+
+class GatewaySyncKindEnum(StructuredEnum):
+    NORMAL = EnumField("normal", "普通网关")
+    AI = EnumField("ai", "AI 网关")
+
+
+_GATEWAY_KIND_NAME_TO_VALUE = {
+    GatewayKindNameEnum.NORMAL.value: GatewayKindEnum.NORMAL.value,
+    GatewayKindNameEnum.PROGRAMMABLE.value: GatewayKindEnum.PROGRAMMABLE.value,
+    GatewayKindNameEnum.AI.value: GatewayKindEnum.AI.value,
+}
+_GATEWAY_KIND_VALUE_TO_NAME = {value: name for name, value in _GATEWAY_KIND_NAME_TO_VALUE.items()}
+
+
+def convert_gateway_kind_name_to_value(kind: str) -> int:
+    return _GATEWAY_KIND_NAME_TO_VALUE[kind]
+
+
+def convert_gateway_kind_to_name(kind: int) -> str:
+    return _GATEWAY_KIND_VALUE_TO_NAME.get(kind, GatewayKindNameEnum.NORMAL.value)
 
 
 class ProgrammableGatewayLanguageEnum(StructuredEnum):
@@ -237,6 +265,25 @@ HTTP_METHOD_CHOICES = [
 RESOURCE_METHOD_CHOICES = HTTP_METHOD_CHOICES + [
     (HTTP_METHOD_ANY, HTTP_METHOD_ANY),
 ]
+
+
+class BackendKindEnum(StructuredEnum):
+    STANDARD = EnumField("standard", "普通后端服务")
+    AI = EnumField("ai", "模型服务")
+
+
+class AIBackendProviderEnum(StructuredEnum):
+    OPENAI = EnumField("openai", "OpenAI")
+    DEEPSEEK = EnumField("deepseek", "DeepSeek")
+    OPENAI_COMPATIBLE = EnumField("openai-compatible", "OpenAI Compatible")
+
+
+AI_BACKEND_BUILTIN_PROVIDERS = frozenset(("openai", "deepseek"))
+
+
+class ResourceKindEnum(StructuredEnum):
+    STANDARD = EnumField("standard", "普通 API")
+    AI = EnumField("ai", "模型代理 API")
 
 
 class BackendTypeEnum(StructuredEnum):

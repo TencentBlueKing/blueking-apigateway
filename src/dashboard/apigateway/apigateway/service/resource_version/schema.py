@@ -26,7 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from apigateway.apps.openapi.models import OpenAPIResourceSchema, OpenAPIResourceSchemaVersion
 from apigateway.common.constants import CACHE_TIME_5_MINUTES
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import ProxyTypeEnum
+from apigateway.core.constants import ProxyTypeEnum, ResourceKindEnum
 from apigateway.core.models import ResourceVersion
 from apigateway.service.resource import get_resource_use_stage_vars
 
@@ -78,7 +78,10 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
 
 
 @cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
-def get_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
+def get_resource_names_set(
+    resource_version_id: int,
+    raise_exception: bool = False,
+) -> Set[str]:
     """获取资源版本中的资源名称集合，用于权限、MCP Server 等名称存在性判断。
 
     频繁读取同一资源版本名称集合的路径使用；结果会缓存 5 分钟。
@@ -86,7 +89,6 @@ def get_resource_names_set(resource_version_id: int, raise_exception: bool = Fal
     Args:
         resource_version_id (int): 资源版本 ID。
         raise_exception (bool): 资源版本不存在时是否抛出 NOT_FOUND；为 False 时返回空集合。
-
     Returns:
         Set[str]: 资源名称集合；资源版本不存在且不抛异常时返回空集合。
     """
@@ -97,6 +99,30 @@ def get_resource_names_set(resource_version_id: int, raise_exception: bool = Fal
         return set()
 
     return {resource["name"] for resource in resource_version.data}
+
+
+@cached(cache=TTLCache(maxsize=300, ttl=CACHE_TIME_5_MINUTES))
+def get_standard_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
+    """获取资源版本中的普通资源名称集合，用于 MCP Server 等仅接受普通资源的场景。
+
+    Args:
+        resource_version_id (int): 资源版本 ID。
+        raise_exception (bool): 资源版本不存在时是否抛出 NOT_FOUND；为 False 时返回空集合。
+
+    Returns:
+        Set[str]: 普通资源名称集合；旧快照缺少或未设置 kind 时按 standard 处理。
+    """
+    resource_version = ResourceVersion.objects.filter(id=resource_version_id).first()
+    if not resource_version:
+        if raise_exception:
+            raise error_codes.NOT_FOUND.format(_("资源版本不存在"))
+        return set()
+
+    return {
+        resource["name"]
+        for resource in resource_version.data
+        if (resource.get("kind") or ResourceKindEnum.STANDARD.value) == ResourceKindEnum.STANDARD.value
+    }
 
 
 # TODO: 缓存优化：可使用 django cache(with database backend) or dogpile 缓存
@@ -121,6 +147,8 @@ def get_used_stage_vars(gateway_id: int, resource_version_id: int):
     used_in_path = set()
     used_in_host = set()
     for resource in resource_version.data:
+        if resource.get("kind", ResourceKindEnum.STANDARD.value) == ResourceKindEnum.AI.value:
+            continue
         if resource["proxy"]["type"] != ProxyTypeEnum.HTTP.value:
             continue
         stage_vars = resource["stage_vars"] if resource.get("stage_vars") else get_resource_use_stage_vars(resource)

@@ -61,7 +61,12 @@ from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.common.tenant.query import gateway_filter_by_app_tenant_id
 from apigateway.components.bkauth import get_app_tenant_info
 from apigateway.controller.publisher.publish import trigger_gateway_publish
-from apigateway.core.constants import GatewayStatusEnum, PublishSourceEnum
+from apigateway.core.constants import (
+    GatewayKindNameEnum,
+    GatewayStatusEnum,
+    PublishSourceEnum,
+    convert_gateway_kind_name_to_value,
+)
 from apigateway.core.models import Gateway, Release, Resource
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.utils import time as time_utils
@@ -107,13 +112,14 @@ class GatewayListApi(generics.ListAPIView):
         - 1. 已启用
         - 2. 公开
         - 3. 已发布
-        - 4. 满足 name 过滤条件
+        - 4. 满足 name / kind 过滤条件
         """
         slz = serializers.GatewayListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         name = slz.validated_data.get("name")
         fuzzy = slz.validated_data.get("fuzzy")
+        kind = slz.validated_data.get("kind")
 
         queryset = GatewayHandler.list_public_released_gateways()
 
@@ -129,6 +135,12 @@ class GatewayListApi(generics.ListAPIView):
         if name:
             # 模糊匹配，查询名称中包含 name 的网关 or 精确匹配，查询名称为 name 的网关
             queryset = queryset.filter(name__contains=name) if fuzzy else queryset.filter(name=name)
+
+        if kind:
+            kind_query = Q(kind=convert_gateway_kind_name_to_value(kind))
+            if kind == GatewayKindNameEnum.NORMAL.value:
+                kind_query |= Q(kind__isnull=True)
+            queryset = queryset.filter(kind_query)
 
         output_slz = self.get_serializer(queryset, many=True)
         output_data = sorted(output_slz.data, key=operator.itemgetter("name"))

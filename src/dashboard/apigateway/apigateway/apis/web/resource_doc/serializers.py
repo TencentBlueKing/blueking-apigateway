@@ -19,6 +19,7 @@ from rest_framework import serializers
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, DocLanguageEnum
+from apigateway.core.constants import ResourceKindEnum
 
 
 class DocArchiveParseInputSLZ(serializers.Serializer):
@@ -31,6 +32,7 @@ class DocArchiveParseInputSLZ(serializers.Serializer):
 class ArchiveParseOutputResourceSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True, help_text="资源 ID")
     name = serializers.CharField(read_only=True, help_text="资源名称")
+    kind = serializers.ChoiceField(choices=ResourceKindEnum.get_choices(), read_only=True, help_text="资源类型")
     method = serializers.CharField(read_only=True, help_text="请求方法")
     path = serializers.CharField(read_only=True, help_text="请求路径")
     description = serializers.CharField(read_only=True, help_text="资源描述")

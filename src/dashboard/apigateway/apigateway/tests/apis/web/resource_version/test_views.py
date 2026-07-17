@@ -24,8 +24,10 @@ from django_dynamic_fixture import G
 
 from apigateway.apps.openapi.models import OpenAPIFileResourceSchemaVersion, OpenAPIResourceSchemaVersion
 from apigateway.apps.support.models import GatewaySDK, ReleasedResourceDoc, ResourceDoc, ResourceDocVersion
-from apigateway.core.models import Proxy, Release, ReleasedResource, Resource, ResourceVersion, Stage
+from apigateway.core.constants import BackendKindEnum, GatewayKindEnum, ResourceKindEnum
+from apigateway.core.models import BackendConfig, Proxy, Release, ReleasedResource, Resource, ResourceVersion, Stage
 from apigateway.tests.utils.testing import create_gateway, dummy_time
+from apigateway.utils.yaml import yaml_loads
 
 
 class TestResourceVersionListCreateApi:
@@ -41,6 +43,37 @@ class TestResourceVersionListCreateApi:
         )
         assert resp.status_code == 201
         assert ResourceVersion.objects.filter(gateway=fake_gateway).count() > 0
+
+    def test_create_ai_resource_version(self, request_view, fake_gateway, fake_backend, fake_resource):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save()
+        fake_resource.kind = ResourceKindEnum.AI.value
+        fake_resource.method = "POST"
+        fake_resource.match_subpath = False
+        fake_resource.enable_websocket = False
+        fake_resource.save()
+        proxy = Proxy.objects.get(resource=fake_resource)
+        Proxy.objects.filter(id=proxy.id).update(_config="{}")
+
+        resp = request_view(
+            method="POST",
+            view_name="gateway.resource_version.list_create",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id},
+            data={"comment": "AI resource version", "version": "1.2.0"},
+        )
+
+        assert resp.status_code == 201
+        resource_version = ResourceVersion.objects.get(gateway=fake_gateway, version="1.2.0")
+        resource = resource_version.data[0]
+        assert resource["kind"] == ResourceKindEnum.AI.value
+        assert resource["proxy"]["backend_id"] == fake_backend.id
+        assert json.loads(resource["proxy"]["config"]) == {}
+        artifact = OpenAPIFileResourceSchemaVersion.objects.get(resource_version=resource_version)
+        operation = yaml_loads(artifact.schema)["paths"][fake_resource.path]["post"]
+        assert operation["x-bk-apigateway-resource"]["kind"] == ResourceKindEnum.AI.value
 
     def test_list(self, request_view, fake_gateway):
         resource_version = G(
@@ -142,6 +175,7 @@ class TestResourceVersionRetrieveDestroyApi:
             "resources": [
                 {
                     "id": fake_resource_version_v2.data[0]["id"],
+                    "kind": ResourceKindEnum.STANDARD.value,
                     "name": fake_resource_version_v2.data[0]["name"],
                     "method": fake_resource_version_v2.data[0]["method"],
                     "path": fake_resource_version_v2.data[0]["path"],
@@ -169,6 +203,48 @@ class TestResourceVersionRetrieveDestroyApi:
             "created_time": fake_resource_version_v2.created_time,
             "created_by": fake_resource_version_v2.created_by,
         }
+
+    def test_retrieve_with_stage_masks_ai_backend_config(
+        self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2
+    ):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        fake_backend.kind = BackendKindEnum.AI.value
+        fake_backend.save()
+        BackendConfig.objects.filter(backend=fake_backend, stage=fake_stage).delete()
+        BackendConfig.objects.create(
+            gateway=fake_gateway,
+            backend=fake_backend,
+            stage=fake_stage,
+            config={
+                "timeout": 30000,
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ],
+            },
+        )
+        resources = fake_resource_version_v2.data
+        resources[0]["kind"] = ResourceKindEnum.AI.value
+        fake_resource_version_v2.data = resources
+        fake_resource_version_v2.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.retrieve_destroy",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
+            data={"stage_id": fake_stage.id},
+        )
+
+        assert resp.status_code == 200
+        header = resp.json()["data"]["resources"][0]["proxy"]["backend"]["config"]["instances"][0]["auth"]["header"]
+        assert header["Authorization"] == "Be****et"
 
     def test_destroy(self, request_view, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")

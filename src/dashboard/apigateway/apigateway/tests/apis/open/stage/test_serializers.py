@@ -20,6 +20,37 @@ import pytest
 from apigateway.apis.open.stage import serializers
 
 
+def test_ai_backend_config_rejects_non_mapping_instance():
+    slz = serializers.AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
+def test_ai_backend_ignores_unknown_outer_field():
+    slz = serializers.AIBackendSLZ(
+        data={
+            "name": "openai-primary",
+            "config": {
+                "instances": [
+                    {
+                        "name": "primary",
+                        "provider": "openai",
+                        "weight": 1,
+                        "auth": {"header": {"Authorization": "Bearer secret"}},
+                        "options": {"model": "gpt-4o"},
+                    }
+                ]
+            },
+            "unknown": True,
+        }
+    )
+
+    slz.is_valid(raise_exception=True)
+
+    assert "unknown" not in slz.validated_data
+
+
 class TestStageWithResourceVersionV1SLZ:
     @pytest.mark.parametrize(
         "stage_name, stage_release, expected",
