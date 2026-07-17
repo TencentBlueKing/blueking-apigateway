@@ -2,24 +2,32 @@
 """
 单元测试: check_api_consistency.py 的核心解析和检查逻辑
 """
-import sys
+
+import importlib.util
 import textwrap
 from pathlib import Path
-from unittest.mock import patch
+from typing import Any
 
-import pytest
 
-# 将脚本目录加入 sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+def _load_checker_module() -> Any:
+    module_path = Path(__file__).resolve().parents[4] / "scripts" / "check_api_consistency.py"
+    module_spec = importlib.util.spec_from_file_location("dashboard_check_api_consistency", module_path)
+    if module_spec is None or module_spec.loader is None:
+        raise RuntimeError(f"unable to load checker module: {module_path}")
 
-from check_api_consistency import (
-    APIConsistencyChecker,
-    normalize_path,
-    parse_django_urls,
-    parse_serializer_fields,
-    parse_view_methods,
-    parse_view_serializers,
-)
+    module: Any = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
+
+check_api_consistency_module = _load_checker_module()
+APIConsistencyChecker = check_api_consistency_module.APIConsistencyChecker
+find_project_dir = check_api_consistency_module.find_project_dir
+normalize_path = check_api_consistency_module.normalize_path
+parse_django_urls = check_api_consistency_module.parse_django_urls
+parse_serializer_fields = check_api_consistency_module.parse_serializer_fields
+parse_view_methods = check_api_consistency_module.parse_view_methods
+parse_view_serializers = check_api_consistency_module.parse_view_serializers
 
 
 # ── normalize_path ────────────────────────────────────────────────────
@@ -58,14 +66,16 @@ class TestNormalizePath:
 class TestParseDjangoUrls:
     def test_simple_path(self, tmp_path):
         urls_py = tmp_path / "urls.py"
-        urls_py.write_text(textwrap.dedent("""\
+        urls_py.write_text(
+            textwrap.dedent("""\
             from django.urls import path
             from . import views
 
             urlpatterns = [
                 path("gateways/", views.GatewayListApi.as_view(), name="gateway.list"),
             ]
-        """))
+        """)
+        )
         routes = parse_django_urls(urls_py, prefix="/api/v2/open/")
         assert len(routes) == 1
         assert routes[0]["full_path"] == "/api/v2/open/gateways/"
@@ -74,7 +84,8 @@ class TestParseDjangoUrls:
 
     def test_nested_include(self, tmp_path):
         urls_py = tmp_path / "urls.py"
-        urls_py.write_text(textwrap.dedent("""\
+        urls_py.write_text(
+            textwrap.dedent("""\
             from django.urls import include, path
             from . import views
 
@@ -87,7 +98,8 @@ class TestParseDjangoUrls:
                     ])),
                 ])),
             ]
-        """))
+        """)
+        )
         routes = parse_django_urls(urls_py, prefix="/api/v2/open/")
         assert len(routes) == 3
         paths = {r["full_path"]: r["view_class"] for r in routes}
@@ -98,7 +110,8 @@ class TestParseDjangoUrls:
     def test_augmented_assign(self, tmp_path):
         """urlpatterns += [...] 形式也应被解析"""
         urls_py = tmp_path / "urls.py"
-        urls_py.write_text(textwrap.dedent("""\
+        urls_py.write_text(
+            textwrap.dedent("""\
             from django.urls import path
             from . import views
 
@@ -108,7 +121,8 @@ class TestParseDjangoUrls:
             urlpatterns += [
                 path("b/", views.BApi.as_view(), name="b"),
             ]
-        """))
+        """)
+        )
         routes = parse_django_urls(urls_py, prefix="/api/")
         assert len(routes) == 2
         classes = {r["view_class"] for r in routes}
@@ -117,7 +131,8 @@ class TestParseDjangoUrls:
     def test_conditional_urlpatterns(self, tmp_path):
         """if 条件中的 urlpatterns += [...] 也应被解析"""
         urls_py = tmp_path / "urls.py"
-        urls_py.write_text(textwrap.dedent("""\
+        urls_py.write_text(
+            textwrap.dedent("""\
             from django.urls import include, path
             from . import views
 
@@ -128,20 +143,23 @@ class TestParseDjangoUrls:
                 urlpatterns += [
                     path("b/", views.BApi.as_view(), name="b"),
                 ]
-        """))
+        """)
+        )
         routes = parse_django_urls(urls_py, prefix="/api/")
         assert len(routes) == 2
 
     def test_no_view_skipped(self, tmp_path):
         """没有 .as_view() 的 path 应该被跳过"""
         urls_py = tmp_path / "urls.py"
-        urls_py.write_text(textwrap.dedent("""\
+        urls_py.write_text(
+            textwrap.dedent("""\
             from django.urls import path
 
             urlpatterns = [
                 path("static/", lambda r: None),
             ]
-        """))
+        """)
+        )
         routes = parse_django_urls(urls_py, prefix="/api/")
         assert len(routes) == 0
 
@@ -152,26 +170,30 @@ class TestParseDjangoUrls:
 class TestParseViewMethods:
     def test_basic_methods(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class GatewayListApi:
                 def get(self, request):
                     pass
                 def post(self, request):
                     pass
-        """))
+        """)
+        )
         result = parse_view_methods(views_py)
         assert "GatewayListApi" in result
         assert set(result["GatewayListApi"]) == {"GET", "POST"}
 
     def test_drf_methods(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class GatewayRetrieveDestroyApi:
                 def retrieve(self, request):
                     pass
                 def destroy(self, request):
                     pass
-        """))
+        """)
+        )
         result = parse_view_methods(views_py)
         methods = set(result["GatewayRetrieveDestroyApi"])
         assert "GET" in methods  # retrieve → GET
@@ -179,17 +201,20 @@ class TestParseViewMethods:
 
     def test_partial_update(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class UpdateApi:
                 def partial_update(self, request):
                     pass
-        """))
+        """)
+        )
         result = parse_view_methods(views_py)
         assert "PATCH" in result["UpdateApi"]
 
     def test_multiple_classes(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class AApi:
                 def get(self, request):
                     pass
@@ -197,7 +222,8 @@ class TestParseViewMethods:
             class BApi:
                 def post(self, request):
                     pass
-        """))
+        """)
+        )
         result = parse_view_methods(views_py)
         assert set(result["AApi"]) == {"GET"}
         assert set(result["BApi"]) == {"POST"}
@@ -209,22 +235,26 @@ class TestParseViewMethods:
 class TestParseViewSerializers:
     def test_serializer_class(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class GatewayListApi:
                 serializer_class = serializers.GatewayListSLZ
                 def get(self, request):
                     pass
-        """))
+        """)
+        )
         result = parse_view_serializers(views_py)
         assert result["GatewayListApi"]["serializer_class"] == "GatewayListSLZ"
 
     def test_input_slz(self, tmp_path):
         views_py = tmp_path / "views.py"
-        views_py.write_text(textwrap.dedent("""\
+        views_py.write_text(
+            textwrap.dedent("""\
             class GatewaySyncApi:
                 def post(self, request):
                     slz = serializers.GatewaySyncInputSLZ(data=request.data)
-        """))
+        """)
+        )
         result = parse_view_serializers(views_py)
         assert result["GatewaySyncApi"]["input_slz"] == "GatewaySyncInputSLZ"
 
@@ -235,14 +265,16 @@ class TestParseViewSerializers:
 class TestParseSerializerFields:
     def test_basic_fields(self, tmp_path):
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class GatewayInputSLZ(serializers.Serializer):
                 name = serializers.CharField()
                 description = serializers.CharField(required=False)
                 is_active = serializers.BooleanField()
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         assert "GatewayInputSLZ" in result
         fields = {f["name"]: f for f in result["GatewayInputSLZ"]}
@@ -252,13 +284,15 @@ class TestParseSerializerFields:
 
     def test_hidden_field_excluded(self, tmp_path):
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class GatewayInputSLZ(serializers.Serializer):
                 gateway = serializers.HiddenField(default=CurrentGatewayDefault())
                 name = serializers.CharField()
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         field_names = [f["name"] for f in result["GatewayInputSLZ"]]
         assert "gateway" not in field_names
@@ -266,26 +300,30 @@ class TestParseSerializerFields:
 
     def test_serializer_method_field_output_only(self, tmp_path):
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class GatewayOutputSLZ(serializers.Serializer):
                 name = serializers.CharField()
                 extra = serializers.SerializerMethodField()
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         fields = {f["name"]: f for f in result["GatewayOutputSLZ"]}
         assert fields["extra"]["output_only"] is True
 
     def test_read_only_field(self, tmp_path):
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class SomeSLZ(serializers.Serializer):
                 id = serializers.IntegerField(read_only=True)
                 name = serializers.CharField()
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         fields = {f["name"]: f for f in result["SomeSLZ"]}
         assert fields["id"]["output_only"] is True
@@ -294,7 +332,8 @@ class TestParseSerializerFields:
     def test_inheritance(self, tmp_path):
         """子类应该继承基类中定义的字段"""
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class BaseSLZ(serializers.Serializer):
@@ -303,7 +342,8 @@ class TestParseSerializerFields:
 
             class GatewayListInputSLZ(BaseSLZ):
                 name = serializers.CharField(required=False)
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         child_field_names = {f["name"] for f in result["GatewayListInputSLZ"]}
         assert "name" in child_field_names
@@ -312,13 +352,15 @@ class TestParseSerializerFields:
 
     def test_meta_fields(self, tmp_path):
         slz_py = tmp_path / "serializers.py"
-        slz_py.write_text(textwrap.dedent("""\
+        slz_py.write_text(
+            textwrap.dedent("""\
             from rest_framework import serializers
 
             class GatewayModelSLZ(serializers.ModelSerializer):
                 class Meta:
                     fields = ["id", "name", "description"]
-        """))
+        """)
+        )
         result = parse_serializer_fields(slz_py)
         field_names = {f["name"] for f in result["GatewayModelSLZ"]}
         assert field_names == {"id", "name", "description"}
@@ -441,16 +483,63 @@ class TestPathsEquivalent:
     def test_param_name_differs(self):
         """路径参数名不同但结构相同应该等价"""
         checker = APIConsistencyChecker.__new__(APIConsistencyChecker)
-        assert checker._paths_equivalent(
-            "/api/v2/open/gateways/{gateway_name}/",
-            "/api/v2/open/gateways/{name}/"
+        assert checker._paths_equivalent("/api/v2/open/gateways/{gateway_name}/", "/api/v2/open/gateways/{name}/")
+
+
+class TestFindProjectDir:
+    def test_from_repo_root(self, tmp_path, monkeypatch):
+        (tmp_path / "src" / "dashboard" / "apigateway").mkdir(parents=True)
+
+        monkeypatch.chdir(tmp_path)
+
+        assert find_project_dir() == str(tmp_path)
+
+    def test_from_dashboard_dir(self, tmp_path, monkeypatch):
+        dashboard_dir = tmp_path / "src" / "dashboard"
+        (dashboard_dir / "apigateway").mkdir(parents=True)
+
+        monkeypatch.chdir(dashboard_dir)
+
+        assert find_project_dir() == str(tmp_path)
+
+    def test_fallback_walks_script_ancestors(self, tmp_path, monkeypatch):
+        (tmp_path / "src" / "dashboard" / "apigateway").mkdir(parents=True)
+        script_path = tmp_path / "src" / "dashboard" / "tools" / "scripts" / "check_api_consistency.py"
+        script_path.parent.mkdir(parents=True)
+        script_path.write_text("", encoding="utf-8")
+        outside_dir = tmp_path.parent / f"{tmp_path.name}_outside"
+        outside_dir.mkdir()
+
+        monkeypatch.chdir(outside_dir)
+        monkeypatch.setattr(
+            check_api_consistency_module,
+            "__file__",
+            str(script_path),
         )
+
+        assert find_project_dir() == str(tmp_path)
+
+    def test_fallback_to_script_location(self, tmp_path, monkeypatch):
+        (tmp_path / "src" / "dashboard" / "apigateway").mkdir(parents=True)
+        script_path = tmp_path / "src" / "dashboard" / "scripts" / "check_api_consistency.py"
+        script_path.parent.mkdir(parents=True)
+        script_path.write_text("", encoding="utf-8")
+        outside_dir = tmp_path.parent / f"{tmp_path.name}_outside"
+        outside_dir.mkdir()
+
+        monkeypatch.chdir(outside_dir)
+        monkeypatch.setattr(
+            check_api_consistency_module,
+            "__file__",
+            str(script_path),
+        )
+
+        assert find_project_dir() == str(tmp_path)
 
 
 class TestColorDisabled:
     """测试非 TTY 时颜色禁用"""
 
     def test_c_function_no_color(self):
-        from check_api_consistency import c
         # 当 color 为空字符串时应返回原文
-        assert c("hello", "") == "hello"
+        assert check_api_consistency_module.c("hello", "") == "hello"

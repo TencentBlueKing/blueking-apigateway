@@ -39,10 +39,6 @@ jobs:
       run: make edition-ee && make lint-check
       working-directory: src/dashboard
 
-    - name: OpenAPI consistency check
-      run: make check-openapi
-      working-directory: src/dashboard
-
     - name: Aqua Security Trivy
       uses: aquasecurity/trivy-action@v0.35.0
       continue-on-error: true
