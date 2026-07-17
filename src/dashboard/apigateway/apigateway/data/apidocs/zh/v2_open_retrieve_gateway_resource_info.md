@@ -20,6 +20,7 @@
     "data": {
         "id": 1,
         "name": "get_user_info",
+        "kind": "standard",
         "description": "获取用户信息",
         "method": "GET",
         "path": "/api/v1/users/{user_id}/",
@@ -41,6 +42,7 @@
 | ------------- | -------- | -------------- |
 | id            | int      | 资源 ID        |
 | name          | string   | 资源名称       |
+| kind          | string   | 资源类型：`standard` 或 `ai` |
 | description   | string   | 资源描述       |
 | method        | string   | 请求方法       |
 | path          | string   | 资源路径       |

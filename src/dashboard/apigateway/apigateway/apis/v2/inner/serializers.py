@@ -46,7 +46,7 @@ from apigateway.common.fields import TimestampField
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.tenant.request import get_tenant_id_for_gateway_maintainers
 from apigateway.components.bkuser import query_display_names_for_readonly
-from apigateway.core.constants import GatewayStatusEnum
+from apigateway.core.constants import GatewayStatusEnum, convert_gateway_kind_to_name
 from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.mcp import (
     build_mcp_server_detail_url,
@@ -95,12 +95,16 @@ class GatewayListOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayListOutputSLZ"
@@ -112,12 +116,16 @@ class GatewayRetrieveOutputSLZ(serializers.Serializer):
     description = SerializerTranslatedField(default_field="description_i18n", allow_blank=True, read_only=True)
     maintainers = serializers.SerializerMethodField()
     doc_maintainers = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
 
     def get_maintainers(self, obj):
         return _get_gateway_maintainers_display_names(obj)
 
     def get_doc_maintainers(self, obj):
         return obj.doc_maintainers
+
+    def get_kind(self, obj):
+        return convert_gateway_kind_to_name(obj.kind)
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.GatewayRetrieveOutputSLZ"

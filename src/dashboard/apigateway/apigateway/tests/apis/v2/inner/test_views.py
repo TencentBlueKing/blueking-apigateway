@@ -40,13 +40,16 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission,
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         g1 = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=False)
         G(Release, gateway=g1)
         g2 = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
@@ -67,10 +70,14 @@ class TestGatewayListApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) == 2
+        assert next(item for item in result["data"] if item["name"] == fake_gateway.name)["kind"] == "ai"
 
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         request = request_factory.get("")
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
@@ -83,6 +90,7 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+        assert result["data"]["kind"] == "ai"
 
 
 class TestGatewayOutputSLZ:

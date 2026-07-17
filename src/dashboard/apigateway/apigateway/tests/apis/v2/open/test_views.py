@@ -33,13 +33,17 @@ from apigateway.apps.mcp_server.constants import (
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
-from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
+from apigateway.biz.released_resource import ReleasedResourceData
+from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
 from apigateway.tests.utils.testing import get_response_json
 
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         g1 = G(Gateway, status=GatewayStatusEnum.ACTIVE.value, is_public=False)
         G(Release, gateway=g1)
         g2 = G(Gateway, status=GatewayStatusEnum.INACTIVE.value, is_public=True)
@@ -60,10 +64,14 @@ class TestGatewayListApi:
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) == 2
+        assert next(item for item in result["data"] if item["name"] == fake_gateway.name)["kind"] == "ai"
 
 
 class TestGatewayRetrieveApi:
     def test_retrieve(self, request_to_view, request_factory, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save(update_fields=["kind"])
+
         request = request_factory.get("")
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
@@ -76,6 +84,7 @@ class TestGatewayRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == fake_gateway.name
+        assert result["data"]["kind"] == "ai"
 
 
 class TestMCPServerAppPermissionApplyCreateApi:
@@ -1232,19 +1241,20 @@ class TestGatewayBatchQueryApi:
     def test_batch_query_with_fields(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.ACTIVE.value
         fake_gateway.is_public = True
+        fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
 
         resp = request_view(
             method="POST",
             view_name="openapi.v2.open.gateway.batch_query",
             app=mock.MagicMock(app_code="test"),
-            data={"names": [fake_gateway.name], "fields": "name"},
+            data={"names": [fake_gateway.name], "fields": "name,kind"},
             content_type="application/json",
         )
         result = resp.json()
         assert resp.status_code == 200
         assert len(result["data"]) == 1
-        assert set(result["data"][0].keys()) == {"name"}
+        assert result["data"][0] == {"name": fake_gateway.name, "kind": "ai"}
 
     def test_batch_query_no_ids_or_names(self, request_view):
         resp = request_view(
@@ -1267,6 +1277,7 @@ class TestGatewayResourceRetrieveByNameApi:
             method="GET",
             path="/api/v1/users/",
             is_public=True,
+            kind=ResourceKindEnum.AI.value,
         )
 
         request = request_factory.get("")
@@ -1283,6 +1294,7 @@ class TestGatewayResourceRetrieveByNameApi:
         assert response.status_code == 200
         assert result["data"]["name"] == "get_user_info"
         assert result["data"]["id"] == resource.id
+        assert result["data"]["kind"] == ResourceKindEnum.AI.value
 
     def test_retrieve_nonexistent_resource(self, request_to_view, request_factory, fake_gateway):
         request = request_factory.get("")
@@ -1298,6 +1310,41 @@ class TestGatewayResourceRetrieveByNameApi:
         assert response.status_code == 404
 
 
+class TestGatewayResourceDetailApi:
+    def test_retrieve_returns_resource_kind(self, mocker, request_to_view, request_factory, fake_gateway):
+        resource_data = ReleasedResourceData(
+            id=1,
+            name="chat_completions",
+            method="POST",
+            path="/chat/completions",
+            is_public=True,
+            kind=ResourceKindEnum.AI.value,
+            contexts={"resource_auth": {"config": "{}"}},
+        )
+        mocker.patch(
+            "apigateway.apis.v2.open.views.Release.objects.get_released_resource_version_id",
+            return_value=1,
+        )
+        mocker.patch(
+            "apigateway.apis.v2.open.views.ReleasedResourceDocHandler.get_released_resource_doc_data",
+            return_value=(resource_data, None),
+        )
+        mocker.patch("apigateway.apis.v2.open.views.get_resource_schema", return_value={})
+
+        request = request_factory.get("", data={"stage_name": "prod"})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.detail",
+            path_params={"gateway_name": fake_gateway.name, "resource_name": resource_data.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert result["data"]["kind"] == ResourceKindEnum.AI.value
+
+
 class TestGatewayReleasedResourceListApi:
     def test_list_by_stage(self, settings, mocker, request_to_view, request_factory, fake_gateway):
         settings.API_RESOURCE_URL_TMPL = "http://bkapi.example.com/{resource_path}"
@@ -1309,6 +1356,7 @@ class TestGatewayReleasedResourceListApi:
                 "description": "test",
                 "method": "GET",
                 "path": "/test/",
+                "kind": ResourceKindEnum.AI.value,
                 "match_subpath": False,
                 "enable_websocket": False,
                 "app_verified_required": True,
@@ -1334,6 +1382,7 @@ class TestGatewayReleasedResourceListApi:
         assert response.status_code == 200
         assert result["data"]["count"] == 1
         assert result["data"]["results"][0]["name"] == "test"
+        assert result["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
         get_released_public_resources_mock.assert_called_once_with(fake_gateway.id, stage_name="prod")
 
 
@@ -1351,6 +1400,7 @@ class TestGatewayReleasedResourceRetrieveApi:
                 "name": "test",
                 "method": "GET",
                 "path": "/test/",
+                "kind": ResourceKindEnum.AI.value,
             },
         )
         get_resource_schema_mock = mocker.patch(
@@ -1374,6 +1424,7 @@ class TestGatewayReleasedResourceRetrieveApi:
 
         assert response.status_code == 200
         assert result["data"]["name"] == "test"
+        assert result["data"]["kind"] == ResourceKindEnum.AI.value
         assert result["data"]["schema"] == {"parameters": []}
         get_released_resource_version_id_mock.assert_called_once_with(fake_gateway.id, "prod")
         get_released_resource_mock.assert_called_once_with(fake_gateway.id, 1, "test")
@@ -1541,9 +1592,10 @@ class TestGatewayResourceListApiFields:
             method="GET",
             path="/api/v1/users/",
             is_public=True,
+            kind=ResourceKindEnum.AI.value,
         )
 
-        request = request_factory.get("", data={"fields": "id,name,method"})
+        request = request_factory.get("", data={"fields": "id,name,method,kind"})
         request.gateway = fake_gateway
         request.app = mock.MagicMock(app_code="test")
 
@@ -1556,7 +1608,8 @@ class TestGatewayResourceListApiFields:
 
         assert response.status_code == 200
         assert len(result["data"]) == 1
-        assert set(result["data"][0].keys()) == {"id", "name", "method"}
+        assert set(result["data"][0].keys()) == {"id", "name", "method", "kind"}
+        assert result["data"][0]["kind"] == ResourceKindEnum.AI.value
 
     def test_list_without_fields_returns_default_id_name(self, request_to_view, request_factory, fake_gateway):
         G(

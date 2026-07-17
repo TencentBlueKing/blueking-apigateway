@@ -19,6 +19,7 @@
 from rest_framework import serializers
 
 from apigateway.common.i18n.field import SerializerTranslatedField
+from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.utils import get_path_display
 from apigateway.service.utils import get_resource_url
 
@@ -26,6 +27,9 @@ from apigateway.service.utils import get_resource_url
 class ResourceV1SLZ(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), read_only=True, default=ResourceKindEnum.STANDARD.value
+    )
     description = SerializerTranslatedField(
         default_field="description_i18n", translated_fields={"en": "description_en"}
     )
@@ -37,6 +41,9 @@ class ResourceV1SLZ(serializers.Serializer):
 class ReleasedResourceOutputSLZ(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
+    kind = serializers.ChoiceField(
+        choices=ResourceKindEnum.get_choices(), read_only=True, default=ResourceKindEnum.STANDARD.value
+    )
     method = serializers.CharField(read_only=True)
     path = serializers.CharField(read_only=True)
     schema = serializers.DictField(help_text="参数协议")

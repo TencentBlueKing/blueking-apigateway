@@ -1338,7 +1338,7 @@ class TestBackendPathCheckApi:
 
 class TestResourcesWithVerifiedUserRequiredApi:
     def test_list(self, request_view, fake_gateway):
-        resource_1 = G(Resource, gateway=fake_gateway)
+        resource_1 = G(Resource, gateway=fake_gateway, kind=ResourceKindEnum.AI.value)
         resource_2 = G(Resource, gateway=fake_gateway)
 
         auth_config = ResourceHandler.get_default_auth_config()
@@ -1354,3 +1354,4 @@ class TestResourcesWithVerifiedUserRequiredApi:
 
         assert resp.status_code == 200
         assert len(result["data"]) == 1
+        assert result["data"][0]["kind"] == ResourceKindEnum.AI.value

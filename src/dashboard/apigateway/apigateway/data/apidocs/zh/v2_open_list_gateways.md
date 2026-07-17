@@ -24,6 +24,7 @@
         {
             "id": 1,
             "name": "bk-apigateway",
+            "kind": "normal",
             "description": "蓝鲸 API 网关",
             "maintainers": [
                 "admin"
@@ -48,6 +49,7 @@ data[]
 | -------- | -------- | ---- |
 | id | int | 网关 ID |
 | name | string | 网关名称 |
+| kind | string | 网关类型：`normal`、`programmable` 或 `ai` |
 | description | string | 网关描述 |
 | maintainers | array | 网关管理员 |
 | doc_maintainers | array | 文档管理员 |

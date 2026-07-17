@@ -659,6 +659,7 @@ class GatewayResourceDetailApi(generics.RetrieveAPIView):
         result = {
             "id": resource_data.id,
             "name": resource_data.name,
+            "kind": resource_data.kind,
             "description": resource_data.description,
             "description_en": resource_data.description_en,
             "method": resource_data.method,

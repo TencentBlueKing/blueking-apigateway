@@ -854,6 +854,11 @@ paths:
                             name:
                               type: string
                               example: echo
+                            kind:
+                              type: string
+                              enum: [standard, ai]
+                              description: 资源类型，standard：普通 API，ai：模型代理 API
+                              example: standard
                             description:
                               type: string
                               example: ""
@@ -948,6 +953,11 @@ paths:
                         type: string
                         description: 资源名称
                         example: updatePet
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
+                        example: standard
                       method:
                         type: string
                         description: 资源请求方法
@@ -1981,6 +1991,7 @@ paths:
                 data:
                   id: 1
                   name: demo
+                  kind: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2218,12 +2229,18 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: ai
               example:
                 code: 0
                 message: OK
                 data:
                   id: 1
                   name: demo
+                  kind: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2287,6 +2304,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
+                          example: normal
                         description:
                           type: string
                           description: 网关描述
@@ -2307,6 +2329,7 @@ paths:
                 data:
                   - id: 1
                     name: bk-apigateway
+                    kind: normal
                     description: 蓝鲸 API 网关
                     maintainers: ["admin"]
                     doc_maintainers: ["admin"]
@@ -2376,6 +2399,10 @@ paths:
                         description:
                           type: string
                           description: 网关描述
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2426,6 +2453,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: normal
                       description:
                         type: string
                         description: 网关描述
@@ -2440,6 +2472,7 @@ paths:
                 data:
                   id: 1
                   name: bk-apigateway
+                  kind: normal
                   description: ""
                   maintainers: ["admin"]
       x-bk-apigateway-resource:
@@ -2485,6 +2518,10 @@ paths:
                           name:
                             type: string
                             description: 资源name
+                          kind:
+                            type: string
+                            enum: [standard, ai]
+                            description: 资源类型，standard：普通 API，ai：模型代理 API
                           description:
                             type: string
                             description: 资源描述
@@ -2583,6 +2620,10 @@ paths:
                   name:
                     type: string
                     description: 资源名称
+                  kind:
+                    type: string
+                    enum: [standard, ai]
+                    description: 资源类型，standard：普通 API，ai：模型代理 API
                   description:
                     type: string
                     description: 资源描述（中文）
@@ -2697,6 +2738,26 @@ paths:
                 properties:
                   data:
                     type: object
+                    properties:
+                      count:
+                        type: integer
+                      has_next:
+                        type: boolean
+                      has_previous:
+                        type: boolean
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            kind:
+                              type: string
+                              enum: [standard, ai]
+                              description: 资源类型，standard：普通 API，ai：模型代理 API
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2749,6 +2810,15 @@ paths:
                 properties:
                   data:
                     type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: true
@@ -2802,6 +2872,10 @@ paths:
                       name:
                         type: string
                         description: 资源名称
+                      kind:
+                        type: string
+                        enum: [standard, ai]
+                        description: 资源类型，standard：普通 API，ai：模型代理 API
                       description:
                         type: string
                         description: 资源描述
@@ -5191,6 +5265,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: demo
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: ai
       x-bk-apigateway-resource:
         isPublic: true
         allowApplyPermission: false
@@ -5918,6 +5997,11 @@ paths:
                           type: string
                           description: 网关名称
                           example: bk-apigateway
+                        kind:
+                          type: string
+                          enum: [normal, programmable, ai]
+                          description: 网关类型
+                          example: normal
                         description:
                           type: string
                           description: 网关描述
@@ -6000,6 +6084,11 @@ paths:
                         type: string
                         description: 网关名称
                         example: bk-apigateway
+                      kind:
+                        type: string
+                        enum: [normal, programmable, ai]
+                        description: 网关类型
+                        example: normal
                       description:
                         type: string
                         description: 网关描述

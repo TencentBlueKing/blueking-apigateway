@@ -29,6 +29,7 @@
     "data": {
         "id": 1,
         "name": "get_user_info",
+        "kind": "standard",
         "description": "获取用户信息",
         "description_en": "Get user information",
         "method": "GET",
@@ -96,6 +97,7 @@
 |------------------------|---------|---------------------------|
 | id                     | int     | 资源 ID                     |
 | name                   | string  | 资源名称                      |
+| kind                   | string  | 资源类型：`standard` 或 `ai`     |
 | description            | string  | 资源描述（中文）                  |
 | description_en         | string  | 资源描述（英文）                  |
 | method                 | string  | 请求方法（GET、POST 等）          |
@@ -145,4 +147,3 @@ OpenAPI 3.0 格式的 Schema 定义，包含以下常见字段：
 
 - `404 Not Found`: 资源不存在、未公开或该环境未发布
 - 需要确保指定的 `stage_name` 已经发布过版本
-

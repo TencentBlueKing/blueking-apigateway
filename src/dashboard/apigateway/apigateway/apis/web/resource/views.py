@@ -723,7 +723,7 @@ class BackendPathCheckApi(ResourceQuerySetMixin, generics.RetrieveAPIView):
 class ResourcesWithVerifiedUserRequiredApi(ResourceQuerySetMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         """过滤出需要认证用户的资源列表"""
-        resources = list(self.get_queryset().values("id", "name"))
+        resources = list(self.get_queryset().values("id", "name", "kind"))
         resource_ids = list(map(operator.itemgetter("id"), resources))
         auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
 
