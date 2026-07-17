@@ -40,6 +40,13 @@ def c(text: str, color: str) -> str:
     return f"{color}{text}{RESET}"
 
 
+def _find_project_root(start: Path) -> Path | None:
+    for candidate in (start, *start.parents):
+        if (candidate / "src" / "dashboard" / "apigateway").exists():
+            return candidate
+    return None
+
+
 # ── Django URL 解析器（基于 AST） ────────────────────────────────────
 
 
@@ -502,14 +509,8 @@ class APIConsistencyChecker:
                     continue
                 # scope 过滤
                 if scope and scope != "all":
-                    if (
-                        scope == "v2_open"
-                        and not path_str.startswith("/api/v2/open/")
-                        or scope == "v2_inner"
-                        and not path_str.startswith("/api/v2/inner/")
-                        or scope == "v2_sync"
-                        and not path_str.startswith("/api/v2/sync/")
-                    ):
+                    scope_config = self.SCOPE_MAP.get(scope)
+                    if scope_config and not path_str.startswith(scope_config["url_prefix"]):
                         continue
 
                 x_res = detail.get("x-bk-apigateway-resource", {})
@@ -1234,15 +1235,14 @@ TODO: 补充响应参数说明
 
 def find_project_dir() -> str:
     cwd = Path.cwd()
-    if (cwd / "src" / "dashboard" / "apigateway").exists():
-        return str(cwd)
-    for p in cwd.parents:
-        if (p / "src" / "dashboard" / "apigateway").exists():
-            return str(p)
-    script_dir = Path(__file__).resolve().parent
-    candidate = script_dir / ".." / ".." / ".."
-    if (candidate / "src" / "dashboard" / "apigateway").exists():
+    candidate = _find_project_root(cwd)
+    if candidate:
         return str(candidate.resolve())
+
+    candidate = _find_project_root(Path(__file__).resolve().parent)
+    if candidate:
+        return str(candidate.resolve())
+
     return str(cwd)
 
 

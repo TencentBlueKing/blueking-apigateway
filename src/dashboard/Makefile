@@ -22,7 +22,7 @@ lint-check:
 	ruff check --config=pyproject.toml --force-exclude . || (echo "ruff check fail"; exit 1)
 	mypy --config-file=pyproject.toml . || (echo "mypy check fail"; exit 1)
 	cd apigateway && lint-imports --config=../pyproject.toml || (echo "importlinter check fail"; exit 1) && cd ..
-	python3 $(OPENAPI_LINT_SCRIPT)
+	python3 $(OPENAPI_LINT_SCRIPT) || (echo "openapi check fail"; exit 1)
 
 
 

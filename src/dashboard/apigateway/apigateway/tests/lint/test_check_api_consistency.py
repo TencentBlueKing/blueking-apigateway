@@ -502,6 +502,23 @@ class TestFindProjectDir:
 
         assert find_project_dir() == str(tmp_path)
 
+    def test_fallback_walks_script_ancestors(self, tmp_path, monkeypatch):
+        (tmp_path / "src" / "dashboard" / "apigateway").mkdir(parents=True)
+        script_path = tmp_path / "src" / "dashboard" / "tools" / "scripts" / "check_api_consistency.py"
+        script_path.parent.mkdir(parents=True)
+        script_path.write_text("", encoding="utf-8")
+        outside_dir = tmp_path.parent / f"{tmp_path.name}_outside"
+        outside_dir.mkdir()
+
+        monkeypatch.chdir(outside_dir)
+        monkeypatch.setattr(
+            check_api_consistency_module,
+            "__file__",
+            str(script_path),
+        )
+
+        assert find_project_dir() == str(tmp_path)
+
     def test_fallback_to_script_location(self, tmp_path, monkeypatch):
         (tmp_path / "src" / "dashboard" / "apigateway").mkdir(parents=True)
         script_path = tmp_path / "src" / "dashboard" / "scripts" / "check_api_consistency.py"
