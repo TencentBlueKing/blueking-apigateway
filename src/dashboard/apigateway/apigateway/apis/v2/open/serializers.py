@@ -38,7 +38,7 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.validators import BKAppCodeValidator
 from apigateway.common.i18n.field import SerializerTranslatedField
-from apigateway.core.constants import ResourceKindEnum, convert_gateway_kind_to_name
+from apigateway.core.constants import GatewayKindNameEnum, ResourceKindEnum, convert_gateway_kind_to_name
 from apigateway.core.models import Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.mcp import (
@@ -65,6 +65,7 @@ class GatewayListInputSLZ(serializers.Serializer):
     keyword = serializers.CharField(
         required=False, allow_blank=True, help_text="搜索关键字，模糊匹配 name 或 description"
     )
+    kind = serializers.ChoiceField(choices=GatewayKindNameEnum.get_choices(), required=False)
 
     class Meta:
         ref_name = "apigateway.apis.v2.open.serializers.GatewayListInputSLZ"
