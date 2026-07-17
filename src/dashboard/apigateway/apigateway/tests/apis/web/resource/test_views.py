@@ -267,6 +267,49 @@ class TestResourceListCreateApi:
 
 
 class TestResourceRetrieveUpdateDestroyApi:
+    def test_create_and_update_ai_resource_without_standard_transport_fields(self, request_view, fake_gateway):
+        fake_gateway.kind = GatewayKindEnum.AI.value
+        fake_gateway.save()
+        backend = G(Backend, gateway=fake_gateway, kind=BackendKindEnum.AI.value, name="openai-primary")
+        data = {
+            "name": "chat_completions",
+            "description": "chat",
+            "kind": ResourceKindEnum.AI.value,
+            "is_public": True,
+            "method": "POST",
+            "path": "/chat/completions",
+            "label_ids": [],
+            "backend": {"id": backend.id, "config": {}},
+            "auth_config": {},
+        }
+
+        created = request_view(
+            method="POST",
+            view_name="resource.list_create",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data=data,
+        )
+        resource = Resource.objects.get(gateway=fake_gateway, name="chat_completions")
+
+        assert created.status_code == 201, created.json()
+        assert resource.match_subpath is False
+        assert resource.enable_websocket is False
+
+        updated = request_view(
+            method="PUT",
+            view_name="resource.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id, "id": resource.id},
+            gateway=fake_gateway,
+            data={**data, "is_public": False},
+        )
+
+        assert updated.status_code == 204, updated.json()
+        resource.refresh_from_db()
+        assert resource.is_public is False
+        assert resource.match_subpath is False
+        assert resource.enable_websocket is False
+
     def test_update_rejects_resource_kind_change(self, fake_resource, request_view):
         fake_gateway = fake_resource.gateway
         fake_gateway.kind = GatewayKindEnum.AI.value
