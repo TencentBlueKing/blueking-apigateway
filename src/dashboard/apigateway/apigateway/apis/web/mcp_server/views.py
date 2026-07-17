@@ -61,6 +61,7 @@ from apigateway.utils.time import now_datetime
 
 from .serializers import (
     GatewayMCPServerAppPermissionExportInputSLZ,
+    GatewayMCPServerAppPermissionExportOutputSLZ,
     GatewayMCPServerAppPermissionListInputSLZ,
     GatewayMCPServerAppPermissionListOutputSLZ,
     MCPServerAppPermissionAppCodeListInputSLZ,
@@ -1287,7 +1288,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
             queryset = queryset.filter(id__in=data["selected_ids"])
 
         permissions = list(queryset.order_by("mcp_server__name", "bk_app_code"))
-        slz = GatewayMCPServerAppPermissionListOutputSLZ(
+        slz = GatewayMCPServerAppPermissionExportOutputSLZ(
             permissions,
             many=True,
             context={
@@ -1303,6 +1304,13 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         response = DownloadableResponse(content, filename=filename)
         response.charset = "utf-8-sig" if "windows" in request.headers.get("User-Agent", "").lower() else "utf-8"
         return response
+
+    def _get_export_grant_type_display(self, grant_type: str) -> str:
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.GRANT.value:
+            return _("主动授权")
+        if grant_type == MCPServerAppPermissionGrantTypeEnum.APPLY.value:
+            return _("申请审批")
+        return _(MCPServerAppPermissionGrantTypeEnum.get_choice_label(grant_type))
 
     def _get_csv_content(self, data):
         headers = [
@@ -1329,7 +1337,7 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
                 "applied_by": item["applied_by"],
                 "effective_time": item["effective_time"],
                 "handled_by": item["handled_by"],
-                "grant_type_display": item["grant_type_display"],
+                "grant_type_display": self._get_export_grant_type_display(item["grant_type"]),
             }
             for item in data
         ]

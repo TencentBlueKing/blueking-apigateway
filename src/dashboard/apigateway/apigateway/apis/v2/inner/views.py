@@ -722,14 +722,16 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 is_deleted=False,
             )
             .order_by("-applied_time")
-            .values("mcp_server_id", "status", "handled_by")
+            .values("mcp_server_id", "status", "handled_by", "itsm_ticket_id")
         )
 
         mcp_server_permission_handled_by: Dict[int, str] = {}
+        mcp_server_permission_itsm_ticket_id: Dict[int, str] = {}
         for obj in mcp_server_permission_apply_status:
             mcp_server_permission_handled_by[obj["mcp_server_id"]] = obj["handled_by"]
             if not mcp_server_permission_status.get(obj["mcp_server_id"]):
                 mcp_server_permission_status[obj["mcp_server_id"]] = obj["status"]
+                mcp_server_permission_itsm_ticket_id[obj["mcp_server_id"]] = obj.get("itsm_ticket_id") or ""
 
         # 3. 已有实际权限的 mcp_server，状态覆盖为 OWNED
         for mcp_server_id in granted_mcp_server_ids:
@@ -747,6 +749,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                 obj.id, MCPServerPermissionStatusEnum.NEED_APPLY.value
             )
             handled_by = mcp_server_permission_handled_by.get(obj.id)
+            itsm_ticket_id = mcp_server_permission_itsm_ticket_id.get(obj.id, "")
 
             if permission_status in [
                 MCPServerPermissionStatusEnum.REJECTED.value,
@@ -766,6 +769,7 @@ class MCPServerPermissionListApi(generics.ListAPIView):
                         "handled_by": [handled_by] if handled_by else obj.gateway.maintainers,
                         "mcp_server_id": obj.id,
                         "gateway_id": obj.gateway_id,
+                        "itsm_ticket_id": itsm_ticket_id,
                     },
                 }
             )

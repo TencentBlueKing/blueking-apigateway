@@ -60,4 +60,3 @@ These skills are designed to work with **any AI coding agent** (Claude Code, Cod
 | Skill | File | Description |
 |-------|------|-------------|
 | bdd-test-gen | `.agents/skills/bdd-test-gen/SKILL.md` | Generate executable Playwright test scripts from BDD case files by exploring a live environment |
-| bk-apigateway-openapi-check | `.agents/skills/bk-apigateway-openapi-check/SKILL.md` | Check consistency between API code, YAML gateway definitions, and API docs (8 checks incl. parameter consistency). Usage: `cd src/dashboard && make check-openapi` — see [src/dashboard/AGENTS.md](src/dashboard/AGENTS.md) for details |

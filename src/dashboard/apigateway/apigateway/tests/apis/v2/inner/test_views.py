@@ -30,13 +30,19 @@ import apigateway.apis.v2.inner.views as inner_views
 from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.mcp_server.constants import (
+    OFFICIAL_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerPermissionStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
-from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermission, MCPServerAppPermissionApply
+from apigateway.apps.mcp_server.models import (
+    MCPServer,
+    MCPServerAppPermission,
+    MCPServerAppPermissionApply,
+    MCPServerCategory,
+)
 from apigateway.apps.monitor.constants import AlarmStatusEnum, AlarmTypeEnum
 from apigateway.apps.monitor.models import AlarmRecord
 from apigateway.apps.permission.models import AppPermissionRecord
@@ -133,8 +139,8 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
-    @patch("apigateway.apis.v2.inner.serializers.query_display_names_for_readonly")
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.query_display_names_for_readonly")
     def test_converts_maintainers_for_cross_tenant_gateway(
         self,
         mock_query_display_names_for_readonly,
@@ -158,9 +164,9 @@ class TestGatewayOutputSLZ:
             inner_serializers.GatewayRetrieveOutputSLZ,
         ],
     )
-    @patch("apigateway.apis.v2.inner.serializers.settings.ENABLE_MULTI_TENANT_MODE", True)
+    @patch("apigateway.biz.permission.permission.settings.ENABLE_MULTI_TENANT_MODE", True)
     @patch(
-        "apigateway.apis.v2.inner.serializers.query_display_names_for_readonly",
+        "apigateway.biz.permission.permission.query_display_names_for_readonly",
         side_effect=RuntimeError("bk-user unavailable"),
     )
     def test_falls_back_to_original_maintainers_when_display_name_lookup_fails(
@@ -255,6 +261,34 @@ class TestMCPServerPermissionListApi:
         assert mcp_server_data["title"] == "Test MCP Server"
         assert mcp_server_data["protocol_type"] == MCPServerProtocolTypeEnum.SSE.value
 
+    def test_list_with_is_official(self, request_view, fake_gateway, fake_stage):
+        """测试 MCP Server 权限列表包含是否官方字段"""
+        official_category, _ = MCPServerCategory.objects.update_or_create(
+            name=OFFICIAL_MCP_CATEGORY_NAME,
+            defaults={"display_name": "官方", "is_active": True},
+        )
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-official-mcp-server",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        mcp_server.categories.add(official_category)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+        assert result["data"][0]["mcp_server"]["is_official"] is True
+
     def test_list_with_tool_names(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 权限列表包含 tool_names 字段（重命名后的工具名称）"""
         # 创建 MCP Server，resource_name=original_tool，tool_name=renamed_tool
@@ -323,6 +357,46 @@ class TestMCPServerPermissionListApi:
         assert (
             f"/gateways/{fake_gateway.id}/mcp-servers/{mcp_server.id}/permissions/" in permission_data["approval_url"]
         )
+
+    def test_list_with_itsm_approval_url(self, request_view, fake_gateway, fake_stage, settings):
+        """测试 MCP Server 权限列表在存在 itsm_ticket_id 时返回 ITSM 审批链接"""
+        settings.BK_MCP_SERVER_PERMISSION_APPROVAL_URL_TMPL = (
+            "http://dashboard.example.com/gateways/{gateway_id}/mcp-servers/{mcp_server_id}/permissions/"
+        )
+        settings.BK_ITSM4_TICKET_URL_TEMPLATE = "http://itsm.example.com/ticket/{ticket_id}"
+
+        mcp_server = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            name="test-mcp-server-itsm",
+            is_public=True,
+            status=MCPServerStatusEnum.ACTIVE.value,
+            protocol_type=MCPServerProtocolTypeEnum.SSE.value,
+        )
+
+        G(
+            MCPServerAppPermissionApply,
+            bk_app_code="test-app",
+            mcp_server=mcp_server,
+            status=MCPServerAppPermissionApplyStatusEnum.PENDING.value,
+            handled_by="admin",
+            itsm_ticket_id="itsm-001",
+        )
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.inner.mcp_server.permission.list",
+            data={"target_app_code": "test-app"},
+            app=mock.MagicMock(app_code="test"),
+        )
+        result = resp.json()
+
+        assert resp.status_code == 200
+        assert len(result["data"]) == 1
+
+        permission_data = result["data"][0]["permission"]
+        assert permission_data["approval_url"] == "http://itsm.example.com/ticket/itsm-001"
 
     def test_list_basic_functionality(self, request_view, fake_gateway, fake_stage):
         """测试 MCP Server 基本功能"""

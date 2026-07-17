@@ -249,6 +249,20 @@ ignore = [
     "B024",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"scripts/check_api_consistency.py" = [
+    "B007",
+    "C401",
+    "C416",
+    "C901",
+    "PERF102",
+    "PERF401",
+    "PERF402",
+    "PLR0912",
+    "PLR0915",
+    "SIM102",
+]
+
 [tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 12

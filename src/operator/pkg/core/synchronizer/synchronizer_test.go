@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -63,6 +64,28 @@ func createReleaseInfo(gateway, stage string) *entity.ReleaseInfo {
 	}
 }
 
+func createStageConfigWithService(gateway, stage string) *entity.ApisixStageResource {
+	routeID := gateway + "-route"
+	serviceID := gateway + "-service"
+	labels := &entity.LabelInfo{Gateway: gateway, Stage: stage}
+	return &entity.ApisixStageResource{
+		Routes: map[string]*entity.Route{
+			routeID: {
+				ResourceMetadata: entity.ResourceMetadata{ID: routeID, Labels: labels},
+				ServiceID:        serviceID,
+				URI:              "/" + gateway + "/*",
+				Status:           1,
+			},
+		},
+		Services: map[string]*entity.Service{
+			serviceID: {
+				ResourceMetadata: entity.ResourceMetadata{ID: serviceID, Labels: labels},
+			},
+		},
+		SSLs: make(map[string]*entity.SSL),
+	}
+}
+
 var _ = Describe("ApisixConfigSynchronizer", func() {
 	var (
 		syncer           *synchronizer.ApisixConfigSynchronizer
@@ -92,7 +115,7 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 
 		// Create a mock store (nil for unit testing without etcd)
 		mockStore = nil
-		syncer = synchronizer.NewSynchronizer(mockStore, apisixHealthzURI)
+		syncer = synchronizer.NewSynchronizer(mockStore, apisixHealthzURI, 5)
 	})
 
 	Describe("NewSynchronizer", func() {
@@ -102,8 +125,26 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 
 		It("should create synchronizer with different healthz URI", func() {
 			customURI := "/api/healthz"
-			customSyncer := synchronizer.NewSynchronizer(nil, customURI)
+			customSyncer := synchronizer.NewSynchronizer(nil, customURI, 5)
 			Expect(customSyncer).NotTo(BeNil())
+		})
+
+		It("should use the default concurrency when configured with a non-positive value", func() {
+			customSyncer := synchronizer.NewSynchronizer(nil, apisixHealthzURI, 0)
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				defer func() {
+					_ = recover()
+				}()
+				_ = customSyncer.SyncRelease(
+					ctx,
+					createReleaseInfo("gateway", "stage"),
+					entity.NewEmptyApisixConfiguration(),
+				)
+			}()
+
+			Eventually(done, 200*time.Millisecond).Should(BeClosed())
 		})
 	})
 
@@ -156,7 +197,7 @@ var _ = Describe("ApisixConfigSynchronizer", func() {
 
 	Describe("Concurrent Operations", func() {
 		It("should handle concurrent Sync calls safely", func() {
-			// Test that flushMux properly handles concurrent access
+			// Test that concurrent calls can enter the gateway synchronization path safely.
 			// Since store is nil, we just verify no race conditions occur
 			done := make(chan bool, 3)
 
@@ -253,7 +294,7 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 
 		// Create synchronizer with real store
-		syncer = synchronizer.NewSynchronizer(etcdStore, apisixHealthzURI)
+		syncer = synchronizer.NewSynchronizer(etcdStore, apisixHealthzURI, 5)
 	})
 
 	AfterEach(func() {
@@ -515,6 +556,140 @@ var _ = Describe("ApisixConfigSynchronizer with EmbedEtcd", func() {
 	})
 
 	Describe("Sync with multiple gateways", func() {
+		It("should limit concurrent gateway syncs without serializing every gateway", func() {
+			const (
+				gatewaySyncConcurrency = 2
+				delInterval            = 2 * time.Second
+			)
+
+			concurrencyStore, err := store.NewApisixEtcdStore(
+				ctx,
+				client,
+				"/concurrency-apisix",
+				10*time.Millisecond,
+				delInterval,
+				5*time.Second,
+			)
+			Expect(err).ShouldNot(HaveOccurred())
+			DeferCleanup(concurrencyStore.Close)
+
+			concurrencySyncer := synchronizer.NewSynchronizer(
+				concurrencyStore,
+				apisixHealthzURI,
+				gatewaySyncConcurrency,
+			)
+			gateways := []string{"gateway-1", "gateway-2", "gateway-3"}
+			for _, gateway := range gateways {
+				err = concurrencySyncer.SyncRelease(
+					ctx,
+					createReleaseInfo(gateway, "prod"),
+					createStageConfigWithService(gateway, "prod"),
+				)
+				Expect(err).ShouldNot(HaveOccurred())
+			}
+
+			Eventually(func() int {
+				resourceCount := 0
+				for _, gateway := range gateways {
+					stageConfig := concurrencyStore.Get(config.GenStagePrimaryKey(gateway, "prod"))
+					resourceCount += len(stageConfig.Routes) + len(stageConfig.Services)
+				}
+				return resourceCount
+			}, 2*time.Second, 10*time.Millisecond).Should(Equal(6))
+
+			start := make(chan struct{})
+			errCh := make(chan error, len(gateways))
+			var wg sync.WaitGroup
+			for _, gateway := range gateways {
+				gateway := gateway
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					<-start
+					errCh <- concurrencySyncer.SyncRelease(
+						ctx,
+						createReleaseInfo(gateway, "prod"),
+						entity.NewEmptyApisixConfiguration(),
+					)
+				}()
+			}
+			close(start)
+			defer wg.Wait()
+
+			Eventually(func() int {
+				resp, getErr := client.Get(ctx, "/concurrency-apisix/routes/", clientv3.WithPrefix())
+				Expect(getErr).ShouldNot(HaveOccurred())
+				return len(resp.Kvs)
+			}, delInterval/2, 10*time.Millisecond).Should(Equal(1))
+
+			wg.Wait()
+			close(errCh)
+			for syncErr := range errCh {
+				Expect(syncErr).ShouldNot(HaveOccurred())
+			}
+		})
+
+		It("should keep global synchronization exclusive from gateway synchronization", func() {
+			const delInterval = 500 * time.Millisecond
+			exclusiveStore, err := store.NewApisixEtcdStore(
+				ctx,
+				client,
+				"/exclusive-apisix",
+				10*time.Millisecond,
+				delInterval,
+				5*time.Second,
+			)
+			Expect(err).ShouldNot(HaveOccurred())
+			DeferCleanup(exclusiveStore.Close)
+
+			exclusiveSyncer := synchronizer.NewSynchronizer(exclusiveStore, apisixHealthzURI, 2)
+			gateway := "exclusive-gateway"
+			err = exclusiveSyncer.SyncRelease(
+				ctx,
+				createReleaseInfo(gateway, "prod"),
+				createStageConfigWithService(gateway, "prod"),
+			)
+			Expect(err).ShouldNot(HaveOccurred())
+			Eventually(func() int {
+				stageConfig := exclusiveStore.Get(config.GenStagePrimaryKey(gateway, "prod"))
+				return len(stageConfig.Routes) + len(stageConfig.Services)
+			}, 2*time.Second, 10*time.Millisecond).Should(Equal(2))
+
+			stageErrCh := make(chan error, 1)
+			globalErrCh := make(chan error, 1)
+			globalDone := make(chan struct{})
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				stageErrCh <- exclusiveSyncer.SyncRelease(
+					ctx,
+					createReleaseInfo(gateway, "prod"),
+					entity.NewEmptyApisixConfiguration(),
+				)
+			}()
+			defer wg.Wait()
+
+			Eventually(func() int {
+				resp, getErr := client.Get(ctx, "/exclusive-apisix/routes/", clientv3.WithPrefix())
+				Expect(getErr).ShouldNot(HaveOccurred())
+				return len(resp.Kvs)
+			}, 2*time.Second, 10*time.Millisecond).Should(BeZero())
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				defer close(globalDone)
+				globalErrCh <- exclusiveSyncer.SyncGlobal(ctx, entity.NewEmptyApisixGlobalResource())
+			}()
+
+			Consistently(globalDone, delInterval/2).ShouldNot(BeClosed())
+
+			wg.Wait()
+			Expect(<-stageErrCh).ShouldNot(HaveOccurred())
+			Expect(<-globalErrCh).ShouldNot(HaveOccurred())
+		})
+
 		It("should handle multiple gateways independently", func() {
 			// Config for gateway-1
 			config1 := &entity.ApisixStageResource{
