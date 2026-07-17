@@ -94,6 +94,11 @@ class TestResourceListCreateApi:
         )
         assert [item["id"] for item in listed.json()["data"]["results"]] == [resource.id]
         assert listed.json()["data"]["results"][0]["kind"] == ResourceKindEnum.AI.value
+        assert listed.json()["data"]["results"][0]["backend"] == {
+            "id": backend.id,
+            "name": backend.name,
+            "kind": BackendKindEnum.AI.value,
+        }
 
         retrieved = request_view(
             method="GET",

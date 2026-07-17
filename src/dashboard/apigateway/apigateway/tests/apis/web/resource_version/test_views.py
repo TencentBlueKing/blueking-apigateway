@@ -192,6 +192,7 @@ class TestResourceVersionRetrieveDestroyApi:
                         "backend": {
                             "id": fake_backend.id,
                             "name": fake_backend.name,
+                            "kind": fake_backend.kind,
                         },
                     },
                     "contexts": fake_resource_version_v2.data[0]["contexts"],
