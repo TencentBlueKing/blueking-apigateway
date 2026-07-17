@@ -41,6 +41,7 @@ from apigateway.conf.utils import (
     get_frontend_env_vars,
     get_gateway_quota_config,
     get_plugin_metadata_config,
+    get_sdk_generation_settings,
 )
 
 pymysql.install_as_MySQLdb()
@@ -521,6 +522,15 @@ CRYPTO_NONCE = env.str("BK_APIGW_CRYPTO_NONCE", "q76rE8srRuYM")
 # 模板变量
 # ==============================================================================
 BK_API_URL_TMPL = env.str("BK_API_URL_TMPL", "").rstrip("/")
+SDK_PYTHON_PROJECT_NAME_TEMPLATE = env.str("SDK_PYTHON_PROJECT_NAME_TEMPLATE", "bkapi-{gateway_name}")
+SDK_PYTHON_PACKAGE_NAME_TEMPLATE = env.str("SDK_PYTHON_PACKAGE_NAME_TEMPLATE", "bkapi_{gateway_name_normalized}")
+SDK_JAVA_GROUP_ID = env.str("SDK_JAVA_GROUP_ID", "com.tencent.bkapi")
+SDK_JAVA_ARTIFACT_ID_TEMPLATE = env.str("SDK_JAVA_ARTIFACT_ID_TEMPLATE", "bkapi-{gateway_name}")
+SDK_JAVA_PACKAGE_TEMPLATE = env.str("SDK_JAVA_PACKAGE_TEMPLATE", "com.tencent.bkapi.{gateway_name_normalized}")
+SDK_GO_MODULE_PREFIX = env.str("SDK_GO_MODULE_PREFIX", "git.example.com/bkapi")
+SDK_JAVASCRIPT_PACKAGE_SCOPE = env.str("SDK_JAVASCRIPT_PACKAGE_SCOPE", "@bkapi")
+SDK_RUST_CRATE_NAME_TEMPLATE = env.str("SDK_RUST_CRATE_NAME_TEMPLATE", "bkapi_{gateway_name_normalized}")
+SDK_GENERATION = get_sdk_generation_settings(env, bk_api_url_tmpl=BK_API_URL_TMPL)
 # TODO: remove in the future, and remove in the helm-chart and te repo
 # BK_API_INNER_URL_TMPL = env.str("BK_API_INNER_URL_TMPL", "") or BK_API_URL_TMPL
 API_RESOURCE_URL_TMPL = env.str("API_RESOURCE_URL_TMPL", "")
@@ -895,7 +905,7 @@ BK_DOCS_URL_PREFIX = env.str("BK_DOCS_URL_PREFIX", default="https://bk.tencent.c
 BK_APIGATEWAY_VERSION = env.str("BK_APIGATEWAY_VERSION", default="1.17.0")
 
 # SDK 支持的语言列表
-BK_SDK_LANGUAGES = env.list("BK_SDK_LANGUAGES", default=["python", "golang", "java"])
+BK_SDK_LANGUAGES = SDK_GENERATION["enabled_languages"]
 
 ENV_VARS_FOR_FRONTEND = get_frontend_env_vars(
     env,

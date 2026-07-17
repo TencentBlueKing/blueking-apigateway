@@ -17,9 +17,35 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import pytest
+from django.core.exceptions import ImproperlyConfigured
 from environ import Env
 
-from apigateway.conf.utils import get_frontend_env_vars
+from apigateway.conf.utils import get_frontend_env_vars, get_sdk_generation_settings
+
+
+def test_get_sdk_generation_settings_uses_common_defaults():
+    settings = get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
+
+    assert settings["enabled_languages"] == ["python", "java", "go", "javascript", "rust"]
+    assert settings["server_url_template"] == "https://bkapi.example.com/{gateway_name}/{stage_name}"
+    assert settings["generator_version"] == "7.23.0"
+
+
+@pytest.mark.parametrize(
+    "languages",
+    [
+        "golang",
+        "ruby",
+        "python,,go",
+        "python,python",
+    ],
+)
+def test_get_sdk_generation_settings_rejects_invalid_languages_at_settings_construction(monkeypatch, languages):
+    monkeypatch.setenv("BK_SDK_LANGUAGES", languages)
+
+    with pytest.raises(ImproperlyConfigured, match="BK_SDK_LANGUAGES"):
+        get_sdk_generation_settings(Env(), bk_api_url_tmpl="https://bkapi.example.com/{api_name}")
 
 
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):

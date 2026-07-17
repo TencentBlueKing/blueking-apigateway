@@ -37,7 +37,13 @@ CELERY_IMPORTS = [
     "apigateway.apps.gateway.tasks",
     "apigateway.apps.mcp_server.tasks",
     "apigateway.controller.tasks",
+    "apigateway.biz.sdk.tasks",
 ]
+
+SDK_GENERATION_QUEUE = os.getenv("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate")
+CELERY_TASK_ROUTES = {
+    "apigateway.biz.sdk.tasks.generate_sdk_item": {"queue": SDK_GENERATION_QUEUE},
+}
 
 if os.getenv("ENABLE_MULTI_TENANT_MODE", "False").lower() not in ("true", "on", "ok", "y", "yes", "1"):
     CELERY_IMPORTS.append("apigateway.apps.esb.component.tasks")
@@ -82,6 +88,14 @@ CELERY_BEAT_SCHEDULE = {
     "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts": {
         "task": "apigateway.apps.mcp_server.tasks.sync_mcp_server_prompts",
         "schedule": crontab(minute="*/10"),
+    },
+    "recover_stale_sdk_generation_items": {
+        "task": "apigateway.biz.sdk.tasks.recover_stale_sdk_generation_items",
+        "schedule": crontab(minute="*/5"),
+    },
+    "cleanup_incomplete_sdk_artifacts": {
+        "task": "apigateway.biz.sdk.tasks.cleanup_incomplete_sdk_artifacts",
+        "schedule": crontab(minute=0),
     },
 }
 

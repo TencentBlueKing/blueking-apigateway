@@ -25,6 +25,26 @@ class GenerateError(SDKException):
     """生成错误"""
 
 
+class SDKGenerateError(GenerateError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        self.message = message
+        super().__init__(message)
+
+
+class SDKArtifactConflict(SDKGenerateError):
+    def __init__(self, message: str):
+        super().__init__("artifact_conflict", message)
+
+
+class LegacySDKVersionConflict(SDKGenerateError):
+    def __init__(self):
+        super().__init__(
+            "legacy_sdk_version_conflict",
+            "An SDK already exists for this resource version; create a new resource version before generating again.",
+        )
+
+
 class SDKRepoConfigError(SDKException):
     """SKD配置错误"""
 

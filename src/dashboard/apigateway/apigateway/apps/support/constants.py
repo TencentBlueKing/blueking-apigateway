@@ -27,8 +27,38 @@ class DocTypeEnum(StructuredEnum):
 class ProgrammingLanguageEnum(StructuredEnum):
     UNKNOWN = EnumField("unknown")
     PYTHON = EnumField("python")
-    GOLANG = EnumField("golang")
     JAVA = EnumField("java")
+    GO = EnumField("go")
+    JAVASCRIPT = EnumField("javascript")
+    RUST = EnumField("rust")
+
+
+SDK_GENERATION_LANGUAGE_VALUES = (
+    ProgrammingLanguageEnum.PYTHON.value,
+    ProgrammingLanguageEnum.JAVA.value,
+    ProgrammingLanguageEnum.GO.value,
+    ProgrammingLanguageEnum.JAVASCRIPT.value,
+    ProgrammingLanguageEnum.RUST.value,
+)
+
+
+class SDKGenerationStatusEnum(StructuredEnum):
+    PENDING = EnumField("pending")
+    RUNNING = EnumField("running")
+    SUCCESS = EnumField("success")
+    PARTIAL = EnumField("partial")
+    FAILED = EnumField("failed")
+
+
+class SDKDistributorEnum(StructuredEnum):
+    BKREPO_GENERIC = EnumField("bkrepo_generic")
+    PYPI = EnumField("pypi")
+    MAVEN = EnumField("maven")
+
+
+class SDKArtifactTypeEnum(StructuredEnum):
+    ARCHIVE = EnumField("archive")
+    PACKAGE = EnumField("package")
 
 
 class DocLanguageEnum(StructuredEnum):

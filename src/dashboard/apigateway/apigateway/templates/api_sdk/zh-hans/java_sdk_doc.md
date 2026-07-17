@@ -1,24 +1,11 @@
 ## 安装
 
-### maven
-```
-<dependency>
-    <groupId>com.tencent.bkapi</groupId>
-    <artifactId>{gateway_name}</artifactId>
-    <version>{sdk_version}</version>
-</dependency>
+配置 Maven 原生仓库时使用 Maven 坐标；否则下载包含依赖的 distribution ZIP：
+
+```shell
+{% if install_command %}{{ install_command }}{% else %}curl -fLO "<BKRepo Generic distribution ZIP 地址>"{% endif %}
 ```
 
-### grade
-
-```
-implementation 'com.tencent.bkapi:{gateway_name}:{sdk_version}'
-
-```
-
-## 使用 SDK
-
-假定网关 {{gateway_name}} 下存在网关 API {{resource_name}}。
-
+## 配置
 
 {% include "api_sdk/zh-hans/java_sdk_usage_example.md" %}

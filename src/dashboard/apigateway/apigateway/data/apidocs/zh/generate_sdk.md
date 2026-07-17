@@ -1,6 +1,6 @@
 ### 描述
 
-创建资源版本对应的 SDK
+异步生成资源版本对应的 SDK。请求受理后，构建完成的包将发布到已配置的软件仓库。
 
 ### 输入参数
 
@@ -15,16 +15,14 @@
 | 参数名称         | 参数类型      | 必选 | 描述                                                     |
 | ---------------- | ------------- | ---- | -------------------------------------------------------- |
 | resource_version | string        | 是   | 资源版本的版本号                                         |
-| languages        | array[string] | 否   | 需要生成SDK的语言列表，可选值：python，默认为 python SDK |
-| version          | string        | 否   | SDK 版本号，需符合 SemVer；未设置时，将使用资源版本的版本号 |
+| languages        | array[string] | 否   | 需要生成 SDK 的语言列表，可选值：python、java、go、javascript、rust，默认为 python |
 
 ### 请求参数示例
 
 ```json
 {
     "resource_version": "1.0.1",
-    "languages": ["python"],
-    "version": "1.0.1"
+    "languages": ["python", "go"]
 }
 ```
 
@@ -37,8 +35,7 @@ client = get_client_by_request(request)
 result = client.api.generate_sdk(
     {
         "resource_version": "1.0.1",
-        "languages": ["python"],
-        "version": "1.0.1"
+        "languages": ["python", "go"]
     }
 )
 ```
@@ -49,14 +46,8 @@ result = client.api.generate_sdk(
 ```json
 {
     "code": 0,
-    "message": "OK",
-    "data": [
-        {
-            "name": "bkapi-test",
-            "version": "1.0.1",
-            "url": "http://demo.example.com/bkapi-test-1.0.1.tar.gz"
-        }
-    ]
+    "message": "SDK generation started",
+    "data": []
 }
 ```
 
@@ -65,13 +56,5 @@ result = client.api.generate_sdk(
 | 字段    | 类型   | 描述                               |
 | ------- | ------ | ---------------------------------- |
 | code    | int    | 返回码，0 表示成功，其它值表示失败 |
-| message | string | 错误信息                           |
-| data    | array  | 结果数据，详细信息请见下面说明     |
-
-#### data
-
-| 名称    | 类型   | 说明         |
-| ------- | ------ | ------------ |
-| name    | string | SDK 名称     |
-| version | string | SDK 版本号   |
-| url     | string | SDK 下载地址 |
+| message | string | 受理结果                           |
+| data    | array  | 为兼容 V1 客户端固定返回空数组     |

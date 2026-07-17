@@ -15,18 +15,81 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List
 
 from django.db.models import Count
 from django.db.transaction import atomic
 
-from apigateway.apps.support.models import GatewaySDK
+from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.models import GatewaySDK, SDKGenerationItem
 from apigateway.core.models import Release
 
 from .models import SDKFactory
 
+if TYPE_CHECKING:
+    from apigateway.biz.sdk.artifacts import ArtifactManifest
+    from apigateway.biz.sdk.config import SDKLanguageConfig
+
 
 class GatewaySDKHandler:
+    @classmethod
+    def upsert_generation_projection(
+        cls,
+        item: SDKGenerationItem,
+        language_config: SDKLanguageConfig,
+        manifest: ArtifactManifest,
+    ) -> GatewaySDK:
+        artifact_rows = list(
+            item.artifacts.filter(status=SDKGenerationStatusEnum.SUCCESS.value).order_by("distributor", "filename")
+        )
+        manifest_artifact_types = {artifact.filename: artifact.artifact_type for artifact in manifest.files}
+        artifacts = [
+            {
+                "distributor": artifact.distributor,
+                "type": manifest_artifact_types.get(artifact.filename, artifact.artifact_type)
+                if artifact.distributor == SDKDistributorEnum.BKREPO_GENERIC.value
+                else artifact.artifact_type,
+                "filename": artifact.filename,
+                "url": artifact.url,
+                "coordinate": artifact.coordinate,
+                "size": artifact.size,
+                "sha256": artifact.sha256,
+            }
+            for artifact in artifact_rows
+        ]
+        generic_urls = [
+            artifact["url"]
+            for artifact in artifacts
+            if artifact["distributor"] == SDKDistributorEnum.BKREPO_GENERIC.value
+            and artifact["filename"] != "manifest.json"
+        ]
+        config = {
+            "generation_item_id": item.id,
+            "input_fingerprint": item.input_fingerprint,
+            "project_name": language_config.project_name,
+            "package_name": language_config.package_name,
+            "package_version": language_config.package_version,
+            "manifest": manifest.to_dict(),
+            "artifacts": artifacts,
+        }
+        sdk, _ = GatewaySDK.objects.update_or_create(
+            gateway=item.task.gateway,
+            language=item.language,
+            version_number=item.task.resource_version.version,
+            defaults={
+                "resource_version": item.task.resource_version,
+                "name": language_config.project_name,
+                "url": generic_urls[0] if generic_urls else "",
+                "include_private_resources": True,
+                "is_public": True,
+                "config": config,
+            },
+        )
+        cls.mark_is_recommended(sdk)
+        return sdk
+
     @classmethod
     def get_stage_sdks(cls, gateway_id: int, language: str) -> List:
         releases = list(

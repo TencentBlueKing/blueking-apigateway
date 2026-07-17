@@ -35,16 +35,25 @@
 #         assert result["data"]["results"][0]["resource_version"]
 
 
+import pytest
+
+
 class TestSDKDocApi:
-    def test_retrieve(self, request_view):
+    @pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
+    def test_retrieve(self, request_view, language):
         resp = request_view(
             method="GET",
             view_name="docs.gateway.sdk.retrieve_doc",
             data={
-                "language": "python",
+                "language": language,
             },
         )
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["content"]
+        content = result["data"]["content"]
+        assert "BKRepo Generic" in content
+        assert "X-Bkapi-Authorization" in content
+        assert "/prod" in content
+        for removed in ("bkapi.bk_apigateway.shortcuts", "get_client_by_request", "bkapi-client-generator", "golang"):
+            assert removed not in content

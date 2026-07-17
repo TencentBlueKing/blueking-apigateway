@@ -17,6 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
 import pytest
 
 pytestmark = pytest.mark.django_db
@@ -37,24 +39,16 @@ class TestSDKGenerateViewSet:
         mocker,
         fake_gateway,
         fake_resource_version,
-        fake_sdk,
         rf,
         request_to_view,
     ):
-        generate_sdks = mocker.patch("apigateway.apis.open.support.views.generate_sdks_for_resource_version")
-        generate_sdks.return_value = [
-            {
-                "name": fake_sdk.name,
-                "version": fake_sdk.version_number,
-                "url": fake_sdk.url,
-            }
-        ]
+        create_task = mocker.patch("apigateway.apis.open.support.views.create_or_resume_generation")
 
         request = rf.post(
             "",
             data={
-                "languages": ["python"],
                 "resource_version": fake_resource_version.version,
+                "version": "9.9.9",
             },
         )
         request.gateway = fake_gateway
@@ -64,10 +58,11 @@ class TestSDKGenerateViewSet:
             view_name="openapi.support.sdk.generate",
             path_params={"gateway_name": fake_gateway.name},
         )
-        generate_sdks.assert_called_with(
-            resource_version=fake_resource_version,
-            languages=["python"],
-            version="",
-        )
+        assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
 
         assert response.status_code == 200
+        assert json.loads(response.content) == {
+            "code": 0,
+            "message": "SDK generation started",
+            "data": [],
+        }

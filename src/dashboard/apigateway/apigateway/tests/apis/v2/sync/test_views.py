@@ -42,6 +42,30 @@ def disable_app_permission(mocker):
 
 
 class TestSyncApi:
+    def test_generate_sdk_returns_accepted_response(
+        self,
+        mocker,
+        request_view,
+        fake_admin_user,
+        fake_gateway,
+        fake_resource_version,
+        disable_app_permission,
+    ):
+        create_task = mocker.patch("apigateway.apis.v2.sync.views.create_or_resume_generation")
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.sdk.generate",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            user=fake_admin_user,
+            data={"resource_version": fake_resource_version.version, "version": "9.9.9"},
+        )
+
+        assert create_task.call_args.args[:2] == (fake_resource_version, ["python"])
+        assert response.status_code == 202
+        assert response.json() == {"data": {"message": "SDK generation started"}}
+
     def test_gateway_public_key_retrieve_from_dashboard_backend(
         self, settings, request_view, fake_gateway, disable_app_permission
     ):

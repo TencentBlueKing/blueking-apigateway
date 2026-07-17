@@ -19,11 +19,21 @@
 import json
 from typing import ClassVar
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
-from apigateway.apps.support.constants import DocLanguageEnum, DocSourceEnum, DocTypeEnum, ProgrammingLanguageEnum
+from apigateway.apps.support.constants import (
+    SDK_GENERATION_LANGUAGE_VALUES,
+    DocLanguageEnum,
+    DocSourceEnum,
+    DocTypeEnum,
+    ProgrammingLanguageEnum,
+    SDKArtifactTypeEnum,
+    SDKDistributorEnum,
+    SDKGenerationStatusEnum,
+)
 from apigateway.apps.support.managers import (
     GatewaySDKManager,
     ReleasedResourceDocManager,
@@ -157,3 +167,131 @@ class GatewaySDK(ConfigModelMixin):
         verbose_name_plural = _("网关SDK")
         db_table = "support_api_sdk"
         unique_together = ("gateway", "language", "version_number")
+
+
+class SDKGenerationTask(TimestampedModelMixin, OperatorModelMixin):
+    gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
+    resource_version = models.ForeignKey(ResourceVersion, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=32,
+        choices=SDKGenerationStatusEnum.get_choices(),
+        default=SDKGenerationStatusEnum.PENDING.value,
+        db_index=True,
+    )
+
+    def clean(self):
+        super().clean()
+
+        if (
+            self.gateway_id
+            and self.resource_version_id
+            and self.gateway_id
+            != ResourceVersion.objects.filter(id=self.resource_version_id).values_list("gateway_id", flat=True).first()
+        ):
+            raise ValidationError({"resource_version": _("Resource version must belong to the gateway.")})
+
+    class Meta:
+        db_table = "support_sdk_generation_task"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["resource_version"], name="support_sdk_generation_task_resource_version_uniq"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                name="support_sdk_generation_task_status_valid",
+            ),
+        ]
+
+
+class SDKGenerationItem(TimestampedModelMixin, OperatorModelMixin):
+    task = models.ForeignKey(SDKGenerationTask, on_delete=models.CASCADE, related_name="items")
+    language = models.CharField(
+        max_length=32,
+        choices=[
+            choice for choice in ProgrammingLanguageEnum.get_choices() if choice[0] in SDK_GENERATION_LANGUAGE_VALUES
+        ],
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=SDKGenerationStatusEnum.get_choices(),
+        default=SDKGenerationStatusEnum.PENDING.value,
+        db_index=True,
+    )
+    lease_token = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    lease_expires_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    attempt_count = models.PositiveIntegerField(default=0)
+    input_fingerprint = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    config_snapshot = models.JSONField(default=dict, blank=True)
+    error_code = models.CharField(max_length=64, blank=True, default="")
+    error_message = models.CharField(max_length=1024, blank=True, default="")
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "support_sdk_generation_item"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["task", "language"], name="support_sdk_generation_item_task_language_uniq"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(language__in=SDK_GENERATION_LANGUAGE_VALUES),
+                name="support_sdk_generation_item_language_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                name="support_sdk_generation_item_status_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(attempt_count__gte=0),
+                name="support_sdk_generation_item_attempt_count_valid",
+            ),
+        ]
+
+
+class SDKArtifact(TimestampedModelMixin):
+    item = models.ForeignKey(SDKGenerationItem, on_delete=models.CASCADE, related_name="artifacts")
+    distributor = models.CharField(
+        max_length=32,
+        choices=SDKDistributorEnum.get_choices(),
+        default=SDKDistributorEnum.BKREPO_GENERIC.value,
+    )
+    artifact_type = models.CharField(
+        max_length=32,
+        choices=SDKArtifactTypeEnum.get_choices(),
+        default=SDKArtifactTypeEnum.ARCHIVE.value,
+    )
+    filename = models.CharField(max_length=512)
+    remote_key = models.CharField(max_length=1024, blank=True, default="")
+    coordinate = models.CharField(max_length=512, blank=True, default="")
+    url = models.TextField(blank=True, default="")
+    size = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True, default="")
+    original_version = models.CharField(max_length=64, blank=True, default="")
+    package_version = models.CharField(max_length=64, blank=True, default="")
+    status = models.CharField(
+        max_length=32,
+        choices=SDKGenerationStatusEnum.get_choices(),
+        default=SDKGenerationStatusEnum.PENDING.value,
+        db_index=True,
+    )
+
+    class Meta:
+        db_table = "support_sdk_artifact"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item", "distributor", "filename"], name="support_sdk_artifact_item_distributor_filename_uniq"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(distributor__in=SDKDistributorEnum.get_values()),
+                name="support_sdk_artifact_distributor_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(artifact_type__in=SDKArtifactTypeEnum.get_values()),
+                name="support_sdk_artifact_type_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=SDKGenerationStatusEnum.get_values()),
+                name="support_sdk_artifact_status_valid",
+            ),
+            models.CheckConstraint(condition=models.Q(size__gte=0), name="support_sdk_artifact_size_valid"),
+        ]

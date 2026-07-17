@@ -1,0 +1,53 @@
+ARG IMAGE=hub.bktencent.com/blueking/python
+ARG TAG=3.14-tencentos4
+
+FROM maven:3.9.9-eclipse-temurin-17 AS maven_toolchain
+FROM golang:1.24.4 AS go_toolchain
+FROM node:22.17.0 AS node_toolchain
+FROM rust:1.88.0 AS rust_toolchain
+
+FROM ${IMAGE}:${TAG}
+
+RUN dnf install -y curl git tar gzip zip unzip gcc gcc-c++ openssl-devel pkgconf-pkg-config \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /var/cache/yum
+
+COPY --from=maven_toolchain /opt/java/openjdk /opt/java/openjdk
+COPY --from=maven_toolchain /usr/share/maven /usr/share/maven
+COPY --from=go_toolchain /usr/local/go /usr/local/go
+COPY --from=node_toolchain /usr/local/bin/node /usr/local/bin/node
+COPY --from=node_toolchain /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=rust_toolchain /usr/local/cargo /usr/local/cargo
+COPY --from=rust_toolchain /usr/local/rustup /usr/local/rustup
+
+RUN ln -s /usr/share/maven/bin/mvn /usr/local/bin/mvn \
+    && ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+ENV JAVA_HOME=/opt/java/openjdk \
+    MAVEN_HOME=/usr/share/maven \
+    GOPATH=/go \
+    CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH=/opt/java/openjdk/bin:/usr/share/maven/bin:/usr/local/go/bin:/usr/local/cargo/bin:/usr/local/bin:/usr/bin:/bin \
+    SDK_OPENAPI_GENERATOR_JAR=/opt/openapi-generator/openapi-generator-cli.jar \
+    SDK_OPENAPI_GENERATOR_VERSION=7.23.0
+
+ARG OPENAPI_GENERATOR_SHA256=cb087e40001e31eb08ef6140dd5de10938dbeb89016a1fe0481eaa25cd569026
+RUN mkdir -p /opt/openapi-generator \
+    && curl -fsSL -o "${SDK_OPENAPI_GENERATOR_JAR}" \
+        "https://repo.maven.apache.org/maven2/org/openapitools/openapi-generator-cli/${SDK_OPENAPI_GENERATOR_VERSION}/openapi-generator-cli-${SDK_OPENAPI_GENERATOR_VERSION}.jar" \
+    && echo "${OPENAPI_GENERATOR_SHA256}  ${SDK_OPENAPI_GENERATOR_JAR}" | sha256sum -c -
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.26 /uv /uvx /bin/
+
+WORKDIR /app
+COPY build/pyproject.toml build/uv.lock /app/
+RUN export UV_PROJECT_ENVIRONMENT=/usr/local/ \
+    && uv sync --locked --no-dev --group sdk-worker \
+    && uv clean
+
+ADD build /app
+COPY sdk-worker-smoke /app/sdk-worker-smoke
+
+CMD ["bash", "/app/bin/start_sdk_worker.sh"]

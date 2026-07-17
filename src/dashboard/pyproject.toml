@@ -6,6 +6,7 @@ authors = []
 requires-python = ">=3.14,<3.15"
 dependencies = [
     "django==5.2.15",
+    "packaging==26.2",
     "djangorestframework==3.17.1",
     "pymysql==1.2.0",
     "celery==5.6.3",
@@ -64,7 +65,6 @@ dependencies = [
     "django-add-default-value==0.10.0",
     "pypi-simple==1.8.0",
     "bk-notice-sdk==1.4.2",
-    "twine==6.2.0",
     "jinja2==3.1.6",
     "setuptools==82.0.1",
     "pycryptodomex==3.23.0",
@@ -112,6 +112,10 @@ dev = [
     "types-PyYAML==6.0.12.20260518",
     "types-PyMySQL==1.1.0.20260518",
     "import-linter==2.12",
+]
+sdk-worker = [
+    "build==1.3.0",
+    "twine==6.2.0",
 ]
 
 [tool.uv]

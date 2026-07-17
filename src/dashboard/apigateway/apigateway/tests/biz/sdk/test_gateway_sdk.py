@@ -16,17 +16,52 @@
 # to the current version of the project delivered to anyone in the future.
 #
 from types import SimpleNamespace
-from unittest.mock import call
 
 import pytest
 from ddf import G
 
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.sdk import GatewaySDKHandler, exceptions, generate_sdks_for_resource_version
-from apigateway.common.error_codes import APIError
+from apigateway.apps.support.constants import SDKDistributorEnum, SDKGenerationStatusEnum
+from apigateway.apps.support.models import GatewaySDK, SDKArtifact, SDKGenerationItem, SDKGenerationTask
+from apigateway.biz.sdk import GatewaySDKHandler
+from apigateway.biz.sdk.artifacts import ArtifactManifest, ManifestFile
+
+pytestmark = pytest.mark.django_db
 
 
 class TestGatewaySDKHandler:
+    def test_generation_projection_uses_manifest_artifact_types(self, fake_gateway, fake_resource_version):
+        fake_resource_version.version = "1.2.3"
+        fake_resource_version.save(update_fields=["version"])
+        task = G(SDKGenerationTask, gateway=fake_gateway, resource_version=fake_resource_version)
+        item = G(SDKGenerationItem, task=task, language="python", input_fingerprint="fingerprint")
+        G(
+            SDKArtifact,
+            item=item,
+            distributor=SDKDistributorEnum.BKREPO_GENERIC.value,
+            artifact_type="package",
+            filename="demo.whl",
+            url="https://repo/demo.whl",
+            status=SDKGenerationStatusEnum.SUCCESS.value,
+        )
+        manifest = ArtifactManifest(
+            gateway_name=fake_gateway.name,
+            resource_version="1.2.3",
+            language="python",
+            package_version="1.2.3",
+            input_fingerprint="fingerprint",
+            tool_versions={"openapi-generator": "7.23.0"},
+            files=(ManifestFile("wheel", "demo.whl", 5, "0" * 64),),
+        )
+        language_config = SimpleNamespace(
+            project_name="demo",
+            package_name="demo",
+            package_version="1.2.3",
+        )
+
+        sdk = GatewaySDKHandler.upsert_generation_projection(item, language_config, manifest)
+
+        assert sdk.config["artifacts"][0]["type"] == "wheel"
+
     def test_stage_sdks(self, fake_gateway, fake_stage, fake_release, fake_sdk):
         result = GatewaySDKHandler.get_stage_sdks(fake_gateway.id, fake_sdk.language)
         assert len(result) == 1
@@ -66,54 +101,3 @@ class TestGatewaySDKHandler:
         assert GatewaySDK.objects.get(id=sdk1.id).is_recommended is False
         assert GatewaySDK.objects.get(id=sdk2.id).is_recommended is True
         assert GatewaySDK.objects.get(id=sdk3.id).is_recommended is True
-
-
-def test_generate_sdks_for_resource_version_returns_sdk_payload(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = [
-        SimpleNamespace(
-            sdk=SimpleNamespace(name="python-sdk", version_number=fake_resource_version.version, url="url1")
-        ),
-        SimpleNamespace(sdk=SimpleNamespace(name="go-sdk", version_number=fake_resource_version.version, url="url2")),
-    ]
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    result = generate_sdks_for_resource_version(
-        resource_version=fake_resource_version,
-        languages=["python", "go"],
-        version="",
-    )
-
-    assert result == [
-        {
-            "name": "python-sdk",
-            "version": fake_resource_version.version,
-            "url": "url1",
-        },
-        {
-            "name": "go-sdk",
-            "version": fake_resource_version.version,
-            "url": "url2",
-        },
-    ]
-    assert helper.create.call_args_list == [
-        call(language="python", version=fake_resource_version.version, operator=None),
-        call(language="go", version=fake_resource_version.version, operator=None),
-    ]
-
-
-def test_generate_sdks_for_resource_version_maps_sdk_errors(fake_resource_version, mocker):
-    helper = mocker.MagicMock()
-    helper.create.side_effect = exceptions.ResourcesIsEmpty
-    mocked_helper = mocker.patch("apigateway.biz.sdk.helper.SDKHelper")
-    mocked_helper.return_value.__enter__.return_value = helper
-
-    with pytest.raises(APIError) as err:
-        generate_sdks_for_resource_version(
-            fake_resource_version,
-            ["python"],
-            "",
-        )
-
-    assert err.value.code.message == "网关下无资源，无法生成 SDK。"

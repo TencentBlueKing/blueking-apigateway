@@ -19,9 +19,12 @@
 import socket
 from typing import Optional
 
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.functional import cached_property
 
 from apigateway.common.env import Env
+
+SDK_GENERATION_LANGUAGES = ("python", "java", "go", "javascript", "rust")
 
 
 def get_default_keepalive_options() -> Optional[dict]:
@@ -317,6 +320,32 @@ def get_bkrepo_config(env: Env) -> dict:
                 "mirror_url": env.str("DEFAULT_MAVEN_MIRROR_URL", "https://repo.maven.apache.org/maven2"),
             }
         },
+    }
+
+
+def get_sdk_generation_settings(env: Env, *, bk_api_url_tmpl: str) -> dict:
+    enabled_languages = env.str("BK_SDK_LANGUAGES", default=",".join(SDK_GENERATION_LANGUAGES)).split(",")
+    if not enabled_languages or any(not language for language in enabled_languages):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES cannot contain empty entries")
+    if invalid_languages := set(enabled_languages).difference(SDK_GENERATION_LANGUAGES):
+        raise ImproperlyConfigured(f"BK_SDK_LANGUAGES contains unsupported values: {sorted(invalid_languages)}")
+    if len(enabled_languages) != len(set(enabled_languages)):
+        raise ImproperlyConfigured("BK_SDK_LANGUAGES must not contain duplicate values")
+
+    return {
+        "enabled_languages": enabled_languages,
+        "queue": env.str("BK_APIGW_SDK_CELERY_QUEUE", "sdk.generate"),
+        "generator_jar": env.str("SDK_OPENAPI_GENERATOR_JAR", "/opt/openapi-generator/openapi-generator-cli.jar"),
+        "generator_version": env.str("SDK_OPENAPI_GENERATOR_VERSION", "7.23.0"),
+        "server_url_template": env.str(
+            "SDK_SERVER_URL_TEMPLATE",
+            bk_api_url_tmpl.replace("{api_name}", "{gateway_name}") + "/{stage_name}",
+        ),
+        "generic_retention_hours": env.int("SDK_GENERIC_RETENTION_HOURS", 24),
+        "subprocess_timeout_seconds": env.int("SDK_SUBPROCESS_TIMEOUT_SECONDS", 600),
+        "max_openapi_bytes": env.int("SDK_MAX_OPENAPI_BYTES", 10485760),
+        "max_output_bytes": env.int("SDK_MAX_OUTPUT_BYTES", 1073741824),
+        "max_artifact_bytes": env.int("SDK_MAX_ARTIFACT_BYTES", 524288000),
     }
 
 

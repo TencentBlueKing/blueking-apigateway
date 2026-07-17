@@ -1,19 +1,11 @@
-## 运行环境
+## 安装
 
-- 支持 Python 2.7，3.6+ 版本
-- 原生适配 Django 框架，可快速生成对应客户端。
+使用 SDK 版本中已成功发布的包地址：
 
-## 安装 SDK
-
-可使用 pip 安装 Python SDK，安装指令如下：
-
-```
-pip install {网关SDK包名}
+```shell
+{% if install_command %}{{ install_command }}{% else %}pip install "<BKRepo Generic wheel 地址>"{% endif %}
 ```
 
-## 使用 SDK
-
-假定网关 {{gateway_name}} 下存在网关 API {{resource_name}}。
-
+## 配置
 
 {% include "api_sdk/zh-hans/python_sdk_usage_example.md" %}

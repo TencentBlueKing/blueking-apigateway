@@ -16,6 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+import json
+
+import pytest
 from django.test import Client
 from django.urls import reverse
 
@@ -65,7 +68,34 @@ class TestSDKUsageExampleApi:
 
         assert resp.status_code == 401
 
-    def test_retrieve(self, request_view, fake_gateway, fake_sdk):
+    @pytest.mark.parametrize(
+        ("language", "artifact_type"),
+        [
+            ("python", "wheel"),
+            ("java", "distribution_zip"),
+            ("go", "go_zip"),
+            ("javascript", "npm_tgz"),
+            ("rust", "crate"),
+        ],
+    )
+    def test_retrieve(self, request_view, fake_gateway, fake_sdk, language, artifact_type):
+        fake_sdk.language = language
+        fake_sdk.name = "bkapi-demo"
+        fake_sdk.url = "https://repo.example.com/sdk-package"
+        fake_sdk._config = json.dumps(
+            {
+                "package_name": "bkapi_demo",
+                "artifacts": [
+                    {
+                        "distributor": "bkrepo_generic",
+                        "type": artifact_type,
+                        "filename": "sdk-package",
+                        "url": fake_sdk.url,
+                    }
+                ],
+            }
+        )
+        fake_sdk.save(update_fields=["language", "name", "url", "_config"])
         resp = request_view(
             method="GET",
             view_name="docs.gateway.gateway_sdk.retrieve_usage_example",
@@ -73,7 +103,7 @@ class TestSDKUsageExampleApi:
                 "gateway_name": fake_gateway.name,
             },
             data={
-                "language": "python",
+                "language": language,
                 "stage_name": "prod",
                 "resource_name": "get_color",
             },
@@ -82,4 +112,9 @@ class TestSDKUsageExampleApi:
         result = resp.json()
 
         assert resp.status_code == 200
-        assert result["data"]["content"]
+        content = result["data"]["content"]
+        assert "X-Bkapi-Authorization" in content
+        assert "https://repo.example.com/sdk-package" in content
+        assert "/prod" in content
+        for removed in ("bkapi.bk_apigateway.shortcuts", "get_client_by_request", "bkapi-client-generator", "golang"):
+            assert removed not in content

@@ -18,9 +18,21 @@
 #
 from django.urls import path
 
-from apigateway.apis.web.sdk.views import GatewaySDKListCreateApi
+from apigateway.apis.web.sdk.views import (
+    GatewaySDKListCreateApi,
+    SDKGenerationTaskDetailApi,
+    SDKGenerationTaskListApi,
+    SDKGenerationTaskRetryApi,
+)
 
 urlpatterns = [
     # 资源 SDK
     path("", GatewaySDKListCreateApi.as_view(), name="gateway.sdk.list_create"),
+    path("tasks/", SDKGenerationTaskListApi.as_view(), name="gateway.sdk.generation_task_list"),
+    path("tasks/<int:task_id>/", SDKGenerationTaskDetailApi.as_view(), name="gateway.sdk.generation_task_detail"),
+    path(
+        "tasks/<int:task_id>/retry/",
+        SDKGenerationTaskRetryApi.as_view(),
+        name="gateway.sdk.generation_task_retry",
+    ),
 ]

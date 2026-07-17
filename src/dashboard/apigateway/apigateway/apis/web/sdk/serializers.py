@@ -16,52 +16,24 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.support.constants import ProgrammingLanguageEnum
-from apigateway.apps.support.models import GatewaySDK
-from apigateway.biz.constants import SEMVER_PATTERN
+from apigateway.apps.support.constants import SDK_GENERATION_LANGUAGE_VALUES, ProgrammingLanguageEnum
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.utils.time import now_datetime
 
 
 class GatewaySDKGenerateInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     resource_version_id = serializers.IntegerField(required=True, help_text="资源版本号id")
-    language = serializers.ChoiceField(choices=ProgrammingLanguageEnum.get_choices(), help_text="sdk语言")
-    version = serializers.RegexField(
-        SEMVER_PATTERN,
-        label="版本",
-        default="",
-        allow_null=True,
-        allow_blank=True,
-        help_text="sdk版本号",
+    languages = serializers.ListField(
+        child=serializers.ChoiceField(choices=SDK_GENERATION_LANGUAGE_VALUES),
+        allow_empty=False,
+        required=True,
+        help_text="SDK 语言列表",
     )
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.GatewaySDKGenerateInputSLZ"
-
-    def validate(self, data):
-        # 用户指定版本号的情况下，需要检查一下版本是否存在
-        if (
-            data["version"]
-            and GatewaySDK.objects.filter(
-                gateway=data["gateway"],
-                language=data["language"],
-                version_number=data["version"],
-            ).exists()
-        ):
-            raise serializers.ValidationError(_("版本已存在。"))
-
-        latest_sdk = GatewaySDK.objects.get_latest_sdk(gateway_id=data["gateway"].id, language=data["language"])
-        if latest_sdk:
-            self._validate_generate_too_soon(latest_sdk)
-        return data
-
-    def _validate_generate_too_soon(self, latest_sdk):
-        if (now_datetime() - latest_sdk.created_time).total_seconds() <= 10:
-            raise serializers.ValidationError(_("生成SDK操作过于频繁，请间隔 10 秒再试。"))
 
 
 class GatewaySDKQueryInputSLZ(serializers.Serializer):
@@ -82,6 +54,33 @@ class ResourceVersionInfoSlz(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.sdk.serializers.ResourceVersionInfoSlz"
+
+
+class SDKArtifactOutputSLZ(serializers.Serializer):
+    distributor = serializers.CharField()
+    type = serializers.CharField()
+    filename = serializers.CharField()
+    url = serializers.CharField()
+    coordinate = serializers.CharField()
+    size = serializers.IntegerField()
+    sha256 = serializers.CharField()
+    status = serializers.CharField()
+
+
+class SDKGenerationItemOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    language = serializers.CharField()
+    status = serializers.CharField()
+    attempt_count = serializers.IntegerField()
+    error = serializers.DictField(allow_null=True)
+    artifacts = SDKArtifactOutputSLZ(many=True)
+
+
+class SDKGenerationTaskOutputSLZ(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.CharField()
+    resource_version = ResourceVersionInfoSlz()
+    items = SDKGenerationItemOutputSLZ(many=True)
 
 
 class GatewaySDKListOutputSLZ(serializers.Serializer):

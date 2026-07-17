@@ -45,7 +45,8 @@ from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveParser, DocImporter
 from apigateway.biz.resource_version import ResourceVersionArtifactHandler, ResourceVersionHandler
-from apigateway.biz.sdk import generate_sdks_for_resource_version
+from apigateway.biz.sdk.orchestrator import create_or_resume_generation
+from apigateway.biz.sdk.tasks import enqueue_generation_items
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.error_codes import error_codes
 from apigateway.components.bkauth import get_app_tenant_info
@@ -564,8 +565,8 @@ class ResourceVersionReleaseApi(generics.CreateAPIView):
     name="post",
     decorator=swagger_auto_schema(
         operation_description="生成网关sdk",
-        request_body=ReleaseInputSLZ(),
-        responses={status.HTTP_201_CREATED: SDKGenerateOutputSLZ(many=True)},
+        request_body=SDKGenerateInputSLZ(),
+        responses={status.HTTP_202_ACCEPTED: SDKGenerateOutputSLZ()},
         tags=["OpenAPI.V2.Sync"],
     ),
 )
@@ -573,24 +574,24 @@ class SDKGenerateApi(generics.CreateAPIView):
     permission_classes = [OpenAPIV2GatewayRelatedAppPermission]
     serializer_class = SDKGenerateInputSLZ
 
-    @transaction.atomic
     def post(self, request, gateway_name: str, *args, **kwargs):
         """创建资源版本对应的 SDK"""
 
         slz = self.get_serializer(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data = slz.data
+        data = slz.validated_data
         resource_version = get_object_or_404(
             ResourceVersion, gateway=request.gateway, version=data["resource_version"]
         )
-        results = generate_sdks_for_resource_version(
-            resource_version=resource_version,
-            languages=data["languages"],
-            version=data["version"],
+        create_or_resume_generation(
+            resource_version,
+            data["languages"],
+            getattr(request.user, "username", None),
+            enqueue_generation_items,
         )
 
-        return OKJsonResponse(status=status.HTTP_201_CREATED, data={"results": results})
+        return OKJsonResponse(status=status.HTTP_202_ACCEPTED, data={"message": "SDK generation started"})
 
 
 @method_decorator(

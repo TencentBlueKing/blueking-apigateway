@@ -22,29 +22,23 @@ from apigateway.apis.v2.sync.serializers import SDKGenerateInputSLZ, StageSyncIn
 
 
 class TestSDKGenerateInputSLZ:
-    @pytest.mark.parametrize(
-        "version, is_valid",
-        [
-            ("", True),
-            ("1.2.3", True),
-            ("1.2.3-beta.1+build.1", True),
-            ("v1.2.3", False),
-            ("1.2", False),
-            ("1.0.0');__import__('os').system('touch /tmp/sdk-version-pwned')#", False),
-        ],
-    )
-    def test_validate_version(self, version, is_valid):
-        slz = SDKGenerateInputSLZ(
-            data={
-                "resource_version": "1.0.0",
-                "languages": ["python"],
-                "version": version,
-            },
-        )
+    def test_omitted_languages_defaults_to_python(self):
+        slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0"})
 
-        assert slz.is_valid() is is_valid
-        if not is_valid:
-            assert "version" in slz.errors
+        assert slz.is_valid()
+        assert slz.validated_data["languages"] == ["python"]
+
+    def test_legacy_version_is_ignored(self):
+        slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "version": "9.9.9"})
+
+        assert slz.is_valid()
+        assert "version" not in slz.validated_data
+
+    @pytest.mark.parametrize("language", ["python", "java", "go", "javascript", "rust"])
+    def test_accepts_supported_languages(self, language):
+        slz = SDKGenerateInputSLZ(data={"resource_version": "1.0.0", "languages": [language]})
+
+        assert slz.is_valid()
 
 
 class TestStageSyncInputSLZ:

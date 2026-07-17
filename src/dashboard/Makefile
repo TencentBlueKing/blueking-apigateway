@@ -157,6 +157,51 @@ image-te:
 	make _build_image
 	make _clean_build_dir
 
+.PHONY: _build_sdk_worker_image
+_build_sdk_worker_image:
+	$(eval name ?= apigateway-dashboard-sdk-worker)
+	docker build \
+		--no-cache \
+		-f Dockerfile.sdk-worker \
+		-t "${name}" \
+		.
+
+.PHONY: image-sdk-worker-ee
+image-sdk-worker-ee:
+	editionctl activate --linker-type copy EE
+	make _build_dir
+	make _build_sdk_worker_image
+	make _clean_build_dir
+
+.PHONY: image-sdk-worker-te
+image-sdk-worker-te:
+	editionctl activate --linker-type copy TE
+	make _build_dir
+	make _build_sdk_worker_image
+	make _clean_build_dir
+
+.PHONY: test-sdk-worker-tools
+test-sdk-worker-tools:
+	$(eval name ?= apigateway-dashboard-sdk-worker)
+	docker run --rm "${name}" bash -lc '\
+		test "$$(java -version 2>&1 | head -1 | grep -o "17\.[0-9.]*")"; \
+		mvn -version | grep "Apache Maven 3.9.9"; \
+		go version | grep "go1.24.4"; \
+		node --version | grep "v22.17.0"; \
+		rustc --version | grep "1.88.0"; \
+		cargo --version; \
+		cc --version; \
+		pkg-config --exists openssl; \
+		python --version | grep "3.14"; \
+		twine --version; \
+		python -m build --version; \
+		test "$$(java -jar "$${SDK_OPENAPI_GENERATOR_JAR}" version)" = "7.23.0"'
+
+.PHONY: test-sdk-worker-smoke
+test-sdk-worker-smoke:
+	$(eval name ?= apigateway-dashboard-sdk-worker)
+	docker run --rm "${name}" bash /app/sdk-worker-smoke/run.sh
+
 .PHONY: dev-ee-image
 dev-ee-image:
 	editionctl activate --linker-type copy EE
