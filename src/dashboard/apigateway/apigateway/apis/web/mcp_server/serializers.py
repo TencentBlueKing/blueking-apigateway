@@ -50,6 +50,43 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 logger = logging.getLogger(__name__)
 
 
+def _validate_mcp_tool_resource_names(
+    resource_names: List[str], valid_resource_names: set[str], gateway_id: int, stage_id: int
+) -> None:
+    release = (
+        Release.objects.filter(
+            gateway_id=gateway_id,
+            stage_id=stage_id,
+            stage__status=StageStatusEnum.ACTIVE.value,
+        )
+        .select_related("resource_version")
+        .first()
+    )
+    ai_resource_names = (
+        {
+            resource["name"]
+            for resource in release.resource_version.data
+            if resource.get("kind") == ResourceKindEnum.AI.value
+        }
+        if release
+        else set()
+    )
+
+    # 必须遍历所有提交的资源检查 AI 类型，不能依赖 valid_resource_names 只包含普通 API 这一上游约定。
+    # 即使调用方错误地将 AI 资源放入 valid_resource_names，后端防御校验仍然需要拒绝保存。
+    for resource_name in resource_names:
+        if resource_name in ai_resource_names:
+            raise serializers.ValidationError(_("模型代理 API 不能作为 MCP Tool") + f": resource_name={resource_name}")
+
+    # 排除 AI 资源后，其余不在普通资源集合中的名称沿用原有“不存在或已失效”错误。
+    for resource_name in resource_names:
+        if resource_name not in valid_resource_names:
+            raise serializers.ValidationError(
+                _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
+                + f"resource_name={resource_name}"
+            )
+
+
 class MCPServerCategoryOutputSLZ(serializers.Serializer):
     """MCPServer 分类输出序列化器"""
 
@@ -268,35 +305,12 @@ class MCPServerCreateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) != len(set(resource_names)):
             raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-        invalid_resource_names = [name for name in resource_names if name not in valid_resource_names]
-        if invalid_resource_names:
-            release = (
-                Release.objects.filter(
-                    gateway_id=self.context["gateway"].id,
-                    stage_id=self.initial_data["stage_id"],
-                )
-                .select_related("resource_version")
-                .first()
-            )
-            ai_resource_names = (
-                {
-                    resource["name"]
-                    for resource in release.resource_version.data
-                    if resource.get("kind") == ResourceKindEnum.AI.value
-                }
-                if release
-                else set()
-            )
-            for resource_name in invalid_resource_names:
-                if resource_name in ai_resource_names:
-                    raise serializers.ValidationError(
-                        _("模型代理 API 不能作为 MCP Tool") + f": resource_name={resource_name}"
-                    )
-
-            raise serializers.ValidationError(
-                _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                + f"resource_name={invalid_resource_names[0]}"
-            )
+        _validate_mcp_tool_resource_names(
+            resource_names,
+            valid_resource_names,
+            gateway_id=self.context["gateway"].id,
+            stage_id=self.initial_data["stage_id"],
+        )
         return resource_names
 
     def validate_tool_names(self, tool_names):
@@ -500,35 +514,12 @@ class MCPServerUpdateInputSLZ(serializers.ModelSerializer):
         if len(resource_names) != len(set(resource_names)):
             raise serializers.ValidationError(_("资源名称列表中不能存在重复的资源名称"))
 
-        invalid_resource_names = [name for name in resource_names if name not in valid_resource_names]
-        if invalid_resource_names:
-            release = (
-                Release.objects.filter(
-                    gateway_id=self.instance.gateway_id,
-                    stage_id=self.instance.stage_id,
-                )
-                .select_related("resource_version")
-                .first()
-            )
-            ai_resource_names = (
-                {
-                    resource["name"]
-                    for resource in release.resource_version.data
-                    if resource.get("kind") == ResourceKindEnum.AI.value
-                }
-                if release
-                else set()
-            )
-            for resource_name in invalid_resource_names:
-                if resource_name in ai_resource_names:
-                    raise serializers.ValidationError(
-                        _("模型代理 API 不能作为 MCP Tool") + f": resource_name={resource_name}"
-                    )
-
-            raise serializers.ValidationError(
-                _("资源名称列表非法，请检查当前环境发布的最新版本中对应资源名称是否存在")
-                + f"resource_name={invalid_resource_names[0]}"
-            )
+        _validate_mcp_tool_resource_names(
+            resource_names,
+            valid_resource_names,
+            gateway_id=self.instance.gateway_id,
+            stage_id=self.instance.stage_id,
+        )
         return resource_names
 
     def validate_tool_names(self, tool_names):

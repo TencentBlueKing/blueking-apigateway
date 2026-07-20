@@ -120,7 +120,7 @@ class TestMCPServerCreateInputSLZ:
         context = {
             "gateway": fake_gateway,
             "source": CallSourceTypeEnum.Web,
-            "valid_resource_names": set(),
+            "valid_resource_names": {"ai-resource"},
         }
 
         slz = MCPServerCreateInputSLZ(data=data, context=context)
@@ -265,7 +265,7 @@ class TestMCPServerUpdateInputSLZ:
         slz = MCPServerUpdateInputSLZ(
             instance=mcp_server,
             data=data,
-            context={"valid_resource_names": set()},
+            context={"valid_resource_names": {"ai-resource"}},
         )
 
         assert not slz.is_valid()
