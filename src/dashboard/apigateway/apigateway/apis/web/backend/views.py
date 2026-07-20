@@ -16,13 +16,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import logging
-import socket
-from ipaddress import ip_address
-from urllib.parse import urlsplit
-
-import requests
-from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -31,7 +24,12 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.biz.audit import Auditor
-from apigateway.biz.backend import BackendHandler
+from apigateway.biz.backend import (
+    AIBackendConnectivityError,
+    AIBackendEndpointError,
+    BackendHandler,
+    get_ai_backend_model_ids,
+)
 from apigateway.biz.resource import ProxyHandler
 from apigateway.common.error_codes import error_codes
 from apigateway.core.models import Backend, BackendConfig, Stage
@@ -47,78 +45,6 @@ from .serializers import (
     BackendRetrieveOutputSLZ,
     BackendUpdateOutputSLZ,
 )
-
-logger = logging.getLogger(__name__)
-
-AI_PROVIDER_MODELS_ENDPOINTS = {
-    "openai": "https://api.openai.com/v1/models",
-    "deepseek": "https://api.deepseek.com/models",
-}
-
-
-def _get_models_endpoint(instance, model_endpoint=None):
-    provider = instance["provider"]
-    if provider in AI_PROVIDER_MODELS_ENDPOINTS:
-        return AI_PROVIDER_MODELS_ENDPOINTS[provider]
-
-    if not model_endpoint:
-        raise ValueError("model endpoint is required")
-
-    parsed = urlsplit(model_endpoint)
-    try:
-        port = parsed.port
-        addresses = {
-            ip_address(item[4][0])
-            for item in socket.getaddrinfo(
-                parsed.hostname,
-                port or (443 if parsed.scheme == "https" else 80),
-                type=socket.SOCK_STREAM,
-            )
-        }
-    except OSError, ValueError:
-        raise ValueError("model provider host cannot be resolved safely") from None
-    if not addresses or any(
-        address.is_link_local
-        or address.is_loopback
-        or address.is_multicast
-        or address.is_reserved
-        or address.is_unspecified
-        or str(address) in settings.FORBIDDEN_HOSTS
-        for address in addresses
-    ):
-        raise ValueError("model provider host resolves to a forbidden address")
-
-    return model_endpoint
-
-
-def _get_model_ids(config, model_endpoint=None):
-    instance = config["instances"][0]
-    provider = instance["provider"]
-    headers = {
-        key: value
-        for key, value in instance.get("auth", {}).get("header", {}).items()
-        if key.casefold() not in {"host", "content-length"}
-    }
-    try:
-        response = requests.get(
-            _get_models_endpoint(instance, model_endpoint),
-            headers=headers,
-            timeout=(10, min(config["timeout"] / 1000, 30)),
-            allow_redirects=False,
-        )
-        if not 200 <= response.status_code < 300:
-            raise ValueError("model provider returned a non-2xx response")
-        data = response.json()["data"]
-        if not isinstance(data, list):
-            raise TypeError("model data must be a list")
-
-        models = [item["id"] for item in data if isinstance(item, dict) and isinstance(item.get("id"), str)]
-        if len(models) != len(data):
-            raise ValueError("model data item must contain a string id")
-        return models
-    except KeyError, TypeError, ValueError, requests.RequestException:
-        logger.warning("failed to test AI backend connectivity: provider=%s", provider)
-        raise error_codes.REMOTE_REQUEST_ERROR.format(_("模型服务连通性测试失败，请检查配置。")) from None
 
 
 class BackendQuerySetMixin:
@@ -205,10 +131,12 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
 
         slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
-        models = _get_model_ids(
-            slz.validated_data["config"],
-            slz.validated_data.get("model_endpoint"),
-        )
+        try:
+            models = get_ai_backend_model_ids(slz.validated_data["config"])
+        except AIBackendEndpointError:
+            raise error_codes.FAILED_PRECONDITION.format(_("模型服务地址不安全或无法解析，请检查配置。")) from None
+        except AIBackendConnectivityError:
+            raise error_codes.REMOTE_REQUEST_ERROR.format(_("模型服务连通性测试失败，请检查配置。")) from None
         return OKJsonResponse(data={"models": models})
 
 

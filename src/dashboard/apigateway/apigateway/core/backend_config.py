@@ -67,6 +67,7 @@ class AIBackendConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     timeout: int = Field(default=30000, gt=0)
+    model_endpoint: str | None = None
     instances: list[dict[str, Any]] = Field(min_length=1, max_length=1)
 
     @field_validator("instances")
@@ -134,23 +135,34 @@ class AIBackendConfig(BaseModel):
         if not isinstance(override["endpoint"], str) or not override["endpoint"]:
             raise ValueError(f"{path}.endpoint: must be a non-empty string")
 
-        endpoint = override["endpoint"]
+        AIBackendConfig._validate_endpoint(override["endpoint"], f"{path}.endpoint")
+
+    @field_validator("model_endpoint")
+    @classmethod
+    def validate_model_endpoint(cls, endpoint: str | None) -> str | None:
+        if endpoint is None:
+            return endpoint
+        cls._validate_endpoint(endpoint, "$.model_endpoint")
+        return endpoint
+
+    @staticmethod
+    def _validate_endpoint(endpoint: str, path: str) -> None:
         try:
             parsed_endpoint = urlsplit(endpoint)
             port = parsed_endpoint.port
         except ValueError:
-            raise ValueError(f"{path}.endpoint: port is invalid") from None
+            raise ValueError(f"{path}: port is invalid") from None
 
         if parsed_endpoint.scheme not in {"http", "https"}:
-            raise ValueError(f"{path}.endpoint: scheme must be http or https")
+            raise ValueError(f"{path}: scheme must be http or https")
         if not parsed_endpoint.hostname:
-            raise ValueError(f"{path}.endpoint: hostname is required")
+            raise ValueError(f"{path}: hostname is required")
         if parsed_endpoint.username is not None or parsed_endpoint.password is not None:
-            raise ValueError(f"{path}.endpoint: userinfo is not allowed")
+            raise ValueError(f"{path}: userinfo is not allowed")
         if is_forbidden_host(parsed_endpoint.hostname):
-            raise ValueError(f"{path}.endpoint: host is forbidden")
+            raise ValueError(f"{path}: host is forbidden")
         if port is not None and is_forbidden_host(f"{parsed_endpoint.hostname}:{port}"):
-            raise ValueError(f"{path}.endpoint: port is forbidden")
+            raise ValueError(f"{path}: port is forbidden")
 
     @model_validator(mode="after")
     def validate_provider_contract(self) -> Self:
@@ -165,6 +177,8 @@ class AIBackendConfig(BaseModel):
                 raise ValueError("$.instances[0].auth.header: Authorization header is required")
             if "override" in instance:
                 raise ValueError("$.instances[0].override: override is not allowed")
+            if self.model_endpoint is not None:
+                raise ValueError("$.model_endpoint: model_endpoint is not allowed")
         elif "override" not in instance:
             raise ValueError("$.instances[0].override: override.endpoint is required")
         return self
