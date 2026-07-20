@@ -190,7 +190,7 @@ class GatewayIdRetrieveApi(generics.RetrieveAPIView):
 class GatewayPublicKeyRetrieveApi(generics.RetrieveAPIView):
     permission_classes = [OpenAPIGatewayNamePermission]
 
-    @swagger_auto_schema(tags=["OpenAPI.V1"])
+    @swagger_auto_schema(responses={status.HTTP_200_OK: ""}, tags=["OpenAPI.V1"])
     def get(self, request, gateway_name: str, *args, **kwargs):
         jwt = JWT.objects.get(gateway=request.gateway)
         return V1OKJsonResponse(

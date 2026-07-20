@@ -605,6 +605,7 @@ class AppAlarmRecordListApi(generics.ListAPIView):
 class AppRequestLogListApi(generics.ListAPIView):
     permission_classes = [OpenAPIV2Permission]
     serializer_class = serializers.AppRequestLogListInputSLZ
+    pagination_class = None
 
     _output_fields = [
         "request_id",
