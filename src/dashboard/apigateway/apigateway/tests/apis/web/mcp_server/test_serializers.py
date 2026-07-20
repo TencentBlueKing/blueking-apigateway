@@ -44,6 +44,8 @@ from apigateway.apps.mcp_server.models import (
     MCPServerCategory,
 )
 from apigateway.common.constants import CallSourceTypeEnum, LanguageCodeEnum
+from apigateway.core.constants import ResourceKindEnum
+from apigateway.core.models import Release
 
 pytestmark = pytest.mark.django_db
 
@@ -102,6 +104,29 @@ class TestMCPServerCreateInputSLZ:
         slz = MCPServerCreateInputSLZ(data=data, context=context)
         assert not slz.is_valid()
         assert "resource_names" in slz.errors
+
+    def test_validate_resource_names_rejects_ai_resource(self, fake_gateway, fake_stage, fake_resource_version):
+        fake_resource_version.data = [{"name": "ai-resource", "kind": ResourceKindEnum.AI.value}]
+        fake_resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        data = {
+            "name": "test-mcp-server",
+            "description": "Test description",
+            "stage_id": fake_stage.id,
+            "is_public": True,
+            "resource_names": ["ai-resource"],
+            "tool_names": ["ai-resource"],
+        }
+        context = {
+            "gateway": fake_gateway,
+            "source": CallSourceTypeEnum.Web,
+            "valid_resource_names": set(),
+        }
+
+        slz = MCPServerCreateInputSLZ(data=data, context=context)
+
+        assert not slz.is_valid()
+        assert "模型代理 API 不能作为 MCP Tool" in str(slz.errors["resource_names"])
 
     @patch("apigateway.biz.validators.MCPServerHandler.get_valid_resource_names")
     def test_validate_resource_names_with_tool_name(self, mock_get_valid, fake_gateway, fake_stage):
@@ -226,6 +251,25 @@ class TestMCPServerUpdateInputSLZ:
         )
         assert not slz.is_valid()
         assert "resource_names" in slz.errors
+
+    def test_validate_resource_names_rejects_ai_resource(self, fake_gateway, fake_stage, fake_resource_version):
+        fake_resource_version.data = [{"name": "ai-resource", "kind": ResourceKindEnum.AI.value}]
+        fake_resource_version.save()
+        G(Release, gateway=fake_gateway, stage=fake_stage, resource_version=fake_resource_version)
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage, status=MCPServerStatusEnum.ACTIVE.value)
+        data = {
+            "description": "Updated description",
+            "resource_names": ["ai-resource"],
+            "tool_names": ["ai-resource"],
+        }
+        slz = MCPServerUpdateInputSLZ(
+            instance=mcp_server,
+            data=data,
+            context={"valid_resource_names": set()},
+        )
+
+        assert not slz.is_valid()
+        assert "模型代理 API 不能作为 MCP Tool" in str(slz.errors["resource_names"])
 
     def test_validate_resource_names_with_tool_name(self, fake_gateway, fake_stage):
         """测试带 tool_name 的资源名称列表"""
