@@ -69,7 +69,6 @@ def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:
     common_config = {
         "timeout": config.get("timeout", 30000),
         "ssl_verify": True,
-        "logging": {"summaries": True, "payloads": False},
     }
 
     instances = config["instances"]

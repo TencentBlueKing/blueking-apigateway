@@ -253,15 +253,16 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert service.upstream is None
-        assert service.plugins["ai-proxy"].model_dump(exclude_none=True) == {
+        ai_proxy_config = service.plugins["ai-proxy"].model_dump(exclude_none=True)
+        assert ai_proxy_config == {
             "provider": "openai-compatible",
             "auth": {"header": {"Authorization": "Bearer must-not-log"}},
             "options": {"model": "gpt-4.1-mini", "temperature": 0.2},
             "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
             "timeout": 45000,
             "ssl_verify": True,
-            "logging": {"summaries": True, "payloads": False},
         }
+        assert "logging" not in ai_proxy_config
         assert service.plugins["bk-backend-context"].bk_backend_id == 10
 
     def test_ai_proxy_omits_override_for_builtin_provider(self, mock_release_data):
@@ -339,14 +340,15 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert "ai-proxy" not in service.plugins
-        assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
+        ai_proxy_multi_config = service.plugins["ai-proxy-multi"].model_dump(exclude_none=True)
+        assert ai_proxy_multi_config == {
             "instances": instances,
             "balancer": {"algorithm": "roundrobin"},
             "fallback_strategy": ["http_429", "http_5xx"],
             "timeout": 60000,
             "ssl_verify": True,
-            "logging": {"summaries": True, "payloads": False},
         }
+        assert "logging" not in ai_proxy_multi_config
 
     def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
