@@ -160,7 +160,7 @@ class TestServiceConvertor:
         assert service.plugins["bk-backend-context"].bk_backend_id == 1
         assert service.plugins["bk-backend-context"].bk_backend_name == "backend-service"
         assert (
-            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["bk_backend_kind"]
             == BackendKindEnum.STANDARD.value
         )
         assert service.upstream.type.value == "roundrobin"
@@ -270,7 +270,7 @@ class TestServiceConvertor:
         }
         assert service.plugins["bk-backend-context"].bk_backend_id == 10
         assert (
-            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["bk_backend_kind"]
             == BackendKindEnum.AI.value
         )
 

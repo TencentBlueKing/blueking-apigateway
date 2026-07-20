@@ -190,7 +190,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             "bk-backend-context": Plugin(
                 bk_backend_id=backend_id,
                 bk_backend_name=backend_name,
-                kind=backend_kind,
+                bk_backend_kind=backend_kind,
             ),
         }
         service_plugins = self._build_service_plugins(backend_kind)
@@ -232,7 +232,7 @@ class ServiceConvertor(GatewayResourceConvertor):
         plugins["bk-backend-context"] = Plugin(
             bk_backend_id=backend_id,
             bk_backend_name=backend_name,
-            kind=backend_kind,
+            bk_backend_kind=backend_kind,
         )
         plugins.update(_build_ai_proxy_plugins(backend_config))
         labels = self.get_labels()

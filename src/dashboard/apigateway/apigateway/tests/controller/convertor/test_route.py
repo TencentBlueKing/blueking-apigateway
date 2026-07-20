@@ -230,7 +230,7 @@ class TestRouteConvertor:
         assert route.plugins["bk-resource-context"].bk_resource_id == 1
         assert route.plugins["bk-resource-context"].bk_resource_name == "test-resource"
         assert (
-            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["bk_resource_kind"]
             == ResourceKindEnum.STANDARD.value
         )
         assert route.plugins["bk-resource-context"].bk_resource_auth == {
@@ -260,7 +260,7 @@ class TestRouteConvertor:
         assert route.service_id == "test-gateway.test-stage.456-10"
         assert "bk-resource-context" in route.plugins
         assert (
-            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["bk_resource_kind"]
             == ResourceKindEnum.AI.value
         )
         assert "bk-proxy-rewrite" not in route.plugins
@@ -518,7 +518,7 @@ class TestRouteConvertor:
         assert plugin.model_dump(exclude_none=True) == {
             "bk_resource_id": 1,
             "bk_resource_name": "test-resource",
-            "kind": ResourceKindEnum.STANDARD.value,
+            "bk_resource_kind": ResourceKindEnum.STANDARD.value,
             "bk_resource_auth": {
                 "verified_app_required": True,
                 "verified_user_required": False,
