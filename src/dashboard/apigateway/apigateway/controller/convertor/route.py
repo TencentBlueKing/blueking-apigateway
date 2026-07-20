@@ -205,6 +205,7 @@ class RouteConvertor(GatewayResourceConvertor):
         return Plugin(
             bk_resource_id=resource["id"],
             bk_resource_name=resource["name"],
+            bk_resource_kind=resource.get("kind", ResourceKindEnum.STANDARD.value),
             bk_resource_auth={
                 "verified_app_required": resource_auth_config.get("app_verified_required", True),
                 "verified_user_required": resource_auth_config.get("auth_verified_required", True),

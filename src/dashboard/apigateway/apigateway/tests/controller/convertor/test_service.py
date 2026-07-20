@@ -155,9 +155,14 @@ class TestServiceConvertor:
 
         assert service.id == "test-gateway.prod.456-1"
         assert service.name == "test-gateway.prod.backend-service"
+        assert "kind" not in service.model_dump(mode="json", exclude_none=True)
         assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "1"
         assert service.plugins["bk-backend-context"].bk_backend_id == 1
         assert service.plugins["bk-backend-context"].bk_backend_name == "backend-service"
+        assert (
+            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["bk_backend_kind"]
+            == BackendKindEnum.STANDARD.value
+        )
         assert service.upstream.type.value == "roundrobin"
         assert service.upstream.scheme.value == "https"
         assert service.upstream.timeout.model_dump() == {"connect": 30, "send": 30, "read": 30}
@@ -253,6 +258,7 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert service.upstream is None
+        assert "kind" not in service.model_dump(mode="json", exclude_none=True)
         assert service.plugins["ai-proxy"].model_dump(exclude_none=True) == {
             "provider": "openai-compatible",
             "auth": {"header": {"Authorization": "Bearer must-not-log"}},
@@ -263,6 +269,10 @@ class TestServiceConvertor:
             "logging": {"summaries": True, "payloads": False},
         }
         assert service.plugins["bk-backend-context"].bk_backend_id == 10
+        assert (
+            service.plugins["bk-backend-context"].model_dump(mode="json", exclude_none=True)["bk_backend_kind"]
+            == BackendKindEnum.AI.value
+        )
 
     def test_ai_proxy_omits_override_for_builtin_provider(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
