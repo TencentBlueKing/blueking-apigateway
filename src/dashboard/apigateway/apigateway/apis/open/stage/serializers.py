@@ -276,10 +276,16 @@ class AIBackendConfigSLZ(serializers.Serializer):
     def to_internal_value(self, data):
         return validate_ai_backend_config(data)
 
+    class Meta:
+        ref_name = "apis.open.stage.AIBackendConfigSLZ"
+
 
 class AIBackendSLZ(serializers.Serializer):
     name = serializers.CharField(help_text="模型服务名称")
     config = AIBackendConfigSLZ()
+
+    class Meta:
+        ref_name = "apis.open.stage.AIBackendSLZ"
 
 
 class PluginConfigSLZ(serializers.Serializer):

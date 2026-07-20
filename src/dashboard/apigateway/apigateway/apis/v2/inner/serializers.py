@@ -798,15 +798,6 @@ class AppAlarmRecordListInputSLZ(serializers.Serializer):
     )
     time_start = TimestampField(required=True, help_text="开始时间")
     time_end = TimestampField(required=True, help_text="结束时间")
-    offset = serializers.IntegerField(label="偏移量", required=False, min_value=0, default=0, help_text="偏移量")
-    limit = serializers.IntegerField(
-        label="限制条数",
-        required=False,
-        min_value=1,
-        max_value=100,
-        default=10,
-        help_text="限制条数",
-    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.inner.serializers.AppAlarmRecordListInputSLZ"
