@@ -414,6 +414,38 @@ class TestBackendConnectivityApi:
         request_get = mocker.patch("requests.get")
         request_get.return_value.status_code = 200
         request_get.return_value.json.return_value = {"data": [{"id": "custom-model"}]}
+        model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
+
+        response = request_view(
+            "POST",
+            "backend.test-connectivity",
+            path_params={"gateway_id": fake_stage.gateway.id},
+            gateway=fake_stage.gateway,
+            data={"config": config, "model_endpoint": model_endpoint},
+        )
+
+        assert response.status_code == 200, response.json()
+        request_get.assert_called_once_with(
+            model_endpoint,
+            headers={"X-Api-Key": "secret"},
+            timeout=(10, 30.0),
+            allow_redirects=False,
+        )
+
+    def test_openai_compatible_requires_model_endpoint(self, mocker, request_view, fake_stage):
+        fake_stage.gateway.kind = GatewayKindEnum.AI.value
+        fake_stage.gateway.save()
+        config = _ai_config(fake_stage.id)
+        instance = config["instances"][0]
+        instance["provider"] = "openai-compatible"
+        instance["override"] = {"endpoint": "https://models.example.com/v1/chat/completions"}
+        mocker.patch(
+            "socket.getaddrinfo",
+            return_value=[(2, 1, 6, "", ("8.8.8.8", 443))],
+        )
+        request_get = mocker.patch("requests.get")
+        request_get.return_value.status_code = 200
+        request_get.return_value.json.return_value = {"data": []}
 
         response = request_view(
             "POST",
@@ -423,13 +455,8 @@ class TestBackendConnectivityApi:
             data={"config": config},
         )
 
-        assert response.status_code == 200, response.json()
-        request_get.assert_called_once_with(
-            "https://models.example.com/v1/models?api-version=2026-01-01",
-            headers={"X-Api-Key": "secret"},
-            timeout=(10, 30.0),
-            allow_redirects=False,
-        )
+        assert response.status_code == 400
+        request_get.assert_not_called()
 
     def test_custom_provider_rejects_link_local_resolved_address(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -449,7 +476,7 @@ class TestBackendConnectivityApi:
             "backend.test-connectivity",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
-            data={"config": config},
+            data={"config": config, "model_endpoint": "https://models.example.com/v1/models"},
         )
 
         assert response.status_code == 500
@@ -475,7 +502,7 @@ class TestBackendConnectivityApi:
             "backend.test-connectivity",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
-            data={"config": config},
+            data={"config": config, "model_endpoint": "https://models.internal.example/v1/models"},
         )
 
         assert response.status_code == 200, response.json()
@@ -501,7 +528,7 @@ class TestBackendConnectivityApi:
             "backend.test-connectivity",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
-            data={"config": config},
+            data={"config": config, "model_endpoint": "https://models.example.com/v1/models"},
         )
 
         assert response.status_code == 200, response.json()

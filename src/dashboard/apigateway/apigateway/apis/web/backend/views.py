@@ -19,7 +19,7 @@
 import logging
 import socket
 from ipaddress import ip_address
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
 
 import requests
 from django.conf import settings
@@ -56,19 +56,22 @@ AI_PROVIDER_MODELS_ENDPOINTS = {
 }
 
 
-def _get_models_endpoint(instance):
+def _get_models_endpoint(instance, model_endpoint=None):
     provider = instance["provider"]
     if provider in AI_PROVIDER_MODELS_ENDPOINTS:
         return AI_PROVIDER_MODELS_ENDPOINTS[provider]
 
-    endpoint = instance["override"]["endpoint"]
-    parsed = urlsplit(endpoint)
+    if not model_endpoint:
+        raise ValueError("model endpoint is required")
+
+    parsed = urlsplit(model_endpoint)
     try:
+        port = parsed.port
         addresses = {
             ip_address(item[4][0])
             for item in socket.getaddrinfo(
                 parsed.hostname,
-                parsed.port or (443 if parsed.scheme == "https" else 80),
+                port or (443 if parsed.scheme == "https" else 80),
                 type=socket.SOCK_STREAM,
             )
         }
@@ -85,17 +88,10 @@ def _get_models_endpoint(instance):
     ):
         raise ValueError("model provider host resolves to a forbidden address")
 
-    path = parsed.path.rstrip("/")
-    for suffix in ("/chat/completions", "/completions"):
-        if path.endswith(suffix):
-            path = f"{path[: -len(suffix)]}/models"
-            break
-    else:
-        path = f"{path}/models"
-    return urlunsplit(parsed._replace(path=path, fragment=""))
+    return model_endpoint
 
 
-def _get_model_ids(config):
+def _get_model_ids(config, model_endpoint=None):
     instance = config["instances"][0]
     provider = instance["provider"]
     headers = {
@@ -105,7 +101,7 @@ def _get_model_ids(config):
     }
     try:
         response = requests.get(
-            _get_models_endpoint(instance),
+            _get_models_endpoint(instance, model_endpoint),
             headers=headers,
             timeout=(10, min(config["timeout"] / 1000, 30)),
             allow_redirects=False,
@@ -209,7 +205,10 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
 
         slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
         slz.is_valid(raise_exception=True)
-        models = _get_model_ids(slz.validated_data["config"])
+        models = _get_model_ids(
+            slz.validated_data["config"],
+            slz.validated_data.get("model_endpoint"),
+        )
         return OKJsonResponse(data={"models": models})
 
 

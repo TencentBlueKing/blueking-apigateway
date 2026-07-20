@@ -30,7 +30,7 @@ from apigateway.biz.validators import SchemeHostInputValidator
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendKindEnum, BackendTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, AIBackendProviderEnum, BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import BACKEND_NAME_PATTERN
@@ -57,11 +57,17 @@ class AIBackendConfigSLZ(serializers.Serializer):
 class AIBackendConnectivityInputSLZ(serializers.Serializer):
     backend_id = serializers.IntegerField(required=False)
     config = serializers.DictField()
+    model_endpoint = serializers.URLField(required=False)
 
     def validate(self, attrs):
         config_slz = AIBackendConfigSLZ(data=attrs["config"])
         config_slz.is_valid(raise_exception=True)
         config = config_slz.validated_data
+        if (
+            config["instances"][0]["provider"] == AIBackendProviderEnum.OPENAI_COMPATIBLE.value
+            and "model_endpoint" not in attrs
+        ):
+            raise serializers.ValidationError({"model_endpoint": _("OpenAI Compatible 类型必须提供模型列表地址。")})
 
         backend_id = attrs.get("backend_id")
         if backend_id is not None:
