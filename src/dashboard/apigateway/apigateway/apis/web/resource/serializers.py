@@ -139,6 +139,7 @@ class ResourceListOutputSLZ(serializers.ModelSerializer):
         return {
             "id": backend.id,
             "name": backend.name,
+            "kind": backend.kind,
         }
 
     def get_labels(self, obj):

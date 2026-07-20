@@ -150,6 +150,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                         "backend": {
                             "id": fake_backend.id,
                             "name": fake_backend.name,
+                            "kind": fake_backend.kind,
                             "config": {
                                 "type": "node",
                                 "timeout": 30,
@@ -219,6 +220,7 @@ class TestResourceVersionRetrieveOutputSLZ:
                         "backend": {
                             "id": fake_backend.id,
                             "name": fake_backend.name,
+                            "kind": fake_backend.kind,
                             "config": {
                                 "type": "node",
                                 "timeout": 30,
