@@ -23,9 +23,9 @@ from . import views
 urlpatterns = [
     path("", views.BackendListCreateApi.as_view(), name="backend.list-create"),
     path(
-        "test-connectivity/",
+        "test-connection/",
         views.BackendConnectivityTestApi.as_view(),
-        name="backend.test-connectivity",
+        name="backend.test-connection",
     ),
     path(
         "<int:id>/",

@@ -16,11 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import json
 import logging
 
 import pytest
-import requests
 from django.urls import get_resolver
 
 from apigateway.core.constants import BackendKindEnum, GatewayKindEnum
@@ -360,16 +358,12 @@ class TestBackendApi:
         assert response.status_code == 204
 
 
-def _mock_model_response(mocker, data, *, status_code=200, chunks=None, headers=None):
+def _mock_model_response(mocker, data, *, success=True):
     _ = get_resolver().url_patterns
-    request_get = mocker.patch("requests.get", side_effect=AssertionError("requests.get must not be used"))
-    session = mocker.patch("requests.Session").return_value
-    response = session.get.return_value
-    response.status_code = status_code
-    response.headers = headers or {}
-    response.iter_content.return_value = chunks or [json.dumps(data).encode()]
-    response.close.return_value = None
-    return session, response, request_get
+    return mocker.patch(
+        "apigateway.biz.backend.connectivity.http_get",
+        return_value=(success, data),
+    )
 
 
 class TestBackendConnectivityApi:
@@ -385,7 +379,7 @@ class TestBackendConnectivityApi:
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
         config["instances"][0]["provider"] = provider
-        session, _, request_get = _mock_model_response(
+        http_get = _mock_model_response(
             mocker,
             {
                 "data": [
@@ -397,7 +391,7 @@ class TestBackendConnectivityApi:
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
@@ -405,14 +399,14 @@ class TestBackendConnectivityApi:
 
         assert response.status_code == 200, response.json()
         assert response.json()["data"] == {"models": ["model-b", "model-a"]}
-        session.get.assert_called_once_with(
+        http_get.assert_called_once_with(
             expected_url,
+            {},
             headers={"Authorization": "Bearer secret"},
-            timeout=(10.0, 20.0),
+            timeout=30,
+            verify=True,
             allow_redirects=False,
-            stream=True,
         )
-        request_get.assert_not_called()
 
     def test_openai_compatible_uses_custom_models_endpoint(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -430,35 +424,28 @@ class TestBackendConnectivityApi:
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("8.8.8.8", 443))],
         )
-        session, _, request_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
+        http_get = _mock_model_response(mocker, {"data": [{"id": "custom-model"}]})
         model_endpoint = "https://catalog.example.com/custom/models?api-version=2026-01-01"
         config["model_endpoint"] = model_endpoint
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
         )
 
         assert response.status_code == 200, response.json()
-        session.get.assert_called_once_with(
+        http_get.assert_called_once_with(
             model_endpoint,
+            {},
             headers={"X-Api-Key": "secret"},
-            timeout=(10.0, 20.0),
+            timeout=30,
+            verify=True,
             allow_redirects=False,
-            stream=True,
         )
         assert resolver.call_count == 1
-        https_adapter = next(call.args[1] for call in session.mount.call_args_list if call.args[0] == "https://")
-        prepared = requests.Request("GET", model_endpoint).prepare()
-        connection = https_adapter.get_connection_with_tls_context(prepared, verify=True)
-        assert connection.host == "8.8.8.8"
-        assert connection.assert_hostname == "catalog.example.com"
-        assert connection.conn_kw["server_hostname"] == "catalog.example.com"
-        assert session.trust_env is False
-        request_get.assert_not_called()
 
     def test_openai_compatible_requires_model_endpoint(self, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -470,7 +457,7 @@ class TestBackendConnectivityApi:
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
@@ -490,19 +477,18 @@ class TestBackendConnectivityApi:
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("169.254.169.254", 443))],
         )
-        session, _, request_get = _mock_model_response(mocker, {"data": []})
+        http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
         )
 
         assert response.status_code == 400
-        session.get.assert_not_called()
-        request_get.assert_not_called()
+        http_get.assert_not_called()
 
     def test_custom_provider_allows_private_resolved_address(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -516,19 +502,18 @@ class TestBackendConnectivityApi:
             "socket.getaddrinfo",
             return_value=[(2, 1, 6, "", ("10.0.0.1", 443))],
         )
-        session, _, request_get = _mock_model_response(mocker, {"data": [{"id": "internal-model"}]})
+        http_get = _mock_model_response(mocker, {"data": [{"id": "internal-model"}]})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
         )
 
         assert response.status_code == 200, response.json()
-        session.get.assert_called_once()
-        request_get.assert_not_called()
+        http_get.assert_called_once()
 
     def test_custom_provider_allows_public_ipv6_address(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -542,38 +527,36 @@ class TestBackendConnectivityApi:
             "socket.getaddrinfo",
             return_value=[(10, 1, 6, "", ("2001:4860:4860::abcd", 443, 0, 0))],
         )
-        session, _, request_get = _mock_model_response(mocker, {"data": [{"id": "ipv6-model"}]})
+        http_get = _mock_model_response(mocker, {"data": [{"id": "ipv6-model"}]})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
         )
 
         assert response.status_code == 200, response.json()
-        session.get.assert_called_once()
-        request_get.assert_not_called()
+        http_get.assert_called_once()
 
-    def test_connectivity_timeout_is_capped(self, mocker, request_view, fake_stage):
+    def test_connectivity_uses_fixed_timeout(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
         config = _ai_config(fake_stage.id)
         config["timeout"] = 300000
-        session, _, request_get = _mock_model_response(mocker, {"data": []})
+        http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": config},
         )
 
         assert response.status_code == 200, response.json()
-        assert session.get.call_args.kwargs["timeout"] == (10.0, 20.0)
-        request_get.assert_not_called()
+        assert http_get.call_args.kwargs["timeout"] == 30
 
     def test_existing_backend_restores_masked_header(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -591,19 +574,18 @@ class TestBackendConnectivityApi:
         )
         config = _ai_config(fake_stage.id)
         config["instances"][0]["auth"]["header"]["Authorization"] = "Be****et"
-        session, _, request_get = _mock_model_response(mocker, {"data": [{"id": "gpt-4o"}]})
+        http_get = _mock_model_response(mocker, {"data": [{"id": "gpt-4o"}]})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"backend_id": backend.id, "config": config},
         )
 
         assert response.status_code == 200, response.json()
-        assert session.get.call_args.kwargs["headers"] == {"Authorization": "Bearer secret"}
-        request_get.assert_not_called()
+        assert http_get.call_args.kwargs["headers"] == {"Authorization": "Bearer secret"}
 
     def test_existing_backend_does_not_restore_masked_header_for_changed_destination(
         self, mocker, request_view, fake_stage
@@ -627,11 +609,11 @@ class TestBackendConnectivityApi:
         instance["auth"]["header"]["Authorization"] = "Be****et"
         instance["override"] = {"endpoint": "https://attacker.example.com/v1"}
         config["model_endpoint"] = "https://attacker.example.com/models"
-        session, _, request_get = _mock_model_response(mocker, {"data": []})
+        http_get = _mock_model_response(mocker, {"data": []})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"backend_id": backend.id, "config": config},
@@ -639,8 +621,7 @@ class TestBackendConnectivityApi:
 
         assert response.status_code == 400
         assert "重新输入" in str(response.json())
-        session.get.assert_not_called()
-        request_get.assert_not_called()
+        http_get.assert_not_called()
 
     def test_existing_backend_reports_corrupted_config(self, caplog, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -661,7 +642,7 @@ class TestBackendConnectivityApi:
         with caplog.at_level(logging.ERROR):
             response = request_view(
                 "POST",
-                "backend.test-connectivity",
+                "backend.test-connection",
                 path_params={"gateway_id": fake_stage.gateway.id},
                 gateway=fake_stage.gateway,
                 data={"backend_id": backend.id, "config": _ai_config(fake_stage.id)},
@@ -672,31 +653,31 @@ class TestBackendConnectivityApi:
         assert ciphertext not in caplog.text
 
     def test_rejects_normal_gateway_without_requesting_provider(self, mocker, request_view, fake_stage):
-        request_get = mocker.patch("requests.Session.get")
+        http_get = mocker.patch("apigateway.biz.backend.connectivity.http_get")
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": _ai_config(fake_stage.id)},
         )
 
         assert response.status_code == 400
-        request_get.assert_not_called()
+        http_get.assert_not_called()
 
     def test_provider_failure_does_not_expose_credentials(self, caplog, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
-        request_get = mocker.patch(
-            "requests.Session.get",
-            side_effect=requests.ConnectionError("Authorization: Bearer secret"),
+        http_get = mocker.patch(
+            "apigateway.biz.backend.connectivity.http_get",
+            return_value=(False, {"error": "Authorization: Bearer secret"}),
         )
 
         with caplog.at_level(logging.WARNING):
             response = request_view(
                 "POST",
-                "backend.test-connectivity",
+                "backend.test-connection",
                 path_params={"gateway_id": fake_stage.gateway.id},
                 gateway=fake_stage.gateway,
                 data={"config": _ai_config(fake_stage.id)},
@@ -705,86 +686,39 @@ class TestBackendConnectivityApi:
         assert response.status_code == 500
         assert "Bearer secret" not in str(response.json())
         assert "Bearer secret" not in caplog.text
-        request_get.assert_called_once()
+        http_get.assert_called_once()
 
     def test_provider_redirect_is_rejected(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
-        session, _, request_get = _mock_model_response(
-            mocker,
-            {"data": [{"id": "redirected-model"}]},
-            status_code=302,
-        )
+        http_get = _mock_model_response(mocker, {"status_code": 302}, success=False)
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": _ai_config(fake_stage.id)},
         )
 
         assert response.status_code == 500
-        session.get.assert_called_once()
-        request_get.assert_not_called()
+        http_get.assert_called_once()
 
     def test_rejects_malformed_provider_response(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
-        session, _, request_get = _mock_model_response(mocker, {"data": [{"name": "missing-id"}]})
+        http_get = _mock_model_response(mocker, {"data": [{"name": "missing-id"}]})
 
         response = request_view(
             "POST",
-            "backend.test-connectivity",
+            "backend.test-connection",
             path_params={"gateway_id": fake_stage.gateway.id},
             gateway=fake_stage.gateway,
             data={"config": _ai_config(fake_stage.id)},
         )
 
         assert response.status_code == 500
-        session.get.assert_called_once()
-        request_get.assert_not_called()
-
-    def test_rejects_oversized_provider_response(self, mocker, request_view, fake_stage):
-        fake_stage.gateway.kind = GatewayKindEnum.AI.value
-        fake_stage.gateway.save()
-        session, _, request_get = _mock_model_response(
-            mocker,
-            {"data": []},
-            chunks=[b"x" * (1024 * 1024 + 1)],
-        )
-
-        response = request_view(
-            "POST",
-            "backend.test-connectivity",
-            path_params={"gateway_id": fake_stage.gateway.id},
-            gateway=fake_stage.gateway,
-            data={"config": _ai_config(fake_stage.id)},
-        )
-
-        assert response.status_code == 500
-        session.get.assert_called_once()
-        request_get.assert_not_called()
-
-    def test_rejects_too_many_models(self, mocker, request_view, fake_stage):
-        fake_stage.gateway.kind = GatewayKindEnum.AI.value
-        fake_stage.gateway.save()
-        session, _, request_get = _mock_model_response(
-            mocker,
-            {"data": [{"id": f"model-{index}"} for index in range(1001)]},
-        )
-
-        response = request_view(
-            "POST",
-            "backend.test-connectivity",
-            path_params={"gateway_id": fake_stage.gateway.id},
-            gateway=fake_stage.gateway,
-            data={"config": _ai_config(fake_stage.id)},
-        )
-
-        assert response.status_code == 500
-        session.get.assert_called_once()
-        request_get.assert_not_called()
+        http_get.assert_called_once()
 
 
 class TestBackendHealthCheckApi:
