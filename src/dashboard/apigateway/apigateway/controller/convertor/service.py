@@ -61,39 +61,8 @@ logger = logging.getLogger(__name__)
 
 
 def _build_ai_log_format() -> Dict[str, str]:
-    return {
-        "proto": "$server_protocol",
-        "method": "$request_method",
-        "http_host": "$host",
-        "http_path": "$uri",
-        "app_code": "$bk_app_code",
-        "client_ip": "$remote_addr",
-        "request_id": "$bk_request_id",
-        "x_request_id": "$x_request_id",
-        "request_duration": "$bk_log_request_duration",
-        "bk_username": "$bk_username",
-        "bk_tenant_id": "$bk_tenant_id",
-        "gateway_id": "$bk_gateway_id",
-        "gateway_name": "$bk_gateway_name",
-        "resource_id": "$bk_resource_id",
-        "resource_name": "$bk_resource_name",
-        "stage": "$bk_stage_name",
-        "backend_name": "$bk_backend_name",
-        "response_size": "$body_bytes_sent",
-        "status": "$status",
-        "code_name": "$bk_apigw_error_code_name",
-        "error": "$bk_apigw_error_message",
-        "proxy_error": "$proxy_error",
-        "timestamp": "$bk_log_request_timestamp",
-        "traceparent": "$http_traceparent",
-        "response_time": "$apisix_upstream_response_time",
-        "request_type": "$request_type",
-        "llm_model": "$llm_model",
-        "request_llm_model": "$request_llm_model",
-        "llm_prompt_tokens": "$llm_prompt_tokens",
-        "llm_completion_tokens": "$llm_completion_tokens",
-        "llm_time_to_first_token": "$llm_time_to_first_token",
-    }
+    default_log_format = settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"]
+    return {**default_log_format, "llm_summary": "$llm_summary"}
 
 
 def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:

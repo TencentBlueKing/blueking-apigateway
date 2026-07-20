@@ -16,7 +16,6 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import base64
-import json
 
 import pytest
 from django.conf import settings
@@ -441,43 +440,9 @@ class TestServiceConvertor:
 
         assert service.plugins["ai-proxy"].provider == "openai-compatible"
 
-    def test_ai_service_uses_safe_log_format(self, mock_release_data):
-        mock_release_data.stage_backend_configs = {
-            1: _standard_backend_config(
-                1,
-                "standard-service",
-                {"timeout": 60, "hosts": [{"scheme": "http", "host": "example.com", "weight": 100}]},
-            ),
-            10: _ai_backend_config(
-                auth={"header": {"Authorization": "Bearer must-not-log"}},
-                override={"endpoint": "https://models.example.com/v1/chat/completions"},
-            ),
-        }
-        mock_release_data.get_stage_plugins.return_value = []
-        mock_release_data.jwt_private_key = "test-key"
-        mock_release_data.gateway_auth_config = {}
-
-        standard_service, ai_service = ServiceConvertor(
-            mock_release_data,
-            publish_id=123,
-            apisix_version=APISIX_VERSION_3_16,
-        ).convert()
-
-        assert standard_service.plugins["file-logger"].model_dump(exclude_none=True) == {"path": "logs/access.log"}
-        serialized = json.dumps(ai_service.plugins["file-logger"].log_format)
-        for forbidden in (
-            "$bk_log_request_body",
-            "$bk_log_response_body",
-            "$args",
-            "$upstream_",
-            "$bk_backend_host",
-            "$bk_log_backend_path",
-        ):
-            assert forbidden not in serialized
-        assert "must-not-log" not in serialized
-
-    def test_ai_service_log_format_includes_ai_metrics(self, mock_release_data):
+    def test_ai_service_log_format_extends_default_with_llm_summary(self, mock_release_data):
         mock_release_data.stage_backend_configs = {10: _ai_backend_config()}
+        default_log_format = settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"].copy()
 
         service = ServiceConvertor(
             mock_release_data,
@@ -486,23 +451,8 @@ class TestServiceConvertor:
         ).convert()[0]
 
         log_format = service.plugins["file-logger"].log_format
-        assert {
-            "request_type": log_format["request_type"],
-            "llm_model": log_format["llm_model"],
-            "request_llm_model": log_format["request_llm_model"],
-            "llm_time_to_first_token": log_format["llm_time_to_first_token"],
-            "response_time": log_format["response_time"],
-            "llm_prompt_tokens": log_format["llm_prompt_tokens"],
-            "llm_completion_tokens": log_format["llm_completion_tokens"],
-        } == {
-            "request_type": "$request_type",
-            "llm_model": "$llm_model",
-            "request_llm_model": "$request_llm_model",
-            "llm_time_to_first_token": "$llm_time_to_first_token",
-            "response_time": "$apisix_upstream_response_time",
-            "llm_prompt_tokens": "$llm_prompt_tokens",
-            "llm_completion_tokens": "$llm_completion_tokens",
-        }
+        assert log_format == {**default_log_format, "llm_summary": "$llm_summary"}
+        assert settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"] == default_log_format
 
     def test_convert_with_multiple_backends(self, mock_release_data):
         """Test convert with multiple backend configs"""
