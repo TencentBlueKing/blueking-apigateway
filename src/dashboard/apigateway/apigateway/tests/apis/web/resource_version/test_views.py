@@ -19,6 +19,7 @@
 import datetime
 import json
 import operator
+from copy import deepcopy
 
 from django_dynamic_fixture import G
 
@@ -204,6 +205,52 @@ class TestResourceVersionRetrieveDestroyApi:
             "created_time": fake_resource_version_v2.created_time,
             "created_by": fake_resource_version_v2.created_by,
         }
+
+    def test_retrieve_for_mcp_server_filters_ai_resources(self, request_view, fake_gateway, fake_resource_version_v2):
+        standard_resource = fake_resource_version_v2.data[0]
+        legacy_resource = deepcopy(standard_resource)
+        legacy_resource["id"] += 1
+        legacy_resource["name"] = "legacy-resource"
+        legacy_resource.pop("kind", None)
+        ai_resource = deepcopy(standard_resource)
+        ai_resource["id"] += 2
+        ai_resource["name"] = "ai-resource"
+        ai_resource["kind"] = ResourceKindEnum.AI.value
+        fake_resource_version_v2.data = [ai_resource, legacy_resource, standard_resource]
+        fake_resource_version_v2.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.retrieve_destroy",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
+            data={"source": "mcp_server"},
+        )
+
+        assert resp.status_code == 200
+        assert [resource["name"] for resource in resp.json()["data"]["resources"]] == [
+            "legacy-resource",
+            standard_resource["name"],
+        ]
+
+    def test_retrieve_for_mcp_server_returns_empty_when_only_ai_resources(
+        self, request_view, fake_gateway, fake_resource_version_v2
+    ):
+        ai_resource = fake_resource_version_v2.data[0]
+        ai_resource["kind"] = ResourceKindEnum.AI.value
+        fake_resource_version_v2.data = [ai_resource]
+        fake_resource_version_v2.save()
+
+        resp = request_view(
+            method="GET",
+            view_name="gateway.resource_version.retrieve_destroy",
+            gateway=fake_gateway,
+            path_params={"gateway_id": fake_gateway.id, "id": fake_resource_version_v2.id},
+            data={"source": "mcp_server"},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"]["resources"] == []
 
     def test_retrieve_with_stage_masks_ai_backend_config(
         self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2

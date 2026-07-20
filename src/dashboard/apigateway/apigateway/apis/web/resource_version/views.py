@@ -43,7 +43,7 @@ from apigateway.biz.resource_version import (
 )
 from apigateway.biz.sdk import GatewaySDKHandler
 from apigateway.common.error_codes import error_codes
-from apigateway.core.constants import PublishSourceEnum
+from apigateway.core.constants import PublishSourceEnum, ResourceKindEnum
 from apigateway.core.models import Release, Resource, ResourceVersion
 from apigateway.service.backend import get_backend_id_to_instance
 from apigateway.service.resource_version import OpenAPIExportManager, get_resource_id_to_schema_by_resource_version
@@ -195,7 +195,9 @@ class ResourceVersionRetrieveDestroyApi(generics.RetrieveDestroyAPIView):
         source = self.request.query_params.get("source")
         # sort the resources by has_openapi_schema, for mcp server to show the options of tools
         if source == "mcp_server":
-            resources = data["resources"]
+            resources = [
+                resource for resource in data["resources"] if resource["kind"] == ResourceKindEnum.STANDARD.value
+            ]
             resources.sort(key=lambda x: x["has_openapi_schema"], reverse=True)
             data["resources"] = resources
 
