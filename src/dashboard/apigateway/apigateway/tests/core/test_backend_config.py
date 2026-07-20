@@ -220,6 +220,7 @@ def test_ai_backend_config_preserves_empty_auth_shape(ai_backend_config, auth, e
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": "https://example.com/v1"}
+    ai_backend_config["model_endpoint"] = "https://example.com/models"
     if auth is None:
         instance.pop("auth")
     else:
@@ -291,6 +292,7 @@ def test_ai_backend_config_validates_override_endpoint(ai_backend_config, endpoi
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": endpoint}
+    ai_backend_config["model_endpoint"] = "https://example.com/models"
 
     with pytest.raises(ValueError, match=error):
         AIBackendConfig.model_validate(ai_backend_config)
@@ -301,6 +303,28 @@ def test_ai_backend_config_rejects_forbidden_override_endpoint_port(ai_backend_c
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": "https://example.com:22/v1"}
+    ai_backend_config["model_endpoint"] = "https://example.com/models"
+
+    with pytest.raises(ValueError, match="port is forbidden"):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
+def test_ai_backend_config_accepts_legacy_openai_compatible_without_model_endpoint(ai_backend_config):
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": "https://example.com/v1"}
+
+    stored = AIBackendConfig.model_validate(ai_backend_config).to_config()
+
+    assert "model_endpoint" not in stored
+
+
+def test_ai_backend_config_rejects_forbidden_model_endpoint_port(ai_backend_config, settings):
+    settings.FORBIDDEN_PORTS = [22]
+    instance = ai_backend_config["instances"][0]
+    instance["provider"] = "openai-compatible"
+    instance["override"] = {"endpoint": "https://example.com/v1"}
+    ai_backend_config["model_endpoint"] = "https://example.com:22/models"
 
     with pytest.raises(ValueError, match="port is forbidden"):
         AIBackendConfig.model_validate(ai_backend_config)

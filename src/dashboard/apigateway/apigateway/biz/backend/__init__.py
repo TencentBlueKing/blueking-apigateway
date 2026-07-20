@@ -17,12 +17,16 @@
 #
 
 from .backend import BackendHandler
+from .connectivity import AIBackendConnectivityError, AIBackendEndpointError, get_ai_backend_model_ids
 
 __all__ = [
     # constant
     # Enum
     # class
+    "AIBackendConnectivityError",
+    "AIBackendEndpointError",
     "BackendHandler",
     # functions
+    "get_ai_backend_model_ids",
     # others
 ]

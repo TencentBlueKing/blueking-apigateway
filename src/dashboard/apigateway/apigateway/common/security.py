@@ -17,27 +17,26 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from ipaddress import ip_address
+
 from django.conf import settings
 
 
 def is_forbidden_host(host: str) -> bool:
-    if host in settings.FORBIDDEN_HOSTS:
+    if host.casefold() in {str(item).casefold() for item in settings.FORBIDDEN_HOSTS}:
         return True
 
     if ":" not in host:
         return False
 
-    parts = host.split(":")
+    try:
+        ip_address(host)
+    except ValueError:
+        port_str = host.rsplit(":", 1)[-1]
+        if not port_str.isdigit():
+            return True
 
-    port_str = parts[-1]
-    if not port_str.isdigit():
-        return True
-
-    port_int = int(port_str)
-    if port_int < 1 or port_int > 65535:
-        return True
-
-    if port_int in settings.FORBIDDEN_PORTS:
-        return True
+        port_int = int(port_str)
+        return port_int < 1 or port_int > 65535 or port_int in settings.FORBIDDEN_PORTS
 
     return False
