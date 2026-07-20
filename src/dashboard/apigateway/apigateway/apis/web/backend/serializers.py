@@ -54,6 +54,56 @@ class AIBackendConfigSLZ(serializers.Serializer):
         return {"stage_id": stage["stage_id"], **validate_ai_backend_config(raw_config)}
 
 
+class AIBackendConnectivityInputSLZ(serializers.Serializer):
+    backend_id = serializers.IntegerField(required=False)
+    config = serializers.DictField()
+
+    def validate(self, attrs):
+        config_slz = AIBackendConfigSLZ(data=attrs["config"])
+        config_slz.is_valid(raise_exception=True)
+        config = config_slz.validated_data
+
+        backend_id = attrs.get("backend_id")
+        if backend_id is not None:
+            backend = Backend.objects.filter(
+                gateway=self.context["gateway"],
+                id=backend_id,
+                kind=BackendKindEnum.AI.value,
+            ).first()
+            if backend is None:
+                raise serializers.ValidationError({"backend_id": _("模型服务不存在。")})
+
+            existing_config = (
+                BackendConfig.objects.filter(backend=backend, stage_id=config["stage_id"])
+                .select_related("backend")
+                .first()
+            )
+            if existing_config is None:
+                raise serializers.ValidationError({"config": _("模型服务在当前环境下没有配置。")})
+
+            try:
+                existing_config_value = existing_config.config
+            except ValueError:
+                logger.exception(
+                    "failed to read backend config id=%s for backend_id=%s stage_id=%s",
+                    existing_config.id,
+                    existing_config.backend_id,
+                    existing_config.stage_id,
+                )
+                raise serializers.ValidationError({"config": _("已有后端配置无法读取，请联系管理员。")}) from None
+
+            restore_masked_header_values(config, existing_config_value)
+            raw_config = {key: value for key, value in config.items() if key != "stage_id"}
+            config = {"stage_id": config["stage_id"], **validate_ai_backend_config(raw_config)}
+
+        attrs["config"] = config
+        return attrs
+
+
+class AIBackendConnectivityOutputSLZ(serializers.Serializer):
+    models = serializers.ListField(child=serializers.CharField(), help_text="模型列表")
+
+
 class BackendInputSLZ(serializers.Serializer):
     gateway = serializers.HiddenField(default=CurrentGatewayDefault())
     name = serializers.RegexField(BACKEND_NAME_PATTERN, help_text="后端服务名称")

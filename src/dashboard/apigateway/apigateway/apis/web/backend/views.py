@@ -16,6 +16,13 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+import socket
+from ipaddress import ip_address
+from urllib.parse import urlsplit, urlunsplit
+
+import requests
+from django.conf import settings
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -32,7 +39,90 @@ from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import OKJsonResponse
 
 from .filters import BackendFilter
-from .serializers import BackendInputSLZ, BackendListOutputSLZ, BackendRetrieveOutputSLZ, BackendUpdateOutputSLZ
+from .serializers import (
+    AIBackendConnectivityInputSLZ,
+    AIBackendConnectivityOutputSLZ,
+    BackendInputSLZ,
+    BackendListOutputSLZ,
+    BackendRetrieveOutputSLZ,
+    BackendUpdateOutputSLZ,
+)
+
+logger = logging.getLogger(__name__)
+
+AI_PROVIDER_MODELS_ENDPOINTS = {
+    "openai": "https://api.openai.com/v1/models",
+    "deepseek": "https://api.deepseek.com/models",
+}
+
+
+def _get_models_endpoint(instance):
+    provider = instance["provider"]
+    if provider in AI_PROVIDER_MODELS_ENDPOINTS:
+        return AI_PROVIDER_MODELS_ENDPOINTS[provider]
+
+    endpoint = instance["override"]["endpoint"]
+    parsed = urlsplit(endpoint)
+    try:
+        addresses = {
+            ip_address(item[4][0])
+            for item in socket.getaddrinfo(
+                parsed.hostname,
+                parsed.port or (443 if parsed.scheme == "https" else 80),
+                type=socket.SOCK_STREAM,
+            )
+        }
+    except OSError, ValueError:
+        raise ValueError("model provider host cannot be resolved safely") from None
+    if not addresses or any(
+        address.is_link_local
+        or address.is_loopback
+        or address.is_multicast
+        or address.is_reserved
+        or address.is_unspecified
+        or str(address) in settings.FORBIDDEN_HOSTS
+        for address in addresses
+    ):
+        raise ValueError("model provider host resolves to a forbidden address")
+
+    path = parsed.path.rstrip("/")
+    for suffix in ("/chat/completions", "/completions"):
+        if path.endswith(suffix):
+            path = f"{path[: -len(suffix)]}/models"
+            break
+    else:
+        path = f"{path}/models"
+    return urlunsplit(parsed._replace(path=path, fragment=""))
+
+
+def _get_model_ids(config):
+    instance = config["instances"][0]
+    provider = instance["provider"]
+    headers = {
+        key: value
+        for key, value in instance.get("auth", {}).get("header", {}).items()
+        if key.casefold() not in {"host", "content-length"}
+    }
+    try:
+        response = requests.get(
+            _get_models_endpoint(instance),
+            headers=headers,
+            timeout=(10, min(config["timeout"] / 1000, 30)),
+            allow_redirects=False,
+        )
+        if not 200 <= response.status_code < 300:
+            raise ValueError("model provider returned a non-2xx response")
+        data = response.json()["data"]
+        if not isinstance(data, list):
+            raise TypeError("model data must be a list")
+
+        models = [item["id"] for item in data if isinstance(item, dict) and isinstance(item.get("id"), str)]
+        if len(models) != len(data):
+            raise ValueError("model data item must contain a string id")
+        return models
+    except KeyError, TypeError, ValueError, requests.RequestException:
+        logger.warning("failed to test AI backend connectivity: provider=%s", provider)
+        raise error_codes.REMOTE_REQUEST_ERROR.format(_("模型服务连通性测试失败，请检查配置。")) from None
 
 
 class BackendQuerySetMixin:
@@ -102,6 +192,25 @@ class BackendListCreateApi(BackendQuerySetMixin, generics.ListCreateAPIView):
         )
 
         return OKJsonResponse(status=status.HTTP_201_CREATED)
+
+
+class BackendConnectivityTestApi(generics.CreateAPIView):
+    serializer_class = AIBackendConnectivityInputSLZ
+
+    @swagger_auto_schema(
+        operation_description="测试模型服务连通性并获取模型列表",
+        request_body=AIBackendConnectivityInputSLZ,
+        responses={status.HTTP_200_OK: AIBackendConnectivityOutputSLZ},
+        tags=["WebAPI.Backend"],
+    )
+    def post(self, request, *args, **kwargs):
+        if not request.gateway.is_ai_gateway:
+            raise error_codes.FAILED_PRECONDITION.format(_("普通网关不支持模型服务。"))
+
+        slz = self.get_serializer(data=request.data, context={"gateway": request.gateway})
+        slz.is_valid(raise_exception=True)
+        models = _get_model_ids(slz.validated_data["config"])
+        return OKJsonResponse(data={"models": models})
 
 
 @method_decorator(
