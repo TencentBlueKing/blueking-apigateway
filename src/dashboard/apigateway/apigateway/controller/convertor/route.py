@@ -92,7 +92,6 @@ class RouteConvertor(GatewayResourceConvertor):
         return self._convert_standard_route(resource, service_id)
 
     def _convert_standard_route(self, resource: Dict[str, Any], service_id: str) -> Route:
-        resource_kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
         resource_proxy = json.loads(resource["proxy"]["config"])
 
         methods = []
@@ -124,7 +123,6 @@ class RouteConvertor(GatewayResourceConvertor):
             # example: bk-esb-prod-helloworld
             # the resource_name max length is 256, while the apisix name max length is 100
             name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{resource['name']}", 100),
-            resource_kind=resource_kind,
             # NOTE: no desc for route, save memory
             # desc=resource["description"],
             uris=uris,
@@ -148,7 +146,6 @@ class RouteConvertor(GatewayResourceConvertor):
         return route
 
     def _convert_ai_route(self, resource: Dict[str, Any], service_id: str) -> Route:
-        resource_kind = resource.get("kind", ResourceKindEnum.STANDARD.value)
         uris, _ = self._convert_uris(path=resource["path"], match_subpath=False)
         plugins: Dict[str, Plugin] = {
             "bk-resource-context": self._build_resource_context_plugin(resource),
@@ -163,7 +160,6 @@ class RouteConvertor(GatewayResourceConvertor):
         return Route(
             id=f"{self.gateway_name}.{self.stage_name}.{resource['id']}",
             name=truncate_string(f"{self.gateway_name}.{self.stage_name}.{resource['name']}", 100),
-            resource_kind=resource_kind,
             uris=uris,
             methods=[HttpMethodEnum.POST],
             plugins=plugins,
@@ -209,6 +205,7 @@ class RouteConvertor(GatewayResourceConvertor):
         return Plugin(
             bk_resource_id=resource["id"],
             bk_resource_name=resource["name"],
+            kind=resource.get("kind", ResourceKindEnum.STANDARD.value),
             bk_resource_auth={
                 "verified_app_required": resource_auth_config.get("app_verified_required", True),
                 "verified_user_required": resource_auth_config.get("auth_verified_required", True),

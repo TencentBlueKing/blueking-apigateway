@@ -222,14 +222,17 @@ class TestRouteConvertor:
         assert isinstance(route, Route)
         assert route.id == "test-gateway.test-stage.1"
         assert route.service_id == "test-service-id"
-        assert route.resource_kind == ResourceKindEnum.STANDARD.value
-        assert route.model_dump(mode="json", exclude_none=True)["kind"] == ResourceKindEnum.STANDARD.value
+        assert "kind" not in route.model_dump(mode="json", exclude_none=True)
         assert route.methods == [HttpMethodEnum.GET]
         assert len(route.plugins) > 0
         assert "bk-resource-context" in route.plugins
         assert "bk-proxy-rewrite" in route.plugins
         assert route.plugins["bk-resource-context"].bk_resource_id == 1
         assert route.plugins["bk-resource-context"].bk_resource_name == "test-resource"
+        assert (
+            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            == ResourceKindEnum.STANDARD.value
+        )
         assert route.plugins["bk-resource-context"].bk_resource_auth == {
             "verified_app_required": True,
             "verified_user_required": True,
@@ -249,14 +252,17 @@ class TestRouteConvertor:
         route = convertor._convert_http_route(_ai_resource())
 
         assert route.methods == [HttpMethodEnum.POST]
-        assert route.resource_kind == ResourceKindEnum.AI.value
-        assert route.model_dump(mode="json", exclude_none=True)["kind"] == ResourceKindEnum.AI.value
+        assert "kind" not in route.model_dump(mode="json", exclude_none=True)
         assert route.uris == [
             "/api/test-gateway/test-stage/v1/chat/completions",
             "/api/test-gateway/test-stage/v1/chat/completions/",
         ]
         assert route.service_id == "test-gateway.test-stage.456-10"
         assert "bk-resource-context" in route.plugins
+        assert (
+            route.plugins["bk-resource-context"].model_dump(mode="json", exclude_none=True)["kind"]
+            == ResourceKindEnum.AI.value
+        )
         assert "bk-proxy-rewrite" not in route.plugins
         assert route.timeout is None
         assert route.enable_websocket is None
@@ -512,6 +518,7 @@ class TestRouteConvertor:
         assert plugin.model_dump(exclude_none=True) == {
             "bk_resource_id": 1,
             "bk_resource_name": "test-resource",
+            "kind": ResourceKindEnum.STANDARD.value,
             "bk_resource_auth": {
                 "verified_app_required": True,
                 "verified_user_required": False,

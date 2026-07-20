@@ -187,7 +187,11 @@ class ServiceConvertor(GatewayResourceConvertor):
         # currently, only add one plugin for service of per backend
         # other plugins are shared by stage, they will be merged on operator
         plugins: Dict[str, Plugin] = {
-            "bk-backend-context": Plugin(bk_backend_id=backend_id, bk_backend_name=backend_name),
+            "bk-backend-context": Plugin(
+                bk_backend_id=backend_id,
+                bk_backend_name=backend_name,
+                kind=backend_kind,
+            ),
         }
         service_plugins = self._build_service_plugins(backend_kind)
         plugins.update(service_plugins)
@@ -212,7 +216,6 @@ class ServiceConvertor(GatewayResourceConvertor):
                 f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                 100,
             ),
-            backend_kind=backend_kind,
             # NOTE: no desc for service, save memory
             labels=labels,
             plugins=plugins,
@@ -229,6 +232,7 @@ class ServiceConvertor(GatewayResourceConvertor):
         plugins["bk-backend-context"] = Plugin(
             bk_backend_id=backend_id,
             bk_backend_name=backend_name,
+            kind=backend_kind,
         )
         plugins.update(_build_ai_proxy_plugins(backend_config))
         labels = self.get_labels()
@@ -240,7 +244,6 @@ class ServiceConvertor(GatewayResourceConvertor):
                 f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                 100,
             ),
-            backend_kind=backend_kind,
             labels=labels,
             plugins=plugins,
             # AI Services are upstream-less; ai-proxy resolves the provider upstream.
