@@ -248,19 +248,26 @@ class GatewayApisixModel(ApisixModel):
 
 
 class Service(GatewayApisixModel):
+    model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True, serialize_by_alias=True)
+
     kind = "service"
 
     name: str = Field(min_length=1, max_length=100, description="name")
 
+    backend_kind: str = Field(default="standard", alias="kind", description="backend kind")
     plugins: Dict[str, Plugin] = Field(default_factory=dict, description="plugins")
     upstream: Optional[BaseUpstream] = Field(default=None, description="upstream")
 
 
 class Route(GatewayApisixModel):
+    model_config = ConfigDict(strict=True, validate_by_name=True, validate_by_alias=True, serialize_by_alias=True)
+
     kind = "route"
     # NOTE: not all fields are defined here, only the fields we need
 
     name: str = Field(min_length=1, max_length=100, description="name")
+
+    resource_kind: str = Field(default="standard", alias="kind", description="resource kind")
 
     # NOTE: use uris, not uri here, for compatibility
     uris: List[str] = Field(default_factory=list, description="uris")

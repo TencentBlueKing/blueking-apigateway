@@ -222,6 +222,8 @@ class TestRouteConvertor:
         assert isinstance(route, Route)
         assert route.id == "test-gateway.test-stage.1"
         assert route.service_id == "test-service-id"
+        assert route.resource_kind == ResourceKindEnum.STANDARD.value
+        assert route.model_dump(mode="json", exclude_none=True)["kind"] == ResourceKindEnum.STANDARD.value
         assert route.methods == [HttpMethodEnum.GET]
         assert len(route.plugins) > 0
         assert "bk-resource-context" in route.plugins
@@ -247,6 +249,8 @@ class TestRouteConvertor:
         route = convertor._convert_http_route(_ai_resource())
 
         assert route.methods == [HttpMethodEnum.POST]
+        assert route.resource_kind == ResourceKindEnum.AI.value
+        assert route.model_dump(mode="json", exclude_none=True)["kind"] == ResourceKindEnum.AI.value
         assert route.uris == [
             "/api/test-gateway/test-stage/v1/chat/completions",
             "/api/test-gateway/test-stage/v1/chat/completions/",

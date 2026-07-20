@@ -212,6 +212,7 @@ class ServiceConvertor(GatewayResourceConvertor):
                 f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                 100,
             ),
+            backend_kind=backend_kind,
             # NOTE: no desc for service, save memory
             labels=labels,
             plugins=plugins,
@@ -239,6 +240,7 @@ class ServiceConvertor(GatewayResourceConvertor):
                 f"{self.gateway_name}.{self.stage_name}.{backend_name}",
                 100,
             ),
+            backend_kind=backend_kind,
             labels=labels,
             plugins=plugins,
             # AI Services are upstream-less; ai-proxy resolves the provider upstream.

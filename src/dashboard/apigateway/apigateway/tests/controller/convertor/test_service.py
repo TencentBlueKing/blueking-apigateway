@@ -155,6 +155,8 @@ class TestServiceConvertor:
 
         assert service.id == "test-gateway.prod.456-1"
         assert service.name == "test-gateway.prod.backend-service"
+        assert service.backend_kind == BackendKindEnum.STANDARD.value
+        assert service.model_dump(mode="json", exclude_none=True)["kind"] == BackendKindEnum.STANDARD.value
         assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "1"
         assert service.plugins["bk-backend-context"].bk_backend_id == 1
         assert service.plugins["bk-backend-context"].bk_backend_name == "backend-service"
@@ -253,6 +255,8 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert service.upstream is None
+        assert service.backend_kind == BackendKindEnum.AI.value
+        assert service.model_dump(mode="json", exclude_none=True)["kind"] == BackendKindEnum.AI.value
         assert service.plugins["ai-proxy"].model_dump(exclude_none=True) == {
             "provider": "openai-compatible",
             "auth": {"header": {"Authorization": "Bearer must-not-log"}},
