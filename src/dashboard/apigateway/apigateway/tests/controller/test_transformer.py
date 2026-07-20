@@ -241,7 +241,10 @@ class TestGatewayApisixResourceConvertor:
         assert "upstream" not in service_payload
         assert "bk-error-wrapper" in service_payload["plugins"]
         assert service_payload["plugins"]["ai-proxy"]["options"]["temperature"] == 0.2
-        assert "logging" not in service_payload["plugins"]["ai-proxy"]
+        assert service_payload["plugins"]["ai-proxy"]["logging"] == {
+            "summaries": True,
+            "payloads": False,
+        }
         assert service.labels.get_label(LABEL_KEY_BACKEND_ID) == "10"
         assert service.labels.get_label(LABEL_KEY_APISIX_VERSION) == APISIX_VERSION_3_16
         assert route_payload["service_id"] == service_payload["id"]

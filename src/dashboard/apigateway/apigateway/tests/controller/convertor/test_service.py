@@ -253,16 +253,15 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert service.upstream is None
-        ai_proxy_config = service.plugins["ai-proxy"].model_dump(exclude_none=True)
-        assert ai_proxy_config == {
+        assert service.plugins["ai-proxy"].model_dump(exclude_none=True) == {
             "provider": "openai-compatible",
             "auth": {"header": {"Authorization": "Bearer must-not-log"}},
             "options": {"model": "gpt-4.1-mini", "temperature": 0.2},
             "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
             "timeout": 45000,
             "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
         }
-        assert "logging" not in ai_proxy_config
         assert service.plugins["bk-backend-context"].bk_backend_id == 10
 
     def test_ai_proxy_omits_override_for_builtin_provider(self, mock_release_data):
@@ -340,15 +339,14 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert "ai-proxy" not in service.plugins
-        ai_proxy_multi_config = service.plugins["ai-proxy-multi"].model_dump(exclude_none=True)
-        assert ai_proxy_multi_config == {
+        assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
             "instances": instances,
             "balancer": {"algorithm": "roundrobin"},
             "fallback_strategy": ["http_429", "http_5xx"],
             "timeout": 60000,
             "ssl_verify": True,
+            "logging": {"summaries": True, "payloads": False},
         }
-        assert "logging" not in ai_proxy_multi_config
 
     def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
@@ -442,9 +440,8 @@ class TestServiceConvertor:
 
         assert service.plugins["ai-proxy"].provider == "openai-compatible"
 
-    def test_ai_service_log_format_extends_default_with_llm_summary(self, mock_release_data):
+    def test_ai_service_uses_default_file_logger_without_log_format(self, mock_release_data):
         mock_release_data.stage_backend_configs = {10: _ai_backend_config()}
-        default_log_format = settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"].copy()
 
         service = ServiceConvertor(
             mock_release_data,
@@ -452,9 +449,7 @@ class TestServiceConvertor:
             apisix_version=APISIX_VERSION_3_16,
         ).convert()[0]
 
-        log_format = service.plugins["file-logger"].log_format
-        assert log_format == {**default_log_format, "llm_summary": "$llm_summary"}
-        assert settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"] == default_log_format
+        assert service.plugins["file-logger"].model_dump(exclude_none=True) == {"path": "logs/access.log"}
 
     def test_convert_with_multiple_backends(self, mock_release_data):
         """Test convert with multiple backend configs"""
@@ -484,22 +479,19 @@ class TestServiceConvertor:
     def test_build_service_plugins(self, mock_release_data, mocker):
         """Test _build_service_plugins method"""
         mock_common_plugins = {"plugin1": mocker.Mock()}
-        mock_kind_plugins = {"plugin2": mocker.Mock()}
         mock_binding_plugins = {"plugin3": mocker.Mock()}
         mock_extra_plugins = {"plugin4": mocker.Mock()}
 
         mocker.patch.object(ServiceConvertor, "_get_common_default_plugins", return_value=mock_common_plugins)
-        mocker.patch.object(ServiceConvertor, "_get_kind_default_plugins", return_value=mock_kind_plugins)
         mocker.patch.object(ServiceConvertor, "_get_stage_binding_plugins", return_value=mock_binding_plugins)
         mocker.patch.object(ServiceConvertor, "_get_stage_extra_plugins", return_value=mock_extra_plugins)
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._build_service_plugins(BackendKindEnum.STANDARD.value)
 
-        assert len(result) == 4
+        assert len(result) == 3
         expected_plugins = {
             **mock_common_plugins,
-            **mock_kind_plugins,
             **mock_binding_plugins,
             **mock_extra_plugins,
         }
@@ -517,7 +509,6 @@ class TestServiceConvertor:
 
         convertor = ServiceConvertor(mock_release_data, publish_id=123, apisix_version=APISIX_VERSION_3_13)
         result = convertor._get_common_default_plugins()
-        result.update(convertor._get_kind_default_plugins(BackendKindEnum.STANDARD.value))
 
         # Check that basic plugins are present
         expected_plugins = [

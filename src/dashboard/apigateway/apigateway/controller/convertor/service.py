@@ -60,15 +60,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _build_ai_log_format() -> Dict[str, str]:
-    default_log_format = settings.PLUGIN_METADATA_CONFIG["file-logger"]["log_format"]
-    return {**default_log_format, "llm_summary": "$llm_summary"}
-
-
 def _build_ai_proxy_plugins(config: Dict[str, Any]) -> Dict[str, Plugin]:
     common_config = {
         "timeout": config.get("timeout", 30000),
         "ssl_verify": True,
+        "logging": {"summaries": True, "payloads": False},
     }
 
     instances = config["instances"]
@@ -246,7 +242,6 @@ class ServiceConvertor(GatewayResourceConvertor):
 
     def _build_service_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         plugins = self._get_common_default_plugins()
-        plugins.update(self._get_kind_default_plugins(backend_kind))
         plugins.update(self._get_stage_binding_plugins(backend_kind))
         plugins.update(self._get_stage_extra_plugins(backend_kind))
         return plugins
@@ -270,6 +265,7 @@ class ServiceConvertor(GatewayResourceConvertor):
             "bk-response-check": Plugin(),
             "bk-permission": Plugin(),
             "bk-debug": Plugin(),
+            "file-logger": Plugin(path="logs/access.log"),
             "bk-stage-context": Plugin(
                 bk_gateway_name=self.gateway_name,
                 bk_gateway_id=self.gateway_id,
@@ -296,13 +292,6 @@ class ServiceConvertor(GatewayResourceConvertor):
             default_plugins["bk-default-tenant"] = Plugin()
 
         return default_plugins
-
-    def _get_kind_default_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
-        if backend_kind == BackendKindEnum.AI.value:
-            return {"file-logger": Plugin(path="logs/access.log", log_format=_build_ai_log_format())}
-        if backend_kind == BackendKindEnum.STANDARD.value:
-            return {"file-logger": Plugin(path="logs/access.log")}
-        raise ValueError(f"unsupported backend kind: {backend_kind}")
 
     def _get_stage_binding_plugins(self, backend_kind: str) -> Dict[str, Plugin]:
         stage_plugins = self._release_data.get_stage_plugins()
