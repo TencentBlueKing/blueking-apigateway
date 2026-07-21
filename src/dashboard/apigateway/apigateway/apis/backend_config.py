@@ -16,3 +16,10 @@ def validate_ai_backend_config(data: Any) -> dict[str, Any]:
             field = str(location[0]) if location else "non_field_errors"
             errors.setdefault(field, []).append(error["msg"])
         raise serializers.ValidationError(errors) from err
+
+
+def validate_single_instance_ai_backend_config(data: Any) -> dict[str, Any]:
+    config = validate_ai_backend_config(data)
+    if len(config["instances"]) != 1:
+        raise serializers.ValidationError({"instances": ["第一期必须且只能配置一个模型实例。"]})
+    return config

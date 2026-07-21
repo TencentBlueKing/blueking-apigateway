@@ -35,14 +35,12 @@ def _model_backend():
     return {
         "name": "openai-primary",
         "config": {
-            "timeout": 30000,
+            "timeout": 300,
             "instances": [
                 {
                     "name": "primary",
                     "provider": "openai",
-                    "weight": 1,
                     "auth": {"header": {"Authorization": "Bearer secret"}},
-                    "options": {"model": "gpt-4o", "temperature": 0.7},
                 }
             ],
         },
@@ -132,7 +130,8 @@ class TestStageSyncViewSet:
         assert backend.kind == BackendKindEnum.AI.value
         backend_config = BackendConfig.objects.get(backend=backend, stage__name="prod")
         assert backend_config.config["instances"][0]["auth"]["header"]["Authorization"] == "Bearer secret"
-        assert backend_config.config["instances"][0]["options"] == {"model": "gpt-4o", "temperature": 0.7}
+        assert backend_config.config["instances"][0]["weight"] == 0
+        assert "options" not in backend_config.config["instances"][0]
 
     def test_sync(self, mocker, unique_gateway_name, request_factory):
         mocker.patch(

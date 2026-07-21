@@ -20,8 +20,37 @@ import pytest
 from apigateway.apis.open.stage import serializers
 
 
+def _custom_instance(name):
+    return {
+        "name": name,
+        "provider": "openai-compatible",
+        "auth": {"header": {"X-Api-Key": "secret", "X-Tenant": "tenant"}},
+        "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+    }
+
+
 def test_ai_backend_config_rejects_non_mapping_instance():
     slz = serializers.AIBackendConfigSLZ(data={"instances": [[{}]]})
+
+    assert not slz.is_valid()
+    assert "instances" in slz.errors
+
+
+def test_automation_defaults_weight_and_accepts_multiple_headers():
+    slz = serializers.AIBackendConfigSLZ(data={"instances": [_custom_instance("primary")]})
+
+    slz.is_valid(raise_exception=True)
+
+    assert slz.validated_data["timeout"] == 300
+    assert slz.validated_data["instances"][0]["weight"] == 0
+    assert slz.validated_data["instances"][0]["auth"]["header"]["X-Tenant"] == "tenant"
+    assert "options" not in slz.validated_data["instances"][0]
+
+
+def test_automation_rejects_multiple_instances_in_first_phase():
+    slz = serializers.AIBackendConfigSLZ(
+        data={"instances": [_custom_instance("primary"), _custom_instance("fallback")]}
+    )
 
     assert not slz.is_valid()
     assert "instances" in slz.errors

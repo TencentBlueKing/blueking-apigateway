@@ -22,7 +22,7 @@ from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import validate_ai_backend_config
+from apigateway.apis.backend_config import validate_single_instance_ai_backend_config
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.stage import StageSyncHandler
@@ -274,7 +274,7 @@ class BackendSLZ(serializers.Serializer):
 
 class AIBackendConfigSLZ(serializers.Serializer):
     def to_internal_value(self, data):
-        return validate_ai_backend_config(data)
+        return validate_single_instance_ai_backend_config(data)
 
     class Meta:
         ref_name = "apis.open.stage.AIBackendConfigSLZ"
