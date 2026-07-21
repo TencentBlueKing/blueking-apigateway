@@ -15,12 +15,15 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 
+from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
 from apigateway.biz.audit import Auditor
@@ -50,11 +53,20 @@ from .serializers import (
     StageVarsSLZ,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _get_backend_config_dict(instance: BackendConfig) -> dict:
     data = get_model_dict(instance)
     data.pop("_config")
-    data["config"] = instance.get_config_for_display()
+    if instance.backend.is_ai:
+        try:
+            data["config"] = AIBackendWebConfigAdapter.to_web(instance.config)
+        except ValueError:
+            logger.exception("failed to convert AI backend config for Web: backend_config_id=%s", instance.id)
+            raise serializers.ValidationError({"config": _("已有模型服务配置无法通过 Web 接口编辑。")}) from None
+    else:
+        data["config"] = instance.get_config_for_display()
     return data
 
 

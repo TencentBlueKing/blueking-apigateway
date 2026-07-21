@@ -25,7 +25,11 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import restore_masked_header_values, validate_ai_backend_config
+from apigateway.apis.web.ai_backend import (
+    AIBackendWebConfigAdapter,
+    AIBackendWebInputSLZ,
+    AIBackendWebOutputSLZ,
+)
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import (
@@ -167,9 +171,9 @@ class StageOutputSLZ(serializers.ModelSerializer):
         return ""
 
 
-class AIBackendConfigSLZ(serializers.Serializer):
-    def to_internal_value(self, data):
-        return validate_ai_backend_config(data)
+class AIBackendConfigSLZ(AIBackendWebInputSLZ):
+    class Meta:
+        ref_name = "apigateway.apis.web.stage.serializers.AIBackendConfigSLZ"
 
 
 class BackendSLZ(serializers.Serializer):
@@ -232,17 +236,19 @@ class StageInputSLZ(serializers.Serializer):
             config_slz_class = AIBackendConfigSLZ if backend.is_ai else BaseBackendConfigSLZ
             config_slz = config_slz_class(data=input_backend["config"])
             config_slz.is_valid(raise_exception=True)
-            input_backend["config"] = config_slz.validated_data
             if backend.is_ai:
-                restore_masked_header_values(input_backend["config"], existing_configs.get(backend.id))
+                input_backend["config"] = AIBackendWebConfigAdapter.to_internal(
+                    config_slz.validated_data,
+                    existing_config=existing_configs.get(backend.id),
+                )
+                continue
 
+            input_backend["config"] = config_slz.validated_data
             try:
                 BACKEND_CONFIG_TYPES[backend.kind].model_validate(input_backend["config"])
             except ValueError as err:
                 raise serializers.ValidationError({"backends": str(err)}) from err
 
-            if backend.is_ai:
-                continue
             # 校验backend下的host下的类型的唯一性
             validator = SchemeHostInputValidator(hosts=input_backend["config"]["hosts"], backend=backend)
             validator.validate_scheme(CallSourceTypeEnum.Web.value)
@@ -312,7 +318,13 @@ class StageBackendOutputSLZ(serializers.Serializer):
         return obj.backend.kind
 
     def get_config(self, obj):
-        return obj.get_config_for_display()
+        if not obj.backend.is_ai:
+            return obj.get_config_for_display()
+        try:
+            return AIBackendWebOutputSLZ(AIBackendWebConfigAdapter.to_web(obj.config)).data
+        except ValueError:
+            logger.exception("failed to convert AI backend config for Web: backend_config_id=%s", obj.id)
+            raise serializers.ValidationError({"config": _("已有模型服务配置无法通过 Web 接口编辑。")}) from None
 
 
 class StandardBackendConfigInputSLZ(BaseBackendConfigSLZ):
@@ -335,10 +347,14 @@ class BackendConfigInputSLZ(serializers.Serializer):
         config_slz = config_slz_class(data=data, context=self.context)
         config_slz.is_valid(raise_exception=True)
 
+        if backend.is_ai:
+            return AIBackendWebConfigAdapter.to_internal(
+                config_slz.validated_data,
+                existing_config=self.context.get("existing_config"),
+            )
+
         try:
             config_data = config_slz.validated_data
-            if backend.is_ai:
-                restore_masked_header_values(config_data, self.context.get("existing_config"))
             return BACKEND_CONFIG_TYPES[backend.kind].model_validate(config_data).to_config()
         except ValueError as err:
             raise serializers.ValidationError({"config": str(err)}) from err
