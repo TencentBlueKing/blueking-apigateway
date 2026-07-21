@@ -38,7 +38,7 @@ def _standard_backend_config():
 
 def _ai_backend_config():
     return {
-        "timeout": 30000,
+        "timeout": 300,
         "instances": [
             {
                 "name": "primary",

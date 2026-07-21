@@ -128,7 +128,7 @@ class TestBackendHandler:
                 "configs": [
                     {
                         "stage_id": fake_stage.id,
-                        "timeout": 30000,
+                        "timeout": 300,
                         "instances": [
                             {
                                 "name": "primary",
