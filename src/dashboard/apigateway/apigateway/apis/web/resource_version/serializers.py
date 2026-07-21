@@ -16,8 +16,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import logging
+
+from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.web.ai_backend import AIBackendWebConfigAdapter, AIBackendWebOutputSLZ
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, OpenAPIFormatEnum
@@ -26,6 +30,8 @@ from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
+
+logger = logging.getLogger(__name__)
 
 
 class ResourceVersionCreateInputSLZ(serializers.Serializer):
@@ -95,7 +101,20 @@ class ResourceInfoSLZ(serializers.Serializer):
             if backend and "resource_backend_configs" in self.context:
                 backend_config = self.context["resource_backend_configs"].get(backend_id)
                 if backend_config:
-                    backend_info["config"] = backend_config.get_config_for_display()
+                    if backend.is_ai:
+                        try:
+                            web_config = AIBackendWebConfigAdapter.to_web(backend_config.config)
+                        except ValueError:
+                            logger.exception(
+                                "failed to convert AI backend config for Web: backend_config_id=%s",
+                                backend_config.id,
+                            )
+                            raise serializers.ValidationError(
+                                {"config": _("已有模型服务配置无法通过 Web 接口编辑。")}
+                            ) from None
+                        backend_info["config"] = AIBackendWebOutputSLZ(web_config).data
+                    else:
+                        backend_info["config"] = backend_config.get_config_for_display()
 
             proxy["backend"] = backend_info
 

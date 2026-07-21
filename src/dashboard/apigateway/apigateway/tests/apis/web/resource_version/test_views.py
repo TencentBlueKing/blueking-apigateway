@@ -252,7 +252,7 @@ class TestResourceVersionRetrieveDestroyApi:
         assert resp.status_code == 200
         assert resp.json()["data"]["resources"] == []
 
-    def test_retrieve_with_stage_masks_ai_backend_config(
+    def test_retrieve_with_stage_returns_ai_backend_web_config(
         self, request_view, fake_backend, fake_stage, fake_gateway, fake_resource_version_v2
     ):
         fake_gateway.kind = GatewayKindEnum.AI.value
@@ -265,7 +265,7 @@ class TestResourceVersionRetrieveDestroyApi:
             backend=fake_backend,
             stage=fake_stage,
             config={
-                "timeout": 30000,
+                "timeout": 300,
                 "instances": [
                     {
                         "name": "primary",
@@ -291,8 +291,17 @@ class TestResourceVersionRetrieveDestroyApi:
         )
 
         assert resp.status_code == 200
-        header = resp.json()["data"]["resources"][0]["proxy"]["backend"]["config"]["instances"][0]["auth"]["header"]
-        assert header["Authorization"] == "Be****et"
+        config = resp.json()["data"]["resources"][0]["proxy"]["backend"]["config"]
+        assert config == {
+            "provider": "openai",
+            "endpoint": "https://api.openai.com/v1/chat/completions",
+            "model_endpoint": "https://api.openai.com/v1/models",
+            "api_key": "se****et",
+            "auth_header": None,
+            "model": "gpt-4o",
+            "model_options": {},
+            "timeout": 300,
+        }
 
     def test_destroy(self, request_view, fake_gateway):
         rv = G(ResourceVersion, gateway=fake_gateway, version="1.0.0")
