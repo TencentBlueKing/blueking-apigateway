@@ -397,6 +397,7 @@ class TestBackendConnectivityApi:
     def test_builtin_provider_returns_model_ids(self, mocker, request_view, fake_stage, provider, expected_url):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         config = _ai_config(fake_stage.id)
         config["provider"] = provider
         http_get = _mock_model_response(
@@ -465,11 +466,16 @@ class TestBackendConnectivityApi:
             verify=True,
             allow_redirects=False,
         )
-        assert resolver.call_count == 1
+        assert resolver.call_count == 2
 
-    def test_openai_compatible_requires_model_endpoint(self, request_view, fake_stage):
+    def test_inferred_models_failure_requests_explicit_model_endpoint(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
+        http_get = mocker.patch(
+            "apigateway.biz.backend.connectivity.http_get",
+            return_value=(False, {"error": "Authorization: Bearer upstream-secret"}),
+        )
         config = _ai_config(fake_stage.id)
         config.update(
             {
@@ -487,7 +493,12 @@ class TestBackendConnectivityApi:
             data={"config": config},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 500
+        assert "model_endpoint" in str(response.json())
+        assert "upstream-secret" not in str(response.json())
+        assert "secret" not in str(response.json())
+        assert http_get.call_count == 1
+        assert http_get.call_args.args[0] == "https://models.example.com/v1/models"
 
     def test_custom_provider_rejects_link_local_resolved_address(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
@@ -579,6 +590,7 @@ class TestBackendConnectivityApi:
     def test_connectivity_uses_fixed_timeout(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         config = _ai_config(fake_stage.id)
         config["timeout"] = 300
         http_get = _mock_model_response(mocker, {"data": []})
@@ -597,6 +609,7 @@ class TestBackendConnectivityApi:
     def test_existing_backend_restores_masked_header(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         backend = Backend.objects.create(
             gateway=fake_stage.gateway,
             name="openai-primary",
@@ -709,6 +722,7 @@ class TestBackendConnectivityApi:
     def test_provider_failure_does_not_expose_credentials(self, caplog, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = mocker.patch(
             "apigateway.biz.backend.connectivity.http_get",
             return_value=(False, {"error": "Authorization: Bearer secret"}),
@@ -731,6 +745,7 @@ class TestBackendConnectivityApi:
     def test_provider_redirect_is_rejected(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = _mock_model_response(mocker, {"status_code": 302}, success=False)
 
         response = request_view(
@@ -747,6 +762,7 @@ class TestBackendConnectivityApi:
     def test_rejects_malformed_provider_response(self, mocker, request_view, fake_stage):
         fake_stage.gateway.kind = GatewayKindEnum.AI.value
         fake_stage.gateway.save()
+        mocker.patch("apigateway.biz.backend.connectivity._resolve_endpoint")
         http_get = _mock_model_response(mocker, {"data": [{"name": "missing-id"}]})
 
         response = request_view(

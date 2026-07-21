@@ -27,6 +27,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.backend import (
     AIBackendConnectivityError,
     AIBackendEndpointError,
+    AIBackendModelEndpointRequiredError,
     BackendHandler,
     get_ai_backend_model_ids,
 )
@@ -135,6 +136,10 @@ class BackendConnectivityTestApi(generics.CreateAPIView):
             models = get_ai_backend_model_ids(slz.validated_data["config"])
         except AIBackendEndpointError:
             raise error_codes.FAILED_PRECONDITION.format(_("模型服务地址不安全或无法解析，请检查配置。")) from None
+        except AIBackendModelEndpointRequiredError:
+            raise error_codes.REMOTE_REQUEST_ERROR.format(
+                _("模型列表地址自动推导失败，请配置 model_endpoint 后重试。")
+            ) from None
         except AIBackendConnectivityError:
             raise error_codes.REMOTE_REQUEST_ERROR.format(_("模型服务连通性测试失败，请检查配置。")) from None
         return OKJsonResponse(data={"models": models})

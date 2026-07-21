@@ -17,7 +17,12 @@
 #
 
 from .backend import BackendHandler
-from .connectivity import AIBackendConnectivityError, AIBackendEndpointError, get_ai_backend_model_ids
+from .connectivity import (
+    AIBackendConnectivityError,
+    AIBackendEndpointError,
+    AIBackendModelEndpointRequiredError,
+    get_ai_backend_model_ids,
+)
 
 __all__ = [
     # constant
@@ -25,6 +30,7 @@ __all__ = [
     # class
     "AIBackendConnectivityError",
     "AIBackendEndpointError",
+    "AIBackendModelEndpointRequiredError",
     "BackendHandler",
     # functions
     "get_ai_backend_model_ids",

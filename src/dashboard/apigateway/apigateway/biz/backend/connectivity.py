@@ -1,18 +1,14 @@
 import logging
 import socket
 from ipaddress import ip_address
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from apigateway.common.security import is_forbidden_host
 from apigateway.components.http import http_get
-from apigateway.core.constants import AIBackendProviderEnum
+from apigateway.core.ai_backend import get_ai_backend_provider_config
 
 logger = logging.getLogger(__name__)
 
-AI_PROVIDER_MODELS_ENDPOINTS = {
-    AIBackendProviderEnum.OPENAI.value: "https://api.openai.com/v1/models",
-    AIBackendProviderEnum.DEEPSEEK.value: "https://api.deepseek.com/models",
-}
 HTTP_TIMEOUT_SECONDS = 30
 
 
@@ -24,13 +20,36 @@ class AIBackendConnectivityError(Exception):
     pass
 
 
+class AIBackendModelEndpointRequiredError(AIBackendConnectivityError):
+    pass
+
+
+def _derive_models_endpoint(completion_endpoint: str) -> str:
+    parsed = urlsplit(completion_endpoint)
+    suffix = "/chat/completions"
+    if not parsed.path.endswith(suffix):
+        raise AIBackendModelEndpointRequiredError("model endpoint cannot be derived")
+    path = f"{parsed.path.removesuffix(suffix)}/models"
+    return urlunsplit(parsed._replace(path=path, fragment=""))
+
+
+def _get_endpoint_pair(config: dict) -> tuple[str, str, bool]:
+    instance = config["instances"][0]
+    provider_config = get_ai_backend_provider_config(instance["provider"])
+    if provider_config is not None:
+        return provider_config.endpoint, provider_config.model_endpoint, False
+    completion = instance["override"]["endpoint"]
+    if model_endpoint := instance.get("model_endpoint"):
+        return completion, model_endpoint, False
+    return completion, _derive_models_endpoint(completion), True
+
+
 def get_ai_backend_model_ids(config: dict) -> list[str]:
     instance = config["instances"][0]
     provider = instance["provider"]
-    endpoint = AI_PROVIDER_MODELS_ENDPOINTS.get(provider)
-    if endpoint is None:
-        endpoint = instance["model_endpoint"]
-        _resolve_endpoint(endpoint)
+    completion_endpoint, model_endpoint, inferred = _get_endpoint_pair(config)
+    _resolve_endpoint(completion_endpoint)
+    _resolve_endpoint(model_endpoint)
 
     headers = {
         key: value
@@ -40,7 +59,7 @@ def get_ai_backend_model_ids(config: dict) -> list[str]:
 
     try:
         ok, response = http_get(
-            endpoint,
+            model_endpoint,
             {},
             headers=headers,
             timeout=HTTP_TIMEOUT_SECONDS,
@@ -59,14 +78,14 @@ def get_ai_backend_model_ids(config: dict) -> list[str]:
             raise ValueError("model data item must contain a string id")
         return models
     except (KeyError, TypeError, ValueError) as err:
-        sanitized_error = AIBackendConnectivityError(type(err).__name__)
         logger.warning(
-            "failed to test AI backend connectivity: provider=%s error_type=%s",
+            "failed to test AI backend connectivity: provider=%s error_type=%s inferred=%s",
             provider,
             type(err).__name__,
-            exc_info=(AIBackendConnectivityError, sanitized_error, err.__traceback__),
+            inferred,
         )
-        raise AIBackendConnectivityError from err
+        error_type = AIBackendModelEndpointRequiredError if inferred else AIBackendConnectivityError
+        raise error_type from err
 
 
 def _resolve_endpoint(endpoint: str) -> None:

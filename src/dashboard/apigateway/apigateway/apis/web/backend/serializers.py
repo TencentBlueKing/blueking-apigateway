@@ -33,7 +33,7 @@ from apigateway.biz.validators import SchemeHostInputValidator
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
-from apigateway.core.constants import DEFAULT_BACKEND_NAME, AIBackendProviderEnum, BackendKindEnum, BackendTypeEnum
+from apigateway.core.constants import DEFAULT_BACKEND_NAME, BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
 from .constants import BACKEND_NAME_PATTERN
@@ -87,10 +87,6 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
                     existing.stage_id,
                 )
                 raise serializers.ValidationError({"config": _("已有后端配置无法读取，请联系管理员。")}) from None
-        if web_config["provider"] == AIBackendProviderEnum.OPENAI_COMPATIBLE.value and not web_config.get(
-            "model_endpoint"
-        ):
-            raise serializers.ValidationError({"config": {"model_endpoint": _("必须提供模型列表地址。")}})
         attrs["config"] = AIBackendWebConfigAdapter.to_internal(web_config, existing_config=existing_value)
         return attrs
 
