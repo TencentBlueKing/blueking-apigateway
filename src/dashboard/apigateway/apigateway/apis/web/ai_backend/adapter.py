@@ -2,6 +2,7 @@ from copy import deepcopy
 from urllib.parse import urlsplit
 
 from django.utils.translation import gettext as _
+from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
 from apigateway.apis.backend_config import validate_ai_backend_config
@@ -18,7 +19,10 @@ class AIBackendWebConfigNotRepresentable(ValueError):
 class AIBackendWebConfigAdapter:
     @classmethod
     def to_internal(cls, data: dict, *, existing_config: dict | None = None) -> dict:
-        restored_auth = cls._restore_masked_auth(data, existing_config)
+        try:
+            restored_auth = cls._restore_masked_auth(data, existing_config)
+        except PydanticValidationError, AIBackendWebConfigNotRepresentable:
+            raise serializers.ValidationError(_("已有模型服务配置无法通过 Web 接口编辑。")) from None
         options = dict(data.get("model_options", {}))
         if data.get("model") is not None:
             options["model"] = data["model"]

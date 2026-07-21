@@ -34,6 +34,64 @@ def test_ai_backend_config_rejects_non_mapping_instance():
     assert "instances" in slz.errors
 
 
+def test_ai_backend_connectivity_rejects_zero_backend_id():
+    slz = serializers.AIBackendConnectivityInputSLZ(
+        data={
+            "backend_id": 0,
+            "config": {
+                "stage_id": 1,
+                "provider": "openai",
+                "api_key": "secret",
+                "model_options": {},
+                "timeout": 300,
+            },
+        },
+        context={"gateway": None},
+    )
+
+    assert not slz.is_valid()
+    assert set(slz.errors) == {"backend_id"}
+
+
+def test_ai_backend_connectivity_reports_unrepresentable_existing_config(fake_backend, fake_stage):
+    fake_stage.gateway.kind = GatewayKindEnum.AI.value
+    fake_stage.gateway.save(update_fields=["kind"])
+    fake_backend.kind = BackendKindEnum.AI.value
+    fake_backend.save(update_fields=["kind"])
+    backend_config = BackendConfig.objects.get(backend=fake_backend, stage=fake_stage)
+    backend_config.config = {
+        "timeout": 300,
+        "instances": [
+            {
+                "name": "primary",
+                "provider": "openai-compatible",
+                "weight": 0,
+                "auth": {"header": {"X-Api-Key": "secret", "X-Tenant": "tenant"}},
+                "options": {},
+                "override": {"endpoint": "https://llm.example.com/v1/chat/completions"},
+            }
+        ],
+    }
+    backend_config.save(update_fields=["_config"])
+    slz = serializers.AIBackendConnectivityInputSLZ(
+        data={
+            "backend_id": fake_backend.id,
+            "config": {
+                "stage_id": fake_stage.id,
+                "provider": "openai-compatible",
+                "endpoint": "https://llm.example.com/v1/chat/completions",
+                "auth_header": {"name": "X-Api-Key", "value": "se****et"},
+                "model_options": {},
+                "timeout": 300,
+            },
+        },
+        context={"gateway": fake_stage.gateway},
+    )
+
+    with pytest.raises(ValidationError, match="无法通过 Web 接口编辑"):
+        slz.is_valid(raise_exception=True)
+
+
 class TestBackendInputSLZ:
     def test_to_internal_value(self, fake_stage):
         data = [

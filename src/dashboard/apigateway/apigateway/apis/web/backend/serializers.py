@@ -53,7 +53,7 @@ class AIBackendConfigSLZ(AIBackendWebInputSLZ):
 
 
 class AIBackendConnectivityInputSLZ(serializers.Serializer):
-    backend_id = serializers.IntegerField(required=False)
+    backend_id = serializers.IntegerField(required=False, min_value=1)
     config = serializers.DictField()
 
     class Meta:
