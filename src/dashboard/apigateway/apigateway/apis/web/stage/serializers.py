@@ -28,7 +28,7 @@ from rest_framework.validators import UniqueTogetherValidator
 from apigateway.apis.web.ai_backend import (
     AIBackendWebConfigAdapter,
     AIBackendWebInputSLZ,
-    AIBackendWebOutputSLZ,
+    serialize_ai_backend_config_for_web,
 )
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
@@ -320,11 +320,7 @@ class StageBackendOutputSLZ(serializers.Serializer):
     def get_config(self, obj):
         if not obj.backend.is_ai:
             return obj.get_config_for_display()
-        try:
-            return AIBackendWebOutputSLZ(AIBackendWebConfigAdapter.to_web(obj.config)).data
-        except ValueError:
-            logger.exception("failed to convert AI backend config for Web: backend_config_id=%s", obj.id)
-            raise serializers.ValidationError({"config": _("已有模型服务配置无法通过 Web 接口编辑。")}) from None
+        return serialize_ai_backend_config_for_web(obj)
 
 
 class StandardBackendConfigInputSLZ(BaseBackendConfigSLZ):
