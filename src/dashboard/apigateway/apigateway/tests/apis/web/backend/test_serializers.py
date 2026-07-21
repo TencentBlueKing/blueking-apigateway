@@ -322,16 +322,10 @@ class TestBackendInputSLZ:
                 "configs": [
                     {
                         "stage_id": fake_stage.id,
-                        "timeout": 30000,
-                        "instances": [
-                            {
-                                "name": "primary",
-                                "provider": "openai",
-                                "weight": 1,
-                                "auth": {"header": {"Authorization": "Bearer secret"}},
-                                "options": {"model": "gpt-4o"},
-                            }
-                        ],
+                        "provider": "openai",
+                        "api_key": "secret",
+                        "model_options": {},
+                        "timeout": 300,
                     }
                 ],
             },

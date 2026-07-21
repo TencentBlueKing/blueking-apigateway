@@ -17,20 +17,22 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import logging
-from collections.abc import Mapping
-from urllib.parse import urlsplit
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from apigateway.apis.backend_config import restore_masked_header_values, validate_ai_backend_config
+from apigateway.apis.web.ai_backend import (
+    AIBackendWebConfigAdapter,
+    AIBackendWebInputSLZ,
+    AIBackendWebOutputSLZ,
+)
 from apigateway.apis.web.constants import BACKEND_CONFIG_SCHEME_MAP
 from apigateway.apis.web.serializers import BaseBackendConfigSLZ
 from apigateway.biz.validators import SchemeHostInputValidator
 from apigateway.common.constants import CallSourceTypeEnum
 from apigateway.common.fields import CurrentGatewayDefault
-from apigateway.core.backend_config import BACKEND_CONFIG_TYPES, mask_header_value
+from apigateway.core.backend_config import BACKEND_CONFIG_TYPES
 from apigateway.core.constants import DEFAULT_BACKEND_NAME, AIBackendProviderEnum, BackendKindEnum, BackendTypeEnum
 from apigateway.core.models import Backend, BackendConfig, Stage
 
@@ -43,16 +45,11 @@ class BackendConfigSLZ(BaseBackendConfigSLZ):
     stage_id = serializers.IntegerField()
 
 
-class AIBackendConfigSLZ(serializers.Serializer):
+class AIBackendConfigSLZ(AIBackendWebInputSLZ):
     stage_id = serializers.IntegerField()
 
-    def to_internal_value(self, data):
-        if not isinstance(data, Mapping):
-            return super().to_internal_value(data)
-
-        stage = super().to_internal_value(data)
-        raw_config = {key: value for key, value in data.items() if key != "stage_id"}
-        return {"stage_id": stage["stage_id"], **validate_ai_backend_config(raw_config)}
+    class Meta:
+        ref_name = "apigateway.apis.web.backend.serializers.AIBackendConfigSLZ"
 
 
 class AIBackendConnectivityInputSLZ(serializers.Serializer):
@@ -65,52 +62,36 @@ class AIBackendConnectivityInputSLZ(serializers.Serializer):
     def validate(self, attrs):
         config_slz = AIBackendConfigSLZ(data=attrs["config"])
         config_slz.is_valid(raise_exception=True)
-        config = config_slz.validated_data
-        if (
-            config["instances"][0]["provider"] == AIBackendProviderEnum.OPENAI_COMPATIBLE.value
-            and "model_endpoint" not in config["instances"][0]
-        ):
-            raise serializers.ValidationError(
-                {"config": {"instances": [{"model_endpoint": _("必须提供模型列表地址。")}]}}
-            )
-
-        backend_id = attrs.get("backend_id")
-        if backend_id is not None:
-            backend = Backend.objects.filter(
-                gateway=self.context["gateway"],
-                id=backend_id,
-                kind=BackendKindEnum.AI.value,
-            ).first()
-            if backend is None:
-                raise serializers.ValidationError({"backend_id": _("模型服务不存在。")})
-
-            existing_config = (
-                BackendConfig.objects.filter(backend=backend, stage_id=config["stage_id"])
+        web_config = dict(config_slz.validated_data)
+        stage_id = web_config.pop("stage_id")
+        existing_value = None
+        if backend_id := attrs.get("backend_id"):
+            existing = (
+                BackendConfig.objects.filter(
+                    backend_id=backend_id,
+                    backend__gateway=self.context["gateway"],
+                    backend__kind=BackendKindEnum.AI.value,
+                    stage_id=stage_id,
+                )
                 .select_related("backend")
                 .first()
             )
-            if existing_config is None:
-                raise serializers.ValidationError({"config": _("模型服务在当前环境下没有配置。")})
-
+            if existing is None:
+                raise serializers.ValidationError({"backend_id": _("模型服务在当前环境下没有配置。")})
             try:
-                existing_config_value = existing_config.config
+                existing_value = existing.config
             except ValueError:
                 logger.exception(
-                    "failed to read backend config id=%s for backend_id=%s stage_id=%s",
-                    existing_config.id,
-                    existing_config.backend_id,
-                    existing_config.stage_id,
+                    "failed to read existing AI backend config: backend_id=%s stage_id=%s",
+                    existing.backend_id,
+                    existing.stage_id,
                 )
                 raise serializers.ValidationError({"config": _("已有后端配置无法读取，请联系管理员。")}) from None
-
-            if _has_masked_header_values(config, existing_config_value):
-                if _get_ai_backend_destination_identity(config) != _get_ai_backend_destination_identity(
-                    existing_config_value
-                ):
-                    raise serializers.ValidationError({"config": _("模型服务地址已变更，请重新输入认证凭据。")})
-                restore_masked_header_values(config, existing_config_value)
-
-        attrs["config"] = config
+        if web_config["provider"] == AIBackendProviderEnum.OPENAI_COMPATIBLE.value and not web_config.get(
+            "model_endpoint"
+        ):
+            raise serializers.ValidationError({"config": {"model_endpoint": _("必须提供模型列表地址。")}})
+        attrs["config"] = AIBackendWebConfigAdapter.to_internal(web_config, existing_config=existing_value)
         return attrs
 
 
@@ -119,44 +100,6 @@ class AIBackendConnectivityOutputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.backend.serializers.AIBackendConnectivityOutputSLZ"
-
-
-def _has_masked_header_values(config, existing_config):
-    if not config.get("instances") or not existing_config.get("instances"):
-        return False
-
-    existing_headers = {
-        key.casefold(): value
-        for key, value in existing_config["instances"][0].get("auth", {}).get("header", {}).items()
-    }
-    return any(
-        existing_value is not None and value == mask_header_value(existing_value)
-        for key, value in config["instances"][0].get("auth", {}).get("header", {}).items()
-        if (existing_value := existing_headers.get(key.casefold())) is not None
-    )
-
-
-def _get_ai_backend_destination_identity(config):
-    if not config.get("instances"):
-        return None
-
-    instance = config["instances"][0]
-    provider = instance.get("provider")
-    if provider != AIBackendProviderEnum.OPENAI_COMPATIBLE.value:
-        return (provider,)
-
-    return (
-        provider,
-        _get_url_origin(instance.get("override", {}).get("endpoint")),
-        _get_url_origin(instance.get("model_endpoint")),
-    )
-
-
-def _get_url_origin(url):
-    if not url:
-        return None
-    parsed = urlsplit(url)
-    return parsed.scheme, parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80)
 
 
 class BackendInputSLZ(serializers.Serializer):
@@ -251,19 +194,22 @@ class BackendInputSLZ(serializers.Serializer):
                     raise serializers.ValidationError({"configs": _("已有后端配置无法读取，请联系管理员。")}) from None
 
         for backend_config in attrs["configs"]:
+            stage_id = backend_config["stage_id"]
             if attrs["kind"] == BackendKindEnum.AI.value:
-                restore_masked_header_values(
-                    backend_config,
-                    existing_configs.get(backend_config["stage_id"]),
+                web_config = {key: value for key, value in backend_config.items() if key != "stage_id"}
+                stored_config = AIBackendWebConfigAdapter.to_internal(
+                    web_config,
+                    existing_config=existing_configs.get(stage_id),
                 )
+                backend_config.clear()
+                backend_config.update({"stage_id": stage_id, **stored_config})
+                continue
             raw_config = {key: value for key, value in backend_config.items() if key != "stage_id"}
             try:
                 BACKEND_CONFIG_TYPES[attrs["kind"]].model_validate(raw_config)
             except ValueError as err:
                 raise serializers.ValidationError({"configs": str(err)}) from err
 
-            if attrs["kind"] == BackendKindEnum.AI.value:
-                continue
             for host in backend_config["hosts"]:
                 # 校验 backend 下类型选择的关联性
                 if host["scheme"] not in BACKEND_CONFIG_SCHEME_MAP[attrs["type"]]:
@@ -313,6 +259,20 @@ class BackendRetrieveOutputSLZ(serializers.Serializer):
 
         data = []
         for backend_config in backend_configs:
+            if obj.kind == BackendKindEnum.AI.value:
+                try:
+                    config = AIBackendWebConfigAdapter.to_web(backend_config.config)
+                except ValueError:
+                    logger.exception(
+                        "failed to convert AI backend config for Web: backend_config_id=%s",
+                        backend_config.id,
+                    )
+                    raise serializers.ValidationError(
+                        {"configs": _("已有模型服务配置无法通过 Web 接口编辑。")}
+                    ) from None
+                config["stage_id"] = backend_config.stage_id
+                data.append({"stage_id": config["stage_id"], **AIBackendWebOutputSLZ(config).data})
+                continue
             config = backend_config.get_config_for_display()
             config["stage"] = {
                 "id": backend_config.stage.id,
