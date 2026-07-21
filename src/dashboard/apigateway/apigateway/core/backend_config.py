@@ -79,8 +79,7 @@ class StandardBackendConfig(BaseModel):
 class AIBackendConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    timeout: int = Field(default=30000, gt=0)
-    model_endpoint: str | None = None
+    timeout: int = Field(default=30, gt=0)
     instances: list[dict[str, Any]] = Field(min_length=1, max_length=1)
 
     @model_validator(mode="before")
@@ -93,24 +92,30 @@ class AIBackendConfig(BaseModel):
     @field_validator("instances")
     @classmethod
     def validate_instances(cls, instances: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        instance = instances[0]
+        instance = dict(instances[0])
         path = "$.instances[0]"
         _validate_object_keys(
             instance,
-            allowed={"name", "provider", "weight", "auth", "options", "override"},
-            required={"name", "provider", "weight", "options"},
+            allowed={"name", "provider", "weight", "auth", "options", "override", "model_endpoint"},
+            required={"name", "provider", "options"},
             path=path,
         )
         if not isinstance(instance["name"], str) or not instance["name"]:
             raise ValueError(f"{path}.name: must be a non-empty string")
         if instance["provider"] not in AIBackendProviderEnum.get_values():
             raise ValueError(f"{path}.provider: unsupported provider")
-        if type(instance["weight"]) is not int or instance["weight"] != 1:
-            raise ValueError(f"{path}.weight: must be 1")
+        instance.setdefault("weight", 0)
+        if type(instance["weight"]) is not int or instance["weight"] < 0:
+            raise ValueError(f"{path}.weight: must be a non-negative integer")
         cls._validate_auth(instance.get("auth"), provided="auth" in instance)
         cls._validate_options(instance["options"])
         cls._validate_override(instance.get("override"), provided="override" in instance)
-        return instances
+        if "model_endpoint" in instance:
+            model_endpoint = instance["model_endpoint"]
+            if not isinstance(model_endpoint, str) or not model_endpoint:
+                raise ValueError(f"{path}.model_endpoint: must be a non-empty string")
+            cls._validate_endpoint(model_endpoint, f"{path}.model_endpoint")
+        return [instance]
 
     @staticmethod
     def _validate_auth(auth: Any, *, provided: bool) -> None:
@@ -141,9 +146,7 @@ class AIBackendConfig(BaseModel):
         path = "$.instances[0].options"
         if not isinstance(options, dict):
             raise ValueError(f"{path}: must be an object")  # noqa: TRY004
-        if "model" not in options:
-            raise ValueError(f"{path}: missing required field: model")
-        if not isinstance(options["model"], str) or not options["model"]:
+        if "model" in options and (not isinstance(options["model"], str) or not options["model"]):
             raise ValueError(f"{path}.model: must be a non-empty string")
 
     @staticmethod
@@ -153,19 +156,13 @@ class AIBackendConfig(BaseModel):
             return
         if not isinstance(override, dict):
             raise ValueError(f"{path}: must be an object")  # noqa: TRY004
-        _validate_object_keys(override, allowed={"endpoint"}, required={"endpoint"}, path=path)
+        _validate_object_keys(override, allowed={"endpoint"}, required=set(), path=path)
+        if "endpoint" not in override:
+            return
         if not isinstance(override["endpoint"], str) or not override["endpoint"]:
             raise ValueError(f"{path}.endpoint: must be a non-empty string")
 
         AIBackendConfig._validate_endpoint(override["endpoint"], f"{path}.endpoint")
-
-    @field_validator("model_endpoint")
-    @classmethod
-    def validate_model_endpoint(cls, endpoint: str | None) -> str | None:
-        if endpoint is None:
-            return endpoint
-        cls._validate_endpoint(endpoint, "$.model_endpoint")
-        return endpoint
 
     @staticmethod
     def _validate_endpoint(endpoint: str, path: str) -> None:
@@ -199,9 +196,9 @@ class AIBackendConfig(BaseModel):
                 raise ValueError("$.instances[0].auth.header: Authorization header is required")
             if "override" in instance:
                 raise ValueError("$.instances[0].override: override is not allowed")
-            if self.model_endpoint is not None:
-                raise ValueError("$.model_endpoint: model_endpoint is not allowed")
-        elif "override" not in instance:
+            if "model_endpoint" in instance:
+                raise ValueError("$.instances[0].model_endpoint: model_endpoint is not allowed")
+        elif "endpoint" not in instance.get("override", {}):
             raise ValueError("$.instances[0].override: override.endpoint is required")
         return self
 

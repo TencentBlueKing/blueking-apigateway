@@ -50,6 +50,7 @@ def _ai_backend_config(
     auth=None,
     options=None,
     override=None,
+    model_endpoint=None,
 ):
     instance = {
         "name": "primary",
@@ -61,12 +62,14 @@ def _ai_backend_config(
         instance["auth"] = auth
     if override is not None:
         instance["override"] = override
+    if model_endpoint is not None:
+        instance["model_endpoint"] = model_endpoint
     return StageBackendConfig(
         backend_id=backend_id,
         backend_name="model-service",
         backend_kind=BackendKindEnum.AI.value,
         backend_type=BackendTypeEnum.HTTP.value,
-        config={"timeout": 45000, "instances": [instance]},
+        config={"timeout": 45, "instances": [instance]},
     )
 
 
@@ -245,6 +248,7 @@ class TestServiceConvertor:
             10: _ai_backend_config(
                 auth={"header": {"Authorization": "Bearer must-not-log"}},
                 override={"endpoint": "https://models.example.com/v1/chat/completions"},
+                model_endpoint="https://models.example.com/v1/models",
             )
         }
         mock_release_data.get_stage_plugins.return_value = []
@@ -325,6 +329,7 @@ class TestServiceConvertor:
                 "auth": {"header": {"Authorization": "Bearer fallback"}},
                 "options": {"model": "fallback-model"},
                 "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
+                "model_endpoint": "https://models.example.com/v1/models",
             },
         ]
         mock_release_data.stage_backend_configs = {
@@ -334,7 +339,7 @@ class TestServiceConvertor:
                 backend_kind=BackendKindEnum.AI.value,
                 backend_type=BackendTypeEnum.HTTP.value,
                 config={
-                    "timeout": 60000,
+                    "timeout": 60,
                     "instances": instances,
                     "balancer": {"algorithm": "roundrobin"},
                     "fallback_strategy": ["http_429", "http_5xx"],
@@ -349,8 +354,10 @@ class TestServiceConvertor:
         ).convert()[0]
 
         assert "ai-proxy" not in service.plugins
+        expected_instances = [dict(instance) for instance in instances]
+        expected_instances[1].pop("model_endpoint")
         assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
-            "instances": instances,
+            "instances": expected_instances,
             "balancer": {"algorithm": "roundrobin"},
             "fallback_strategy": ["http_429", "http_5xx"],
             "timeout": 60000,

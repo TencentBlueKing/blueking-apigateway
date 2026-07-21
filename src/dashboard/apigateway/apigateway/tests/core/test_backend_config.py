@@ -188,7 +188,7 @@ def test_ai_backend_config_rejects_forbidden_headers(ai_backend_config, header):
 @pytest.mark.parametrize(
     ("path", "value"),
     [
-        (("model_endpoint",), "https://{{env.host}}/models"),
+        (("instances", 0, "model_endpoint"), "https://{{env.host}}/models"),
         (("instances", 0, "name"), "{env.instance_name}"),
         (("instances", 0, "auth", "header", "Authorization"), "Bearer {{env.token}}"),
         (("instances", 0, "options", "model"), "{env.model}"),
@@ -228,6 +228,19 @@ def test_ai_backend_config_preserves_additional_json_options(ai_backend_config):
     assert config.to_config() == ai_backend_config
 
 
+def test_ai_backend_config_defaults_optional_instance_fields(ai_backend_config):
+    ai_backend_config.pop("timeout")
+    instance = ai_backend_config["instances"][0]
+    instance.pop("weight")
+    instance["options"] = {}
+
+    stored = AIBackendConfig.model_validate(ai_backend_config).to_config()
+
+    assert stored["timeout"] == 30
+    assert stored["instances"][0]["weight"] == 0
+    assert stored["instances"][0]["options"] == {}
+
+
 def test_backend_config_optional_fields_reject_explicit_null(ai_backend_config):
     ai_backend_config["instances"][0]["auth"] = None
     standard_backend_config = {
@@ -255,7 +268,7 @@ def test_ai_backend_config_preserves_empty_auth_shape(ai_backend_config, auth, e
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": "https://example.com/v1"}
-    ai_backend_config["model_endpoint"] = "https://example.com/models"
+    instance["model_endpoint"] = "https://example.com/models"
     if auth is None:
         instance.pop("auth")
     else:
@@ -327,7 +340,7 @@ def test_ai_backend_config_validates_override_endpoint(ai_backend_config, endpoi
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": endpoint}
-    ai_backend_config["model_endpoint"] = "https://example.com/models"
+    instance["model_endpoint"] = "https://example.com/models"
 
     with pytest.raises(ValueError, match=error):
         AIBackendConfig.model_validate(ai_backend_config)
@@ -338,7 +351,7 @@ def test_ai_backend_config_rejects_forbidden_override_endpoint_port(ai_backend_c
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": "https://example.com:22/v1"}
-    ai_backend_config["model_endpoint"] = "https://example.com/models"
+    instance["model_endpoint"] = "https://example.com/models"
 
     with pytest.raises(ValueError, match="port is forbidden"):
         AIBackendConfig.model_validate(ai_backend_config)
@@ -351,7 +364,7 @@ def test_ai_backend_config_accepts_legacy_openai_compatible_without_model_endpoi
 
     stored = AIBackendConfig.model_validate(ai_backend_config).to_config()
 
-    assert "model_endpoint" not in stored
+    assert "model_endpoint" not in stored["instances"][0]
 
 
 def test_ai_backend_config_rejects_forbidden_model_endpoint_port(ai_backend_config, settings):
@@ -359,7 +372,7 @@ def test_ai_backend_config_rejects_forbidden_model_endpoint_port(ai_backend_conf
     instance = ai_backend_config["instances"][0]
     instance["provider"] = "openai-compatible"
     instance["override"] = {"endpoint": "https://example.com/v1"}
-    ai_backend_config["model_endpoint"] = "https://example.com:22/models"
+    instance["model_endpoint"] = "https://example.com:22/models"
 
     with pytest.raises(ValueError, match="port is forbidden"):
         AIBackendConfig.model_validate(ai_backend_config)

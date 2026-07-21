@@ -59,7 +59,7 @@ ai_backends.config 参数说明
 
 | 参数名称 | 参数类型 | 必选 | 描述 |
 | -------- | -------- | ---- | ---- |
-| `timeout` | integer | 否 | 超时时间，单位毫秒，默认 `30000` |
+| `timeout` | integer | 否 | 超时时间，单位秒，默认 `30` |
 | `instances` | array[object] | 是 | 模型实例列表；第一期必须且只能配置 1 个实例 |
 
 instances 参数说明
@@ -68,10 +68,11 @@ instances 参数说明
 | -------- | -------- | ---- | ---- |
 | `name` | string | 是 | 实例名称 |
 | `provider` | string | 是 | `openai`、`deepseek` 或 `openai-compatible` |
-| `weight` | integer | 是 | 第一期固定为 `1` |
+| `weight` | integer | 否 | 实例权重，默认 `0` |
 | `auth.header` | object | 否 | 发往模型服务的认证 Header；凭证入库时加密 |
-| `options.model` | string | 是 | 模型名称 |
-| `override.endpoint` | string | 否 | 自定义模型服务地址 |
+| `options.model` | string | 否 | 模型名称 |
+| `override.endpoint` | string | 否 | 自定义模型服务地址；`provider=openai-compatible` 时必填 |
+| `model_endpoint` | string | 否 | dashboard 编辑及连接测试使用的模型列表地址，不下发到网关 |
 
 plugin_configs 参数说明
 每个插件配置对象包含：
@@ -110,12 +111,11 @@ plugin_configs 参数说明
     {
       "name": "openai-primary",
       "config": {
-        "timeout": 30000,
+        "timeout": 30,
         "instances": [
           {
             "name": "primary",
             "provider": "openai-compatible",
-            "weight": 1,
             "auth": {
               "header": {
                 "Authorization": "Bearer <token>"
@@ -126,7 +126,8 @@ plugin_configs 参数说明
             },
             "override": {
               "endpoint": "https://llm.example.com/v1/chat/completions"
-            }
+            },
+            "model_endpoint": "https://llm.example.com/v1/models"
           }
         ]
       }
