@@ -177,6 +177,41 @@ def test_model_rejects_case_insensitive_duplicate_headers(ai_backend_config):
         AIBackendConfig.model_validate(ai_backend_config)
 
 
+@pytest.mark.parametrize("header", ["Host", "content-length", "TRANSFER-ENCODING", "Connection"])
+def test_ai_backend_config_rejects_forbidden_headers(ai_backend_config, header):
+    ai_backend_config["instances"][0]["auth"]["header"][header] = "value"
+
+    with pytest.raises(ValueError, match=f"header is forbidden: {header}"):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("model_endpoint",), "https://{{env.host}}/models"),
+        (("instances", 0, "name"), "{env.instance_name}"),
+        (("instances", 0, "auth", "header", "Authorization"), "Bearer {{env.token}}"),
+        (("instances", 0, "options", "model"), "{env.model}"),
+        (("instances", 0, "options", "metadata"), {"region": "{{env.region}}"}),
+    ],
+)
+def test_ai_backend_config_rejects_environment_variables(ai_backend_config, path, value):
+    target = ai_backend_config
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+
+    with pytest.raises(ValueError, match="must not contain environment variables"):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
+def test_ai_backend_config_rejects_environment_variables_in_header_names(ai_backend_config):
+    ai_backend_config["instances"][0]["auth"]["header"]["{{env.header_name}}"] = "value"
+
+    with pytest.raises(ValueError, match="must not contain environment variables"):
+        AIBackendConfig.model_validate(ai_backend_config)
+
+
 @pytest.mark.parametrize("patch", [{"instances": []}, {"unknown": True}, {"timeout": 0}])
 def test_ai_backend_config_rejects_invalid_top_level(ai_backend_config, patch):
     with pytest.raises(ValueError):
