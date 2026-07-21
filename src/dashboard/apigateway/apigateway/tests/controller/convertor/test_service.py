@@ -56,10 +56,12 @@ def _ai_backend_config(
         "name": "primary",
         "provider": provider,
         "weight": 1,
-        "options": options or {"model": "gpt-4.1-mini", "temperature": 0.2},
+        "options": options if options is not None else {"model": "gpt-4.1-mini", "temperature": 0.2},
     }
     if auth is not None:
         instance["auth"] = auth
+    if override is None and provider == "openai-compatible":
+        override = {"endpoint": "https://models.example.com/v1/chat/completions"}
     if override is not None:
         instance["override"] = override
     if model_endpoint is not None:
@@ -278,24 +280,59 @@ class TestServiceConvertor:
             == BackendKindEnum.AI.value
         )
 
-    def test_ai_proxy_omits_override_for_builtin_provider(self, mock_release_data):
+    @pytest.mark.parametrize(
+        ("provider", "endpoint"),
+        [
+            ("openai", "https://api.openai.com/v1/chat/completions"),
+            ("deepseek", "https://api.deepseek.com/chat/completions"),
+        ],
+    )
+    def test_builtin_provider_publishes_as_openai_compatible(self, mock_release_data, provider, endpoint):
         mock_release_data.stage_backend_configs = {
             10: _ai_backend_config(
-                provider="openai",
+                provider=provider,
                 auth={"header": {"Authorization": "Bearer must-not-log"}},
             )
         }
-        mock_release_data.get_stage_plugins.return_value = []
-        mock_release_data.jwt_private_key = "test-key"
-        mock_release_data.gateway_auth_config = {}
 
-        service = ServiceConvertor(
-            mock_release_data,
-            publish_id=123,
-            apisix_version=APISIX_VERSION_3_16,
-        ).convert()[0]
+        plugin = (
+            ServiceConvertor(
+                mock_release_data,
+                publish_id=123,
+                apisix_version=APISIX_VERSION_3_16,
+            )
+            .convert()[0]
+            .plugins["ai-proxy"]
+        )
+        data = plugin.model_dump(exclude_none=True)
 
-        assert "override" not in service.plugins["ai-proxy"].model_dump(exclude_none=True)
+        assert data["provider"] == "openai-compatible"
+        assert data["override"] == {"endpoint": endpoint}
+        assert data["timeout"] == 45000
+
+    def test_single_plugin_omits_internal_and_optional_fields(self, mock_release_data):
+        mock_release_data.stage_backend_configs = {
+            10: _ai_backend_config(
+                options={},
+                model_endpoint="https://models.example.com/v1/models",
+            )
+        }
+
+        data = (
+            ServiceConvertor(
+                mock_release_data,
+                publish_id=123,
+                apisix_version=APISIX_VERSION_3_16,
+            )
+            .convert()[0]
+            .plugins["ai-proxy"]
+            .model_dump(exclude_none=True)
+        )
+
+        assert "name" not in data
+        assert "weight" not in data
+        assert "model_endpoint" not in data
+        assert "model" not in data.get("options", {})
 
     def test_ai_proxy_emits_empty_auth_when_omitted(self, mock_release_data):
         mock_release_data.stage_backend_configs = {
@@ -319,14 +356,13 @@ class TestServiceConvertor:
                 "name": "primary",
                 "provider": "openai",
                 "weight": 80,
-                "auth": {"header": {"Authorization": "Bearer primary"}},
+                "auth": {"header": {"Authorization": "Bearer primary", "X-Tenant": "tenant"}},
                 "options": {"model": "gpt-4.1-mini"},
             },
             {
                 "name": "fallback",
                 "provider": "openai-compatible",
                 "weight": 20,
-                "auth": {"header": {"Authorization": "Bearer fallback"}},
                 "options": {"model": "fallback-model"},
                 "override": {"endpoint": "https://models.example.com/v1/chat/completions"},
                 "model_endpoint": "https://models.example.com/v1/models",
@@ -355,7 +391,10 @@ class TestServiceConvertor:
 
         assert "ai-proxy" not in service.plugins
         expected_instances = [dict(instance) for instance in instances]
+        expected_instances[0]["provider"] = "openai-compatible"
+        expected_instances[0]["override"] = {"endpoint": "https://api.openai.com/v1/chat/completions"}
         expected_instances[1].pop("model_endpoint")
+        expected_instances[1]["auth"] = {}
         assert service.plugins["ai-proxy-multi"].model_dump(exclude_none=True) == {
             "instances": expected_instances,
             "balancer": {"algorithm": "roundrobin"},
